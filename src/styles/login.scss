@@ -1,0 +1,57 @@
+@import 'variables/general';
+@import 'variables/input';
+@import 'mixins/general';
+
+body {
+    overflow: hidden;
+}
+
+.login-container {
+  @include flex-center;
+  height: 100vh;
+  background: $background;
+}
+
+.login-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 320px;
+
+  h2 {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+
+    input {
+      width: 100%;
+      padding: 0.2rem;
+      margin-top: 0.25rem;
+      border: 1px solid $background-border;
+      border-radius: 6px;
+      background: $background-input;
+      height: $login-input-height;
+    }
+  }
+
+  button {
+    width: 100%;
+    padding: 0.6rem;
+    background-color: $primary-color;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+
+    &:hover {
+       background-color: $primary-hover;
+    }
+  }
+}
