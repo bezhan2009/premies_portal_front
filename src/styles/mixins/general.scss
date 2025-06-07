@@ -1,5 +1,12 @@
+@import '../variables/general.scss';
+
 @mixin flex-center {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+@mixin hover-opacity {
+  opacity: $primary-opacity;
+  transition: 0.2s;
 }

@@ -1,0 +1,29 @@
+@import 'general.scss';
+
+
+@mixin filter_block {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px;
+  margin-bottom: 20px;
+}
+
+@mixin filter_button {
+  padding: 3px 28px;
+  height: 40px;
+  border: none;
+  font-family: sans-serif;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.3s;
+
+  &:hover {
+    @include hover-opacity;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+}

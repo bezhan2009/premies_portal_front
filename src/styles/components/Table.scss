@@ -1,0 +1,47 @@
+@import '../variables/table.scss';
+
+
+.table-reports {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    border-collapse: collapse; // Ensure borders don't double up
+    font-family: Arial, sans-serif; // Match the font style
+    font-size: 12px; // Approximate font size from the image
+    border: 2px solid $border-table-color; // Lighter gray border
+
+    th {
+        padding: .95rem; // Reduced padding to match the tighter spacing in the image
+        border-right: 1px solid $border-table-color; // Lighter gray border
+        border-bottom: 1px solid $border-table-color; // Add bottom border for header
+        font-weight: bold; // Bold text for header
+        text-align: center; // Align text to the left as in the image
+    }
+
+    td {
+        padding: .95rem; // Reduced padding to match the tighter spacing in the image
+        border-right: 1px solid $border-table-color; // Lighter gray border
+        border-top: 1px solid $border-table-color; // Top border for body cells
+        text-align: center; // Align text to the left
+    }
+
+    tr:hover {
+        background-color: #ebf3ff;
+    }
+
+    // Remove the right border for the last cell in each row
+    th:last-child,
+    td:last-child {
+        border-right: none;
+    }
+
+    // Remove the top border for the first row of the body to avoid double borders
+    tbody tr:first-child td {
+        border-top: none;
+    }
+
+    td:empty::before {
+        content: "\00a0"; // Неразрывный пробел для пустых ячеек
+    }
+}

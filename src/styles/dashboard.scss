@@ -1,0 +1,36 @@
+@import 'variables/dashboard.scss';
+
+body {
+    background-color: #f1f1f1;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 15px;
+
+  &__item {
+    padding: 10px 15px;
+    background-color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:hover {
+      background-color: darken(#fff, 10%);
+    }
+
+    &--active {
+      background-color: $primary-color;
+      color: #fff;
+    }
+  }
+}
