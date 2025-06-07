@@ -1,52 +1,98 @@
-@import '../variables/spinner.scss';
+@import '../variables/spinner';
 
-.sk-chase {
-  transform: scale(1.2, 1.2);
-  width: $spinner-width;
-  height: $spinner-height;
+.dot-spinner {
+  --uib-size: #{$size};
+  --uib-speed: #{$speed};
+  --uib-color: #{$color};
   position: relative;
-  animation: sk-chase 2.5s infinite linear both;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+}
 
-  // Вложенные стили для точек
-  .sk-chase-dot {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    animation: sk-chase-dot 1.0s infinite ease-in-out both;
-
-    &:before {
-      content: '';
-      display: block;
-      width: $spinner-dot-width;
-      height: $spinner-dot-height;
-      background-color: $spinner-color;
-      border-radius: 100%;
-      animation: sk-chase-dot-before 1.0s infinite ease-in-out both;
-    }
-
-    @for $i from 1 through 6 {
-      &:nth-child(#{$i}) {
-        animation-delay: -#{1.2 - 0.1 * $i}s;
-      }
-    }
+.dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  
+  &::before {
+    content: '';
+    height: 20%;
+    width: 20%;
+    border-radius: 50%;
+    background-color: var(--uib-color);
+    transform: scale(0);
+    opacity: 0.5;
+    animation: pulse0112 calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(24, 49, 83, 0.3); // цвет по аналогии, можно вместо этого использовать переменную
   }
 }
 
-@keyframes sk-chase {
-  100% { transform: rotate(360deg); }
+.dot-spinner__dot:nth-child(2) {
+  transform: rotate(45deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.875);
+  }
+}
+  
+.dot-spinner__dot:nth-child(3) {
+  transform: rotate(90deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.75);
+  }
 }
 
-@keyframes sk-chase-dot {
-  80%, 100% { transform: rotate(360deg); }
+.dot-spinner__dot:nth-child(4) {
+  transform: rotate(135deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.625);
+  }
 }
 
-@keyframes sk-chase-dot-before {
+.dot-spinner__dot:nth-child(5) {
+  transform: rotate(180deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.5);
+  }
+}
+
+.dot-spinner__dot:nth-child(6) {
+  transform: rotate(225deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.375);
+  }
+}
+
+.dot-spinner__dot:nth-child(7) {
+  transform: rotate(270deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.25);
+  }
+}
+
+.dot-spinner__dot:nth-child(8) {
+  transform: rotate(315deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.125);
+  }
+}
+
+@keyframes pulse0112 {
+  0%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+
   50% {
-    transform: scale(0.4);
-  } 
-  100%, 0% {
-    transform: scale(1.0);
+    transform: scale(1);
+    opacity: 1;
   }
 }

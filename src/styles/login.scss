@@ -3,7 +3,6 @@
 @import 'mixins/general';
 
 body {
-    overflow: hidden;
     margin: 0;
     padding: 0;
 }
@@ -11,7 +10,7 @@ body {
 .login-container {
   @include flex-center;
   height: 100vh;
-  background: #e0e0e0; // Light gray background from the image
+  background: #e0e0e0;
 }
 
 .login-form {
@@ -70,8 +69,8 @@ body {
 
   button {
     width: 100%;
-    padding: 0.75rem; // Increased padding for a larger button
-    background-color: #ae86ff; // Red background to match the logo
+    padding: 0.75rem;
+    background-color: #ae86ff;
     color: white;
     border: none;
     border-radius: 6px;
@@ -80,13 +79,14 @@ body {
     font-size: 1rem;
 
     &:hover {
-      background-color: #ab6aff; // Darker red for hover effect
+      background-color: #ab6aff;
     }
   }
 }
 
 .error {
-  color: red;
+  color: #e21a1c;
+  font-weight: bold;
   font-size: 0.85rem;
   margin-bottom: 1rem;
   font-family: sans-serif;

@@ -1,0 +1,46 @@
+@import '../variables/filters.scss';
+@import '../mixins/general.scss';
+@import '../mixins/filters.scss';
+
+.filters {
+  @include filter_block;
+  width: 93%;
+  background-color: #f1f1f1;
+  padding: 30px;
+  margin: 20px auto;
+  border-radius: 15px;
+
+  &__left, &__right {
+    gap: 10px;
+  }
+
+  &__button {
+    @include filter_button;
+    margin-right: 15px;
+
+    &--black { background-color: $button-bg-black; }
+    &--orange { background-color: $button-bg-orange; }
+    &--blue { background-color: $button-bg-blue; }
+    &--green { background-color: $button-bg-green; }
+    &--red { background-color: $button-bg-red; }
+  }
+}
+
+.reports_filter {
+    @include filter_block;
+    width: 93%;
+    background-color: #f1f1f1;
+    padding: 30px;
+    margin: 10px auto;
+    border-radius: 15px;
+
+  &__button {
+    @include filter_button;
+    margin-right: 24px;
+
+    &--grey { background-color: $button-bg-grey; }
+    &--purple { background-color: $button-bg-purple; }
+    &--yellow { background-color: $button-bg-yellow; }
+    &--cyan { background-color: $button-bg-cyan; }
+  }
+}
