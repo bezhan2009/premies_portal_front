@@ -10,3 +10,8 @@
   opacity: $primary-opacity;
   transition: 0.2s;
 }
+
+@mixin font {
+  font-weight: 470;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}

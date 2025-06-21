@@ -1,0 +1,53 @@
+@import '../variables/worker_premies';
+
+
+/* ======= TopHeader.scss ======= */
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: $border-radius-general;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: $background-color-blocks;
+
+  &__left {
+    display: flex;
+    align-items: center;
+
+    & .top-header__nav {
+      font-size: 18px;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    & .top-header__month {
+      font-size: 18px;
+      font-weight: bold;
+    }
+  }
+
+  &__right {
+    text-align: right;
+    line-height: 1.2;
+
+    & .top-header__total {
+      font-size: 14px;
+      margin-bottom: 4px;
+
+      & .top-header__value {
+        font-weight: bold;
+      }
+    }
+
+    & .top-header__plan {
+      font-size: 14px;
+
+      & .top-header__value--plan {
+        color: #d00; /* Красный цвет для плана */
+        font-weight: bold;
+      }
+    }
+  }
+}

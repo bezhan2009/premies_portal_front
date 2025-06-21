@@ -1,6 +1,6 @@
-import '../../styles/components/MenuOperator.scss';
-import LogoImageComponent from '../Logo';
-import LogoutButton from './Logout';
+import '../../../styles/components/Menu.scss';
+import LogoImageComponent from '../../Logo';
+import LogoutButton from '../../general/Logout';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 

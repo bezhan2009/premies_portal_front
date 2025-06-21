@@ -9,7 +9,7 @@
     border-collapse: collapse; // Ensure borders don't double up
     font-family: Arial, sans-serif; // Match the font style
     font-size: 12px; // Approximate font size from the image
-    border: 2px solid $border-table-color; // Lighter gray border
+    border-top: 2px solid $border-table-color; // Lighter gray border
 
     th {
         padding: .95rem; // Reduced padding to match the tighter spacing in the image

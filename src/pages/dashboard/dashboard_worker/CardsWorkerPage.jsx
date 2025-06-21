@@ -1,19 +1,19 @@
 import '../../../styles/dashboard.scss';
-import Header from '../../../components/dashboard/dashboard_operator/MenuOperator';
+import HeaderWorker from '../../../components/dashboard/dashboard_worker/MenuWorker';
 import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
 import { Helmet } from 'react-helmet';
 
-export default function DashboardOperatorReports() {
+export default function DashboardWorkerCards() {
   return (
     <>
       <Helmet>
-        <title>Панель управления</title>
+        <title>Карты</title>
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <Header username="Бартов М." activeLink="reports" />
+          <HeaderWorker username="Бартов М." activeLink="cards" />
         </header>
-        <GetBlockInfo page="operator_reports" />
+          <GetBlockInfo page="und" />
       </div>
     </>
   );

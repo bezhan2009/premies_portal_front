@@ -2,7 +2,7 @@ import React from 'react';
 import LastModified from './LastModified';
 import '../../../styles/components/Filters.scss';
 
-const Filters = ({ initialDate, modificationDesc }) => {
+const Filters = ({ initialDate, modificationDesc, onChange }) => {
   const buttons = [
     { text: 'Фильтры', class: 'filters__button--black' },
     { text: 'Добавить', class: 'filters__button--orange' },
@@ -14,7 +14,7 @@ const Filters = ({ initialDate, modificationDesc }) => {
   return (
     <div className="filters">
       <div className="filters__left">
-        <LastModified initialDate={initialDate} modificationDesc={modificationDesc} />
+        <LastModified initialDate={initialDate} modificationDesc={modificationDesc} onChange={onChange} />
       </div>
       <div className="filters__right">
         {buttons.map((btn) => (
