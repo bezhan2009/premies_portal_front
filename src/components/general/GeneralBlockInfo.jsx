@@ -5,6 +5,7 @@ import OperatorDatasBlockInfo from "../dashboard/dashboard_operator/OperatorData
 import OperatorKnowledgeBaseBlockInfo from "../dashboard/dashboard_operator/OperatorKnowledgeBase.jsx";
 import GeneralUnderDevelopment from "./UnderDevelopment.jsx";
 import WorkerPremiesBlockInfo from "../dashboard/dashboard_worker/WorkerPremies.jsx";
+import RenderReports from "../dashboard/dashboard_worker/reports_table/RenderReports.jsx";
 import ChairmanReports from "../dashboard/dashboard_chairman/ChairmanReports.jsx";
 import '../../styles/components/BlockInfo.scss'
 
@@ -20,6 +21,8 @@ function GetBlockInfo({ page }) {
             return <OperatorKnowledgeBaseBlockInfo />;
         case "worker_premi":
             return <WorkerPremiesBlockInfo />;
+        case "worker_report":
+            return <RenderReports />;
         case "chairman_reports":
             return <ChairmanReports />
         default:

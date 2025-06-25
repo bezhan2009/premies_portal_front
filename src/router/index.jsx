@@ -14,6 +14,7 @@ import DashboardWorkerCards from "../pages/dashboard/dashboard_worker/CardsWorke
 import DashboardWorkerCredits from "../pages/dashboard/dashboard_worker/CreditsWorkerPage.jsx";
 import DashboardWorkerKB from "../pages/dashboard/dashboard_worker/KBWorkerPage.jsx";
 import DashboardWorkerTests from "../pages/dashboard/dashboard_worker/TestsWorkerPage.jsx";
+import DashboardWorkerReports from "../pages/dashboard/dashboard_worker/DataReports.jsx";
 
 import DashboardChairmanReports from "../pages/dashboard/dashboard_chairman/ChairmanReports.jsx";
 
@@ -44,6 +45,7 @@ export default function AppRouter() {
             <Route path="/worker/credits" element={<DashboardWorkerCredits />} />
             <Route path="/worker/tests" element={<DashboardWorkerTests />} />
             <Route path="/worker/knowledge-base" element={<DashboardWorkerKB />} />
+            <Route path="/worker/reports" element={<DashboardWorkerReports />} />
 
             <Route path="/chairman/reports" element={<DashboardChairmanReports />} />
           </Route>
