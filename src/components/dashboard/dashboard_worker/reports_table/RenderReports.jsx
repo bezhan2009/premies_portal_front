@@ -5,19 +5,23 @@ import MBReport from "./MobileBankReports.jsx";
 import CardTurnoversReport from "./CardTurnover.jsx";
 import CardsReport from "./CardsReport.jsx";
 import UnderDevelopmentPage from "../../dashboard_general/UnderDevelopment.jsx";
+import KCReport from "./KCReport.jsx";
+import ReportButton from "../ReportButton.jsx";
 
 
 const RenderReports = () => {
-    const [activeComponent, setActiveComponent] = React.useState('Мобильный банк');
+    const [activeComponent, setActiveComponent] = React.useState("cards");
 
     const renderComponent = () => {
         switch (activeComponent) {
-            case 'карты':
-                return <CardsReport />
-            case 'мб':
+            case 'mobileBank':
                 return <MBReport />;
-            case 'обороты':
+            case 'cards':
+                return <CardsReport />
+            case 'turnovers':
                 return <CardTurnoversReport />;
+            case 'kc':
+                return <KCReport />;
             // case 'Овердрафт':
             //     return <OVReport />;
             default:
@@ -27,12 +31,12 @@ const RenderReports = () => {
 
     return (
         <div className="block_info_prems" align="center">
-            <div className="container">
+            <div className="header-reps">
                 <ReportFilters onSelect={setActiveComponent} />
-                <div className="content">
-                    {renderComponent()}
-                </div>
             </div>
+
+            {renderComponent()}
+            <ReportButton navigateTo='/worker/premies' descButton='Моя премия' />
         </div>
     );
 };

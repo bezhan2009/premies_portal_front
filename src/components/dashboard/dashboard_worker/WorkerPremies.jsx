@@ -2,7 +2,7 @@ import React from 'react';
 import Header from "./WorkerPremiesHeader.jsx";
 import '../../../styles/components/WorkerPremies.scss';
 import { AnimatePresence, motion } from 'framer-motion';
-
+import ReportButton from "./ReportButton.jsx";
 
 const FinancialSummary = () => {
     return (
@@ -10,28 +10,24 @@ const FinancialSummary = () => {
             {/* Верхний блок */}
             <Header />
 
-            {/* Первая карточка: Продажа карт и доп. продуктов */}
+            {/* Продажа карт и дополнительных продуктов */}
             <div className="card">
                 <div className="card__title">Продажа карт и дополнительных продуктов</div>
                 <div className="card__content">
                     <div className="card__column">
                         <div className="card__row">
-                            <div className="card__label">Карты:</div>
-                            <div className="card__value">130 TJS</div>
+                            <span>Карты: 130 TJS</span>
                         </div>
                         <div className="card__row">
-                            <div className="card__label">Мобильный банк:</div>
-                            <div className="card__value">115 TJS</div>
-                        </div>
-                        <div className="card__row">
-                            <div className="card__label">Овердрафт:</div>
-                            <div className="card__value">120 TJS</div>
+                            <span>Мобильный банк: 115 TJS</span>
                         </div>
                     </div>
                     <div className="card__column">
                         <div className="card__row">
-                            <div className="card__label">ЗП Проект:</div>
-                            <div className="card__value">100 TJS</div>
+                            <span>Овердрафт: 120 TJS</span>
+                        </div>
+                        <div className="card__row">
+                            <span>ЗП Проект: 100 TJS</span>
                         </div>
                     </div>
                 </div>
@@ -40,53 +36,41 @@ const FinancialSummary = () => {
                 </div>
             </div>
 
-            {/* Вторая карточка: Обороты по картам */}
+            {/* Обороты по картам */}
             <div className="card">
                 <div className="card__title">Обороты по картам</div>
                 <div className="card__content">
                     <div className="card__column">
                         <div className="card__row">
-                            <div className="card__label">Оборот по дебету + остаток:</div>
-                            <div className="card__value">350,07 TJS</div>
-                        </div>
-                        <div className="card__row">
-                            <div className="card__label">Количество активных карт:</div>
-                            <div className="card__value">259,2 TJS</div>
+                            <span>Оборот по дебету + остаток: 350,07 TJS</span>
                         </div>
                     </div>
-                    {/* Правая колонка оставим пустой, чтобы не ломать выравнивание */}
-                    <div className="card__column"></div>
+                    <div className="card__column">
+                        <div className="card__row">
+                            <span>Количество активных карт: 259,2 TJS</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="card__footer">
                     <span className="card__footer-label">467 TJS</span>
                 </div>
             </div>
 
-            {/* Третья карточка: Качество обслуживания */}
+            {/* Качество обслуживания */}
             <div className="card">
                 <div className="card__title">Качество обслуживания</div>
                 <div className="card__content column-mode">
-                    <div className="card__row">
-                        <div className="card__label">Средняя оценка:</div>
-                        <div className="card__value">7,2 Балла</div>
-                    </div>
-                    <div className="card__row">
-                        <div className="card__label">Жалобы + ОЗ:</div>
-                        <div className="card__value">0 ШТ</div>
-                    </div>
-                    <div className="card__row">
-                        <div className="card__label">Тесты:</div>
-                        <div className="card__value">7 баллов</div>
-                    </div>
-                    <div className="card__row">
-                        <div className="card__label">Мотивация от руководства:</div>
-                        <div className="card__value">0 баллов</div>
-                    </div>
+                    <div className="card__row"><span>Средняя оценка: 7,2 Балла</span></div>
+                    <div className="card__row"><span>Жалобы + ОЗ: 0 ШТ</span></div>
+                    <div className="card__row"><span>Тесты: 7 баллов</span></div>
+                    <div className="card__row"><span>Мотивация от руководства: 0 баллов</span></div>
                 </div>
                 <div className="card__footer">
                     <span className="card__footer-label">+10%</span>
                 </div>
             </div>
+
+            <ReportButton navigateTo='/worker/reports' descButton='Отчеты' />
         </div>
     );
 };
@@ -108,14 +92,12 @@ const renderPage = () => {
 
 const WorkerPremiesBlockInfo = () => {
     return (
-        <>
-            <div className='block_info_prems' align='center'>
-                <AnimatePresence mode="wait">
-                    {renderPage()}
-                </AnimatePresence>
-            </div>
-        </>
-    )
-}
+        <div className="block_info_prems" align="center">
+            <AnimatePresence mode="wait">
+                {renderPage()}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 export default WorkerPremiesBlockInfo;

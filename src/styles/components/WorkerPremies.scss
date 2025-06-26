@@ -1,75 +1,64 @@
 @import '../variables/worker_premies';
 
-/* Обёртка всей страницы */
 .dashboard {
-  max-width: 95%;
+  max-width: 97%;
   margin: 0 auto;
   padding: 16px;
   font-family: Arial, sans-serif;
   color: #333;
 }
 
-
-/* ======= Card.scss ======= */
 .card {
   background: $background-color-blocks;
   border: 1px solid #ddd;
   border-radius: $border-radius-general;
-  padding: 16px;
+  padding: 20px;
   margin-bottom: 20px;
 
   &__title {
     font-size: 16px;
     font-weight: bold;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
-  /* Содержимое может быть с колонками или без (для третьей карточки) */
   &__content {
     display: flex;
+    justify-content: space-between;
+    gap: 32px;
 
-    /* Для третьей карточки (список в одну колонку) */
     &.column-mode {
       flex-direction: column;
+      gap: 12px;
     }
 
-    & .card__column {
+    .card__column {
       flex: 1;
-      &:not(:last-child) {
-        margin-right: 20px; /* Расстояние между колонками */
-      }
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
   }
 
   &__row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
+    font-size: 14px;
+    gap: 4px; // если хочешь чуть-чуть отступа между span
 
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    & .card__label {
-      font-size: 14px;
-      color: #555;
-    }
-
-    & .card__value {
-      font-size: 14px;
-      font-weight: bold;
+    & span {
       white-space: nowrap;
+      font-weight: 550;
     }
   }
 
+
   &__footer {
-    margin-top: 12px;
+    margin-top: 16px;
     text-align: right;
 
-    & .card__footer-label {
-      font-size: 14px;
+    .card__footer-label {
+      font-size: 15px;
       font-weight: bold;
     }
   }
 }
-

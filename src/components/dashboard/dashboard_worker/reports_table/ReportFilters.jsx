@@ -1,46 +1,38 @@
 import React, { useState } from 'react';
+import '../../../../styles/components/Filters.scss'
 
 const ReportFilters = ({ onSelect }) => {
-    const [activeButton, setActiveButton] = useState('Мобильный банк');
+    const [activeTab, setActiveTab] = useState('cards');
 
-    const handleButtonClick = (buttonName) => {
-        setActiveButton(buttonName);
-        onSelect(buttonName);
+    const buttons = [
+        { text: 'Выданные карты', value: 'cards', class: 'filters__button--black-rep' },
+        { text: 'Мобильный банк', value: 'mobileBank', class: 'filters__button--black-rep' },
+        { text: 'Овердрафт', value: 'overdraft', class: 'filters__button--black-rep' },
+        { text: 'Обороты', value: 'turnovers', class: 'filters__button--black-rep' },
+        { text: 'Каналы обслуживания', value: 'kc', class: 'filters__button--black-rep' },
+    ];
+
+    const handleButtonClick = (value) => {
+        setActiveTab(value);
+        onSelect(value);
     };
 
     return (
-        <div className="header">
-                Отчет
-            <button
-                className={`btn ${activeButton === 'карты' ? 'active' : ''}`}
-                onClick={() => handleButtonClick('карты')}
-            >
-                Выданные карты
-            </button>
-            <button
-                className={`btn ${activeButton === 'мб' ? 'active' : ''}`}
-                onClick={() => handleButtonClick('мб')}
-            >
-                Мобильный банк
-            </button>
-            <button
-                className={`btn ${activeButton === 'Овердрафт' ? 'active' : ''}`}
-                onClick={() => handleButtonClick('Овердрафт')}
-            >
-                Овердрафт
-            </button>
-            <button
-                className={`btn ${activeButton === 'обороты' ? 'active' : ''}`}
-                onClick={() => handleButtonClick('обороты')}
-            >
-                Обороты
-            </button>
-            <button
-                className={`btn ${activeButton === 'Каналы обслуживания' ? 'active' : ''}`}
-                onClick={() => handleButtonClick('Каналы обслуживания')}
-            >
-                Каналы обслуживания
-            </button>
+        <div className="filters-reports">
+            <div className="filters__container">
+                <div className="filters__title">Отчет</div>
+                <div className="filters__left">
+                    {buttons.map((btn) => (
+                        <button
+                            key={btn.value}
+                            className={`filters__button ${btn.class} ${activeTab === btn.value ? 'active' : ''}`}
+                            onClick={() => handleButtonClick(btn.value)}
+                        >
+                            {btn.text}
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };
