@@ -1,58 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import '../../../../styles/components/Table.scss';
-import LastModified from '../../dashboard_general/LastModified.jsx';
+import Filters from '../../dashboard_general/LastModified.jsx';
 import '../../../../styles/components/TablesChairman.scss';
+import '../../../../styles/pagination.scss';
+import SearchBar from "../../../general/SearchBar.jsx";
+import Spinner from "../../../Spinner.jsx";
+import {calculateTotalPremia} from "../../../../api/utils/calculate_premia.js";
+import {fetchEmployees} from "../../../../api/chairman/reports/employee.js";
 
-const data = [
-  {
-    category: 'Умарова Фаридун',
-    concreteCards: '5 000',
-    concreteActiveCards: '4 000',
-    overdraftDebt: '8 000 000',
-    overdraftCredit: '7 000 000',
-    balanceCards: '12 124',
-    premium: '1000',
-  },
-  {
-    category: 'Носирова Дилрабо',
-    concreteCards: '545',
-    concreteActiveCards: '55',
-    overdraftDebt: '5',
-    overdraftCredit: '55',
-    balanceCards: '554',
-    premium: '500',
-  },
-  {
-    category: 'Сафина Карина',
-    concreteCards: '5',
-    concreteActiveCards: '5',
-    overdraftDebt: '4',
-    overdraftCredit: '4',
-    balanceCards: '4',
-    premium: '1200',
-  },
-  {
-    category: 'Кто то',
-    concreteCards: '1',
-    concreteActiveCards: '1',
-    overdraftDebt: '1',
-    overdraftCredit: '1',
-    balanceCards: '1',
-    premium: '100',
-  },
-];
+const ITEMS_PER_PAGE = 10;
 
 const ReportTableEmployeesChairman = ({ onSelect }) => {
-  const [selectedRow, setSelectedRow] = useState(0); // Первая строка выбрана по умолчанию
+  const [allData, setAllData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  });
+  const [selectedRow, setSelectedRow] = useState(null);
 
+  // Загружаем всех работников
   useEffect(() => {
-    onSelect(''); // Вызываем onSelect при загрузке для первой строки
-  }, [onSelect]);
+    const loadAll = async () => {
+      setLoading(true);
+      let all = [];
+      let after = null;
+      try {
+        while (true) {
+          const chunk = await fetchEmployees(dateFilter.month, dateFilter.year, after);
+          if (!chunk || chunk.length === 0) break;
 
-  const handleRowClick = (index) => {
-    setSelectedRow(index); // Устанавливаем выбранную строку
-    const url = Math.floor(Math.random() * 1000).toString();
-    onSelect(url); // Передаем URL родителю
+          all = [...all, ...chunk];
+          after = chunk[chunk.length - 1]?.ID;
+          if (chunk.length < ITEMS_PER_PAGE) break;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      setAllData(all);
+      setFilteredData(all);
+      setCurrentPage(1);
+      setLoading(false);
+    };
+
+    loadAll();
+  }, [dateFilter]);
+
+  const handleSearch = (filtered) => {
+    if (!filtered || filtered.length === 0) {
+      setFilteredData(allData);
+      setCurrentPage(1);
+    } else {
+      setFilteredData(filtered);
+      setCurrentPage(1);
+    }
+  };
+
+  const handleRowClick = (worker) => {
+    setSelectedRow(worker.ID);
+    onSelect(`${worker.ID}/${dateFilter.year}`);
+  };
+
+  const paginatedData = filteredData.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+  );
+
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const buttons = [];
+    for (let i = 1; i <= totalPages; i++) {
+      buttons.push(
+          <button
+              key={i}
+              className={`pagination-button ${currentPage === i ? 'active' : ''}`}
+              onClick={() => setCurrentPage(i)}
+          >
+            {i}
+          </button>
+      );
+    }
+
+    return <div className="pagination-container">{buttons}</div>;
   };
 
   return (
@@ -60,45 +94,74 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
         <div className="report-table-container">
           <div className="date-filter-container">
             <span className="label">Период</span>
-            <LastModified />
+            <Filters onChange={setDateFilter} />
           </div>
 
-          <table className="table-reports">
-            <thead>
-            <tr>
-              <th>Выберите</th>
-              <th>Отделение</th>
-              <th>Количество карт</th>
-              <th>Конкретно активных карт</th>
-              <th>Оборот по дебету</th>
-              <th>Оборот по кредиту</th>
-              <th>Остатки на картах</th>
-              <th>Премия</th>
-            </tr>
-            </thead>
-            <tbody>
-            {data.map((row, idx) => (
-                <tr
-                    key={idx}
-                    onClick={() => handleRowClick(idx)} // Клик по строке
-                    style={{ cursor: 'pointer' }}
-                >
-                  <td>
-                    <div
-                        className={`choose-td ${selectedRow === idx ? 'active' : ''}`} // Активный класс
-                    ></div>
-                  </td>
-                  <td>{row.category || ''}</td>
-                  <td>{row.concreteCards || ''}</td>
-                  <td>{row.concreteActiveCards || ''}</td>
-                  <td>{row.overdraftDebt || ''}</td>
-                  <td>{row.overdraftCredit || ''}</td>
-                  <td>{row.balanceCards || ''}</td>
-                  <td>{row.premium || ''}</td>
-                </tr>
-            ))}
-            </tbody>
-          </table>
+          <SearchBar allData={allData} onSearch={handleSearch} searchKey="user.full_name" />
+
+          {loading ? (
+              <div
+                  style={{
+                    transform: 'scale(2)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: "100px",
+                    width: "auto"
+                  }}
+              >
+                <Spinner/>
+              </div>
+          ) : paginatedData.length === 0 ? (
+              <h1>Нет данных</h1>
+          ) : (
+              <>
+                <table className="table-reports">
+                  <thead>
+                  <tr>
+                    <th>Выберите</th>
+                    <th>ФИО</th>
+                    <th>Количество карт</th>
+                    <th>Количество активных карт</th>
+                    <th>Обороты по дебету</th>
+                    <th>Обороты по кредиту</th>
+                    <th>Премия</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {paginatedData.map((worker) => (
+                      <tr
+                          key={worker.ID}
+                          onClick={() => handleRowClick(worker)}
+                          style={{cursor: 'pointer'}}
+                      >
+                        <td>
+                          <div
+                              className={`choose-td ${selectedRow === worker.ID ? 'active' : ''}`}
+                          ></div>
+                        </td>
+                        <td>{worker.user?.full_name || ''}</td>
+                        <td>{worker.CardSales && worker.CardSales.length > 0
+                            ? worker.CardSales[0].cards_sailed : 0}</td>
+                        <td>{worker.CardTurnovers && worker.CardTurnovers.length > 0
+                            ? worker.CardTurnovers[0].activated_cards : 0}</td>
+                        <td>
+                          {worker.CardSales && worker.CardSales.length > 0
+                              ? worker.CardSales[0].deb_osd : 0}
+                        </td>
+                        <td>
+                          {worker.CardSales && worker.CardSales.length > 0
+                              ? worker.CardSales[0].deb_osk : 0}
+                        </td>
+                        <td>{calculateTotalPremia(worker)?.toFixed(3)}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+
+                {renderPagination()}
+              </>
+          )}
         </div>
       </div>
   );

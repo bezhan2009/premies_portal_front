@@ -1,7 +1,9 @@
+// ReportFilters.jsx
 import React, { useState } from 'react';
 import '../../../../styles/components/Filters.scss'
+import LastModified from "../../dashboard_general/LastModified.jsx";
 
-const ReportFilters = ({ onSelect }) => {
+const ReportFilters = ({ onSelect, onDateChange }) => {
     const [activeTab, setActiveTab] = useState('cards');
 
     const buttons = [
@@ -31,6 +33,9 @@ const ReportFilters = ({ onSelect }) => {
                             {btn.text}
                         </button>
                     ))}
+                </div>
+                <div className="filters__container__date">
+                    <LastModified onChange={({ month, year }) => onDateChange(month, year)} />
                 </div>
             </div>
         </div>

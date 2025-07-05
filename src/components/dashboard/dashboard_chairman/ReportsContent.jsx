@@ -9,6 +9,7 @@ import ChairmanReportFinanceBlockInfo from "./charts/FinanceChart.jsx";
 import UnderDevelopment from "../../general/UnderDevelopment.jsx";
 import ChairmanOfficeParentComponent from "./ChairmanOfficeReportsParentComponent.jsx";
 import ChairmanEmployeeParentComponent from "./ChairmanEmployeeReportsParentComponent.jsx";
+import ChairmanAllParentComponent from "./ChairmanAllReportsParentComponent.jsx";
 
 
 const ReportContent = ({ activeTab }) => {
@@ -18,9 +19,7 @@ const ReportContent = ({ activeTab }) => {
                 return (
                     <RenderPage pageKey="bank">
                         <>
-                            <ReportTableCardsChairman />
-                            <ChairmanReportCardsBlockInfo />
-                            <ChairmanReportFinanceBlockInfo />
+                            <ChairmanAllParentComponent />
                         </>
                     </RenderPage>
                 );

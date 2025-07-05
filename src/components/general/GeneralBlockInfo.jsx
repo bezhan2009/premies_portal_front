@@ -8,9 +8,12 @@ import WorkerPremiesBlockInfo from "../dashboard/dashboard_worker/WorkerPremies.
 import RenderReports from "../dashboard/dashboard_worker/reports_table/RenderReports.jsx";
 import ChairmanReports from "../dashboard/dashboard_chairman/ChairmanReports.jsx";
 import '../../styles/components/BlockInfo.scss'
+import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/GeneralKnowledgeBase.jsx";
 
 function GetBlockInfo({ page }) {
     switch (page) {
+        case "worker_knowledge_base":
+            return <GeneralKnowledgeBaseBlockInfo />;
         case "operator_premi":
             return <OperatorPremiBlockInfo />;
         case "operator_reports":

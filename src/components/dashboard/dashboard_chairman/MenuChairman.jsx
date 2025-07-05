@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export default function HeaderChairman({ username = 'Бартов М.', activeLink = 'reports' }) {
     const links = [
-        { name: 'База знаний', href: '/operator/knowledge-base', key: 'knowledge' },
+        { name: 'База знаний', href: '/chairman/knowledge-base', key: 'knowledge' },
         { name: 'Отчет по картам', href: '/chairman/reports', key: 'rep_cards' },
     ];
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

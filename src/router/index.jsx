@@ -23,6 +23,7 @@ import UnderDevelopmentPage from '../pages/general/UnderDevelopmentPage';
 import RequireAuth from '../middlewares/RequireAuth';
 
 import PageNotFound from "../pages/general/NotFound.jsx";
+import DashboardChairmanKnowledgeBase from "../pages/dashboard/dashboard_chairman/KnowledgeBase.jsx";
 
 export default function AppRouter() {
   return (
@@ -48,6 +49,7 @@ export default function AppRouter() {
             <Route path="/worker/reports" element={<DashboardWorkerReports />} />
 
             <Route path="/chairman/reports" element={<DashboardChairmanReports />} />
+            <Route path="/chairman/knowledge-base" element={<DashboardChairmanKnowledgeBase />} />
           </Route>
 
           <Route path="*" element={<PageNotFound />} />

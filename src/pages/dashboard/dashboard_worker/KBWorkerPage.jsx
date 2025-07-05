@@ -13,7 +13,7 @@ export default function DashboardWorkerKB() {
         <header className="dashboard-header">
           <HeaderWorker username="Бартов М." activeLink="knowledge" />
         </header>
-          <GetBlockInfo page="und" />
+          <GetBlockInfo page="worker_knowledge_base" />
       </div>
     </>
   );

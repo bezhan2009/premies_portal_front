@@ -71,7 +71,23 @@
 
 .filters__container {
   @include filter-container-table;
-
   margin: 10px;
   padding-top: 40px;
+
+  &__date {
+    margin: 10px;
+  }
+}
+
+.loading {
+  font-size: 16px;        /* Размер шрифта */
+  color: #ff0000;         /* Цвет текста, например красный */
+  text-align: center;     /* Выравнивание по центру */
+  padding: 10px;          /* Внутренние отступы */
+  background-color: #f0f0f0; /* Светлый фон */
+  border-radius: 5px;     /* Скругление углов */
+  font-family: Arial, sans-serif; /* Семейство шрифтов */
+  margin: 20px auto;      /* Отступы и центрирование блока */
+  width: fit-content;     /* Подгонка ширины под содержимое */
+  font-weight: bold;
 }

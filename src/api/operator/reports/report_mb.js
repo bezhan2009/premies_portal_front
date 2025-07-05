@@ -10,7 +10,7 @@ export const fetchReportMobileBank = async (month, year, after) => {
     url.searchParams.append("loadCardTurnovers", "false");
     url.searchParams.append("loadCardSales", "false");
     url.searchParams.append("loadCardDetails", "false");
-    url.searchParams.append("loadUser", "false");
+    url.searchParams.append("loadUser", "true");
     url.searchParams.append("loadServiceQuality", "false");
     url.searchParams.append("loadMobileBank", "true");
 

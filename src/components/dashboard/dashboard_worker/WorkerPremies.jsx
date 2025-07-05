@@ -1,103 +1,211 @@
-import React from 'react';
-import Header from "./WorkerPremiesHeader.jsx";
+import React, { useEffect, useState } from 'react';
+import Header from './WorkerPremiesHeader.jsx';
+import { fetchWorkerData } from '../../../api/workers/reports/worker_premies.js';
 import '../../../styles/components/WorkerPremies.scss';
-import { AnimatePresence, motion } from 'framer-motion';
 import ReportButton from "./ReportButton.jsx";
+import Spinner from "../../Spinner.jsx";
+import AlertMessage from "../../general/AlertMessage.jsx";
+import {calculateTotalPremia} from "../../../api/utils/calculate_premia.js";
 
-const FinancialSummary = () => {
-    return (
-        <div className="dashboard">
-            {/* Верхний блок */}
-            <Header />
+export default function Dashboard() {
+    const now = new Date();
 
-            {/* Продажа карт и дополнительных продуктов */}
-            <div className="card">
-                <div className="card__title">Продажа карт и дополнительных продуктов</div>
-                <div className="card__content">
-                    <div className="card__column">
-                        <div className="card__row">
-                            <span>Карты: 130 TJS</span>
-                        </div>
-                        <div className="card__row">
-                            <span>Мобильный банк: 115 TJS</span>
-                        </div>
-                    </div>
-                    <div className="card__column">
-                        <div className="card__row">
-                            <span>Овердрафт: 120 TJS</span>
-                        </div>
-                        <div className="card__row">
-                            <span>ЗП Проект: 100 TJS</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="card__footer">
-                    <span className="card__footer-label">571 TJS</span>
-                </div>
-            </div>
+    const [month, setMonth] = useState(now.getMonth() + 1);
+    const [year, setYear] = useState(now.getFullYear());
+    const [prevMonth, setPrevMonth] = useState(month);
+    const [prevYear, setPrevYear] = useState(year);
 
-            {/* Обороты по картам */}
-            <div className="card">
-                <div className="card__title">Обороты по картам</div>
-                <div className="card__content">
-                    <div className="card__column">
-                        <div className="card__row">
-                            <span>Оборот по дебету + остаток: 350,07 TJS</span>
-                        </div>
-                    </div>
-                    <div className="card__column">
-                        <div className="card__row">
-                            <span>Количество активных карт: 259,2 TJS</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="card__footer">
-                    <span className="card__footer-label">467 TJS</span>
-                </div>
-            </div>
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [alert, setAlert] = useState(null);
 
-            {/* Качество обслуживания */}
-            <div className="card">
-                <div className="card__title">Качество обслуживания</div>
-                <div className="card__content column-mode">
-                    <div className="card__row"><span>Средняя оценка: 7,2 Балла</span></div>
-                    <div className="card__row"><span>Жалобы + ОЗ: 0 ШТ</span></div>
-                    <div className="card__row"><span>Тесты: 7 баллов</span></div>
-                    <div className="card__row"><span>Мотивация от руководства: 0 баллов</span></div>
-                </div>
-                <div className="card__footer">
-                    <span className="card__footer-label">+10%</span>
-                </div>
-            </div>
+    const loadData = async (m, y, revertOnFail = false) => {
+        setLoading(true);
+        try {
+            const worker = await fetchWorkerData({
+                month: m,
+                year: y,
+                options: {
+                    loadCardTurnovers: true,
+                    loadCardSales: true,
+                    loadCardDetails: false,
+                    loadUser: true,
+                    loadServiceQuality: true,
+                    loadMobileBank: true
+                }
+            });
 
-            <ReportButton navigateTo='/worker/reports' descButton='Отчеты' />
-        </div>
-    );
-};
-
-const renderPage = () => {
-    const commonProps = {
-        initial: { opacity: 0, x: 10 },
-        animate: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: -10 },
-        transition: { duration: 0.3 }
+            if (!worker || Object.keys(worker).length === 0) {
+                if (revertOnFail) {
+                    setMonth(prevMonth);
+                    setYear(prevYear);
+                    setAlert({ message: "Нет данных для отображения.", type: "error" });
+                }
+                setData(null);
+            } else {
+                setData(worker);
+            }
+        } catch (e) {
+            console.error(e);
+            if (revertOnFail) {
+                setMonth(prevMonth);
+                setYear(prevYear);
+            }
+            setAlert({ message: "Не удалось загрузить данные.", type: "error" });
+            setData(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    return (
-        <motion.div key="mb" {...commonProps}>
-            <FinancialSummary />
-        </motion.div>
-    );
-};
+    useEffect(() => {
+        loadData(month, year);
+    }, [month, year]);
 
-const WorkerPremiesBlockInfo = () => {
+    const safeArray = (arr) => Array.isArray(arr) ? arr : [];
+
+    const prev = () => {
+        setPrevMonth(month);
+        setPrevYear(year);
+
+        let m = month - 1;
+        let y = year;
+        if (m < 1) {
+            m = 12;
+            y -= 1;
+        }
+        setMonth(m);
+        setYear(y);
+        loadData(m, y, true);
+    };
+
+    const next = () => {
+        setPrevMonth(month);
+        setPrevYear(year);
+
+        let m = month + 1;
+        let y = year;
+        if (m > 12) {
+            m = 1;
+            y += 1;
+        }
+        setMonth(m);
+        setYear(y);
+        loadData(m, y, true);
+    };
+
+    if (loading) {
+        return (
+            <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: "100px", width: "auto" }}>
+                <Spinner />
+            </div>
+        );
+    }
+
+    if (alert) {
+        return (
+            <>
+                <AlertMessage
+                    message={alert.message}
+                    type={alert.type}
+                    onClose={() => setAlert(null)}
+                />
+                <div style={{
+                    transform: 'scale(2)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: "100px",
+                    width: "auto"
+                }}>
+                    <Spinner/>
+                </div>
+            </>
+        );
+    }
+
+    if (!data) {
+        return (
+            <>
+                <AlertMessage
+                    message={"Нет данных для отображения."}
+                    type="warning"
+                    onClose={() => setAlert(null)}
+                />
+                <div className="dashboard__spinner">
+                    <Spinner />
+                </div>
+            </>
+        );
+    }
+
+    // Итоговая премия
+    const total = calculateTotalPremia(data);
+
     return (
         <div className="block_info_prems" align="center">
-            <AnimatePresence mode="wait">
-                {renderPage()}
-            </AnimatePresence>
+            <div className="dashboard">
+                <Header
+                    month={month}
+                    year={year}
+                    total={total}
+                    plan={data.plan || 0}
+                    onPrev={prev}
+                    onNext={next}
+                    loading={loading}
+                />
+
+                <div className="dashboard__sections">
+                    <section className="card">
+                        <h3 className="card__title">Продажа карт и доп. продуктов</h3>
+                        <div className="card__row">
+                            <div>Карты: <b>{safeArray(data.CardSales)[0]?.cards_prem || 0} TJS</b></div>
+                        </div>
+                        <div className="card__row">
+                            <div>Мобильный банк: <b>{safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0} TJS</b></div>
+                        </div>
+                        <div className="card__row">
+                            <div>ЗП Проект: <b>{data.salary_project || 0} TJS</b></div>
+                        </div>
+                        <div className="card__sum">
+                            {((safeArray(data.CardSales)[0]?.cards_prem || 0) + (safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0) + (data.salary_project || 0)).toFixed(1)} TJS
+                        </div>
+                    </section>
+
+                    <section className="card">
+                        <h3 className="card__title">Обороты по картам</h3>
+                        <div className="card__row">
+                            <div>Оборот
+                                дебет +
+                                остаток: <b>{safeArray(data.CardTurnovers)[0]?.card_turnovers_prem?.toFixed(3) || 0} TJS</b>
+                            </div>
+                        </div>
+                        <div className="card__row">
+                            <div>Активные
+                                карты: <b>{safeArray(data.CardTurnovers)[0]?.active_cards_perms?.toFixed(3) || 0} TJS</b>
+                            </div>
+                        </div>
+                        <div className="card__sum">
+                            {((safeArray(data.CardTurnovers)[0]?.card_turnovers_prem || 0) + (safeArray(data.CardTurnovers)[0]?.active_cards_perms || 0)).toFixed(3)} TJS
+                        </div>
+                    </section>
+
+                    <section className="card">
+                        <h3 className="card__title">Качество обслуживания</h3>
+                        <div className="card__row">
+                            <div>Средняя оценка: <b>{(((safeArray(data.ServiceQuality)[0]?.call_center || 0) +
+                                (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2).toFixed(1)} Балла</b></div>
+                        </div>
+                        <div className="card__row">
+                            <div>Жалобы + ОЗ: <b>{safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.</b></div>
+                        </div>
+                        <div className="card__row">
+                            <div>Тесты: <b>{safeArray(data.ServiceQuality)[0]?.tests || 0} Балла</b></div>
+                        </div>
+                    </section>
+                </div>
+                <ReportButton navigateTo='/worker/reports' descButton='Отчет' />
+            </div>
         </div>
     );
-};
-
-export default WorkerPremiesBlockInfo;
+}

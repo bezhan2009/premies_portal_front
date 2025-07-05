@@ -1,26 +1,51 @@
 import React from 'react';
 import '../../../styles/components/WorkerPremiesHeader.scss';
 
-const TopHeader = () => {
+export default function Header({ month, year, total, plan, onPrev, onNext, loading }) {
+    const monthNames = [
+        'Январь', 'Февраль', 'Март', 'Апрель',
+        'Май', 'Июнь', 'Июль', 'Август',
+        'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ];
+
     return (
-        <div className="top-header">
-            <div className="top-header__left">
-                <span className="top-header__nav">&lt;</span>
-                <span className="top-header__month">Апрель 2025</span>
+        <div className="header-premis">
+            <button
+                className="header-premis__nav"
+                onClick={onPrev}
+                disabled={loading}
+            >
+                ←
+            </button>
+
+            <div className="header-premis__center">
+                <span className="header-premis__month">
+                  {monthNames[month - 1]} {year}
+                </span>
             </div>
-            <div className="bottom-header__left">
-                <span className="bottom-header__date">Актуальность: 20.04.2025</span>
+
+            <div className="header-premis__stats">
+                {loading
+                    ? <span className="header-premis__loading">Загрузка...</span>
+                    : <>
+                        <span>Итого:</span>
+                        <span className="header-premis__total">{total.toFixed(1)} TJS</span>
+                    </>
+                }
+                <br/>
+
+                <span className="header-premis__plan">
+                  План: {plan.toLocaleString()} TJS
+                </span>
             </div>
-            <div className="top-header__right">
-                <div className="top-header__total">
-                    Итог: <span className="top-header__value">1 141,8 TJS</span>
-                </div>
-                <div className="top-header__plan">
-                    План: <span className="top-header__value top-header__value--plan">1 000 TJS</span>
-                </div>
-            </div>
+
+            <button
+                className="header-premis__nav"
+                onClick={onNext}
+                disabled={loading}
+            >
+                →
+            </button>
         </div>
     );
-};
-
-export default TopHeader;
+}

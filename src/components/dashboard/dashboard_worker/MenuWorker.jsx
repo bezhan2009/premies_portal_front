@@ -8,8 +8,8 @@ export default function HeaderWorker({ username = 'Бартов М.', activeLink
   const links = [
     { name: 'Карты', href: '/worker/cards', key: 'cards' },
     { name: 'Кредиты', href: '/worker/credits', key: 'credits' },
-    { name: 'Базан знаний', href: '/worker/knowledge-base', key: 'knowledge' },
     { name: 'Тесты', href: '/worker/tests', key: 'tests' },
+    { name: 'База знаний', href: '/worker/knowledge-base', key: 'knowledge' },
     { name: 'Моя премия', href: '/worker/premies', key: 'premies' },
   ];
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

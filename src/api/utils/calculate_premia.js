@@ -1,0 +1,31 @@
+export function calculateTotalPremia(worker) {
+    const safeArray = (arr) => Array.isArray(arr) ? arr : [];
+
+    const card_sales = safeArray(worker.CardSales)[0] || {};
+    const turnover = safeArray(worker.CardTurnovers)[0] || {};
+    const service = safeArray(worker.ServiceQuality)[0] || {};
+    const mobile_bank = safeArray(worker.MobileBank)[0] || {};
+
+    const basePremia =
+        (mobile_bank.mobile_bank_prem || 0) +
+        (turnover.card_turnovers_prem || 0) +
+        (turnover.active_cards_perms || 0) +
+        (card_sales.cards_prem || 0) +
+        (worker.salary_project || 0);
+
+    const callCenter = service.call_center || 0;
+    let callPercent = 0;
+    if (callCenter <= 7) callPercent = 0;
+    else if (callCenter <= 9) callPercent = 10;
+    else if (callCenter <= 10) callPercent = 20;
+
+    const tests = service.tests || 0;
+    let testPercent = 0;
+    if (tests <= 6) testPercent = 0;
+    else if (tests <= 8) testPercent = 5;
+    else if (tests <= 9) testPercent = 10;
+    else if (tests <= 10) testPercent = 15;
+
+    const totalCoef = (callPercent + testPercent) / 100;
+    return basePremia + basePremia * totalCoef;
+}

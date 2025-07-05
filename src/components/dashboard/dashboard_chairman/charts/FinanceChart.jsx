@@ -1,38 +1,109 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import CustomFinanceTooltip from './CustomFinanceTooltip.jsx';
 import '../../../../styles/components/ChartComponents.scss';
 import { AnimatePresence, motion } from 'framer-motion';
-
-// Начальные данные
-const initialData = [
-    { name: 'Янв', debit: 40, credit: 60, balance: 20 },
-    { name: 'Фев', debit: 55, credit: 80, balance: 25 },
-    { name: 'Мар', debit: 70, credit: 95, balance: 30 },
-    { name: 'Апр', debit: 30, credit: 60, balance: 15 },
-    { name: 'Май', debit: 85, credit: 100, balance: 35 },
-    { name: 'Июн', debit: 50, credit: 75, balance: 20 },
-    { name: 'Июл', debit: 65, credit: 90, balance: 28 },
-];
-
-// Функция для генерации рандомных данных
-const generateRandomData = () => {
-    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл'];
-    return months.map((month) => ({
-        name: month,
-        debit: Math.floor(Math.random() * 85) + 40,
-        credit: Math.floor(Math.random() * 100) + 60,
-        balance: Math.floor(Math.random() * 15) + 35,
-    }));
-};
+import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js";
+import { getMonthName } from "../../../../api/utils/date.js";
+import Spinner from "../../../Spinner.jsx";
 
 const ChartReportFinance = ({ url }) => {
-    // Определяем данные в зависимости от URL
-    const chartData = url ? initialData : generateRandomData(); // Если URL есть, начальные данные, иначе — рандом
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!url) {
+            setChartData([]);
+            return;
+        }
+
+        const loadAllMonths = async () => {
+            setLoading(true);
+            const allMonths = [];
+
+            for (let m = 1; m <= 12; m++) {
+                try {
+                    // fetchEmployee теперь возвращает массив записей
+                    const list = await fetchEmployee(m, url) || [];
+
+                    // суммируем debit, credit и balance по всем элементам
+                    let sumDebit = 0;
+                    let sumCredit = 0;
+                    let sumBalance = 0;
+
+                    list.forEach(item => {
+                        const cs = item.CardSales?.[0] || {};
+                        sumDebit   += Number(cs.deb_osd)     || 0;
+                        sumCredit  += Number(cs.deb_osk)     || 0;
+                        sumBalance += Number(cs.out_balance) || 0;
+                    });
+
+                    // имя из первой записи
+                    const first = list[0] || {};
+                    const fullName = first.user?.full_name || first.Username || "";
+
+                    allMonths.push({
+                        name:    getMonthName(m),
+                        debit:   sumDebit,
+                        credit:  sumCredit,
+                        balance: sumBalance,
+                        full_name: fullName
+                    });
+                } catch (e) {
+                    console.error(e);
+                    allMonths.push({
+                        name:    getMonthName(m),
+                        debit:   0,
+                        credit:  0,
+                        balance: 0,
+                        full_name: ""
+                    });
+                }
+            }
+
+            setChartData(allMonths);
+            setLoading(false);
+        };
+
+        loadAllMonths();
+    }, [url]);
+
+    if (loading) {
+        return (
+            <div style={{
+                transform: 'scale(2)', display: 'flex', justifyContent: 'center',
+                alignItems: 'center', marginBottom: '100px', width: 'auto',
+            }}>
+                <Spinner/>
+            </div>
+        );
+    }
+
+    if (!url) {
+        return (
+            <div style={{
+                padding: '10px', color: '#555', fontSize: '16px',
+                textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px'
+            }}>
+                Выберите сотрудника
+            </div>
+        );
+    }
+
+    if (chartData.length === 0) {
+        return (
+            <div style={{
+                padding: '10px', color: '#555', fontSize: '16px',
+                textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px'
+            }}>
+                Нет данных для отображения
+            </div>
+        );
+    }
 
     return (
         <div className="chart-wrapper light-theme alt">
-            <h2>Финансовая динамика</h2>
+            <h2>Финансовая динамика {chartData[0].full_name}</h2>
             <p>Дебет, кредит и остатки по месяцам</p>
             <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={chartData}>
@@ -51,10 +122,24 @@ const ChartReportFinance = ({ url }) => {
                         </linearGradient>
                     </defs>
 
-                    <XAxis dataKey="name" stroke="#333" tick={{ fill: '#333', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis stroke="#333" tick={{ fill: '#333', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <XAxis
+                        dataKey="name"
+                        stroke="#333"
+                        tick={{ fill: '#333', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        stroke="#333"
+                        tick={{ fill: '#333', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
 
-                    <Tooltip content={<CustomFinanceTooltip />} cursor={{ stroke: '#8c52ff', strokeWidth: 1 }} />
+                    <Tooltip
+                        content={<CustomFinanceTooltip />}
+                        cursor={{ stroke: '#8c52ff', strokeWidth: 1 }}
+                    />
 
                     <Area
                         type="monotone"
@@ -93,20 +178,19 @@ const ChairmanReportFinanceBlockInfo = ({ url }) => {
     const commonProps = {
         initial: { opacity: 0, x: 10 },
         animate: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: -10 },
-        transition: { duration: 0.3 },
+        exit:    { opacity: 0, x: -10 },
+        transition: { duration: 0.3 }
     };
 
     return (
         <div className="block_info_prems" align="center">
             <AnimatePresence mode="wait">
-                <motion.div key="finance" {...commonProps}>
+                <motion.div key={url} {...commonProps}>
                     <ChartReportFinance url={url} />
                 </motion.div>
             </AnimatePresence>
         </div>
     );
 };
-
 
 export default ChairmanReportFinanceBlockInfo;

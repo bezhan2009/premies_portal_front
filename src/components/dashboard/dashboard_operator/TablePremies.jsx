@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Spinner from '../../Spinner.jsx';
 import '../../../styles/components/Table.scss';
-import {fetchWorkers} from "../../../api/operator/reports/operator_premies.js";
+import { fetchWorkers } from "../../../api/operator/reports/operator_premies.js";
 import SearchBar from "../../general/SearchBar.jsx";
+import {calculateTotalPremia} from "../../../api/utils/calculate_premia.js";
 
 const TablePremies = ({ month, year }) => {
   const [workers, setWorkers] = useState([]);
@@ -14,7 +15,6 @@ const TablePremies = ({ month, year }) => {
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
 
-  // Загрузка первой порции
   useEffect(() => {
     const loadInitial = async () => {
       setLoading(true);
@@ -34,10 +34,8 @@ const TablePremies = ({ month, year }) => {
     loadInitial();
   }, [month, year]);
 
-  // Поиск
   const handleSearch = async (filtered) => {
     if (!filtered) {
-      // Очистка поиска
       setIsSearching(false);
       setLoading(true);
       try {
@@ -57,7 +55,6 @@ const TablePremies = ({ month, year }) => {
     setHasMore(false);
   };
 
-  // Подгрузка всех данных для поиска
   useEffect(() => {
     const loadAllData = async () => {
       let all = [];
@@ -78,7 +75,6 @@ const TablePremies = ({ month, year }) => {
     loadAllData();
   }, [month, year]);
 
-  // Пагинация
   const loadMore = async () => {
     if (loadingMore || !hasMore || workers.length === 0 || isSearching) return;
 
@@ -154,34 +150,7 @@ const TablePremies = ({ month, year }) => {
             const card_sales = w.CardSales?.[0] || {};
             const mobile_bank = w.MobileBank?.[0] || {};
 
-            const basePremia =
-                (mobile_bank.mobile_bank_prem || 0) +
-                (turnover.card_turnovers_prem || 0) +
-                (turnover.active_cards_perms || 0) +
-                (card_sales.cards_prem || 0) +
-                (w.salary_project || 0);
-
-            const callCenter = service.call_center || 0;
-            let callPercent = 0;
-            if (callCenter <= 1) callPercent = -30;
-            else if (callCenter <= 3) callPercent = -20;
-            else if (callCenter <= 5) callPercent = -10;
-            else if (callCenter <= 7) callPercent = 0;
-            else if (callCenter <= 9) callPercent = 10;
-            else if (callCenter <= 10) callPercent = 20;
-
-            const tests = service.tests || 0;
-            let testPercent = 0;
-            if (tests <= 2) testPercent = -10;
-            else if (tests <= 4) testPercent = -5;
-            else if (tests <= 6) testPercent = 0;
-            else if (tests <= 8) testPercent = 5;
-            else if (tests <= 9) testPercent = 10;
-            else if (tests <= 10) testPercent = 15;
-
-            const totalCoef = (callPercent + testPercent) / 100;
-            const totalPremia = basePremia + basePremia * totalCoef;
-
+            const totalPremia = calculateTotalPremia(w);
             const isLast = idx === workers.length - 1;
 
             return (
@@ -191,8 +160,8 @@ const TablePremies = ({ month, year }) => {
                   <td>{card_sales.cards_sailed}</td>
                   <td>{mobile_bank.mobile_bank_prem}</td>
                   <td>{w.salary_project}</td>
-                  <td>{turnover.card_turnovers_prem?.toFixed(0)}</td>
-                  <td>{card_sales.deb_osd}</td>
+                  <td>{turnover.debt_osd?.toFixed(0)}</td>
+                  <td>{card_sales.out_balance}</td>
                   <td>{turnover.active_cards_perms?.toFixed(0)}</td>
                   <td>{service.call_center}</td>
                   <td>{service.complaint}</td>

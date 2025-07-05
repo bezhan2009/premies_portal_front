@@ -8,7 +8,7 @@ export default function PageNotFound() {
     return (
         <>
             <Helmet>
-                <title>Тесты</title>
+                <title>Страница не найдена</title>
             </Helmet>
 
             <div className="page page--not-found">

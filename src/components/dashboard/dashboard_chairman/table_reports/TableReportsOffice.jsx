@@ -2,53 +2,69 @@ import React, { useState, useEffect } from 'react';
 import '../../../../styles/components/Table.scss';
 import LastModified from '../../dashboard_general/LastModified.jsx';
 import '../../../../styles/components/TablesChairman.scss';
+import '../../../../styles/pagination.scss';
+import Spinner from '../../../Spinner.jsx';
+import {fetchOffices} from "../../../../api/offices/all_offices.js";
 
-const data = [
-  {
-    category: 'Мудирлити амашитли',
-    concreteCards: '5 000',
-    concreteActiveCards: '4 000',
-    overdraftDebt: '8 000 000',
-    overdraftCredit: '7 000 000',
-    balanceCards: '12 124',
-  },
-  {
-    category: 'Худанда',
-    concreteCards: '545',
-    concreteActiveCards: '55',
-    overdraftDebt: '5',
-    overdraftCredit: '55',
-    balanceCards: '554',
-  },
-  {
-    category: 'Кубошен',
-    concreteCards: '5',
-    concreteActiveCards: '5',
-    overdraftDebt: '4',
-    overdraftCredit: '4',
-    balanceCards: '4',
-  },
-  {
-    category: 'Вахат',
-    concreteCards: '1',
-    concreteActiveCards: '1',
-    overdraftDebt: '1',
-    overdraftCredit: '1',
-    balanceCards: '1',
-  },
-];
+const ITEMS_PER_PAGE = 10;
 
 const ReportTableOfficesChairman = ({ onSelect }) => {
-  const [selectedRow, setSelectedRow] = useState(0); // Первая строка выбрана по умолчанию
+  const [allData, setAllData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  });
+  const [selectedRow, setSelectedRow] = useState(null);
 
   useEffect(() => {
-    onSelect(''); // Вызываем onSelect при загрузке для первой строки
-  }, [onSelect]);
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        const res = await fetchOffices();
+        setAllData(res);
+        setFilteredData(res);
+      } catch (e) {
+        console.error(e);
+      }
+      setCurrentPage(1);
+      setLoading(false);
+    };
 
-  const handleRowClick = (index) => {
-    setSelectedRow(index); // Устанавливаем выбранную строку
-    const url = Math.floor(Math.random() * 1000).toString();
-    onSelect(url); // Передаем URL родителю
+    loadAll();
+  }, [dateFilter]);
+
+  const handleRowClick = (office) => {
+    setSelectedRow(office.ID);
+    onSelect(`${office.ID}/${dateFilter.year}/office`);
+  };
+
+  const paginatedData = filteredData.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+  );
+
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const buttons = [];
+    for (let i = 1; i <= totalPages; i++) {
+      buttons.push(
+          <button
+              key={i}
+              className={`pagination-button ${currentPage === i ? 'active' : ''}`}
+              onClick={() => setCurrentPage(i)}
+          >
+            {i}
+          </button>
+      );
+    }
+
+    return <div className="pagination-container">{buttons}</div>;
   };
 
   return (
@@ -56,43 +72,62 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
         <div className="report-table-container">
           <div className="date-filter-container">
             <span className="label">Период</span>
-            <LastModified />
+            <LastModified onChange={setDateFilter} />
           </div>
 
-          <table className="table-reports">
-            <thead>
-            <tr>
-              <th>Выберите</th>
-              <th>Организация</th>
-              <th>Количество карт</th>
-              <th>Конкретно активных карт</th>
-              <th>Оборот по дебету</th>
-              <th>Оборот по кредиту</th>
-              <th>Остатки на картах</th>
-            </tr>
-            </thead>
-            <tbody>
-            {data.map((row, idx) => (
-                <tr
-                    key={idx}
-                    onClick={() => handleRowClick(idx)} // Клик по строке
-                    style={{ cursor: 'pointer' }}
-                >
-                  <td>
-                    <div
-                        className={`choose-td ${selectedRow === idx ? 'active' : ''}`} // Активный класс
-                    ></div>
-                  </td>
-                  <td>{row.category || ''}</td>
-                  <td>{row.concreteCards || ''}</td>
-                  <td>{row.concreteActiveCards || ''}</td>
-                  <td>{row.overdraftDebt || ''}</td>
-                  <td>{row.overdraftCredit || ''}</td>
-                  <td>{row.balanceCards || ''}</td>
-                </tr>
-            ))}
-            </tbody>
-          </table>
+          {loading ? (
+              <div
+                  style={{
+                    transform: 'scale(2)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: '100px',
+                    width: 'auto',
+                  }}
+              >
+                <Spinner />
+              </div>
+          ) : paginatedData.length === 0 ? (
+              <h1>Нет данных</h1>
+          ) : (
+              <>
+                <table className="table-reports">
+                  <thead>
+                  <tr>
+                    <th>Выберите</th>
+                    <th>Организация</th>
+                    <th>Количество работников</th>
+                    <th>Филиал</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {paginatedData.map((office) => (
+                      <tr
+                          key={office.ID}
+                          onClick={() => handleRowClick(office)}
+                          style={{ cursor: 'pointer' }}
+                      >
+                        <td>
+                          <div
+                              className={`choose-td ${selectedRow === office.ID ? 'active' : ''}`}
+                          ></div>
+                        </td>
+                        <td>{office.title || ''}</td>
+                        <td>{office.office_user?.length || 0}</td>
+                        <td>
+                          {office.office_user && office.office_user.length > 0
+                              ? office.office_user[0].worker?.place_work || ''
+                              : ''}
+                        </td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+
+                {renderPagination()}
+              </>
+          )}
         </div>
       </div>
   );
