@@ -96,7 +96,7 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: "100px", width: "auto" }}>
+            <div className="dashboard__spinner">
                 <Spinner />
             </div>
         );
@@ -104,46 +104,34 @@ export default function Dashboard() {
 
     if (alert) {
         return (
-            <>
+            <div className="dashboard__spinner">
                 <AlertMessage
                     message={alert.message}
                     type={alert.type}
                     onClose={() => setAlert(null)}
                 />
-                <div style={{
-                    transform: 'scale(2)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: "100px",
-                    width: "auto"
-                }}>
-                    <Spinner/>
-                </div>
-            </>
+                <Spinner />
+            </div>
         );
     }
 
     if (!data) {
         return (
-            <>
+            <div className="dashboard__spinner">
                 <AlertMessage
                     message={"Нет данных для отображения."}
                     type="warning"
                     onClose={() => setAlert(null)}
                 />
-                <div className="dashboard__spinner">
-                    <Spinner />
-                </div>
-            </>
+                <Spinner />
+            </div>
         );
     }
 
-    // Итоговая премия
     const total = calculateTotalPremia(data);
 
     return (
-        <div className="block_info_prems" align="center">
+        <>
             <div className="dashboard">
                 <Header
                     month={month}
@@ -156,56 +144,67 @@ export default function Dashboard() {
                 />
 
                 <div className="dashboard__sections">
-                    <section className="card">
-                        <h3 className="card__title">Продажа карт и доп. продуктов</h3>
-                        <div className="card__row">
-                            <div>Карты: <b>{safeArray(data.CardSales)[0]?.cards_prem || 0} TJS</b></div>
-                        </div>
-                        <div className="card__row">
-                            <div>Мобильный банк: <b>{safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0} TJS</b></div>
-                        </div>
-                        <div className="card__row">
-                            <div>ЗП Проект: <b>{data.salary_project || 0} TJS</b></div>
-                        </div>
-                        <div className="card__sum">
-                            {((safeArray(data.CardSales)[0]?.cards_prem || 0) + (safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0) + (data.salary_project || 0)).toFixed(1)} TJS
-                        </div>
-                    </section>
-
-                    <section className="card">
-                        <h3 className="card__title">Обороты по картам</h3>
-                        <div className="card__row">
-                            <div>Оборот
-                                дебет +
-                                остаток: <b>{safeArray(data.CardTurnovers)[0]?.card_turnovers_prem?.toFixed(3) || 0} TJS</b>
-                            </div>
-                        </div>
-                        <div className="card__row">
-                            <div>Активные
-                                карты: <b>{safeArray(data.CardTurnovers)[0]?.active_cards_perms?.toFixed(3) || 0} TJS</b>
-                            </div>
-                        </div>
-                        <div className="card__sum">
-                            {((safeArray(data.CardTurnovers)[0]?.card_turnovers_prem || 0) + (safeArray(data.CardTurnovers)[0]?.active_cards_perms || 0)).toFixed(3)} TJS
-                        </div>
-                    </section>
-
-                    <section className="card">
-                        <h3 className="card__title">Качество обслуживания</h3>
-                        <div className="card__row">
-                            <div>Средняя оценка: <b>{(((safeArray(data.ServiceQuality)[0]?.call_center || 0) +
-                                (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2).toFixed(1)} Балла</b></div>
-                        </div>
-                        <div className="card__row">
-                            <div>Жалобы + ОЗ: <b>{safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.</b></div>
-                        </div>
-                        <div className="card__row">
-                            <div>Тесты: <b>{safeArray(data.ServiceQuality)[0]?.tests || 0} Балла</b></div>
-                        </div>
-                    </section>
+                    {[
+                        {
+                            title: "Продажа карт и доп. продуктов",
+                            rows: [
+                                {label: "Карты", value: `${safeArray(data.CardSales)[0]?.cards_prem || 0} TJS`},
+                                {
+                                    label: "Мобильный банк",
+                                    value: `${safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0} TJS`
+                                },
+                                {label: "ЗП Проект", value: `${data.salary_project || 0} TJS`}
+                            ],
+                            sum: ((safeArray(data.CardSales)[0]?.cards_prem || 0) +
+                                (safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0) +
+                                (data.salary_project || 0)).toFixed(1) + " TJS"
+                        },
+                        {
+                            title: "Обороты по картам",
+                            rows: [
+                                {
+                                    label: "Оборот дебет + остаток",
+                                    value: `${safeArray(data.CardTurnovers)[0]?.card_turnovers_prem?.toFixed(3) || 0} TJS`
+                                },
+                                {
+                                    label: "Активные карты",
+                                    value: `${safeArray(data.CardTurnovers)[0]?.active_cards_perms?.toFixed(3) || 0} TJS`
+                                }
+                            ],
+                            sum: ((safeArray(data.CardTurnovers)[0]?.card_turnovers_prem || 0) +
+                                (safeArray(data.CardTurnovers)[0]?.active_cards_perms || 0)).toFixed(3) + " TJS"
+                        },
+                        {
+                            title: "Качество обслуживания",
+                            rows: [
+                                {
+                                    label: "Средняя оценка",
+                                    value: `${(((safeArray(data.ServiceQuality)[0]?.call_center || 0) + (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2).toFixed(1)} Балла`
+                                },
+                                {label: "Жалобы + ОЗ", value: `${safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.`},
+                                {label: "Тесты", value: `${safeArray(data.ServiceQuality)[0]?.tests || 0} Балла`}
+                            ],
+                            sum: null
+                        }
+                    ].map((section, index) => (
+                        <section key={index} className="card" style={{'--card-index': index}}>
+                            <h3 className="card__title">{section.title}</h3>
+                            {section.rows.map((row, rowIndex) => (
+                                <div key={rowIndex} className="card__row">
+                                    <div>{row.label}: <b>{row.value}</b></div>
+                                </div>
+                            ))}
+                            {section.sum && (
+                                <div className="card__sum">{section.sum}</div>
+                            )}
+                        </section>
+                    ))}
                 </div>
-                <ReportButton navigateTo='/worker/reports' descButton='Отчет' />
             </div>
-        </div>
-    );
+
+            <div className="dashboard__report">
+                <ReportButton navigateTo='/worker/reports' descButton='Отчет'/>
+            </div>
+        </>
+);
 }

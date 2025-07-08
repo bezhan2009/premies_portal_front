@@ -16,3 +16,11 @@ tasks:
     desc: "Starts main back-end"
     cmds:
       - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; .\\main.exe"
+
+  build-app-go:
+    aliases:
+      - build-go
+      - build
+    desc: "Builds main back-end"
+    cmds:
+      - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; go build main.go"

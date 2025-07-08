@@ -9,6 +9,7 @@ export default function Header({ username = 'Бартов М.', activeLink = 're
     { name: 'Премии', href: '/operator/premies', key: 'premi' },
     { name: 'Отчеты', href: '/operator/reports', key: 'reports' },
     { name: 'Данные', href: '/operator/data', key: 'data' },
+    { name: 'Тесты', href: '/operator/tests', key: 'tests' },
     { name: 'База знаний', href: '/operator/knowledge-base', key: 'knowledge' },
   ];
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,7 +18,7 @@ export default function Header({ username = 'Бартов М.', activeLink = 're
     <header className="header">
       <div className="header-left">
         <Link to="/">
-          <LogoImageComponent width={75} height={50} />
+                    <LogoImageComponent width={75} height={65} />
         </Link>
         <nav className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           {links.map(link => (

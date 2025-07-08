@@ -9,6 +9,8 @@ import RenderReports from "../dashboard/dashboard_worker/reports_table/RenderRep
 import ChairmanReports from "../dashboard/dashboard_chairman/ChairmanReports.jsx";
 import '../../styles/components/BlockInfo.scss'
 import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/GeneralKnowledgeBase.jsx";
+import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTestsPage.jsx";
+import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";
 
 function GetBlockInfo({ page }) {
     switch (page) {
@@ -22,10 +24,14 @@ function GetBlockInfo({ page }) {
             return <OperatorDatasBlockInfo />;
         case "operator_knowledge_base":
             return <OperatorKnowledgeBaseBlockInfo />;
+        case "operator_tests":
+            return <OperatorTestsDashboard />;
         case "worker_premi":
             return <WorkerPremiesBlockInfo />;
         case "worker_report":
             return <RenderReports />;
+        case "worker_tests":
+            return <WorkerTestsPage />;
         case "chairman_reports":
             return <ChairmanReports />
         default:

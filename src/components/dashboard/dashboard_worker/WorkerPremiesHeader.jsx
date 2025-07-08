@@ -20,7 +20,7 @@ export default function Header({ month, year, total, plan, onPrev, onNext, loadi
 
             <div className="header-premis__center">
                 <span className="header-premis__month">
-                  {monthNames[month - 1]} {year}
+                    {monthNames[month - 1]} {year}
                 </span>
             </div>
 
@@ -28,15 +28,14 @@ export default function Header({ month, year, total, plan, onPrev, onNext, loadi
                 {loading
                     ? <span className="header-premis__loading">Загрузка...</span>
                     : <>
-                        <span>Итого:</span>
+                        <span>Итого: </span>
                         <span className="header-premis__total">{total.toFixed(1)} TJS</span>
+                        <br />
+                        <span className="header-premis__plan">
+                            План: {plan.toLocaleString()} TJS
+                        </span>
                     </>
                 }
-                <br/>
-
-                <span className="header-premis__plan">
-                  План: {plan.toLocaleString()} TJS
-                </span>
             </div>
 
             <button

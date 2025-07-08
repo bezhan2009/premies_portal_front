@@ -41,7 +41,7 @@ const ReportTableCardsChairman = ({ onSelect }) => {
           totalDebit   += Number(cs.deb_osd)           || 0;
           totalCredit  += Number(cs.deb_osk)           || 0;
           // используем out_balance, или in_balance как fallback
-          totalBalance += Number(ct.out_balance || cs.in_balance || 0) || 0;
+          totalBalance += Number(cs.out_balance || 0);
         });
 
         setRow({

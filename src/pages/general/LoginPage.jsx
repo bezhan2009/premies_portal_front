@@ -56,7 +56,7 @@ export default function LoginPage() {
       <div className="login-container">
         <form className="login-form" onSubmit={handleSubmit}>
           <div align="center" className='image-logo-login'>
-            <LogoImageComponent width={125} height={75} />
+            <LogoImageComponent width={125} height={105} />
           </div>
 
           <label>

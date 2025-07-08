@@ -49,16 +49,20 @@ export const fetchEmployee = async (month, employeeURL) => {
                     exist = {
                         ...cs,
                         deb_osd: 0,
+                        deb_osk: 0,
                         out_balance: 0,
                         cards_sailed: 0,
+                        cards_sailed_in_general: 0,
                         cards_prem: 0,
                         WorkerID: office.ID
                     };
                     agg.CardSales.push(exist);
                 }
                 exist.deb_osd += cs.deb_osd;
+                exist.deb_osk += cs.deb_osk;
                 exist.out_balance += cs.out_balance;
                 exist.cards_sailed += cs.cards_sailed ?? 0;
+                exist.cards_sailed_in_general += cs.cards_sailed_in_general ?? 0;
                 exist.cards_prem += cs.cards_prem ?? 0;
             });
         });
@@ -99,8 +103,10 @@ export const fetchEmployee = async (month, employeeURL) => {
                     combined.CardSales.push(exist);
                 } else {
                     exist.deb_osd += cs.deb_osd;
+                    exist.deb_osk += cs.deb_osk;
                     exist.out_balance += cs.out_balance;
                     exist.cards_sailed += cs.cards_sailed;
+                    exist.cards_sailed_in_general += cs.cards_sailed_in_general;
                     exist.cards_prem += cs.cards_prem;
                 }
             });

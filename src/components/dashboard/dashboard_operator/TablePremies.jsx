@@ -3,7 +3,8 @@ import Spinner from '../../Spinner.jsx';
 import '../../../styles/components/Table.scss';
 import { fetchWorkers } from "../../../api/operator/reports/operator_premies.js";
 import SearchBar from "../../general/SearchBar.jsx";
-import {calculateTotalPremia} from "../../../api/utils/calculate_premia.js";
+import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
+import { DownloadCloud } from 'lucide-react';
 
 const TablePremies = ({ month, year }) => {
   const [workers, setWorkers] = useState([]);
@@ -14,6 +15,27 @@ const TablePremies = ({ month, year }) => {
   const [error, setError] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
+
+  // NEW: State for modal
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadUser, setDownloadUser] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState('');
+  const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
+
+  const monthOptions = [
+    { name: 'Январь', value: 1 },
+    { name: 'Февраль', value: 2 },
+    { name: 'Март', value: 3 },
+    { name: 'Апрель', value: 4 },
+    { name: 'Май', value: 5 },
+    { name: 'Июнь', value: 6 },
+    { name: 'Июль', value: 7 },
+    { name: 'Август', value: 8 },
+    { name: 'Сентябрь', value: 9 },
+    { name: 'Октябрь', value: 10 },
+    { name: 'Ноябрь', value: 11 },
+    { name: 'Декабрь', value: 12 },
+  ];
 
   useEffect(() => {
     const loadInitial = async () => {
@@ -105,6 +127,57 @@ const TablePremies = ({ month, year }) => {
     if (node) observer.current.observe(node);
   }, [loadingMore, hasMore, workers]);
 
+  // NEW: open modal for choosing month/year
+  const openDownloadModal = (user) => {
+    setDownloadUser(user);
+    setShowDownloadModal(true);
+    setDownloadMonth('');
+    setDownloadYear(new Date().getFullYear());
+  };
+
+  // NEW: execute download
+  const executeDownload = async () => {
+    if (!downloadMonth || !downloadYear) {
+      alert('Выберите месяц и год');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const url = `${import.meta.env.VITE_BACKEND_URL}/automation/reports/${downloadUser.ID}?month=${downloadMonth}&year=${downloadYear}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Ошибка скачивания отчета.');
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `report_${downloadUser.Username || downloadUser.ID}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(urlBlob);
+
+      setShowDownloadModal(false);
+      setDownloadUser(null);
+      setDownloadMonth('');
+      setDownloadYear(new Date().getFullYear());
+    } catch (e) {
+      console.error(e);
+      alert(`Не удалось скачать отчет: ${e.message}`);
+    }
+  };
+
   if (loading) {
     return (
         <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: "100px", width: "auto" }}>
@@ -129,17 +202,18 @@ const TablePremies = ({ month, year }) => {
           <thead>
           <tr>
             <th>ФИО</th>
-            <th>План продаж</th>
-            <th>Продано карт</th>
-            <th>Моб. банк</th>
-            <th>ЗП проект</th>
-            <th>Оборот по дебету</th>
-            <th>Остатки по картам</th>
-            <th>Активные карты</th>
-            <th>Оценка КЦ</th>
-            <th>Жалобы</th>
-            <th>Тесты</th>
-            <th>Итого</th>
+            <th>План продаж (TJS)</th>
+            <th>Продано карт (шт)</th>
+            <th>Карт за всё время</th>
+            <th>Моб. банк (шт)</th>
+            <th>ЗП проект (шт)</th>
+            <th>Оборот по дебету (TJS)</th>
+            <th>Остатки по картам (TJS)</th>
+            <th>Активные карты (шт)</th>
+            <th>Оценка КЦ (балл)</th>
+            <th>Жалобы (шт)</th>
+            <th>Тесты (балл)</th>
+            <th>Итого (TJS)</th>
           </tr>
           </thead>
           <tbody>
@@ -155,12 +229,24 @@ const TablePremies = ({ month, year }) => {
 
             return (
                 <tr key={w.ID} ref={isLast ? lastRowRef : null}>
-                  <td>{user.Username}</td>
+                  <td>
+                    <div className="fio-cell">
+                      <span className="fio-text">{user.Username}</span>
+                      <button
+                          className="download-report-btn"
+                          title="Скачать отчет рабочего"
+                          onClick={() => openDownloadModal(user)}
+                      >
+                        <DownloadCloud size={18}/>
+                      </button>
+                    </div>
+                  </td>
                   <td>{w.plan}</td>
                   <td>{card_sales.cards_sailed}</td>
+                  <td>{card_sales.cards_sailed_in_general}</td>
                   <td>{mobile_bank.mobile_bank_prem}</td>
                   <td>{w.salary_project}</td>
-                  <td>{turnover.debt_osd?.toFixed(0)}</td>
+                  <td>{card_sales.deb_osd}</td>
                   <td>{card_sales.out_balance}</td>
                   <td>{turnover.active_cards_perms?.toFixed(0)}</td>
                   <td>{service.call_center}</td>
@@ -182,6 +268,46 @@ const TablePremies = ({ month, year }) => {
         {loadingMore && (
             <div style={{ textAlign: 'center', padding: '1rem' }}>
               <Spinner />
+            </div>
+        )}
+
+        {/* NEW: Download Modal */}
+        {showDownloadModal && (
+            <div className="filters__modal">
+              <div className="filters__modal-content">
+                <h3>Выгрузка отчёта для {downloadUser?.Username}</h3>
+
+                <div className="filters__date-selection">
+                  <select
+                      value={downloadMonth}
+                      onChange={(e) => setDownloadMonth(e.target.value)}
+                  >
+                    <option value="">-- Выберите месяц --</option>
+                    {monthOptions.map(month => (
+                        <option key={month.value} value={month.value}>
+                          {month.name}
+                        </option>
+                    ))}
+                  </select>
+
+                  <input
+                      type="number"
+                      placeholder="Год"
+                      value={downloadYear}
+                      onChange={(e) => setDownloadYear(e.target.value)}
+                      className="filters__year-input"
+                  />
+                </div>
+
+                <div className="filters__modal-actions">
+                  <button onClick={executeDownload}>
+                    Выгрузить
+                  </button>
+                  <button onClick={() => setShowDownloadModal(false)}>
+                    Отмена
+                  </button>
+                </div>
+              </div>
             </div>
         )}
       </div>

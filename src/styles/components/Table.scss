@@ -45,3 +45,33 @@
         content: "\00a0"; // Неразрывный пробел для пустых ячеек
     }
 }
+
+.fio-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px; // можешь поменять ширину под свой макет
+}
+
+.fio-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-report-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        color: #0056b3;
+    }
+}

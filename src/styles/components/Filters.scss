@@ -95,6 +95,7 @@
   border-radius: 6px;
   border: 1px solid #ccc;
   background-color: #f9f9f9;
+  color: #1c1c1c;
   cursor: pointer;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
@@ -173,5 +174,42 @@
   &:disabled {
     background-color: #eee;
     cursor: not-allowed;
+  }
+}
+
+.filters__date-selection {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+
+  select {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s;
+
+    &:focus {
+      outline: none;
+      border-color: #6a1fff;
+    }
+  }
+}
+
+.filters__year-input {
+  width: 120px;
+  height: 15px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  transition: box-shadow 0.3s, border-color 0.3s;
+
+  &:focus {
+    outline: none;
+    border-color: #6a1fff;
+    box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
   }
 }

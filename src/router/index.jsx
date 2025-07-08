@@ -8,6 +8,7 @@ import DashboardOperatorPremiesPage from '../pages/dashboard/dashboard_operator/
 import DashboardOperatorReports from '../pages/dashboard/dashboard_operator/ReportsPage';
 import DashboardOperatorDatas from '../pages/dashboard/dashboard_operator/DatasPage';
 import DashboardOperatorKnowledgeBase from '../pages/dashboard/dashboard_operator/KnowledgeBase';
+import DashboardOperatorTests from "../pages/dashboard/dashboard_operator/TestsPage.jsx";
 
 import DashboardWorkerPremies from '../pages/dashboard/dashboard_worker/PremiesWorkerPage';
 import DashboardWorkerCards from "../pages/dashboard/dashboard_worker/CardsWorkerPage.jsx";
@@ -24,6 +25,7 @@ import RequireAuth from '../middlewares/RequireAuth';
 
 import PageNotFound from "../pages/general/NotFound.jsx";
 import DashboardChairmanKnowledgeBase from "../pages/dashboard/dashboard_chairman/KnowledgeBase.jsx";
+import RegisterPage from "../pages/general/RegisterPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -36,10 +38,12 @@ export default function AppRouter() {
           <Route element={<RequireAuth><Outlet /></RequireAuth>}>
             <Route path="/" element={<DashboardRedirectPage />} />
             <Route path="/under/development" element={<UnderDevelopmentPage />} />
+            <Route path="/auth/register" element={<RegisterPage />} />
             <Route path="/operator/premies" element={<DashboardOperatorPremiesPage />} />
             <Route path="/operator/reports" element={<DashboardOperatorReports />} />
             <Route path="/operator/data" element={<DashboardOperatorDatas />} />
             <Route path="/operator/knowledge-base" element={<DashboardOperatorKnowledgeBase />} />
+            <Route path="/operator/tests" element={<DashboardOperatorTests />} />
 
             <Route path="/worker/premies" element={<DashboardWorkerPremies />} />
             <Route path="/worker/cards" element={<DashboardWorkerCards />} />

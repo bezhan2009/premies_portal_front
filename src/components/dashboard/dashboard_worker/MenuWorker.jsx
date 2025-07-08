@@ -18,7 +18,7 @@ export default function HeaderWorker({ username = 'Бартов М.', activeLink
     <header className="header">
       <div className="header-left">
         <Link to="/">
-          <LogoImageComponent width={75} height={50} />
+          <LogoImageComponent width={75} height={65} />
         </Link>
         <nav className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           {links.map(link => (
