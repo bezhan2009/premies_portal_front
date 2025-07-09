@@ -11,7 +11,7 @@ export default function DashboardWorkerPremies() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker username="Бартов М." activeLink="premies" />
+          <HeaderWorker activeLink="premies" />
         </header>
           <GetBlockInfo page="worker_premi" />
       </div>

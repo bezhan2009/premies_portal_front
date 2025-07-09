@@ -11,7 +11,7 @@ export default function DashboardOperatorKnowledgeBase() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <Header username="Бартов М." activeLink="knowledge" />
+          <Header activeLink="knowledge" />
         </header>
         <GetBlockInfo page="operator_knowledge_base" />
       </div>

@@ -11,7 +11,7 @@ export default function DashboardWorkerKB() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker username="Бартов М." activeLink="knowledge" />
+          <HeaderWorker activeLink="knowledge" />
         </header>
           <GetBlockInfo page="worker_knowledge_base" />
       </div>

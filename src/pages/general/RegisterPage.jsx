@@ -1,7 +1,7 @@
-// src/pages/auth/RegisterPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/login.scss';
+import '../../styles/extraForm.scss';
 import LogoImageComponent from '../../components/Logo';
 import Spinner from '../../components/Spinner';
 import { Helmet } from 'react-helmet';
@@ -10,14 +10,11 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { registerUser } from '../../api/auth';
 
 const ROLES = [
-    { id: 1, name: "Admin" },
-    { id: 2, name: "Worker" },
     { id: 3, name: "Operator" },
-    { id: 4, name: "Head" },
     { id: 5, name: "Director" },
     { id: 6, name: "Card Seller" },
-    { id: 7, name: "Universal" },
-    { id: 8, name: "Credit seller" },
+    { id: 8, name: "Credit Seller" },
+    { id: 9, name: "Chairman" },
 ];
 
 export default function RegisterPage() {
@@ -26,11 +23,19 @@ export default function RegisterPage() {
     const [phone, setPhone] = useState('');
     const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
-    const [roleId, setRoleId] = useState(6);
+    const [roleId, setRoleId] = useState(3); // Operator по умолчанию
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    const [salary, setSalary] = useState('');
+    const [position, setPosition] = useState('');
+    const [plan, setPlan] = useState('');
+    const [salaryProject, setSalaryProject] = useState('');
+    const [placeWork, setPlaceWork] = useState('');
+    const [offices, setOffices] = useState([]);
+
+    const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -38,17 +43,25 @@ export default function RegisterPage() {
         setError('');
         setLoading(true);
 
-        try {
-            await registerUser({
-                Username: username,
-                Email: email,
-                Phone: phone,
-                full_name: fullName,
-                Password: password,
-                role_id: Number(roleId),
-            });
+        const payload = {
+            Username: username,
+            Email: email,
+            Phone: phone,
+            full_name: fullName,
+            Password: password,
+            role_id: roleId,
+        };
 
-            // Просто редирект без сохранения токенов
+        if (roleId === 6 || roleId === 8) {
+            payload.Salary = Number(salary);
+            payload.position = position;
+            payload.plan = Number(plan);
+            payload.salary_project = Number(salaryProject);
+            payload.place_work = placeWork;
+        }
+
+        try {
+            await registerUser(payload);
             navigate('/operator/reports', { replace: true });
         } catch (err) {
             if (err.message === "Failed to fetch") {
@@ -64,6 +77,32 @@ export default function RegisterPage() {
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
+    useEffect(() => {
+        if ((roleId === 6 || roleId === 8) && offices.length === 0) {
+            fetch(`${import.meta.env.VITE_BACKEND_URL}/office`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Ошибка ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const titles = data.map(item => item.title);
+                        setOffices(titles);
+                    } else {
+                        console.error('Сервер вернул не массив:', data);
+                    }
+                })
+                .catch(err => console.error('Ошибка загрузки офисов:', err));
+        }
+    }, [roleId, token, offices.length]);
 
     return (
         <>
@@ -136,7 +175,7 @@ export default function RegisterPage() {
                     <label>
                         <select
                             value={roleId}
-                            onChange={(e) => setRoleId(e.target.value)}
+                            onChange={(e) => setRoleId(Number(e.target.value))}
                             required
                         >
                             {ROLES.map(role => (
@@ -147,6 +186,54 @@ export default function RegisterPage() {
                         </select>
                     </label>
 
+                    <div className={`extra-form ${roleId === 6 || roleId === 8 ? 'visible' : ''}`}>
+                        <label>
+                            <input
+                                type="number"
+                                value={salary}
+                                onChange={(e) => setSalary(e.target.value)}
+                                placeholder="Сумма оклада"
+                            />
+                        </label>
+                        <label>
+                            <input
+                                type="text"
+                                value={position}
+                                onChange={(e) => setPosition(e.target.value)}
+                                placeholder="Позиция"
+                            />
+                        </label>
+                        <label>
+                            <input
+                                type="number"
+                                value={plan}
+                                onChange={(e) => setPlan(e.target.value)}
+                                placeholder="План"
+                            />
+                        </label>
+                        <label>
+                            <input
+                                type="number"
+                                value={salaryProject}
+                                onChange={(e) => setSalaryProject(e.target.value)}
+                                placeholder="ЗП проект"
+                            />
+                        </label>
+                        <label>
+                            <select
+                                value={placeWork}
+                                onChange={(e) => setPlaceWork(e.target.value)}
+                            >
+                                <option value="">Выберите место работы</option>
+                                {offices.map((title, idx) => (
+                                    <option key={idx} value={title}>
+                                        {title}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+
                     {error && <div align="center" className="error">{error}</div>}
 
                     <button type="submit" disabled={loading}>
@@ -155,7 +242,7 @@ export default function RegisterPage() {
                                 <Spinner />
                             </div>
                         ) : (
-                            'Зарегистрироваться'
+                            'Зарегистрировать'
                         )}
                     </button>
                 </form>

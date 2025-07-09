@@ -11,7 +11,7 @@ export default function DashboardWorkerCredits() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker username="Бартов М." activeLink="credits" />
+          <HeaderWorker activeLink="credits" />
         </header>
           <GetBlockInfo page="und" />
       </div>

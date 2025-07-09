@@ -11,7 +11,7 @@ export default function DashboardChairmanReports() {
             </Helmet>
             <div className="dashboard-container">
                 <header className="dashboard-header">
-                    <HeaderChairman username="Бартов М." activeLink="rep_cards" />
+                    <HeaderChairman activeLink="rep_cards" />
                 </header>
                 <GetBlockInfo page="chairman_reports" />
             </div>

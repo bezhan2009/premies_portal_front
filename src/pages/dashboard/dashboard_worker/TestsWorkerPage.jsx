@@ -11,7 +11,7 @@ export default function DashboardWorkerTests() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker username="Бартов М." activeLink="tests" />
+          <HeaderWorker activeLink="tests" />
         </header>
           <GetBlockInfo page="worker_tests" />
       </div>

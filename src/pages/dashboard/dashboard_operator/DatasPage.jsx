@@ -11,7 +11,7 @@ export default function DashboardOperatorDatas() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <Header username="Бартов М." activeLink="data" />
+          <Header activeLink="data" />
         </header>
         <GetBlockInfo page="operator_data" />
       </div>

@@ -11,7 +11,7 @@ export default function DashboardWorkerCards() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker username="Бартов М." activeLink="cards" />
+          <HeaderWorker activeLink="cards" />
         </header>
           <GetBlockInfo page="und" />
       </div>

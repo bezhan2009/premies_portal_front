@@ -26,6 +26,7 @@ import RequireAuth from '../middlewares/RequireAuth';
 import PageNotFound from "../pages/general/NotFound.jsx";
 import DashboardChairmanKnowledgeBase from "../pages/dashboard/dashboard_chairman/KnowledgeBase.jsx";
 import RegisterPage from "../pages/general/RegisterPage.jsx";
+import RequireRole from "../middlewares/RequireRole.jsx";
 
 export default function AppRouter() {
   return (
@@ -36,24 +37,55 @@ export default function AppRouter() {
 
           {/* Защищённые маршруты */}
           <Route element={<RequireAuth><Outlet /></RequireAuth>}>
+            {/* Дашборд редирект */}
             <Route path="/" element={<DashboardRedirectPage />} />
+
+            {/* Подготовленные страницы */}
             <Route path="/under/development" element={<UnderDevelopmentPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
-            <Route path="/operator/premies" element={<DashboardOperatorPremiesPage />} />
-            <Route path="/operator/reports" element={<DashboardOperatorReports />} />
-            <Route path="/operator/data" element={<DashboardOperatorDatas />} />
-            <Route path="/operator/knowledge-base" element={<DashboardOperatorKnowledgeBase />} />
-            <Route path="/operator/tests" element={<DashboardOperatorTests />} />
 
-            <Route path="/worker/premies" element={<DashboardWorkerPremies />} />
-            <Route path="/worker/cards" element={<DashboardWorkerCards />} />
-            <Route path="/worker/credits" element={<DashboardWorkerCredits />} />
-            <Route path="/worker/tests" element={<DashboardWorkerTests />} />
-            <Route path="/worker/knowledge-base" element={<DashboardWorkerKB />} />
-            <Route path="/worker/reports" element={<DashboardWorkerReports />} />
+            {/* Operator-only routes */}
+            <Route
+                element={
+                  <RequireRole allowedRoles={[3]}>
+                    <Outlet />
+                  </RequireRole>
+                }
+            >
+              <Route path="/operator/premies" element={<DashboardOperatorPremiesPage />} />
+              <Route path="/operator/reports" element={<DashboardOperatorReports />} />
+              <Route path="/operator/data" element={<DashboardOperatorDatas />} />
+              <Route path="/operator/knowledge-base" element={<DashboardOperatorKnowledgeBase />} />
+              <Route path="/operator/tests" element={<DashboardOperatorTests />} />
+              <Route path="/auth/register" element={<RegisterPage />} />
+            </Route>
 
-            <Route path="/chairman/reports" element={<DashboardChairmanReports />} />
-            <Route path="/chairman/knowledge-base" element={<DashboardChairmanKnowledgeBase />} />
+            {/* Worker-only routes */}
+            <Route
+                element={
+                  <RequireRole allowedRoles={[6, 8]}>
+                    <Outlet />
+                  </RequireRole>
+                }
+            >
+              <Route path="/worker/premies" element={<DashboardWorkerPremies />} />
+              <Route path="/worker/cards" element={<DashboardWorkerCards />} />
+              <Route path="/worker/credits" element={<DashboardWorkerCredits />} />
+              <Route path="/worker/tests" element={<DashboardWorkerTests />} />
+              <Route path="/worker/knowledge-base" element={<DashboardWorkerKB />} />
+              <Route path="/worker/reports" element={<DashboardWorkerReports />} />
+            </Route>
+
+            {/* Chairman-only routes */}
+            <Route
+                element={
+                  <RequireRole allowedRoles={[9]}>
+                    <Outlet />
+                  </RequireRole>
+                }
+            >
+              <Route path="/chairman/reports" element={<DashboardChairmanReports />} />
+              <Route path="/chairman/knowledge-base" element={<DashboardChairmanKnowledgeBase />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<PageNotFound />} />

@@ -11,7 +11,7 @@ export default function DashboardChairmanKnowledgeBase() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderChairman username="Бартов М." activeLink="knowledge" />
+          <HeaderChairman activeLink="knowledge" />
         </header>
         <GetBlockInfo page="worker_knowledge_base" />
       </div>

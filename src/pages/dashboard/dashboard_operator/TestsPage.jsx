@@ -11,7 +11,7 @@ export default function DashboardOperatorTests() {
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <Header username="Бартов М." activeLink="tests" />
+          <Header activeLink="tests" />
         </header>
         <GetBlockInfo page="operator_tests" />
       </div>

@@ -31,7 +31,12 @@ export default function LoginPage() {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
-      // 🔁 Перенаправляем обратно, откуда пришли
+      localStorage.setItem('username', username);
+
+      if (data.role_id !== undefined) {
+        localStorage.setItem('role_id', String(data.role_id));
+      }
+
       navigate(from, { replace: true });
     } catch (err) {
       if (err.message === "Failed to fetch") {
@@ -49,56 +54,56 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <Helmet>
-        <title>Логин</title>
-      </Helmet>
-      <div className="login-container">
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div align="center" className='image-logo-login'>
-            <LogoImageComponent width={125} height={105} />
-          </div>
+      <>
+        <Helmet>
+          <title>Логин</title>
+        </Helmet>
+        <div className="login-container">
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div align="center" className='image-logo-login'>
+              <LogoImageComponent width={125} height={105} />
+            </div>
 
-          <label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder='Логин'
-              required
-            />
-          </label>
+            <label>
+              <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder='Логин'
+                  required
+              />
+            </label>
 
-          <label style={{ position: 'relative' }}>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder='Пароль'
-              required
-            />
-            <button
-              type="button"
-              className='toggle-password-visibility'
-              onClick={togglePasswordVisibility}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            <label style={{ position: 'relative' }}>
+              <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder='Пароль'
+                  required
+              />
+              <button
+                  type="button"
+                  className='toggle-password-visibility'
+                  onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </label>
+
+            {error && <div align="center" className="error">{error}</div>}
+
+            <button type="submit" disabled={loading}>
+              {loading ? (
+                  <div align="center">
+                    <Spinner />
+                  </div>
+              ) : (
+                  'Войти'
+              )}
             </button>
-          </label>
-
-          {error && <div align="center" className="error">{error}</div>}
-
-          <button type="submit" disabled={loading}>
-            {loading ? (
-              <div align="center">
-                <Spinner />
-              </div>
-            ) : (
-              'Войти'
-            )}
-          </button>
-        </form>
-      </div>
-    </>
+          </form>
+        </div>
+      </>
   );
 }
