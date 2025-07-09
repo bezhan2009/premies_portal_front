@@ -1,3 +1,5 @@
+@import '../mixins/general';
+
 .last-modified-container {
   font-family: Arial, sans-serif;
   color: #333;
@@ -43,6 +45,41 @@
   display: flex;
   align-items: center;
   gap: 15px;
+
+
+  &__inputs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    input {
+      width: 6ch;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #333;
+      border: none;
+      border-bottom: 1px solid grey;
+      background-color: transparent;
+      text-align: center;
+      padding: 0 2px;
+      outline: none;
+      transition: border-bottom 0.2s ease;
+
+      &:focus {
+        border-bottom: 1px solid #990000;
+      }
+
+      &__year-input {
+        width: 3.6ch;
+      }
+    }
+
+    span {
+      margin: 0 1px;
+      font-size: 0.95rem;
+      color: #555;
+    }
+  }
 
   &__current {
     font-size: 16px;
@@ -91,5 +128,43 @@
     border-width: 6px 0 6px 10px;
     border-color: transparent transparent transparent #fff;
     border-radius: 50%;
+  }
+}
+
+.date-filter__select {
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+  margin-right: 6px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  }
+}
+
+.date-filter__inputs__year-input {
+  padding: 4px 6px;
+  font-size: 14px;
+  width: 70px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+
+.date-filter__inputs__year-input {
+  width: 100px;
+  padding: 4px 6px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+
+  &:focus {
+    @include input-focus;
   }
 }

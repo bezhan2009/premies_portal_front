@@ -9,7 +9,7 @@
     border-collapse: collapse; // Ensure borders don't double up
     font-family: Arial, sans-serif; // Match the font style
     font-size: 12px; // Approximate font size from the image
-    border: 2px solid $border-table-color; // Lighter gray border
+    border-top: 2px solid $border-table-color; // Lighter gray border
 
     th {
         padding: .95rem; // Reduced padding to match the tighter spacing in the image
@@ -43,5 +43,35 @@
 
     td:empty::before {
         content: "\00a0"; // Неразрывный пробел для пустых ячеек
+    }
+}
+
+.fio-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px; // можешь поменять ширину под свой макет
+}
+
+.fio-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-report-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        color: #0056b3;
     }
 }

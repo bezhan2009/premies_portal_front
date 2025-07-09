@@ -1,0 +1,23 @@
+.chart-wrapper {
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: #333;
+
+  h2 {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+}
+
+.chart-wrapper.alt {
+  background-color: #f8f9fb;
+  border: 1px solid #eee;
+}

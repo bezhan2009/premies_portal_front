@@ -10,12 +10,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf-viewer/default-layout": "^3.12.0",
     "framer-motion": "^12.16.0",
+    "lucide-react": "^0.525.0",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-helmet": "^6.1.0",
     "react-icons": "^5.5.0",
-    "react-router-dom": "^7.6.1"
+    "react-loading-skeleton": "^3.5.0",
+    "react-pdf": "^10.0.1",
+    "react-router-dom": "^7.6.1",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -30,6 +37,7 @@
     "postcss": "^8.5.4",
     "sass-embedded": "^1.89.1",
     "tailwindcss": "^4.1.8",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-top-level-await": "^1.5.0"
   }
 }

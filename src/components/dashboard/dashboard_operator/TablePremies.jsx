@@ -1,74 +1,317 @@
-import React from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import Spinner from '../../Spinner.jsx';
 import '../../../styles/components/Table.scss';
+import { fetchWorkers } from "../../../api/operator/reports/operator_premies.js";
+import SearchBar from "../../general/SearchBar.jsx";
+import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
+import { DownloadCloud } from 'lucide-react';
 
-const data = [
-  {
-    fullName: '7925929452',
-    plan: 'Зима',
-    cards: 'Ivanov Ivan',
-    mobileBank: 'Муж',
-    salaryProject: 'Нет',
-    overdraft: 'Заграничный паспорт РФ P 23992209',
-    debit: '29393992',
-    balance: 'Россия город Москва улица Чертановская д 64 кв 84',
-    activeCards: 'Visa Gold (тариф "GOLD")',
-    kcz: 'Мультимапо тная',
-    complaints: '4598459456954956',
-    tests: '№47599 4569465',
-    bonus: '12.02.2024',
-  },
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-];
+const TablePremies = ({ month, year }) => {
+  const [workers, setWorkers] = useState([]);
+  const [allWorkers, setAllWorkers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const observer = useRef();
 
-const ReportTable = () => {
+  // NEW: State for modal
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadUser, setDownloadUser] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState('');
+  const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
+
+  const monthOptions = [
+    { name: 'Январь', value: 1 },
+    { name: 'Февраль', value: 2 },
+    { name: 'Март', value: 3 },
+    { name: 'Апрель', value: 4 },
+    { name: 'Май', value: 5 },
+    { name: 'Июнь', value: 6 },
+    { name: 'Июль', value: 7 },
+    { name: 'Август', value: 8 },
+    { name: 'Сентябрь', value: 9 },
+    { name: 'Октябрь', value: 10 },
+    { name: 'Ноябрь', value: 11 },
+    { name: 'Декабрь', value: 12 },
+  ];
+
+  useEffect(() => {
+    const loadInitial = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchWorkers(month, year);
+        setWorkers(data);
+        setHasMore(data.length === 10);
+      } catch (err) {
+        setError('Не удалось загрузить данные.');
+        setWorkers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitial();
+  }, [month, year]);
+
+  const handleSearch = async (filtered) => {
+    if (!filtered) {
+      setIsSearching(false);
+      setLoading(true);
+      try {
+        const data = await fetchWorkers(month, year);
+        setWorkers(data);
+        setHasMore(data.length === 10);
+      } catch {
+        setError('Не удалось загрузить данные.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setIsSearching(true);
+    setWorkers(filtered);
+    setHasMore(false);
+  };
+
+  useEffect(() => {
+    const loadAllData = async () => {
+      let all = [];
+      let afterID = null;
+
+      while (true) {
+        const chunk = await fetchWorkers(month, year, afterID);
+        if (!chunk || chunk.length === 0) break;
+
+        all = [...all, ...chunk];
+        afterID = chunk[chunk.length - 1]?.ID;
+        if (chunk.length < 10) break;
+      }
+
+      setAllWorkers(all);
+    };
+
+    loadAllData();
+  }, [month, year]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || workers.length === 0 || isSearching) return;
+
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const lastId = workers[workers.length - 1]?.ID;
+      const data = await fetchWorkers(month, year, lastId);
+      setWorkers(prev => [...prev, ...data]);
+      setHasMore(data.length === 10);
+    } catch (err) {
+      setError('Не удалось загрузить дополнительные данные.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const lastRowRef = useCallback(node => {
+    if (loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore();
+      }
+    });
+
+    if (node) observer.current.observe(node);
+  }, [loadingMore, hasMore, workers]);
+
+  // NEW: open modal for choosing month/year
+  const openDownloadModal = (user) => {
+    setDownloadUser(user);
+    setShowDownloadModal(true);
+    setDownloadMonth('');
+    setDownloadYear(new Date().getFullYear());
+  };
+
+  // NEW: execute download
+  const executeDownload = async () => {
+    if (!downloadMonth || !downloadYear) {
+      alert('Выберите месяц и год');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const url = `${import.meta.env.VITE_BACKEND_URL}/automation/reports/${downloadUser.ID}?month=${downloadMonth}&year=${downloadYear}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Ошибка скачивания отчета.');
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `report_${downloadUser.Username || downloadUser.ID}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(urlBlob);
+
+      setShowDownloadModal(false);
+      setDownloadUser(null);
+      setDownloadMonth('');
+      setDownloadYear(new Date().getFullYear());
+    } catch (e) {
+      console.error(e);
+      alert(`Не удалось скачать отчет: ${e.message}`);
+    }
+  };
+
+  if (loading) {
+    return (
+        <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: "100px", width: "auto" }}>
+          <Spinner />
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="report-table-container" style={{ textAlign: 'center', padding: '1rem', color: 'red' }}>
+          <p>{error}</p>
+        </div>
+    );
+  }
+
   return (
-    <div className="report-table-container">
-      <table className="table-reports">
-        <thead>
+      <div className="report-table-container">
+        <SearchBar allData={allWorkers} onSearch={handleSearch} />
+
+        <table className="table-reports">
+          <thead>
           <tr>
-            <th>ФИО сотрудника</th>
-            <th>План продаж</th>
-            <th>Продажа Карт</th>
-            <th>Мобильный банк</th>
-            <th>ЗП проект</th>
-            <th>Овердрафт</th>
-            <th>Оборот по дебету</th>
-            <th>Остатки по картам</th>
-            <th>Активные карты</th>
-            <th>Оценка КЦ</th>
-            <th>Жалобы + ОЗ</th>
-            <th>Тесты</th>
-            <th>Итого премия</th>
+            <th>ФИО</th>
+            <th>План продаж (TJS)</th>
+            <th>Продано карт (шт)</th>
+            <th>Карт за всё время</th>
+            <th>Моб. банк (шт)</th>
+            <th>ЗП проект (шт)</th>
+            <th>Оборот по дебету (TJS)</th>
+            <th>Остатки по картам (TJS)</th>
+            <th>Активные карты (шт)</th>
+            <th>Оценка КЦ (балл)</th>
+            <th>Жалобы (шт)</th>
+            <th>Тесты (балл)</th>
+            <th>Итого (TJS)</th>
           </tr>
-        </thead>
-        <tbody>
-          {data.map((row, idx) => (
-            <tr key={idx}>
-              <td>{row.fullName || ''}</td>
-              <td>{row.plan || ''}</td>
-              <td>{row.cards || ''}</td>
-              <td>{row.mobileBank || ''}</td>
-              <td>{row.salaryProject || ''}</td>
-              <td>{row.overdraft || ''}</td>
-              <td>{row.debit || ''}</td>
-              <td>{row.balance || ''}</td>
-              <td>{row.activeCards || ''}</td>
-              <td>{row.kcz || ''}</td>
-              <td>{row.complaints || ''}</td>
-              <td>{row.tests || ''}</td>
-              <td>{row.bonus || ''}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+          {workers.map((w, idx) => {
+            const user = w.user || {};
+            const turnover = w.CardTurnovers?.[0] || {};
+            const service = w.ServiceQuality?.[0] || {};
+            const card_sales = w.CardSales?.[0] || {};
+            const mobile_bank = w.MobileBank?.[0] || {};
+
+            const totalPremia = calculateTotalPremia(w);
+            const isLast = idx === workers.length - 1;
+
+            return (
+                <tr key={w.ID} ref={isLast ? lastRowRef : null}>
+                  <td>
+                    <div className="fio-cell">
+                      <span className="fio-text">{user.Username}</span>
+                      <button
+                          className="download-report-btn"
+                          title="Скачать отчет рабочего"
+                          onClick={() => openDownloadModal(user)}
+                      >
+                        <DownloadCloud size={18}/>
+                      </button>
+                    </div>
+                  </td>
+                  <td>{w.plan}</td>
+                  <td>{card_sales.cards_sailed}</td>
+                  <td>{card_sales.cards_sailed_in_general}</td>
+                  <td>{mobile_bank.mobile_bank_prem}</td>
+                  <td>{w.salary_project}</td>
+                  <td>{card_sales.deb_osd}</td>
+                  <td>{card_sales.out_balance}</td>
+                  <td>{turnover.active_cards_perms?.toFixed(0)}</td>
+                  <td>{service.call_center}</td>
+                  <td>{service.complaint}</td>
+                  <td>{service.tests}</td>
+                  <td>{totalPremia.toFixed(1)}</td>
+                </tr>
+            );
+          })}
+          </tbody>
+        </table>
+
+        {!loading && workers.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '1rem' }}>
+              <p>Ничего не найдено</p>
+            </div>
+        )}
+
+        {loadingMore && (
+            <div style={{ textAlign: 'center', padding: '1rem' }}>
+              <Spinner />
+            </div>
+        )}
+
+        {/* NEW: Download Modal */}
+        {showDownloadModal && (
+            <div className="filters__modal">
+              <div className="filters__modal-content">
+                <h3>Выгрузка отчёта для {downloadUser?.Username}</h3>
+
+                <div className="filters__date-selection">
+                  <select
+                      value={downloadMonth}
+                      onChange={(e) => setDownloadMonth(e.target.value)}
+                  >
+                    <option value="">-- Выберите месяц --</option>
+                    {monthOptions.map(month => (
+                        <option key={month.value} value={month.value}>
+                          {month.name}
+                        </option>
+                    ))}
+                  </select>
+
+                  <input
+                      type="number"
+                      placeholder="Год"
+                      value={downloadYear}
+                      onChange={(e) => setDownloadYear(e.target.value)}
+                      className="filters__year-input"
+                  />
+                </div>
+
+                <div className="filters__modal-actions">
+                  <button onClick={executeDownload}>
+                    Выгрузить
+                  </button>
+                  <button onClick={() => setShowDownloadModal(false)}>
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+      </div>
   );
 };
 
-export default ReportTable;
+export default TablePremies;

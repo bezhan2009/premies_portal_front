@@ -1,0 +1,26 @@
+version: "3"
+
+tasks:
+  start-app-py:
+    aliases:
+      - app-py
+      - start-py
+    desc: "Starts back-end automation"
+    cmds:
+      - powershell -Command "cd C:\\Users\\Admin\\PycharmProjects\\premies; .\\.venv\\Scripts\\Activate.ps1; py main.py"
+
+  start-app-go:
+    aliases:
+      - app-go
+      - start-go
+    desc: "Starts main back-end"
+    cmds:
+      - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; .\\main.exe"
+
+  build-app-go:
+    aliases:
+      - build-go
+      - build
+    desc: "Builds main back-end"
+    cmds:
+      - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; go build main.go"

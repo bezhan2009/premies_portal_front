@@ -1,0 +1,122 @@
+@import 'variables/not_found';
+
+body {
+  font-family: $font-family !important;
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+}
+
+// Общие стили для div
+div {
+  display: block;
+  unicode-bidi: isolate;
+}
+
+// Для секций последнего элемента
+.content {
+  .section:last-child,
+  [class^='section']:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Стиль блока ошибки 404
+.section__not_found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  padding: 20px;
+
+  & .item__suptitle {
+    color: $primary-color;
+    font-weight: 500;
+    font-size: $font-size-large;
+    margin-bottom: 20px;
+  }
+
+  & .item__subtitle {
+    font-size: 18px;
+    line-height: $line-height-normal;
+    margin-bottom: 21px;
+    max-width: 600px;
+  }
+}
+
+// Заголовки крупного размера, адаптив
+.section__index__products_card,
+.section__not_found .item__title {
+  margin-bottom: 56px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 32px;
+  }
+}
+
+// Общие стили для текста
+.alert,
+.section__not_found .item__title,
+h3,
+.section__not_found .item__subtitle,
+.text-medium {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: $line-height-normal;
+}
+
+// Кнопки, ссылки и прочие элементы
+.banner-block__btn,
+.category__block .category__nav .nav__link,
+.category__block .category__nav .nav__link .section__not_found ul li,
+.category__block .section__not_found .category__nav li,
+.checkbox.checkbox-category [type='checkbox'] + label,
+.common-block .description,
+.jobs__wrap .item__jobs .form-step .form-control,
+.jobs__wrap .item__jobs .item__category .section__not_found ul li,
+.page--bonus-sell-inner .share .title,
+.page--inner-info .share .title,
+.secrch__results .pagination li,
+.section-card-center .desc,
+.section-list-text .title,
+.section__not_found .category__block .category__nav li,
+.section__not_found .item__subtitle,
+.section__not_found .jobs__wrap .item__jobs .item__category ul li,
+.section__not_found .list-inline li,
+  // Обобщённые стили
+li {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: $line-height-normal;
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+// Удаление внешних отступов у списков
+ol,
+ul {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 0;
+}
+
+// Стиль ссылок в списках
+.list-inline,
+.list-unstyled,
+.list_style ul,
+.section__not_found .category__block .category__nav li,
+.section__not_found .list-inline li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+  outline: 0 !important;
+  transition: .2s color;
+}

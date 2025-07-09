@@ -19,20 +19,6 @@ const OperatorDatasBlockInfo = () => {
             <EmployeesTable key="employees" />
           </>
         );
-    //   case 'roles':
-    //     return (
-    //       <>
-    //         <RolesTable key="roles" />
-    //         <Filters modificationDesc="Роли" />
-    //       </>
-    //     );
-    //   case 'prices':
-    //     return (
-    //       <>
-    //         <PricesTable key="prices" />
-    //         <Filters modificationDesc="Цены продуктов" />
-    //       </>
-    //     );
       case 'office':
         return (
           <>

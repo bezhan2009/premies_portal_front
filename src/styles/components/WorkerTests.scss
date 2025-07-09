@@ -1,0 +1,273 @@
+.worker-tests-page {
+  max-width: 97%;
+  margin: 40px auto;
+  padding: 0 20px;
+  font-family: 'Roboto', sans-serif;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.worker-test-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 50px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.worker-test-header {
+  background-color: #f7f3ff;
+  padding: 30px 40px;
+
+  h2 {
+    font-size: 2rem;
+    color: #202124;
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 1.1rem;
+    color: #5f6368;
+    margin: 0;
+  }
+}
+
+.worker-questions {
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.worker-question-card {
+  background: #faf8ff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 25px 20px;
+  animation: slideIn 0.5s ease-out;
+  animation-fill-mode: backwards;
+  animation-delay: calc(0.1s * var(--question-index));
+
+  .worker-question-title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 10px;
+  }
+
+  .worker-question-type {
+    font-size: 0.95rem;
+    color: #9661ff; /* Акцентный цвет заменен сюда */
+    margin-bottom: 20px;
+  }
+}
+
+.worker-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  li {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+
+    &:hover {
+      background: #f2e9ff;
+      border-color: #9661ff; /* Замена цвета при hover на новый */
+    }
+
+    &.selected {
+      background: #e8f0fe;
+      border-color: #9661ff; /* Замена цвета у выбранных */
+      color: #202124;
+      font-weight: 600;
+    }
+
+    .custom-checkbox,
+    .custom-radio {
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding-left: 30px;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #202124;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+      z-index: -1;
+    }
+
+    .checkmark,
+    .radiomark {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      height: 18px;
+      width: 18px;
+      border: 2px solid #ddd;
+      background-color: #fff;
+      transition: all 0.2s ease;
+    }
+
+    .checkmark {
+      border-radius: 50%;
+    }
+
+    .radiomark {
+      border-radius: 50%;
+    }
+
+    .custom-checkbox:hover input ~ .checkmark,
+    .custom-radio:hover input ~ .radiomark {
+      border-color: #9661ff; /* Акцентный цвет при hover */
+    }
+
+    .custom-checkbox input:checked ~ .checkmark,
+    .custom-radio input:checked ~ .radiomark {
+      background-color: #9661ff; /* Акцентный цвет при выборе */
+      border-color: #9661ff;
+    }
+
+    .checkmark:after {
+      content: "";
+      position: absolute;
+      display: none;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .radiomark:after {
+      content: "";
+      position: absolute;
+      display: none;
+      left: 4px;
+      top: 4px;
+      width: 8px;
+      height: 8px;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    .custom-checkbox input:checked ~ .checkmark:after,
+    .custom-radio input:checked ~ .radiomark:after {
+      display: block;
+    }
+
+    .custom-checkbox input:checked ~ .checkbox-text,
+    .custom-radio input:checked ~ .radio-text {
+      color: #9661ff; /* Акцентный цвет текста при выборе */
+      font-weight: bold;
+    }
+  }
+}
+
+.worker-question-card textarea {
+  width: 97%;
+  min-height: 120px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 1.1rem;
+  color: #202124;
+  resize: none;
+  margin-top: 15px;
+
+  &:focus {
+    border-color: #9661ff; /* Акцентный цвет для фокуса */
+    box-shadow: 0 0 0 2px rgba(150,97,255, 0.2); /* Цвет в тени тоже обновлён */
+    outline: none;
+  }
+}
+
+.worker-submit-bar {
+  padding: 20px 40px;
+  background: #f7f3ff;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.kb-add-btn {
+  &:disabled {
+    background: #dadce0;
+    color: #80868b;
+    cursor: not-allowed;
+  }
+}
+
+.worker-page-blocked {
+  max-width: 600px;
+  margin: 80px auto;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 50px;
+  text-align: center;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.5s ease-out;
+
+  h2 {
+    color: #9661ff; /* Главный акцентный цвет в блоке */
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+
+  p {
+    font-size: 1.2rem;
+    color: #5f6368;
+  }
+}
+
+.worker-page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  font-size: 1.5rem;
+  color: #9661ff; /* Цвет загрузки тоже поменял */
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

@@ -7,10 +7,22 @@ function RedirectDashboard() {
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
-    if (!accessToken || !refreshToken) {
+    const roleId = Number(localStorage.getItem('role_id'));
+
+    if (!accessToken || !refreshToken || !roleId) {
       navigate('/login');
-    } else {
+      return;
+    }
+
+    // Перенаправляем по роли
+    if (roleId === 3) {
       navigate('/operator/premies');
+    } else if (roleId === 6 || roleId === 8) {
+      navigate('/worker/cards');
+    } else if (roleId === 9) {
+      navigate('/chairman/reports');
+    } else {
+      navigate('/404');
     }
   }, [navigate]);
 
