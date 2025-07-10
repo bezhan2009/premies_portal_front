@@ -88,7 +88,7 @@ export default function Header({ activeLink = 'reports' }) {
           <div className="header-right">
             <div className="username-wrapper">
             <span>
-              Портал Activ Daily (Оператор): <strong>{username}</strong>
+              Оператор: <strong>{username}</strong>
             </span>
               <button className="change-password-btn" onClick={handleChangePassword}>
                 Изменить пароль

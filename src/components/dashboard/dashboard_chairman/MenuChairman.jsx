@@ -84,9 +84,9 @@ export default function HeaderChairman({ activeLink = 'reports' }) {
                 </div>
                 <div className="header-right">
                     <div className="username-wrapper">
-            <span>
-              Портал Activ Daily (Председатель): <strong>{username}</strong>
-            </span>
+                        <span>
+                          Председатель: <strong>{username}</strong>
+                        </span>
                         <button className="change-password-btn" onClick={handleChangePassword}>
                             Изменить пароль
                         </button>

@@ -88,7 +88,7 @@ export default function HeaderWorker({ activeLink = 'cards' }) {
           <div className="header-right">
             <div className="username-wrapper">
             <span>
-              Портал Daily: <strong>{username}</strong>
+              Сотрудник: <strong>{username}</strong>
             </span>
               <button className="change-password-btn" onClick={handleChangePassword}>
                 Изменить пароль
