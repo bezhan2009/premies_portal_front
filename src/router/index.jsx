@@ -78,7 +78,7 @@ export default function AppRouter() {
             {/* Chairman-only routes */}
             <Route
                 element={
-                  <RequireRole allowedRoles={[9]}>
+                  <RequireRole allowedRoles={[9, 5]}>
                     <Outlet />
                   </RequireRole>
                 }
