@@ -35,6 +35,9 @@ export default function RegisterPage() {
     const [placeWork, setPlaceWork] = useState('');
     const [offices, setOffices] = useState([]);
 
+    const [officeTitle, setOfficeTitle] = useState('');
+    const [officeDesc, setOfficeDesc] = useState('');
+
     const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
 
@@ -58,6 +61,11 @@ export default function RegisterPage() {
             payload.plan = Number(plan);
             payload.salary_project = Number(salaryProject);
             payload.place_work = placeWork;
+        }
+
+        if (roleId === 5) {
+            payload.office_title = officeTitle;
+            payload.office_desc = officeDesc;
         }
 
         try {
@@ -186,53 +194,78 @@ export default function RegisterPage() {
                         </select>
                     </label>
 
-                    <div className={`extra-form ${roleId === 6 || roleId === 8 ? 'visible' : ''}`}>
-                        <label>
-                            <input
-                                type="number"
-                                value={salary}
-                                onChange={(e) => setSalary(e.target.value)}
-                                placeholder="Сумма оклада"
-                            />
-                        </label>
-                        <label>
-                            <input
-                                type="text"
-                                value={position}
-                                onChange={(e) => setPosition(e.target.value)}
-                                placeholder="Позиция"
-                            />
-                        </label>
-                        <label>
-                            <input
-                                type="number"
-                                value={plan}
-                                onChange={(e) => setPlan(e.target.value)}
-                                placeholder="План"
-                            />
-                        </label>
-                        <label>
-                            <input
-                                type="number"
-                                value={salaryProject}
-                                onChange={(e) => setSalaryProject(e.target.value)}
-                                placeholder="ЗП проект"
-                            />
-                        </label>
-                        <label>
-                            <select
-                                value={placeWork}
-                                onChange={(e) => setPlaceWork(e.target.value)}
-                            >
-                                <option value="">Выберите место работы</option>
-                                {offices.map((title, idx) => (
-                                    <option key={idx} value={title}>
-                                        {title}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    </div>
+                    {(roleId === 6 || roleId === 8) && (
+                        <div className="extra-form visible">
+                            <label>
+                                <input
+                                    type="number"
+                                    value={salary}
+                                    onChange={(e) => setSalary(e.target.value)}
+                                    placeholder="Сумма оклада"
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="text"
+                                    value={position}
+                                    onChange={(e) => setPosition(e.target.value)}
+                                    placeholder="Позиция"
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="number"
+                                    value={plan}
+                                    onChange={(e) => setPlan(e.target.value)}
+                                    placeholder="План"
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="number"
+                                    value={salaryProject}
+                                    onChange={(e) => setSalaryProject(e.target.value)}
+                                    placeholder="ЗП проект"
+                                />
+                            </label>
+                            <label>
+                                <select
+                                    value={placeWork}
+                                    onChange={(e) => setPlaceWork(e.target.value)}
+                                >
+                                    <option value="">Выберите место работы</option>
+                                    {offices.map((title, idx) => (
+                                        <option key={idx} value={title}>
+                                            {title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                    )}
+
+                    {roleId === 5 && (
+                        <div className="extra-form visible">
+                            <label>
+                                <input
+                                    type="text"
+                                    value={officeTitle}
+                                    onChange={(e) => setOfficeTitle(e.target.value)}
+                                    placeholder="Название офиса"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <textarea
+                                    value={officeDesc}
+                                    onChange={(e) => setOfficeDesc(e.target.value)}
+                                    placeholder="Описание офиса"
+                                    required
+                                    rows={3}
+                                />
+                            </label>
+                        </div>
+                    )}
 
                     {error && <div align="center" className="error">{error}</div>}
 

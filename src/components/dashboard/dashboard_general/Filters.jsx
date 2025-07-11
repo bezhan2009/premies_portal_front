@@ -179,6 +179,13 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
             class: 'filters__button--green',
             onClick: handleReportsDownload,
         },
+        {
+            text: 'Зарегистрировать нового сотрудника',
+            class: 'filters__button--green',
+            onClick: () => {
+                window.location.href = '/auth/register';
+            },
+        },
     ];
 
     return (

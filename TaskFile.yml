@@ -7,7 +7,7 @@ tasks:
       - start-py
     desc: "Starts back-end automation"
     cmds:
-      - powershell -Command "cd C:\\Users\\Admin\\PycharmProjects\\premies; .\\.venv\\Scripts\\Activate.ps1; py main.py"
+      - powershell -Command "cd D:\\ActivProjects\\DailyActiv\\py-backend; .\\.venv\\Scripts\\Activate.ps1; py main.py"
 
   start-app-go:
     aliases:
@@ -15,7 +15,7 @@ tasks:
       - start-go
     desc: "Starts main back-end"
     cmds:
-      - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; .\\main.exe"
+      - powershell -Command "cd D:\\ActivProjects\\DailyActiv\\go-backend; .\\main.exe"
 
   build-app-go:
     aliases:
@@ -23,4 +23,4 @@ tasks:
       - build
     desc: "Builds main back-end"
     cmds:
-      - powershell -Command "cd C:\\Users\\Admin\\GolandProjects\\ActivBonk\\premiesPortal; go build main.go"
+      - powershell -Command "cd D:\\ActivProjects\\DailyActiv\\go-backend; go build main.go"
