@@ -193,11 +193,33 @@ function KnowledgeDocsList({ docs, onEdit, onDelete }) {
     const [selectedDocUrl, setSelectedDocUrl] = useState(null);
 
     if (!docs.length) {
-        return <p>Документы отсутствуют</p>;
+        return (
+            <>
+                <div className="kb-docs-list-header">
+                    <h3>Документы</h3>
+                    <button
+                        className="kb-add-btn"
+                        onClick={() => onEdit('knowledge_doc', { knowledge_id: docs[0]?.knowledge_id })}
+                    >
+                        + Добавить документ
+                    </button>
+                </div>
+                <p>Документы отсутствуют</p>
+            </>
+        );
     }
 
     return (
         <>
+            <div className="kb-docs-list-header">
+                <h3>Документы</h3>
+                <button
+                    className="kb-add-btn"
+                    onClick={() => onEdit('knowledge_doc', { knowledge_id: docs[0].knowledge_id })}
+                >
+                    + Добавить документ
+                </button>
+            </div>
             <ul className="kb-docs-list">
                 {docs.map(doc => {
                     const url = `${baseURL}/${doc.file_path.replace(/\\/g, '/')}`;
