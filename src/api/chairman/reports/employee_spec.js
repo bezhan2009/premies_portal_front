@@ -7,7 +7,7 @@ export const fetchEmployee = async (month, employeeURL) => {
     // Общие query-параметры
     const commonParams = new URLSearchParams({
         month: String(month),
-        year: parts[1],
+        year: parts[1] || "",
         loadCardTurnovers: "true",
         loadCardSales: "true",
         loadCardDetails: "false",
@@ -70,8 +70,9 @@ export const fetchEmployee = async (month, employeeURL) => {
         return agg;
     };
 
-    // 1) «*» — объединяем все офисы в одну запись «Актив Банк»
+    // === 1) Все офисы (агрегация по офисам) ===
     if (parts[0] === "*" && (parts[2] === "office" || parts.length === 2)) {
+        // старое поведение для office
         const url = `${import.meta.env.VITE_BACKEND_URL}/office?${commonParams}`;
         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -84,24 +85,20 @@ export const fetchEmployee = async (month, employeeURL) => {
             CardTurnovers: [],
             CardSales: []
         };
-
+        // объединяем офисы
         officeAggs.forEach(agg => {
             agg.CardTurnovers.forEach(ct => {
                 let exist = combined.CardTurnovers.find(x => x.WorkerID === ct.WorkerID);
-                if (!exist) {
-                    exist = { ...ct };
-                    combined.CardTurnovers.push(exist);
-                } else {
+                if (!exist) combined.CardTurnovers.push({ ...ct });
+                else {
                     exist.activated_cards += ct.activated_cards;
                     exist.card_turnovers_prem += ct.card_turnovers_prem;
                 }
             });
             agg.CardSales.forEach(cs => {
                 let exist = combined.CardSales.find(x => x.WorkerID === cs.WorkerID);
-                if (!exist) {
-                    exist = { ...cs };
-                    combined.CardSales.push(exist);
-                } else {
+                if (!exist) combined.CardSales.push({ ...cs });
+                else {
                     exist.deb_osd += cs.deb_osd;
                     exist.deb_osk += cs.deb_osk;
                     exist.out_balance += cs.out_balance;
@@ -115,7 +112,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [combined];
     }
 
-    // 2) Один офис
+    // === 2) Один офис ===
     if (parts[2] === "office") {
         const officeID = parts[0];
         const url = `${import.meta.env.VITE_BACKEND_URL}/office/${officeID}?${commonParams}`;
@@ -125,7 +122,26 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [aggregateOfficeUsers(office)];
     }
 
-    // 3) Один работник
+    // === 3) Все работники (пагинация) ===
+    if (parts[0] === "*") {
+        const allWorkers = [];
+        let after = null;
+        while (true) {
+            const params = new URLSearchParams(commonParams);
+            if (after) params.set("after", after);
+            const url = `${import.meta.env.VITE_BACKEND_URL}/workers?${params}`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const chunk = await res.json();
+            if (!Array.isArray(chunk) || chunk.length === 0) break;
+
+            allWorkers.push(...chunk);
+            after = chunk[chunk.length - 1].ID;
+        }
+        return allWorkers;
+    }
+
+    // === 4) Один работник ===
     const workerID = parts[0];
     const url = `${import.meta.env.VITE_BACKEND_URL}/workers/${workerID}?${commonParams}`;
     const res = await fetch(url, {

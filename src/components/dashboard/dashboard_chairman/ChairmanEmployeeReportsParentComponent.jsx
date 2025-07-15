@@ -3,13 +3,17 @@ import ChairmanReportCardsBlockInfo from './charts/CardCharts.jsx';
 import ChairmanReportFinanceBlockInfo from './charts/FinanceChart.jsx';
 import ReportTableEmployeesChairman from "./table_reports/TableReportsEmployees.jsx";
 
-const ChairmanEmployeeParentComponent = () => {
-    const [url, setUrl] = useState(''); // Состояние для URL
+const ChairmanEmployeeParentComponent = ({ workerId = null, year }) => {
+    const [url, setUrl] = useState('');
 
-    // Устанавливаем первую строку по умолчанию при загрузке
+    // Когда меняется workerId или год — формируем новый URL
     useEffect(() => {
-        handleSelect(''); // Симулируем выбор первой строки
-    }, []);
+        if (workerId) {
+            setUrl(`${workerId}/${year}`);
+        } else {
+            setUrl('');
+        }
+    }, [workerId, year]);
 
     const handleSelect = (newUrl) => {
         setUrl(newUrl);
@@ -17,7 +21,13 @@ const ChairmanEmployeeParentComponent = () => {
 
     return (
         <div>
-            <ReportTableEmployeesChairman onSelect={handleSelect} />
+            {/* Если передан workerId, ReportTableEmployeesChairman не рендерит таблицу, но всё равно шлёт onSelect */}
+            <ReportTableEmployeesChairman
+                onSelect={handleSelect}
+                workerId={workerId}
+            />
+
+            {/* Передаем в блоки актуальный url */}
             <ChairmanReportCardsBlockInfo key={`cards-${url}`} url={url} />
             <ChairmanReportFinanceBlockInfo key={`finance-${url}`} url={url} />
         </div>
