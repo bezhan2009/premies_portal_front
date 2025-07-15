@@ -319,7 +319,7 @@ function PdfViewer({ fileUrl }) {
 
     return (
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-            <div className="pdf-container" style={{ height: '600px' }}>
+            <div className="pdf-container" style={{ height: '1000px' }}>
                 <Viewer
                     fileUrl={fileUrl}
                     onDocumentLoadFail={(e) => {
