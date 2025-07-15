@@ -116,7 +116,7 @@ const TableReportsTest = ({ month, year }) => {
             onSearch={handleSearch}
             placeholder="Поиск по ФИО"
             searchFields={[
-              (item) => item.user?.Username || '',
+              (item) => item.user?.full_name || '',
             ]}
         />
 
@@ -132,7 +132,7 @@ const TableReportsTest = ({ month, year }) => {
               data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
 
-                const userName = row.user?.Username || '';
+                const userName = row.user?.full_name || '';
                 const tests = row.ServiceQuality?.[0]?.tests ?? '';
 
                 return (

@@ -10,11 +10,11 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { registerUser } from '../../api/auth';
 
 const ROLES = [
-    { id: 3, name: "Operator" },
-    { id: 5, name: "Director" },
-    { id: 6, name: "Card Seller" },
-    { id: 8, name: "Credit Seller" },
-    { id: 9, name: "Chairman" },
+    { id: 3, name: "Оператор" },
+    { id: 5, name: "Директор" },
+    { id: 6, name: "Карточник" },
+    { id: 8, name: "Кредитник" },
+    { id: 9, name: "Председатель" },
 ];
 
 export default function RegisterPage() {

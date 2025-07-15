@@ -15,19 +15,40 @@ export function calculateTotalPremia(worker) {
 
     const callCenter = service.call_center || 0;
     let callPercent = 0;
-    if (callCenter <= 7) callPercent = 0;
-    else if (callCenter <= 9) callPercent = 10;
-    else if (callCenter <= 10) callPercent = 20;
+
+    if (callCenter >= 0 && callCenter <= 1) {
+        callPercent = -30;
+    } else if (callCenter > 1 && callCenter <= 3) {
+        callPercent = -20;
+    } else if (callCenter > 3 && callCenter <= 5) {
+        callPercent = -10;
+    } else if (callCenter > 5 && callCenter <= 7) {
+        callPercent = 0;
+    } else if (callCenter > 7 && callCenter <= 9) {
+        callPercent = 10;
+    } else if (callCenter > 9 && callCenter <= 10) {
+        callPercent = 20;
+    }
 
     const tests = service.tests || 0;
     let testPercent = 0;
-    if (tests <= 6) testPercent = 0;
-    else if (tests <= 8) testPercent = 5;
-    else if (tests <= 9) testPercent = 10;
-    else if (tests <= 10) testPercent = 15;
+
+    if (tests >= 0 && tests <= 2) {
+        testPercent = -10;
+    } else if (tests > 2 && tests <= 4) {
+        testPercent = -5;
+    } else if (tests > 4 && tests <= 6) {
+        testPercent = 0;
+    } else if (tests > 6 && tests <= 8) {
+        testPercent = 5;
+    } else if (tests > 8 && tests <= 9) {
+        testPercent = 10;
+    } else if (tests > 9 && tests <= 10) {
+        testPercent = 15;
+    }
 
     const totalCoef = (callPercent + testPercent) / 100;
-    const calculatedPremia = basePremia + basePremia * totalCoef;
+    const calculatedPremia = basePremia * (1 + totalCoef);
 
     // Получаем максимально допустимую премию (1.5 от оклада)
     const maxAllowedPremia = worker.Salary * 1.5;
