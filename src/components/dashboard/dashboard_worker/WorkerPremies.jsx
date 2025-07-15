@@ -5,7 +5,9 @@ import '../../../styles/components/WorkerPremies.scss';
 import ReportButton from "./ReportButton.jsx";
 import Spinner from "../../Spinner.jsx";
 import AlertMessage from "../../general/AlertMessage.jsx";
-import {calculateTotalPremia} from "../../../api/utils/calculate_premia.js";
+import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
+import ChairmanEmployeeParentComponent from "../dashboard_chairman/ChairmanEmployeeReportsParentComponent.jsx";
+import RenderPage from "../../RenderPage.jsx";
 
 export default function Dashboard() {
     const now = new Date();
@@ -16,6 +18,7 @@ export default function Dashboard() {
     const [prevYear, setPrevYear] = useState(year);
 
     const [data, setData] = useState(null);
+    const [workerId, setWorkerId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [alert, setAlert] = useState(null);
 
@@ -44,6 +47,9 @@ export default function Dashboard() {
                 setData(null);
             } else {
                 setData(worker);
+                if (worker.ID) {
+                    setWorkerId(worker.ID);
+                }
             }
         } catch (e) {
             console.error(e);
@@ -148,16 +154,18 @@ export default function Dashboard() {
                         {
                             title: "Продажа карт и доп. продуктов",
                             rows: [
-                                {label: "Карты", value: `${safeArray(data.CardSales)[0]?.cards_prem || 0} TJS`},
+                                { label: "Карты", value: `${safeArray(data.CardSales)[0]?.cards_prem || 0} TJS` },
                                 {
                                     label: "Мобильный банк",
                                     value: `${safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0} TJS`
                                 },
-                                {label: "ЗП Проект", value: `${data.salary_project || 0} TJS`}
+                                { label: "ЗП Проект", value: `${data.salary_project || 0} TJS` }
                             ],
-                            sum: ((safeArray(data.CardSales)[0]?.cards_prem || 0) +
+                            sum: (
+                                (safeArray(data.CardSales)[0]?.cards_prem || 0) +
                                 (safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0) +
-                                (data.salary_project || 0)).toFixed(1) + " TJS"
+                                (data.salary_project || 0)
+                            ).toFixed(1) + " TJS"
                         },
                         {
                             title: "Обороты по картам",
@@ -171,23 +179,28 @@ export default function Dashboard() {
                                     value: `${safeArray(data.CardTurnovers)[0]?.active_cards_perms?.toFixed(3) || 0} TJS`
                                 }
                             ],
-                            sum: ((safeArray(data.CardTurnovers)[0]?.card_turnovers_prem || 0) +
-                                (safeArray(data.CardTurnovers)[0]?.active_cards_perms || 0)).toFixed(3) + " TJS"
+                            sum: (
+                                (safeArray(data.CardTurnovers)[0]?.card_turnovers_prem || 0) +
+                                (safeArray(data.CardTurnovers)[0]?.active_cards_perms || 0)
+                            ).toFixed(3) + " TJS"
                         },
                         {
                             title: "Качество обслуживания",
                             rows: [
                                 {
                                     label: "Средняя оценка",
-                                    value: `${(((safeArray(data.ServiceQuality)[0]?.call_center || 0) + (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2).toFixed(1)} Балла`
+                                    value: `${(
+                                        ((safeArray(data.ServiceQuality)[0]?.call_center || 0) +
+                                            (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2
+                                    ).toFixed(1)} Балла`
                                 },
-                                {label: "Жалобы + ОЗ", value: `${safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.`},
-                                {label: "Тесты", value: `${safeArray(data.ServiceQuality)[0]?.tests || 0} Балла`}
+                                { label: "Жалобы + ОЗ", value: `${safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.` },
+                                { label: "Тесты", value: `${safeArray(data.ServiceQuality)[0]?.tests || 0} Балла` }
                             ],
                             sum: null
                         }
                     ].map((section, index) => (
-                        <section key={index} className="card" style={{'--card-index': index}}>
+                        <section key={index} className="card" style={{ '--card-index': index }}>
                             <h3 className="card__title">{section.title}</h3>
                             {section.rows.map((row, rowIndex) => (
                                 <div key={rowIndex} className="card__row">
@@ -200,11 +213,18 @@ export default function Dashboard() {
                         </section>
                     ))}
                 </div>
+
+                <RenderPage pageKey="employees">
+                    <ChairmanEmployeeParentComponent
+                        workerId={workerId}
+                        year={year}
+                    />
+                </RenderPage>
             </div>
 
             <div className="dashboard__report">
-                <ReportButton navigateTo='/worker/reports' descButton='Отчет'/>
+                <ReportButton navigateTo='/worker/reports' descButton='Отчет' />
             </div>
         </>
-);
+    );
 }

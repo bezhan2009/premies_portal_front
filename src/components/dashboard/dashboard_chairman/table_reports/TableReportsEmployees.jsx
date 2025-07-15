@@ -5,12 +5,12 @@ import '../../../../styles/components/TablesChairman.scss';
 import '../../../../styles/pagination.scss';
 import SearchBar from "../../../general/SearchBar.jsx";
 import Spinner from "../../../Spinner.jsx";
-import {calculateTotalPremia} from "../../../../api/utils/calculate_premia.js";
-import {fetchEmployees} from "../../../../api/chairman/reports/employee.js";
+import { calculateTotalPremia } from "../../../../api/utils/calculate_premia.js";
+import { fetchEmployees } from "../../../../api/chairman/reports/employee.js";
 
 const ITEMS_PER_PAGE = 10;
 
-const ReportTableEmployeesChairman = ({ onSelect }) => {
+const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +21,19 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
   });
   const [selectedRow, setSelectedRow] = useState(null);
 
-  // Загружаем всех работников
+  // Если workerId передан → сразу формируем URL и ничего не рендерим
   useEffect(() => {
+    if (workerId) {
+      const url = `${workerId}/${dateFilter.year}`;
+      onSelect(url);
+    }
+  }, [workerId, dateFilter, onSelect]);
+
+  useEffect(() => {
+    if (workerId) {
+      // Не загружаем данные, если workerId уже есть
+      return;
+    }
     const loadAll = async () => {
       setLoading(true);
       let all = [];
@@ -46,7 +57,7 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
     };
 
     loadAll();
-  }, [dateFilter]);
+  }, [dateFilter, workerId]);
 
   const handleSearch = (filtered) => {
     if (!filtered || filtered.length === 0) {
@@ -59,9 +70,15 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
   };
 
   const handleRowClick = (worker) => {
+    const idToUse = workerId || worker.ID;
     setSelectedRow(worker.ID);
-    onSelect(`${worker.ID}/${dateFilter.year}`);
+    onSelect(`${idToUse}/${dateFilter.year}`);
   };
+
+  if (workerId) {
+    // Если workerId есть → ничего не рендерим (страница пустая)
+    return null;
+  }
 
   const paginatedData = filteredData.slice(
       (currentPage - 1) * ITEMS_PER_PAGE,
@@ -110,7 +127,7 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
                     width: "auto"
                   }}
               >
-                <Spinner/>
+                <Spinner />
               </div>
           ) : paginatedData.length === 0 ? (
               <h1>Нет данных</h1>
@@ -133,7 +150,7 @@ const ReportTableEmployeesChairman = ({ onSelect }) => {
                       <tr
                           key={worker.ID}
                           onClick={() => handleRowClick(worker)}
-                          style={{cursor: 'pointer'}}
+                          style={{ cursor: 'pointer' }}
                       >
                         <td>
                           <div

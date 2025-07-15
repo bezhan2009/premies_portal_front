@@ -28,6 +28,7 @@ const ReportTableCardsChairman = ({ onSelect }) => {
 
         // суммируем метрики по всему массиву
         let totalCards = 0;
+        let totalCardsGeneral = 0;
         let totalActive = 0;
         let totalDebit = 0;
         let totalCredit = 0;
@@ -40,12 +41,13 @@ const ReportTableCardsChairman = ({ onSelect }) => {
           totalCards   += Number(cs.cards_sailed)      || 0;
           totalDebit   += Number(cs.deb_osd)           || 0;
           totalCredit  += Number(cs.deb_osk)           || 0;
-          // используем out_balance, или in_balance как fallback
+          totalCardsGeneral += Number(cs.cards_sailed_in_general || 0);
           totalBalance += Number(cs.out_balance || 0);
         });
 
         setRow({
           concreteCards:       totalCards.toLocaleString(),
+          concreteCardsGeneral:totalCardsGeneral.toLocaleString(),
           concreteActiveCards: totalActive.toLocaleString(),
           overdraftDebt:       totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 }),
           overdraftCredit:     totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 }),
@@ -90,7 +92,8 @@ const ReportTableCardsChairman = ({ onSelect }) => {
               <table className="table-reports">
                 <thead>
                 <tr>
-                  <th>Количество карт</th>
+                  <th>Выдано в этом месяце</th>
+                  <th>Всего карт</th>
                   <th>Конкретно активных карт</th>
                   <th>Оборот по дебету</th>
                   <th>Оборот по кредиту</th>
@@ -99,6 +102,7 @@ const ReportTableCardsChairman = ({ onSelect }) => {
                 </thead>
                 <tbody>
                 <tr>
+                  <td>{row.concreteCardsGeneral}</td>
                   <td>{row.concreteCards}</td>
                   <td>{row.concreteActiveCards}</td>
                   <td>{row.overdraftDebt}</td>
