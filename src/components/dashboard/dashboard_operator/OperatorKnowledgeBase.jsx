@@ -217,6 +217,35 @@ function KnowledgeDocsList({ docs, knowledgeId, onEdit, onDelete }) {
         onEdit('knowledge_doc', { knowledge_id: knowledgeId });
     };
 
+    const handleDownload = async (doc) => {
+        try {
+            // Если у тебя есть специальный эндпоинт скачивания — используй его, например:
+            // const res = await fetch(`${baseURL}/knowledge/docs/${doc.ID}/download`, {
+            //     headers: { Authorization: `Bearer ${token}` }
+            // });
+
+            // В твоем случае достаточно обычного file_path:
+            const url = `${baseURL}/${doc.file_path.replace(/\\/g, '/')}`;
+
+            const res = await fetch(url, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+            });
+
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+
+            const blob = await res.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = doc.title || 'document.pdf';
+            link.click();
+            window.URL.revokeObjectURL(link.href);
+        } catch (e) {
+            alert('Не удалось скачать файл: ' + e.message);
+        }
+    };
+
     return (
         <>
             <div className="kb-docs-list-header">
@@ -258,6 +287,12 @@ function KnowledgeDocsList({ docs, knowledgeId, onEdit, onDelete }) {
                                         <span
                                             onClick={e => {
                                                 e.stopPropagation();
+                                                handleDownload(doc);
+                                            }}
+                                        >⬇️</span>
+                                        <span
+                                            onClick={e => {
+                                                e.stopPropagation();
                                                 onDelete(`/knowledge/docs/${doc.ID}`);
                                             }}
                                         >🗑️</span>
@@ -275,6 +310,7 @@ function KnowledgeDocsList({ docs, knowledgeId, onEdit, onDelete }) {
         </>
     );
 }
+
 
 function PdfViewer({ fileUrl }) {
     if (!fileUrl) {
