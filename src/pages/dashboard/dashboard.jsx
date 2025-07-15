@@ -19,7 +19,7 @@ function RedirectDashboard() {
       navigate('/operator/premies');
     } else if (roleId === 6 || roleId === 8) {
       navigate('/worker/cards');
-    } else if (roleId === 9) {
+    } else if (roleId === 9 || roleId === 5) {
       navigate('/chairman/reports');
     } else {
       navigate('/404');

@@ -4,6 +4,8 @@ export default function RequireRole({ allowedRoles, children }) {
     const location = useLocation();
     const roleId = Number(localStorage.getItem('role_id'));
 
+    console.log("roles", roleId)
+
     if (!roleId) {
         // Если нет роли — считаем, что не авторизован
         return <Navigate to="/login" state={{ from: location }} replace />;
