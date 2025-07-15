@@ -244,7 +244,7 @@ const TablePremies = ({ month, year }) => {
                   <td>{w.plan}</td>
                   <td>{card_sales.cards_sailed}</td>
                   <td>{card_sales.cards_sailed_in_general}</td>
-                  <td>{mobile_bank.mobile_bank_prem}</td>
+                  <td>{mobile_bank.mobile_bank_connects}</td>
                   <td>{w.salary_project}</td>
                   <td>{card_sales.deb_osd}</td>
                   <td>{card_sales.out_balance}</td>
