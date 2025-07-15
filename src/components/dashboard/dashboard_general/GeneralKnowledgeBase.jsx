@@ -94,6 +94,25 @@ function KnowledgeDocsList({ docs }) {
     const [selectedDocId, setSelectedDocId] = useState(null);
     const [selectedDocUrl, setSelectedDocUrl] = useState(null);
 
+    const handleDownload = async (doc) => {
+        try {
+            const url = `${baseURL}/${doc.file_path.replace(/\\/g, '/')}`;
+            const res = await fetch(url, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+            });
+            if (!res.ok) throw new Error(await res.text());
+
+            const blob = await res.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = doc.title || 'document.pdf';
+            link.click();
+            window.URL.revokeObjectURL(link.href);
+        } catch (e) {
+            alert(`Не удалось скачать файл: ${e.message}`);
+        }
+    };
+
     if (!docs.length) {
         return <p>Документы отсутствуют</p>;
     }
@@ -116,6 +135,17 @@ function KnowledgeDocsList({ docs }) {
                         >
                             <img src={fileLogo} width="30px" alt="" />
                             <span className="doc-label">{doc.title}</span>
+
+                            <span
+                                className="kb-download-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownload(doc);
+                                }}
+                                style={{ marginLeft: '10px', cursor: 'pointer' }}
+                            >
+                                ⬇️
+                            </span>
                         </li>
                     );
                 })}
@@ -128,16 +158,14 @@ function KnowledgeDocsList({ docs }) {
     );
 }
 
-
 function PdfViewer({ fileUrl }) {
-    console.log(fileUrl)
     if (!fileUrl) {
         return <p>Выберите документ для просмотра</p>;
     }
 
     return (
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-            <div className="pdf-container" style={{ height: '600px' /* adjust as needed */ }}>
+            <div className="pdf-container" style={{ height: '600px' }}>
                 <Viewer
                     fileUrl={fileUrl}
                     onDocumentLoadFail={(e) => {
