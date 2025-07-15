@@ -184,7 +184,7 @@ const TableReportsCards = ({ month, year }) => {
                         key={row.ID}
                         ref={isLast && !isSearching ? lastElementRef : null}
                     >
-                      <td>{row.worker?.user?.Username || ''}</td>
+                      <td>{row.worker?.user?.full_name || ''}</td>
                       <td>{row.card_type || ''}</td>
                       <td>{row.code || ''}</td>
                       <td>{row.debt_osd || ''}</td>

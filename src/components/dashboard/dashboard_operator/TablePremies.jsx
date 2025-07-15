@@ -231,7 +231,7 @@ const TablePremies = ({ month, year }) => {
                 <tr key={w.ID} ref={isLast ? lastRowRef : null}>
                   <td>
                     <div className="fio-cell">
-                      <span className="fio-text">{user.Username}</span>
+                      <span className="fio-text">{user.full_name}</span>
                       <button
                           className="download-report-btn"
                           title="Скачать отчет рабочего"

@@ -132,7 +132,7 @@ const TableReportsKc = ({ month, year }) => {
               data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
 
-                const userName = row.user?.Username || '';
+                const userName = row.user?.full_name || '';
                 const call_center = row.ServiceQuality?.[0]?.call_center ?? '';
 
                 return (

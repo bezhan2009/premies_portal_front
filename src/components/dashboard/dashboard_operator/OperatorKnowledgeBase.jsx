@@ -181,33 +181,41 @@ function KnowledgeBaseDetail({ data, onAdd, onDelete }) {
 
             {sel && Array.isArray(sel.knowledge_docs) && (
                 <div className="kb-docs-and-viewer">
-                    <KnowledgeDocsList docs={sel.knowledge_docs} onEdit={onAdd} onDelete={onDelete} />
+                    <KnowledgeDocsList
+                        docs={sel.knowledge_docs}
+                        knowledgeId={sel.ID}
+                        onEdit={onAdd}
+                        onDelete={onDelete}
+                    />
+                </div>
+            )}
+
+            {!sel && (
+                <div className="kb-docs-and-viewer">
+                    {/* если knowledge не выбран — кнопка все равно видна */}
+                    <KnowledgeDocsList
+                        docs={[]}
+                        knowledgeId={null}
+                        onEdit={onAdd}
+                        onDelete={onDelete}
+                    />
                 </div>
             )}
         </div>
     );
 }
 
-function KnowledgeDocsList({ docs, onEdit, onDelete }) {
+function KnowledgeDocsList({ docs, knowledgeId, onEdit, onDelete }) {
     const [selectedDocId, setSelectedDocId] = useState(null);
     const [selectedDocUrl, setSelectedDocUrl] = useState(null);
 
-    if (!docs.length) {
-        return (
-            <>
-                <div className="kb-docs-list-header">
-                    <h3>Документы</h3>
-                    <button
-                        className="kb-add-btn"
-                        onClick={() => onEdit('knowledge_doc', { knowledge_id: docs[0]?.knowledge_id })}
-                    >
-                        + Добавить документ
-                    </button>
-                </div>
-                <p>Документы отсутствуют</p>
-            </>
-        );
-    }
+    const handleAddDoc = () => {
+        if (!knowledgeId) {
+            alert('Сначала выберите элемент Knowledge, чтобы добавить документ.');
+            return;
+        }
+        onEdit('knowledge_doc', { knowledge_id: knowledgeId });
+    };
 
     return (
         <>
@@ -215,50 +223,55 @@ function KnowledgeDocsList({ docs, onEdit, onDelete }) {
                 <h3>Документы</h3>
                 <button
                     className="kb-add-btn"
-                    onClick={() => onEdit('knowledge_doc', { knowledge_id: docs[0].knowledge_id })}
+                    onClick={handleAddDoc}
                 >
                     + Добавить документ
                 </button>
             </div>
-            <ul className="kb-docs-list">
-                {docs.map(doc => {
-                    const url = `${baseURL}/${doc.file_path.replace(/\\/g, '/')}`;
-                    const isActive = doc.ID === selectedDocId;
+            {docs.length === 0 && <p>Документы отсутствуют</p>}
+            {docs.length > 0 && (
+                <>
+                    <ul className="kb-docs-list">
+                        {docs.map(doc => {
+                            const url = `${baseURL}/${doc.file_path.replace(/\\/g, '/')}`;
+                            const isActive = doc.ID === selectedDocId;
 
-                    return (
-                        <li
-                            key={doc.ID}
-                            className={`kb-doc-item ${isActive ? 'active' : ''}`}
-                            onClick={() => {
-                                setSelectedDocId(doc.ID);
-                                setSelectedDocUrl(url);
-                            }}
-                        >
-                            <img src={fileLogo} width="30px" alt="" />
-                            <span className="doc-label">{doc.title}</span>
-
-                            <div className="kb-doc-actions">
-                                <span
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        onEdit('knowledge_doc', doc);
+                            return (
+                                <li
+                                    key={doc.ID}
+                                    className={`kb-doc-item ${isActive ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setSelectedDocId(doc.ID);
+                                        setSelectedDocUrl(url);
                                     }}
-                                >✏️</span>
-                                <span
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        onDelete(`/knowledge/docs/${doc.ID}`);
-                                    }}
-                                >🗑️</span>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ul>
+                                >
+                                    <img src={fileLogo} width="30px" alt="" />
+                                    <span className="doc-label">{doc.title}</span>
 
-            <div className="kb-pdf-viewer">
-                <PdfViewer fileUrl={selectedDocUrl} />
-            </div>
+                                    <div className="kb-doc-actions">
+                                        <span
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                onEdit('knowledge_doc', doc);
+                                            }}
+                                        >✏️</span>
+                                        <span
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                onDelete(`/knowledge/docs/${doc.ID}`);
+                                            }}
+                                        >🗑️</span>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+
+                    <div className="kb-pdf-viewer">
+                        <PdfViewer fileUrl={selectedDocUrl} />
+                    </div>
+                </>
+            )}
         </>
     );
 }
@@ -288,7 +301,11 @@ function ModalEditor({ data, onClose, onSave, baseId }) {
     const [file, setFile] = useState(null);
     useEffect(() => { setForm(data.data || {}); }, [data]);
 
-    const handleChange = e => { const { name, value } = e.target; setForm(prev => ({ ...prev, [name]: value })); };
+    const handleChange = e => {
+        const { name, value } = e.target;
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
+
     const handleSubmit = () => {
         let endpoint = '', payload, isFormData = false, isUpdate = false;
         if (data.entity === 'knowledge_base') {
@@ -299,14 +316,18 @@ function ModalEditor({ data, onClose, onSave, baseId }) {
         if (data.entity === 'knowledge') {
             isUpdate = !!form.ID;
             endpoint = isUpdate ? `/knowledge/${form.ID}` : '/knowledge';
-            payload = { title: form.title, description: form.description, knowledge_base_id: form.knowledge_base_id || baseId };
+            payload = {
+                title: form.title,
+                description: form.description,
+                knowledge_base_id: form.knowledge_base_id || baseId
+            };
         }
         if (data.entity === 'knowledge_doc') {
             isUpdate = !!form.ID;
             endpoint = isUpdate ? `/knowledge/docs/${form.ID}` : '/knowledge/docs';
             payload = new FormData();
             payload.append('title', form.title);
-            payload.append('knowledge_id', form.knowledge_id);
+            payload.append('knowledge_id', form.knowledge_id || data.data.knowledge_id);
             if (file) payload.append('file', file);
             isFormData = true;
         }
@@ -319,9 +340,19 @@ function ModalEditor({ data, onClose, onSave, baseId }) {
                 <h3>{form.ID ? 'Редактировать' : 'Создать'} {data.entity.replace('_', ' ')}</h3>
                 <div className="kb-modal-content">
                     <label>Название</label>
-                    <input name="title" value={form.title||''} onChange={handleChange} />
-                    {data.entity === 'knowledge' && <><label>Описание</label><textarea name="description" value={form.description||''} onChange={handleChange} /></>}
-                    {data.entity === 'knowledge_doc' && <><label>Файл</label><input type="file" onChange={e => setFile(e.target.files[0])} /></>}
+                    <input name="title" value={form.title || ''} onChange={handleChange} />
+                    {data.entity === 'knowledge' && (
+                        <>
+                            <label>Описание</label>
+                            <textarea name="description" value={form.description || ''} onChange={handleChange} />
+                        </>
+                    )}
+                    {data.entity === 'knowledge_doc' && (
+                        <>
+                            <label>Файл</label>
+                            <input type="file" onChange={e => setFile(e.target.files[0])} />
+                        </>
+                    )}
                 </div>
                 <div className="kb-modal-actions">
                     <button onClick={handleSubmit}>Сохранить</button>
