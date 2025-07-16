@@ -275,7 +275,7 @@ const TablePremies = ({ month, year }) => {
         {showDownloadModal && (
             <div className="filters__modal">
               <div className="filters__modal-content">
-                <h3>Выгрузка отчёта для {downloadUser?.Username}</h3>
+                <h3>Выгрузка отчёта для {downloadUser?.full_name}</h3>
 
                 <div className="filters__date-selection">
                   <select

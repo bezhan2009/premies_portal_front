@@ -9,9 +9,9 @@ import {
 } from 'recharts';
 import '../../../../styles/components/ChartComponents.scss';
 import CustomCardsTooltip from './CustomCardsTooltip.jsx';
-import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js";
-import { getMonthName } from "../../../../api/utils/date.js";
-import Spinner from "../../../Spinner.jsx";
+import { fetchEmployee } from '../../../../api/chairman/reports/employee_spec.js';
+import { getMonthName } from '../../../../api/utils/date.js';
+import Spinner from '../../../Spinner.jsx';
 
 const ChartReportCards = ({ url }) => {
     const [chartData, setChartData] = useState([]);
@@ -27,31 +27,52 @@ const ChartReportCards = ({ url }) => {
             setLoading(true);
             const allMonths = [];
 
+            let prev = null;
+
             for (let m = 1; m <= 12; m++) {
                 try {
                     const list = await fetchEmployee(m, url) || [];
 
-                    // суммируем метрики по всем элементам массива
-                    let sumAct = 0, sumAll = 0, sumGen = 0;
+                    let sumAct = 0, sumFor = 0, sumGen = 0;
                     list.forEach(w => {
                         const t = w.CardTurnovers?.[0];
                         if (t) sumAct += Number(t.activated_cards) || 0;
                         const s = w.CardSales?.[0];
                         if (s) {
-                            sumAll += Number(s.cards_sailed) || 0;
+                            // Используем cards_for_month вместо cards_sailed
+                            sumFor += Number(s.cards_for_month) || Number(s.cards_sailed) || 0;
                             sumGen += Number(s.cards_sailed_in_general) || 0;
                         }
                     });
 
-                    // извлекаем имя из первой записи
+                    const current = {
+                        activeCards: sumAct,
+                        monthlyCards: sumFor,
+                        generalCards: sumGen,
+                    };
+
+                    let values = current;
+                    if (prev &&
+                        prev.activeCards === current.activeCards &&
+                        prev.generalCards === current.generalCards
+                    ) {
+                        values = {
+                            activeCards: 0,
+                            monthlyCards: 0,
+                            generalCards: 0,
+                        };
+                    } else {
+                        prev = current;
+                    }
+
                     const first = list[0] || {};
-                    const fullName = first.user?.full_name || first.Username || "";
+                    const fullName = first.user?.full_name || first.Username || '';
 
                     allMonths.push({
                         name: getMonthName(m),
-                        activeCards: sumAct,
-                        allCards: sumAll,
-                        generalCards: sumGen,
+                        activeCards: values.activeCards,
+                        monthlyCards: values.monthlyCards,
+                        generalCards: values.generalCards,
                         full_name: fullName
                     });
                 } catch (e) {
@@ -59,9 +80,9 @@ const ChartReportCards = ({ url }) => {
                     allMonths.push({
                         name: getMonthName(m),
                         activeCards: 0,
-                        allCards: 0,
+                        monthlyCards: 0,
                         generalCards: 0,
-                        full_name: ""
+                        full_name: ''
                     });
                 }
             }
@@ -95,7 +116,7 @@ const ChartReportCards = ({ url }) => {
         <div className="chart-wrapper light-theme">
             <div style={{ textAlign: 'center' }}>
                 <h2>Статистика по картам {chartData[0].full_name}</h2>
-                <p>Активные, все и общие карты по месяцам</p>
+                <p>Активные, выдано и общие карты по месяцам</p>
             </div>
             <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={chartData}>
@@ -104,7 +125,7 @@ const ChartReportCards = ({ url }) => {
                             <stop offset="0%" stopColor="#6ce5e8" stopOpacity={0.8} />
                             <stop offset="100%" stopColor="#6ce5e8" stopOpacity={0.1} />
                         </linearGradient>
-                        <linearGradient id="allGradient" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="forGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#41b8d5" stopOpacity={0.8} />
                             <stop offset="100%" stopColor="#41b8d5" stopOpacity={0.1} />
                         </linearGradient>
@@ -119,9 +140,9 @@ const ChartReportCards = ({ url }) => {
 
                     <Tooltip content={<CustomCardsTooltip />} cursor={{ stroke: '#41b8d5', strokeWidth: 1 }} />
 
-                    <Area type="monotone" dataKey="allCards" name="Все карты" stroke="#41b8d5" fill="url(#allGradient)" strokeWidth={3} dot={{ stroke: '#41b8d5', strokeWidth: 2, r: 3 }} />
-                    <Area type="monotone" dataKey="activeCards" name="Активные карты" stroke="#6ce5e8" fill="url(#activeGradient)" strokeWidth={3} dot={{ stroke: '#6ce5e8', strokeWidth: 2, r: 3 }} />
                     <Area type="monotone" dataKey="generalCards" name="Карт в общем" stroke="#417cd5" fill="url(#genGradient)" strokeWidth={3} dot={{ stroke: '#417cd5', strokeWidth: 2, r: 3 }} />
+                    <Area type="monotone" dataKey="monthlyCards" name="Выдано в этом месяце" stroke="#41b8d5" fill="url(#forGradient)" strokeWidth={3} dot={{ stroke: '#41b8d5', strokeWidth: 2, r: 3 }} />
+                    <Area type="monotone" dataKey="activeCards" name="Активные карты" stroke="#6ce5e8" fill="url(#activeGradient)" strokeWidth={3} dot={{ stroke: '#6ce5e8', strokeWidth: 2, r: 3 }} />
                 </AreaChart>
             </ResponsiveContainer>
         </div>

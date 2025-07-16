@@ -8,50 +8,46 @@ import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js
 const ReportTableCardsChairman = ({ onSelect }) => {
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
-    year: new Date().getFullYear()
+    year:  new Date().getFullYear(),
   });
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Каждый раз при изменении фильтра подтягиваем данные
     const loadData = async () => {
       setLoading(true);
       try {
-        // используем URL вида '*/2025' для агрегации по всем офисам
-        const url = `*/${dateFilter.year}`;
-        // поднимаем его наверх для графика
-        onSelect && onSelect(url);
+        const url = `*/${dateFilter.year}/stats`;
+        onSelect?.(url);
 
-        // получаем массив агрегированных записей
         const list = await fetchEmployee(dateFilter.month, url) || [];
+        const statObj = list[0] || { CardSales: [{}], CardTurnovers: [{}] };
+        const sales = statObj.CardSales[0] || {};
+        const turns = statObj.CardTurnovers[0] || {};
 
-        // суммируем метрики по всему массиву
-        let totalCards = 0;
-        let totalCardsGeneral = 0;
-        let totalActive = 0;
-        let totalDebit = 0;
-        let totalCredit = 0;
-        let totalBalance = 0;
+        // Если cards_for_month равен 0, обнуляем все показатели
+        let cardsForMonth = sales.cards_for_month ?? 0;
+        let activatedCards = turns.activated_cards ?? 0;
+        let debtOsd = sales.deb_osd ?? 0;
+        let debtOsk = sales.deb_osk ?? 0;
+        let outBalance = sales.out_balance ?? 0;
+        let cardsInGeneral = sales.cards_sailed_in_general ?? 0;
 
-        list.forEach(item => {
-          const ct = item.CardTurnovers?.[0] || {};
-          const cs = item.CardSales?.[0]    || {};
-          totalActive  += Number(ct.activated_cards)   || 0;
-          totalCards   += Number(cs.cards_sailed)      || 0;
-          totalDebit   += Number(cs.deb_osd)           || 0;
-          totalCredit  += Number(cs.deb_osk)           || 0;
-          totalCardsGeneral += Number(cs.cards_sailed_in_general || 0);
-          totalBalance += Number(cs.out_balance || 0);
-        });
+        if (cardsForMonth === 0) {
+          activatedCards = 0;
+          debtOsd = 0;
+          debtOsk = 0;
+          outBalance = 0;
+          cardsInGeneral = 0;
+        }
 
         setRow({
-          concreteCards:       totalCards.toLocaleString(),
-          concreteCardsGeneral:totalCardsGeneral.toLocaleString(),
-          concreteActiveCards: totalActive.toLocaleString(),
-          overdraftDebt:       totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          overdraftCredit:     totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          balanceCards:        totalBalance.toLocaleString(),
+          concreteCards:        cardsForMonth.toLocaleString(),
+          concreteCardsGeneral: cardsInGeneral.toLocaleString(),
+          concreteActiveCards:  activatedCards.toLocaleString(),
+          overdraftDebt:        debtOsd.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+          overdraftCredit:      debtOsk.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+          balanceCards:         outBalance.toLocaleString(),
         });
       } catch (err) {
         console.error(err);
@@ -76,19 +72,17 @@ const ReportTableCardsChairman = ({ onSelect }) => {
           </div>
 
           {loading ? (
-              <div
-                  style={{
-                    transform: 'scale(2)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: '100px',
-                    width: 'auto',
-                  }}
-              >
+              <div style={{
+                transform:   'scale(2)',
+                display:     'flex',
+                justifyContent: 'center',
+                alignItems:  'center',
+                marginBottom:  '100px',
+                width:        'auto',
+              }}>
                 <Spinner />
               </div>
-          ) : row ? (
+          ) : (
               <table className="table-reports">
                 <thead>
                 <tr>
@@ -102,26 +96,15 @@ const ReportTableCardsChairman = ({ onSelect }) => {
                 </thead>
                 <tbody>
                 <tr>
-                  <td>{row.concreteCardsGeneral}</td>
-                  <td>{row.concreteCards}</td>
-                  <td>{row.concreteActiveCards}</td>
-                  <td>{row.overdraftDebt}</td>
-                  <td>{row.overdraftCredit}</td>
-                  <td>{row.balanceCards}</td>
+                  <td>{row?.concreteCardsGeneral ?? '0'}</td>
+                  <td>{row?.concreteCards        ?? '0'}</td>
+                  <td>{row?.concreteActiveCards   ?? '0'}</td>
+                  <td>{row?.overdraftDebt         ?? '0.00'}</td>
+                  <td>{row?.overdraftCredit       ?? '0.00'}</td>
+                  <td>{row?.balanceCards          ?? '0'}</td>
                 </tr>
                 </tbody>
               </table>
-          ) : (
-              <div style={{
-                padding: '10px',
-                color: '#555',
-                fontSize: '16px',
-                textAlign: 'center',
-                backgroundColor: '#f0f0f0',
-                borderRadius: '4px'
-              }}>
-                Нет данных за выбранный период
-              </div>
           )}
         </div>
       </div>
