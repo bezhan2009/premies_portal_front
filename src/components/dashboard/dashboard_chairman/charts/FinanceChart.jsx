@@ -113,8 +113,8 @@ const ChartReportFinance = ({ url }) => {
                             <stop offset="100%" stopColor="#ff8a41" stopOpacity={0.1} />
                         </linearGradient>
                         <linearGradient id="creditGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#d9d9d9" stopOpacity={0.8} />
-                            <stop offset="100%" stopColor="#d9d9d9" stopOpacity={0.1} />
+                            <stop offset="0%" stopColor="#0ea820" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#0ea820" stopOpacity={0.1} />
                         </linearGradient>
                         <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#8c52ff" stopOpacity={0.8} />
@@ -154,10 +154,10 @@ const ChartReportFinance = ({ url }) => {
                         type="monotone"
                         dataKey="credit"
                         name="Кредит"
-                        stroke="#d9d9d9"
+                        stroke="#0ea820"
                         fill="url(#creditGradient)"
                         strokeWidth={3}
-                        dot={{ stroke: '#d9d9d9', strokeWidth: 2, r: 3 }}
+                        dot={{ stroke: '#0ea820', strokeWidth: 2, r: 3 }}
                     />
                     <Area
                         type="monotone"

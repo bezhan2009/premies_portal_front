@@ -1,5 +1,14 @@
 import React from 'react';
 
+function formatNumber(value) {
+    if (value == null || isNaN(value)) return "0.00";
+
+    return Number(value)
+        .toFixed(0)
+        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+        .replace(".", ".");
+}
+
 const CustomFinanceTooltip = ({ active, payload, label }) => {
     return (
         <div
@@ -17,9 +26,9 @@ const CustomFinanceTooltip = ({ active, payload, label }) => {
             }}
         >
             <div style={{ fontWeight: "bold", fontSize: "13px", marginBottom: "6px" }}>{label}</div>
-            <div><span style={{ color: "#ff8a41" }}>Дебет:</span> {payload?.[0]?.value}</div>
-            <div><span style={{ color: "#d9d9d9" }}>Кредит:</span> {payload?.[1]?.value}</div>
-            <div><span style={{ color: "#8c52ff" }}>Остатки:</span> {payload?.[2]?.value}</div>
+            <div><span style={{ color: "#ff8a41" }}>Дебет:</span> {formatNumber(payload?.[0]?.value)}</div>
+            <div><span style={{ color: "#0ea820" }}>Кредит:</span> {formatNumber(payload?.[1]?.value)}</div>
+            <div><span style={{ color: "#8c52ff" }}>Остатки:</span> {formatNumber(payload?.[2]?.value)}</div>
         </div>
     );
 };
