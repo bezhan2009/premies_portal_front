@@ -102,7 +102,7 @@ const ChartReportCards = ({ url }) => {
 
     if (!url) return (
         <div style={{ padding: '10px', color: '#555', fontSize: '16px', textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px' }}>
-            Выберите сотрудника
+            Выберите отделения/сотрудника
         </div>
     );
 
