@@ -34,16 +34,24 @@ const ChartReportCards = ({ url }) => {
                     const list = await fetchEmployee(m, url) || [];
 
                     let sumAct = 0, sumFor = 0, sumGen = 0;
+
                     list.forEach(w => {
-                        const t = w.CardTurnovers?.[0];
-                        if (t) sumAct += Number(t.activated_cards) || 0;
-                        const s = w.CardSales?.[0];
-                        if (s) {
-                            // Используем cards_for_month вместо cards_sailed
-                            sumFor += Number(s.cards_for_month) || Number(s.cards_sailed) || 0;
-                            sumGen += Number(s.cards_sailed_in_general) || 0;
+                        // Суммируем все turnovers
+                        if (Array.isArray(w.CardTurnovers)) {
+                            w.CardTurnovers.forEach(t => {
+                                sumAct += Number(t?.activated_cards || 0);
+                            });
+                        }
+
+                        // Суммируем все sales
+                        if (Array.isArray(w.CardSales)) {
+                            w.CardSales.forEach(s => {
+                                sumFor += Number(s?.cards_for_month || s?.cards_sailed || 0);
+                                sumGen += Number(s?.cards_sailed_in_general || 0);
+                            });
                         }
                     });
+
 
                     const current = {
                         activeCards: sumAct,

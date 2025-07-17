@@ -8,6 +8,15 @@ import Spinner from "../../../Spinner.jsx";
 import { calculateTotalPremia } from "../../../../api/utils/calculate_premia.js";
 import { fetchEmployees } from "../../../../api/chairman/reports/employee.js";
 
+function formatNumber(value) {
+  if (value == null || isNaN(value)) return "0,00";
+
+  return Number(value)
+      .toFixed(0)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+      .replace(".", ",");
+}
+
 const ITEMS_PER_PAGE = 10;
 
 const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
@@ -138,8 +147,9 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                   <tr>
                     <th>Выберите</th>
                     <th>ФИО</th>
-                    <th>Количество карт</th>
-                    <th>Количество активных карт</th>
+                    <th>Всего карт до текущего периода</th>
+                    <th>Выдано карт в текущем периоде</th>
+                    <th>Активных карт за текущий период</th>
                     <th>Обороты по дебету</th>
                     <th>Обороты по кредиту</th>
                     <th>Премия</th>
@@ -150,7 +160,7 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                       <tr
                           key={worker.ID}
                           onClick={() => handleRowClick(worker)}
-                          style={{ cursor: 'pointer' }}
+                          style={{cursor: 'pointer'}}
                       >
                         <td>
                           <div
@@ -158,19 +168,12 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                           ></div>
                         </td>
                         <td>{worker.user?.full_name || ''}</td>
-                        <td>{worker.CardSales && worker.CardSales.length > 0
-                            ? worker.CardSales[0].cards_sailed : 0}</td>
-                        <td>{worker.CardTurnovers && worker.CardTurnovers.length > 0
-                            ? worker.CardTurnovers[0].activated_cards : 0}</td>
-                        <td>
-                          {worker.CardSales && worker.CardSales.length > 0
-                              ? worker.CardSales[0].deb_osd : 0}
-                        </td>
-                        <td>
-                          {worker.CardSales && worker.CardSales.length > 0
-                              ? worker.CardSales[0].deb_osk : 0}
-                        </td>
-                        <td>{calculateTotalPremia(worker)?.toFixed(3)}</td>
+                        <td>{formatNumber(worker.CardSales?.[0]?.cards_sailed_in_general || 0)}</td>
+                        <td>{formatNumber(worker.CardSales?.[0]?.cards_sailed || 0)}</td>
+                        <td>{formatNumber(worker.CardTurnovers?.[0]?.activated_cards || 0)}</td>
+                        <td>{formatNumber(worker.CardSales?.[0]?.deb_osd || 0)}</td>
+                        <td>{formatNumber(worker.CardSales?.[0]?.deb_osk || 0)}</td>
+                        <td>{formatNumber(calculateTotalPremia(worker))}</td>
                       </tr>
                   ))}
                   </tbody>

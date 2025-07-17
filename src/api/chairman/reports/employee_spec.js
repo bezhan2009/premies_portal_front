@@ -4,7 +4,6 @@ export const fetchEmployee = async (month, employeeURL) => {
     const parts = employeeURL.split("/");
     const token = localStorage.getItem("access_token");
 
-    // Общие query-параметры
     const commonParams = new URLSearchParams({
         month: String(month),
         year: parts[1] || "",
@@ -54,10 +53,9 @@ export const fetchEmployee = async (month, employeeURL) => {
                 exist.deb_osd += cs.deb_osd;
                 exist.deb_osk += cs.deb_osk;
                 exist.out_balance += cs.out_balance;
-                // Важно: сохраняем оба поля
+                exist.cards_sailed += cs.cards_sailed ?? 0;
                 exist.cards_sailed_in_general += cs.cards_sailed_in_general ?? 0;
                 exist.cards_for_month += cs.cards_for_month ?? 0;
-                exist.cards_sailed += cs.cards_sailed ?? 0;
                 exist.cards_prem += cs.cards_prem ?? 0;
             });
         });
@@ -73,40 +71,57 @@ export const fetchEmployee = async (month, employeeURL) => {
         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const stats = await res.json();
+
+        const cards_for_month = stats.cards_for_month || 0;
         const transformed = {
             ID: 0,
             Username: "Статистика за месяц",
-            CardTurnovers: [{ activated_cards: stats.activated_cards || 0, card_turnovers_prem: 0, WorkerID: 0 }],
+            CardTurnovers: [{
+                activated_cards: cards_for_month === 0 ? 0 : (stats.activated_cards || 0),
+                card_turnovers_prem: 0,
+                WorkerID: 0
+            }],
             CardSales: [{
-                deb_osd: stats.debt_osd || 0,
-                deb_osk: stats.debt_osk || 0,
-                out_balance: stats.out_balance || 0,
-                cards_for_month: stats.cards_for_month || 0,
-                cards_sailed: stats.cards_in_general || 0,
-                cards_sailed_in_general: stats.cards_in_general || 0,
+                deb_osd: cards_for_month === 0 ? 0 : (stats.debt_osd || 0),
+                deb_osk: cards_for_month === 0 ? 0 : (stats.debt_osk || 0),
+                out_balance: cards_for_month === 0 ? 0 : (stats.out_balance || 0),
+                cards_for_month,
+                cards_sailed: cards_for_month === 0 ? 0 : (stats.cards_in_general || 0),
+                cards_sailed_in_general: cards_for_month === 0 ? 0 : (stats.cards_in_general || 0),
                 cards_prem: 0,
                 WorkerID: 0
             }]
         };
+
         return [transformed];
     }
 
-    // === 2) По офисам или ALL ===
+    // === По всем офисам или по ALL ===
     if (parts[0] === "*") {
-        // Если это агрегация по офисам
         if (parts[2] === "office" || parts.length === 2) {
             const url = `${import.meta.env.VITE_BACKEND_URL}/office?${commonParams}`;
             const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const offices = await res.json();
             const officeAggs = offices.map(aggregateOfficeUsers);
-            const combined = { ID: 0, Username: "Актив Банк", CardTurnovers: [], CardSales: [] };
+
+            const combined = {
+                ID: 0,
+                Username: "Актив Банк",
+                CardTurnovers: [],
+                CardSales: []
+            };
+
             officeAggs.forEach(agg => {
                 agg.CardTurnovers.forEach(ct => {
                     const exist = combined.CardTurnovers.find(x => x.WorkerID === ct.WorkerID);
                     if (!exist) combined.CardTurnovers.push({ ...ct });
-                    else { exist.activated_cards += ct.activated_cards; exist.card_turnovers_prem += ct.card_turnovers_prem; }
+                    else {
+                        exist.activated_cards += ct.activated_cards;
+                        exist.card_turnovers_prem += ct.card_turnovers_prem;
+                    }
                 });
+
                 agg.CardSales.forEach(cs => {
                     const exist = combined.CardSales.find(x => x.WorkerID === cs.WorkerID);
                     if (!exist) combined.CardSales.push({ ...cs });
@@ -121,9 +136,11 @@ export const fetchEmployee = async (month, employeeURL) => {
                     }
                 });
             });
+
             return [combined];
         }
-        // Иначе пагинация по всем работникам
+
+        // === Пагинация по всем работникам ===
         const all = [];
         let after = null;
         while (true) {
@@ -140,7 +157,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         return all;
     }
 
-    // === One office or worker ===
+    // === Один офис ===
     if (parts[2] === "office") {
         const id = parts[0];
         const url = `${import.meta.env.VITE_BACKEND_URL}/office/${id}?${commonParams}`;
@@ -150,9 +167,14 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [aggregateOfficeUsers(office)];
     }
 
-    // Один работник
+    // === Один работник ===
     const urlW = `${import.meta.env.VITE_BACKEND_URL}/workers/${parts[0]}?${commonParams}`;
-    const resW = await fetch(urlW, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } });
+    const resW = await fetch(urlW, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+        }
+    });
     if (!resW.ok) throw new Error(`HTTP ${resW.status}`);
     const data = await resW.json();
     return data.worker ? [data.worker] : [];
