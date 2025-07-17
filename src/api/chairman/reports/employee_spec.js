@@ -75,7 +75,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         const cards_for_month = stats.cards_for_month || 0;
         const transformed = {
             ID: 0,
-            Username: "Статистика за месяц",
+            Username: "Актив Банк",
             CardTurnovers: [{
                 activated_cards: cards_for_month === 0 ? 0 : (stats.activated_cards || 0),
                 card_turnovers_prem: 0,
