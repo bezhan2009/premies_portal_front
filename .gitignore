@@ -29,3 +29,4 @@ dist-ssr
 # Security files
 *.env
 
+uploads/uploaded

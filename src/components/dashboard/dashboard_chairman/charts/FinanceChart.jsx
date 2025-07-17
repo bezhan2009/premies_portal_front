@@ -21,12 +21,12 @@ const ChartReportFinance = ({ url }) => {
             setLoading(true);
             const allMonths = [];
 
+            let prev = null;
+
             for (let m = 1; m <= 12; m++) {
                 try {
-                    // fetchEmployee теперь возвращает массив записей
                     const list = await fetchEmployee(m, url) || [];
 
-                    // суммируем debit, credit и balance по всем элементам
                     let sumDebit = 0;
                     let sumCredit = 0;
                     let sumBalance = 0;
@@ -38,28 +38,47 @@ const ChartReportFinance = ({ url }) => {
                         sumBalance += Number(cs.out_balance) || 0;
                     });
 
-                    // имя из первой записи
+                    const current = {
+                        debit: sumDebit,
+                        credit: sumCredit,
+                        balance: sumBalance
+                    };
+
+                    let values = current;
+                    if (prev &&
+                        prev.debit === current.debit &&
+                        prev.credit === current.credit &&
+                        prev.balance === current.balance
+                    ) {
+                        values = {
+                            debit: 0,
+                            credit: 0,
+                            balance: 0
+                        };
+                    } else {
+                        prev = current;
+                    }
+
                     const first = list[0] || {};
                     const fullName = first.user?.full_name || first.Username || "";
 
                     allMonths.push({
-                        name:    getMonthName(m),
-                        debit:   sumDebit,
-                        credit:  sumCredit,
-                        balance: sumBalance,
+                        name: getMonthName(m),
+                        ...values,
                         full_name: fullName
                     });
                 } catch (e) {
                     console.error(e);
                     allMonths.push({
-                        name:    getMonthName(m),
-                        debit:   0,
-                        credit:  0,
+                        name: getMonthName(m),
+                        debit: 0,
+                        credit: 0,
                         balance: 0,
                         full_name: ""
                     });
                 }
             }
+
 
             setChartData(allMonths);
             setLoading(false);
@@ -85,7 +104,7 @@ const ChartReportFinance = ({ url }) => {
                 padding: '10px', color: '#555', fontSize: '16px',
                 textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px'
             }}>
-                Выберите сотрудника
+                Выберите отделения/сотрудника
             </div>
         );
     }
