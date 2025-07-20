@@ -10,7 +10,6 @@ const ReportFilters = ({ onSelect, onDateChange }) => {
         { text: 'Выданные карты', value: 'cards', class: 'filters__button--black-rep' },
         { text: 'Мобильный банк', value: 'mobileBank', class: 'filters__button--black-rep' },
         { text: 'Овердрафт', value: 'overdraft', class: 'filters__button--black-rep' },
-        { text: 'Обороты', value: 'turnovers', class: 'filters__button--black-rep' },
         { text: 'Каналы обслуживания', value: 'kc', class: 'filters__button--black-rep' },
     ];
 

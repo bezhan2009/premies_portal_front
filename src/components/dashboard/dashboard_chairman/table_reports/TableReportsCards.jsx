@@ -33,8 +33,9 @@ const ReportTableCardsChairman = ({ onSelect }) => {
         let outBalance = sales.out_balance ?? 0;
         let cardsInGeneral = sales.cards_sailed_in_general ?? 0;
 
-        if (cardsForMonth === 0) {
+        if (cardsForMonth === 0 || debtOsd === 0) {
           activatedCards = 0;
+          cardsForMonth = 0;
           debtOsd = 0;
           debtOsk = 0;
           outBalance = 0;

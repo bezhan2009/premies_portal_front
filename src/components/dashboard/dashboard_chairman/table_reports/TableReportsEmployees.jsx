@@ -147,6 +147,7 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                   <tr>
                     <th>Выберите</th>
                     <th>ФИО</th>
+                    <th>Место работы</th>
                     <th>Всего карт до текущего периода</th>
                     <th>Выдано карт в текущем периоде</th>
                     <th>Активных карт за текущий период</th>
@@ -168,6 +169,7 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                           ></div>
                         </td>
                         <td>{worker.user?.full_name || ''}</td>
+                        <td>{worker.place_work || ''}</td>
                         <td>{formatNumber(worker.CardSales?.[0]?.cards_sailed_in_general || 0)}</td>
                         <td>{formatNumber(worker.CardSales?.[0]?.cards_sailed || 0)}</td>
                         <td>{formatNumber(worker.CardTurnovers?.[0]?.activated_cards || 0)}</td>

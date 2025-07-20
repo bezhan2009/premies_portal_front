@@ -5,6 +5,7 @@ import '../../../../styles/components/TablesChairman.scss';
 import '../../../../styles/pagination.scss';
 import Spinner from '../../../Spinner.jsx';
 import {fetchOffices} from "../../../../api/offices/all_offices.js";
+import {fetchUserById} from "../../../../api/users/get_user.js";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -13,6 +14,7 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [directorNames, setDirectorNames] = useState({});
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -26,6 +28,20 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
         const res = await fetchOffices();
         setAllData(res);
         setFilteredData(res);
+
+        const directorMap = {};
+        await Promise.all(res.map(async (office) => {
+          if (office.director_id) {
+            try {
+              const director = await fetchUserById(office.director_id);
+              directorMap[office.director_id] = director.full_name;
+            } catch (err) {
+              directorMap[office.director_id] = "Неизвестно";
+            }
+          }
+        }));
+        setDirectorNames(directorMap);
+
       } catch (e) {
         console.error(e);
       }
@@ -96,9 +112,9 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
                   <thead>
                   <tr>
                     <th>Выберите</th>
+                    <th>Директор</th>
                     <th>Организация</th>
-                    <th>Количество работников</th>
-                    <th>Филиал</th>
+                    <th>Количество сотрудников</th>
                   </tr>
                   </thead>
                   <tbody>
@@ -106,20 +122,16 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
                       <tr
                           key={office.ID}
                           onClick={() => handleRowClick(office)}
-                          style={{ cursor: 'pointer' }}
+                          style={{cursor: 'pointer'}}
                       >
                         <td>
                           <div
                               className={`choose-td ${selectedRow === office.ID ? 'active' : ''}`}
                           ></div>
                         </td>
+                        <td>{directorNames[office.director_id] || '—'}</td>
                         <td>{office.title || ''}</td>
                         <td>{office.office_user?.length || 0}</td>
-                        <td>
-                          {office.office_user && office.office_user.length > 0
-                              ? office.office_user[0].worker?.place_work || ''
-                              : ''}
-                        </td>
                       </tr>
                   ))}
                   </tbody>
