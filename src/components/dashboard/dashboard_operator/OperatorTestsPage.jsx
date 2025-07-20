@@ -18,6 +18,7 @@ export default function OperatorTestsPage() {
     const [tests, setTests] = useState([]);
     const [selectedTestId, setSelectedTestId] = useState(null);
     const [testDetail, setTestDetail] = useState(null);
+    const [showAnswers, setShowAnswers] = useState(false);
     const [answers, setAnswers] = useState([]);
 
     const [modal, setModal] = useState({ open: false, entity: '', mode: '', data: null });
@@ -252,17 +253,22 @@ export default function OperatorTestsPage() {
 
                         <button
                             className="kb-add-btn"
-                            onClick={() => fetchAnswers(testDetail.ID)}
-                            style={{ marginTop: '20px' }}
+                            onClick={() => {
+                                if (!showAnswers) {
+                                    fetchAnswers(testDetail.ID);
+                                }
+                                setShowAnswers(!showAnswers);
+                            }}
+                            style={{marginTop: '20px'}}
                         >
-                            Показать ответы
+                            {showAnswers ? "Свернуть ответы" : "Показать ответы"}
                         </button>
 
-                        {answers.length > 0 && (
-                                    <div className="kb-answers">
-                                    <h3>Ответы пользователей</h3>
-                                    <div className="answers-grid">
-                                        {answers.map((a) => {
+                        {showAnswers && answers.length > 0 && (
+                            <div className="kb-answers">
+                                <h3>Ответы пользователей</h3>
+                                <div className="answers-grid">
+                                {answers.map((a) => {
                                             return (
                                                 <div
                                                     key={a.ID}
