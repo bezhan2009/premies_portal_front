@@ -32,10 +32,12 @@ const ChartReportFinance = ({ url }) => {
                     let sumBalance = 0;
 
                     list.forEach(item => {
-                        const cs = item.CardSales?.[0] || {};
-                        sumDebit   += Number(cs.deb_osd)     || 0;
-                        sumCredit  += Number(cs.deb_osk)     || 0;
-                        sumBalance += Number(cs.out_balance) || 0;
+                        const cardSales = item.CardSales || [];
+                        cardSales.forEach(cs => {
+                            sumDebit   += Number(cs.deb_osd)     || 0;
+                            sumCredit  += Number(cs.deb_osk)     || 0;
+                            sumBalance += Number(cs.out_balance) || 0;
+                        });
                     });
 
                     const current = {
@@ -78,7 +80,6 @@ const ChartReportFinance = ({ url }) => {
                     });
                 }
             }
-
 
             setChartData(allMonths);
             setLoading(false);

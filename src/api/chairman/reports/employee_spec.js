@@ -30,8 +30,8 @@ export const fetchEmployee = async (month, employeeURL) => {
                     exist = { ...ct, activated_cards: 0, card_turnovers_prem: 0, WorkerID: office.ID };
                     agg.CardTurnovers.push(exist);
                 }
-                exist.activated_cards += ct.activated_cards;
-                exist.card_turnovers_prem += ct.card_turnovers_prem;
+                exist.activated_cards += ct.activated_cards ?? 0;
+                exist.card_turnovers_prem += ct.card_turnovers_prem ?? 0;
             });
 
             w.CardSales?.forEach(cs => {
@@ -41,6 +41,7 @@ export const fetchEmployee = async (month, employeeURL) => {
                         ...cs,
                         deb_osd: 0,
                         deb_osk: 0,
+                        in_balance: 0,
                         out_balance: 0,
                         cards_sailed: 0,
                         cards_sailed_in_general: 0,
@@ -50,9 +51,10 @@ export const fetchEmployee = async (month, employeeURL) => {
                     };
                     agg.CardSales.push(exist);
                 }
-                exist.deb_osd += cs.deb_osd;
-                exist.deb_osk += cs.deb_osk;
-                exist.out_balance += cs.out_balance;
+                exist.deb_osd += cs.deb_osd ?? 0;
+                exist.deb_osk += cs.deb_osk ?? 0;
+                exist.in_balance += cs.in_balance ?? 0;
+                exist.out_balance += cs.out_balance ?? 0;
                 exist.cards_sailed += cs.cards_sailed ?? 0;
                 exist.cards_sailed_in_general += cs.cards_sailed_in_general ?? 0;
                 exist.cards_for_month += cs.cards_for_month ?? 0;
@@ -63,7 +65,6 @@ export const fetchEmployee = async (month, employeeURL) => {
         return agg;
     };
 
-    // === Новый роут stats ===
     if (parts[0] === "*" && parts[parts.length - 1] === "stats") {
         const yearParam = parts[1] || "";
         const monthParam = parts.length === 3 ? month : Number(parts[2]) || month;
@@ -84,6 +85,7 @@ export const fetchEmployee = async (month, employeeURL) => {
             CardSales: [{
                 deb_osd: cards_for_month === 0 ? 0 : (stats.debt_osd || 0),
                 deb_osk: cards_for_month === 0 ? 0 : (stats.debt_osk || 0),
+                in_balance: 0,
                 out_balance: cards_for_month === 0 ? 0 : (stats.out_balance || 0),
                 cards_for_month,
                 cards_sailed: cards_for_month === 0 ? 0 : (stats.cards_in_general || 0),
@@ -96,7 +98,6 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [transformed];
     }
 
-    // === По всем офисам или по ALL ===
     if (parts[0] === "*") {
         if (parts[2] === "office" || parts.length === 2) {
             const url = `${import.meta.env.VITE_BACKEND_URL}/office?${commonParams}`;
@@ -117,8 +118,8 @@ export const fetchEmployee = async (month, employeeURL) => {
                     const exist = combined.CardTurnovers.find(x => x.WorkerID === ct.WorkerID);
                     if (!exist) combined.CardTurnovers.push({ ...ct });
                     else {
-                        exist.activated_cards += ct.activated_cards;
-                        exist.card_turnovers_prem += ct.card_turnovers_prem;
+                        exist.activated_cards += ct.activated_cards ?? 0;
+                        exist.card_turnovers_prem += ct.card_turnovers_prem ?? 0;
                     }
                 });
 
@@ -126,13 +127,14 @@ export const fetchEmployee = async (month, employeeURL) => {
                     const exist = combined.CardSales.find(x => x.WorkerID === cs.WorkerID);
                     if (!exist) combined.CardSales.push({ ...cs });
                     else {
-                        exist.deb_osd += cs.deb_osd;
-                        exist.deb_osk += cs.deb_osk;
-                        exist.out_balance += cs.out_balance;
-                        exist.cards_for_month += cs.cards_for_month;
-                        exist.cards_sailed += cs.cards_sailed;
-                        exist.cards_sailed_in_general += cs.cards_sailed_in_general;
-                        exist.cards_prem += cs.cards_prem;
+                        exist.deb_osd += cs.deb_osd ?? 0;
+                        exist.deb_osk += cs.deb_osk ?? 0;
+                        exist.in_balance += cs.in_balance ?? 0;
+                        exist.out_balance += cs.out_balance ?? 0;
+                        exist.cards_for_month += cs.cards_for_month ?? 0;
+                        exist.cards_sailed += cs.cards_sailed ?? 0;
+                        exist.cards_sailed_in_general += cs.cards_sailed_in_general ?? 0;
+                        exist.cards_prem += cs.cards_prem ?? 0;
                     }
                 });
             });
@@ -140,7 +142,6 @@ export const fetchEmployee = async (month, employeeURL) => {
             return [combined];
         }
 
-        // === Пагинация по всем работникам ===
         const all = [];
         let after = null;
         while (true) {
@@ -157,7 +158,6 @@ export const fetchEmployee = async (month, employeeURL) => {
         return all;
     }
 
-    // === Один офис ===
     if (parts[2] === "office") {
         const id = parts[0];
         const url = `${import.meta.env.VITE_BACKEND_URL}/office/${id}?${commonParams}`;
@@ -167,7 +167,6 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [aggregateOfficeUsers(office)];
     }
 
-    // === Один работник ===
     const urlW = `${import.meta.env.VITE_BACKEND_URL}/workers/${parts[0]}?${commonParams}`;
     const resW = await fetch(urlW, {
         headers: {
