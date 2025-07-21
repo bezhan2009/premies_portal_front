@@ -135,6 +135,10 @@ export default function Dashboard() {
     }
 
     const total = calculateTotalPremia(data);
+    const qualityData = safeArray(data.ServiceQuality)[0] || {};
+    const callCenterValue = (qualityData?.call_center ?? 0) === 0 ? 5 : qualityData?.call_center ?? 5;
+    const testsValue = (qualityData?.tests ?? 0) === 0 ? 5 : qualityData?.tests ?? 5;
+    const complaintValue = qualityData?.complaint ?? 0;
 
     return (
         <>
@@ -157,13 +161,13 @@ export default function Dashboard() {
                                 { label: "Карты", value: `${safeArray(data.CardSales)[0]?.cards_prem || 0} TJS` },
                                 {
                                     label: "Мобильный банк",
-                                    value: `${safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0} TJS`
+                                    value: `${safeArray(data.MobileBank)[0]?.mobile_bank_connects * 10 || 0} TJS`
                                 },
                                 { label: "ЗП Проект", value: `${data.salary_project || 0} TJS` }
                             ],
                             sum: (
                                 (safeArray(data.CardSales)[0]?.cards_prem || 0) +
-                                (safeArray(data.MobileBank)[0]?.mobile_bank_prem || 0) +
+                                (safeArray(data.MobileBank)[0]?.mobile_bank_connects * 10 || 0) +
                                 (data.salary_project || 0)
                             ).toFixed(1) + " TJS"
                         },
@@ -189,13 +193,16 @@ export default function Dashboard() {
                             rows: [
                                 {
                                     label: "Средняя оценка",
-                                    value: `${(
-                                        ((safeArray(data.ServiceQuality)[0]?.call_center || 0) +
-                                            (safeArray(data.ServiceQuality)[0]?.tests || 0)) / 2
-                                    ).toFixed(1)} Балла`
+                                    value: `${((callCenterValue + testsValue) / 2).toFixed(1)} Балла`
                                 },
-                                { label: "Жалобы + ОЗ", value: `${safeArray(data.ServiceQuality)[0]?.complaint || 0} ШТ.` },
-                                { label: "Тесты", value: `${safeArray(data.ServiceQuality)[0]?.tests || 0} Балла` }
+                                {
+                                    label: "Жалобы + ОЗ",
+                                    value: `${complaintValue} ШТ.`
+                                },
+                                {
+                                    label: "Тесты",
+                                    value: `${testsValue} Балла`
+                                }
                             ],
                             sum: null
                         }
