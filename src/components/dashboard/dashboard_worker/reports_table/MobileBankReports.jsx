@@ -61,8 +61,7 @@ const MBReport = ({ month, year }) => {
             <table>
                 <thead>
                 <tr>
-                    <th>ИНН клиента</th>
-                    <th>Прием (ТЗ)</th>
+                    <th>Прием (ТJ)</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -73,7 +72,6 @@ const MBReport = ({ month, year }) => {
                             key={item.ID}
                             ref={isLast ? lastRowRef : null}
                         >
-                            <td>{item.inn || ""}</td>
                             <td>{item.prem || ""}</td>
                         </tr>
                     );
