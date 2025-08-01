@@ -1,0 +1,86 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 320px;
+}
+.login-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+.login-form label input {
+  width: 95%;
+  padding: 0.5rem;
+  margin-top: 0.45rem;
+  border: none;
+  border-radius: 6px;
+  outline: none;
+  background: #f5f5f5;
+  height: 30px;
+  font-size: 0.9rem;
+}
+.login-form label input::-moz-placeholder {
+  color: #999;
+  font-weight: 700;
+}
+.login-form label input::placeholder {
+  color: #999;
+  font-weight: 700;
+}
+.login-form label .toggle-password-visibility {
+  position: absolute;
+  right: 10px;
+  top: 60%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  font-size: 1.2rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+}
+.login-form label .toggle-password-visibility:hover {
+  background: none;
+}
+.login-form .image-logo-login {
+  margin-bottom: 1.5rem;
+}
+.login-form button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.login-form button:hover {
+  background-color: #e21a1c;
+}
+
+.error {
+  color: #e21a1c;
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  font-family: sans-serif;
+}/*# sourceMappingURL=login.css.map */

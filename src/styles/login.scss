@@ -9,7 +9,8 @@ body {
 
 .login-container {
   @include flex-center;
-  margin: 8%;
+  // margin: 8%;
+  height: 100vh ;
 }
 
 .login-form {
@@ -69,7 +70,7 @@ body {
   button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #ae86ff;
+    background-color: #333;
     color: white;
     border: none;
     border-radius: 6px;
@@ -78,7 +79,7 @@ body {
     font-size: 1rem;
 
     &:hover {
-      background-color: #ab6aff;
+      background-color: #e21a1c;
     }
   }
 }
