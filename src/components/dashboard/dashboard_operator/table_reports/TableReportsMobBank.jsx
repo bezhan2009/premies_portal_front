@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import '../../../../styles/components/Table.scss';
 import Spinner from '../../../Spinner.jsx';
 import SearchBar from '../../../general/SearchBar.jsx';
-import {fetchReportMobileBank} from "../../../../api/operator/reports/report_mb.js";
+import { fetchReportMobileBank } from "../../../../api/operator/reports/report_mb.js";
 
 const TableReportsMb = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -13,7 +13,12 @@ const TableReportsMb = ({ month, year }) => {
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
 
-  // Загрузка всех данных для поиска
+  const [editId, setEditId] = useState(null);
+  const [editedConnects, setEditedConnects] = useState('');
+  const [highlightedId, setHighlightedId] = useState(null);
+
+  const backendURL = import.meta.env.VITE_BACKEND_URL;
+
   useEffect(() => {
     const loadAll = async () => {
       let all = [];
@@ -34,7 +39,6 @@ const TableReportsMb = ({ month, year }) => {
     loadAll();
   }, [month, year]);
 
-  // Загрузка первой страницы данных
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -56,7 +60,6 @@ const TableReportsMb = ({ month, year }) => {
     load();
   }, [month, year]);
 
-  // Догрузка следующей страницы
   const loadMore = async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
@@ -73,7 +76,6 @@ const TableReportsMb = ({ month, year }) => {
     }
   };
 
-  // Intersection Observer для пагинации
   const lastRowRef = useCallback((node) => {
     if (loadingMore) return;
     if (observer.current) observer.current.disconnect();
@@ -87,10 +89,8 @@ const TableReportsMb = ({ month, year }) => {
     if (node) observer.current.observe(node);
   }, [loadingMore, hasMore, data]);
 
-  // Обработка поиска
   const handleSearch = async (filtered) => {
     if (!filtered) {
-      // Очистка поиска
       setIsSearching(false);
       setLoading(true);
       try {
@@ -103,11 +103,99 @@ const TableReportsMb = ({ month, year }) => {
       return;
     }
 
-    // Пользователь ввел запрос
     setIsSearching(true);
     setData(filtered);
     setHasMore(false);
   };
+
+  const handleDoubleClick = (row) => {
+    const value = row.MobileBank?.[0]?.mobile_bank_connects ?? '';
+    setEditId(row.ID);
+    setEditedConnects(value.toString());
+  };
+
+  const saveConnects = async (row) => {
+    const token = localStorage.getItem("access_token");
+    const value = Number(editedConnects);
+
+    try {
+      const existing = row.MobileBank?.[0];
+
+      if (existing?.ID) {
+        const res = await fetch(`${backendURL}/mobile-bank/${existing.ID}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            mobile_bank_connects: value,
+            mobile_bank_prem: value * 10,
+            worker_id: row.ID
+          })
+        });
+
+        if (!res.ok) throw new Error("Ошибка при PATCH");
+
+        setData(prev =>
+            prev.map(item =>
+                item.ID === row.ID
+                    ? {
+                      ...item,
+                      MobileBank: [{
+                        ...existing,
+                        mobile_bank_connects: value
+                      }]
+                    }
+                    : item
+            )
+        );
+      } else {
+        const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
+
+        const res = await fetch(`${backendURL}/mobile-bank`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            mobile_bank_connects: value,
+            mobile_bank_prem: value * 10,
+            worker_id: row.ID,
+            CreatedAt: createdAt,
+            UpdatedAt: createdAt
+          })
+        });
+
+        if (!res.ok) throw new Error("Ошибка при POST");
+
+        const created = await res.json();
+
+        setData(prev =>
+            prev.map(item =>
+                item.ID === row.ID
+                    ? {
+                      ...item,
+                      MobileBank: [{
+                        ID: created.ID,
+                        mobile_bank_connects: value
+                      }]
+                    }
+                    : item
+            )
+        );
+      }
+
+      setHighlightedId(row.ID);
+      setTimeout(() => setHighlightedId(null), 1500);
+    } catch (err) {
+      console.error("Ошибка сохранения:", err);
+    } finally {
+      setEditId(null);
+    }
+  };
+
 
   return (
       <div className="report-table-container">
@@ -115,9 +203,7 @@ const TableReportsMb = ({ month, year }) => {
             allData={allData}
             onSearch={handleSearch}
             placeholder="Поиск по ФИО"
-            searchFields={[
-              (item) => item.user?.full_name || '',
-            ]}
+            searchFields={[(item) => item.user?.full_name || '']}
         />
 
         <table className="table-reports">
@@ -131,14 +217,33 @@ const TableReportsMb = ({ month, year }) => {
           {data.length > 0 ? (
               data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
-
                 const userName = row.user?.full_name || '';
                 const mobile_bank_connects = row.MobileBank?.[0]?.mobile_bank_connects ?? '';
 
                 return (
-                    <tr key={row.ID} ref={isLast && !isSearching ? lastRowRef : null}>
+                    <tr
+                        key={row.ID}
+                        ref={isLast && !isSearching ? lastRowRef : null}
+                        className={highlightedId === row.ID ? 'row-updated' : ''}
+                    >
                       <td>{userName}</td>
-                      <td>{mobile_bank_connects}</td>
+                      <td onDoubleClick={() => handleDoubleClick(row)}>
+                        {editId === row.ID ? (
+                            <input
+                                type="number"
+                                value={editedConnects}
+                                onChange={(e) => setEditedConnects(e.target.value)}
+                                onBlur={() => saveConnects(row)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveConnects(row);
+                                  else if (e.key === 'Escape') setEditId(null);
+                                }}
+                                autoFocus
+                            />
+                        ) : (
+                            mobile_bank_connects
+                        )}
+                      </td>
                     </tr>
                 );
               })

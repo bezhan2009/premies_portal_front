@@ -27,6 +27,7 @@ import PageNotFound from "../pages/general/NotFound.jsx";
 import DashboardChairmanKnowledgeBase from "../pages/dashboard/dashboard_chairman/KnowledgeBase.jsx";
 import RegisterPage from "../pages/general/RegisterPage.jsx";
 import RequireRole from "../middlewares/RequireRole.jsx";
+import DashboardWorkerApplicationCards from "../pages/dashboard/dashboard_worker/ApplicationCardsWorker.jsx";
 
 export default function AppRouter() {
   return (

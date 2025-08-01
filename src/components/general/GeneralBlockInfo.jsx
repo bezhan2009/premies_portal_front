@@ -11,6 +11,7 @@ import '../../styles/components/BlockInfo.scss'
 import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/GeneralKnowledgeBase.jsx";
 import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTestsPage.jsx";
 import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";
+import WorkerApplicationsCards from "../dashboard/dashboard_worker/WorkerApplicationsCards.jsx";
 
 function GetBlockInfo({ page }) {
     switch (page) {
@@ -32,6 +33,8 @@ function GetBlockInfo({ page }) {
             return <RenderReports />;
         case "worker_tests":
             return <WorkerTestsPage />;
+        case "application_cards_worker":
+            return <WorkerApplicationsCards />
         case "chairman_reports":
             return <ChairmanReports />
         default:
