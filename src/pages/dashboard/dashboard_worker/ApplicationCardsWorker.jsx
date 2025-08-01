@@ -3,11 +3,11 @@ import HeaderWorker from '../../../components/dashboard/dashboard_worker/MenuWor
 import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
 import { Helmet } from 'react-helmet';
 
-export default function DashboardWorkerCards() {
+export default function DashboardWorkerApplicationCards() {
     return (
         <>
             <Helmet>
-                <title>Карты</title>
+                <title>Кредиты</title>
             </Helmet>
             <div className="dashboard-container">
                 <header className="dashboard-header">

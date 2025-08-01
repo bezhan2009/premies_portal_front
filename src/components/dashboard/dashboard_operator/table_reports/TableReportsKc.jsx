@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import '../../../../styles/components/Table.scss';
 import Spinner from '../../../Spinner.jsx';
 import SearchBar from '../../../general/SearchBar.jsx';
-import {fetchReportKCAndTests} from "../../../../api/operator/reports/report_kc.js";
+import { fetchReportKCAndTests } from "../../../../api/operator/reports/report_kc.js";
 
 const TableReportsKc = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -13,7 +13,12 @@ const TableReportsKc = ({ month, year }) => {
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
 
-  // Загрузка всех данных для поиска
+  const [editId, setEditId] = useState(null);
+  const [editedScore, setEditedScore] = useState('');
+  const [highlightedId, setHighlightedId] = useState(null);
+
+  const backendURL = import.meta.env.VITE_BACKEND_URL;
+
   useEffect(() => {
     const loadAll = async () => {
       let all = [];
@@ -34,7 +39,6 @@ const TableReportsKc = ({ month, year }) => {
     loadAll();
   }, [month, year]);
 
-  // Загрузка первой страницы данных
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -56,7 +60,6 @@ const TableReportsKc = ({ month, year }) => {
     load();
   }, [month, year]);
 
-  // Догрузка следующей страницы
   const loadMore = async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
@@ -73,7 +76,6 @@ const TableReportsKc = ({ month, year }) => {
     }
   };
 
-  // Intersection Observer для пагинации
   const lastRowRef = useCallback((node) => {
     if (loadingMore) return;
     if (observer.current) observer.current.disconnect();
@@ -87,10 +89,8 @@ const TableReportsKc = ({ month, year }) => {
     if (node) observer.current.observe(node);
   }, [loadingMore, hasMore, data]);
 
-  // Обработка поиска
   const handleSearch = async (filtered) => {
     if (!filtered) {
-      // Очистка поиска
       setIsSearching(false);
       setLoading(true);
       try {
@@ -103,10 +103,95 @@ const TableReportsKc = ({ month, year }) => {
       return;
     }
 
-    // Пользователь ввел запрос
     setIsSearching(true);
     setData(filtered);
     setHasMore(false);
+  };
+
+  const handleDoubleClick = (row) => {
+    const value = row.ServiceQuality?.[0]?.call_center ?? '';
+    setEditId(row.ID);
+    setEditedScore(value.toString());
+  };
+
+  const saveScore = async (row) => {
+    const token = localStorage.getItem("access_token");
+
+    try {
+      const existingQuality = row.ServiceQuality?.[0];
+      const call_center_value = Number(editedScore);
+
+      if (existingQuality?.ID) {
+        // Обновляем
+        const response = await fetch(`${backendURL}/service-quality/${existingQuality.ID}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            call_center: call_center_value
+          })
+        });
+
+        if (!response.ok) throw new Error('Ошибка при PATCH');
+
+        setData((prev) =>
+            prev.map(item =>
+                item.ID === row.ID
+                    ? {
+                      ...item,
+                      ServiceQuality: [
+                        { ...item.ServiceQuality?.[0], call_center: call_center_value }
+                      ]
+                    }
+                    : item
+            )
+        );
+      } else {
+        const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
+
+        // Создаём новую
+        const response = await fetch(`${backendURL}/service-quality`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            call_center: call_center_value,
+            coefficient: 0,
+            complaint: 0,
+            tests: 0,
+            WorkerID: row.ID,
+            CreatedAt: createdAt,
+            UpdatedAt: createdAt
+          })
+        });
+
+        if (!response.ok) throw new Error('Ошибка при POST');
+
+        const created = await response.json();
+
+        setData((prev) =>
+            prev.map(item =>
+                item.ID === row.ID
+                    ? {
+                      ...item,
+                      ServiceQuality: [{ ID: created.ID, call_center: call_center_value }]
+                    }
+                    : item
+            )
+        );
+      }
+
+      setHighlightedId(row.ID);
+      setTimeout(() => setHighlightedId(null), 1500);
+    } catch (e) {
+      console.error('Ошибка обновления:', e);
+    } finally {
+      setEditId(null);
+    }
   };
 
   return (
@@ -115,9 +200,7 @@ const TableReportsKc = ({ month, year }) => {
             allData={allData}
             onSearch={handleSearch}
             placeholder="Поиск по ФИО"
-            searchFields={[
-              (item) => item.user?.Username || '',
-            ]}
+            searchFields={[(item) => item.user?.Username || '']}
         />
 
         <table className="table-reports">
@@ -131,14 +214,33 @@ const TableReportsKc = ({ month, year }) => {
           {data.length > 0 ? (
               data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
-
                 const userName = row.user?.full_name || '';
                 const call_center = row.ServiceQuality?.[0]?.call_center ?? '';
 
                 return (
-                    <tr key={row.ID} ref={isLast && !isSearching ? lastRowRef : null}>
+                    <tr
+                        key={row.ID}
+                        ref={isLast && !isSearching ? lastRowRef : null}
+                        className={highlightedId === row.ID ? 'row-updated' : ''}
+                    >
                       <td>{userName}</td>
-                      <td>{call_center}</td>
+                      <td onDoubleClick={() => handleDoubleClick(row)}>
+                        {editId === row.ID ? (
+                            <input
+                                type="number"
+                                value={editedScore}
+                                onChange={(e) => setEditedScore(e.target.value)}
+                                onBlur={() => saveScore(row)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveScore(row);
+                                  else if (e.key === 'Escape') setEditId(null);
+                                }}
+                                autoFocus
+                            />
+                        ) : (
+                            call_center
+                        )}
+                      </td>
                     </tr>
                 );
               })
