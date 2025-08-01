@@ -13,7 +13,7 @@ export default function DashboardWorkerCards() {
                 <header className="dashboard-header">
                     <HeaderWorker activeLink="cards" />
                 </header>
-                <GetBlockInfo page="application_cards_worker" />
+                <GetBlockInfo page="und" />
             </div>
         </>
     );
