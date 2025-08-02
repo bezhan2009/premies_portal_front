@@ -9,6 +9,7 @@ import nc from "../../assets/nc.jpg";
 import mc from "../../assets/mc.jpg";
 import { useFormStore } from "../../hooks/useFormState";
 import File from "../../components/elements/File";
+import CheckBox from "../../components/elements/checkBox";
 
 export default function GiftCard() {
   const { data, errors, setData, validate } = useFormStore();
@@ -55,7 +56,7 @@ export default function GiftCard() {
             onChange={(e) => setData("front_passport", e)}
             placeholderImage={front_passport}
             value={data?.front_passport}
-            width={350}
+            width={340}
           />
           <img src={file} alt="file" width={16} />
           <File
@@ -63,7 +64,7 @@ export default function GiftCard() {
             onChange={(e) => setData("back_passport", e)}
             placeholderImage={back_passport}
             value={data?.back_passport}
-            width={350}
+            width={340}
           />
           <img src={file} alt="file" width={16} />
           <File
@@ -71,10 +72,11 @@ export default function GiftCard() {
             onChange={(e) => setData("person", e)}
             placeholderImage={person}
             value={data?.person}
-            width={230}
+            width={220}
           />
           <div>
-            
+            <CheckBox title={"Личность подтверждена?"} value={data.identity_verified} onChange={(e) => setData("identity_verified", e)} />
+            <CheckBox title={"Заявка дистанционная?"} value={data.remote_application} onChange={(e) => setData("remote_application", e)} />
           </div>
         </div>
       </main>
