@@ -1,0 +1,22 @@
+.under-development-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  background-color: #fff;
+  font-family: Arial, sans-serif;
+  color: #333;
+  text-align: center;
+  padding: 20px;
+}
+.under-development-page h1 {
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  color: #444;
+}
+.under-development-page p {
+  font-size: 1.2em;
+  max-width: 600px;
+  line-height: 1.5;
+}/*# sourceMappingURL=UnderDevelopment.css.map */
