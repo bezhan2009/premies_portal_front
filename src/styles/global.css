@@ -22,6 +22,57 @@ body {
   position: absolute;
 }
 
+.check-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0px;
+  width: 360px;
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 0px 0px 0 10px;
+}
+.check-box h1 {
+  color: #000 !important;
+}
+.check-box div {
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  width: 115px;
+  background-color: #e2e2e2;
+  padding-left: 10px;
+  border-radius: 12px 12px 12px 12px;
+}
+.check-box div label {
+  display: flex;
+  gap: 5px;
+}
+.check-box div span {
+  display: flex;
+  max-width: 10px !important;
+  min-width: 10px;
+  max-height: 10px !important;
+  min-height: 10px;
+  border: 2px solid #999;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 2px !important;
+  margin: 0;
+}
+.check-box div .checked {
+  border-color: #e21a1c !important;
+  border-width: 5px;
+  max-width: 5px !important;
+  min-width: 5px;
+  max-height: 5px !important;
+  min-height: 5px;
+}
+
 .radio-select {
   display: flex;
   flex-direction: column;
@@ -111,6 +162,11 @@ body {
   align-items: center;
   gap: 20px;
   padding: 20px;
+}
+.gift-card main .header-passport > div {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 .gift-card main h1 {
   font-family: sans-serif;
