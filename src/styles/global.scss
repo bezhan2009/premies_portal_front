@@ -3,6 +3,23 @@ body {
   margin: 0;
   padding: 0;
 }
+.file {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  background-color: #fff;
+  border-radius: 12px;
+  input {
+    display: none;
+  }
+  img{
+    max-height: 230px;
+  }
+  p{
+    position: absolute;
+  }
+}
 .radio-select {
   display: flex;
   flex-direction: column;
@@ -13,6 +30,7 @@ body {
   .radio-select-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
     cursor: pointer;
     // padding: 10px;
@@ -33,21 +51,51 @@ body {
       letter-spacing: 0.39%;
     }
 
-    input[type="radio"] {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #999;
-      border-radius: 50%;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      padding: 2px;
-      margin: 0;
-    }
+    // input[type="radio"] {
+    //   max-width: 20px;
+    //   min-width: 20px;
+    //   max-height: 20px;
+    //   min-height: 20px;
+    //   border: 2px solid #999;
+    //   border-radius: 50%;
+    //   -webkit-appearance: none;
+    //   -moz-appearance: none;
+    //   appearance: none;
+    //   padding: 2px;
+    //   margin: 0;
+    // }
 
-    input[type="radio"]:checked {
+    // input[type="radio"]:checked {
+    //   border-color: #e21a1c;
+    //   border-width: 5px;
+    // }
+
+    & nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      // justify-content: space-between;
+      & > div {
+        max-width: 10px !important;
+        min-width: 10px;
+        max-height: 10px !important;
+        min-height: 10px;
+        border: 2px solid #999;
+        border-radius: 50%;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        padding: 2px !important;
+        margin: 0;
+      }
+    }
+    .checked {
       border-color: #e21a1c;
       border-width: 5px;
+      max-width: 5px !important;
+      min-width: 5px;
+      max-height: 5px !important;
+      min-height: 5px;
     }
   }
 }
@@ -79,6 +127,15 @@ body {
         gap: 20px;
         padding: 20px;
       }
+    }
+    .header-passport {
+      background-color: #f1f1f1;
+      height: 230px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
     }
     h1 {
       font-family: sans-serif;

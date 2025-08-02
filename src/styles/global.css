@@ -4,6 +4,24 @@ body {
   padding: 0;
 }
 
+.file {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  background-color: #fff;
+  border-radius: 12px;
+}
+.file input {
+  display: none;
+}
+.file img {
+  max-height: 230px;
+}
+.file p {
+  position: absolute;
+}
+
 .radio-select {
   display: flex;
   flex-direction: column;
@@ -15,6 +33,7 @@ body {
 .radio-select .radio-select-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   cursor: pointer;
   border-radius: 6px;
@@ -28,20 +47,31 @@ body {
   line-height: 19px;
   letter-spacing: 0.39%;
 }
-.radio-select .radio-select-item input[type=radio] {
-  width: 20px;
-  height: 20px;
+.radio-select .radio-select-item nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.radio-select .radio-select-item nav > div {
+  max-width: 10px !important;
+  min-width: 10px;
+  max-height: 10px !important;
+  min-height: 10px;
   border: 2px solid #999;
   border-radius: 50%;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  padding: 2px;
+  padding: 2px !important;
   margin: 0;
 }
-.radio-select .radio-select-item input[type=radio]:checked {
+.radio-select .radio-select-item .checked {
   border-color: #e21a1c;
   border-width: 5px;
+  max-width: 5px !important;
+  min-width: 5px;
+  max-height: 5px !important;
+  min-height: 5px;
 }
 
 .gift-card {
@@ -67,6 +97,15 @@ body {
   background-color: #f1f1f1;
   height: 200px;
   flex: 1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+.gift-card main .header-passport {
+  background-color: #f1f1f1;
+  height: 230px;
   border-radius: 12px;
   display: flex;
   align-items: center;
