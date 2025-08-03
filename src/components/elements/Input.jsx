@@ -6,13 +6,15 @@ export default function Input({
   value,
   placeholder,
   className = "",
+  type = "text",
 }) {
   return (
     <label className={`input ${className}`} htmlFor={id}>
-      {title && <span>{title}</span>}
+      {title || type === "date" && <span>{title || placeholder}</span>}
       <input
+        // style={{ display: type === "date" && "none" }}
         id={id}
-        type="text"
+        type={type}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

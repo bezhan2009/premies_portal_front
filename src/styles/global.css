@@ -24,6 +24,7 @@ body {
 
 .input {
   max-height: 100%;
+  position: relative;
 }
 .input input {
   width: 95%;
@@ -38,9 +39,31 @@ body {
   background-color: rgba(0, 0, 0, 0.5725490196);
   color: #fff;
 }
+.input span {
+  width: auto;
+  position: absolute;
+  height: 50%;
+  padding: 10px 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+}
 
 .div4 input {
   width: 95%;
+}
+
+.div28 input {
+  width: 70%;
+}
+
+.div9 {
+  width: 325px !important;
+}
+.div9 div {
+  margin-left: -30px;
 }
 
 .check-box {
@@ -204,11 +227,33 @@ body {
 }
 .gift-card main {
   max-width: 1440px;
-  height: 90%;
+  height: 1103px;
   width: 90%;
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
+}
+.gift-card main .select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gift-card main .select select {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  color: #000;
+}
+.gift-card main .select select:focus {
+  outline: #e21a1c solid 2px;
+  background-color: rgba(0, 0, 0, 0.5725490196);
+  color: #fff;
+}
+.gift-card main .select p {
+  position: absolute;
 }
 .gift-card main .header-form {
   display: flex;
@@ -330,6 +375,29 @@ body {
 }
 .gift-card main .content-form .div28 {
   grid-area: 5/16/6/17;
+}
+.gift-card main footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 70px;
+  background-color: #f1f1f1;
+  margin-top: 20px;
+  border-radius: 12px;
+  padding: 20px;
+}
+.gift-card main footer button {
+  cursor: pointer;
+  background-color: white;
+  border: none;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.gift-card main footer button img {
+  width: 30px;
 }
 .gift-card main h1 {
   font-family: sans-serif;
