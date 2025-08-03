@@ -1,14 +1,15 @@
 export default function Input({
+  id,
   title,
   error,
-  id,
   onChange,
   value,
   placeholder,
+  className = "",
 }) {
   return (
-    <label className="input" htmlFor={id}>
-      <span>{title}</span>
+    <label className={`input ${className}`} htmlFor={id}>
+      {title && <span>{title}</span>}
       <input
         id={id}
         type="text"
