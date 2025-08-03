@@ -29,7 +29,22 @@ import Select from "../../components/elements/Select";
 export default function GiftCard() {
   const { data, errors, setData, validate } = useFormStore();
 
+  const ValidData = {
+    login: { required: true },
+    password: { required: true, minLength: 4 },
+  };
   console.log("data", data);
+  const onSend = async () => {
+    const isValid = validate(ValidData);
+    if (isValid) {
+      try {
+        console.log("data", data);
+        
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   return (
     <div className="gift-card">
@@ -343,7 +358,7 @@ export default function GiftCard() {
         <footer>
           <button>
             <img src={save} alt="" />
-            <span>Сохранить</span>
+            <span onClick={() => onSend()}>Сохранить</span>
           </button>
           <button>
             <img src={card} alt="" />
