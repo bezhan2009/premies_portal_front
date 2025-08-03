@@ -3,6 +3,54 @@ body {
   margin: 0;
   padding: 0;
 }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+td:first-child {
+  text-align: center;
+}
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+.modal {
+  max-width: 100% !important;
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  > main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80%;
+    height: 80%;
+    background-color: #fff;
+    border-radius: 12px;
+    position: relative;
+    img {
+      width: 90%;
+      max-height: 90%;
+    }
+  }
+}
 .file {
   display: flex;
   flex-direction: column;
@@ -36,11 +84,11 @@ body {
     border: none;
     &:focus {
       outline: #e21a1c solid 2px;
-      background-color: #00000092;
+      background-color: #686868;
       color: #fff;
     }
   }
-  span{
+  span {
     width: auto;
     // margin-right: 40px;
     position: absolute;
@@ -54,23 +102,22 @@ body {
     align-items: center;
   }
 }
-.div4{
-  input{
+.div4 {
+  input {
     width: 95%;
   }
 }
-.div28{
+.div28 {
   input {
     width: 70%;
   }
 }
-.div9{
+.div9 {
   width: 325px !important;
-  div{
+  div {
     margin-left: -30px;
   }
 }
-
 
 .check-box {
   display: flex;
@@ -94,7 +141,7 @@ body {
     background-color: #e2e2e2;
     padding-left: 10px;
     border-radius: 12px 12px 12px 12px;
-      label {
+    label {
       display: flex;
       gap: 10px;
       align-items: center;
@@ -124,10 +171,10 @@ body {
     }
   }
 }
-.form-check-box{
+.form-check-box {
   background-color: #f1f1f1;
   height: 46px;
-  h1{
+  h1 {
     font-size: 16px !important;
   }
   div {
@@ -266,7 +313,7 @@ body {
     border-radius: 12px;
     padding: 20px;
 
-    .select{
+    .select {
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -285,7 +332,7 @@ body {
           color: #fff;
         }
       }
-      p{
+      p {
         position: absolute;
       }
     }
@@ -411,7 +458,7 @@ body {
         grid-area: 5 / 16 / 6 / 17;
       }
     }
-    footer{
+    footer {
       display: flex;
       align-items: center;
       gap: 20px;
@@ -420,7 +467,7 @@ body {
       margin-top: 20px;
       border-radius: 12px;
       padding: 20px;
-      button{
+      button {
         cursor: pointer;
         background-color: white;
         border: none;
@@ -429,7 +476,7 @@ body {
         display: flex;
         align-items: center;
         gap: 20px;
-        img{
+        img {
           width: 30px;
         }
       }
@@ -444,6 +491,165 @@ body {
       display: flex;
       align-items: center;
       color: #bdbdbd;
+    }
+  }
+}
+.my-applications {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  // height: 100%;
+  // padding: 20px;
+  > main {
+    max-width: 1440px;
+    height: 1103px;
+    width: 90%;
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    .my-applications-header {
+      display: flex;
+      gap: 15px;
+      button {
+        border-radius: 12px;
+        padding: 10px 40px;
+        background-color: #999;
+        color: #fff;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        &:last-child {
+          background-color: #e21a1c;
+        }
+      }
+    }
+    .my-applications-sub-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+      .input {
+        display: flex;
+        align-items: center;
+        width: 80px;
+      }
+    }
+    .my-applications-content {
+      margin-top: 20px;
+      overflow: auto;
+    }
+  }
+}
+
+.applications-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  // height: 100%;
+  // padding: 20px;
+  > main {
+    max-width: 1440px;
+    height: 1103px;
+    width: 90%;
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    .my-applications-header {
+      display: flex;
+      gap: 15px;
+      button {
+        border-radius: 12px;
+        padding: 10px 20px;
+        background-color: #999;
+        color: #fff;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .filter {
+        background-color: #999;
+      }
+      .edit{
+        background-color: #6b3dcf;
+      }
+      .save{
+        background-color: #2566e8;
+      }
+      .Unloading{
+        background-color: green;
+      }
+      .Report{
+        background-color: green;
+      }
+      & > div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+
+        .input {
+        // height: 46px;
+        display: flex;
+        align-items: center;
+        height: 60%;
+        width: 300px;
+        input{
+          height: 100%;
+        }
+      }
+      button{
+        padding: 10px 40px;
+        height: 100% !important;margin-left: -30px;
+        background-color: #e21a1c;
+      }
+      }
+      
+      .select {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        // margin-bottom: 20px;
+        select {
+          width: 100%;
+          height: 50px;
+          padding: 10px;
+          background-color: #f1f1f1;
+          border-radius: 12px;
+          border: none;
+          color: #000;
+          &:focus {
+            outline: #e21a1c solid 2px;
+            background-color: #00000092;
+            color: #fff;
+          }
+        }
+        p {
+          position: absolute;
+        }
+      }
+    }
+    .my-applications-sub-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+      .input {
+        display: flex;
+        align-items: center;
+        width: 80px;
+      }
+      
+    }
+    .my-applications-content {
+      margin-top: 20px;
+      overflow: auto;
+      
     }
   }
 }

@@ -30,8 +30,10 @@ export default function GiftCard() {
   const { data, errors, setData, validate } = useFormStore();
 
   const ValidData = {
-    login: { required: true },
-    password: { required: true, minLength: 4 },
+    front_passport: { required: true },
+    back_passport: { required: true },
+    person: { required: true },
+    //...
   };
   console.log("data", data);
   const onSend = async () => {
@@ -39,7 +41,6 @@ export default function GiftCard() {
     if (isValid) {
       try {
         console.log("data", data);
-        
       } catch (e) {
         console.error(e);
       }

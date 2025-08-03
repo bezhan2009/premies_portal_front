@@ -4,6 +4,60 @@ body {
   padding: 0;
 }
 
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+td:first-child {
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.modal {
+  max-width: 100% !important;
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal > main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  height: 80%;
+  background-color: #fff;
+  border-radius: 12px;
+  position: relative;
+}
+.modal > main img {
+  width: 90%;
+  max-height: 90%;
+}
+
 .file {
   display: flex;
   flex-direction: column;
@@ -36,7 +90,7 @@ body {
 }
 .input input:focus {
   outline: #e21a1c solid 2px;
-  background-color: rgba(0, 0, 0, 0.5725490196);
+  background-color: #686868;
   color: #fff;
 }
 .input span {
@@ -409,4 +463,155 @@ body {
   display: flex;
   align-items: center;
   color: #bdbdbd;
+}
+
+.my-applications {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.my-applications > main {
+  max-width: 1440px;
+  height: 1103px;
+  width: 90%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+.my-applications > main .my-applications-header {
+  display: flex;
+  gap: 15px;
+}
+.my-applications > main .my-applications-header button {
+  border-radius: 12px;
+  padding: 10px 40px;
+  background-color: #999;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+.my-applications > main .my-applications-header button:last-child {
+  background-color: #e21a1c;
+}
+.my-applications > main .my-applications-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.my-applications > main .my-applications-sub-header .input {
+  display: flex;
+  align-items: center;
+  width: 80px;
+}
+.my-applications > main .my-applications-content {
+  margin-top: 20px;
+  overflow: auto;
+}
+
+.applications-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.applications-list > main {
+  max-width: 1440px;
+  height: 1103px;
+  width: 90%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+.applications-list > main .my-applications-header {
+  display: flex;
+  gap: 15px;
+}
+.applications-list > main .my-applications-header button {
+  border-radius: 12px;
+  padding: 10px 20px;
+  background-color: #999;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+.applications-list > main .my-applications-header .filter {
+  background-color: #999;
+}
+.applications-list > main .my-applications-header .edit {
+  background-color: #6b3dcf;
+}
+.applications-list > main .my-applications-header .save {
+  background-color: #2566e8;
+}
+.applications-list > main .my-applications-header .Unloading {
+  background-color: green;
+}
+.applications-list > main .my-applications-header .Report {
+  background-color: green;
+}
+.applications-list > main .my-applications-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.applications-list > main .my-applications-header > div .input {
+  display: flex;
+  align-items: center;
+  height: 60%;
+  width: 300px;
+}
+.applications-list > main .my-applications-header > div .input input {
+  height: 100%;
+}
+.applications-list > main .my-applications-header > div button {
+  padding: 10px 40px;
+  height: 100% !important;
+  margin-left: -30px;
+  background-color: #e21a1c;
+}
+.applications-list > main .my-applications-header .select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.applications-list > main .my-applications-header .select select {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  color: #000;
+}
+.applications-list > main .my-applications-header .select select:focus {
+  outline: #e21a1c solid 2px;
+  background-color: rgba(0, 0, 0, 0.5725490196);
+  color: #fff;
+}
+.applications-list > main .my-applications-header .select p {
+  position: absolute;
+}
+.applications-list > main .my-applications-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.applications-list > main .my-applications-sub-header .input {
+  display: flex;
+  align-items: center;
+  width: 80px;
+}
+.applications-list > main .my-applications-content {
+  margin-top: 20px;
+  overflow: auto;
 }/*# sourceMappingURL=global.css.map */
