@@ -37,6 +37,7 @@ import DashboardWorkerApplicationCards from "../pages/dashboard/dashboard_worker
 import GiftCard from "../pages/general/GiftCard.jsx";
 import MyApplications from "../pages/general/MyApplications.jsx";
 import ApplicationsList from "../pages/general/ApplicationsList.jsx";
+import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -134,7 +135,7 @@ export default function AppRouter() {
           </Route>
           <Route
             element={
-              <RequireRole allowedRoles={[9, 5]}>
+              <RequireRole allowedRoles={[10]}>
                 <Outlet />
               </RequireRole>
             }
@@ -147,6 +148,10 @@ export default function AppRouter() {
             <Route
               path="/agent/applications-list"
               element={<ApplicationsList />}
+            />
+            <Route
+                path="/agent/knowledge-base"
+                element={<DashboardAgentKB />}
             />
           </Route>
         </Route>

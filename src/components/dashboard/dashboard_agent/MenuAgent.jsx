@@ -8,7 +8,8 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
     const username = localStorage.getItem('username') || 'Неизвестное имя';
 
     const links = [
-        { name: 'Заявки', href: '/agent/reports', key: 'applications' },
+        { name: 'Редактирование заявки', href: '/agent/card', key: 'gift_card' },
+        { name: 'Заявки', href: '/agent/applications-list', key: 'applications' },
         { name: 'База знаний', href: '/agent/knowledge-base', key: 'knowledge' },
     ];
 

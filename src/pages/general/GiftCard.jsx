@@ -25,6 +25,7 @@ import File from "../../components/elements/File";
 import CheckBox from "../../components/elements/checkBox";
 import Input from "../../components/elements/Input";
 import Select from "../../components/elements/Select";
+import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 
 export default function GiftCard() {
   const { data, errors, setData, validate } = useFormStore();
@@ -33,21 +34,92 @@ export default function GiftCard() {
     front_passport: { required: true },
     back_passport: { required: true },
     person: { required: true },
-    //...
   };
-  console.log("data", data);
+
+  const formatDateForBackend = (dateStr) => {
+    if (!dateStr) return "";
+    // Преобразует "2025-08-04" в ISO формат "2025-08-04T00:00:00Z"
+    return new Date(dateStr).toISOString();
+  };
+
   const onSend = async () => {
-    const isValid = validate(ValidData);
-    if (isValid) {
-      try {
-        console.log("data", data);
-      } catch (e) {
-        console.error(e);
+    // const isValid = validate(ValidData);
+    // if (!isValid) return;
+
+    try {
+      const formData = new FormData();
+
+      // Проверка файлов
+      if (data.front_passport) {
+        formData.append("front_side_of_the_passport_file", data.front_passport);
       }
+      if (data.back_passport) {
+        formData.append("back_side_of_the_passport_file", data.back_passport);
+      }
+      if (data.person) {
+        formData.append("selfie_with_passport_file", data.person);
+      }
+
+      // Добавление остальных полей
+      formData.append("name", data.name || "");
+      formData.append("surname", data.sur_name || "");
+      formData.append("patronymic", data.paternity || "");
+      formData.append("gender", data.gender === true ? "Муж" : "Жен");
+      formData.append("client_index", data.index || "");
+      formData.append("issued_by", data.issued_by || "");
+      formData.append("issued_at", formatDateForBackend(data.сard_issue_date));
+      formData.append("birth_date", formatDateForBackend(data.birthday));
+      formData.append("phone_number", data.phone || "");
+      formData.append("secret_word", data.code || "");
+      formData.append("card_name", data.name_on_the_card || "");
+      formData.append("card_code", data.visa_card || data.mc_card || data.nc_card || "");
+      formData.append("type_of_certificate", data.card_type || "");
+      formData.append("documents_series", data.series || "");
+      formData.append("document_number", data.number || "");
+      formData.append("passport_issued_at", formatDateForBackend(data.сard_issue_date));
+      formData.append("inn", data.tin || "");
+      formData.append("country", data.country || "");
+      formData.append("region", data.region || "");
+      formData.append("population_type", data.US_type || "");
+      formData.append("populated", data.UsPoint || "");
+      formData.append("district", data.district || "");
+      formData.append("street_type", data.street_type || "");
+      formData.append("street", data.street || "");
+      formData.append("house_number", data.house || "");
+      formData.append("corpus", data.frame || "");
+      formData.append("apartment_number", data.kv || "");
+
+      // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
+      formData.append("is_resident", String(!!data.resident));
+      formData.append("remote_application", String(!!data.remote_application));
+      formData.append("identity_verified", String(!!data.identity_verified));
+
+      formData.append(
+          "delivery_address",
+          `${data.country || ""}, ${data.region || ""}, ${data.UsPoint || ""}, ${data.street || ""} ${data.house || ""}`
+      );
+
+      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+
+      const response = await fetch(`${backendUrl}/applications`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const result = await response.json();
+      console.log("Успешно отправлено:", result);
+      alert("Данные успешно сохранены!");
+    } catch (error) {
+      console.error("Ошибка отправки:", error);
+      alert("Произошла ошибка при сохранении данных");
     }
   };
 
   return (
+   <>
+   <HeaderAgent activeLink="gift_card" />
     <div className="gift-card">
       <main>
         <h1>
@@ -376,5 +448,6 @@ export default function GiftCard() {
         </footer>
       </main>
     </div>
+     </>
   );
 }
