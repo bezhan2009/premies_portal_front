@@ -6,6 +6,13 @@ export const useFormStore = create((set, get) => ({
   data: {},
   errors: {},
 
+  deleteKey: (key) =>
+    set((state) => {
+      const newData = { ...state.data };
+      delete newData[key];
+      return { data: newData };
+    }),
+
   setData: (field, value) =>
     set((state) => ({
       data: { ...state.data, [field]: value },
