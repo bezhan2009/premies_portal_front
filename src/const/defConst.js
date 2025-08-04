@@ -1,5 +1,4 @@
 export const visaCards = [
-  { id: 0, name: "Нет" },
   { id: 1, name: "Visa Gold_ 1635.03_ резидент" },
   { id: 2, name: "Viza Gold_ 1635.03 _не резидент" },
   { id: 3, name: "Vita Inindy, 1635 04 резидент" },
@@ -19,7 +18,6 @@ export const visaCards = [
 ];
 
 export const ncCards = [
-  { id: 0, name: "Нет" },
   { id: 1, name: "Korti milly 1637.01" },
   { id: 2, name: "Korti milly Salary, 1637.02" },
   { id: 3, name: "Korti milly 1637.01" },
@@ -27,7 +25,6 @@ export const ncCards = [
 ];
 
 export const mcCards = [
-  { id: 0, name: "Нет" },
   { id: 1, name: "MC Standerd_1636,02 резидент" },
   { id: 2, name: "MC Standard 1636:02 нерезидент" },
   { id: 3, name: "MC Wedd_1636.03 резидент" },
