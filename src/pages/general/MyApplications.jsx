@@ -5,6 +5,7 @@ import { tableDataDef } from "../../const/defConst";
 import file from "../../assets/file.jpg";
 import { useModal } from "../../hooks/useModal";
 import Modal from "../../components/modal/Modal";
+import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 
 export default function MyApplications() {
   const { data, errors, setData } = useFormStore();
@@ -15,6 +16,8 @@ export default function MyApplications() {
   console.log("selectedRows", selectedRows);
 
   return (<>
+    <HeaderAgent activeLink="applications" />
+
     <div className="my-applications">
       <main>
         <div className="my-applications-header">

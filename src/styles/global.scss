@@ -3,6 +3,7 @@ body {
   margin: 0;
   padding: 0;
 }
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -69,25 +70,37 @@ tr:nth-child(even) {
   }
 }
 .input {
-  // max-width: 100%;
-  // width: 100%;
   max-height: 100%;
   position: relative;
+
   input {
-    // max-width: 100%;
     width: 95%;
-    // min-width: 50px;
     height: 50%;
     padding: 10px 10px;
     background-color: #f1f1f1;
     border-radius: 12px;
     border: none;
+    transition: 0.09s;
+
+    &::placeholder {
+      color: initial; // или задайте нужный цвет по умолчанию
+    }
+
+    &:hover {
+      outline: #e21a1c solid 2px;
+    }
+
     &:focus {
       outline: #e21a1c solid 2px;
-      background-color: #686868;
+      background-color: #6d6d6d;
       color: #fff;
+
+      &::placeholder {
+        color: #f1f1f1; // меняется при фокусе
+      }
     }
   }
+
   span {
     width: auto;
     // margin-right: 40px;
@@ -302,13 +315,13 @@ tr:nth-child(even) {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  margin-top: 30px;
+  //height: 100vh;
   // height: 100%;
   // padding: 20px;
   main {
-    max-width: 1440px;
     height: 1103px;
-    width: 90%;
+    width: 95%;
     background-color: #fff;
     border-radius: 12px;
     padding: 20px;
@@ -502,9 +515,8 @@ tr:nth-child(even) {
   // height: 100%;
   // padding: 20px;
   > main {
-    max-width: 1440px;
     height: 1103px;
-    width: 90%;
+    width: 98%;
     background-color: #fff;
     border-radius: 12px;
     padding: 20px;
@@ -552,9 +564,8 @@ tr:nth-child(even) {
   // height: 100%;
   // padding: 20px;
   > main {
-    max-width: 1440px;
     height: 1103px;
-    width: 90%;
+    width: 98%;
     background-color: #fff;
     border-radius: 12px;
     padding: 20px;
@@ -609,7 +620,7 @@ tr:nth-child(even) {
         background-color: #e21a1c;
       }
       }
-      
+
       .select {
         display: flex;
         flex-direction: column;
@@ -644,12 +655,52 @@ tr:nth-child(even) {
         align-items: center;
         width: 80px;
       }
-      
+
     }
     .my-applications-content {
       margin-top: 20px;
       overflow: auto;
-      
+
+    }
+  }
+}
+
+/* Основные исправления */
+body {
+  overflow-x: hidden; /* Запрет горизонтального скролла */
+}
+
+.modal {
+  > main {
+    width: 95vw; /* Относительная ширина */
+    height: 90vh; /* Относительная высота */
+    overflow: auto; /* Добавляем скролл при переполнении */
+    img {
+      max-width: 85vw; /* Адаптивное изображение */
+    }
+  }
+}
+
+.my-applications,
+.applications-list {
+  height: auto; /* Убираем фиксированную высоту */
+  min-height: 100vh; /* Минимальная высота */
+  padding: 2vh 2vw; /* Относительные отступы */
+
+  > main {
+    height: auto; /* Автоматическая высота */
+    max-height: 90vh; /* Ограничение по высоте */
+    overflow: hidden; /* Скрываем переполнение */
+    padding: 2vh 2vw; /* Относительные отступы */
+
+    .content-form {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Адаптивная сетка */
+      grid-auto-rows: minmax(60px, auto); /* Гибкие строки */
+
+      /* Убираем все явные grid-area (они не нужны в адаптивной сетке) */
+      > div {
+        grid-area: auto !important;
+      }
     }
   }
 }

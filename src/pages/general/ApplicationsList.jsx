@@ -6,7 +6,7 @@ import file from "../../assets/file.jpg";
 import { useModal } from "../../hooks/useModal";
 import Modal from "../../components/modal/Modal";
 import Select from "../../components/elements/Select";
-
+import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
@@ -36,6 +36,8 @@ export default function ApplicationsList() {
 
   return (
     <>
+      <HeaderAgent activeLink="applications" />
+
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
