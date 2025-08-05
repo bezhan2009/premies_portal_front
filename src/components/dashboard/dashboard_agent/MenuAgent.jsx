@@ -8,7 +8,7 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
     const username = localStorage.getItem('username') || 'Неизвестное имя';
 
     const links = [
-        { name: 'Редактирование заявки', href: '/agent/card', key: 'gift_card' },
+        { name: 'Карта', href: '/agent/card', key: 'gift_card' },
         { name: 'Заявки', href: '/agent/applications-list', key: 'applications' },
         { name: 'База знаний', href: '/agent/knowledge-base', key: 'knowledge' },
     ];
@@ -91,8 +91,9 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
                         <button className="change-password-btn" onClick={handleChangePassword}>
                             Изменить пароль
                         </button>
+                        <LogoutButton />
+
                     </div>
-                    <LogoutButton />
                 </div>
             </header>
 
