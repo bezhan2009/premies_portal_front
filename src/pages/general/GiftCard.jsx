@@ -43,8 +43,8 @@ export default function GiftCard() {
   };
 
   const onSend = async () => {
-    // const isValid = validate(ValidData);
-    // if (!isValid) return;
+    const isValid = validate(ValidData);
+    if (!isValid) return;
 
     try {
       const formData = new FormData();
