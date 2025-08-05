@@ -22,7 +22,7 @@ import share from "../../assets/share.jpg";
 import save from "../../assets/save.jpg";
 import { useFormStore } from "../../hooks/useFormState";
 import File from "../../components/elements/File";
-import CheckBox from "../../components/elements/checkBox";
+import CheckBox from "../../components/elements/CheckBox";
 import Input from "../../components/elements/Input";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
