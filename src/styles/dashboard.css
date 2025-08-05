@@ -1,0 +1,31 @@
+body {
+  background-color: #f1f1f1;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 15px;
+}
+.nav-menu__item {
+  padding: 10px 15px;
+  background-color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.nav-menu__item:hover {
+  background-color: rgb(229.5, 229.5, 229.5);
+}
+.nav-menu__item--active {
+  background-color: #ff3e3e;
+  color: #fff;
+}/*# sourceMappingURL=dashboard.css.map */

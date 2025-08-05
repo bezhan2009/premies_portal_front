@@ -21,6 +21,8 @@ function RedirectDashboard() {
       navigate('/worker/cards');
     } else if (roleId === 9 || roleId === 5) {
       navigate('/chairman/reports');
+    } else if (roleId === 10) {
+      navigate('/agent/applications-list');
     } else {
       navigate('/404');
     }

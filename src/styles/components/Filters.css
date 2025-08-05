@@ -1,0 +1,265 @@
+@charset "UTF-8";
+.filters {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px;
+  margin-bottom: 20px;
+  width: 92%;
+  background-color: #f1f1f1;
+  padding: 30px;
+  margin: 20px auto;
+  border-radius: 15px;
+}
+.filters__left, .filters__right {
+  gap: 10px;
+}
+.filters__button {
+  padding: 3px 28px;
+  height: 40px;
+  border: none;
+  font-family: sans-serif;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.3s;
+  margin-right: 15px;
+}
+.filters__button:hover {
+  opacity: 0.85;
+  transition: 0.2s;
+}
+.filters__button:active {
+  outline: none;
+  border-color: rgb(151, 98, 254);
+  box-shadow: 0 0 0 15px rgba(151, 98, 254, 0.2);
+  transform: scale(0.95);
+}
+.filters__button--black {
+  background-color: #000001;
+}
+.filters__button--orange {
+  background-color: #ff914d;
+}
+.filters__button--blue {
+  background-color: #004aad;
+}
+.filters__button--green {
+  background-color: #1ba553;
+}
+.filters__button--red {
+  background-color: #e31919;
+}
+.filters__button--black-rep {
+  margin: 1.1rem;
+  background-color: #1c1c1c;
+}
+
+.reports_filter {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px;
+  margin-bottom: 20px;
+  width: 92%;
+  background-color: #f1f1f1;
+  padding: 30px;
+  margin: 10px auto;
+  border-radius: 15px;
+}
+.reports_filter__button {
+  padding: 3px 28px;
+  height: 40px;
+  border: none;
+  font-family: sans-serif;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.3s;
+  margin-right: 24px;
+}
+.reports_filter__button:hover {
+  opacity: 0.85;
+  transition: 0.2s;
+}
+.reports_filter__button:active {
+  outline: none;
+  border-color: rgb(151, 98, 254);
+  box-shadow: 0 0 0 15px rgba(151, 98, 254, 0.2);
+  transform: scale(0.95);
+}
+.reports_filter__button--grey {
+  background-color: #a6a6a6;
+}
+.reports_filter__button--purple {
+  background-color: #8c52ff;
+}
+.reports_filter__button--yellow {
+  background-color: #ffbd59;
+}
+.reports_filter__button--cyan {
+  background-color: #0097b2;
+}
+
+.filters__modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.filters__modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: fadeInModal 0.3s ease;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.filters__modal-content h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.filters__modal-content select,
+.filters__modal-content input[type=file] {
+  display: block;
+  width: 97%;
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  color: #1c1c1c;
+  cursor: pointer;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  /* Кнопка внутри file-input */
+}
+.filters__modal-content select:focus,
+.filters__modal-content input[type=file]:focus {
+  border-color: #8c52ff;
+  box-shadow: 0 0 0 2px rgba(140, 82, 255, 0.2);
+  outline: none;
+}
+.filters__modal-content select::file-selector-button,
+.filters__modal-content input[type=file]::file-selector-button {
+  background-color: #8c52ff;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background-color 0.3s ease;
+}
+.filters__modal-content select::file-selector-button:hover,
+.filters__modal-content input[type=file]::file-selector-button:hover {
+  background-color: rgb(106.098265896, 31, 255);
+}
+
+/* Кастомная стрелочка для select */
+.filters__modal-content select {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='10' viewBox='0 0 14 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238c52ff' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 10px;
+}
+
+.filters__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.filters__modal-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.filters__modal-actions button:first-of-type {
+  background-color: #8c52ff;
+  color: #fff;
+}
+.filters__modal-actions button:first-of-type:hover {
+  background-color: rgb(106.098265896, 31, 255);
+}
+.filters__modal-actions button:first-of-type:disabled {
+  background-color: #cbb9ff;
+  cursor: not-allowed;
+}
+
+.filters__modal-actions button:last-of-type {
+  background-color: #ddd;
+  color: #333;
+}
+.filters__modal-actions button:last-of-type:hover {
+  background-color: #bbb;
+}
+.filters__modal-actions button:last-of-type:disabled {
+  background-color: #eee;
+  cursor: not-allowed;
+}
+
+.filters__date-selection {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+}
+.filters__date-selection select {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s;
+}
+.filters__date-selection select:focus {
+  outline: none;
+  border-color: #6a1fff;
+}
+
+.filters__year-input {
+  width: 120px;
+  height: 15px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.filters__year-input:focus {
+  outline: none;
+  border-color: #6a1fff;
+  box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
+}/*# sourceMappingURL=Filters.css.map */

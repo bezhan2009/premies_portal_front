@@ -1,0 +1,617 @@
+body {
+  background: #f1f1f1;
+  margin: 0;
+  padding: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+td:first-child {
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.modal {
+  max-width: 100% !important;
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal > main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  height: 80%;
+  background-color: #fff;
+  border-radius: 12px;
+  position: relative;
+}
+.modal > main img {
+  width: 90%;
+  max-height: 90%;
+}
+
+.file {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  background-color: #fff;
+  border-radius: 12px;
+}
+.file input {
+  display: none;
+}
+.file img {
+  max-height: 230px;
+}
+.file p {
+  position: absolute;
+}
+
+.input {
+  max-height: 100%;
+  position: relative;
+}
+.input input {
+  width: 95%;
+  height: 50%;
+  padding: 10px 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+}
+.input input:focus {
+  outline: #e21a1c solid 2px;
+  background-color: #686868;
+  color: #fff;
+}
+.input span {
+  width: auto;
+  position: absolute;
+  height: 50%;
+  padding: 10px 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+}
+
+.div4 input {
+  width: 95%;
+}
+
+.div28 input {
+  width: 70%;
+}
+
+.div9 {
+  width: 325px !important;
+}
+.div9 div {
+  margin-left: -30px;
+}
+
+.check-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0px;
+  width: 370px;
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 0px 0px 0 10px;
+}
+.check-box h1 {
+  color: #000 !important;
+}
+.check-box div {
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  width: 135px;
+  background-color: #e2e2e2;
+  padding-left: 10px;
+  border-radius: 12px 12px 12px 12px;
+}
+.check-box div label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.check-box div span {
+  display: flex;
+  max-width: 15px !important;
+  min-width: 15px;
+  max-height: 15px !important;
+  min-height: 15px;
+  border: 2px solid #999;
+  background-color: white;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 2px !important;
+  margin: 0;
+}
+.check-box div .checked {
+  border-color: #e21a1c !important;
+  border-width: 5px;
+  max-width: 10px !important;
+  min-width: 10px;
+  max-height: 10px !important;
+  min-height: 10px;
+}
+
+.form-check-box {
+  background-color: #f1f1f1;
+  height: 46px;
+}
+.form-check-box h1 {
+  font-size: 16px !important;
+}
+.form-check-box div {
+  padding: 5px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 40px;
+  width: 50%;
+  background-color: #e2e2e2;
+  border-radius: 12px 12px 12px 12px;
+}
+.form-check-box div label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.form-check-box div span {
+  display: flex;
+  max-width: 15px !important;
+  min-width: 15px;
+  max-height: 15px !important;
+  min-height: 15px;
+  border: 2px solid #999;
+  background-color: white;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 2px !important;
+  margin: 0;
+}
+.form-check-box div .checked {
+  border-color: #e21a1c !important;
+  border-width: 5px;
+  max-width: 10px !important;
+  min-width: 10px;
+  max-height: 10px !important;
+  min-height: 10px;
+}
+
+.radio-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 100px;
+  gap: 10px;
+  overflow: auto;
+}
+.radio-select .radio-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+.radio-select .radio-select-item span {
+  font-weight: 300;
+  font-style: Regular;
+  font-size: 14px;
+  line-height: 19px;
+  letter-spacing: 0.39%;
+}
+.radio-select .radio-select-item nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.radio-select .radio-select-item nav > div {
+  max-width: 15px !important;
+  min-width: 15px;
+  max-height: 15px !important;
+  min-height: 15px;
+  background-color: #fff !important;
+  border: 2px solid #999;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 2px !important;
+  margin: 0;
+}
+.radio-select .radio-select-item .checked {
+  border-color: #e21a1c;
+  border-width: 5px;
+  max-width: 10px !important;
+  min-width: 10px;
+  max-height: 10px !important;
+  min-height: 10px;
+}
+
+.gift-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.gift-card main {
+  max-width: 1440px;
+  height: 1103px;
+  width: 90%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
+.gift-card main .select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gift-card main .select select {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  color: #000;
+}
+.gift-card main .select select:focus {
+  outline: #e21a1c solid 2px;
+  background-color: rgba(0, 0, 0, 0.5725490196);
+  color: #fff;
+}
+.gift-card main .select p {
+  position: absolute;
+}
+.gift-card main .header-form {
+  display: flex;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+.gift-card main .header-form div {
+  background-color: #f1f1f1;
+  height: 200px;
+  flex: 1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+.gift-card main .header-passport {
+  background-color: #f1f1f1;
+  height: 230px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+.gift-card main .header-passport > div {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.gift-card main .content-form {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 10px 20px;
+  justify-content: space-between;
+}
+.gift-card main .content-form .div1 {
+  grid-area: 1/1/2/5;
+}
+.gift-card main .content-form .div2 {
+  grid-area: 1/5/2/9;
+}
+.gift-card main .content-form .div3 {
+  grid-area: 1/9/2/13;
+}
+.gift-card main .content-form .div4 {
+  grid-area: 1/13/2/17;
+}
+.gift-card main .content-form .div5 {
+  grid-area: 2/1/3/5;
+}
+.gift-card main .content-form .div6 {
+  grid-area: 2/5/3/7;
+}
+.gift-card main .content-form .div7 {
+  grid-area: 2/7/3/10;
+}
+.gift-card main .content-form .div8 {
+  grid-area: 2/10/3/13;
+}
+.gift-card main .content-form .div9 {
+  grid-area: 2/13/3/17;
+}
+.gift-card main .content-form .div10 {
+  grid-area: 3/1/4/5;
+}
+.gift-card main .content-form .div11 {
+  grid-area: 3/5/4/9;
+}
+.gift-card main .content-form .div12 {
+  grid-area: 3/9/4/11;
+}
+.gift-card main .content-form .div13 {
+  grid-area: 3/11/4/13;
+}
+.gift-card main .content-form .div14 {
+  grid-area: 3/13/4/17;
+}
+.gift-card main .content-form .div15 {
+  grid-area: 4/1/5/4;
+}
+.gift-card main .content-form .div16 {
+  grid-area: 4/4/5/6;
+}
+.gift-card main .content-form .div17 {
+  grid-area: 4/6/5/8;
+}
+.gift-card main .content-form .div18 {
+  grid-area: 4/8/5/11;
+}
+.gift-card main .content-form .div19 {
+  grid-area: 4/11/5/14;
+}
+.gift-card main .content-form .div20 {
+  grid-area: 4/14/5/17;
+}
+.gift-card main .content-form .div21 {
+  grid-area: 5/1/6/3;
+}
+.gift-card main .content-form .div22 {
+  grid-area: 5/3/6/5;
+}
+.gift-card main .content-form .div23 {
+  grid-area: 5/5/6/8;
+}
+.gift-card main .content-form .div24 {
+  grid-area: 5/8/6/10;
+}
+.gift-card main .content-form .div25 {
+  grid-area: 5/10/6/12;
+}
+.gift-card main .content-form .div26 {
+  grid-area: 5/12/6/13;
+}
+.gift-card main .content-form .div27 {
+  grid-area: 5/13/6/16;
+}
+.gift-card main .content-form .div28 {
+  grid-area: 5/16/6/17;
+}
+.gift-card main footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 70px;
+  background-color: #f1f1f1;
+  margin-top: 20px;
+  border-radius: 12px;
+  padding: 20px;
+}
+.gift-card main footer button {
+  cursor: pointer;
+  background-color: white;
+  border: none;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.gift-card main footer button img {
+  width: 30px;
+}
+.gift-card main h1 {
+  font-family: sans-serif;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 17.6px;
+  line-height: 22px;
+  letter-spacing: 1.56%;
+  display: flex;
+  align-items: center;
+  color: #bdbdbd;
+}
+
+.my-applications {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.my-applications > main {
+  max-width: 1440px;
+  height: 1103px;
+  width: 90%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+.my-applications > main .my-applications-header {
+  display: flex;
+  gap: 15px;
+}
+.my-applications > main .my-applications-header button {
+  border-radius: 12px;
+  padding: 10px 40px;
+  background-color: #999;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+.my-applications > main .my-applications-header button:last-child {
+  background-color: #e21a1c;
+}
+.my-applications > main .my-applications-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.my-applications > main .my-applications-sub-header .input {
+  display: flex;
+  align-items: center;
+  width: 80px;
+}
+.my-applications > main .my-applications-content {
+  margin-top: 20px;
+  overflow: auto;
+}
+
+.applications-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.applications-list > main {
+  max-width: 1440px;
+  height: 1103px;
+  width: 90%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+.applications-list > main .my-applications-header {
+  display: flex;
+  gap: 15px;
+}
+.applications-list > main .my-applications-header button {
+  border-radius: 12px;
+  padding: 10px 20px;
+  background-color: #999;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+.applications-list > main .my-applications-header .filter {
+  background-color: #999;
+}
+.applications-list > main .my-applications-header .edit {
+  background-color: #6b3dcf;
+}
+.applications-list > main .my-applications-header .save {
+  background-color: #2566e8;
+}
+.applications-list > main .my-applications-header .Unloading {
+  background-color: green;
+}
+.applications-list > main .my-applications-header .Report {
+  background-color: green;
+}
+.applications-list > main .my-applications-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.applications-list > main .my-applications-header > div .input {
+  display: flex;
+  align-items: center;
+  height: 60%;
+  width: 300px;
+}
+.applications-list > main .my-applications-header > div .input input {
+  height: 100%;
+}
+.applications-list > main .my-applications-header > div button {
+  padding: 10px 40px;
+  height: 100% !important;
+  margin-left: -30px;
+  background-color: #e21a1c;
+}
+.applications-list > main .my-applications-header .select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.applications-list > main .my-applications-header .select select {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  color: #000;
+}
+.applications-list > main .my-applications-header .select select:focus {
+  outline: #e21a1c solid 2px;
+  background-color: rgba(0, 0, 0, 0.5725490196);
+  color: #fff;
+}
+.applications-list > main .my-applications-header .select p {
+  position: absolute;
+}
+.applications-list > main .my-applications-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.applications-list > main .my-applications-sub-header .input {
+  display: flex;
+  align-items: center;
+  width: 80px;
+}
+.applications-list > main .my-applications-content {
+  margin-top: 20px;
+  overflow: auto;
+}/*# sourceMappingURL=global.css.map */

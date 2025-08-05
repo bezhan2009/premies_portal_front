@@ -1,0 +1,40 @@
+.extra-form {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(50px);
+  transition: all 0.4s ease;
+}
+.extra-form label {
+  display: block;
+  margin: 10px 0;
+}
+.extra-form label input, .extra-form label select {
+  width: 93%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.extra-form label textarea {
+  width: 93%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: none;
+  outline: none;
+  background: #f5f5f5;
+}
+.extra-form label textarea::-moz-placeholder {
+  color: #999;
+  font-weight: 700;
+}
+.extra-form label textarea::placeholder {
+  color: #999;
+  font-weight: 700;
+}
+
+.extra-form.visible {
+  max-height: 500px;
+  opacity: 1;
+  transform: translateX(0);
+}/*# sourceMappingURL=extraForm.css.map */

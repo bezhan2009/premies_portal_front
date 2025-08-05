@@ -1,0 +1,102 @@
+@charset "UTF-8";
+.container {
+  font-family: Arial, sans-serif;
+  padding: 10px;
+}
+
+.header-reps {
+  width: 94%;
+  display: flex;
+  gap: 8px;
+  margin: 25px;
+  flex-wrap: wrap;
+  background-color: #f8f8f8;
+  border: 2px solid #e4e4e4;
+  border-radius: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  background-color: #e4e4e4;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn:hover {
+  background-color: #d6d6d6;
+}
+
+.btn.active {
+  background-color: #eae6f8;
+  border: 1px solid #bfa2f4;
+  color: #7e4cc3;
+  box-shadow: inset 0 0 0 1px #bfa2f4;
+}
+
+.content {
+  width: 95%;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background-color: #f8f8f8;
+}
+.content h2 {
+  margin-left: 0;
+  padding-left: 20px;
+}
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.content th, .content td {
+  padding: 26px;
+  border: 1px solid #e4e4e4;
+  text-align: center;
+  font-size: 14px;
+  color: #333;
+}
+.content th {
+  font-weight: 650;
+}
+
+.filters__container {
+  position: relative;
+  padding-top: 30px;
+  margin: 10px;
+  padding-top: 40px;
+}
+.filters__container .filters__title {
+  position: absolute;
+  top: 10px;
+  left: 18px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 10px;
+}
+.filters__container .filters__left {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filters__container__date {
+  margin: 10px;
+}
+
+.loading {
+  font-size: 16px; /* Размер шрифта */
+  color: #ff0000; /* Цвет текста, например красный */
+  text-align: center; /* Выравнивание по центру */
+  padding: 10px; /* Внутренние отступы */
+  background-color: #f0f0f0; /* Светлый фон */
+  border-radius: 5px; /* Скругление углов */
+  font-family: Arial, sans-serif; /* Семейство шрифтов */
+  margin: 20px auto; /* Отступы и центрирование блока */
+  width: -moz-fit-content;
+  width: fit-content; /* Подгонка ширины под содержимое */
+  font-weight: bold;
+}/*# sourceMappingURL=WorkersDataReports.css.map */

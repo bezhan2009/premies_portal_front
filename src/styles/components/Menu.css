@@ -1,0 +1,233 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: white;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+.header .header-left {
+  display: flex;
+  align-items: center;
+}
+.header .header-left img:hover {
+  opacity: 0.85;
+  transition: 0.2s;
+}
+.header .header-left .nav-links {
+  display: flex;
+  gap: 2.4rem;
+  margin-left: 2rem;
+}
+.header .header-left .nav-links a {
+  position: relative;
+  text-decoration: none;
+  color: #333;
+  font-weight: 470;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0.5rem 0;
+}
+.header .header-left .nav-links a:hover {
+  opacity: 0.85;
+  transition: 0.2s;
+}
+.header .header-left .nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  top: 156%;
+  margin-bottom: 4px;
+  width: 150%;
+  height: 3px;
+  background-color: transparent;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+.header .header-left .nav-links a.active::after {
+  background-color: #e31919;
+  transform: translateX(-50%) scaleX(1);
+}
+.header .header-left .nav-links a:hover::after {
+  background-color: #e31949;
+  transform: translateX(-50%) scaleX(1);
+}
+.header .header-left .nav-links a:focus::after {
+  background-color: #e31949;
+  transform: translateX(-50%) scaleX(1);
+}
+.header .header-left .nav-links.mobile-open {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  width: 200px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+  z-index: 1000;
+  overflow: hidden;
+}
+.header .header-left .nav-links.mobile-open a {
+  margin: 0.5rem 0;
+}
+.header .header-left .mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+}
+.header .header-left .mobile-menu-toggle span {
+  width: 100%;
+  height: 3px;
+  background: #333;
+  transition: all 0.3s ease;
+}
+.header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.header .header-right span {
+  font-size: 0.9rem;
+  font-weight: 470;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+@media (max-width: 768px) {
+  .header .header-left .nav-links {
+    display: none;
+  }
+  .header .header-left .mobile-menu-toggle {
+    display: flex;
+  }
+  .header .header-left .nav-links.mobile-open {
+    display: flex;
+  }
+}
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.username-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.username-wrapper span {
+  cursor: pointer;
+}
+.username-wrapper .change-password-btn {
+  display: none;
+  margin-left: 10px;
+  background: transparent;
+  border: none;
+  color: #e31919;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.username-wrapper .change-password-btn:hover {
+  color: #e31949;
+  text-decoration: underline;
+}
+.username-wrapper:hover .change-password-btn {
+  display: inline;
+}
+
+.modal-overlay {
+  color: #f1f1f1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 6px;
+  width: 400px;
+  max-width: 90%;
+}
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: #333;
+}
+.modal form {
+  display: flex;
+  flex-direction: column;
+}
+.modal form label {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.modal form label input {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.modal form label input:focus {
+  border-color: #e31919;
+  outline: none;
+}
+.modal form .modal-error {
+  color: #e31919;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.modal form .modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.modal form .modal-buttons button {
+  padding: 0.5rem 1rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+.modal form .modal-buttons button:first-child {
+  background: #e31919;
+  color: #fff;
+}
+.modal form .modal-buttons button:first-child:hover {
+  background: #c31414;
+}
+.modal form .modal-buttons button:last-child {
+  background: #eee;
+  color: #333;
+}
+.modal form .modal-buttons button:last-child:hover {
+  background: #ddd;
+}/*# sourceMappingURL=Menu.css.map */
