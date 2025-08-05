@@ -86,7 +86,7 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
                 <div className="header-right">
                     <div className="username-wrapper">
                         <span>
-                          Председатель: <strong>{username}</strong>
+                          Агент: <strong>{username}</strong>
                         </span>
                         <button className="change-password-btn" onClick={handleChangePassword}>
                             Изменить пароль
