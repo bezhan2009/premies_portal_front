@@ -429,9 +429,9 @@ export default function GiftCard() {
           />
         </div>
         <footer>
-          <button>
+          <button onClick={() => onSend()}>
             <img src={save} alt="" />
-            <span onClick={() => onSend()}>Сохранить</span>
+            <span >Сохранить</span>
           </button>
           <button>
             <img src={card} alt="" />
