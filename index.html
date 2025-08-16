@@ -9,5 +9,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      const body = document.body;
+      let scrollTimeout;
+
+      window.addEventListener('scroll', () => {
+        body.classList.add('scrolling');
+        clearTimeout(scrollTimeout);
+
+        scrollTimeout = setTimeout(() => {
+          body.classList.remove('scrolling');
+        }, 300);
+      });
+    </script>
   </body>
 </html>
