@@ -38,6 +38,8 @@ import GiftCard from "../pages/general/GiftCard.jsx";
 import MyApplications from "../pages/general/MyApplications.jsx";
 import ApplicationsList from "../pages/general/ApplicationsList.jsx";
 import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
+import DashboardDirectorReports from "../pages/dashboard/dashboard_director/DirectorReports.jsx";
+import DashboardDirectorKnowledgeBase from "../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
 
 export default function AppRouter() {
   return (
@@ -119,7 +121,7 @@ export default function AppRouter() {
           {/* Chairman-only routes */}
           <Route
             element={
-              <RequireRole allowedRoles={[9, 5]}>
+              <RequireRole allowedRoles={[9]}>
                 <Outlet />
               </RequireRole>
             }
@@ -131,6 +133,23 @@ export default function AppRouter() {
             <Route
               path="/chairman/knowledge-base"
               element={<DashboardChairmanKnowledgeBase />}
+            />
+          </Route>
+          {/* Director-only routes */}
+          <Route
+              element={
+                <RequireRole allowedRoles={[5]}>
+                  <Outlet />
+                </RequireRole>
+              }
+          >
+            <Route
+                path="/director/reports"
+                element={<DashboardDirectorReports />}
+            />
+            <Route
+                path="/director/knowledge-base"
+                element={<DashboardDirectorKnowledgeBase />}
             />
           </Route>
           <Route

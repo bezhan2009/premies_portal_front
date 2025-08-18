@@ -1,4 +1,4 @@
-// operator_premies.js
+
 export const fetchOffices = async () => {
     const token = localStorage.getItem('access_token');
     const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/office`);

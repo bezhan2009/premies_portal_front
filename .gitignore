@@ -30,3 +30,6 @@ dist-ssr
 *.env
 
 uploads/uploaded
+
+*.xlsx
+*.docx

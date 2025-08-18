@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import CustomFinanceTooltip from './CustomFinanceTooltip.jsx';
-import '../../../../styles/components/ChartComponents.scss';
+import '../../../styles/components/ChartComponents.scss';
 import { AnimatePresence, motion } from 'framer-motion';
-import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js";
-import { getMonthName } from "../../../../api/utils/date.js";
-import Spinner from "../../../Spinner.jsx";
+import { fetchEmployee } from "../../../api/chairman/reports/employee_spec.js";
+import { getMonthName } from "../../../api/utils/date.js";
+import Spinner from "../../Spinner.jsx";
 
 const ChartReportFinance = ({ url }) => {
     const [chartData, setChartData] = useState([]);

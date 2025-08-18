@@ -21,6 +21,12 @@
           body.classList.remove('scrolling');
         }, 300);
       });
+
+      document.querySelectorAll('tr').forEach((row, index) => {
+        row.querySelectorAll('td').forEach(td => {
+          td.style.setProperty('--row-index', index);
+        });
+      });
     </script>
   </body>
 </html>
