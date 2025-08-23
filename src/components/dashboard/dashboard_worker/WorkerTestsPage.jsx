@@ -208,7 +208,7 @@ export default function WorkerTestsPage() {
                                                     key={opt.ID}
                                                     className={isChecked ? 'selected' : ''}
                                                 >
-                                                    <label className="custom-checkbox">
+                                                    <label className="custom-checkbox-tests">
                                                         <input
                                                             type="checkbox"
                                                             checked={isChecked}

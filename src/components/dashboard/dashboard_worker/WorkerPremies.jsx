@@ -136,8 +136,8 @@ export default function Dashboard() {
 
     const total = calculateTotalPremia(data);
     const qualityData = safeArray(data.ServiceQuality)[0] || {};
-    const callCenterValue = (qualityData?.call_center ?? 0) === 0 ? 5 : qualityData?.call_center ?? 5;
-    const testsValue = (qualityData?.tests ?? 0) === 0 ? 5 : qualityData?.tests ?? 5;
+    const callCenterValue = (qualityData?.call_center ?? 0) === 0 ? 0 : qualityData?.call_center ?? 0;
+    const testsValue = (qualityData?.tests ?? 0) === 0 ? 0 : qualityData?.tests ?? 0;
     const complaintValue = qualityData?.complaint ?? 0;
 
     return (

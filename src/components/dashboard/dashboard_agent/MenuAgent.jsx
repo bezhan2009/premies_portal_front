@@ -86,14 +86,13 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
                 <div className="header-right">
                     <div className="username-wrapper">
                         <span>
-                          Агент: <strong>{username}</strong>
+                          Директор: <strong>{username}</strong>
                         </span>
                         <button className="change-password-btn" onClick={handleChangePassword}>
                             Изменить пароль
                         </button>
-                        <LogoutButton />
-
                     </div>
+                    <LogoutButton />
                 </div>
             </header>
 
