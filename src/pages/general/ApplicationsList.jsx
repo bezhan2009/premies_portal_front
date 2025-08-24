@@ -7,6 +7,8 @@ import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
+import '../../styles/checkbox.scss'
+
 
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
@@ -190,7 +192,7 @@ export default function ApplicationsList() {
                     </thead>
                     <tbody>
                     {filteredData.slice(0, data?.limit || filteredData.length).map((row, index) => (
-                        <tr key={index} style={{ backgroundColor: index % 2 === 0 ? "#fff" : "#f9f9f9" }}>
+                        <tr key={index}>
                           <td>
                             <input
                                 type="checkbox"

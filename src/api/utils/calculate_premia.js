@@ -13,7 +13,7 @@ export function calculateTotalPremia(worker) {
         (card_sales.cards_prem || 0) +
         (worker.salary_project || 0);
 
-    const callCenter = service.call_center === 0 ? 5 : service.call_center;
+    const callCenter = service.call_center === 0 ? 0 : service.call_center;
     let callPercent = 0;
 
     if (callCenter >= 0 && callCenter <= 1) {
@@ -30,7 +30,7 @@ export function calculateTotalPremia(worker) {
         callPercent = 20;
     }
 
-    const tests = service.tests === 0 ? 5 : service.tests;
+    const tests = service.tests === 0 ? 0 : service.tests;
     let testPercent = 0;
 
     if (tests >= 0 && tests <= 2) {

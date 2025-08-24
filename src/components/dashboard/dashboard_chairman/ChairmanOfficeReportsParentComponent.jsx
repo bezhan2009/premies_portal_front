@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReportTableOfficesChairman from './table_reports/TableReportsOffice.jsx';
-import ChairmanReportCardsBlockInfo from './charts/CardCharts.jsx';
-import ChairmanReportFinanceBlockInfo from './charts/FinanceChart.jsx';
+import ChairmanReportCardsBlockInfo from '../charts/CardCharts.jsx';
+import ChairmanReportFinanceBlockInfo from '../charts/FinanceChart.jsx';
 
 const ChairmanOfficeParentComponent = () => {
     const [url, setUrl] = useState(''); // Состояние для URL

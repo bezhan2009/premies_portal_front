@@ -4,13 +4,12 @@ import LogoutButton from '../../general/Logout';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
-export default function HeaderAgent({ activeLink = 'reports' }) {
+export default function HeaderDirector({ activeLink = 'reports' }) {
     const username = localStorage.getItem('username') || 'Неизвестное имя';
 
     const links = [
-        { name: 'Карта', href: '/agent/card', key: 'gift_card' },
-        { name: 'Заявки', href: '/agent/applications-list', key: 'applications' },
-        { name: 'База знаний', href: '/agent/knowledge-base', key: 'knowledge' },
+        { name: 'База знаний', href: '/director/knowledge-base', key: 'knowledge' },
+        { name: 'Отчет по картам', href: '/director/reports', key: 'rep_cards' },
     ];
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

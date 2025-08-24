@@ -7,11 +7,11 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from 'recharts';
-import '../../../../styles/components/ChartComponents.scss';
+import '../../../styles/components/ChartComponents.scss';
 import CustomCardsTooltip from './CustomCardsTooltip.jsx';
-import { fetchEmployee } from '../../../../api/chairman/reports/employee_spec.js';
-import { getMonthName } from '../../../../api/utils/date.js';
-import Spinner from '../../../Spinner.jsx';
+import { fetchEmployee } from '../../../api/chairman/reports/employee_spec.js';
+import { getMonthName } from '../../../api/utils/date.js';
+import Spinner from '../../Spinner.jsx';
 
 const ChartReportCards = ({ url }) => {
     const [chartData, setChartData] = useState([]);

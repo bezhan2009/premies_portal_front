@@ -9,5 +9,24 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      const body = document.body;
+      let scrollTimeout;
+
+      window.addEventListener('scroll', () => {
+        body.classList.add('scrolling');
+        clearTimeout(scrollTimeout);
+
+        scrollTimeout = setTimeout(() => {
+          body.classList.remove('scrolling');
+        }, 300);
+      });
+
+      document.querySelectorAll('tr').forEach((row, index) => {
+        row.querySelectorAll('td').forEach(td => {
+          td.style.setProperty('--row-index', index);
+        });
+      });
+    </script>
   </body>
 </html>

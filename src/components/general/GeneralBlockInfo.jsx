@@ -12,6 +12,7 @@ import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/Genera
 import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTestsPage.jsx";
 import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";
 import WorkerApplicationsCards from "../dashboard/dashboard_worker/WorkerApplicationsCards.jsx";
+import DirectorReports from "../dashboard/dashboard_director/DirectorReports.jsx";
 
 function GetBlockInfo({ page }) {
     switch (page) {
@@ -37,6 +38,8 @@ function GetBlockInfo({ page }) {
             return <WorkerApplicationsCards />
         case "chairman_reports":
             return <ChairmanReports />
+        case "director_reports":
+            return <DirectorReports />
         default:
             return <GeneralUnderDevelopment />;
     }

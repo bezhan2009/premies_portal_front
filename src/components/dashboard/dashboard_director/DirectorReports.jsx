@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import ReportFilters from "./FilterReports.jsx";
 import ReportContent from "./ReportsContent.jsx";
 
-const ChairmanReports = () => {
-    const [activeTab, setActiveTab] = useState('bank');
+const DirectorReports = () => {
+    const [activeTab, setActiveTab] = useState('office');
 
     return (
         <>
@@ -17,4 +17,4 @@ const ChairmanReports = () => {
     );
 };
 
-export default ChairmanReports;
+export default DirectorReports;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import ChairmanReportCardsBlockInfo from './charts/CardCharts.jsx';
-import ChairmanReportFinanceBlockInfo from './charts/FinanceChart.jsx';
+import ChairmanReportCardsBlockInfo from '../charts/CardCharts.jsx';
+import ChairmanReportFinanceBlockInfo from '../charts/FinanceChart.jsx';
 import ReportTableCardsChairman from "./table_reports/TableReportsCards.jsx";
 
 const ChairmanAllParentComponent = () => {

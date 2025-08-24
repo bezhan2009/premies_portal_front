@@ -4,7 +4,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  width: 99%;
   background: white;
   padding: 0.50rem 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -38,11 +38,11 @@
         &::after {
           content: '';
           position: absolute;
-          left: 50%; 
+          left: 50%;
           transform: translateX(-50%) scaleX(0);
           top: 156%;
           margin-bottom: 4px;
-          width: 150%; 
+          width: 150%;
           height: 3px;
           background-color: transparent;
           transition: background-color 0.3s ease, transform 0.3s ease;
@@ -143,34 +143,58 @@
   }
 }
 
-
 .username-wrapper {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  font-family: sans-serif;
+
+  &:hover {
+    background: rgba(227, 25, 25, 0.05);
+  }
 
   span {
     cursor: pointer;
+    font-size: 0.95rem;
+    font-family: sans-serif;
+    color: #333;
+
+    strong {
+      font-family: sans-serif;
+      font-weight: 600;
+      color: #222;
+    }
   }
 
   .change-password-btn {
-    display: none;
-    margin-left: 10px;
+    opacity: .9;
+    margin-left: 6px;
     background: transparent;
+    font-family: sans-serif;
     border: none;
     color: #e31919;
-    font-weight: 500;
+    font-weight: 530;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    transform: translateY(1px);
 
     &:hover {
-      color: #e31949;
-      text-decoration: underline;
+      color: #c31414;
+      background: rgba(227, 25, 25, 0.1);
+      text-decoration: none;
     }
   }
 
   &:hover .change-password-btn {
-    display: inline;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -180,48 +204,71 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 10000;
   display: flex;
   justify-content: center;
   align-items: center;
+  animation: fadeIn 0.3s ease-out;
+  backdrop-filter: blur(3px);
 }
 
 .modal {
   background: #fff;
   padding: 2rem;
-  border-radius: 6px;
-  width: 400px;
+  border-radius: 8px;
+  width: 420px;
   max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  animation: modalSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   h3 {
     margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.8rem;
     font-size: 1.4rem;
-    color: #333;
+    color: #222;
+    position: relative;
+    padding-bottom: 8px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 50px;
+      height: 3px;
+      background: #e31919;
+      border-radius: 3px;
+    }
   }
 
   form {
     display: flex;
     flex-direction: column;
+    gap: 1.2rem;
 
     label {
-      margin-bottom: 1rem;
+      margin-bottom: 0.2rem;
       display: flex;
       flex-direction: column;
       font-weight: 500;
       font-size: 0.9rem;
+      color: #444;
 
       input {
         margin-top: 0.5rem;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        padding: 0.7rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
         font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f9f9f9;
 
         &:focus {
           border-color: #e31919;
+          box-shadow: 0 0 0 3px rgba(227, 25, 25, 0.1);
           outline: none;
+          background: #fff;
         }
       }
     }
@@ -229,40 +276,84 @@
     .modal-error {
       color: #e31919;
       font-size: 0.9rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
+      padding: 8px 12px;
+      background: rgba(227, 25, 25, 0.05);
+      border-radius: 4px;
+      border-left: 3px solid #e31919;
+      animation: shake 0.4s ease;
     }
 
     .modal-buttons {
       display: flex;
       justify-content: flex-end;
       gap: 1rem;
+      margin-top: 0.5rem;
 
       button {
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.2rem;
         border: none;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 6px;
         font-weight: 500;
-        transition: background 0.3s ease;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
 
         &:first-child {
           background: #e31919;
           color: #fff;
+          box-shadow: 0 2px 6px rgba(227, 25, 25, 0.3);
 
           &:hover {
             background: #c31414;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(227, 25, 25, 0.4);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+
+          &:disabled {
+            background: #e31949;
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
           }
         }
 
         &:last-child {
-          background: #eee;
-          color: #333;
+          background: #f5f5f5;
+          color: #555;
 
           &:hover {
-            background: #ddd;
+            background: #e0e0e0;
           }
         }
       }
     }
   }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
 }

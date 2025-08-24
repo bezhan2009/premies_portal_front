@@ -65,6 +65,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         return agg;
     };
 
+    // ==== 1. Аггрегированная статистика банка ====
     if (parts[0] === "*" && parts[parts.length - 1] === "stats") {
         const yearParam = parts[1] || "";
         const monthParam = parts.length === 3 ? month : Number(parts[2]) || month;
@@ -98,6 +99,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [transformed];
     }
 
+    // ==== 2. Все офисы (аггрегировано) ====
     if (parts[0] === "*") {
         if (parts[2] === "office" || parts.length === 2) {
             const url = `${import.meta.env.VITE_BACKEND_URL}/office?${commonParams}`;
@@ -142,6 +144,7 @@ export const fetchEmployee = async (month, employeeURL) => {
             return [combined];
         }
 
+        // Все работники постранично
         const all = [];
         let after = null;
         while (true) {
@@ -158,7 +161,8 @@ export const fetchEmployee = async (month, employeeURL) => {
         return all;
     }
 
-    if (parts[2] === "office") {
+    // ==== 3. Конкретный офис ====
+    if (!(isNumber(parts[0]) && parts[1] === "director") && parts[2] === "office") {
         const id = parts[0];
         const url = `${import.meta.env.VITE_BACKEND_URL}/office/${id}?${commonParams}`;
         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -167,6 +171,20 @@ export const fetchEmployee = async (month, employeeURL) => {
         return [aggregateOfficeUsers(office)];
     }
 
+    // ==== 4. Офис директора (по токену) ====
+    if (isNumber(parts[0]) && parts[1] === "director" && parts[2] === "office") {
+        const yearParam = parts[0];
+        const params = new URLSearchParams(commonParams);
+        params.set("year", yearParam);
+
+        const url = `${import.meta.env.VITE_BACKEND_URL}/office/director?${params}`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const office = await res.json();
+        return [aggregateOfficeUsers(office)];
+    }
+
+    // ==== 5. Один сотрудник ====
     const urlW = `${import.meta.env.VITE_BACKEND_URL}/workers/${parts[0]}?${commonParams}`;
     const resW = await fetch(urlW, {
         headers: {

@@ -91,7 +91,7 @@
       font-weight: 600;
     }
 
-    .custom-checkbox,
+    .custom-checkbox-tests,
     .custom-radio {
       display: flex;
       align-items: center;
@@ -133,12 +133,12 @@
       border-radius: 50%;
     }
 
-    .custom-checkbox:hover input ~ .checkmark,
+    .custom-checkbox-tests:hover input ~ .checkmark,
     .custom-radio:hover input ~ .radiomark {
       border-color: #9661ff; /* Акцентный цвет при hover */
     }
 
-    .custom-checkbox input:checked ~ .checkmark,
+    .custom-checkbox-tests input:checked ~ .checkmark,
     .custom-radio input:checked ~ .radiomark {
       background-color: #9661ff; /* Акцентный цвет при выборе */
       border-color: #9661ff;
@@ -169,12 +169,12 @@
       border-radius: 50%;
     }
 
-    .custom-checkbox input:checked ~ .checkmark:after,
+    .custom-checkbox-tests input:checked ~ .checkmark:after,
     .custom-radio input:checked ~ .radiomark:after {
       display: block;
     }
 
-    .custom-checkbox input:checked ~ .checkbox-text,
+    .custom-checkbox-tests input:checked ~ .checkbox-text,
     .custom-radio input:checked ~ .radio-text {
       color: #9661ff; /* Акцентный цвет текста при выборе */
       font-weight: bold;
