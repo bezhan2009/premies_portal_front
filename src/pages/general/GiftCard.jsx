@@ -235,52 +235,64 @@ export default function GiftCard({ edit = false }) {
               </div>
             </div>
             <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
-            {
-              <div className="header-passport">
-                <File
-                  errors={errors}
-                  onChange={(e) =>
-                    setData("front_side_of_the_passport_file", e)
-                  }
-                  placeholderImage={front_side_of_the_passport_file}
-                  id={"front_side_of_the_passport_file"}
-                  value={data?.front_side_of_the_passport_file}
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
-                <File
-                  errors={errors}
-                  onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                  placeholderImage={back_side_of_the_passport_file}
-                  id={"back_side_of_the_passport_file"}
-                  value={data?.back_side_of_the_passport_file}
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
 
-                <File
-                  errors={errors}
-                  onChange={(e) => setData("selfie_with_passport_file", e)}
-                  placeholderImage={personImg}
-                  id={"selfie_with_passport_file"}
-                  value={data?.selfie_with_passport_file}
-                  width={220}
-                />
+            <div className="header-passport">
+              <File
+                edit={edit}
+                errors={errors}
+                onChange={(e) => setData("front_side_of_the_passport_file", e)}
+                placeholderImage={front_side_of_the_passport_file}
+                id={"front_side_of_the_passport_file"}
+                value={
+                  edit
+                    ? data?.front_side_of_the_passport
+                    : data?.front_side_of_the_passport_file
+                }
+                width={340}
+              />
+              <img src={file} alt="file" width={16} />
+              <File
+                edit={edit}
+                errors={errors}
+                onChange={(e) => setData("back_side_of_the_passport_file", e)}
+                placeholderImage={back_side_of_the_passport_file}
+                id={"back_side_of_the_passport_file"}
+                value={
+                  edit
+                    ? data?.back_side_of_the_passport
+                    : data?.back_side_of_the_passport_file
+                }
+                width={340}
+              />
+              <img src={file} alt="file" width={16} />
 
-                <div>
-                  <CheckBox
-                    title={"Личность подтверждена?"}
-                    value={data.identity_verified}
-                    onChange={(e) => setData("identity_verified", e)}
-                  />
-                  <CheckBox
-                    title={"Заявка дистанционная?"}
-                    value={data.remote_application}
-                    onChange={(e) => setData("remote_application", e)}
-                  />
-                </div>
+              <File
+                edit={edit}
+                errors={errors}
+                onChange={(e) => setData("selfie_with_passport_file", e)}
+                placeholderImage={personImg}
+                id={"selfie_with_passport_file"}
+                value={
+                  edit
+                    ? data?.selfie_with_passport
+                    : data?.selfie_with_passport_file
+                }
+                width={220}
+              />
+
+              <div>
+                <CheckBox
+                  title={"Личность подтверждена?"}
+                  value={data.identity_verified}
+                  onChange={(e) => setData("identity_verified", e)}
+                />
+                <CheckBox
+                  title={"Заявка дистанционная?"}
+                  value={data.remote_application}
+                  onChange={(e) => setData("remote_application", e)}
+                />
               </div>
-            }
+            </div>
             <div className="content-form">
               <Input
                 className={"div1"}
