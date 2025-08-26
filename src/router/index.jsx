@@ -157,7 +157,7 @@ export default function AppRouter() {
               <RequireRole allowedRoles={[10]}>
                 <Outlet />
               </RequireRole>
-            }
+            } 
           >
             <Route path="/agent/card" element={<GiftCard />} />
             <Route path="/agent/card/:id" element={<GiftCard edit={true} />} />
