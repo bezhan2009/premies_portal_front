@@ -10,6 +10,7 @@ import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
+import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
@@ -133,6 +134,17 @@ export default function ApplicationsList() {
         <img src={fileLogo} alt="Файл" width={48} height={60} />
       </button>
     );
+  };
+
+  const deleteApplication = async (id) => {
+    try {
+      const res = await deleteApplicationById(id);
+      if (res) {
+        setTimeout(() => fetchData(), 200);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const filteredData = applyFilters(tableData);
@@ -290,7 +302,7 @@ export default function ApplicationsList() {
                             }}
                           />
                           <AiFillDelete
-                            onClick={() => deleteApplication()}
+                            onClick={() => deleteApplication(row.ID)}
                             style={{
                               fontSize: 35,
                               color: "#c31414",
