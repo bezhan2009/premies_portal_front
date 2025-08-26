@@ -86,7 +86,7 @@
   color: #202124;
   font-weight: 600;
 }
-.worker-options-list li .custom-checkbox,
+.worker-options-list li .custom-checkbox-tests,
 .worker-options-list li .custom-radio {
   display: flex;
   align-items: center;
@@ -123,11 +123,11 @@
 .worker-options-list li .radiomark {
   border-radius: 50%;
 }
-.worker-options-list li .custom-checkbox:hover input ~ .checkmark,
+.worker-options-list li .custom-checkbox-tests:hover input ~ .checkmark,
 .worker-options-list li .custom-radio:hover input ~ .radiomark {
   border-color: #9661ff; /* Акцентный цвет при hover */
 }
-.worker-options-list li .custom-checkbox input:checked ~ .checkmark,
+.worker-options-list li .custom-checkbox-tests input:checked ~ .checkmark,
 .worker-options-list li .custom-radio input:checked ~ .radiomark {
   background-color: #9661ff; /* Акцентный цвет при выборе */
   border-color: #9661ff;
@@ -155,11 +155,11 @@
   background-color: white;
   border-radius: 50%;
 }
-.worker-options-list li .custom-checkbox input:checked ~ .checkmark:after,
+.worker-options-list li .custom-checkbox-tests input:checked ~ .checkmark:after,
 .worker-options-list li .custom-radio input:checked ~ .radiomark:after {
   display: block;
 }
-.worker-options-list li .custom-checkbox input:checked ~ .checkbox-text,
+.worker-options-list li .custom-checkbox-tests input:checked ~ .checkbox-text,
 .worker-options-list li .custom-radio input:checked ~ .radio-text {
   color: #9661ff; /* Акцентный цвет текста при выборе */
   font-weight: bold;
