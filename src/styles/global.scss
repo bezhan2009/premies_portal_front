@@ -4,7 +4,20 @@ body {
   padding: 0;
   animation: fadeIn 0.5s ease-out;
 }
-
+.archive-toggle {
+  background-color: #2566e8 !important;
+}
+.active-table{
+  position: sticky;
+  right: 0;
+  background-color: #fff !important;
+  > svg{
+    border: 1px solid transparent;
+    &:hover{
+      border: 1px solid #999;
+    }
+  }
+}
 /* Стили для всех скроллбаров */
 ::-webkit-scrollbar {
   width: 12px;

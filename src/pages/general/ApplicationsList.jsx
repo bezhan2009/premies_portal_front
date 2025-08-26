@@ -8,8 +8,9 @@ import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
-import { AiFillEdit } from "react-icons/ai";
+import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
+import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
@@ -18,6 +19,7 @@ export default function ApplicationsList() {
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [archive, setArchive] = useState(false);
   const [filters, setFilters] = useState({
     fullName: "",
     phone: "",
@@ -26,23 +28,21 @@ export default function ApplicationsList() {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-        const response = await fetch(`${backendUrl}/applications`);
-        const result = await response.json();
-        setTableData(result);
-      } catch (error) {
-        console.error("Ошибка загрузки заявок:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      const response = await fetch(
+        `${backendUrl}/applications${archive ? "/archive" : ""}`
+      );
+      const result = await response.json();
+      setTableData(result);
+    } catch (error) {
+      console.error("Ошибка загрузки заявок:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   function ImagePreviewModal({ imageUrl, onClose }) {
     if (!imageUrl) return null;
@@ -136,7 +136,22 @@ export default function ApplicationsList() {
     );
   };
 
+  const deleteApplication = async (id) => {
+    try {
+      const res = await deleteApplicationById(id);
+      if (res) {
+        setTimeout(() => fetchData(), 200);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const filteredData = applyFilters(tableData);
+
+  useEffect(() => {
+    fetchData();
+  }, [archive]);
 
   return (
     <>
@@ -159,6 +174,12 @@ export default function ApplicationsList() {
               onClick={() => setShowFilters(!showFilters)}
             >
               Фильтры
+            </button>
+            <button
+              className={archive && "archive-toggle"}
+              onClick={() => setArchive(!archive)}
+            >
+              Архив
             </button>
           </div>
 
@@ -270,12 +291,21 @@ export default function ApplicationsList() {
                         <td>{row.inn}</td>
                         <td>{row.delivery_address}</td>
                         <td>{row.card_code}</td>
-                        <td style={{ position: "sticky", right: "0", background: "#fff" }}>
+                        <td className="active-table">
                           <AiFillEdit
                             onClick={() => navigate(`/agent/card/${row.ID}`)}
                             style={{
-                              fontSize: 30,
+                              fontSize: 35,
                               color: "green",
+                              cursor: "pointer",
+                              marginBottom: "10px",
+                            }}
+                          />
+                          <AiFillDelete
+                            onClick={() => deleteApplication(row.ID)}
+                            style={{
+                              fontSize: 35,
+                              color: "#c31414",
                               cursor: "pointer",
                             }}
                           />
