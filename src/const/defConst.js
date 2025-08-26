@@ -38,7 +38,7 @@ export const mcCards = [
   { id: 8, name: "MC Unembossed_1635 15 нерезидент" },
   { id: 9, name: "1636.20 MC Platinum Nontesident" },
   { id: 10, name: "1636.21 MC World Nonresident" },
-  { id: 10, name: "1636.24 MC World Elite" },
+  { id: 11, name: "1636.24 MC World Elite" },
 ];
 
 
