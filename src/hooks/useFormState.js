@@ -1,7 +1,5 @@
 import { create } from "zustand";
 
-
-
 export const useFormStore = create((set, get) => ({
   data: {},
   errors: {},
@@ -17,6 +15,7 @@ export const useFormStore = create((set, get) => ({
     set((state) => ({
       data: { ...state.data, [field]: value },
     })),
+  setDataMore: (data) => set({ data: data }),
   setDataClear: () =>
     set(() => ({
       data: {},
