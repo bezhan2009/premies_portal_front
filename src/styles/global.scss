@@ -7,13 +7,16 @@ body {
 .archive-toggle {
   background-color: #2566e8 !important;
 }
-.active-table{
+.selectAll-toggle {
+  background-color: #e21a1c !important;
+}
+.active-table {
   position: sticky;
   right: 0;
   background-color: #fff !important;
-  > svg{
+  > svg {
     border: 1px solid transparent;
-    &:hover{
+    &:hover {
       border: 1px solid #999;
     }
   }
