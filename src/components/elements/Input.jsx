@@ -10,7 +10,7 @@ export default function Input({
 }) {
   return (
     <label className={`input ${className}`} htmlFor={id}>
-      {title || type === "date" && <span>{title || placeholder}</span>}
+      {title || (type === "date" && !value  && <span>{title || placeholder}</span>)}
       <input
         // style={{ display: type === "date" && "none" }}
         id={id}

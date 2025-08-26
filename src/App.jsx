@@ -6,7 +6,7 @@ import MyApplications from "./pages/general/MyApplications";
 import ApplicationsList from "./pages/general/ApplicationsList";
 
 function App() {
-  return <AppRouter />;
+  return <AppRouter />; 
   // return <GiftCard />; // page: "Карты"
   // return <MyApplications />; // page: "Мои заявки"
   // return <ApplicationsList />; // page: "Список заявкок"

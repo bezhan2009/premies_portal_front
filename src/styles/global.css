@@ -1,63 +1,169 @@
+@charset "UTF-8";
 body {
   background: #f1f1f1;
   margin: 0;
   padding: 0;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Стили для всех скроллбаров */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(232, 48, 54, 0.5);
+  border-radius: 6px;
+  border: 3px solid #fff;
+  -webkit-transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(232, 48, 54, 0.8);
+}
+
+/* Исправленный селектор (без пробела!) */
+body.scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(232, 48, 54, 0.9);
+}
+
+div.scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(232, 48, 54, 0.9);
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", -apple-system, sans-serif;
+  font-size: 14px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.4s ease-out;
 }
 
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-td:first-child {
-  text-align: center;
-}
-
+/* Заголовки столбцов */
 th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.modal {
-  max-width: 100% !important;
-  width: 100%;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-.modal > main {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 80%;
-  height: 80%;
   background-color: #fff;
-  border-radius: 12px;
+  color: #333;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid #ff4757;
   position: relative;
-}
-.modal > main img {
-  width: 90%;
-  max-height: 90%;
+  transition: all 0.3s ease;
 }
 
+/* Эффект при наведении на заголовок */
+th:hover {
+  background-color: rgba(255, 71, 87, 0.05);
+}
+
+/* Ячейки таблицы */
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+/* Анимация появления строк */
+tr {
+  animation: fadeInRow 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+/* Подсветка строки при наведении */
+tr:hover td {
+  background: rgba(255, 71, 87, 0.03);
+}
+
+/* Разделители столбцов (тонкие линии) */
+th:not(:last-child),
+td:not(:last-child) {
+  border-right: 1px solid #f5f5f5;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* Последовательное появление строк */
+tr:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+tr:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+tr:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+tr:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+tr:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+tr:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+tr:nth-child(7) {
+  animation-delay: 0.7s;
+}
+
+tr:nth-child(8) {
+  animation-delay: 0.8s;
+}
+
+tr:nth-child(9) {
+  animation-delay: 0.9s;
+}
+
+tr:nth-child(10) {
+  animation-delay: 1s;
+}
+
+tr:nth-child(11) {
+  animation-delay: 1.1s;
+}
+
+tr:nth-child(12) {
+  animation-delay: 1.2s;
+}
+
+tr:nth-child(13) {
+  animation-delay: 1.3s;
+}
+
+tr:nth-child(14) {
+  animation-delay: 1.4s;
+}
+
+/* ... и так далее по необходимости */
 .file {
   display: flex;
   flex-direction: column;
@@ -65,20 +171,24 @@ tr:nth-child(even) {
   position: relative;
   background-color: #fff;
   border-radius: 12px;
+  animation: fadeIn 0.4s ease-out;
 }
 .file input {
   display: none;
 }
 .file img {
   max-height: 230px;
+  animation: scaleIn 0.3s ease-out;
 }
 .file p {
   position: absolute;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .input {
   max-height: 100%;
   position: relative;
+  animation: fadeIn 0.4s ease-out;
 }
 .input input {
   width: 95%;
@@ -87,11 +197,28 @@ tr:nth-child(even) {
   background-color: #f1f1f1;
   border-radius: 12px;
   border: none;
+  transition: 0.09s;
+  animation: fadeIn 0.5s ease-out;
+}
+.input input::-moz-placeholder {
+  color: initial;
+}
+.input input::placeholder {
+  color: initial;
+}
+.input input:hover {
+  outline: #e21a1c solid 2px;
 }
 .input input:focus {
   outline: #e21a1c solid 2px;
-  background-color: #686868;
+  background-color: #6d6d6d;
   color: #fff;
+}
+.input input:focus::-moz-placeholder {
+  color: #f1f1f1;
+}
+.input input:focus::placeholder {
+  color: #f1f1f1;
 }
 .input span {
   width: auto;
@@ -103,6 +230,7 @@ tr:nth-child(even) {
   border: none;
   display: flex;
   align-items: center;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .div4 input {
@@ -115,6 +243,7 @@ tr:nth-child(even) {
 
 .div9 {
   width: 325px !important;
+  animation: fadeIn 0.4s ease-out;
 }
 .div9 div {
   margin-left: -30px;
@@ -129,6 +258,7 @@ tr:nth-child(even) {
   border-radius: 12px;
   background-color: #fff;
   padding: 0px 0px 0 10px;
+  animation: fadeIn 0.4s ease-out;
 }
 .check-box h1 {
   color: #000 !important;
@@ -143,6 +273,7 @@ tr:nth-child(even) {
   background-color: #e2e2e2;
   padding-left: 10px;
   border-radius: 12px 12px 12px 12px;
+  animation: fadeIn 0.5s ease-out;
 }
 .check-box div label {
   display: flex;
@@ -176,6 +307,7 @@ tr:nth-child(even) {
 .form-check-box {
   background-color: #f1f1f1;
   height: 46px;
+  animation: fadeIn 0.4s ease-out;
 }
 .form-check-box h1 {
   font-size: 16px !important;
@@ -190,6 +322,7 @@ tr:nth-child(even) {
   width: 50%;
   background-color: #e2e2e2;
   border-radius: 12px 12px 12px 12px;
+  animation: fadeIn 0.5s ease-out;
 }
 .form-check-box div label {
   display: flex;
@@ -227,6 +360,7 @@ tr:nth-child(even) {
   max-height: 100px;
   gap: 10px;
   overflow: auto;
+  animation: fadeIn 0.4s ease-out;
 }
 .radio-select .radio-select-item {
   display: flex;
@@ -237,6 +371,7 @@ tr:nth-child(even) {
   border-radius: 6px;
   transition: background-color 0.3s ease;
   width: 100%;
+  animation: fadeIn 0.5s ease-out;
 }
 .radio-select .radio-select-item span {
   font-weight: 300;
@@ -277,20 +412,22 @@ tr:nth-child(even) {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  margin-top: 30px;
+  animation: fadeIn 0.3s ease-out;
 }
 .gift-card main {
-  max-width: 1440px;
   height: 1103px;
-  width: 90%;
+  width: 95%;
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
+  animation: fadeIn 0.4s ease-out;
 }
 .gift-card main .select {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  animation: fadeIn 0.5s ease-out;
 }
 .gift-card main .select select {
   width: 100%;
@@ -300,6 +437,7 @@ tr:nth-child(even) {
   border-radius: 12px;
   border: none;
   color: #000;
+  animation: fadeIn 0.6s ease-out;
 }
 .gift-card main .select select:focus {
   outline: #e21a1c solid 2px;
@@ -313,6 +451,7 @@ tr:nth-child(even) {
   display: flex;
   margin-bottom: 20px;
   gap: 20px;
+  animation: fadeIn 0.5s ease-out;
 }
 .gift-card main .header-form div {
   background-color: #f1f1f1;
@@ -323,6 +462,7 @@ tr:nth-child(even) {
   align-items: center;
   gap: 20px;
   padding: 20px;
+  animation: fadeIn 0.6s ease-out;
 }
 .gift-card main .header-passport {
   background-color: #f1f1f1;
@@ -332,11 +472,13 @@ tr:nth-child(even) {
   align-items: center;
   gap: 20px;
   padding: 20px;
+  animation: fadeIn 0.5s ease-out;
 }
 .gift-card main .header-passport > div {
   display: flex;
   flex-direction: column;
   gap: 30px;
+  animation: fadeIn 0.6s ease-out;
 }
 .gift-card main .content-form {
   margin-top: 20px;
@@ -345,6 +487,7 @@ tr:nth-child(even) {
   grid-template-rows: repeat(5, 1fr);
   gap: 10px 20px;
   justify-content: space-between;
+  animation: fadeIn 0.6s ease-out;
 }
 .gift-card main .content-form .div1 {
   grid-area: 1/1/2/5;
@@ -425,10 +568,13 @@ tr:nth-child(even) {
   grid-area: 5/12/6/13;
 }
 .gift-card main .content-form .div27 {
-  grid-area: 5/13/6/16;
+  grid-area: 5/13/6/15;
 }
 .gift-card main .content-form .div28 {
   grid-area: 5/16/6/17;
+}
+.gift-card main .content-form .div29 {
+  grid-area: 5/15/6/16;
 }
 .gift-card main footer {
   display: flex;
@@ -439,6 +585,7 @@ tr:nth-child(even) {
   margin-top: 20px;
   border-radius: 12px;
   padding: 20px;
+  animation: fadeIn 0.7s ease-out;
 }
 .gift-card main footer button {
   cursor: pointer;
@@ -449,6 +596,7 @@ tr:nth-child(even) {
   display: flex;
   align-items: center;
   gap: 20px;
+  animation: fadeIn 0.8s ease-out;
 }
 .gift-card main footer button img {
   width: 30px;
@@ -463,6 +611,7 @@ tr:nth-child(even) {
   display: flex;
   align-items: center;
   color: #bdbdbd;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .my-applications {
@@ -470,20 +619,22 @@ tr:nth-child(even) {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  animation: fadeIn 0.3s ease-out;
 }
 .my-applications > main {
-  max-width: 1440px;
   height: 1103px;
-  width: 90%;
+  width: 98%;
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
   display: grid;
   grid-template-rows: auto auto 1fr;
+  animation: fadeIn 0.4s ease-out;
 }
 .my-applications > main .my-applications-header {
   display: flex;
   gap: 15px;
+  animation: fadeIn 0.5s ease-out;
 }
 .my-applications > main .my-applications-header button {
   border-radius: 12px;
@@ -493,6 +644,7 @@ tr:nth-child(even) {
   border: none;
   font-size: 16px;
   cursor: pointer;
+  animation: fadeIn 0.6s ease-out;
 }
 .my-applications > main .my-applications-header button:last-child {
   background-color: #e21a1c;
@@ -502,36 +654,38 @@ tr:nth-child(even) {
   align-items: center;
   gap: 15px;
   margin-top: 20px;
+  animation: fadeIn 0.6s ease-out;
 }
 .my-applications > main .my-applications-sub-header .input {
   display: flex;
   align-items: center;
   width: 80px;
+  animation: fadeIn 0.7s ease-out;
 }
 .my-applications > main .my-applications-content {
   margin-top: 20px;
   overflow: auto;
+  animation: fadeIn 0.7s ease-out;
 }
 
 .applications-list {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  height: calc(100vh - 130px);
+  animation: fadeIn 0.3s ease-out;
 }
 .applications-list > main {
-  max-width: 1440px;
-  height: 1103px;
-  width: 90%;
+  width: 98%;
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
-  display: grid;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.4s ease-out;
 }
 .applications-list > main .my-applications-header {
   display: flex;
   gap: 15px;
+  animation: fadeIn 0.5s ease-out;
 }
 .applications-list > main .my-applications-header button {
   border-radius: 12px;
@@ -541,6 +695,7 @@ tr:nth-child(even) {
   border: none;
   font-size: 16px;
   cursor: pointer;
+  animation: fadeIn 0.6s ease-out;
 }
 .applications-list > main .my-applications-header .filter {
   background-color: #999;
@@ -559,15 +714,15 @@ tr:nth-child(even) {
 }
 .applications-list > main .my-applications-header > div {
   display: flex;
-  align-items: center;
   gap: 10px;
   position: relative;
+  animation: fadeIn 0.6s ease-out;
 }
 .applications-list > main .my-applications-header > div .input {
   display: flex;
-  align-items: center;
   height: 60%;
   width: 300px;
+  animation: fadeIn 0.7s ease-out;
 }
 .applications-list > main .my-applications-header > div .input input {
   height: 100%;
@@ -577,11 +732,13 @@ tr:nth-child(even) {
   height: 100% !important;
   margin-left: -30px;
   background-color: #e21a1c;
+  animation: fadeIn 0.7s ease-out;
 }
 .applications-list > main .my-applications-header .select {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  animation: fadeIn 0.6s ease-out;
 }
 .applications-list > main .my-applications-header .select select {
   width: 100%;
@@ -591,6 +748,7 @@ tr:nth-child(even) {
   border-radius: 12px;
   border: none;
   color: #000;
+  animation: fadeIn 0.7s ease-out;
 }
 .applications-list > main .my-applications-header .select select:focus {
   outline: #e21a1c solid 2px;
@@ -605,13 +763,340 @@ tr:nth-child(even) {
   align-items: center;
   gap: 15px;
   margin-top: 20px;
+  animation: fadeIn 0.6s ease-out;
 }
 .applications-list > main .my-applications-sub-header .input {
   display: flex;
   align-items: center;
   width: 80px;
+  animation: fadeIn 0.7s ease-out;
 }
 .applications-list > main .my-applications-content {
   margin-top: 20px;
   overflow: auto;
+  animation: fadeIn 0.7s ease-out;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.modal > main {
+  width: 95vw;
+  height: 90vh;
+  overflow: auto;
+  animation: fadeIn 0.4s ease-out;
+}
+.modal > main img {
+  max-width: 85vw;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.my-applications,
+.applications-list {
+  padding: 2vh 2vw;
+  animation: fadeIn 0.3s ease-out;
+}
+.my-applications > main,
+.applications-list > main {
+  height: auto;
+  overflow: hidden;
+  padding: 2vh 2vw;
+  animation: fadeIn 0.4s ease-out;
+}
+.my-applications > main .content-form,
+.applications-list > main .content-form {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-auto-rows: minmax(60px, auto);
+  animation: fadeIn 0.5s ease-out;
+}
+.my-applications > main .content-form > div,
+.applications-list > main .content-form > div {
+  grid-area: auto !important;
+}
+
+.file-icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  padding: 0;
+  animation: fadeIn 0.5s ease-out;
+}
+.file-icon-button:hover {
+  transform: scale(1.05);
+}
+
+.preview-modal-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+.preview-image {
+  max-width: 90vw;
+  max-height: 80vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.3s ease-out;
+}
+
+.close-preview {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  font-size: 20px;
+  padding: 6px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.custom-modal-content {
+  position: relative;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 85vh;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.3s ease;
+}
+
+.custom-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: crimson;
+  color: white;
+  border: none;
+  font-size: 20px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 50%;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.custom-modal-image {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.custom-modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+  font-family: "Helvetica Neue", sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.custom-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background-color: #ff4d4d;
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.custom-modal-close:hover {
+  background-color: #ff1a1a;
+  transform: scale(1.05);
+}
+
+.custom-modal-image {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
+}
+
+.filters {
+  animation: fadeIn 0.4s ease-out;
+  margin: 20px 0;
+}
+
+.filters input,
+.filters select {
+  margin-right: 12px;
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.filters input:focus,
+.filters select:focus {
+  border-color: #ff1a1a;
+  box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
+  outline: none;
+  animation: pulse 0.5s ease-out;
+}
+
+/* Дополнительные анимации для фильтров */
+.filters .filter-group {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.filters .filter-label {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.filters .filter-controls {
+  animation: fadeIn 0.7s ease-out;
+}
+
+.filters button {
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 12px rgba(175, 76, 76, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
+  }
+}
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.85) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+@keyframes slideIn {
+  from {
+    left: 100%;
+  }
+  to {
+    left: 0;
+  }
+}
+select {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  border: none;
+  color: #000;
+  animation: fadeIn 0.7s ease-out;
+}
+select:focus {
+  outline: #e21a1c solid 2px;
+  background-color: rgba(0, 0, 0, 0.5725490196);
+  color: #fff;
+}
+
+/* Общий стиль для всех option */
+option {
+  font-family: "Arial", sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  background-color: #ff1a1a; /* Зеленый фон */
+  padding: 10px;
+  border-radius: 8px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+/* При наведении - изменение цвета и поднятие */
+option:hover {
+  background-color: #ff1a1a;
+  transform: scale(1.02);
+}
+
+/* Стиль для выбранного элемента (если позволяют стили) */
+option:checked {
+  background-color: #ff1a1a;
+  color: #ffffff;
+}
+
+button {
+  transition: 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:active {
+  opacity: 0.8;
+  transform: scale(0.9);
+  transition: 0.3s;
 }/*# sourceMappingURL=global.css.map */

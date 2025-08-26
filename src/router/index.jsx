@@ -137,19 +137,19 @@ export default function AppRouter() {
           </Route>
           {/* Director-only routes */}
           <Route
-              element={
-                <RequireRole allowedRoles={[5]}>
-                  <Outlet />
-                </RequireRole>
-              }
+            element={
+              <RequireRole allowedRoles={[5]}>
+                <Outlet />
+              </RequireRole>
+            }
           >
             <Route
-                path="/director/reports"
-                element={<DashboardDirectorReports />}
+              path="/director/reports"
+              element={<DashboardDirectorReports />}
             />
             <Route
-                path="/director/knowledge-base"
-                element={<DashboardDirectorKnowledgeBase />}
+              path="/director/knowledge-base"
+              element={<DashboardDirectorKnowledgeBase />}
             />
           </Route>
           <Route
@@ -157,20 +157,18 @@ export default function AppRouter() {
               <RequireRole allowedRoles={[10]}>
                 <Outlet />
               </RequireRole>
-            }
+            }  
           >
             <Route path="/agent/card" element={<GiftCard />} />
-            <Route
-              path="/agent/my-applications"
-              element={<MyApplications />}
-            />
+            <Route path="/agent/card/:id" element={<GiftCard edit={true} />} />
+            <Route path="/agent/my-applications" element={<MyApplications />} />
             <Route
               path="/agent/applications-list"
               element={<ApplicationsList />}
             />
             <Route
-                path="/agent/knowledge-base"
-                element={<DashboardAgentKB />}
+              path="/agent/knowledge-base"
+              element={<DashboardAgentKB />}
             />
           </Route>
         </Route>
