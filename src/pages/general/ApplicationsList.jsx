@@ -20,6 +20,7 @@ export default function ApplicationsList() {
   const [previewImage, setPreviewImage] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [archive, setArchive] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
   const [filters, setFilters] = useState({
     fullName: "",
     phone: "",
@@ -153,6 +154,14 @@ export default function ApplicationsList() {
     fetchData();
   }, [archive]);
 
+  useEffect(() => {
+    if (selectAll) {
+      setSelectedRows(filteredData.map((e) => e.ID));
+    } else {
+      setSelectedRows([]);
+    }
+  }, [selectAll]);
+
   return (
     <>
       <HeaderAgent activeLink="applications" />
@@ -180,6 +189,14 @@ export default function ApplicationsList() {
               onClick={() => setArchive(!archive)}
             >
               Архив
+            </button>
+            <button
+              className={selectAll && "selectAll-toggle"}
+              onClick={() => {
+                setSelectAll(!selectAll);
+              }}
+            >
+              Выбрать все
             </button>
           </div>
 
@@ -263,6 +280,7 @@ export default function ApplicationsList() {
                           <input
                             type="checkbox"
                             className="custom-checkbox"
+                            checked={selectedRows.includes(row.ID)}
                             onChange={(e) => {
                               setSelectedRows(
                                 e.target.checked

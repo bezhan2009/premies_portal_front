@@ -9,6 +9,7 @@ export default function FileUpload({
   placeholder,
   placeholderImage,
   value,
+  edit
 }) {
   const [preview, setPreview] = useState(null);
   const renderFileIcon = (path) => {
@@ -21,12 +22,12 @@ export default function FileUpload({
       return null;
     }
   };
-  console.log("value " + id , value);
-  
+  console.log("value " + id, value);
 
   useEffect(() => {
     if (typeof value === "string") {
-      renderFileIcon(value);
+      const url = renderFileIcon(value);
+      setPreview(url);
     } else {
       if (value instanceof File) {
         const objectUrl = URL.createObjectURL(value);
@@ -40,7 +41,7 @@ export default function FileUpload({
   }, [value]);
 
   return (
-    <label className="file" htmlFor={id}>
+    <label className="file" htmlFor={edit ? "" : id }>
       <img
         src={preview || placeholderImage}
         width={width}
