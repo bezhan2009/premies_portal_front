@@ -41,7 +41,6 @@ export const mcCards = [
   { id: 11, name: "1636.24 MC World Elite" },
 ];
 
-
 export const docTypes = [
   { value: 0, label: "Тип документа" },
   { value: 2, label: "Паспорт Республики Таджикистан" },
@@ -114,13 +113,12 @@ export const streetTypes = [
 ];
 export const status = [
   { value: 0, label: "Статус" },
-  { value: 1, label: "Отправлено в банк" },
-  { value: 2, label: "Ожидает подтверждения" },
-  { value: 3, label: "Подтверждено" },
-  { value: 4, label: "Отклонено" },
-  { value: 5, label: "На доработке" },
-  { value: 6, label: "Отменено" },
-  { value: 7, label: "Завершено" },
+  { value: 1, label: "Заявка принята" },
+  { value: 2, label: "Заявка обработана" },
+  { value: 3, label: "Карта открыта" },
+  { value: 4, label: "Карта активирована" },
+  { value: 5, label: "Недостоверные данные" },
+  { value: 6, label: "Отказано в карте" },
 ];
 export const applicationsList = [
   {
