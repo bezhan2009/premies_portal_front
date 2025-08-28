@@ -92,6 +92,7 @@ function KnowledgeBaseDetail({ data }) {
           </div>
         ))}
       </div>
+
       <div>
         <Input title={"Поиск"} onChange={(e) => setFilter(e)} value={filter} />
       </div>
