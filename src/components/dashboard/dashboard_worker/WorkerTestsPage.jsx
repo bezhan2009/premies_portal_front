@@ -248,6 +248,11 @@ export default function WorkerTestsPage() {
                                 )}
                 </div>
             ))} */}
+            <div>
+              <h1>
+                {question + 1}/{test.Questions.length}
+              </h1>
+            </div>
             <div
               key={test.Questions[question].ID}
               className="worker-question-card"
