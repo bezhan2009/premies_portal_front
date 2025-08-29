@@ -1218,3 +1218,9 @@ button:active {
   transform: scale(0.9);
   transition: 0.3s;
 }
+.btn-test-nav{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
