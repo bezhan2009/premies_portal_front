@@ -40,10 +40,11 @@
   transition: background 0.2s, transform 0.2s;
   animation: fadeIn 0.6s ease;
 }
-.kb-sidebar ul li:hover, .kb-sidebar ul li.active {
-  background: rgba(140, 82, 255, 0.15);
+.kb-sidebar ul li:hover,
+.kb-sidebar ul li.active {
+  background: #fff3f3;
   transform: scale(1.02);
-  color: #8c52ff;
+  color: #c31414;
 }
 .kb-sidebar ul li:not(.active) {
   color: #333;
@@ -109,7 +110,7 @@
 }
 
 .question-single_choice {
-  border-left: 5px solid #8c52ff;
+  border-left: 5px solid #c31414;
 }
 
 .question-multiple_choice {
@@ -292,4 +293,4 @@ option:hover {
 .wrong-answer {
   border-color: #e74c3c;
   background: #fdecea;
-}/*# sourceMappingURL=TestsPage.css.map */
+} /*# sourceMappingURL=TestsPage.css.map */

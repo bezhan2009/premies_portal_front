@@ -1,4 +1,4 @@
-@import '../mixins/general';
+@import "../mixins/general";
 
 .tests-module {
   width: 93%;
@@ -22,9 +22,9 @@
 
   h3 {
     @include font;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     margin-bottom: 14px;
-    color: #333;
+    color: #c31414;
   }
 
   ul {
@@ -43,9 +43,9 @@
 
       &:hover,
       &.active {
-        background: rgba(140, 82, 255, 0.15);
+        background: #fff3f3;
         transform: scale(1.02);
-        color: #8c52ff;
+        color: #c31414;
       }
 
       &:not(.active) {
@@ -120,7 +120,7 @@
 }
 
 .question-single_choice {
-  border-left: 5px solid #8c52ff;
+  border-left: 5px solid #c31414;
 }
 
 .question-multiple_choice {
@@ -182,8 +182,8 @@
 }
 
 .kb-add-btn {
-  background: #eae1fb;
-  color: #6b3dcf;
+  background: #d52f2f;
+  color: white;
   border: none;
   padding: 9px 17px;
   margin: 10px;
@@ -193,12 +193,13 @@
   transition: background 0.3s;
 
   &:hover {
-    background: #c5aeff;
+    background: #d52f2f;
+    color: white;
   }
 
   &:active {
     color: #fff;
-    background: #a47fff;
+    background: #cd696b;
   }
 }
 
@@ -264,12 +265,12 @@ option:hover {
   border: 2px solid #dcdcdc;
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s, box-shadow 0.2s;
 
   &:hover {
     transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   .answer-header {

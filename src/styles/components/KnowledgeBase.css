@@ -64,13 +64,14 @@
   transition: background 0.2s, transform 0.2s;
   animation: fadeIn 0.6s ease;
 }
-.kb-sidebar ul li.active, .kb-sidebar ul li:hover {
-  background: rgba(140, 82, 255, 0.15);
+.kb-sidebar ul li.active,
+.kb-sidebar ul li:hover {
+  background: #fff3f3;
   transform: scale(1.02);
 }
 .kb-sidebar ul li.active {
   font-weight: 600;
-  color: #8c52ff;
+  color: #c31414;
 }
 .kb-sidebar ul li:not(.active) {
   color: #333;
@@ -121,8 +122,9 @@
   transform: scale(1.03);
 }
 .kb-detail .kb-items .kb-item.active {
-  border-color: #8c52ff;
-  box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.2);
+  border-color: #c31414;
+  color: #c31414;
+  box-shadow: 0 0 0 3px #fff3f3;
 }
 .kb-detail .kb-items .kb-item h4 {
   font-size: 1.1rem;
@@ -164,16 +166,16 @@
   width: 24px;
   height: 24px;
   -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
   margin-right: 8px;
 }
 .kb-detail .kb-docs-list li a:hover,
 .kb-detail .kb-docs-list li .doc-label:hover {
-  color: #8c52ff;
+  color: #c31414;
 }
 
 .kb-add-btn {
-  background: #8c52ff;
+  background: #c31414;
   color: #fff;
   border: none;
   padding: 4px 10px;
@@ -194,7 +196,7 @@
   color: #666;
 }
 .kb-action-btn:hover {
-  color: #8c52ff;
+  color: #c31414;
 }
 
 .kb-doc-actions {
@@ -232,13 +234,14 @@
   flex-direction: column;
   gap: 10px;
 }
-.kb-modal-content input, .kb-modal-content textarea {
+.kb-modal-content input,
+.kb-modal-content textarea {
   width: 100%;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-.kb-modal-content input[type=file] {
+.kb-modal-content input[type="file"] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -251,13 +254,13 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   /* Кнопка внутри file-input */
 }
-.kb-modal-content input[type=file]:focus {
-  border-color: #8c52ff;
-  box-shadow: 0 0 0 2px rgba(140, 82, 255, 0.2);
+.kb-modal-content input[type="file"]:focus {
+  border-color: #c31414;
+  box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
-.kb-modal-content input[type=file]::file-selector-button {
-  background-color: #8c52ff;
+.kb-modal-content input[type="file"]::file-selector-button {
+  background-color: #c31414;
   color: #fff;
   border: none;
   padding: 10px 16px;
@@ -267,7 +270,7 @@
   margin-right: 10px;
   transition: background-color 0.3s ease;
 }
-.kb-modal-content input[type=file]::file-selector-button:hover {
+.kb-modal-content input[type="file"]::file-selector-button:hover {
   background-color: rgb(106.098265896, 31, 255);
 }
 
@@ -278,7 +281,7 @@
   margin-top: 20px;
 }
 .kb-modal-actions button {
-  background: #8c52ff;
+  background: #c31414;
   color: #fff;
   border: none;
   padding: 8px 14px;
@@ -312,4 +315,4 @@
 .kb-doc-actions span {
   margin-left: 8px;
   cursor: pointer;
-}/*# sourceMappingURL=KnowledgeBase.css.map */
+} /*# sourceMappingURL=KnowledgeBase.css.map */

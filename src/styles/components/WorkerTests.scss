@@ -1,12 +1,14 @@
 .worker-tests-page {
   max-width: 97%;
-  margin: 40px auto;
+  margin: 10px auto;
   padding: 0 20px;
-  font-family: 'Roboto', sans-serif;
+  height: calc(100vh - 165px);
+  font-family: "Roboto", sans-serif;
   animation: fadeIn 0.5s ease-out;
 }
 
 .worker-test-card {
+  height: 100%;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -19,7 +21,7 @@
 }
 
 .worker-test-header {
-  background-color: #f7f3ff;
+  background-color: #fff3f3;
   padding: 30px 40px;
 
   h2 {
@@ -37,14 +39,17 @@
 }
 
 .worker-questions {
-  padding: 30px 40px;
+  padding: 30px 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
   gap: 30px;
 }
 
 .worker-question-card {
-  background: #faf8ff;
+  background: #fff3f3;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 25px 20px;
@@ -61,7 +66,7 @@
 
   .worker-question-type {
     font-size: 0.95rem;
-    color: #9661ff; /* Акцентный цвет заменен сюда */
+    color: #e9585a; /* Акцентный цвет заменен сюда */
     margin-bottom: 20px;
   }
 }
@@ -80,13 +85,13 @@
     background: #fff;
 
     &:hover {
-      background: #f2e9ff;
-      border-color: #9661ff; /* Замена цвета при hover на новый */
+      background: #ffe9e9;
+      border-color: #e9585a; /* Замена цвета при hover на новый */
     }
 
     &.selected {
-      background: #e8f0fe;
-      border-color: #9661ff; /* Замена цвета у выбранных */
+      background: #fee8e8;
+      border-color: #e9585a; /* Замена цвета у выбранных */
       color: #202124;
       font-weight: 600;
     }
@@ -135,13 +140,13 @@
 
     .custom-checkbox-tests:hover input ~ .checkmark,
     .custom-radio:hover input ~ .radiomark {
-      border-color: #9661ff; /* Акцентный цвет при hover */
+      border-color: #e9585a; /* Акцентный цвет при hover */
     }
 
     .custom-checkbox-tests input:checked ~ .checkmark,
     .custom-radio input:checked ~ .radiomark {
-      background-color: #9661ff; /* Акцентный цвет при выборе */
-      border-color: #9661ff;
+      background-color: #e9585a; /* Акцентный цвет при выборе */
+      border-color: #e9585a;
     }
 
     .checkmark:after {
@@ -176,7 +181,7 @@
 
     .custom-checkbox-tests input:checked ~ .checkbox-text,
     .custom-radio input:checked ~ .radio-text {
-      color: #9661ff; /* Акцентный цвет текста при выборе */
+      color: #e9585a; /* Акцентный цвет текста при выборе */
       font-weight: bold;
     }
   }
@@ -194,15 +199,15 @@
   margin-top: 15px;
 
   &:focus {
-    border-color: #9661ff; /* Акцентный цвет для фокуса */
-    box-shadow: 0 0 0 2px rgba(150,97,255, 0.2); /* Цвет в тени тоже обновлён */
+    border-color: #e9585a; /* Акцентный цвет для фокуса */
+    box-shadow: 0 0 0 2px rgba(150, 97, 255, 0.2); /* Цвет в тени тоже обновлён */
     outline: none;
   }
 }
 
 .worker-submit-bar {
   padding: 20px 40px;
-  background: #f7f3ff;
+  background:   #fff3f3;
   border-top: 1px solid #ddd;
   display: flex;
   justify-content: flex-end;
@@ -228,7 +233,7 @@
   animation: fadeIn 0.5s ease-out;
 
   h2 {
-    color: #9661ff; /* Главный акцентный цвет в блоке */
+    color: #e9585a; /* Главный акцентный цвет в блоке */
     font-size: 2rem;
     margin-bottom: 20px;
   }
@@ -245,7 +250,7 @@
   align-items: center;
   min-height: 60vh;
   font-size: 1.5rem;
-  color: #9661ff; /* Цвет загрузки тоже поменял */
+  color: #e9585a; /* Цвет загрузки тоже поменял */
   animation: fadeIn 0.5s ease-out;
 }
 
