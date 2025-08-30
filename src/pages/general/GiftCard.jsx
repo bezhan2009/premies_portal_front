@@ -28,20 +28,23 @@ import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import { useEffect, useState } from "react";
 import { getApplicationById } from "../../api/application/getApplicationById.js";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
+import { formaterDate } from "../../api/utils/formateDate.js";
 
 export default function GiftCard({ edit = false }) {
   const [loading, setLoading] = useState(false);
   const { data, errors, setData, validate, setDataClear, setDataMore } =
     useFormStore();
 
+  const navigate = useNavigate()
+
   const { id } = useParams();
 
   const ValidData = {
-    front_side_of_the_passport_file: { required: true },
-    back_side_of_the_passport_file: { required: true },
-    selfie_with_passport_file: { required: true },
+    surname: { required: true },
+    name: { required: true },
+    phone_number: { required: true },
   };
 
   const formatDateForBackend = (dateStr) => {
@@ -51,8 +54,8 @@ export default function GiftCard({ edit = false }) {
   };
 
   const onSend = async () => {
-    // const isValid = validate(ValidData);
-    // if (!isValid) return;
+    const isValid = validate(ValidData);
+    if (!isValid) return;
     try {
       const formData = new FormData();
 
@@ -140,7 +143,7 @@ export default function GiftCard({ edit = false }) {
 
         const result = await response.json();
         console.log("Успешно отправлено:", result);
-        setDataClear();
+        // setDataClear();
         alert("Данные успешно сохранены!");
       } else {
         const response = await fetch(`${backendUrl}/applications`, {
@@ -153,7 +156,8 @@ export default function GiftCard({ edit = false }) {
 
         const result = await response.json();
         console.log("Успешно отправлено:", result);
-        setDataClear();
+        // setDataClear();
+        navigate(0)
         alert("Данные успешно сохранены!");
       }
     } catch (error) {
@@ -169,7 +173,15 @@ export default function GiftCard({ edit = false }) {
         console.log("edit id", id);
 
         const data = await getApplicationById(id);
-        setDataMore({ ...data, gemder: data.gender === "Муж" });
+        setDataMore({
+          ...data,
+          gemder: data.gender === "Муж",
+          birth_date: formaterDate(data?.birth_date, "dateOnly"),
+          passport_issued_at: formaterDate(
+            data?.passport_issued_at,
+            "dateOnly"
+          ),
+        });
       } catch (e) {
         console.error(e);
       } finally {

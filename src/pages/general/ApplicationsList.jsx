@@ -21,6 +21,8 @@ export default function ApplicationsList() {
   const [showFilters, setShowFilters] = useState(false);
   const [archive, setArchive] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
+  const [nextId, setNextId] = useState(null);
+  const [fetching, setFetching] = useState(true);
   const [filters, setFilters] = useState({
     fullName: "",
     phone: "",
@@ -29,19 +31,32 @@ export default function ApplicationsList() {
   });
   const navigate = useNavigate();
 
-  const fetchData = async () => {
+  const fetchData = async (nextId = null, res = false) => {
     try {
       setLoading(true);
       const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      let query = new URLSearchParams();
+
+      if (nextId) query.append("after", nextId);
+      if (data?.month) query.append("month", data?.month);
+      if (data?.year) query.append("year", data?.year);
       const response = await fetch(
-        `${backendUrl}/applications${archive ? "/archive" : ""}`
+        `${backendUrl}/applications${
+          archive ? "/archive" : `?${query.toString()}`
+        }`
       );
       const result = await response.json();
-      setTableData(result);
+      if (res) {
+        setTableData(result);
+      } else setTableData([...tableData, ...result]);
+
+      setNextId(result?.[result?.length - 1]?.ID);
+      setFetching(false);
     } catch (error) {
       console.error("Ошибка загрузки заявок:", error);
     } finally {
       setLoading(false);
+      setFetching(false);
     }
   };
 
@@ -90,6 +105,22 @@ export default function ApplicationsList() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Ошибка выгрузки:", error);
+    }
+  };
+
+  const scrollHandler = (e) => {
+    const target = e.target;
+    console.table({
+      name: "target",
+      scrollHeight: target.scrollHeight,
+      scrollTop: target.scrollTop,
+      clientHeight: target.clientHeight,
+    });
+
+    if (!fetching) {
+      if (target.scrollHeight - (target.scrollTop + target.clientHeight) < 1) {
+        setFetching(true);
+      }
     }
   };
 
@@ -151,8 +182,12 @@ export default function ApplicationsList() {
   const filteredData = applyFilters(tableData);
 
   useEffect(() => {
-    fetchData();
+    fetchData(null, true);
   }, [archive]);
+
+  useEffect(() => {
+    fetchData(null, true);
+  }, [data?.month, data?.year]);
 
   useEffect(() => {
     if (selectAll) {
@@ -161,6 +196,14 @@ export default function ApplicationsList() {
       setSelectedRows([]);
     }
   }, [selectAll]);
+
+  useEffect(() => {
+    if (fetching && nextId !== undefined) {
+      fetchData(nextId);
+    }
+  }, [fetching]);
+
+  console.log("nextId", nextId);
 
   return (
     <>
@@ -225,26 +268,51 @@ export default function ApplicationsList() {
           )}
 
           <div className="my-applications-sub-header">
+            <div>
+              Поиск по месяцам
+              <Input
+                type="number"
+                placeholder={""}
+                onChange={(e) => setData("month", e)}
+                value={data?.month}
+                // error={errors}
+                id={"month"}
+              />{" "}
+            </div>
+            <div>
+              Поиск по годам
+              <Input
+                type="number"
+                placeholder={""}
+                onChange={(e) => setData("year", e)}
+                value={data?.year}
+                // error={errors}
+                id={"year"}
+              />{" "}
+            </div>
             {loading ? (
               <Spinner />
             ) : (
               <>
-                Показать{" "}
-                <Input
-                  type="number"
-                  placeholder={""}
-                  onChange={(e) => setData("limit", e)}
-                  value={data?.limit}
-                  error={errors}
-                  id={"limit"}
-                />{" "}
-                записей
+                <div>
+                  Показать{" "}
+                  <Input
+                    type="number"
+                    placeholder={""}
+                    onChange={(e) => setData("limit", e)}
+                    value={data?.limit}
+                    // error={errors}
+                    id={"limit"}
+                  />{" "}
+                  записей
+                </div>
               </>
             )}
           </div>
 
           <div
             className="my-applications-content"
+            onScroll={scrollHandler}
             style={{ position: "relative" }}
           >
             {filteredData.length === 0 ? (

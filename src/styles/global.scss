@@ -49,15 +49,21 @@ div.scrolling::-webkit-scrollbar-thumb {
 table {
   border-collapse: collapse;
   width: 100%;
+  // min-height: 1400px;
   font-family: "Inter", -apple-system, sans-serif;
   font-size: 14px;
   background: white;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.4s ease-out;
+  > thead {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    border-bottom: 2px solid #ff4757;
+    z-index: 2;
+  }
 }
-
 /* Заголовки столбцов */
 th {
   background-color: #fff;
@@ -65,8 +71,8 @@ th {
   font-weight: 600;
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 2px solid #ff4757;
-  position: relative;
+  // border-bottom: 2px solid #ff4757;
+
   transition: all 0.3s ease;
 }
 
@@ -230,9 +236,17 @@ tr:nth-child(14) {
   gap: 5px;
   animation: fadeIn 0.4s ease-out;
 
+  p {
+    color: #e21a1c;
+    margin: 0;
+    display: none;
+  }
+  .error-input {
+    display: flex;
+  }
   input {
     width: 95%;
-    height: 50%;
+    height: 35px;
     padding: 10px 10px;
     background-color: #f1f1f1;
     border-radius: 12px;
@@ -262,7 +276,7 @@ tr:nth-child(14) {
   span {
     width: auto;
     position: absolute;
-    height: 50%;
+    height: 31px;
     padding: 10px 10px;
     background-color: #f1f1f1;
     border-radius: 12px;
@@ -304,7 +318,7 @@ tr:nth-child(14) {
   background-color: #fff;
   padding: 0px 0px 0 10px;
   animation: fadeIn 0.4s ease-out;
-
+  height: 55px;
   h1 {
     color: #000 !important;
   }
@@ -356,7 +370,7 @@ tr:nth-child(14) {
 
 .form-check-box {
   background-color: #f1f1f1;
-  height: 46px;
+  height: 55px;
   animation: fadeIn 0.4s ease-out;
 
   h1 {
@@ -479,7 +493,7 @@ tr:nth-child(14) {
   animation: fadeIn 0.3s ease-out;
 
   main {
-    height: 1103px;
+    min-height: 1103px;
     width: 95%;
     background-color: #fff;
     border-radius: 12px;
@@ -736,7 +750,6 @@ tr:nth-child(14) {
       gap: 15px;
       margin-top: 20px;
       animation: fadeIn 0.6s ease-out;
-
       .input {
         display: flex;
         align-items: center;
@@ -746,8 +759,9 @@ tr:nth-child(14) {
     }
 
     .my-applications-content {
+      max-height: 1200px;
       margin-top: 20px;
-      overflow: auto;
+      // overflow: auto;
       animation: fadeIn 0.7s ease-out;
     }
   }
@@ -862,20 +876,25 @@ tr:nth-child(14) {
 
     .my-applications-sub-header {
       display: flex;
-      align-items: center;
-      gap: 15px;
+      gap: 30px;
       margin-top: 20px;
       animation: fadeIn 0.6s ease-out;
-
-      .input {
+      height: 35px;
+      > div {
         display: flex;
+        gap: 15px;
         align-items: center;
-        width: 80px;
-        animation: fadeIn 0.7s ease-out;
+        .input {
+          display: flex;
+          align-items: center;
+          width: 80px;
+          animation: fadeIn 0.7s ease-out;
+        }
       }
     }
 
     .my-applications-content {
+      max-height: 1200px  ;
       margin-top: 20px;
       overflow: auto;
       animation: fadeIn 0.7s ease-out;
@@ -905,14 +924,17 @@ body {
 .applications-list {
   // height: auto;
   // min-height: 100vh;
-  padding: 2vh 2vw;
+  // padding: 0 2vw;
+  margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
   > main {
     height: auto;
     // max-height: 90vh;
     overflow: hidden;
-    padding: 2vh 2vw;
+    // padding: 2vh 2vw;
+    width: 95%;
+    margin: 0 auto;
     animation: fadeIn 0.4s ease-out;
 
     .content-form {
