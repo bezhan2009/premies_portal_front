@@ -28,7 +28,7 @@ import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import { useEffect, useState } from "react";
 import { getApplicationById } from "../../api/application/getApplicationById.js";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 
@@ -36,6 +36,8 @@ export default function GiftCard({ edit = false }) {
   const [loading, setLoading] = useState(false);
   const { data, errors, setData, validate, setDataClear, setDataMore } =
     useFormStore();
+
+  const navigate = useNavigate()
 
   const { id } = useParams();
 
@@ -141,7 +143,7 @@ export default function GiftCard({ edit = false }) {
 
         const result = await response.json();
         console.log("Успешно отправлено:", result);
-        setDataClear();
+        // setDataClear();
         alert("Данные успешно сохранены!");
       } else {
         const response = await fetch(`${backendUrl}/applications`, {
@@ -154,7 +156,8 @@ export default function GiftCard({ edit = false }) {
 
         const result = await response.json();
         console.log("Успешно отправлено:", result);
-        setDataClear();
+        // setDataClear();
+        navigate(0)
         alert("Данные успешно сохранены!");
       }
     } catch (error) {
