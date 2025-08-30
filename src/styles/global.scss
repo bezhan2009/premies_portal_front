@@ -1226,12 +1226,15 @@ button:active {
 }
 .worker-question-wrapper {
   position: relative;
-  overflow: hidden;
-  min-height: 200px; // чтобы карточка не схлопывалась
+  overflow:  auto;
+  min-height: 200px; 
+  height: auto;
+  flex: 1;
 
   .worker-question-card {
     position: absolute;
-    width: 100%;
+    width: 97%;
+    height: auto;
     top: 0;
     left: 0;
 
@@ -1254,21 +1257,21 @@ button:active {
 @keyframes slideInRight {
   from {
     opacity: 0;
-    transform: translateX(50px);
+    transform: translateY(50px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-50px);
+    transform: translateY(-50px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }

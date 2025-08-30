@@ -2,11 +2,13 @@
   max-width: 97%;
   margin: 40px auto;
   padding: 0 20px;
+  height: calc(100vh - 165px);
   font-family: 'Roboto', sans-serif;
   animation: fadeIn 0.5s ease-out;
 }
 
 .worker-test-card {
+  height: 100%;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -40,6 +42,7 @@
   padding: 30px 40px;
   display: flex;
   flex-direction: column;
+  height: 100%;
   gap: 30px;
 }
 

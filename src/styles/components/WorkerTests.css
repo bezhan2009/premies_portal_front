@@ -37,8 +37,8 @@
 
 .worker-questions {
   padding: 30px 40px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 81px 1fr;
   gap: 30px;
 }
 
