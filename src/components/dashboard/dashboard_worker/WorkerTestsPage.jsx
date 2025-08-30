@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../../../styles/components/TestsPage.scss";
 import "../../../styles/components/WorkerTests.scss";
 import Spinner from "../../Spinner.jsx";
+import { nav } from "framer-motion/client";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -166,137 +167,140 @@ export default function WorkerTestsPage() {
           </div>
 
           <div className="worker-questions">
-            <div>
+            <div className="header-worker-questions">
               <h1>
                 {question + 1}/{test.Questions.length}
               </h1>
-            </div>
-
-            <div className="worker-question-wrapper">
-              <div
-                key={test.Questions[question].ID}
-                className="worker-question-card fade-slide"
-              >
-                <div className="worker-question-title">
-                  {test.Questions[question].text}
-                </div>
-                <div className="worker-question-type">
-                  {QUESTION_TYPE_LABELS[test.Questions[question].type]}
-                </div>
-
-                {test.Questions[question].type === "single_choice" && (
-                  <ul className="worker-options-list">
-                    {test.Questions[question].Options.map((opt) => (
-                      <li
-                        key={opt.ID}
-                        className={
-                          answers[test.Questions[question].ID]
-                            ?.SelectedOptions[0]?.option_id === opt.ID
-                            ? "selected"
-                            : ""
-                        }
-                      >
-                        <label className="custom-radio">
-                          <input
-                            type="radio"
-                            name={`q_${test.Questions[question].ID}`}
-                            checked={
-                              answers[test.Questions[question].ID]
-                                ?.SelectedOptions[0]?.option_id === opt.ID
-                            }
-                            onChange={() =>
-                              handleAnswer(test.Questions[question].ID, {
-                                SelectedOptions: [{ option_id: opt.ID }],
-                              })
-                            }
-                          />
-                          <span className="radiomark"></span>
-                          <span className="radio-text">{opt.text}</span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {test.Questions[question].type === "multiple_choice" && (
-                  <ul className="worker-options-list">
-                    {test.Questions[question].Options.map((opt) => {
-                      const isChecked = answers[
-                        test.Questions[question].ID
-                      ]?.SelectedOptions?.some((o) => o.option_id === opt.ID);
-
-                      return (
-                        <li
-                          key={opt.ID}
-                          className={isChecked ? "selected" : ""}
-                        >
-                          <label className="custom-checkbox-tests">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {
-                                let current =
-                                  answers[test.Questions[question].ID]
-                                    ?.SelectedOptions || [];
-                                let newSelected;
-                                if (isChecked) {
-                                  newSelected = current.filter(
-                                    (o) => o.option_id !== opt.ID
-                                  );
-                                } else {
-                                  newSelected = [
-                                    ...current,
-                                    { option_id: opt.ID },
-                                  ];
-                                }
-                                handleAnswer(test.Questions[question].ID, {
-                                  SelectedOptions: newSelected,
-                                });
-                              }}
-                            />
-                            <span className="checkmark"></span>
-                            <span className="checkbox-text">{opt.text}</span>
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {test.Questions[question].type === "text" && (
-                  <textarea
-                    placeholder="Ваш ответ..."
-                    value={
-                      answers[test.Questions[question].ID]?.text_answer || ""
-                    }
-                    onChange={(e) =>
-                      handleAnswer(test.Questions[question].ID, {
-                        text_answer: e.target.value,
-                      })
-                    }
-                  />
-                )}
+              <div className="btn-test-nav">
+                <button
+                  className={`btn ${question && "active-btn"}`}
+                  onClick={() => {
+                    if (question) setQuestion(question - 1);
+                  }}
+                >
+                  Назад
+                </button>
+                <button
+                  className={`btn ${
+                    question + 1 < test.Questions.length && "active-btn"
+                  }`}
+                  onClick={() => {
+                    if (question + 1 < test.Questions.length)
+                      setQuestion(question + 1);
+                  }}
+                >
+                  Дальше
+                </button>
               </div>
             </div>
 
-            <div className="btn-test-nav">
-              <button
-                className="btn"
-                onClick={() => {
-                  if (question) setQuestion(question - 1);
-                }}
-              >
-                Назад
-              </button>
-              <button
-                className="btn"
-                onClick={() => {
-                  if (question + 1 < test.Questions.length)
-                    setQuestion(question + 1);
-                }}
-              >
-                Дальше
-              </button>
+            <div
+              className="worker-question-wrapper"
+              style={{ translate: `-${question * 102}% 0` }}
+            >
+              {test.Questions.map((test, i) => (
+                <nav>
+                  <div key={i} className="worker-question-card fade-slide">
+                    <div className="worker-question-title">{test.text}</div>
+                    <div className="worker-question-type">
+                      {QUESTION_TYPE_LABELS[test.type]}
+                    </div>
+                    {test.type === "single_choice" && (
+                      <ul className="worker-options-list">
+                        {test.Options.map((opt) => (
+                          <li
+                            key={opt.ID}
+                            className={
+                              answers[test.ID]?.SelectedOptions[0]
+                                ?.option_id === opt.ID
+                                ? "selected"
+                                : ""
+                            }
+                          >
+                            <label className="custom-radio">
+                              <input
+                                type="radio"
+                                name={`q_${test.ID}`}
+                                checked={
+                                  answers[test.ID]?.SelectedOptions[0]
+                                    ?.option_id === opt.ID
+                                }
+                                onChange={() =>
+                                  handleAnswer(test.ID, {
+                                    SelectedOptions: [{ option_id: opt.ID }],
+                                  })
+                                }
+                              />
+                              <span className="radiomark"></span>
+                              <span className="radio-text">{opt.text}</span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {test.type === "multiple_choice" && (
+                      <ul className="worker-options-list">
+                        {test.Options.map((opt) => {
+                          const isChecked = answers[
+                            test.ID
+                          ]?.SelectedOptions?.some(
+                            (o) => o.option_id === opt.ID
+                          );
+
+                          return (
+                            <li
+                              key={opt.ID}
+                              className={isChecked ? "selected" : ""}
+                            >
+                              <label className="custom-checkbox-tests">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    let current =
+                                      answers[test.ID]?.SelectedOptions || [];
+                                    let newSelected;
+                                    if (isChecked) {
+                                      newSelected = current.filter(
+                                        (o) => o.option_id !== opt.ID
+                                      );
+                                    } else {
+                                      newSelected = [
+                                        ...current,
+                                        { option_id: opt.ID },
+                                      ];
+                                    }
+                                    handleAnswer(test.ID, {
+                                      SelectedOptions: newSelected,
+                                    });
+                                  }}
+                                />
+                                <span className="checkmark"></span>
+                                <span className="checkbox-text">
+                                  {opt.text}
+                                </span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    {test.type === "text" && (
+                      <textarea
+                        placeholder="Ваш ответ..."
+                        value={answers[test.ID]?.text_answer || ""}
+                        onChange={(e) =>
+                          handleAnswer(test.ID, {
+                            text_answer: e.target.value,
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                </nav>
+              ))}
             </div>
           </div>
 

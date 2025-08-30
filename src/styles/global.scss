@@ -1219,21 +1219,55 @@ button:active {
   transition: 0.3s;
 }
 .btn-test-nav {
+  // margin-top: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  > .btn {
+    cursor: no-drop;
+    padding: 12px 18px;
+    font-size: 18px;
+  }
+}
+.active-btn {
+  background-color: #e21a1c;
+  color: white;
+  cursor: pointer !important;
+  &:hover {
+    background-color: #e9585a;
+  }
+}
+.header-worker-questions {
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  > h1 {
+    background-color: #e21a1c;
+    color: white;
+    padding: 4px 15px;
+    margin: 0;
+    border-radius: 6px;
+  }
 }
 .worker-question-wrapper {
+  display: flex;
+  gap: 2%;
   position: relative;
-  overflow:  auto;
-  min-height: 200px; 
+  width: 100%;
+  min-height: 200px;
   height: auto;
   flex: 1;
+  transition: all 0.7s ease-in-out;
+  > nav {
+    padding: 0 2%;
+    min-width: 96%;
+  }
 
   .worker-question-card {
-    position: absolute;
-    width: 97%;
+    // position: absolute;
+    min-width: 97%;
     height: auto;
     top: 0;
     left: 0;

@@ -16,7 +16,7 @@
 .header-premis__nav {
   width: 32px;
   height: 32px;
-  background: #9661ff;
+  background: #e9585a;
   color: #ffffff;
   border-radius: 50%;
   border: none;
@@ -58,4 +58,4 @@
 .header-premis__loading {
   font-size: 14px;
   color: #5f6368;
-}/*# sourceMappingURL=WorkerPremiesHeader.css.map */
+} /*# sourceMappingURL=WorkerPremiesHeader.css.map */

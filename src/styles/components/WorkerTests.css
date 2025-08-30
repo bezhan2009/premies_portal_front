@@ -59,7 +59,7 @@
 }
 .worker-question-card .worker-question-type {
   font-size: 0.95rem;
-  color: #9661ff; /* Акцентный цвет заменен сюда */
+  color: #e9585a; /* Акцентный цвет заменен сюда */
   margin-bottom: 20px;
 }
 
@@ -78,11 +78,11 @@
 }
 .worker-options-list li:hover {
   background: #f2e9ff;
-  border-color: #9661ff; /* Замена цвета при hover на новый */
+  border-color: #e9585a; /* Замена цвета при hover на новый */
 }
 .worker-options-list li.selected {
   background: #e8f0fe;
-  border-color: #9661ff; /* Замена цвета у выбранных */
+  border-color: #e9585a; /* Замена цвета у выбранных */
   color: #202124;
   font-weight: 600;
 }
@@ -96,8 +96,8 @@
   font-size: 1rem;
   color: #202124;
 }
-.worker-options-list li input[type=checkbox],
-.worker-options-list li input[type=radio] {
+.worker-options-list li input[type="checkbox"],
+.worker-options-list li input[type="radio"] {
   position: absolute;
   opacity: 0;
   cursor: pointer;
@@ -125,12 +125,12 @@
 }
 .worker-options-list li .custom-checkbox-tests:hover input ~ .checkmark,
 .worker-options-list li .custom-radio:hover input ~ .radiomark {
-  border-color: #9661ff; /* Акцентный цвет при hover */
+  border-color: #e9585a; /* Акцентный цвет при hover */
 }
 .worker-options-list li .custom-checkbox-tests input:checked ~ .checkmark,
 .worker-options-list li .custom-radio input:checked ~ .radiomark {
-  background-color: #9661ff; /* Акцентный цвет при выборе */
-  border-color: #9661ff;
+  background-color: #e9585a; /* Акцентный цвет при выборе */
+  border-color: #e9585a;
 }
 .worker-options-list li .checkmark:after {
   content: "";
@@ -161,7 +161,7 @@
 }
 .worker-options-list li .custom-checkbox-tests input:checked ~ .checkbox-text,
 .worker-options-list li .custom-radio input:checked ~ .radio-text {
-  color: #9661ff; /* Акцентный цвет текста при выборе */
+  color: #e9585a; /* Акцентный цвет текста при выборе */
   font-weight: bold;
 }
 
@@ -177,7 +177,7 @@
   margin-top: 15px;
 }
 .worker-question-card textarea:focus {
-  border-color: #9661ff; /* Акцентный цвет для фокуса */
+  border-color: #e9585a; /* Акцентный цвет для фокуса */
   box-shadow: 0 0 0 2px rgba(150, 97, 255, 0.2); /* Цвет в тени тоже обновлён */
   outline: none;
 }
@@ -208,7 +208,7 @@
   animation: fadeIn 0.5s ease-out;
 }
 .worker-page-blocked h2 {
-  color: #9661ff; /* Главный акцентный цвет в блоке */
+  color: #e9585a; /* Главный акцентный цвет в блоке */
   font-size: 2rem;
   margin-bottom: 20px;
 }
@@ -223,7 +223,7 @@
   align-items: center;
   min-height: 60vh;
   font-size: 1.5rem;
-  color: #9661ff; /* Цвет загрузки тоже поменял */
+  color: #e9585a; /* Цвет загрузки тоже поменял */
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -247,4 +247,4 @@
     opacity: 1;
     transform: translateX(0);
   }
-}/*# sourceMappingURL=WorkerTests.css.map */
+} /*# sourceMappingURL=WorkerTests.css.map */

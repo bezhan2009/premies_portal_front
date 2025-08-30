@@ -182,23 +182,24 @@
 }
 
 .kb-add-btn {
-  background: #eae1fb;
-  color: #6b3dcf;
+  background: #d52f2f;
+  color: white;
   border: none;
   padding: 9px 17px;
-  margin: 10px;
+  margin: 10px; 
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   transition: background 0.3s;
 
   &:hover {
-    background: #c5aeff;
+    background: #d52f2f;
+    color: white;
   }
 
   &:active {
     color: #fff;
-    background: #a47fff;
+    background: #cd696b;
   }
 }
 
