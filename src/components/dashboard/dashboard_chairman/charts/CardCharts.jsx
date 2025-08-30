@@ -1,0 +1,160 @@
+import React, { useEffect, useState } from 'react';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
+import '../../../../styles/components/ChartComponents.scss';
+import CustomCardsTooltip from './CustomCardsTooltip.jsx';
+import { fetchEmployee } from '../../../../api/chairman/reports/employee_spec.js';
+import { getMonthName } from '../../../../api/utils/date.js';
+import Spinner from '../../../Spinner.jsx';
+
+const ChartReportCards = ({ url }) => {
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!url) {
+            setChartData([]);
+            return;
+        }
+
+        const loadAllMonths = async () => {
+            setLoading(true);
+            const allMonths = [];
+
+            let prev = null;
+
+            for (let m = 1; m <= 12; m++) {
+                try {
+                    const list = await fetchEmployee(m, url) || [];
+
+                    let sumAct = 0, sumFor = 0, sumGen = 0;
+
+                    list.forEach(w => {
+                        // Суммируем все turnovers
+                        if (Array.isArray(w.CardTurnovers)) {
+                            w.CardTurnovers.forEach(t => {
+                                sumAct += Number(t?.activated_cards || 0);
+                            });
+                        }
+
+                        // Суммируем все sales
+                        if (Array.isArray(w.CardSales)) {
+                            w.CardSales.forEach(s => {
+                                sumFor += Number(s?.cards_for_month || s?.cards_sailed || 0);
+                                sumGen += Number(s?.cards_sailed_in_general || 0);
+                            });
+                        }
+                    });
+
+
+                    const current = {
+                        activeCards: sumAct,
+                        monthlyCards: sumFor,
+                        generalCards: sumGen,
+                    };
+
+                    let values = current;
+                    if (prev &&
+                        prev.activeCards === current.activeCards &&
+                        prev.generalCards === current.generalCards
+                    ) {
+                        values = {
+                            activeCards: 0,
+                            monthlyCards: 0,
+                            generalCards: 0,
+                        };
+                    } else {
+                        prev = current;
+                    }
+
+                    const first = list[0] || {};
+                    const fullName = first.user?.full_name || first.Username || '';
+
+                    allMonths.push({
+                        name: getMonthName(m),
+                        activeCards: values.activeCards,
+                        monthlyCards: values.monthlyCards,
+                        generalCards: values.generalCards,
+                        full_name: fullName
+                    });
+                } catch (e) {
+                    console.error(e);
+                    allMonths.push({
+                        name: getMonthName(m),
+                        activeCards: 0,
+                        monthlyCards: 0,
+                        generalCards: 0,
+                        full_name: ''
+                    });
+                }
+            }
+
+            setChartData(allMonths);
+            setLoading(false);
+        };
+
+        loadAllMonths();
+    }, [url]);
+
+    if (loading) return (
+        <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '100px', width: 'auto' }}>
+            <Spinner />
+        </div>
+    );
+
+    if (!url) return (
+        <div style={{ padding: '10px', color: '#555', fontSize: '16px', textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px' }}>
+            Выберите отделения/сотрудника
+        </div>
+    );
+
+    if (chartData.length === 0) return (
+        <div style={{ padding: '10px', color: '#555', fontSize: '16px', textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px' }}>
+            Нет данных для отображения
+        </div>
+    );
+
+    return (
+        <div className="chart-wrapper light-theme">
+            <div style={{ textAlign: 'center' }}>
+                <h2>Статистика по картам {chartData[0].full_name}</h2>
+                <p>Активные, выдано и общие карты по месяцам</p>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartData}>
+                    <defs>
+                        <linearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#6ce5e8" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#6ce5e8" stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="forGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#41b8d5" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#41b8d5" stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="genGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
+                        </linearGradient>
+                    </defs>
+
+                    <XAxis dataKey="name" stroke="#333" tick={{ fill: '#333', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#333" tick={{ fill: '#333', fontSize: 12 }} axisLine={false} tickLine={false} />
+
+                    <Tooltip content={<CustomCardsTooltip />} cursor={{ stroke: '#41b8d5', strokeWidth: 1 }} />
+
+                    <Area type="monotone" dataKey="generalCards" name="Карт в общем" stroke="#417cd5" fill="url(#genGradient)" strokeWidth={3} dot={{ stroke: '#417cd5', strokeWidth: 2, r: 3 }} />
+                    <Area type="monotone" dataKey="monthlyCards" name="Выдано в этом месяце" stroke="#41b8d5" fill="url(#forGradient)" strokeWidth={3} dot={{ stroke: '#41b8d5', strokeWidth: 2, r: 3 }} />
+                    <Area type="monotone" dataKey="activeCards" name="Активные карты" stroke="#6ce5e8" fill="url(#activeGradient)" strokeWidth={3} dot={{ stroke: '#6ce5e8', strokeWidth: 2, r: 3 }} />
+                </AreaChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+export default ChartReportCards;
