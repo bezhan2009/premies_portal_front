@@ -230,9 +230,17 @@ tr:nth-child(14) {
   gap: 5px;
   animation: fadeIn 0.4s ease-out;
 
+  p {
+    color: #e21a1c;
+    margin: 0;
+    display: none;
+  }
+  .error-input {
+    display: flex;
+  }
   input {
     width: 95%;
-    height: 50%;
+    height: 35px;
     padding: 10px 10px;
     background-color: #f1f1f1;
     border-radius: 12px;
@@ -262,7 +270,7 @@ tr:nth-child(14) {
   span {
     width: auto;
     position: absolute;
-    height: 50%;
+    height: 31px;
     padding: 10px 10px;
     background-color: #f1f1f1;
     border-radius: 12px;
@@ -304,7 +312,7 @@ tr:nth-child(14) {
   background-color: #fff;
   padding: 0px 0px 0 10px;
   animation: fadeIn 0.4s ease-out;
-
+  height: 55px;
   h1 {
     color: #000 !important;
   }
@@ -356,7 +364,7 @@ tr:nth-child(14) {
 
 .form-check-box {
   background-color: #f1f1f1;
-  height: 46px;
+  height: 55px;
   animation: fadeIn 0.4s ease-out;
 
   h1 {
@@ -479,7 +487,7 @@ tr:nth-child(14) {
   animation: fadeIn 0.3s ease-out;
 
   main {
-    height: 1103px;
+    min-height: 1103px;
     width: 95%;
     background-color: #fff;
     border-radius: 12px;
@@ -905,14 +913,17 @@ body {
 .applications-list {
   // height: auto;
   // min-height: 100vh;
-  padding: 2vh 2vw;
+  // padding: 0 2vw;
+  margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
   > main {
     height: auto;
     // max-height: 90vh;
     overflow: hidden;
-    padding: 2vh 2vw;
+    // padding: 2vh 2vw;
+    width: 95%;
+    margin: 0 auto;
     animation: fadeIn 0.4s ease-out;
 
     .content-form {

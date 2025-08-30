@@ -10,7 +10,8 @@ export default function Input({
 }) {
   return (
     <label className={`input ${className}`} htmlFor={id}>
-      {title || (type === "date" && !value  && <span>{title || placeholder}</span>)}
+      {title ||
+        (type === "date" && !value && <span>{title || placeholder}</span>)}
       <input
         // style={{ display: type === "date" && "none" }}
         id={id}
@@ -19,7 +20,7 @@ export default function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
-      <p className={error?.[id] && "error-input"}>{error?.[id]}</p>
+      {error && <p className={error?.[id] && "error-input"}>{error?.[id]}</p>}
     </label>
   );
 }
