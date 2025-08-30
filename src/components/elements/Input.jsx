@@ -11,11 +11,14 @@ export default function Input({
   return (
     <label className={`input ${className}`} htmlFor={id}>
       {title ||
-        (type === "date" && !value && <span>{title || placeholder}</span>)}
+        (placeholder && type === "date" && !value && (
+          <span>{title || placeholder}</span>
+        ))}
       <input
         // style={{ display: type === "date" && "none" }}
         id={id}
-        type={type}
+        // type={type}
+        type="month"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
