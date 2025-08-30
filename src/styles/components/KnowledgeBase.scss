@@ -1,4 +1,4 @@
-@import '../mixins/general';
+@import "../mixins/general";
 
 /* Обновленная анимация появления с масштабированием */
 @keyframes fadeIn {
@@ -68,13 +68,13 @@
 
       &.active,
       &:hover {
-        background: rgba(140, 82, 255, 0.15);
+        background: #fff3f3;
         transform: scale(1.02);
       }
 
       &.active {
         font-weight: 600;
-        color: #8c52ff;
+        color: #c31414;
       }
 
       &:not(.active) {
@@ -105,7 +105,7 @@
     font-size: 1.4rem;
     margin-top: 0;
     margin-bottom: 18px;
-    color: #222;
+    color: #c31414;
     animation: fadeIn 0.4s ease;
   }
 
@@ -130,14 +130,15 @@
       }
 
       &.active {
-        border-color: #8c52ff;
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.2);
+        border-color: #c31414;
+        color: #c31414;
+        box-shadow: 0 0 0 3px #fff3f3;
       }
 
       h4 {
         font-size: 1.1rem;
-        margin: 0 0 8px;
-        color: #333;
+        // margin: 0 0 8px;
+        margin: 0;
       }
 
       p {
@@ -180,13 +181,12 @@
         }
 
         &:hover {
-          color: #8c52ff;
+          color: #c31414;
         }
       }
     }
   }
 }
-
 
 .kb-add-btn {
   background: #e9585a;
@@ -211,7 +211,7 @@
   color: #666;
 
   &:hover {
-    color: #8c52ff;
+    color: #c31414;
   }
 }
 
@@ -226,8 +226,11 @@
 
 .kb-modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -248,7 +251,8 @@
   flex-direction: column;
   gap: 10px;
 
-  input, textarea {
+  input,
+  textarea {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
@@ -268,14 +272,14 @@
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
     &:focus {
-      border-color: #8c52ff;
-      box-shadow: 0 0 0 2px rgba(140, 82, 255, 0.2);
+      border-color: #c31414;
+      box-shadow: 0 0 0 2px #fff3f3;
       outline: none;
     }
 
     /* Кнопка внутри file-input */
     &::file-selector-button {
-      background-color: #8c52ff;
+      background-color: #c31414;
       color: #fff;
       border: none;
       padding: 10px 16px;
@@ -286,7 +290,7 @@
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: darken(#8c52ff, 10%);
+        background-color: darken(#c31414, 10%);
       }
     }
   }
@@ -299,7 +303,7 @@
   margin-top: 20px;
 
   button {
-    background: #8c52ff;
+    background: #c31414;
     color: #fff;
     border: none;
     padding: 8px 14px;

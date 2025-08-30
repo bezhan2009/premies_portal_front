@@ -10,7 +10,8 @@
   margin: 20px auto;
   border-radius: 15px;
 }
-.filters__left, .filters__right {
+.filters__left,
+.filters__right {
   gap: 10px;
 }
 .filters__button {
@@ -92,7 +93,7 @@
   background-color: #a6a6a6;
 }
 .reports_filter__button--purple {
-  background-color: #8c52ff;
+  background-color: #c31414;
 }
 .reports_filter__button--yellow {
   background-color: #ffbd59;
@@ -142,7 +143,7 @@
 }
 
 .filters__modal-content select,
-.filters__modal-content input[type=file] {
+.filters__modal-content input[type="file"] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -157,14 +158,14 @@
   /* Кнопка внутри file-input */
 }
 .filters__modal-content select:focus,
-.filters__modal-content input[type=file]:focus {
-  border-color: #8c52ff;
-  box-shadow: 0 0 0 2px rgba(140, 82, 255, 0.2);
+.filters__modal-content input[type="file"]:focus {
+  border-color: #c31414;
+  box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
 .filters__modal-content select::file-selector-button,
-.filters__modal-content input[type=file]::file-selector-button {
-  background-color: #8c52ff;
+.filters__modal-content input[type="file"]::file-selector-button {
+  background-color: #c31414;
   color: #fff;
   border: none;
   padding: 10px 16px;
@@ -175,15 +176,15 @@
   transition: background-color 0.3s ease;
 }
 .filters__modal-content select::file-selector-button:hover,
-.filters__modal-content input[type=file]::file-selector-button:hover {
+.filters__modal-content input[type="file"]::file-selector-button:hover {
   background-color: rgb(106.098265896, 31, 255);
 }
 
 /* Кастомная стрелочка для select */
 .filters__modal-content select {
   -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='10' viewBox='0 0 14 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238c52ff' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -207,7 +208,7 @@
 }
 
 .filters__modal-actions button:first-of-type {
-  background-color: #8c52ff;
+  background-color: #c31414;
   color: #fff;
 }
 .filters__modal-actions button:first-of-type:hover {
@@ -262,4 +263,4 @@
   outline: none;
   border-color: #6a1fff;
   box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
-}/*# sourceMappingURL=Filters.css.map */
+} /*# sourceMappingURL=Filters.css.map */

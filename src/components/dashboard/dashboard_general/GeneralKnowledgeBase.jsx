@@ -37,6 +37,12 @@ export default function GeneralKnowledgeBaseBlockInfo() {
       .catch((err) => console.error("Error fetching base data:", err));
   }, [selectedBaseId]);
 
+  useEffect(() => {
+    if (bases?.[0]?.ID) {
+      setSelectedBaseId(bases?.[0]?.ID);
+    }
+  }, [bases]);
+
   return (
     <div className="knowledge-module">
       <aside className="kb-sidebar">
