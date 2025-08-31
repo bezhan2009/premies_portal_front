@@ -1,7 +1,7 @@
-import '../../../styles/dashboard.scss';
-import Header from '../../../components/dashboard/dashboard_operator/MenuOperator';
-import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
-import { Helmet } from 'react-helmet';
+import "../../../styles/dashboard.scss";
+import Header from "../../../components/dashboard/dashboard_operator/MenuOperator";
+import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
+import { Helmet } from "react-helmet";
 
 export default function DashboardWorkerPremies() {
   return (

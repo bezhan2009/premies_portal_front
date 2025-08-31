@@ -894,7 +894,7 @@ tr:nth-child(14) {
     }
 
     .my-applications-content {
-      max-height: 1200px  ;
+      max-height: 1200px;
       margin-top: 20px;
       overflow: auto;
       animation: fadeIn 0.7s ease-out;
@@ -1113,7 +1113,8 @@ body {
 
 .filters {
   animation: fadeIn 0.4s ease-out;
-  margin: 20px 0;
+  margin: 20px 10px;
+  width: calc(100% - 80px) !important;
 }
 
 .filters input,
