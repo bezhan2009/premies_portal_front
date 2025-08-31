@@ -4,8 +4,8 @@ import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import { translate_role_id } from "../../../../api/utils/translate_role_id.js";
-import { employeesTableUpDateReq } from "../../../../api/workers/employeesTableUpDateReq.js";
 import Input from "../../../elements/Input.jsx";
+import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateworkers.js";
 
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -24,7 +24,7 @@ const EmployeesTable = () => {
           if (office.office_user && office.office_user.length > 0) {
             office.office_user.forEach((u) => {
               users.push({
-                ID: u.ID,
+                ID: u.worker.user.ID,
                 officeTitle: office.title,
                 fio: u.worker?.user?.full_name || "",
                 login: u.worker?.user?.Username || "",
@@ -53,7 +53,7 @@ const EmployeesTable = () => {
 
   const saveChange = async () => {
     try {
-      await employeesTableUpDateReq(edit);
+      await fullUpdateWorkers(edit);
       setEdit({ ID: null });
     } catch (e) {
       console.error(e);
