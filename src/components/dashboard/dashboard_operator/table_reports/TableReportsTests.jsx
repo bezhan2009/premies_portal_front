@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import '../../../../styles/components/Table.scss';
-import Spinner from '../../../Spinner.jsx';
-import SearchBar from '../../../general/SearchBar.jsx';
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import "../../../../styles/components/Table.scss";
+import Spinner from "../../../Spinner.jsx";
+import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchReportKCAndTests } from "../../../../api/operator/reports/report_kc.js";
 
 const TableReportsTest = ({ month, year }) => {
@@ -12,7 +12,7 @@ const TableReportsTest = ({ month, year }) => {
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [editedTests, setEditedTests] = useState('');
+  const [editedTests, setEditedTests] = useState("");
   const [highlightedId, setHighlightedId] = useState(null);
   const observer = useRef();
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -74,18 +74,21 @@ const TableReportsTest = ({ month, year }) => {
     }
   };
 
-  const lastRowRef = useCallback((node) => {
-    if (loadingMore) return;
-    if (observer.current) observer.current.disconnect();
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadMore();
-      }
-    });
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
 
-    if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, data]);
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore, data]
+  );
 
   const handleSearch = async (filtered) => {
     if (!filtered) {
@@ -107,7 +110,7 @@ const TableReportsTest = ({ month, year }) => {
   };
 
   const handleDoubleClick = (row) => {
-    const value = row.ServiceQuality?.[0]?.tests ?? '';
+    const value = row.ServiceQuality?.[0]?.tests ?? "";
     setEditId(row.ID);
     setEditedTests(value.toString());
   };
@@ -120,37 +123,40 @@ const TableReportsTest = ({ month, year }) => {
       const existing = row.ServiceQuality?.[0];
 
       if (existing?.ID) {
-        const res = await fetch(`${backendURL}/service-quality/${existing.ID}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            tests: value,
-            WorkerID: row.ID,
-          })
-        });
+        const res = await fetch(
+          `${backendURL}/service-quality/${existing.ID}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              tests: value,
+              WorkerID: row.ID,
+            }),
+          }
+        );
 
         if (!res.ok) throw new Error("Ошибка при PATCH");
 
-        setData(prev =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      ServiceQuality: [{ ...existing, tests: value }]
-                    }
-                    : item
-            )
+        setData((prev) =>
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  ServiceQuality: [{ ...existing, tests: value }],
+                }
+              : item
+          )
         );
       } else {
         const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
         const res = await fetch(`${backendURL}/service-quality`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             tests: value,
@@ -158,26 +164,28 @@ const TableReportsTest = ({ month, year }) => {
             complaint: 0,
             call_center: 0,
             WorkerID: row.ID,
-            CreatedAt: createdAt
-          })
+            CreatedAt: createdAt,
+          }),
         });
 
         if (!res.ok) throw new Error("Ошибка при POST");
 
         const created = await res.json();
 
-        setData(prev =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      ServiceQuality: [{
-                        ID: created.ID,
-                        tests: value
-                      }]
-                    }
-                    : item
-            )
+        setData((prev) =>
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  ServiceQuality: [
+                    {
+                      ID: created.ID,
+                      tests: value,
+                    },
+                  ],
+                }
+              : item
+          )
         );
       }
 
@@ -191,80 +199,79 @@ const TableReportsTest = ({ month, year }) => {
   };
 
   return (
-      <div className="report-table-container">
-        <SearchBar
-            allData={allData}
-            onSearch={handleSearch}
-            placeholder="Поиск по ФИО"
-            searchFields={[(item) => item.user?.full_name || '']}
-        />
-
+    <div className="report-table-container">
+      <SearchBar
+        allData={allData}
+        onSearch={handleSearch}
+        placeholder="Поиск по ФИО"
+        searchFields={[(item) => item.user?.full_name || ""]}
+      />
+      <div className="table-reports-div">
         <table className="table-reports">
           <thead>
-          <tr>
-            <th>ФИО сотрудника</th>
-            <th>Средняя оценка по тестам</th>
-          </tr>
+            <tr>
+              <th>ФИО сотрудника</th>
+              <th>Средняя оценка по тестам</th>
+            </tr>
           </thead>
           <tbody>
-          {data.length > 0 ? (
-              data.map((row, idx) => {
-                const isLast = idx === data.length - 1;
-                const userName = row.user?.full_name || '';
-                const tests = row.ServiceQuality?.[0]?.tests ?? '';
+            {data.length > 0
+              ? data.map((row, idx) => {
+                  const isLast = idx === data.length - 1;
+                  const userName = row.user?.full_name || "";
+                  const tests = row.ServiceQuality?.[0]?.tests ?? "";
 
-                return (
+                  return (
                     <tr
-                        key={row.ID}
-                        ref={isLast && !isSearching ? lastRowRef : null}
-                        className={highlightedId === row.ID ? 'row-updated' : ''}
+                      key={row.ID}
+                      ref={isLast && !isSearching ? lastRowRef : null}
+                      className={highlightedId === row.ID ? "row-updated" : ""}
                     >
                       <td>{userName}</td>
                       <td onDoubleClick={() => handleDoubleClick(row)}>
                         {editId === row.ID ? (
-                            <input
-                                type="number"
-                                value={editedTests}
-                                onChange={(e) => setEditedTests(e.target.value)}
-                                onBlur={() => saveTests(row)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveTests(row);
-                                  else if (e.key === 'Escape') setEditId(null);
-                                }}
-                                autoFocus
-                                className="editable-input"
-                            />
+                          <input
+                            type="number"
+                            value={editedTests}
+                            onChange={(e) => setEditedTests(e.target.value)}
+                            onBlur={() => saveTests(row)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveTests(row);
+                              else if (e.key === "Escape") setEditId(null);
+                            }}
+                            autoFocus
+                            className="editable-input"
+                          />
                         ) : (
-                            tests
+                          tests
                         )}
                       </td>
                     </tr>
-                );
-              })
-          ) : (
-              !loading && (
+                  );
+                })
+              : !loading && (
                   <tr>
-                    <td colSpan={2} style={{ textAlign: 'center' }}>
+                    <td colSpan={2} style={{ textAlign: "center" }}>
                       Нет данных за выбранный период
                     </td>
                   </tr>
-              )
-          )}
+                )}
           </tbody>
         </table>
+      </div>  
 
-        {loading && (
-            <div className="spinner-container">
-              <Spinner />
-            </div>
-        )}
+      {loading && (
+        <div className="spinner-container">
+          <Spinner />
+        </div>
+      )}
 
-        {loadingMore && (
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <Spinner />
-            </div>
-        )}
-      </div>
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Spinner />
+        </div>
+      )}
+    </div>
   );
 };
 
