@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import '../../../../styles/components/Table.scss';
-import Spinner from '../../../Spinner.jsx';
+import React, { useEffect, useState, useRef } from "react";
+import "../../../../styles/components/Table.scss";
+import Spinner from "../../../Spinner.jsx";
 import { fetchReportCards } from "../../../../api/operator/reports/report_cards.js";
-import SearchBar from '../../../general/SearchBar.jsx';
+import SearchBar from "../../../general/SearchBar.jsx";
+import Input from "../../../elements/Input.jsx";
+import { cardDetailPatch } from "../../../../api/workers/cardDetailPatch.js";
 
 const TableReportsCards = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -13,6 +15,7 @@ const TableReportsCards = ({ month, year }) => {
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef(null);
   const lastElementRef = useRef(null);
+  const [edit, setEdit] = useState(null);
 
   /**
    * 🔥 Подзагрузка “всех” данных для поиска – ОГРАНИЧЕНА MAX_PAGES,
@@ -20,7 +23,7 @@ const TableReportsCards = ({ month, year }) => {
    */
   useEffect(() => {
     const loadAllData = async () => {
-      const MAX_PAGES = 10;   // <-- грузим не больше 10 страниц
+      const MAX_PAGES = 10; // <-- грузим не больше 10 страниц
       let all = [];
       let after = null;
       let page = 0;
@@ -33,7 +36,7 @@ const TableReportsCards = ({ month, year }) => {
         after = chunk[chunk.length - 1]?.ID;
         page++;
 
-        if (chunk.length < 10) break;    // меньше страницы — нормально выходим
+        if (chunk.length < 10) break; // меньше страницы — нормально выходим
       }
 
       setAllData(all);
@@ -72,10 +75,10 @@ const TableReportsCards = ({ month, year }) => {
 
     observer.current = new IntersectionObserver((entries) => {
       if (
-          entries[0].isIntersecting &&
-          hasMore &&
-          !loadingMore &&
-          !isSearching
+        entries[0].isIntersecting &&
+        hasMore &&
+        !loadingMore &&
+        !isSearching
       ) {
         loadMore();
       }
@@ -115,7 +118,7 @@ const TableReportsCards = ({ month, year }) => {
 
       const newLastId = chunk[chunk.length - 1]?.ID;
       if (newLastId === lastId) {
-        console.warn('Получены дубли — остановка пагинации');
+        console.warn("Получены дубли — остановка пагинации");
         setHasMore(false);
         return;
       }
@@ -151,81 +154,213 @@ const TableReportsCards = ({ month, year }) => {
     setHasMore(false);
   };
 
-  return (
-      <div className="report-table-container">
-        <SearchBar
-            allData={allData}
-            onSearch={handleSearch}
-            placeholder="Поиск по ФИО, номеру карты..."
-            searchFields={[
-              (item) => item.worker?.user?.Username || '',
-              (item) => item.code || '',
-              (item) => item.card_type || ''
-            ]}
-        />
+  const handleChange = (key, value) => {
+    setEdit((prev) => {
+      const keys = key.split(".");
 
+      let newState = { ...prev };
+      let current = newState;
+
+      keys.forEach((k, i) => {
+        const arrayMatch = k.match(/(\w+)\[(\d+)\]/);
+        if (arrayMatch) {
+          const [, arrKey, indexStr] = arrayMatch;
+          const index = Number(indexStr);
+
+          if (!Array.isArray(current[arrKey])) {
+            current[arrKey] = [];
+          }
+
+          current[arrKey] = [...current[arrKey]];
+          if (!current[arrKey][index]) {
+            current[arrKey][index] = {};
+          }
+
+          if (i === keys.length - 1) {
+            current[arrKey][index] = value;
+          } else {
+            current[arrKey][index] = { ...current[arrKey][index] };
+            current = current[arrKey][index];
+          }
+        } else {
+          if (i === keys.length - 1) {
+            current[k] = value;
+          } else {
+            current[k] = { ...current[k] };
+            current = current[k];
+          }
+        }
+      });
+
+      return newState;
+    });
+  };
+
+  const saveChange = async (edit) => {
+    try {
+      await cardDetailPatch(edit);
+      setEdit({ ID: null });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  console.log("data", data);
+
+  return (
+    <div className="report-table-container">
+      <SearchBar
+        allData={allData}
+        onSearch={handleSearch}
+        placeholder="Поиск по ФИО, номеру карты..."
+        searchFields={[
+          (item) => item.worker?.user?.Username || "",
+          (item) => item.code || "",
+          (item) => item.card_type || "",
+        ]}
+      />
+      <div
+        className="table-reports-div"
+        style={{ maxHeight: "calc(100vh - 480px)" }}
+      >
         <table className="table-reports">
           <thead>
-          <tr>
-            <th>ФИО сотрудника</th>
-            <th>Тип карты</th>
-            <th>Номер счета</th>
-            <th>Оборот по дебету</th>
-            <th>Остаток</th>
-            <th>Дата выдачи</th>
-          </tr>
+            <tr>
+              <th>ФИО сотрудника</th>
+              <th>Тип карты</th>
+              <th>Номер счета</th>
+              <th>Оборот по дебету</th>
+              <th>Остаток</th>
+              <th>Дата выдачи</th>
+            </tr>
           </thead>
           <tbody>
-          {data.length > 0 ? (
-              data.map((row, idx) => {
-                const isLast = idx === data.length - 1;
-                return (
+            {data.length > 0
+              ? data.map((row, idx) => {
+                  const isLast = idx === data.length - 1;
+                  return (
                     <tr
-                        key={row.ID}
-                        ref={isLast && !isSearching ? lastElementRef : null}
+                      key={row.ID}
+                      ref={isLast && !isSearching ? lastElementRef : null}
                     >
-                      <td>{row.worker?.user?.full_name || ''}</td>
-                      <td>{row.card_type || ''}</td>
-                      <td>{row.code || ''}</td>
-                      <td>{row.debt_osd || ''}</td>
-                      <td>{row.out_balance || ''}</td>
-                      <td>{row.issue_date?.split('T')[0] || ''}</td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={
+                              edit?.worker?.user?.full_name ||
+                              row.worker?.user?.full_name
+                            }
+                            type="text"
+                            value={edit?.worker?.user?.full_name}
+                            onChange={(e) =>
+                              handleChange("worker.user.full_name", e)
+                            }
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.worker?.user?.full_name || ""
+                        )}
+                      </td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={edit?.card_type || row.card_type}
+                            type="text"
+                            value={edit?.card_type}
+                            onChange={(e) => handleChange("card_type", e)}
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.card_type || ""
+                        )}
+                      </td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={edit?.code || row.code}
+                            type="text"
+                            value={edit?.code}
+                            onChange={(e) => handleChange("code", e)}
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.code || ""
+                        )}
+                      </td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={edit?.debt_osd || row.debt_osd}
+                            type="text"
+                            value={edit?.debt_osd}
+                            onChange={(e) => handleChange("debt_osd", e)}
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.debt_osd || ""
+                        )}
+                      </td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={edit?.out_balance || row.out_balance}
+                            type="text"
+                            value={edit?.out_balance}
+                            onChange={(e) => handleChange("out_balance", e)}
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.out_balance || ""
+                        )}
+                      </td>
+                      <td onClick={() => !edit && setEdit(row)}>
+                        {edit?.ID === row.ID ? (
+                          <Input
+                            defValue={edit?.issue_date || row.issue_date}
+                            value={edit?.issue_date}
+                            type="date"
+                            onChange={(e) => handleChange("issue_date", e)}
+                            onEnter={() => saveChange(edit)}
+                          />
+                        ) : (
+                          row.issue_date?.split("T")[0] || ""
+                        )}
+                      </td>
                     </tr>
-                );
-              })
-          ) : (
-              !loading && (
+                  );
+                })
+              : !loading && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center' }}>
+                    <td colSpan={7} style={{ textAlign: "center" }}>
                       <h1>Нет данных за выбранный период</h1>
                     </td>
                   </tr>
-              )
-          )}
+                )}
           </tbody>
         </table>
-
-        {loading && (
-            <div
-                style={{
-                  transform: 'scale(2)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginBottom: '100px',
-                  width: 'auto'
-                }}
-            >
-              <Spinner />
-            </div>
-        )}
-
-        {loadingMore && (
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <Spinner />
-            </div>
-        )}
       </div>
+
+      {loading && (
+        <div
+          style={{
+            transform: "scale(2)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "100px",
+            width: "auto",
+          }}
+        >
+          <Spinner />
+        </div>
+      )}
+
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Spinner />
+        </div>
+      )}
+    </div>
   );
 };
 
