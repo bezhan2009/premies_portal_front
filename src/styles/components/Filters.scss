@@ -47,7 +47,8 @@
   width: $block-width;
   background-color: #f1f1f1;
   padding: 30px;
-  margin: 10px auto;
+  margin: 10px;
+  width: calc(100% - 80px);
   border-radius: 15px;
 
   &__button {
