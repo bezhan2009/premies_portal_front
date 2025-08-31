@@ -9,8 +9,6 @@ const OfficeTable = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
-  const [editedTitle, setEditedTitle] = useState("");
-  const [highlightedId, setHighlightedId] = useState(null);
   const inputRef = useRef(null);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -80,7 +78,7 @@ const OfficeTable = () => {
               ? data.map((office) => (
                   <tr
                     key={office.ID}
-                    className={highlightedId === office.ID ? "row-updated" : ""}
+                    className={edit?.ID === office.ID ? "row-updated" : ""}
                   >
                     <td onClick={() => !edit && setEdit(office)}>
                       {edit?.ID === office.ID ? (
