@@ -7,6 +7,8 @@ export default function Input({
   placeholder,
   className = "",
   type = "text",
+  defValue,
+  onEnter,
 }) {
   return (
     <label className={`input ${className}`} htmlFor={id}>
@@ -19,9 +21,16 @@ export default function Input({
         id={id}
         // type={type}
         type="month"
+        defaultValue={defValue}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onEnter?.(value);
+          }
+        }}
       />
       {error && <p className={error?.[id] && "error-input"}>{error?.[id]}</p>}
     </label>
