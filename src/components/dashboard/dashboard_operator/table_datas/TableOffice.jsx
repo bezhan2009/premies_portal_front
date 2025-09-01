@@ -53,6 +53,9 @@ const OfficeTable = () => {
     }
   };
 
+  console.log("edit", edit);
+  
+
   return (
     <div className="report-table-container">
       <div
@@ -78,7 +81,7 @@ const OfficeTable = () => {
               ? data.map((office) => (
                   <tr
                     key={office.ID}
-                    className={edit?.ID === office.ID ? "row-updated" : ""}
+                    // className={edit?.ID === office.ID ? "row-updated" : ""}
                   >
                     <td onClick={() => !edit && setEdit(office)}>
                       {edit?.ID === office.ID ? (
