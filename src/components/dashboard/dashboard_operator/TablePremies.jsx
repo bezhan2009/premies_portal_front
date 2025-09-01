@@ -306,6 +306,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={edit?.user?.full_name || user.full_name}
                         onChange={(e) => onChangeEdit("user.full_name", e)}
                         value={edit?.user?.full_name}
@@ -327,6 +328,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={edit?.plan || w.plan}
                         onChange={(e) => onChangeEdit("plan", e)}
                         value={edit?.plan}
@@ -339,6 +341,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.CardSales?.[0]?.cards_sailed ||
                           card_sales.cards_sailed
@@ -356,6 +359,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.CardSales?.[0]?.cards_sailed_in_general ||
                           card_sales.cards_sailed_in_general
@@ -378,6 +382,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.MobileBank?.[0]?.mobile_bank_connects ||
                           mobile_bank.mobile_bank_connects
@@ -395,6 +400,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={edit?.salary_project || w.salary_project}
                         onChange={(e) => onChangeEdit("salary_project", e)}
                         value={edit?.salary_project || ""}
@@ -407,6 +413,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.CardSales?.[0]?.deb_osd || card_sales.deb_osd
                         }
@@ -423,6 +430,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.CardSales?.[0]?.out_balance ||
                           card_sales.out_balance
@@ -440,6 +448,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.CardTurnovers?.[0]?.active_cards_perms ||
                           turnover.active_cards_perms?.toFixed(0)
@@ -459,6 +468,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.ServiceQuality?.[0]?.call_center ||
                           service.call_center
@@ -476,6 +486,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.ServiceQuality?.[0]?.complaint ||
                           service.complaint
@@ -493,6 +504,7 @@ const TablePremies = ({ month, year }) => {
                   <td onClick={() => !edit?.user?.ID && setEdit(w)}>
                     {edit?.user?.ID === user.ID ? (
                       <Input
+                      type="text"
                         defValue={
                           edit?.ServiceQuality?.[0]?.tests || service.tests
                         }
@@ -548,6 +560,7 @@ const TablePremies = ({ month, year }) => {
               </select>
 
               <input
+              type="text"
                 type="number"
                 placeholder="Год"
                 value={downloadYear}
