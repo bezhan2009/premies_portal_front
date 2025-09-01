@@ -5,7 +5,7 @@ import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import { translate_role_id } from "../../../../api/utils/translate_role_id.js";
 import Input from "../../../elements/Input.jsx";
-import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateworkers.js";
+import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
 
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
