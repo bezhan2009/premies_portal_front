@@ -6,16 +6,18 @@ export default function Select({
   options = [],
   className = "",
   onEnter,
+  style,
 }) {
   return (
     <label className={`select ${className}`} htmlFor={id}>
       <select
+        style={style}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={`${id}-error`}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter") { 
             e.preventDefault();
             onEnter?.(value);
           }

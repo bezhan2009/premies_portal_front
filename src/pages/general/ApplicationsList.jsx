@@ -11,6 +11,8 @@ import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
+import { b, s } from "framer-motion/client";
+import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
@@ -40,7 +42,8 @@ export default function ApplicationsList() {
       if (nextId) query.append("after", nextId);
       if (data?.month) query.append("month", data?.month);
       if (data?.year) query.append("year", data?.year);
-      if (data?.status) query.append("status_id", data?.status);
+      if (!selectedRows.length && data?.status)
+        query.append("status_id", data?.status);
       const response = await fetch(
         `${backendUrl}/applications${
           archive ? "/archive" : `?${query.toString()}`
@@ -189,6 +192,29 @@ export default function ApplicationsList() {
 
   const filteredData = applyFilters(tableData);
 
+  const upDateStatusApplications = async (status) => {
+    try {
+      await selectedRows.map(async (e) => {
+        await apiClientApplication.patch(`/applications/${e}`, {
+          application_status_id: +status,
+        });
+      });
+
+      setData("status", "");
+      fetchData(null, true);
+      setSelectedRows([]);
+      setSelectAll(false);
+    } catch (e) {
+      console.error(e);
+    }
+    // if (selectedRows.length) {
+    //   setData("status", "");
+    //   fetchData(null, true);
+    //   setSelectedRows([]);
+    //   setSelectAll(false);
+    // }
+  };
+
   useEffect(() => {
     fetchData(null, true);
   }, [archive]);
@@ -240,9 +266,13 @@ export default function ApplicationsList() {
         <main>
           <div className="my-applications-header">
             <Select
+              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
               id={"status"}
               value={data?.status}
-              onChange={(e) => setData("status", e)}
+              onChange={(e) => {
+                if (!selectedRows.length) setData("status", e);
+                else upDateStatusApplications(e);
+              }}
               options={status}
               error={errors}
             />
