@@ -137,7 +137,7 @@ const TablePremies = ({ month, year }) => {
 
   const upDateUserWorkers = async () => {
     try {
-      await fullUpdateWorkers(edit);
+      await fullUpdateWorkers(edit, false);
       setEdit({ ID: null });
       const data = await fetchWorkers(month, year);
       setWorkers(data);
