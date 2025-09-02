@@ -5,6 +5,8 @@ import { fetchReportCards } from "../../../../api/operator/reports/report_cards.
 import SearchBar from "../../../general/SearchBar.jsx";
 import Input from "../../../elements/Input.jsx";
 import { cardDetailPatch } from "../../../../api/workers/cardDetailPatch.js";
+import Select from "../../../elements/Select.jsx";
+import { mcCards, ncCards, visaCards } from "../../../../const/defConst.js";
 
 const TableReportsCards = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -198,8 +200,16 @@ const TableReportsCards = ({ month, year }) => {
 
   const saveChange = async (edit) => {
     try {
-      await cardDetailPatch(edit);
-      setEdit({ ID: null });
+      await cardDetailPatch({
+        ...edit,
+        issue_date: edit.issue_date?.split("T")?.[1]
+          ? edit.issue_date
+          : edit.issue_date + "T00:00:00Z" || null,
+      });
+      setEdit(null);
+      const data = await fetchReportCards(month, year, null);
+      setData(data);
+      setHasMore(data.length === 10);
     } catch (e) {
       console.error(e);
     }
@@ -263,12 +273,31 @@ const TableReportsCards = ({ month, year }) => {
                       </td>
                       <td onClick={() => !edit && setEdit(row)}>
                         {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.card_type || row.card_type}
-                            type="text"
-                            value={edit?.card_type}
+                          // <Input
+                          //   defValue={edit?.card_type || row.card_type}
+                          //   type="text"
+                          //   value={edit?.card_type}
+                          //   onChange={(e) => handleChange("card_type", e)}
+                          //   onEnter={() => saveChange(edit)}
+                          // />
+                          <Select
                             onChange={(e) => handleChange("card_type", e)}
+                            value={edit?.card_type || row.card_type}
                             onEnter={() => saveChange(edit)}
+                            options={[
+                              ...visaCards.map((c) => ({
+                                label: c.name,
+                                value: c.name,
+                              })),
+                              ...ncCards.map((c) => ({
+                                label: c.name,
+                                value: c.name,
+                              })),
+                              ...mcCards.map((c) => ({
+                                label: c.name,
+                                value: c.name,
+                              })),
+                            ]}
                           />
                         ) : (
                           row.card_type || ""

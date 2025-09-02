@@ -40,6 +40,7 @@ export default function ApplicationsList() {
       if (nextId) query.append("after", nextId);
       if (data?.month) query.append("month", data?.month);
       if (data?.year) query.append("year", data?.year);
+      if (data?.status) query.append("status_id", data?.status);
       const response = await fetch(
         `${backendUrl}/applications${
           archive ? "/archive" : `?${query.toString()}`
@@ -53,7 +54,7 @@ export default function ApplicationsList() {
       setNextId(result?.[result?.length - 1]?.ID);
       setFetching(false);
     } catch (error) {
-      console.error("Ошибка загрузки заявок:", error);
+      // console.error("Ошибка загрузки заявок:", error);
     } finally {
       setLoading(false);
       setFetching(false);
@@ -129,18 +130,25 @@ export default function ApplicationsList() {
   };
 
   const applyFilters = (data) => {
-    return data.filter((row) => {
-      const fullName =
-        `${row.surname} ${row.name} ${row.patronymic}`.toLowerCase();
-      return (
-        fullName.includes(filters.fullName.toLowerCase()) &&
-        row.phone_number.includes(filters.phone) &&
-        (!filters.resident ||
-          (filters.resident === "Да" ? row.is_resident : !row.is_resident)) &&
-        (!filters.card ||
-          row.card_name.toLowerCase().includes(filters.card.toLowerCase()))
-      );
-    });
+    return (
+      Array.isArray(data) &&
+      data?.filter((row) => {
+        const fullName =
+          `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
+        return (
+          fullName?.includes(filters?.fullName?.toLowerCase()) &&
+          row?.phone_number?.includes(filters?.phone) &&
+          (!filters?.resident ||
+            (filters?.resident === "Да"
+              ? row?.is_resident
+              : !row?.is_resident)) &&
+          (!filters?.card ||
+            row?.card_name
+              ?.toLowerCase()
+              ?.includes(filters?.card?.toLowerCase()))
+        );
+      })
+    );
   };
 
   const headers = [
@@ -187,7 +195,7 @@ export default function ApplicationsList() {
 
   useEffect(() => {
     fetchData(null, true);
-  }, [data?.month, data?.year]);
+  }, [data?.month, data?.year, data?.status]);
 
   useEffect(() => {
     if (selectAll) {
@@ -204,6 +212,26 @@ export default function ApplicationsList() {
   }, [fetching]);
 
   console.log("nextId", nextId);
+
+  useEffect(() => {
+    if (data.month || data.month === "") {
+      localStorage.setItem("month", data.month);
+    }
+    if (data.year || data.year === "") {
+      localStorage.setItem("year", data.year);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    const savedMonth = localStorage.getItem("month");
+    const savedYear = localStorage.getItem("year");
+    if (savedMonth) {
+      setData("month", savedMonth);
+    }
+    if (savedYear) {
+      setData("year", savedYear);
+    }
+  }, []);
 
   return (
     <>
@@ -340,64 +368,67 @@ export default function ApplicationsList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData
-                    .slice(0, data?.limit || filteredData.length)
-                    .map((row, index) => (
-                      <tr key={index}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="custom-checkbox"
-                            checked={selectedRows.includes(row.ID)}
-                            onChange={(e) => {
-                              setSelectedRows(
-                                e.target.checked
-                                  ? [...selectedRows, row.ID]
-                                  : selectedRows.filter((id) => id !== row.ID)
-                              );
-                            }}
-                          />
-                        </td>
-                        <td>{row.ID}</td>
-                        <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                        <td>{row.phone_number}</td>
-                        <td>{row.card_name}</td>
-                        <td>{row.delivery_address}</td>
-                        <td>
-                          {renderFileIcon(row.front_side_of_the_passport)}
-                        </td>
-                        <td>{renderFileIcon(row.back_side_of_the_passport)}</td>
-                        <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                        <td>{row.phone_number}</td>
-                        <td>{row.secret_word}</td>
-                        <td>{row.card_name}</td>
-                        <td>{row.gender}</td>
-                        <td>{row.is_resident ? "Да" : "Нет"}</td>
-                        <td>{row.type_of_certificate}</td>
-                        <td>{row.inn}</td>
-                        <td>{row.delivery_address}</td>
-                        <td>{row.card_code}</td>
-                        <td className="active-table">
-                          <AiFillEdit
-                            onClick={() => navigate(`/agent/card/${row.ID}`)}
-                            style={{
-                              fontSize: 35,
-                              color: "green",
-                              cursor: "pointer",
-                              marginBottom: "10px",
-                            }}
-                          />
-                          <AiFillDelete
-                            onClick={() => deleteApplication(row.ID)}
-                            style={{
-                              fontSize: 35,
-                              color: "#c31414",
-                              cursor: "pointer",
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                  {filteredData &&
+                    filteredData
+                      ?.slice(0, data?.limit || filteredData?.length)
+                      ?.map((row, index) => (
+                        <tr key={index}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="custom-checkbox"
+                              checked={selectedRows.includes(row.ID)}
+                              onChange={(e) => {
+                                setSelectedRows(
+                                  e.target.checked
+                                    ? [...selectedRows, row.ID]
+                                    : selectedRows.filter((id) => id !== row.ID)
+                                );
+                              }}
+                            />
+                          </td>
+                          <td>{row.ID}</td>
+                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
+                          <td>{row.phone_number}</td>
+                          <td>{row.card_name}</td>
+                          <td>{row.delivery_address}</td>
+                          <td>
+                            {renderFileIcon(row.front_side_of_the_passport)}
+                          </td>
+                          <td>
+                            {renderFileIcon(row.back_side_of_the_passport)}
+                          </td>
+                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                          <td>{row.phone_number}</td>
+                          <td>{row.secret_word}</td>
+                          <td>{row.card_name}</td>
+                          <td>{row.gender}</td>
+                          <td>{row.is_resident ? "Да" : "Нет"}</td>
+                          <td>{row.type_of_certificate}</td>
+                          <td>{row.inn}</td>
+                          <td>{row.delivery_address}</td>
+                          <td>{row.card_code}</td>
+                          <td className="active-table">
+                            <AiFillEdit
+                              onClick={() => navigate(`/agent/card/${row.ID}`)}
+                              style={{
+                                fontSize: 35,
+                                color: "green",
+                                cursor: "pointer",
+                                marginBottom: "10px",
+                              }}
+                            />
+                            <AiFillDelete
+                              onClick={() => deleteApplication(row.ID)}
+                              style={{
+                                fontSize: 35,
+                                color: "#c31414",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
                 </tbody>
               </table>
             )}

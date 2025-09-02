@@ -19,8 +19,8 @@ export default function Input({
       <input
         // style={{ display: type === "date" && "none" }}
         id={id}
-        // type={type}
-        type="month"
+        type={type}
+        // type="month"
         defaultValue={defValue}
         placeholder={placeholder}
         value={value}

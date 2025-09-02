@@ -5,6 +5,7 @@ export default function Select({
   value,
   options = [],
   className = "",
+  onEnter,
 }) {
   return (
     <label className={`select ${className}`} htmlFor={id}>
@@ -13,6 +14,12 @@ export default function Select({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={`${id}-error`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onEnter?.(value);
+          }
+        }}
       >
         {options.map((item, i) => (
           <option value={item.value} key={i}>

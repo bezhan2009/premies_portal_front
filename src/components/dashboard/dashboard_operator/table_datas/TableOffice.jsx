@@ -13,9 +13,6 @@ const OfficeTable = () => {
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -33,7 +30,6 @@ const OfficeTable = () => {
 
   const saveChange = async (edit) => {
     const token = localStorage.getItem("access_token");
-
     try {
       const response = await fetch(`${backendURL}/office/${edit.ID}`, {
         method: "PATCH",
@@ -46,6 +42,7 @@ const OfficeTable = () => {
 
       if (!response.ok) throw new Error("Ошибка при обновлении");
       setEdit(null);
+      loadData();
     } catch (error) {
       console.error("Ошибка:", error);
     } finally {
@@ -54,6 +51,10 @@ const OfficeTable = () => {
   };
 
   console.log("edit", edit);
+
+  useEffect(() => {
+    loadData();
+  }, []);
   
 
   return (
