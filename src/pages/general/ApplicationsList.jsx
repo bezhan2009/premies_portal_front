@@ -40,6 +40,7 @@ export default function ApplicationsList() {
       if (nextId) query.append("after", nextId);
       if (data?.month) query.append("month", data?.month);
       if (data?.year) query.append("year", data?.year);
+      if (data?.status) query.append("status_id", data?.status);
       const response = await fetch(
         `${backendUrl}/applications${
           archive ? "/archive" : `?${query.toString()}`
@@ -194,7 +195,7 @@ export default function ApplicationsList() {
 
   useEffect(() => {
     fetchData(null, true);
-  }, [data?.month, data?.year]);
+  }, [data?.month, data?.year, data?.status]);
 
   useEffect(() => {
     if (selectAll) {
@@ -211,6 +212,26 @@ export default function ApplicationsList() {
   }, [fetching]);
 
   console.log("nextId", nextId);
+
+  useEffect(() => {
+    if (data.month || data.month === "") {
+      localStorage.setItem("month", data.month);
+    }
+    if (data.year || data.year === "") {
+      localStorage.setItem("year", data.year);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    const savedMonth = localStorage.getItem("month");
+    const savedYear = localStorage.getItem("year");
+    if (savedMonth) {
+      setData("month", savedMonth);
+    }
+    if (savedYear) {
+      setData("year", savedYear);
+    }
+  }, []);
 
   return (
     <>

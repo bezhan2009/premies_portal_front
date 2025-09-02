@@ -12,38 +12,37 @@ const EmployeesTable = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const offices = await fetchOffices();
+
+      const users = [];
+      offices.forEach((office) => {
+        if (office.office_user && office.office_user.length > 0) {
+          office.office_user.forEach((u) => {
+            users.push({
+              ID: u.worker.user.ID,
+              officeTitle: office.title,
+              fio: u.worker?.user?.full_name || "",
+              login: u.worker?.user?.Username || "",
+              position: u.worker?.position || "",
+              placeWork: u.worker?.place_work || "",
+              salary: u.worker?.Salary || "",
+              group: translate_role_id(u.worker?.user.role_id),
+            });
+          });
+        }
+      });
+
+      setEmployees(users);
+      setFilteredEmployees(users);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const offices = await fetchOffices();
-
-        const users = [];
-        offices.forEach((office) => {
-          if (office.office_user && office.office_user.length > 0) {
-            office.office_user.forEach((u) => {
-              users.push({
-                ID: u.worker.user.ID,
-                officeTitle: office.title,
-                fio: u.worker?.user?.full_name || "",
-                login: u.worker?.user?.Username || "",
-                position: u.worker?.position || "",
-                placeWork: u.worker?.place_work || "",
-                salary: u.worker?.Salary || "",
-                group: translate_role_id(u.worker?.user.role_id),
-              });
-            });
-          }
-        });
-
-        setEmployees(users);
-        setFilteredEmployees(users);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
   }, []);
 
@@ -54,6 +53,7 @@ const EmployeesTable = () => {
   const saveChange = async () => {
     try {
       await fullUpdateWorkers(edit);
+      loadData();
       setEdit({ ID: null });
     } catch (e) {
       console.error(e);
