@@ -37,7 +37,7 @@ export default function GiftCard({ edit = false }) {
   const { data, errors, setData, validate, setDataClear, setDataMore } =
     useFormStore();
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { id } = useParams();
 
@@ -80,9 +80,9 @@ export default function GiftCard({ edit = false }) {
       }
 
       // Добавление остальных полей
-      formData.append("name", data.name || "");
-      formData.append("surname", data.surname || "");
-      formData.append("patronymic", data.patronymic || "");
+      formData.append("name", data.name.trim() || "");
+      formData.append("surname", data.surname.trim() || "");
+      formData.append("patronymic", data.patronymic.trim() || "");
       formData.append("gender", data.gender === true ? "Муж" : "Жен");
       formData.append("client_index", data.client_index || "");
       formData.append("issued_by", data.issued_by || "");
@@ -157,7 +157,7 @@ export default function GiftCard({ edit = false }) {
         const result = await response.json();
         console.log("Успешно отправлено:", result);
         // setDataClear();
-        navigate(0)
+        navigate(0);
         alert("Данные успешно сохранены!");
       }
     } catch (error) {

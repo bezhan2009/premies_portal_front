@@ -52,7 +52,7 @@ const EmployeesTable = () => {
 
   const saveChange = async () => {
     try {
-      await fullUpdateWorkers(edit);
+      await fullUpdateWorkers({ ...edit, fio: edit.fio.trim() });
       loadData();
       setEdit({ ID: null });
     } catch (e) {
