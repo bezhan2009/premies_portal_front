@@ -193,7 +193,7 @@ export default function Dashboard() {
                             rows: [
                                 {
                                     label: "Средняя оценка",
-                                    value: `${((callCenterValue + testsValue) / 2).toFixed(1)} Балла`
+                                    value: `${callCenterValue} Балла`
                                 },
                                 {
                                     label: "Жалобы + ОЗ",
