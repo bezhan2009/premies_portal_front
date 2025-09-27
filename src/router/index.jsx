@@ -40,6 +40,8 @@ import ApplicationsList from "../pages/general/ApplicationsList.jsx";
 import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
 import DashboardDirectorReports from "../pages/dashboard/dashboard_director/DirectorReports.jsx";
 import DashboardDirectorKnowledgeBase from "../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
+import ApplicationsListCredit from "../pages/general/ApplicationsListCredit.jsx";
+import GiftCardCredit from "../pages/general/GiftCardCredit.jsx";
 
 export default function AppRouter() {
   return (
@@ -157,7 +159,7 @@ export default function AppRouter() {
               <RequireRole allowedRoles={[10]}>
                 <Outlet />
               </RequireRole>
-            }  
+            }
           >
             <Route path="/agent/card" element={<GiftCard />} />
             <Route path="/agent/card/:id" element={<GiftCard edit={true} />} />
@@ -170,6 +172,28 @@ export default function AppRouter() {
               path="/agent/knowledge-base"
               element={<DashboardAgentKB />}
             />
+          </Route>
+          <Route
+            element={
+              <RequireRole allowedRoles={[11]}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/agent/card" element={<GiftCardCredit />} />
+            <Route
+              path="/agent/card/:id"
+              element={<GiftCardCredit edit={true} />}
+            />
+            {/* <Route path="/agent/my-applications" element={<MyApplications />} /> */}
+            <Route
+              path="/agent/applications-list"
+              element={<ApplicationsListCredit />}
+            />
+            {/* <Route
+              path="/agent/knowledge-base"
+              element={<DashboardAgentKB />}
+            /> */}
           </Route>
         </Route>
 
