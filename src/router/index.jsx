@@ -180,18 +180,18 @@ export default function AppRouter() {
               </RequireRole>
             }
           >
-            <Route path="/agent/card" element={<GiftCardCredit />} />
+            <Route path="/credit/card" element={<GiftCardCredit />} />
             <Route
-              path="/agent/card/:id"
+              path="/credit/card/:id"
               element={<GiftCardCredit edit={true} />}
             />
-            {/* <Route path="/agent/my-applications" element={<MyApplications />} /> */}
+            {/* <Route path="/credit/my-applications" element={<MyApplications />} /> */}
             <Route
-              path="/agent/applications-list"
+              path="/credit/applications-list"
               element={<ApplicationsListCredit />}
             />
             {/* <Route
-              path="/agent/knowledge-base"
+              path="/credit/knowledge-base"
               element={<DashboardAgentKB />}
             /> */}
           </Route>
