@@ -1,7 +1,7 @@
-import '../../../styles/dashboard.scss';
-import HeaderWorker from '../../../components/dashboard/dashboard_worker/MenuWorker';
-import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
-import { Helmet } from 'react-helmet';
+import "../../../styles/dashboard.scss";
+import HeaderWorker from "../../../components/dashboard/dashboard_worker/MenuWorker";
+import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
+import { Helmet } from "react-helmet";
 
 export default function DashboardWorkerCredits() {
   return (
@@ -13,7 +13,7 @@ export default function DashboardWorkerCredits() {
         <header className="dashboard-header">
           <HeaderWorker activeLink="credits" />
         </header>
-          <GetBlockInfo page="und" />
+        <GetBlockInfo page="und" />
       </div>
     </>
   );
