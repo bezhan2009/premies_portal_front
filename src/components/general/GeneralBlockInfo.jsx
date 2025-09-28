@@ -13,6 +13,7 @@ import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTest
 import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";
 import WorkerApplicationsCards from "../dashboard/dashboard_worker/WorkerApplicationsCards.jsx";
 import DirectorReports from "../dashboard/dashboard_director/DirectorReports.jsx";
+import ProcessingIntegration from "../dashboard/dashboard_operator/processing/Limits.jsx";
 
 function GetBlockInfo({ page }) {
     switch (page) {
@@ -28,6 +29,8 @@ function GetBlockInfo({ page }) {
             return <OperatorKnowledgeBaseBlockInfo />;
         case "operator_tests":
             return <OperatorTestsDashboard />;
+        case "operator_processing":
+            return <ProcessingIntegration />
         case "worker_premi":
             return <WorkerPremiesBlockInfo />;
         case "worker_report":

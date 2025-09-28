@@ -40,6 +40,7 @@ import ApplicationsList from "../pages/general/ApplicationsList.jsx";
 import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
 import DashboardDirectorReports from "../pages/dashboard/dashboard_director/DirectorReports.jsx";
 import DashboardDirectorKnowledgeBase from "../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
+import DashboardOperatorProcessing from "../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -84,8 +85,12 @@ export default function AppRouter() {
               element={<DashboardOperatorKnowledgeBase />}
             />
             <Route
-              path="/operator/tests"
-              element={<DashboardOperatorTests />}
+                path="/operator/tests"
+                element={<DashboardOperatorTests />}
+            />
+            <Route
+                path="/operator/processing/limits"
+                element={<DashboardOperatorProcessing />}
             />
             <Route path="/auth/register" element={<RegisterPage />} />
           </Route>
