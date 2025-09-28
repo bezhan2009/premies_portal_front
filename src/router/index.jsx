@@ -42,6 +42,7 @@ import DashboardDirectorReports from "../pages/dashboard/dashboard_director/Dire
 import DashboardDirectorKnowledgeBase from "../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
 import ApplicationsListCredit from "../pages/general/ApplicationsListCredit.jsx";
 import GiftCardCredit from "../pages/general/GiftCardCredit.jsx";
+import DashboardAgentKBCredit from "../pages/dashboard/dashboard_credit/KBAgentPageCredit.jsx";
 
 export default function AppRouter() {
   return (
@@ -190,10 +191,10 @@ export default function AppRouter() {
               path="/credit/applications-list"
               element={<ApplicationsListCredit />}
             />
-            {/* <Route
+            <Route
               path="/credit/knowledge-base"
-              element={<DashboardAgentKB />}
-            /> */}
+              element={<DashboardAgentKBCredit />}
+            />
           </Route>
         </Route>
 

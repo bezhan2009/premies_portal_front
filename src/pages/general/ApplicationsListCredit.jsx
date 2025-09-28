@@ -10,8 +10,9 @@ import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
-import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
-import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
+import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
+import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
+import { deleteCreditById } from "../../api/application/deleteCreditById.js";
 
 export default function ApplicationsListCredit() {
   const { data, errors, setData } = useFormStore();
@@ -35,7 +36,7 @@ export default function ApplicationsListCredit() {
   const fetchData = async (nextId = null, res = false) => {
     try {
       setLoading(true);
-      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
       let query = new URLSearchParams();
 
       if (nextId) query.append("after", nextId);
@@ -44,9 +45,7 @@ export default function ApplicationsListCredit() {
       if (!selectedRows.length && data?.status)
         query.append("status_id", data?.status);
       const response = await fetch(
-        `${backendUrl}/applications${
-          archive ? "/archive" : `?${query.toString()}`
-        }`
+        `${backendUrl}/credit${archive ? "/archive" : `?${query.toString()}`}`
       );
       const result = await response.json();
       if (res) {
@@ -88,13 +87,13 @@ export default function ApplicationsListCredit() {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
-      const response = await fetch(`${backendUrl}/automation/application`, {
+      const response = await fetch(`${backendUrl}/automation/credit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ application_ids: selectedRows }),
+        body: JSON.stringify({ credit_ids: selectedRows }),
       });
       if (!response.ok) throw new Error("Ошибка при получении файла");
       const blob = await response.blob();
@@ -166,7 +165,7 @@ export default function ApplicationsListCredit() {
   ];
 
   const renderFileIcon = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+    const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
     const fullUrl = `${backendUrl}/${path.replace(/\\/g, "/")}`;
     return (
       <button
@@ -180,7 +179,7 @@ export default function ApplicationsListCredit() {
 
   const deleteApplication = async (id) => {
     try {
-      const res = await deleteApplicationById(id);
+      const res = await deleteCreditById(id);
       if (res) {
         setTimeout(() => fetchData(), 200);
       }
@@ -194,7 +193,7 @@ export default function ApplicationsListCredit() {
   const upDateStatusApplications = async (status) => {
     try {
       await selectedRows.map(async (e) => {
-        await apiClientApplication.patch(`/applications/${e}`, {
+        await apiClientCredit.patch(`/credits/${e}`, {
           application_status_id: +status,
         });
       });
@@ -260,7 +259,7 @@ export default function ApplicationsListCredit() {
 
   return (
     <>
-      <HeaderAgent activeLink="applications" />
+      <HeaderCredit activeLink="applications" />
       <div className="applications-list">
         <main>
           <div className="my-applications-header">

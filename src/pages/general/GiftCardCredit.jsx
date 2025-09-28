@@ -1,21 +1,11 @@
 import RadioSelect from "../../components/elements/RadioSelect";
-import {
-  districtTypes,
-  docTypes,
-  mcCards,
-  ncCards,
-  reginTypes,
-  streetTypes,
-  USTypes,
-  visaCards,
-} from "../../const/defConst";
+import { loanTypes, offis, statusCredit } from "../../const/defConst";
 import file from "../../assets/file.jpg";
 import back_side_of_the_passport_file from "../../assets/back-passport.jpg";
 import front_side_of_the_passport_file from "../../assets/front-passport.jpg";
 import personImg from "../../assets/person.svg";
-import visa from "../../assets/visa.jpg";
-import nc from "../../assets/nc.jpg";
-import mc from "../../assets/mc.jpg";
+import fileIcon from "../../assets/fileIcon.png";
+// fileIcon.png
 import card from "../../assets/card.jpg";
 import download from "../../assets/download.jpg";
 import share from "../../assets/share.jpg";
@@ -31,6 +21,7 @@ import { getApplicationById } from "../../api/application/getApplicationById.js"
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
+import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 
 export default function GiftCardCredit({ edit = false }) {
   const [loading, setLoading] = useState(false);
@@ -41,9 +32,9 @@ export default function GiftCardCredit({ edit = false }) {
   const { id } = useParams();
 
   const ValidData = {
-    surname: { required: true },
-    name: { required: true },
-    phone_number: { required: true },
+    last_name: { required: true },
+    first_name: { required: true },
+    phone: { required: true },
   };
 
   const formatDateForBackend = (dateStr) => {
@@ -77,62 +68,80 @@ export default function GiftCardCredit({ edit = false }) {
           data.selfie_with_passport_file
         );
       }
+      if (data.income_proof_document_file) {
+        formData.append(
+          "income_proof_document_file",
+          data.income_proof_document_file
+        );
+      }
 
       // Добавление остальных полей
-      formData.append("name", data.name.trim() || "");
-      formData.append("surname", data.surname.trim() || "");
-      formData.append("patronymic", data.patronymic.trim() || "");
-      formData.append("gender", data.gender === true ? "Муж" : "Жен");
-      formData.append("client_index", data.client_index || "");
-      formData.append("issued_by", data.issued_by || "");
+      formData.append("name", data.first_name.trim() || "");
+      formData.append("surname", data.last_name.trim() || "");
+      formData.append("patronymic", data.middle_name.trim() || "");
+      // formData.append("gender", data.gender === true ? "Муж" : "Жен");
+      formData.append("client_code", String(data.client_code) || "");
+      // formData.append("issued_by", data.issued_by || "");
+      // formData.append(
+      //   "issued_at",
+      //   formatDateForBackend(data.passport_issued_at)
+      // );
       formData.append(
-        "issued_at",
-        formatDateForBackend(data.passport_issued_at)
+        "employment_date",
+        formatDateForBackend(data.employment_date + "T16:29:10.789009Z")
       );
-      formData.append("birth_date", formatDateForBackend(data.birth_date));
-      formData.append("phone_number", data.phone_number || "");
-      formData.append("secret_word", data.secret_word || "");
-      formData.append("card_name", data.card_name || "");
+      formData.append("phone", String(data.phone) || "");
+      // formData.append("secret_word", data.secret_word || "");
+      formData.append("workplace", data.workplace || "");
+      // formData.append(
+      //   "card_code",
+      //   data.visa_card || data.mc_card || data.nc_card || ""
+      // );
+      formData.append("loan_type", data.loan_type || "");
+      // branch_office
+      formData.append("branch_office", data.branch_office || "");
       formData.append(
-        "card_code",
-        data.visa_card || data.mc_card || data.nc_card || ""
+        "additional_income_source",
+        data.additional_income_source || ""
       );
-      formData.append("type_of_certificate", data.type_of_certificate || "");
-      formData.append("documents_series", data.documents_series || "");
-      formData.append("document_number", data.document_number || "");
       formData.append(
-        "passport_issued_at",
-        formatDateForBackend(data.passport_issued_at)
+        "additional_income_amount",
+        data.additional_income_amount || ""
       );
-      formData.append("inn", data.inn || "");
-      formData.append("country", data.country || "");
-      formData.append("email", data.email || "");
-      formData.append("region", data.region || "");
-      formData.append("population_type", data.population_type || "");
-      formData.append("populated", data.populated || "");
-      formData.append("district", data.district || "");
-      formData.append("street_type", data.street_type || "");
-      formData.append("street", data.street || "");
-      formData.append("house_number", data.house_number || "");
-      formData.append("corpus", data.corpus || "");
-      formData.append("apartment_number", data.apartment_number || "");
+      formData.append(
+        "credit_status_id",
+        formatDateForBackend(data.credit_status_id)
+      );
+      formData.append(
+        "credit_status",
+        formatDateForBackend(
+          statusCredit.find((e) => e.value === data.credit_status_id)
+        )
+      );
+      formData.append("inn", String(data.inn) || "");
+      formData.append("loan_purpose", data.loan_purpose || "");
+      formData.append("salary", data.salary || "");
+      formData.append("loan_term", data.loan_term || "");
+      // formData.append("population_type", data.population_type || "");
+      formData.append("loan_amount", data.loan_amount || "");
+      // formData.append("district", data.district || "");
+      formData.append("credit_status_id", data.credit_status_id || "");
+      // formData.append("street", data.street || "");
+      // formData.append("house_number", data.house_number || "");
+      // formData.append("corpus", data.corpus || "");
+      // formData.append("apartment_number", data.apartment_number || "");
 
       // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
-      formData.append("is_resident", String(!!data.is_resident));
-      formData.append("remote_application", String(!!data.remote_application));
-      formData.append("identity_verified", String(!!data.identity_verified));
+      // formData.append("is_resident", String(!!data.is_resident));
+      // formData.append("remote_application", String(!!data.remote_application));
+      // formData.append("identity_verified", String(!!data.identity_verified));
 
-      formData.append(
-        "delivery_address",
-        `${data.country || ""}, ${data.region || ""}, ${
-          data.populated || ""
-        }, ${data.street || ""} ${data.house_number || ""}`
-      );
+      formData.append("address", data.address);
 
-      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
 
       if (edit) {
-        const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
+        const response = await fetch(`${backendUrl}/credits/${data.ID}`, {
           method: "PATCH",
           body: formData,
         });
@@ -145,7 +154,7 @@ export default function GiftCardCredit({ edit = false }) {
         // setDataClear();
         alert("Данные успешно сохранены!");
       } else {
-        const response = await fetch(`${backendUrl}/applications`, {
+        const response = await fetch(`${backendUrl}/credits`, {
           method: "POST",
           body: formData,
         });
@@ -175,7 +184,7 @@ export default function GiftCardCredit({ edit = false }) {
         setDataMore({
           ...data,
           gemder: data.gender === "Муж",
-          birth_date: formaterDate(data?.birth_date, "dateOnly"),
+          employment_date: formaterDate(data?.employment_date, "dateOnly"),
           passport_issued_at: formaterDate(
             data?.passport_issued_at,
             "dateOnly"
@@ -197,13 +206,13 @@ export default function GiftCardCredit({ edit = false }) {
 
   return (
     <>
-      <HeaderAgent activeLink="gift_card" />
-      <div className="gift-card">
+      <HeaderCredit activeLink="gift_card" />
+      <div className="gift-card-credit">
         {loading ? (
           <Spinner />
         ) : (
           <main>
-            <h1>
+            {/* <h1>
               Выберите карту! Нажав на <img src={file} alt="file" width={16} />{" "}
               вы можете посмотреть и распечатать тарифы.
             </h1>
@@ -244,7 +253,7 @@ export default function GiftCardCredit({ edit = false }) {
                   }}
                 />
               </div>
-            </div>
+            </div> */}
             <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
 
             <div className="header-passport">
@@ -290,6 +299,23 @@ export default function GiftCardCredit({ edit = false }) {
                 }
                 width={220}
               />
+              {/* income_proof_document_file */}
+
+              <img src={file} alt="file" width={16} />
+
+              <File
+                edit={edit}
+                errors={errors}
+                onChange={(e) => setData("income_proof_document_file", e)}
+                placeholderImage={fileIcon}
+                id={"income_proof_document_file"}
+                value={
+                  edit
+                    ? data?.income_proof_document
+                    : data?.income_proof_document_file
+                }
+                width={220}
+              />
 
               <div>
                 <CheckBox
@@ -304,112 +330,120 @@ export default function GiftCardCredit({ edit = false }) {
                 />
               </div>
             </div>
-            <div className="content-form">
+            <div className="content-form-credit">
               <Input
                 className={"div1"}
                 placeholder={"Фамилия"}
-                onChange={(e) => setData("surname", e)}
-                value={data?.surname}
+                onChange={(e) => setData("last_name", e)}
+                value={data?.last_name}
                 error={errors}
-                id={"surname"}
+                id={"last_name"}
               />
               <Input
                 className={"div2"}
                 placeholder={"Имя"}
-                onChange={(e) => setData("name", e)}
-                value={data?.name}
+                onChange={(e) => setData("first_name", e)}
+                value={data?.first_name}
                 error={errors}
-                id={"name"}
+                id={"first_name"}
               />
               <Input
                 className={"div3"}
                 placeholder={"Отчество"}
-                onChange={(e) => setData("patronymic", e)}
-                value={data?.patronymic}
+                onChange={(e) => setData("middle_name", e)}
+                value={data?.middle_name}
                 error={errors}
-                id={"patronymic"}
+                id={"middle_name"}
               />
               <Input
                 type="date"
                 className={"div4"}
-                placeholder={"Дата рождения"}
-                onChange={(e) => setData("birth_date", e)}
-                value={data?.birth_date}
+                placeholder={"Дата трудоустройства"}
+                onChange={(e) => setData("employment_date", e)}
+                value={data?.employment_date}
                 error={errors}
-                id={"birth_date"}
+                id={"employment_date"}
               />
               <Input
                 className={"div5"}
                 placeholder={"Телефон"}
-                onChange={(e) => setData("phone_number", e)}
-                value={data?.phone_number}
+                onChange={(e) => setData("phone", e)}
+                value={data?.phone}
                 error={errors}
-                id={"phone_number"}
+                id={"phone"}
               />
-              <Input
+              {/* <Input
                 className={"div6"}
                 placeholder={"Кодовое"}
                 onChange={(e) => setData("secret_word", e)}
                 value={data?.secret_word}
                 error={errors}
                 id={"secret_word"}
-              />
+              /> */}
               <Input
                 className={"div7"}
-                placeholder={"Почта"}
-                onChange={(e) => setData("email", e)}
-                value={data?.email}
+                placeholder={"Заработная плата"}
+                onChange={(e) => setData("salary", e)}
+                value={data?.salary}
                 error={errors}
-                id={"email"}
+                id={"salary"}
               />
               <Input
                 className={"div8"}
-                placeholder={"Имя на карте"}
-                onChange={(e) => setData("card_name", e)}
-                value={data?.card_name}
+                placeholder={"Место работы"}
+                onChange={(e) => setData("workplace", e)}
+                value={data?.workplace}
                 error={errors}
-                id={"card_name"}
+                id={"workplace"}
               />
-              <CheckBox
+              {/* <CheckBox
                 yes={"Муж"}
                 no={"Жен"}
                 className={"div9 form-check-box"}
                 title={"Пол"}
                 value={data.gender}
                 onChange={(e) => setData("gender", e)}
-              />
-              <CheckBox
+              /> */}
+              {/* <CheckBox
                 className={"div10 form-check-box"}
                 title={"Резидент Тадж-на?"}
                 value={data.is_resident}
                 onChange={(e) => setData("is_resident", e)}
-              />
+              /> */}
               <Select
                 className={"div11"}
-                id={"type_of_certificate"}
-                value={data?.type_of_certificate}
-                onChange={(e) => setData("type_of_certificate", e)}
-                options={docTypes}
+                id={"loan_type"}
+                value={data?.loan_type}
+                onChange={(e) => setData("loan_type", e)}
+                options={loanTypes}
+                error={errors}
+              />
+              <Select
+                className={"div10"}
+                id={"branch_office"}
+                value={data?.branch_office}
+                onChange={(e) => setData("branch_office", e)}
+                options={offis}
                 error={errors}
               />
               <Input
                 className={"div12"}
-                placeholder={"Серия"}
-                onChange={(e) => setData("documents_series", e)}
-                value={data?.documents_series}
+                placeholder={"Доп. источник дохода"}
+                onChange={(e) => setData("additional_income_source", e)}
+                value={data?.additional_income_source}
                 error={errors}
-                id={"documents_series"}
+                id={"additional_income_source"}
               />
               <Input
                 className={"div13"}
-                placeholder={"Номер"}
-                onChange={(e) => setData("document_number", e)}
-                value={data?.document_number}
+                placeholder={"Сумма доп. дохода"}
+                onChange={(e) => setData("additional_income_amount", e)}
+                value={data?.additional_income_amount}
                 error={errors}
-                id={"document_number"}
+                id={"additional_income_amount"}
               />
 
-              <Input
+              {/* <Input
                 type="date"
                 className={"div14"}
                 placeholder={"Дата выдачи"}
@@ -417,15 +451,15 @@ export default function GiftCardCredit({ edit = false }) {
                 value={data?.passport_issued_at}
                 error={errors}
                 id={"passport_issued_at"}
-              />
-              <Input
+              /> */}
+              {/* <Input
                 className={"div15"}
                 placeholder={"Кем выдан"}
                 onChange={(e) => setData("issued_by", e)}
                 value={data?.issued_by}
                 error={errors}
                 id={"issued_by"}
-              />
+              /> */}
               <Input
                 className={"div16"}
                 placeholder={"ИНН"}
@@ -436,69 +470,69 @@ export default function GiftCardCredit({ edit = false }) {
               />
               <Input
                 className={"div17"}
-                placeholder={"Страна"}
-                onChange={(e) => setData("country", e)}
-                value={data?.country}
+                placeholder={"Цель кредита"}
+                onChange={(e) => setData("loan_purpose", e)}
+                value={data?.loan_purpose}
                 error={errors}
-                id={"country"}
+                id={"loan_purpose"}
               />
-              <Select
+              {/* <Select
                 className={"div18"}
                 id={"regin_type"}
                 value={data?.regin_type}
                 onChange={(e) => setData("regin_type", e)}
                 options={reginTypes}
                 error={errors}
-              />
+              /> */}
               <Input
                 className={"div19"}
-                placeholder={"Регион"}
-                onChange={(e) => setData("region", e)}
-                value={data?.region}
+                placeholder={"Срок кредита (мес.)"}
+                onChange={(e) => setData("loan_term", e)}
+                value={data?.loan_term}
                 error={errors}
-                id={"region"}
+                id={"loan_term"}
               />
-              <Select
+              {/* <Select
                 className={"div20"}
                 id={"population_type"}
                 value={data?.population_type}
                 onChange={(e) => setData("population_type", e)}
                 options={USTypes}
                 error={errors}
-              />
+              /> */}
               <Input
                 className={"div21"}
-                placeholder={"Нас пункт"}
-                onChange={(e) => setData("populated", e)}
-                value={data?.populated}
+                placeholder={"Сумма кредита"}
+                onChange={(e) => setData("loan_amount", e)}
+                value={data?.loan_amount}
                 error={errors}
-                id={"populated"}
+                id={"loan_amount"}
               />
-              <Select
+              {/* <Select
                 className={"div22"}
                 id={"district_type"}
                 value={data?.district_type}
                 onChange={(e) => setData("district_type", e)}
                 options={districtTypes}
                 error={errors}
-              />
+              /> */}
               <Input
                 className={"div23"}
-                placeholder={"Района"}
-                onChange={(e) => setData("district", e)}
-                value={data?.district}
+                placeholder={"Адрес"}
+                onChange={(e) => setData("address", e)}
+                value={data?.address}
                 error={errors}
-                id={"district"}
+                id={"address"}
               />
               <Select
                 className={"div24"}
-                id={"street_type"}
-                value={data?.street_type}
-                onChange={(e) => setData("street_type", e)}
-                options={streetTypes}
+                id={"credit_status_id"}
+                value={data?.credit_status_id}
+                onChange={(e) => setData("credit_status_id", e)}
+                options={statusCredit}
                 error={errors}
               />
-              <Input
+              {/* <Input
                 className={"div25"}
                 placeholder={"Улица"}
                 onChange={(e) => setData("street", e)}
@@ -529,14 +563,14 @@ export default function GiftCardCredit({ edit = false }) {
                 value={data?.apartment_number}
                 error={errors}
                 id={"apartment_number"}
-              />
+              />*/}
               <Input
                 className={"div28"}
                 placeholder={"Индекс"}
-                onChange={(e) => setData("client_index", e)}
-                value={data?.client_index}
+                onChange={(e) => setData("client_code", e)}
+                value={data?.client_code}
                 error={errors}
-                id={"client_index"}
+                id={"client_code"}
               />
             </div>
             <footer>
