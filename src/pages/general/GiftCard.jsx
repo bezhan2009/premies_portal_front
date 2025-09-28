@@ -34,13 +34,10 @@ import { formaterDate } from "../../api/utils/formateDate.js";
 
 export default function GiftCard({ edit = false }) {
   const [loading, setLoading] = useState(false);
-  const { data, errors, setData, validate, setDataClear, setDataMore } =
-    useFormStore();
-
+  const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
-
   const { id } = useParams();
-
+  
   const ValidData = {
     surname: { required: true },
     name: { required: true },

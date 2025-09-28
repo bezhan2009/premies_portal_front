@@ -129,22 +129,36 @@ export default function ApplicationsListCredit() {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
-
-  const applyFilters = (data) => {
+  const applyFilters = (rows) => {
     return (
-      Array.isArray(data) &&
-      data?.filter((row) => {
-        const fullName =
-          `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
-        return (
-          fullName?.includes(filters?.fullName?.toLowerCase()) &&
-          row?.phone?.includes(filters?.phone) &&
-          (!filters?.card ||
-            row?.card_name
-              ?.toLowerCase()
-              ?.includes(filters?.card?.toLowerCase()))
-        );
-      })
+      Array.isArray(rows) &&
+      rows
+        ?.filter((row) => {
+          const fullName =
+            `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
+          return (
+            fullName?.includes(filters?.fullName?.toLowerCase()) &&
+            row?.phone?.includes(filters?.phone) &&
+            (!filters?.card ||
+              row?.card_name
+                ?.toLowerCase()
+                ?.includes(filters?.card?.toLowerCase()))
+          );
+        })
+        .filter((row) => {
+          if (data?.name_filter) {
+            const fullName =
+              `${row?.surname} ${row?.name} ${row?.patronymic}`.toLowerCase();
+            if (!fullName.includes(data.name_filter.toLowerCase()))
+              return false;
+          }
+
+          if (data?.phone_filter) {
+            if (!row?.phone?.includes(data.phone_filter)) return false;
+          }
+
+          return true;
+        })
     );
   };
 
@@ -175,9 +189,9 @@ export default function ApplicationsListCredit() {
 
   const deleteApplication = async (id) => {
     try {
-      const res = await deleteCreditById(id);
+      await deleteCreditById(id);
       // if (res) {
-        setTimeout(() => fetchData(), 200);
+      setTimeout(() => fetchData(null, true), 200);
       // }
     } catch (e) {
       console.error(e);
@@ -341,6 +355,27 @@ export default function ApplicationsListCredit() {
                 // error={errors}
                 id={"year"}
               />{" "}
+            </div>
+            <div>
+              Поиск по имени
+              <Input
+                type="text"
+                placeholder={""}
+                onChange={(e) => setData("name_filter", e)}
+                value={data?.name_filter}
+                // error={errors}
+                id={"name_filter"}
+              />{" "}
+            </div>
+            <div>
+              Поиск по телефону
+              <Input
+                type="text"
+                placeholder={""}
+                onChange={(e) => setData("phone_filter", e)}
+                value={data?.phone_filter}
+                id={"phone_filter"}
+              />
             </div>
             {loading ? (
               <Spinner />
