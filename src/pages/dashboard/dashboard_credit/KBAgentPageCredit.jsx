@@ -2,18 +2,20 @@ import "../../../styles/dashboard.scss";
 import HeaderWorker from "../../../components/dashboard/dashboard_worker/MenuWorker";
 import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
 import { Helmet } from "react-helmet";
+import HeaderAgent from "../../../components/dashboard/dashboard_agent/MenuAgent.jsx";
+import HeaderCredit from "../../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 
-export default function DashboardWorkerCredits() {
+export default function DashboardAgentKBCredit() {
   return (
     <>
       <Helmet>
-        <title>Кредиты</title>
+        <title>База знаний</title>
       </Helmet>
       <div className="dashboard-container">
         <header className="dashboard-header">
-          <HeaderWorker activeLink="credits" />
+          <HeaderCredit activeLink="knowledge" />
         </header>
-        <GetBlockInfo page="und" />
+        <GetBlockInfo page="worker_knowledge_base" />
       </div>
     </>
   );

@@ -1,32 +1,34 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function RedirectDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const accessToken = localStorage.getItem('access_token');
-    const refreshToken = localStorage.getItem('refresh_token');
-    const roleId = Number(localStorage.getItem('role_id'));
+    const accessToken = localStorage.getItem("access_token");
+    const refreshToken = localStorage.getItem("refresh_token");
+    const roleId = Number(localStorage.getItem("role_id"));
 
     if (!accessToken || !refreshToken || !roleId) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
     // Перенаправляем по роли
     if (roleId === 3) {
-      navigate('/operator/premies');
+      navigate("/operator/premies");
     } else if (roleId === 6 || roleId === 8) {
-      navigate('/worker/cards');
+      navigate("/worker/cards");
     } else if (roleId === 9) {
-      navigate('/chairman/reports');
+      navigate("/chairman/reports");
     } else if (roleId === 5) {
-      navigate('/director/reports');
+      navigate("/director/reports");
     } else if (roleId === 10) {
-      navigate('/agent/applications-list');
+      navigate("/agent/applications-list");
+    } else if (roleId === 11) {
+      navigate("/credit/applications-list");
     } else {
-      navigate('/404');
+      navigate("/404");
     }
   }, [navigate]);
 

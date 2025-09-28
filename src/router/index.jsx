@@ -40,6 +40,9 @@ import ApplicationsList from "../pages/general/ApplicationsList.jsx";
 import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
 import DashboardDirectorReports from "../pages/dashboard/dashboard_director/DirectorReports.jsx";
 import DashboardDirectorKnowledgeBase from "../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
+import ApplicationsListCredit from "../pages/general/ApplicationsListCredit.jsx";
+import GiftCardCredit from "../pages/general/GiftCardCredit.jsx";
+import DashboardAgentKBCredit from "../pages/dashboard/dashboard_credit/KBAgentPageCredit.jsx";
 import DashboardOperatorProcessing from "../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 
 export default function AppRouter() {
@@ -85,8 +88,8 @@ export default function AppRouter() {
               element={<DashboardOperatorKnowledgeBase />}
             />
             <Route
-                path="/operator/tests"
-                element={<DashboardOperatorTests />}
+              path="/operator/tests"
+              element={<DashboardOperatorTests />}
             />
             <Route
                 path="/operator/processing/limits"
@@ -174,6 +177,28 @@ export default function AppRouter() {
             <Route
               path="/agent/knowledge-base"
               element={<DashboardAgentKB />}
+            />
+          </Route>
+          <Route
+            element={
+              <RequireRole allowedRoles={[11]}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/credit/card" element={<GiftCardCredit />} />
+            <Route
+              path="/credit/card/:id"
+              element={<GiftCardCredit edit={true} />}
+            />
+            {/* <Route path="/credit/my-applications" element={<MyApplications />} /> */}
+            <Route
+              path="/credit/applications-list"
+              element={<ApplicationsListCredit />}
+            />
+            <Route
+              path="/credit/knowledge-base"
+              element={<DashboardAgentKBCredit />}
             />
           </Route>
         </Route>
