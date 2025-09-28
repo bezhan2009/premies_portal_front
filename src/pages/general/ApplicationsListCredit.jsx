@@ -87,7 +87,7 @@ export default function ApplicationsListCredit() {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
-      const response = await fetch(`${backendUrl}/automation/credits`, {
+      const response = await fetch(`${backendUrl}/automation/credit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -204,7 +204,7 @@ export default function ApplicationsListCredit() {
     try {
       await selectedRows.map(async (e) => {
         await apiClientCredit.patch(`/credits/${e}`, {
-          application_status_id: +status,
+          credit_status_id: +status,
         });
       });
 
