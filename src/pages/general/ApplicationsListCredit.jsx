@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Input from "../../components/elements/Input";
 import { useFormStore } from "../../hooks/useFormState";
-import { status } from "../../const/defConst";
+import { statusCredit } from "../../const/defConst";
 import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
@@ -45,7 +45,7 @@ export default function ApplicationsListCredit() {
       if (!selectedRows.length && data?.status)
         query.append("status_id", data?.status);
       const response = await fetch(
-        `${backendUrl}/credit${archive ? "/archive" : `?${query.toString()}`}`
+        `${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`
       );
       const result = await response.json();
       if (res) {
@@ -87,7 +87,7 @@ export default function ApplicationsListCredit() {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
-      const response = await fetch(`${backendUrl}/automation/credit`, {
+      const response = await fetch(`${backendUrl}/automation/credits`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -138,11 +138,7 @@ export default function ApplicationsListCredit() {
           `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
         return (
           fullName?.includes(filters?.fullName?.toLowerCase()) &&
-          row?.phone_number?.includes(filters?.phone) &&
-          (!filters?.resident ||
-            (filters?.resident === "Да"
-              ? row?.is_resident
-              : !row?.is_resident)) &&
+          row?.phone?.includes(filters?.phone) &&
           (!filters?.card ||
             row?.card_name
               ?.toLowerCase()
@@ -154,14 +150,14 @@ export default function ApplicationsListCredit() {
 
   const headers = [
     "Телефон",
-    "Кодовое слово",
-    "Имя на карте",
-    "Пол",
-    "Резидент",
-    "Документ",
+    "Код клиента",
+    "Тип кредита",
+    "Сумма кредита",
+    "Срок кредита (мес.)",
+    "Место работы",
     "ИНН",
-    "Адрес",
-    "Карта",
+    "Заработная плата",
+    // "Карта",
   ];
 
   const renderFileIcon = (path) => {
@@ -180,9 +176,9 @@ export default function ApplicationsListCredit() {
   const deleteApplication = async (id) => {
     try {
       const res = await deleteCreditById(id);
-      if (res) {
+      // if (res) {
         setTimeout(() => fetchData(), 200);
-      }
+      // }
     } catch (e) {
       console.error(e);
     }
@@ -271,7 +267,7 @@ export default function ApplicationsListCredit() {
                 if (!selectedRows.length) setData("status", e);
                 else upDateStatusApplications(e);
               }}
-              options={status}
+              options={statusCredit}
               error={errors}
             />
             <button className="Unloading" onClick={handleExport}>
@@ -385,11 +381,12 @@ export default function ApplicationsListCredit() {
                     <th>ID</th>
                     <th>ФИО</th>
                     <th>Телефон</th>
-                    <th>Карта</th>
+                    {/* <th>Карта</th> */}
                     <th>Адрес</th>
                     <th>Скан паспорта (лицевая)</th>
                     <th>Скан паспорта (задняя)</th>
                     <th>Скан паспорта (с лицом)</th>
+                    <th>Документ подтверждающий доход</th>
                     {headers.map((e, i) => (
                       <th key={i}>{e}</th>
                     ))}
@@ -417,9 +414,9 @@ export default function ApplicationsListCredit() {
                           </td>
                           <td>{row.ID}</td>
                           <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.delivery_address}</td>
+                          <td>{row.phone}</td>
+                          {/* <td>{row.card_name}</td> */}
+                          <td>{row.address}</td>
                           <td>
                             {renderFileIcon(row.front_side_of_the_passport)}
                           </td>
@@ -427,18 +424,19 @@ export default function ApplicationsListCredit() {
                             {renderFileIcon(row.back_side_of_the_passport)}
                           </td>
                           <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.secret_word}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.gender}</td>
-                          <td>{row.is_resident ? "Да" : "Нет"}</td>
-                          <td>{row.type_of_certificate}</td>
+                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                          <td>{row.phone}</td>
+                          <td>{row.client_code}</td>
+                          <td>{row.loan_type}</td>
+                          <td>{row.salary}</td>
+                          <td>{row.loan_amount}</td>
+                          <td>{row.workplace}</td>
                           <td>{row.inn}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>{row.card_code}</td>
+                          <td>{row.salary}</td>
+                          {/* <td>{row.card_code}</td> */}
                           <td className="active-table">
                             <AiFillEdit
-                              onClick={() => navigate(`/agent/card/${row.ID}`)}
+                              onClick={() => navigate(`/credit/card/${row.ID}`)}
                               style={{
                                 fontSize: 35,
                                 color: "green",

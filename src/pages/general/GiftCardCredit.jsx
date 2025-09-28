@@ -17,11 +17,11 @@ import Input from "../../components/elements/Input";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import { useEffect, useState } from "react";
-import { getApplicationById } from "../../api/application/getApplicationById.js";
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
+import { getCreditById } from "../../api/application/getCredit.js";
 
 export default function GiftCardCredit({ edit = false }) {
   const [loading, setLoading] = useState(false);
@@ -88,7 +88,7 @@ export default function GiftCardCredit({ edit = false }) {
       // );
       formData.append(
         "employment_date",
-        formatDateForBackend(data.employment_date + "T16:29:10.789009Z")
+        formatDateForBackend(data.employment_date + "T00:00:00Z")
       );
       formData.append("phone", String(data.phone) || "");
       // formData.append("secret_word", data.secret_word || "");
@@ -108,15 +108,10 @@ export default function GiftCardCredit({ edit = false }) {
         "additional_income_amount",
         data.additional_income_amount || ""
       );
-      formData.append(
-        "credit_status_id",
-        formatDateForBackend(data.credit_status_id)
-      );
+      formData.append("credit_status_id", data.credit_status_id);
       formData.append(
         "credit_status",
-        formatDateForBackend(
-          statusCredit.find((e) => e.value === data.credit_status_id)
-        )
+        statusCredit.find((e) => +e.value === +data.credit_status_id)
       );
       formData.append("inn", String(data.inn) || "");
       formData.append("loan_purpose", data.loan_purpose || "");
@@ -125,7 +120,7 @@ export default function GiftCardCredit({ edit = false }) {
       // formData.append("population_type", data.population_type || "");
       formData.append("loan_amount", data.loan_amount || "");
       // formData.append("district", data.district || "");
-      formData.append("credit_status_id", data.credit_status_id || "");
+      // formData.append("credit_status_id", data.credit_status_id || "");
       // formData.append("street", data.street || "");
       // formData.append("house_number", data.house_number || "");
       // formData.append("corpus", data.corpus || "");
@@ -180,7 +175,7 @@ export default function GiftCardCredit({ edit = false }) {
         setLoading(true);
         console.log("edit id", id);
 
-        const data = await getApplicationById(id);
+        const data = await getCreditById(id);
         setDataMore({
           ...data,
           gemder: data.gender === "Муж",
