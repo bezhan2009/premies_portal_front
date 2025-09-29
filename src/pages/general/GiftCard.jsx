@@ -37,7 +37,7 @@ export default function GiftCard({ edit = false }) {
   const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
   const { id } = useParams();
-  
+
   const ValidData = {
     surname: { required: true },
     name: { required: true },

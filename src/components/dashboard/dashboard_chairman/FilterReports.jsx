@@ -14,7 +14,7 @@ const ReportFilters = ({ activeTab, setActiveTab }) => {
                 {buttons.map((btn) => (
                     <button
                         key={btn.value}
-                        className={`filters__button ${btn.class} ${activeTab === btn.value ? 'active' : ''}`}
+                        className={`filters__button ${btn.class || ""} ${activeTab === btn.value ? 'active' : ''}`}
                         onClick={() => setActiveTab(btn.value)}
                     >
                         {btn.text}
