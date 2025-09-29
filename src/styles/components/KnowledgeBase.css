@@ -64,8 +64,7 @@
   transition: background 0.2s, transform 0.2s;
   animation: fadeIn 0.6s ease;
 }
-.kb-sidebar ul li.active,
-.kb-sidebar ul li:hover {
+.kb-sidebar ul li.active, .kb-sidebar ul li:hover {
   background: #fff3f3;
   transform: scale(1.02);
 }
@@ -98,7 +97,7 @@
   font-size: 1.4rem;
   margin-top: 0;
   margin-bottom: 18px;
-  color: #222;
+  color: #c31414;
   animation: fadeIn 0.4s ease;
 }
 .kb-detail .kb-items {
@@ -128,8 +127,7 @@
 }
 .kb-detail .kb-items .kb-item h4 {
   font-size: 1.1rem;
-  margin: 0 0 8px;
-  color: #333;
+  margin: 0;
 }
 .kb-detail .kb-items .kb-item p {
   font-size: 0.95rem;
@@ -166,7 +164,7 @@
   width: 24px;
   height: 24px;
   -o-object-fit: cover;
-  object-fit: cover;
+     object-fit: cover;
   margin-right: 8px;
 }
 .kb-detail .kb-docs-list li a:hover,
@@ -175,7 +173,7 @@
 }
 
 .kb-add-btn {
-  background: #c31414;
+  background: #e9585a;
   color: #fff;
   border: none;
   padding: 4px 10px;
@@ -186,7 +184,7 @@
   transition: background 0.3s;
 }
 .kb-add-btn:hover {
-  background: #6b3dcf;
+  background: #e9585a;
 }
 
 .kb-action-btn {
@@ -241,7 +239,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-.kb-modal-content input[type="file"] {
+.kb-modal-content input[type=file] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -254,12 +252,12 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   /* Кнопка внутри file-input */
 }
-.kb-modal-content input[type="file"]:focus {
+.kb-modal-content input[type=file]:focus {
   border-color: #c31414;
   box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
-.kb-modal-content input[type="file"]::file-selector-button {
+.kb-modal-content input[type=file]::file-selector-button {
   background-color: #c31414;
   color: #fff;
   border: none;
@@ -270,8 +268,8 @@
   margin-right: 10px;
   transition: background-color 0.3s ease;
 }
-.kb-modal-content input[type="file"]::file-selector-button:hover {
-  background-color: rgb(106.098265896, 31, 255);
+.kb-modal-content input[type=file]::file-selector-button:hover {
+  background-color: rgb(148.7441860465, 15.2558139535, 15.2558139535);
 }
 
 .kb-modal-actions {
@@ -315,4 +313,4 @@
 .kb-doc-actions span {
   margin-left: 8px;
   cursor: pointer;
-} /*# sourceMappingURL=KnowledgeBase.css.map */
+}/*# sourceMappingURL=KnowledgeBase.css.map */

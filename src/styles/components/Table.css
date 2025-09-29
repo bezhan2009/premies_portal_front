@@ -1,4 +1,10 @@
 @charset "UTF-8";
+.table-reports-div {
+  position: relative;
+  overflow: auto;
+  max-height: calc(100vh - 370px);
+}
+
 .table-reports {
   margin: 0;
   padding: 0;
@@ -9,7 +15,12 @@
   font-size: 12px;
   border-top: 2px solid rgba(217, 217, 217, 0.7);
 }
-.table-reports th {
+.table-reports > thead {
+  position: sticky;
+  padding-bottom: 2px;
+}
+.table-reports > thead th {
+  font-size: 16px;
   padding: 0.95rem;
   border-right: 1px solid rgba(217, 217, 217, 0.7);
   border-bottom: 1px solid rgba(217, 217, 217, 0.7);
@@ -21,6 +32,12 @@
   border-right: 1px solid rgba(217, 217, 217, 0.7);
   border-top: 1px solid rgba(217, 217, 217, 0.7);
   text-align: center;
+  cursor: pointer;
+  font-size: 16px;
+}
+.table-reports td:hover {
+  background-color: #ff1a1a;
+  color: white;
 }
 .table-reports .checkbox-wrapper {
   position: relative;
@@ -78,7 +95,7 @@
   animation: fadeIn 0.3s ease-out;
 }
 .table-reports tr:hover {
-  background-color: #ebf3ff;
+  background-color: #ffebeb;
 }
 .table-reports th:last-child,
 .table-reports td:last-child {
@@ -109,7 +126,7 @@
 .download-report-btn {
   background: none;
   border: none;
-  color: #007bff;
+  color: #009dff;
   cursor: pointer;
   padding: 0;
   display: flex;
@@ -117,7 +134,7 @@
   justify-content: center;
 }
 .download-report-btn:hover {
-  color: #0056b3;
+  color: #b30000;
 }
 
 /* Обновленная анимация появления с масштабированием */

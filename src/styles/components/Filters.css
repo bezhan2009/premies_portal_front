@@ -10,8 +10,7 @@
   margin: 20px auto;
   border-radius: 15px;
 }
-.filters__left,
-.filters__right {
+.filters__left, .filters__right {
   gap: 10px;
 }
 .filters__button {
@@ -64,7 +63,8 @@
   width: 92%;
   background-color: #f1f1f1;
   padding: 30px;
-  margin: 10px auto;
+  margin: 10px;
+  width: calc(100% - 80px);
   border-radius: 15px;
 }
 .reports_filter__button {
@@ -143,7 +143,7 @@
 }
 
 .filters__modal-content select,
-.filters__modal-content input[type="file"] {
+.filters__modal-content input[type=file] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -158,13 +158,13 @@
   /* Кнопка внутри file-input */
 }
 .filters__modal-content select:focus,
-.filters__modal-content input[type="file"]:focus {
+.filters__modal-content input[type=file]:focus {
   border-color: #c31414;
   box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
 .filters__modal-content select::file-selector-button,
-.filters__modal-content input[type="file"]::file-selector-button {
+.filters__modal-content input[type=file]::file-selector-button {
   background-color: #c31414;
   color: #fff;
   border: none;
@@ -176,15 +176,15 @@
   transition: background-color 0.3s ease;
 }
 .filters__modal-content select::file-selector-button:hover,
-.filters__modal-content input[type="file"]::file-selector-button:hover {
-  background-color: rgb(106.098265896, 31, 255);
+.filters__modal-content input[type=file]::file-selector-button:hover {
+  background-color: rgb(148.7441860465, 15.2558139535, 15.2558139535);
 }
 
 /* Кастомная стрелочка для select */
 .filters__modal-content select {
   -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+     -moz-appearance: none;
+          appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='10' viewBox='0 0 14 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238c52ff' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -212,7 +212,7 @@
   color: #fff;
 }
 .filters__modal-actions button:first-of-type:hover {
-  background-color: rgb(106.098265896, 31, 255);
+  background-color: rgb(148.7441860465, 15.2558139535, 15.2558139535);
 }
 .filters__modal-actions button:first-of-type:disabled {
   background-color: #cbb9ff;
@@ -263,4 +263,4 @@
   outline: none;
   border-color: #6a1fff;
   box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
-} /*# sourceMappingURL=Filters.css.map */
+}/*# sourceMappingURL=Filters.css.map */

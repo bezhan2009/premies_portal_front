@@ -506,6 +506,7 @@ tr:nth-child(14) {
       flex-direction: column;
       gap: 10px;
       animation: fadeIn 0.5s ease-out;
+      position: relative;
 
       select {
         width: 100%;
@@ -526,6 +527,10 @@ tr:nth-child(14) {
 
       p {
         position: absolute;
+        bottom: 0;
+        margin: 0;
+        color: #e21a1c;
+
       }
     }
 
@@ -882,6 +887,7 @@ tr:nth-child(14) {
 
         p {
           position: absolute;
+          bottom: 0;
         }
       }
     }

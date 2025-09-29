@@ -32,9 +32,25 @@ export default function GiftCardCredit({ edit = false }) {
   const { id } = useParams();
 
   const ValidData = {
-    last_name: { required: true },
-    first_name: { required: true },
+    name: { required: true },
+    surname: { required: true },
     phone: { required: true },
+    inn: { required: true },
+    client_code: { required: true },
+    loan_type: { required: true },
+    address: { required: true },
+    branch_office: { required: true },
+    front_side_of_the_passport: { required: true },
+    back_side_of_the_passport: { required: true },
+    selfie_with_passport: { required: true },
+    workplace: { required: true },
+    employment_date: { required: true },
+    salary: { required: true },
+    income_proof_document: { required: true },
+    loan_purpose: { required: true },
+    // loan_term: { required: true },
+    loan_amount: { required: true },
+    credit_status_id: { required: true },
   };
 
   const formatDateForBackend = (dateStr) => {
@@ -76,8 +92,8 @@ export default function GiftCardCredit({ edit = false }) {
       }
 
       // Добавление остальных полей
-      formData.append("name", data.first_name.trim() || "");
-      formData.append("surname", data.last_name.trim() || "");
+      formData.append("name", data.name.trim() || "");
+      formData.append("surname", data.surname.trim() || "");
       formData.append("patronymic", data.middle_name.trim() || "");
       // formData.append("gender", data.gender === true ? "Муж" : "Жен");
       formData.append("client_code", String(data.client_code) || "");
@@ -160,7 +176,7 @@ export default function GiftCardCredit({ edit = false }) {
         const result = await response.json();
         console.log("Успешно отправлено:", result);
         // setDataClear();
-        navigate(0);
+        // navigate(0);
         alert("Данные успешно сохранены!");
       }
     } catch (error) {
@@ -329,18 +345,18 @@ export default function GiftCardCredit({ edit = false }) {
               <Input
                 className={"div1"}
                 placeholder={"Фамилия"}
-                onChange={(e) => setData("last_name", e)}
-                value={data?.last_name}
+                onChange={(e) => setData("surname", e)}
+                value={data?.surname}
                 error={errors}
-                id={"last_name"}
+                id={"surname"}
               />
               <Input
                 className={"div2"}
                 placeholder={"Имя"}
-                onChange={(e) => setData("first_name", e)}
-                value={data?.first_name}
+                onChange={(e) => setData("name", e)}
+                value={data?.name}
                 error={errors}
-                id={"first_name"}
+                id={"name"}
               />
               <Input
                 className={"div3"}
