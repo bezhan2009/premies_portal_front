@@ -118,7 +118,7 @@ const api = {
         try {
             const token = localStorage.getItem('access_token');
             const response = await fetch(`${API_BASE_URL}/api/Transactions/${cardNumber}`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
