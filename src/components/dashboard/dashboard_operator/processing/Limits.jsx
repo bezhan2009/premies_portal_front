@@ -91,13 +91,22 @@ const getLimitDescription = (limitId) => {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL;
 
 const api = {
-    // Получение лимитов карты
     getLimits: async (cardNumber) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Transactions/limits/${cardNumber}`);
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE_URL}/processing/limits/${cardNumber}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             return await response.json();
         } catch (error) {
             console.error('Ошибка получения лимитов:', error);
@@ -105,15 +114,19 @@ const api = {
         }
     },
 
-    // Изменение лимита
     updateLimit: async (cardNumber, limitName, limitValue) => {
         try {
-            const url = new URL(`${API_BASE_URL}/api/Transactions/${cardNumber}`);
-            url.searchParams.append('limitName', limitName);
-            url.searchParams.append('limitValue', limitValue);
-
-            const response = await fetch(url.toString(), {
-                method: 'GET'
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE_URL}/processing/limits/${cardNumber}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    limitName,
+                    limitValue
+                })
             });
 
             if (!response.ok) {
