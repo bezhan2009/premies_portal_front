@@ -8,7 +8,7 @@ export default function HeaderCredit({ activeLink = "reports" }) {
   const username = localStorage.getItem("username") || "Неизвестное имя";
 
   const links = [
-    { name: "Карта", href: "/credit/card", key: "gift_card" },
+    { name: "Кредит", href: "/credit/card", key: "gift_card" },
     { name: "Заявки", href: "/credit/applications-list", key: "applications" },
     { name: "База знаний", href: "/credit/knowledge-base", key: "knowledge" },
   ];
