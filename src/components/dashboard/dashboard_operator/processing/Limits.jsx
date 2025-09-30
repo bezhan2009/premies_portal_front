@@ -94,7 +94,7 @@ const api = {
     getLimits: async (cardNumber) => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE_URL}/processing/limits/${cardNumber}`, {
+            const response = await fetch(`${API_BASE_URL}/api/Transactions/limits/${cardNumber}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -117,7 +117,7 @@ const api = {
     updateLimit: async (cardNumber, limitName, limitValue) => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE_URL}/processing/limits/${cardNumber}`, {
+            const response = await fetch(`${API_BASE_URL}/api/Transactions/${cardNumber}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
