@@ -93,11 +93,9 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL;
 const api = {
     getLimits: async (cardNumber) => {
         try {
-            const token = localStorage.getItem('access_token');
             const response = await fetch(`${API_BASE_URL}/api/Transactions/limits/${cardNumber}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json',
                 }
             });
@@ -115,15 +113,12 @@ const api = {
 
     updateLimit: async (cardNumber, limitName, limitValue) => {
         try {
-            const token = localStorage.getItem('access_token');
-
             // Используем query параметры для GET запроса
             const url = `${API_BASE_URL}/api/Transactions/${cardNumber}?limitName=${encodeURIComponent(limitName)}&limitValue=${encodeURIComponent(limitValue)}`;
 
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json',
                 }
             });
