@@ -99,7 +99,6 @@ const api = {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json',
                 }
             });
 
@@ -117,16 +116,16 @@ const api = {
     updateLimit: async (cardNumber, limitName, limitValue) => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE_URL}/api/Transactions/${cardNumber}`, {
+
+            // Используем query параметры для GET запроса
+            const url = `${API_BASE_URL}/api/Transactions/${cardNumber}?limitName=${encodeURIComponent(limitName)}&limitValue=${encodeURIComponent(limitValue)}`;
+
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    limitName,
-                    limitValue
-                })
+                    'Accept': 'application/json',
+                }
             });
 
             if (!response.ok) {
@@ -140,6 +139,7 @@ const api = {
         }
     }
 };
+
 
 // Компонент модалки подтверждения сброса
 const ResetConfirmationModal = ({
