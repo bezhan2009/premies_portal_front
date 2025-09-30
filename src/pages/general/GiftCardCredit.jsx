@@ -40,13 +40,13 @@ export default function GiftCardCredit({ edit = false }) {
     loan_type: { required: true },
     address: { required: true },
     branch_office: { required: true },
-    front_side_of_the_passport: { required: true },
-    back_side_of_the_passport: { required: true },
-    selfie_with_passport: { required: true },
+    // front_side_of_the_passport: { required: true },
+    // back_side_of_the_passport: { required: true },
+    // selfie_with_passport: { required: true },
     workplace: { required: true },
     employment_date: { required: true },
     salary: { required: true },
-    income_proof_document: { required: true },
+    // income_proof_document: { required: true },
     loan_purpose: { required: true },
     // loan_term: { required: true },
     loan_amount: { required: true },
@@ -61,6 +61,10 @@ export default function GiftCardCredit({ edit = false }) {
 
   const onSend = async () => {
     const isValid = validate(ValidData);
+
+    console.log("isValid", isValid);
+    
+
     if (!isValid) return;
     try {
       const formData = new FormData();
@@ -176,7 +180,7 @@ export default function GiftCardCredit({ edit = false }) {
         const result = await response.json();
         console.log("Успешно отправлено:", result);
         // setDataClear();
-        // navigate(0);
+        navigate(0);
         alert("Данные успешно сохранены!");
       }
     } catch (error) {
@@ -210,6 +214,7 @@ export default function GiftCardCredit({ edit = false }) {
   };
 
   console.log("data", data);
+  console.log("errors", errors);
 
   useEffect(() => {
     getData();
