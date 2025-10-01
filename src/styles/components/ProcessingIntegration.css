@@ -427,6 +427,7 @@
   color: #374151;
   margin-bottom: 0.75rem;
 }
+
 .modal-processing__input {
   width: 91%;
   padding: 1rem 1.25rem;
@@ -435,11 +436,13 @@
   font-size: 1rem;
   transition: all 0.3s ease;
 }
+
 .modal-processing__input:focus {
   outline: none;
   border-color: #6b3dcf;
   box-shadow: 0 0 0 3px rgba(107, 61, 207, 0.1);
 }
+
 .modal-processing__input--error {
   border-color: #c31414;
   box-shadow: 0 0 0 3px rgba(195, 20, 20, 0.1);
@@ -500,7 +503,7 @@
   background: #f3f4f6;
   color: #4b5563;
 }
-.modal-processing__info {
+.modal-processing__info .modal-processing__id {
   color: #10b981;
   background: rgba(16, 185, 129, 0.1);
   padding: 0.25rem 0.5rem;

@@ -43,45 +43,59 @@ const DEFAULT_LIMIT_VALUES = {
     'LMTTZ277': 6000000
 };
 
+// Словарь валют
+const CURRENCIES = {
+    '840': 'USD',
+    '972': 'TJS',
+    '978': 'EUR'
+};
+
+// Функция для получения кода валюты
+const getCurrencyCode = (currencyNumber) => {
+    return CURRENCIES[currencyNumber] || currencyNumber;
+};
+
 // Функция для получения человеко-читаемого названия лимита
 const getLimitDescription = (limitId) => {
     const descriptions = {
-        'LMTTZ285': 'Дневной лимит ATM снятий',
-        'LMTTZ292': 'Дневной лимит количества ATM операций',
-        'LMTTZ272': 'Лимит POS операций в день',
-        'LMTTZ288': 'Количество POS операций в день',
-        'LMTTZ271': 'Месячный лимит ATM снятий',
-        'LMTTZ273': 'Общий месячный лимит операций',
-        'LMTTZ280': 'Лимит онлайн покупок в день',
-        'LMTTZ281': 'Месячный лимит онлайн покупок',
-        'LMTTZ268': 'Минимальный лимит операции',
-        'LMTTZ270': 'Дневной лимит переводов',
-        'LMTTZ283': 'Лимит операций без PIN',
-        'LMTTZ290': 'Лимит cash advance в день',
-        'LMTTZ274': 'Лимит международных операций',
-        'LMTTZ294': 'Лимит мобильных платежей',
-        'LMTTZ371': 'Максимальный лимит операций',
-        'LMTTZ276': 'Лимит микроплатежей',
-        'LMTTZ278': 'Лимит P2P переводов',
-        'LMTTZ282': 'Лимит электронных кошельков',
-        'LMTTZ297': 'Месячный лимит переводов',
-        'LMTTZ269': 'Общий месячный лимит карты',
-        'LMTTZ279': 'Лимит операций через интернет',
-        'LMTTZ286': 'Лимит бесконтактных платежей',
-        'LMTTZ298': 'Лимит QR-платежей',
-        'LMTTZ289': 'Годовой лимит операций',
-        'LMTTZ291': 'Лимит валютных операций',
-        'LMTTZ296': 'Лимит СМС-платежей',
-        'LMTTZ275': 'Комиссионный лимит',
-        'LMTTZ287': 'Лимит операций в торговых точках',
-        'LMTTZ293': 'Максимальный годовой лимит',
+        'LMTTZ285': 'Чужой ВПН в месяц(сумма)',
+        'LMTTZ292': 'Чужой ПОС в день(кол-во)',
+        'LMTTZ272': 'Наш АТМ в день(кол-во)',
+        'LMTTZ288': 'Чужой АТМ в день(кол-во)',
+        'LMTTZ362': "Корректировка лимита",
+        'LMTTZ363': "Корректировка лимита",
+        'LMTTZ271': 'Наш АТМ в день(сумма)',
+        'LMTTZ273': 'Наш АТМ в месяц(сумма)',
+        'LMTTZ280': 'Наш ЕПОС в день(кол-во)',
+        'LMTTZ281': 'Наш ЕПОС в месяц(сумма)',
+        'LMTTZ268': 'Наш ПВН в день(кол-во)',
+        'LMTTZ270': 'Наш ПВН в месяц(кол-во)',
+        'LMTTZ283': 'Чужой ПВН в день(сумма)',
+        'LMTTZ290': 'Чужой АТМ в месяц(кол-во)',
+        'LMTTZ274': 'Наш АТМ в месяц(кол-во)',
+        'LMTTZ294': 'Чужой ПОС в месяц(кол-во)',
+        'LMTTZ371': 'Наш АТМ в день(сумма)',
+        'LMTTZ276': 'Наш ПОС в день(кол-во)',
+        'LMTTZ278': 'Наш ПОС в месяц(кол-во)',
+        'LMTTZ282': 'Наш ЕПОС в месяц(кол-во)',
+        'LMTTZ297': 'Чужой ЕПОС в месяц(сумма)',
+        'LMTTZ269': 'Наш ПВН в месяц(сумма)',
+        'LMTTZ279': 'Наш ЕПОС в день(сумма)',
+        'LMTTZ286': 'Чужой ВПН в месяц(кол-во)',
+        'LMTTZ298': 'Чужой ЕПОС в месяц(кол-во)',
+        'LMTTZ289': 'Чужой АТМ в месяц(сумма)',
+        'LMTTZ291': 'Чужой ПОС в день(сумма)',
+        'LMTTZ296': 'Чужой ЕПОС в день(кол-во)',
+        'LMTTZ275': 'Наш ПОС в день(сумма)',
+        'LMTTZ287': 'Чужой АТМ в день(сумма)',
+        'LMTTZ293': 'Чужой ПОС в месяц(сумма)',
         'LMTTZ369': 'Технический лимит системы',
-        'LMTTZ284': 'Лимит операций через банкомат',
+        'LMTTZ284': 'Чужой ПВН в день(кол-во)',
         'LMTTZ370': 'Системный лимит безопасности',
-        'LMTTZ372': 'Максимальный технический лимит',
-        'LMTTZ267': 'Базовый лимит операций',
-        'LMTTZ295': 'Лимит автоплатежей',
-        'LMTTZ277': 'Специальный лимит операций'
+        'LMTTZ372': 'Общий лимит расходов(кол-во)',
+        'LMTTZ267': 'Наш ПВН в день(сумма)',
+        'LMTTZ295': 'Чужой ЕПОС в день(сумма)',
+        'LMTTZ277': 'Наш ПОС в месяц(сумма)'
     };
 
     return descriptions[limitId] || `Лимит ${limitId}`;
@@ -135,92 +149,46 @@ const api = {
     }
 };
 
+// Компонент кастомного селекта
+const CustomSelect = ({ value, onChange, options }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedLabel, setSelectedLabel] = useState('');
 
-// Компонент модалки подтверждения сброса
-const ResetConfirmationModal = ({
-                                    isOpen,
-                                    onClose,
-                                    onConfirm,
-                                    changesCount
-                                }) => {
-    const [isClosing, setIsClosing] = useState(false);
+    useEffect(() => {
+        const selected = options.find(opt => opt.value === value);
+        setSelectedLabel(selected ? selected.label : '');
+    }, [value, options]);
 
-    const handleClose = () => {
-        setIsClosing(true);
-        setTimeout(() => {
-            setIsClosing(false);
-            onClose();
-        }, 300);
+    const handleSelect = (optionValue) => {
+        onChange(optionValue);
+        setIsOpen(false);
     };
-
-    const handleConfirm = () => {
-        onConfirm();
-        handleClose();
-    };
-
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleConfirm();
-        }
-        if (e.key === 'Escape') {
-            handleClose();
-        }
-    };
-
-    if (!isOpen) return null;
 
     return (
-        <div
-            className={`modal-overlay-processing ${isClosing ? 'modal-overlay-processing--closing' : ''}`}
-            onClick={(e) => e.target === e.currentTarget && handleClose()}
-        >
-            <div className={`modal-processing modal-processing--confirmation ${isClosing ? 'modal-processing--closing' : ''}`}>
-                <button
-                    className="modal-processing__close"
-                    onClick={handleClose}
-                    aria-label="Закрыть"
-                >
-                    ×
-                </button>
-
-                <div className="modal-processing__header">
-                    <h3 className="modal-processing__title">Подтверждение сброса</h3>
-                    <div className="modal-processing__warning-icon">
-                        ⚠️
-                    </div>
-                </div>
-
-                <div className="modal-processing__body">
-                    <p className="modal-processing__confirmation-text">
-                        Вы уверены, что хотите сбросить все изменения к дефолтным значениям?
-                    </p>
-                    {changesCount > 0 && (
-                        <div className="modal-processing__changes-info">
-                            Будет сброшено <strong>{changesCount}</strong> лимитов
-                        </div>
-                    )}
-                    <p className="modal-processing__confirmation-subtext">
-                        Все лимиты будут установлены в дефолтные значения.
-                    </p>
-                </div>
-
-                <div className="modal-processing__footer">
-                    <button
-                        className="modal-processing__btn modal-processing__btn--secondary"
-                        onClick={handleClose}
-                        onKeyPress={handleKeyPress}
-                    >
-                        Отмена
-                    </button>
-                    <button
-                        className="modal-processing__btn modal-processing__btn--danger"
-                        onClick={handleConfirm}
-                        autoFocus
-                    >
-                        Сбросить все
-                    </button>
-                </div>
+        <div className="custom-select">
+            <div
+                className={`custom-select__trigger ${isOpen ? 'custom-select__trigger--open' : ''}`}
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <span className="custom-select__value">{selectedLabel}</span>
+                <span className={`custom-select__arrow ${isOpen ? 'custom-select__arrow--open' : ''}`}>▼</span>
             </div>
+            {isOpen && (
+                <>
+                    <div className="custom-select__backdrop" onClick={() => setIsOpen(false)} />
+                    <div className="custom-select__dropdown">
+                        {options.map((option) => (
+                            <div
+                                key={option.value}
+                                className={`custom-select__option ${value === option.value ? 'custom-select__option--selected' : ''}`}
+                                onClick={() => handleSelect(option.value)}
+                            >
+                                {option.label}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 };
@@ -238,7 +206,7 @@ const LimitEditModal = ({
 
     useEffect(() => {
         if (isOpen && limit) {
-            setValue((limit.newValue || limit.currentValue).toString());
+            setValue((limit.newValue || limit.value).toString());
             setError('');
         }
     }, [isOpen, limit]);
@@ -308,7 +276,7 @@ const LimitEditModal = ({
                 <div className="modal-processing__header">
                     <h3 className="modal-processing__title">Изменение лимита</h3>
                     <p className="modal-processing__subtitle">{getLimitDescription(limit?.name)}</p>
-                    <p className="modal-processing__id">ID: {limit?.name}</p>
+                    <p className="modal-processing__info">ID: {limit?.name}</p>
                 </div>
 
                 <div className="modal-processing__body">
@@ -331,10 +299,10 @@ const LimitEditModal = ({
                     {error && <div className="modal-processing__error">{error}</div>}
 
                     <div className="modal-processing__info">
-                        Текущее значение: <strong>{limit?.currentValue?.toLocaleString('ru-RU')}</strong>
+                        Текущее значение: <strong>{limit?.currentValue?.toLocaleString('ru-RU')} {limit?.currency ? getCurrencyCode(limit.currency) : ''}</strong>
                     </div>
                     <div className="modal-processing__info">
-                        Дефолтное значение: <strong>{DEFAULT_LIMIT_VALUES[limit?.name]?.toLocaleString('ru-RU') || 'Не определено'}</strong>
+                        Значение лимита: <strong>{limit?.value?.toLocaleString('ru-RU')} {limit?.currency ? getCurrencyCode(limit.currency) : ''}</strong>
                     </div>
                 </div>
 
@@ -362,20 +330,25 @@ export default function ProcessingIntegration() {
     const [cardNumber, setCardNumber] = useState('');
     const [displayCardNumber, setDisplayCardNumber] = useState('');
     const [limitData, setLimitData] = useState([]);
+    const [filteredLimitData, setFilteredLimitData] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortOrder, setSortOrder] = useState('asc');
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [editModal, setEditModal] = useState({
         isOpen: false,
         limit: null
     });
-    const [resetModal, setResetModal] = useState({
-        isOpen: false
-    });
     const [alert, setAlert] = useState({
         show: false,
         message: '',
         type: 'success'
     });
+
+    const sortOptions = [
+        { value: 'asc', label: 'По возрастанию (по ID)' },
+        { value: 'desc', label: 'По убыванию (по ID)' }
+    ];
 
     // Функция для показа уведомления
     const showAlert = (message, type = 'success') => {
@@ -397,9 +370,7 @@ export default function ProcessingIntegration() {
 
     // Функция для форматирования номера карты
     const formatCardNumber = (value) => {
-        // Удаляем всё кроме цифр
         const digitsOnly = value.replace(/\D/g, '');
-        // Добавляем пробелы каждые 4 цифры
         const formatted = digitsOnly.replace(/(\d{4})(?=\d)/g, '$1 ');
         return formatted;
     };
@@ -412,6 +383,39 @@ export default function ProcessingIntegration() {
         setCardNumber(digitsOnly);
         setDisplayCardNumber(formatCardNumber(digitsOnly));
     };
+
+    // Функция для извлечения числа из ID лимита
+    const extractLimitNumber = (limitName) => {
+        const match = limitName.match(/\d+$/);
+        return match ? parseInt(match[0]) : 0;
+    };
+
+    // Функция для сортировки лимитов
+    const sortLimits = (limits, order) => {
+        return [...limits].sort((a, b) => {
+            const numA = extractLimitNumber(a.name);
+            const numB = extractLimitNumber(b.name);
+            return order === 'asc' ? numA - numB : numB - numA;
+        });
+    };
+
+    // Функция для фильтрации и сортировки данных
+    useEffect(() => {
+        let filtered = limitData;
+
+        // Фильтрация по поисковому запросу
+        if (searchQuery.trim()) {
+            filtered = filtered.filter(limit =>
+                limit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                limit.description.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        // Сортировка
+        filtered = sortLimits(filtered, sortOrder);
+
+        setFilteredLimitData(filtered);
+    }, [limitData, searchQuery, sortOrder]);
 
     // Функция для обработки изменения лимита
     const handleLimitChange = (limitName, newValue) => {
@@ -454,7 +458,7 @@ export default function ProcessingIntegration() {
 
     // Функция для сохранения всех изменений
     const handleSaveAll = async () => {
-        const changes = limitData.filter(item => item.newValue !== null && item.newValue !== item.currentValue);
+        const changes = limitData.filter(item => item.newValue !== null && item.newValue !== item.value);
 
         if (changes.length === 0) {
             showAlert('Нет изменений для сохранения', 'info');
@@ -481,10 +485,10 @@ export default function ProcessingIntegration() {
                 // Обновляем состояние для успешно сохраненных лимитов
                 setLimitData(prevData =>
                     prevData.map(item => {
-                        if (item.newValue !== null && item.newValue !== item.currentValue) {
+                        if (item.newValue !== null && item.newValue !== item.value) {
                             return {
                                 ...item,
-                                currentValue: item.newValue,
+                                value: item.newValue,
                                 newValue: null
                             };
                         }
@@ -507,89 +511,6 @@ export default function ProcessingIntegration() {
         }
     };
 
-    // Функция для сброса всех изменений к дефолтным значениям
-    const handleResetAll = async () => {
-        if (limitData.length === 0) {
-            showAlert('Нет данных для сброса', 'info');
-            return;
-        }
-
-        setIsSaving(true);
-        let successCount = 0;
-        let errorCount = 0;
-
-        try {
-            // Сбрасываем все лимиты к дефолтным значениям
-            for (const limit of limitData) {
-                const defaultValue = DEFAULT_LIMIT_VALUES[limit.name];
-                if (defaultValue !== undefined && defaultValue !== limit.currentValue) {
-                    try {
-                        await api.updateLimit(cardNumber, limit.name, defaultValue.toString());
-                        successCount++;
-                    } catch (error) {
-                        console.error(`Ошибка сброса лимита ${limit.name}:`, error);
-                        errorCount++;
-                    }
-                }
-            }
-
-            if (successCount > 0) {
-                // Обновляем состояние
-                setLimitData(prevData =>
-                    prevData.map(item => ({
-                        ...item,
-                        currentValue: DEFAULT_LIMIT_VALUES[item.name] || item.currentValue,
-                        newValue: null
-                    }))
-                );
-
-                showAlert(
-                    `Сброшено ${successCount} лимитов к дефолтным значениям` +
-                    (errorCount > 0 ? `, ошибок: ${errorCount}` : ''),
-                    errorCount > 0 ? 'warning' : 'success'
-                );
-            } else {
-                showAlert('Нет лимитов для сброса или все уже имеют дефолтные значения', 'info');
-            }
-        } catch (error) {
-            showAlert('Критическая ошибка при сбросе: ' + error.message, 'error');
-        } finally {
-            setIsSaving(false);
-        }
-
-        setResetModal({ isOpen: false });
-    };
-
-    // Функция для открытия модалки подтверждения сброса
-    const handleOpenResetModal = () => {
-        if (limitData.length === 0) {
-            showAlert('Нет данных для сброса', 'info');
-            return;
-        }
-
-        // Подсчитываем количество лимитов, которые будут сброшены
-        const changesCount = limitData.filter(item => {
-            const defaultValue = DEFAULT_LIMIT_VALUES[item.name];
-            return defaultValue !== undefined && defaultValue !== item.currentValue;
-        }).length;
-
-        if (changesCount === 0) {
-            showAlert('Все лимиты уже имеют дефолтные значения', 'info');
-            return;
-        }
-
-        setResetModal({
-            isOpen: true
-        });
-    };
-
-    // Функция для закрытия модалки сброса
-    const handleCloseResetModal = () => {
-        setResetModal({
-            isOpen: false
-        });
-    };
-
     // Функция для открытия модалки редактирования
     const handleEditLimit = (limit) => {
         setEditModal({
@@ -606,18 +527,8 @@ export default function ProcessingIntegration() {
         });
     };
 
-    // Функция для сброса конкретного лимита
-    const handleResetLimit = (limitName) => {
-        setLimitData(prevData =>
-            prevData.map(item =>
-                item.name === limitName ? { ...item, newValue: null } : item
-            )
-        );
-        showAlert('Изменение сброшено', 'success');
-    };
-
     // Получаем количество изменений
-    const changesCount = limitData.filter(item => item.newValue !== null && item.newValue !== item.currentValue).length;
+    const changesCount = limitData.filter(item => item.newValue !== null && item.newValue !== item.value).length;
 
     return (
         <div className="block_info_prems" align="center">
@@ -661,7 +572,7 @@ export default function ProcessingIntegration() {
                                         onChange={handleCardNumberChange}
                                         placeholder="0000 0000 0000 0000"
                                         className="search-card__input"
-                                        maxLength={19} // 16 цифр + 3 пробела
+                                        maxLength={19}
                                         disabled={isLoading || isSaving}
                                     />
                                 </div>
@@ -686,19 +597,36 @@ export default function ProcessingIntegration() {
                                     </h2>
                                     <div className="limits-table__actions">
                                         <button
-                                            onClick={handleOpenResetModal}
-                                            className="limits-table__action-btn limits-table__action-btn--secondary"
-                                            disabled={isSaving || limitData.length === 0}
-                                        >
-                                            {isSaving ? 'Обработка...' : 'Сбросить все'}
-                                        </button>
-                                        <button
                                             onClick={handleSaveAll}
                                             className="limits-table__action-btn limits-table__action-btn--primary"
                                             disabled={changesCount === 0 || isSaving}
                                         >
                                             {isSaving ? 'Сохранение...' : 'Сохранить все'}
                                         </button>
+                                    </div>
+                                </div>
+
+                                {/* Фильтры */}
+                                <div className="limits-table__filters">
+                                    <div className="filters-group">
+                                        <div className="filter-item">
+                                            <label className="filter-item__label">Поиск по лимитам</label>
+                                            <input
+                                                type="text"
+                                                className="filter-item__input"
+                                                placeholder="Введите ID или название..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="filter-item">
+                                            <label className="filter-item__label">Сортировка</label>
+                                            <CustomSelect
+                                                value={sortOrder}
+                                                onChange={setSortOrder}
+                                                options={sortOptions}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -713,7 +641,7 @@ export default function ProcessingIntegration() {
                                                 Текущее значение
                                             </th>
                                             <th className="limits-table__th limits-table__th--default">
-                                                Дефолт
+                                                Значение лимита
                                             </th>
                                             <th className="limits-table__th limits-table__th--new">
                                                 Новое значение
@@ -724,7 +652,7 @@ export default function ProcessingIntegration() {
                                         </tr>
                                         </thead>
                                         <tbody className="limits-table__body">
-                                        {limitData.map((limit) => (
+                                        {filteredLimitData.map((limit) => (
                                             <tr key={limit.name} className="limits-table__row">
                                                 <td className="limits-table__td limits-table__td--info">
                                                     <div className="limit-info">
@@ -738,18 +666,18 @@ export default function ProcessingIntegration() {
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="current-value">
-                                                        {limit.currentValue.toLocaleString('ru-RU')}
+                                                        {limit.currentValue.toLocaleString('ru-RU')} {getCurrencyCode(limit.currency)}
                                                     </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">
-                                                        {DEFAULT_LIMIT_VALUES[limit.name]?.toLocaleString('ru-RU') || 'N/A'}
+                                                        {limit.value.toLocaleString('ru-RU')} {getCurrencyCode(limit.currency)}
                                                     </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     {limit.newValue !== null ? (
                                                         <span className="new-value new-value--changed">
-                                                            {limit.newValue.toLocaleString('ru-RU')}
+                                                            {limit.newValue.toLocaleString('ru-RU')} {getCurrencyCode(limit.currency)}
                                                         </span>
                                                     ) : (
                                                         <span className="new-value new-value--empty">
@@ -766,13 +694,6 @@ export default function ProcessingIntegration() {
                                                         >
                                                             Изменить
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleResetLimit(limit.name)}
-                                                            disabled={limit.newValue === null || isSaving}
-                                                            className="action-buttons__btn action-buttons__btn--reset"
-                                                        >
-                                                            Сбросить
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -786,6 +707,9 @@ export default function ProcessingIntegration() {
                                     <div className="limits-table__stats">
                                         <span className="limits-table__stat">
                                             Всего записей: {limitData.length}
+                                        </span>
+                                        <span className="limits-table__stat">
+                                            Показано: {filteredLimitData.length}
                                         </span>
                                         <span className="limits-table__stat">
                                             Изменено: {changesCount}
@@ -818,25 +742,6 @@ export default function ProcessingIntegration() {
                             </div>
                         </div>
                     )}
-
-                    {/* JSON данные для отладки */}
-                    {/*<div className="processing-integration__debug">*/}
-                    {/*    <details className="debug-section">*/}
-                    {/*        <summary className="debug-section__summary">*/}
-                    {/*            JSON данные (для разработки)*/}
-                    {/*        </summary>*/}
-                    {/*        <pre className="debug-section__content">*/}
-                    {/*            {JSON.stringify({*/}
-                    {/*                cardNumber: cardNumber,*/}
-                    {/*                displayCardNumber: displayCardNumber,*/}
-                    {/*                limitsCount: limitData.length,*/}
-                    {/*                changesCount: changesCount,*/}
-                    {/*                apiBaseUrl: API_BASE_URL,*/}
-                    {/*                limits: limitData.slice(0, 3) // Показываем только первые 3 для краткости*/}
-                    {/*            }, null, 2)}*/}
-                    {/*        </pre>*/}
-                    {/*    </details>*/}
-                    {/*</div>*/}
                 </div>
             </div>
 
@@ -846,17 +751,6 @@ export default function ProcessingIntegration() {
                 onClose={handleCloseModal}
                 limit={editModal.limit}
                 onSave={handleLimitChange}
-            />
-
-            {/* Модалка подтверждения сброса */}
-            <ResetConfirmationModal
-                isOpen={resetModal.isOpen}
-                onClose={handleCloseResetModal}
-                onConfirm={handleResetAll}
-                changesCount={limitData.filter(item => {
-                    const defaultValue = DEFAULT_LIMIT_VALUES[item.name];
-                    return defaultValue !== undefined && defaultValue !== item.currentValue;
-                }).length}
             />
         </div>
     );
