@@ -21,8 +21,8 @@ export default function Header({ activeLink = 'reports', activeSubLink = null })
     { name: 'Отчеты', href: '/operator/reports', key: 'reports' },
     { name: 'Данные', href: '/operator/data', key: 'data' },
     { name: 'Тесты', href: '/operator/tests', key: 'tests' },
-    { name: 'Процессинг', href: '/operator/processing/limits', key: 'processing' },
     { name: 'База знаний', href: '/operator/knowledge-base', key: 'knowledge' },
+    { name: 'Процессинг', href: '/operator/processing/limits', key: 'processing' },
   ];
 
   const processingSubmenu = [
