@@ -237,3 +237,21 @@
     box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
   }
 }
+
+.filters__button--red {
+  background-color: #d32f2f !important;
+  color: white !important;
+  border: 1px solid #c62828 !important;
+
+  &:hover {
+    background-color: #b71c1c !important;
+    border-color: #b71c1c !important;
+  }
+
+  &:disabled {
+    background-color: #ef5350 !important;
+    border-color: #ef5350 !important;
+    cursor: not-allowed;
+  }
+}
+

@@ -6,6 +6,7 @@ import Spinner from "../../Spinner.jsx";
 const Filters = ({ initialDate, modificationDesc, onChange }) => {
     const [showModal, setShowModal] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedType, setSelectedType] = useState('');
     const [selectedDownloadType, setSelectedDownloadType] = useState('');
     const [file, setFile] = useState(null);
@@ -17,6 +18,9 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
 
     const [selectedDownloadMonth, setSelectedDownloadMonth] = useState('');
     const [selectedDownloadYear, setSelectedDownloadYear] = useState(currentYear);
+
+    const [selectedDeleteMonth, setSelectedDeleteMonth] = useState('');
+    const [selectedDeleteYear, setSelectedDeleteYear] = useState(currentYear);
 
     const monthOptions = [
         { name: 'Январь', value: 1 },
@@ -168,6 +172,46 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
         }
     };
 
+    const handleDeleteCards = async () => {
+        if (!selectedDeleteMonth || !selectedDeleteYear) {
+            alert('Выберите месяц и год');
+            return;
+        }
+
+        if (!confirm(`Вы уверены, что хотите удалить карты за ${selectedDeleteMonth}.${selectedDeleteYear}? Это действие невозможно отменить.`)) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('access_token');
+
+            const url = `${import.meta.env.VITE_BACKEND_URL}/automation/cards?month=${selectedDeleteMonth}&year=${selectedDeleteYear}`;
+
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                alert(`Ошибка при удалении карт: ${error}`);
+            } else {
+                alert('Карты успешно удалены!');
+                setShowDeleteModal(false);
+                setSelectedDeleteMonth('');
+                setSelectedDeleteYear(currentYear);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Произошла ошибка при удалении карт');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const buttons = [
         {
             text: 'Загрузить файл',
@@ -185,6 +229,11 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
             onClick: () => {
                 window.location.href = '/auth/register';
             },
+        },
+        {
+            text: 'Удалить карты',
+            class: 'filters__button--red',
+            onClick: () => setShowDeleteModal(true),
         },
     ];
 
@@ -317,6 +366,56 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
                                 {loading ? 'Выгрузка...' : 'Выгрузить'}
                             </button>
                             <button onClick={() => setShowDownloadModal(false)} disabled={loading}>
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Cards Modal */}
+            {showDeleteModal && (
+                <div className="filters__modal">
+                    <div className="filters__modal-content">
+                        <h3 style={{ color: '#d32f2f' }}>Удаление карт</h3>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>
+                            Выберите месяц и год для удаления карт
+                        </p>
+
+                        <div className="filters__date-selection">
+                            <select
+                                value={selectedDeleteMonth}
+                                onChange={(e) => setSelectedDeleteMonth(e.target.value)}
+                            >
+                                <option value="">-- Выберите месяц --</option>
+                                {monthOptions.map((month) => (
+                                    <option
+                                        key={month.value}
+                                        value={month.value}
+                                    >
+                                        {month.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <input
+                                type="number"
+                                placeholder="Год"
+                                value={selectedDeleteYear}
+                                onChange={(e) => setSelectedDeleteYear(e.target.value)}
+                                className="filters__year-input"
+                            />
+                        </div>
+
+                        <div className="filters__modal-actions">
+                            <button
+                                onClick={handleDeleteCards}
+                                disabled={loading}
+                                style={{ backgroundColor: '#d32f2f', color: 'white' }}
+                            >
+                                {loading ? 'Удаление...' : 'Удалить'}
+                            </button>
+                            <button onClick={() => setShowDeleteModal(false)} disabled={loading}>
                                 Отмена
                             </button>
                         </div>

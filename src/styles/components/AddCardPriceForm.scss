@@ -1,0 +1,93 @@
+// add-card-form.scss (или часть ProcessingIntegration.scss)
+
+// Базовый контейнер формы добавления новой карты
+.add-card-form {
+  // отступы вокруг формы
+  padding: 12px 16px;
+  margin: 0 0 14px 0; // небольшой отступ снизу
+  border-radius: 8px;
+  background: #f7f7fb; // светлый фон, можно изменить под дизайн
+  border: 1px solid #e2e2e8;
+
+  // Заголовок внутри формы (если нужен)
+  > h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #333;
+  }
+
+  // Линия для инпутов и кнопки
+  .form-row,
+  .form-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; // промежуток между элементами
+    align-items: center;
+  }
+
+  // Расположение инпутов в одну строку, но адаптивно
+  input {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #d6d6e0;
+    background: #fff;
+    min-width: 180px;
+    font-size: 14px;
+    color: #333;
+
+    &::placeholder {
+      color: #a0a0a0;
+    }
+
+    // специальный стиль для числовых инпутов
+    &[type="number"] {
+      width: 140px;
+    }
+  }
+
+  // Кнопка добавления
+  .action-buttons__btn,
+  button {
+    background: #e24a4a; // основной цвет кнопки
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+
+    &:hover {
+      background: #d53b3b;
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  // альтернативная стилизация под существующие кнопки
+  .action-buttons__btn {
+    // если нужно подчеркнуть кнопку в форме
+    white-space: nowrap;
+  }
+
+  // Мобильная адаптация: перенос полей в несколько строк
+  @media (max-width: 900px) {
+    .form-row,
+    .form-fields {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    input {
+      min-width: unset;
+      width: 100%;
+    }
+
+    .action-buttons__btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+}

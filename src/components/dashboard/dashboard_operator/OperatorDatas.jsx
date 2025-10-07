@@ -6,6 +6,7 @@ import OfficeTable from './table_datas/TableOffice';
 import EmployeesTable from './table_datas/TableEmployees';
 import UnderDevelopmentPage from '../dashboard_general/UnderDevelopment';
 import { AnimatePresence, motion } from 'framer-motion';
+import CardsTable from "./table_datas/TableCardPrices.jsx";
 
 const OperatorDatasBlockInfo = () => {
   const [selectedTable, setSelectedTable] = useState('office');
@@ -26,6 +27,13 @@ const OperatorDatasBlockInfo = () => {
             <OfficeTable key="office" />
           </>
         );
+        case 'prices':
+            return (
+                <>
+                    <Filters modificationDesc="Отделения" />
+                    <CardsTable key="prices" />
+                </>
+            );
       default:
         return (
           <>
