@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
+import { useLocation } from "react-router-dom";
 
 export default function FileUpload({
   error,
@@ -9,14 +10,21 @@ export default function FileUpload({
   placeholder,
   placeholderImage,
   value,
-  edit
+  edit,
 }) {
   const [preview, setPreview] = useState(null);
+  const location = useLocation();
   const renderFileIcon = (path) => {
     console.log("path", path);
 
+    let backendUrl = "";
+
     if (path) {
-      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      if (location.pathname.split("/")[1] === "credit") {
+        backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
+      } else {
+        backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      }
       return `${backendUrl}/${path.replace(/\\/g, "/")}`;
     } else {
       return null;
@@ -40,8 +48,10 @@ export default function FileUpload({
     }
   }, [value]);
 
+  console.log(`location`);
+
   return (
-    <label className="file" htmlFor={edit ? "" : id }>
+    <label className="file" htmlFor={edit ? "" : id}>
       <img
         src={preview || placeholderImage}
         width={width}

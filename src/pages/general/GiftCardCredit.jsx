@@ -198,12 +198,12 @@ export default function GiftCardCredit({ edit = false }) {
         const data = await getCreditById(id);
         setDataMore({
           ...data,
-          gemder: data.gender === "Муж",
+          // gemder: data.gender === "Муж",
           employment_date: formaterDate(data?.employment_date, "dateOnly"),
-          passport_issued_at: formaterDate(
-            data?.passport_issued_at,
-            "dateOnly"
-          ),
+          // passport_issued_at: formaterDate(
+          //   data?.passport_issued_at,
+          //   "dateOnly"
+          // ),
         });
       } catch (e) {
         console.error(e);
