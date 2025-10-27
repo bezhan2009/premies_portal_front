@@ -27,7 +27,7 @@ export default function Header({ activeLink = 'reports', activeSubLink = null })
 
   const processingSubmenu = [
     { name: 'Лимиты', href: '/operator/processing/limits', key: 'limits', description: 'Управление лимитами карт' },
-    // { name: 'Транзакции', href: '/operator/transactions', key: 'transactions', description: 'Мониторинг транзакций' },
+    { name: 'Транзакции', href: '/operator/processing/transactions', key: 'transactions', description: 'Мониторинг транзакций' },
     // { name: 'Мерчанты', href: '/operator/merchants', key: 'merchants', description: 'Управление мерчантами' },
     // { name: 'Эквайринг', href: '/operator/acquirings', key: 'acquirings', description: 'Настройки эквайринга' },
     // { name: 'Комиссии', href: '/operator/fees', key: 'fees', description: 'Настройка комиссий' },

@@ -2,58 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../../../styles/components/ProcessingIntegration.scss';
 import '../../../../styles/components/BlockInfo.scss';
 import AlertMessage from "../../../general/AlertMessage.jsx";
-
-// Дефолтные значения лимитов для сброса
-const DEFAULT_LIMIT_VALUES = {
-    'LMTTZ285': 100,
-    'LMTTZ292': 50,
-    'LMTTZ272': 30,
-    'LMTTZ288': 30,
-    'LMTTZ271': 200000,
-    'LMTTZ273': 6000000,
-    'LMTTZ280': 50,
-    'LMTTZ281': 3000000,
-    'LMTTZ268': 50,
-    'LMTTZ270': 1500,
-    'LMTTZ283': 100000,
-    'LMTTZ290': 900,
-    'LMTTZ274': 900,
-    'LMTTZ294': 1500,
-    'LMTTZ371': 999999999999,
-    'LMTTZ276': 50,
-    'LMTTZ278': 1500,
-    'LMTTZ282': 1500,
-    'LMTTZ297': 3000000,
-    'LMTTZ269': 3000000,
-    'LMTTZ279': 100000,
-    'LMTTZ286': 1500,
-    'LMTTZ298': 1500,
-    'LMTTZ289': 3000000,
-    'LMTTZ291': 300000,
-    'LMTTZ296': 50,
-    'LMTTZ275': 3200,
-    'LMTTZ287': 100000,
-    'LMTTZ293': 9000000,
-    'LMTTZ369': 999999999999,
-    'LMTTZ284': 50,
-    'LMTTZ370': 999999999999,
-    'LMTTZ372': 999999999999,
-    'LMTTZ267': 100000,
-    'LMTTZ295': 100000,
-    'LMTTZ277': 6000000
-};
-
-// Словарь валют
-const CURRENCIES = {
-    '840': 'USD',
-    '972': 'TJS',
-    '978': 'EUR'
-};
-
-// Функция для получения кода валюты
-const getCurrencyCode = (currencyNumber) => {
-    return CURRENCIES[currencyNumber] || currencyNumber;
-};
+import {getCurrencyCode} from "../../../../api/utils/getCurrencyCode.js";
 
 // Функция для получения человеко-читаемого названия лимита
 const getLimitDescription = (limitId) => {
@@ -326,9 +275,10 @@ const LimitEditModal = ({
     );
 };
 
-export default function ProcessingIntegration() {
+export default function ProcessingIntegrationLimits() {
     const [cardNumber, setCardNumber] = useState('');
-    const [displayCardNumber, setDisplayCardNumber] = useState('');
+    const [displayCardNumber, setDisplayCardNumber] = useState(
+        '');
     const [limitData, setLimitData] = useState([]);
     const [filteredLimitData, setFilteredLimitData] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');

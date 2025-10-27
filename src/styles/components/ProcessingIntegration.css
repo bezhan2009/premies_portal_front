@@ -201,9 +201,11 @@
   margin-bottom: 2rem;
   transition: all 0.3s ease;
 }
+
 .limits-table:hover {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
+
 .limits-table__header {
   display: flex;
   justify-content: space-between;
@@ -212,16 +214,19 @@
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
 }
+
 .limits-table__title {
   font-size: 1.75rem;
   font-weight: 700;
   color: #111827;
   margin: 0;
 }
+
 .limits-table__actions {
   display: flex;
   gap: 1rem;
 }
+
 .limits-table__action-btn {
   padding: 0.75rem 1.5rem;
   border: none;
@@ -231,28 +236,35 @@
   cursor: pointer;
   transition: all 0.3s ease;
 }
+
 .limits-table__action-btn--primary {
   background: #10b981;
   color: white;
 }
+
 .limits-table__action-btn--primary:hover {
   background: #059669;
   transform: translateY(-1px);
 }
+
 .limits-table__action-btn--secondary {
   background: #e5e7eb;
   color: #374151;
 }
+
 .limits-table__action-btn--secondary:hover {
   background: #d1d5db;
   transform: translateY(-1px);
 }
+
 .limits-table__wrapper {
   overflow-x: auto;
 }
+
 .limits-table__head {
   background: #f9fafb;
 }
+
 .limits-table__th {
   padding: 1rem 1.5rem;
   text-align: left;
