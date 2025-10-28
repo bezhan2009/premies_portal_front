@@ -289,7 +289,7 @@ export default function TransactionsQR() {
             className="my-applications-content"
             style={{ position: "relative" }}
           >
-            {defData.length === 0 ? (
+            {filteredData.length === 0 ? (
               <div
                 style={{ textAlign: "center", padding: "2rem", color: "gray" }}
               >
@@ -310,9 +310,9 @@ export default function TransactionsQR() {
                   </tr>
                 </thead>
                 <tbody>
-                  {defData &&
-                    defData
-                      // ?.slice(0, data?.limit || filteredData?.length)
+                  {filteredData &&
+                    filteredData
+                      ?.slice(0, data?.limit || filteredData?.length)
                       ?.map((row, index) => (
                         <tr key={index}>
                           <td>
@@ -333,7 +333,6 @@ export default function TransactionsQR() {
                           <td>{`${row.sender_name}`}</td>
                           <td>{row.sender_phone}</td>
                           <td>{row.status === "success" ? "Да" : "Нет"}</td>
-                          {/* <td>{row.delivery_address}</td> */}
                           <td>{row.description}</td>
                           <td>{row.sender_bank}</td>
                           <th></th>
