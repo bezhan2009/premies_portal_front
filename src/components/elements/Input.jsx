@@ -9,9 +9,10 @@ export default function Input({
   type = "text",
   defValue,
   onEnter,
+  style,
 }) {
   return (
-    <label className={`input ${className}`} htmlFor={id}>
+    <label className={`input ${className}`} style={style} htmlFor={id}>
       {title ||
         (placeholder && type === "date" && !value && (
           <span>{title || placeholder}</span>
