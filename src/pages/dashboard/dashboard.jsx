@@ -27,6 +27,8 @@ function RedirectDashboard() {
       navigate("/agent/applications-list");
     } else if (roleId === 11) {
       navigate("/credit/applications-list");
+    } else if (roleId === 13) {
+      navigate("/agent-qr/transactions/list");
     } else {
       navigate("/404");
     }

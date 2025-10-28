@@ -44,6 +44,7 @@ import ApplicationsListCredit from "../pages/general/ApplicationsListCredit.jsx"
 import GiftCardCredit from "../pages/general/GiftCardCredit.jsx";
 import DashboardAgentKBCredit from "../pages/dashboard/dashboard_credit/KBAgentPageCredit.jsx";
 import DashboardOperatorProcessing from "../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
+import Transactions from "../pages/general/TransactionsQR.jsx";
 
 export default function AppRouter() {
   return (
@@ -92,8 +93,8 @@ export default function AppRouter() {
               element={<DashboardOperatorTests />}
             />
             <Route
-                path="/operator/processing/limits"
-                element={<DashboardOperatorProcessing />}
+              path="/operator/processing/limits"
+              element={<DashboardOperatorProcessing />}
             />
             <Route path="/auth/register" element={<RegisterPage />} />
           </Route>
@@ -165,7 +166,7 @@ export default function AppRouter() {
               <RequireRole allowedRoles={[10]}>
                 <Outlet />
               </RequireRole>
-            }  
+            }
           >
             <Route path="/agent/card" element={<GiftCard />} />
             <Route path="/agent/card/:id" element={<GiftCard edit={true} />} />
@@ -199,6 +200,18 @@ export default function AppRouter() {
             <Route
               path="/credit/knowledge-base"
               element={<DashboardAgentKBCredit />}
+            />
+          </Route>
+          <Route
+            element={
+              <RequireRole allowedRoles={[13]}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route
+              path="agent-qr/transactions/list"
+              element={<Transactions />}
             />
           </Route>
         </Route>

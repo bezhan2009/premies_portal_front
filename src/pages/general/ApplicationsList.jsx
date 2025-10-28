@@ -11,7 +11,7 @@ import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
-import { b, s } from "framer-motion/client";
+// import { b, s } from "framer-motion/client";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 
 export default function ApplicationsList() {
@@ -57,7 +57,7 @@ export default function ApplicationsList() {
       setNextId(result?.[result?.length - 1]?.ID);
       setFetching(false);
     } catch (error) {
-      // console.error("Ошибка загрузки заявок:", error);
+      console.log("Ошибка загрузки заявок:", error);
     } finally {
       setLoading(false);
       setFetching(false);

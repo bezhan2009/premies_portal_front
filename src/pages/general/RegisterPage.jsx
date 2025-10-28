@@ -17,6 +17,7 @@ const ROLES = [
     { id: 9, name: "Председатель" },
     { id: 10, name: "Агент по заявкам" },
     { id: 11, name: "Агент по кредитам" },
+    { id: 13, name: "Агент по QR" },
 ];
 
 export default function RegisterPage() {
