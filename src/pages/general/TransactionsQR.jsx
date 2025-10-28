@@ -37,13 +37,10 @@ export default function TransactionsQR() {
     try {
       setLoading(true);
       const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
-      let query = new URLSearchParams();
-      if (data?.month) query.append("start_date", data?.month);
-      if (data?.year) query.append("end_date", data?.year);
       const response = await fetch(
-        `${backendUrl}/applications${
-          archive ? "/archive" : `?${query.toString()}`
-        }`
+        `${backendUrl}${archive ? "transactions" : `incoming_tx`}?start_date=${
+          data?.start_date || "2025-9-25"
+        }&end_date=${data?.end_date || "2025-10-01"}`
       );
       const result = await response.json();
       if (res) {
@@ -150,10 +147,6 @@ export default function TransactionsQR() {
   }, [archive]);
 
   useEffect(() => {
-    fetchData(null, true);
-  }, [data?.month, data?.year, data?.status]);
-
-  useEffect(() => {
     if (selectAll) {
       setSelectedRows(filteredData.map((e) => e.ID));
     } else {
@@ -167,27 +160,45 @@ export default function TransactionsQR() {
     }
   }, [fetching]);
 
+  useEffect(() => {
+    fetchData(null, true);
+  }, [data?.start_date, data?.end_date]);
+
   console.log("nextId", nextId);
 
   useEffect(() => {
-    if (data.month || data.month === "") {
-      localStorage.setItem("month", data.month);
-    }
-    if (data.year || data.year === "") {
-      localStorage.setItem("year", data.year);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    const savedMonth = localStorage.getItem("month");
-    const savedYear = localStorage.getItem("year");
-    if (savedMonth) {
-      setData("month", savedMonth);
-    }
-    if (savedYear) {
-      setData("year", savedYear);
-    }
+    setData("start_date", "2025-09-25");
+    setData("end_date", "2025-10-01");
   }, []);
+
+  const defData = [
+    {
+      id: 6822,
+      trnId: 20225850,
+      sender_phone: "992904411010",
+      receiver: 3,
+      amount: 90,
+      description: "",
+      sender_name: "САИДЗОДА Фарзоди",
+      sender_bank: 27,
+      qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+      status: "success",
+      created_at: "2025-10-01T21:30:28",
+    },
+    {
+      id: 6822,
+      trnId: 20225850,
+      sender_phone: "992904411010",
+      receiver: 3,
+      amount: 90,
+      description: "",
+      sender_name: "САИДЗОДА Фарзоди",
+      sender_bank: 27,
+      qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+      status: "success",
+      created_at: "2025-10-01T21:30:28",
+    },
+  ];
 
   return (
     <>
@@ -195,18 +206,18 @@ export default function TransactionsQR() {
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
-            <button className="Unloading">Выгрузка для карт</button>
+            {/* <button className="Unloading">Выгрузка для карт</button> */}
             <button
-              className="filter-toggle"
+              className={!showFilters ? "filter-toggle" : "Unloading"}
               onClick={() => setShowFilters(!showFilters)}
             >
               Фильтры
             </button>
             <button
-              className={archive && "archive-toggle"}
+              className={"archive-toggle"}
               onClick={() => setArchive(!archive)}
             >
-              Архив
+              {archive ? "Us on Them" : "Them on Us"}
             </button>
             <button
               className={selectAll && "selectAll-toggle"}
@@ -222,47 +233,54 @@ export default function TransactionsQR() {
             <div className="filters animate-slideIn">
               <input
                 placeholder="ФИО"
-                onChange={(e) => handleFilterChange("fullName", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("sender_name", e.target.value)
+                }
               />
               <input
                 placeholder="Телефон"
-                onChange={(e) => handleFilterChange("phone", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("sender_phone", e.target.value)
+                }
               />
               <select
-                onChange={(e) => handleFilterChange("resident", e.target.value)}
+                onChange={(e) => handleFilterChange("success", e.target.value)}
               >
-                <option value="">Резидент</option>
-                <option value="Да">Да</option>
-                <option value="Нет">Нет</option>
+                <option value="">Статус перевода</option>
+                <option value="success">успешно</option>
+                <option value="failed">неудача</option>
+                <option value="processing">обрабатывается</option>
               </select>
               <input
-                placeholder="Карта"
-                onChange={(e) => handleFilterChange("card", e.target.value)}
+                placeholder="Сумма перевода"
+                onChange={(e) => handleFilterChange("amount", e.target.value)}
               />
             </div>
           )}
 
           <div className="my-applications-sub-header">
             <div>
-              Поиск по месяцам
+              от
               <Input
-                type="number"
+                type="date"
                 placeholder={""}
-                onChange={(e) => setData("month", e)}
-                value={data?.month}
+                onChange={(e) => setData("start_date", e)}
+                value={data?.start_date}
                 // error={errors}
-                id={"month"}
+                style={{ width: "150px" }}
+                id={"start_date"}
               />{" "}
             </div>
             <div>
-              Поиск по годам
+              до
               <Input
-                type="number"
+                type="date"
                 placeholder={""}
-                onChange={(e) => setData("year", e)}
-                value={data?.year}
+                onChange={(e) => setData("end_date", e)}
+                value={data?.end_date}
                 // error={errors}
-                id={"year"}
+                style={{ width: "150px" }}
+                id={"end_date"}
               />{" "}
             </div>
           </div>
@@ -271,7 +289,7 @@ export default function TransactionsQR() {
             className="my-applications-content"
             style={{ position: "relative" }}
           >
-            {filteredData.length === 0 ? (
+            {defData.length === 0 ? (
               <div
                 style={{ textAlign: "center", padding: "2rem", color: "gray" }}
               >
@@ -286,19 +304,15 @@ export default function TransactionsQR() {
                     <th>ФИО</th>
                     <th>Телефон</th>
                     <th>Карта</th>
-                    <th>Адрес</th>
-                    <th>Скан паспорта (лицевая)</th>
-                    <th>Скан паспорта (задняя)</th>
-                    <th>Скан паспорта (с лицом)</th>
-                    {headers.map((e, i) => (
-                      <th key={i}>{e}</th>
-                    ))}
+                    <th>Коментарий</th>
+                    <th>Банк</th>
+                    {/* <th>sender_bank</th> */}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData &&
-                    filteredData
-                      ?.slice(0, data?.limit || filteredData?.length)
+                  {defData &&
+                    defData
+                      // ?.slice(0, data?.limit || filteredData?.length)
                       ?.map((row, index) => (
                         <tr key={index}>
                           <td>
@@ -316,45 +330,13 @@ export default function TransactionsQR() {
                             />
                           </td>
                           <td>{row.ID}</td>
-                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>
-                            {renderFileIcon(row.front_side_of_the_passport)}
-                          </td>
-                          <td>
-                            {renderFileIcon(row.back_side_of_the_passport)}
-                          </td>
-                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.secret_word}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.gender}</td>
-                          <td>{row.is_resident ? "Да" : "Нет"}</td>
-                          <td>{row.type_of_certificate}</td>
-                          <td>{row.inn}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>{row.card_code}</td>
-                          <td className="active-table">
-                            <AiFillEdit
-                              onClick={() => navigate(`/agent/card/${row.ID}`)}
-                              style={{
-                                fontSize: 35,
-                                color: "green",
-                                cursor: "pointer",
-                                marginBottom: "10px",
-                              }}
-                            />
-                            <AiFillDelete
-                              onClick={() => deleteApplication(row.ID)}
-                              style={{
-                                fontSize: 35,
-                                color: "#c31414",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </td>
+                          <td>{`${row.sender_name}`}</td>
+                          <td>{row.sender_phone}</td>
+                          <td>{row.status === "success" ? "Да" : "Нет"}</td>
+                          {/* <td>{row.delivery_address}</td> */}
+                          <td>{row.description}</td>
+                          <td>{row.sender_bank}</td>
+                          <th></th>
                         </tr>
                       ))}
                 </tbody>
