@@ -45,6 +45,7 @@ import GiftCardCredit from "../pages/general/GiftCardCredit.jsx";
 import DashboardAgentKBCredit from "../pages/dashboard/dashboard_credit/KBAgentPageCredit.jsx";
 import DashboardOperatorProcessing from "../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 import Transactions from "../pages/general/TransactionsQR.jsx";
+import DashboardOperatorProcessingTransactions from "../pages/dashboard/dashboard_operator/Transactions.jsx";
 
 export default function AppRouter() {
   return (
@@ -95,6 +96,10 @@ export default function AppRouter() {
             <Route
               path="/operator/processing/limits"
               element={<DashboardOperatorProcessing />}
+            />
+            <Route
+                path="/operator/processing/transactions"
+                element={<DashboardOperatorProcessingTransactions />}
             />
             <Route path="/auth/register" element={<RegisterPage />} />
           </Route>

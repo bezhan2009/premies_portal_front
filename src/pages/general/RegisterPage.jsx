@@ -41,8 +41,39 @@ export default function RegisterPage() {
     const [officeTitle, setOfficeTitle] = useState('');
     const [officeDesc, setOfficeDesc] = useState('');
 
+    const [roles, setRoles] = useState([]);
+    const [loadingRoles, setLoadingRoles] = useState(true);
+
     const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
+
+    // Загрузка ролей из API
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+                }
+
+                const rolesData = await response.json();
+                setRoles(rolesData);
+            } catch (err) {
+                console.error('Ошибка загрузки ролей:', err);
+                setError('Не удалось загрузить список ролей');
+            } finally {
+                setLoadingRoles(false);
+            }
+        };
+
+        fetchRoles();
+    }, [token]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -188,12 +219,17 @@ export default function RegisterPage() {
                             value={roleId}
                             onChange={(e) => setRoleId(Number(e.target.value))}
                             required
+                            disabled={loadingRoles}
                         >
-                            {ROLES.map(role => (
-                                <option key={role.id} value={role.id}>
-                                    {role.name}
-                                </option>
-                            ))}
+                            {loadingRoles ? (
+                                <option value="">Загрузка ролей...</option>
+                            ) : (
+                                roles.map(role => (
+                                    <option key={role.ID} value={role.ID}>
+                                        {role.Name}
+                                    </option>
+                                ))
+                            )}
                         </select>
                     </label>
 
@@ -272,7 +308,7 @@ export default function RegisterPage() {
 
                     {error && <div align="center" className="error">{error}</div>}
 
-                    <button type="submit" disabled={loading}>
+                    <button type="submit" disabled={loading || loadingRoles}>
                         {loading ? (
                             <div align="center">
                                 <Spinner />
