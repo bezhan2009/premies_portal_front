@@ -26,7 +26,7 @@ export default function RegisterPage() {
     const [phone, setPhone] = useState('');
     const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
-    const [roleId, setRoleId] = useState(3); // Operator по умолчанию
+    const [roleId, setRoleId] = useState(3);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
