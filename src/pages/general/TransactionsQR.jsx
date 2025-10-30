@@ -2,17 +2,16 @@
 import React, { useEffect, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import { status } from "../../const/defConst.js";
 import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select.jsx";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 // import { b, s } from "framer-motion/client";
 import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
+import { FcHighPriority, FcOk } from "react-icons/fc";
 
 export default function TransactionsQR() {
   const { data, errors, setData } = useFormStore();
@@ -31,14 +30,13 @@ export default function TransactionsQR() {
     resident: "",
     card: "",
   });
-  const navigate = useNavigate();
 
-  const fetchData = async (res = false) => {
+  const fetchData = async (res = true) => {
     try {
       setLoading(true);
       const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
       const response = await fetch(
-        `${backendUrl}${archive ? "transactions" : `incoming_tx`}?start_date=${
+        `${backendUrl}${archive ? "transactions" : "incoming_tx"}?start_date=${
           data?.start_date || "2025-9-25"
         }&end_date=${data?.end_date || "2025-10-01"}`
       );
@@ -83,72 +81,36 @@ export default function TransactionsQR() {
   };
 
   const applyFilters = (data) => {
-    return (
-      Array.isArray(data) &&
-      data?.filter((row) => {
-        const fullName =
-          `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
-        return (
-          fullName?.includes(filters?.fullName?.toLowerCase()) &&
-          row?.phone_number?.includes(filters?.phone) &&
-          (!filters?.resident ||
-            (filters?.resident === "Да"
-              ? row?.is_resident
-              : !row?.is_resident)) &&
-          (!filters?.card ||
-            row?.card_name
-              ?.toLowerCase()
-              ?.includes(filters?.card?.toLowerCase()))
-        );
-      })
-    );
-  };
+    if (!Array.isArray(data)) return [];
 
-  const headers = [
-    "Телефон",
-    "Кодовое слово",
-    "Имя на карте",
-    "Пол",
-    "Резидент",
-    "Документ",
-    "ИНН",
-    "Адрес",
-    "Карта",
-  ];
+    return data.filter((row) => {
+      return Object.entries(filters).every(([key, value]) => {
+        if (!value) return true;
 
-  const renderFileIcon = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-    const fullUrl = `${backendUrl}/${path.replace(/\\/g, "/")}`;
-    return (
-      <button
-        className="file-icon-button"
-        onClick={() => setPreviewImage(fullUrl)}
-      >
-        <img src={fileLogo} alt="Файл" width={48} height={60} />
-      </button>
-    );
-  };
-
-  const deleteApplication = async (id) => {
-    try {
-      const res = await deleteApplicationById(id);
-      if (res) {
-        setTimeout(() => fetchData(), 200);
-      }
-    } catch (e) {
-      console.error(e);
-    }
+        const rowValue = row[key];
+        if (key === "status") {
+          return String(rowValue).toLowerCase() === String(value).toLowerCase();
+        }
+        if (typeof rowValue === "number") {
+          return String(rowValue).includes(String(value));
+        }
+        if (typeof rowValue === "string") {
+          return rowValue.toLowerCase().includes(value.toLowerCase());
+        }
+        return false;
+      });
+    });
   };
 
   const filteredData = applyFilters(tableData);
 
   useEffect(() => {
-    fetchData(null, true);
+    fetchData(true);
   }, [archive]);
 
   useEffect(() => {
     if (selectAll) {
-      setSelectedRows(filteredData.map((e) => e.ID));
+      setSelectedRows(filteredData.map((e) => e.id));
     } else {
       setSelectedRows([]);
     }
@@ -164,41 +126,13 @@ export default function TransactionsQR() {
     fetchData(null, true);
   }, [data?.start_date, data?.end_date]);
 
-  console.log("nextId", nextId);
+  console.log("filteredData", filteredData);
+  console.log("tableData", tableData);
 
   useEffect(() => {
     setData("start_date", "2025-09-25");
     setData("end_date", "2025-10-01");
   }, []);
-
-  const defData = [
-    {
-      id: 6822,
-      trnId: 20225850,
-      sender_phone: "992904411010",
-      receiver: 3,
-      amount: 90,
-      description: "",
-      sender_name: "САИДЗОДА Фарзоди",
-      sender_bank: 27,
-      qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-      status: "success",
-      created_at: "2025-10-01T21:30:28",
-    },
-    {
-      id: 6822,
-      trnId: 20225850,
-      sender_phone: "992904411010",
-      receiver: 3,
-      amount: 90,
-      description: "",
-      sender_name: "САИДЗОДА Фарзоди",
-      sender_bank: 27,
-      qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-      status: "success",
-      created_at: "2025-10-01T21:30:28",
-    },
-  ];
 
   return (
     <>
@@ -244,7 +178,7 @@ export default function TransactionsQR() {
                 }
               />
               <select
-                onChange={(e) => handleFilterChange("success", e.target.value)}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
               >
                 <option value="">Статус перевода</option>
                 <option value="success">успешно</option>
@@ -312,7 +246,7 @@ export default function TransactionsQR() {
                 <tbody>
                   {filteredData &&
                     filteredData
-                      ?.slice(0, data?.limit || filteredData?.length)
+                      // ?.slice(0, data?.limit || filteredData?.length)
                       ?.map((row, index) => (
                         <tr key={index}>
                           <td>
@@ -332,7 +266,7 @@ export default function TransactionsQR() {
                           <td>{row.ID}</td>
                           <td>{`${row.sender_name}`}</td>
                           <td>{row.sender_phone}</td>
-                          <td>{row.status === "success" ? "Да" : "Нет"}</td>
+                          <td>{row.status === "success" ? <FcOk style={{ fontSize: "24px" }} /> : <FcHighPriority style={{ fontSize: "24px" }} />}</td>
                           <td>{row.description}</td>
                           <td>{row.sender_bank}</td>
                           <th></th>
