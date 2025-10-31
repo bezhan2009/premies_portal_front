@@ -37,7 +37,7 @@ export default function TransactionsQR() {
       const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
       const response = await fetch(
         `${backendUrl}${archive ? "transactions" : "incoming_tx"}?start_date=${
-          data?.start_date || "2025-9-25"
+          data?.start_date || "2025-09-25"
         }&end_date=${data?.end_date || "2025-10-01"}`
       );
       const result = await response.json();
@@ -266,7 +266,13 @@ export default function TransactionsQR() {
                           <td>{row.ID}</td>
                           <td>{`${row.sender_name}`}</td>
                           <td>{row.sender_phone}</td>
-                          <td>{row.status === "success" ? <FcOk style={{ fontSize: "24px" }} /> : <FcHighPriority style={{ fontSize: "24px" }} />}</td>
+                          <td>
+                            {row.status === "success" ? (
+                              <FcOk style={{ fontSize: "24px" }} />
+                            ) : (
+                              <FcHighPriority style={{ fontSize: "24px" }} />
+                            )}
+                          </td>
                           <td>{row.description}</td>
                           <td>{row.sender_bank}</td>
                           <th></th>
