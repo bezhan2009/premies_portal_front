@@ -46,6 +46,9 @@ import DashboardAgentKBCredit from "../pages/dashboard/dashboard_credit/KBAgentP
 import DashboardOperatorProcessing from "../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 import Transactions from "../pages/general/TransactionsQR.jsx";
 import DashboardOperatorProcessingTransactions from "../pages/dashboard/dashboard_operator/Transactions.jsx";
+import ApplicationsListDipozit from "../pages/general/ApplicationsListDipozit.jsx";
+import MyApplicationsDipozit from "../pages/general/MyApplicationsDipozit.jsx";
+import GiftCardDipozit from "../pages/general/GiftCardDipozit.jsx";
 
 export default function AppRouter() {
   return (
@@ -98,8 +101,8 @@ export default function AppRouter() {
               element={<DashboardOperatorProcessing />}
             />
             <Route
-                path="/operator/processing/transactions"
-                element={<DashboardOperatorProcessingTransactions />}
+              path="/operator/processing/transactions"
+              element={<DashboardOperatorProcessingTransactions />}
             />
             <Route path="/auth/register" element={<RegisterPage />} />
           </Route>
@@ -184,6 +187,31 @@ export default function AppRouter() {
               path="/agent/knowledge-base"
               element={<DashboardAgentKB />}
             />
+          </Route>
+          <Route
+            element={
+              <RequireRole allowedRoles={[12]}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/agent/dipozit/card" element={<GiftCardDipozit />} />
+            <Route
+              path="/agent/dipozit/card/:id"
+              element={<GiftCardDipozit edit={true} />}
+            />
+            <Route
+              path="/agent/dipozit/my-applications"
+              element={<MyApplicationsDipozit />}
+            />
+            <Route
+              path="/agent/dipozit/applications-list"
+              element={<ApplicationsListDipozit />}
+            />
+            {/* <Route
+              path="/agent/knowledge-base"
+              element={<DashboardAgentKBDipozit />}
+            /> */}
           </Route>
           <Route
             element={

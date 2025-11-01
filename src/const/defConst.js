@@ -160,6 +160,12 @@ export const districtTypes = [
   { value: 4, label: "Сельский округ" },
   { value: 5, label: "Улус" },
 ];
+export const depositCurrency = [
+  { value: 0, label: "Валюта депозита" },
+  { value: 1, label: "TJS" },
+  { value: 2, label: "USD" },
+  { value: 3, label: "EUR" },
+]
 export const streetTypes = [
   { value: 0, label: "Тип улицы" },
   { value: 1, label: "Аллея" },
