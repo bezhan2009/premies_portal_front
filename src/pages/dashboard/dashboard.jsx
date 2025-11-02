@@ -28,7 +28,7 @@ function RedirectDashboard() {
     } else if (roleId === 11) {
       navigate("/credit/applications-list");
     } else if (roleId === 12) {
-      navigate("/agent/dipozit/my-applications");
+      navigate("/agent/dipozit/applications-list");
     } else if (roleId === 13) {
       navigate("/agent-qr/transactions/list");
     } else {
