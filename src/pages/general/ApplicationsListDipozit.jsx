@@ -163,17 +163,6 @@ export default function ApplicationsListDipozit() {
   //   );
   // };
 
-  const deleteApplication = async (id) => {
-    try {
-      const res = await deleteApplicationById(id);
-      if (res) {
-        setTimeout(() => fetchData(), 200);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const filteredData = applyFilters(tableData);
 
   useEffect(() => {
