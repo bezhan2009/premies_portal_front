@@ -1012,3 +1012,109 @@ $gray-900: #111827;
     }
   }
 }
+
+// === ПОЛЯ ДАТ — ПОЛНОСТЬЮ ОБНОВЛЁННЫЕ СТИЛИ ===
+.search-card__date-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 140px;
+}
+
+.search-card__date-input {
+    width: 100%;
+    padding: 1rem 1.25rem; // Точно такой же, как у основного input
+    border: 2px solid $gray-300;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    background: white;
+    height: 3.5rem; // Фиксированная высота = 56px (как у основного input)
+    box-sizing: border-box;
+    @include smooth-transition;
+
+    // Убираем стандартные стили браузера для input[type=date]
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+        outline: none;
+        border-color: $danger-color;
+        box-shadow: 0 0 0 3px $danger-light;
+    }
+
+    &:disabled {
+        background: $gray-100;
+        color: $gray-500;
+        cursor: not-allowed;
+    }
+
+    // Стили для иконки календаря (опционально, если браузер показывает)
+    &::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+        margin-left: 8px;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
+}
+
+.date-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $gray-500;
+    padding-bottom: 1rem; // Выравнивание с полями
+    min-width: 30px;
+}
+
+// Кнопки
+.search-card__buttons {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.search-card__button--secondary {
+    padding: 1.1rem 1.8rem;
+    background: $gray-600;
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    @include smooth-transition;
+    height: 3.5rem; // Такая же высота, как у полей
+
+    &:hover:not(:disabled) {
+        background: $gray-700;
+    }
+
+    &:disabled {
+        background: $gray-400;
+        cursor: not-allowed;
+    }
+}
+
+.date-range {
+    background: rgba(0, 102, 204, 0.1);
+    color: #0066cc;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-left: 16px;
+}
