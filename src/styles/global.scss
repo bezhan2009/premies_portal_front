@@ -1132,11 +1132,15 @@ body {
   animation: fadeIn 0.4s ease-out;
   margin: 20px 10px;
   width: calc(100% - 80px) !important;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .filters input,
 .filters select {
-  margin-right: 12px;
+  flex: 1;
+  // margin-right: 12px;
   padding: 10px 15px;
   border: 1px solid #ccc;
   border-radius: 8px;
