@@ -49,6 +49,9 @@ import DashboardOperatorProcessingTransactions from "../pages/dashboard/dashboar
 import ApplicationsListDipozit from "../pages/general/ApplicationsListDipozit.jsx";
 import MyApplicationsDipozit from "../pages/general/MyApplicationsDipozit.jsx";
 import GiftCardDipozit from "../pages/general/GiftCardDipozit.jsx";
+import DashboardDipozitKnowledgeBase, {
+  DashboardQRKnowledgeBase,
+} from "../pages/general/KnowledgeBase.jsx";
 
 export default function AppRouter() {
   return (
@@ -208,6 +211,10 @@ export default function AppRouter() {
               path="/agent/dipozit/applications-list"
               element={<ApplicationsListDipozit />}
             />
+            <Route
+              path="/agent/dipozit/knowledge-base"
+              element={<DashboardDipozitKnowledgeBase />}
+            />
             {/* <Route
               path="/agent/knowledge-base"
               element={<DashboardAgentKBDipozit />}
@@ -245,6 +252,10 @@ export default function AppRouter() {
             <Route
               path="agent-qr/transactions/list"
               element={<Transactions />}
+            />
+            <Route
+              path="agent-qr/knowledge-base"
+              element={<DashboardQRKnowledgeBase />}
             />
           </Route>
         </Route>

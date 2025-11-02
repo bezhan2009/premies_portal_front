@@ -136,7 +136,7 @@ export default function TransactionsQR() {
 
   return (
     <>
-      <HeaderAgentQR activeLink="applications" />
+      <HeaderAgentQR activeLink="list" />
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
@@ -153,14 +153,14 @@ export default function TransactionsQR() {
             >
               {archive ? "Us on Them" : "Them on Us"}
             </button>
-            <button
+            {/* <button
               className={selectAll && "selectAll-toggle"}
               onClick={() => {
                 setSelectAll(!selectAll);
               }}
             >
               Выбрать все
-            </button>
+            </button> */}
           </div>
 
           {showFilters && (
@@ -233,7 +233,7 @@ export default function TransactionsQR() {
               <table>
                 <thead>
                   <tr>
-                    <th>Выбрать</th>
+                    {/* <th>Выбрать</th> */}
                     <th>ID</th>
                     <th>ФИО</th>
                     <th>Телефон</th>
@@ -249,7 +249,7 @@ export default function TransactionsQR() {
                       // ?.slice(0, data?.limit || filteredData?.length)
                       ?.map((row, index) => (
                         <tr key={index}>
-                          <td>
+                          {/* <td>
                             <input
                               type="checkbox"
                               className="custom-checkbox"
@@ -262,7 +262,7 @@ export default function TransactionsQR() {
                                 );
                               }}
                             />
-                          </td>
+                          </td> */}
                           <td>{row.ID}</td>
                           <td>{`${row.sender_name}`}</td>
                           <td>{row.sender_phone}</td>
