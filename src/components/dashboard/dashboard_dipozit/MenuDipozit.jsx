@@ -14,6 +14,11 @@ export default function HeaderDipozit({ activeLink = "reports" }) {
       href: "/agent/dipozit/applications-list",
       key: "applications",
     },
+    {
+      name: "База знаний",
+      href: "/agent/dipozit/knowledge-base",
+      key: "knowledge",
+    },
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
