@@ -4,6 +4,7 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
 import { FcHighPriority, FcOk } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
+
 import "../../styles/checkbox.scss";
 
 export default function TransactionsQR() {
@@ -15,7 +16,8 @@ export default function TransactionsQR() {
   const [isUsOnThem, setIsUsOnThem] = useState(false);
   const [isThemOnUs, setIsThemOnUs] = useState(true);
   const [filters, setFilters] = useState({});
-  const [alert, setAlert] = useState(null); // ✅ для уведомлений
+  const [alert, setAlert] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc"); // ✅ сортировка по ID
 
   const showAlert = (message, type = "success") => {
     setAlert({ message, type });
@@ -35,8 +37,7 @@ export default function TransactionsQR() {
 
       const result = await response.json();
       setTableData(result);
-
-      showAlert(`Загружено ${result.length} записей`, "success"); // ✅ уведомление о количестве
+      showAlert(`Загружено ${result.length} записей`, "success");
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
       showAlert("Ошибка загрузки данных. Проверьте подключение к серверу.", "error");
@@ -79,6 +80,14 @@ export default function TransactionsQR() {
 
   const filteredData = applyFilters(tableData);
 
+  const sortedData = [...filteredData].sort((a, b) =>
+    sortOrder === "asc" ? a.id - b.id : b.id - a.id
+  );
+
+  const toggleSort = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const d = new Date(dateString);
@@ -86,13 +95,11 @@ export default function TransactionsQR() {
     return d.toISOString().replace("T", " ").substring(0, 19);
   };
 
-  // ✅ При смене типа данных
   useEffect(() => {
     if (isUsOnThem) fetchData("usOnThem");
     else if (isThemOnUs) fetchData("themOnUs");
   }, [isUsOnThem, isThemOnUs]);
 
-  // ✅ При изменении даты сразу перезапрашиваем
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
       if (isUsOnThem) fetchData("usOnThem");
@@ -119,7 +126,7 @@ export default function TransactionsQR() {
             >
               Фильтры
             </button>
-            <pre>    </pre>
+            <pre>   </pre>
 
             <div style={{ display: "flex", gap: "50px" }}>
               <button
@@ -212,7 +219,7 @@ export default function TransactionsQR() {
           <div className="my-applications-content" style={{ position: "relative" }}>
             {loading ? (
               <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
-            ) : filteredData.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
                 Нет данных для отображения
               </div>
@@ -220,7 +227,12 @@ export default function TransactionsQR() {
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th
+                      onClick={toggleSort}
+                      style={{ cursor: "pointer", userSelect: "none" }}
+                    >
+                      ID {sortOrder === "asc" ? "▲" : "▼"}
+                    </th>
                     {isUsOnThem && (
                       <>
                         <th>ФИО</th>
@@ -242,7 +254,7 @@ export default function TransactionsQR() {
                 </thead>
 
                 <tbody>
-                  {filteredData.map((row, i) => (
+                  {sortedData.map((row, i) => (
                     <tr key={i}>
                       <td>{row.id}</td>
 
@@ -292,7 +304,6 @@ export default function TransactionsQR() {
         </main>
       </div>
 
-      {/* ✅ Уведомление */}
       {alert && (
         <AlertMessage
           message={alert.message}
@@ -303,4 +314,3 @@ export default function TransactionsQR() {
     </>
   );
 }
-
