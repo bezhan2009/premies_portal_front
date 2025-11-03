@@ -1,5 +1,12 @@
-export const fetchTransactionsByCardId = async (cardID) => {
+export const fetchTransactionsByCardId = async (cardID, fromDate = null, toDate = null) => {
     const url = new URL(`${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-card/${cardID}`);
+    if (fromDate) {
+        url.searchParams.append('fromDate', fromDate);
+    }
+    if (toDate) {
+        url.searchParams.append('toDate', toDate);
+    }
+
     const response = await fetch(url);
 
     if (!response.ok) {

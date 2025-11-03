@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import '../../../../styles/components/ProcessingIntegration.scss';
 import '../../../../styles/components/BlockInfo.scss';
 import AlertMessage from "../../../general/AlertMessage.jsx";
@@ -8,6 +8,8 @@ import {getCurrencyCode} from "../../../../api/utils/getCurrencyCode.js";
 export default function DashboardOperatorProcessingTransactions() {
     const [displayCardId, setDisplayCardId] = useState('');
     const [cardId, setCardId] = useState('');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [transactions, setTransactions] = useState([]);
     const [alert, setAlert] = useState({
@@ -15,6 +17,18 @@ export default function DashboardOperatorProcessingTransactions() {
         message: '',
         type: 'success'
     });
+
+    // Устанавливаем даты по умолчанию (последние 30 дней)
+    useEffect(() => {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        const formatDate = (date) => date.toISOString().split('T')[0];
+        
+        setFromDate(formatDate(thirtyDaysAgo));
+        setToDate(formatDate(today));
+    }, []);
 
     const showAlert = (message, type = 'success') => {
         setAlert({
@@ -35,19 +49,35 @@ export default function DashboardOperatorProcessingTransactions() {
     const handleCardIdChange = (e) => {
         const value = e.target.value;
         setDisplayCardId(value);
-        // Убираем все пробелы для внутреннего хранения
         setCardId(value.replace(/\s/g, ''));
+    };
+
+    const handleDateChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'fromDate') {
+            setFromDate(value);
+        } else {
+            setToDate(value);
+        }
     };
 
     const handleCardNumberSearch = async () => {
         if (cardId.trim()) {
+            // Проверяем корректность дат
+            if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
+                showAlert('Дата "С" не может быть больше даты "По"', 'error');
+                return;
+            }
+
             setIsLoading(true);
             try {
-                const transactionsData = await fetchTransactionsByCardId(cardId);
+                const transactionsData = await fetchTransactionsByCardId(
+                    cardId, 
+                    fromDate || undefined, 
+                    toDate || undefined
+                );
 
-                // Проверяем, что данные получены и являются массивом
                 if (transactionsData && Array.isArray(transactionsData)) {
-                    // Преобразуем данные API в нужный формат
                     const formattedTransactions = transactionsData.map(transaction => ({
                         id: transaction.id,
                         cardNumber: transaction.cardNumber,
@@ -95,7 +125,6 @@ export default function DashboardOperatorProcessingTransactions() {
     };
 
     const formatCardNumber = (value) => {
-        // Форматирование номера карты с пробелами через каждые 4 цифры
         return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
     };
 
@@ -114,6 +143,14 @@ export default function DashboardOperatorProcessingTransactions() {
             default:
                 return <span className="status-badge status-badge--unknown">Неизвестно</span>;
         }
+    };
+
+    const clearFilters = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        setFromDate(thirtyDaysAgo.toISOString().split('T')[0]);
+        setToDate(today);
     };
 
     return <>
@@ -136,14 +173,14 @@ export default function DashboardOperatorProcessingTransactions() {
                             Поиск транзакций без ограничений
                         </p>
                     </div>
+
+                    {/* Блок поиска с датами */}
                     <div className="processing-integration__search-card">
                         <div className="search-card">
                             <div className="search-card__content">
+                                {/* Номер карты */}
                                 <div className="search-card__input-group">
-                                    <label
-                                        htmlFor="cardNumber"
-                                        className="search-card__label"
-                                    >
+                                    <label htmlFor="cardNumber" className="search-card__label">
                                         Идентификатор карты
                                     </label>
                                     <input
@@ -155,32 +192,83 @@ export default function DashboardOperatorProcessingTransactions() {
                                         className="search-card__input"
                                         disabled={isLoading}
                                         placeholder="Введите идентификатор карты"
-                                        maxLength={19} // 16 цифр + 3 пробела
+                                        maxLength={19}
                                     />
                                 </div>
-                                <button
-                                    onClick={handleCardNumberSearch}
-                                    disabled={!cardId.trim() || isLoading}
-                                    className={`search-card__button ${isLoading ? 'search-card__button--loading' : ''}`}
-                                >
-                                    {isLoading ? 'Поиск...' : 'Найти'}
-                                </button>
+
+                                {/* Блок дат */}
+                                <div className="search-card__date-group">
+                                    <div className="date-input-group">
+                                        <label htmlFor="fromDate" className="search-card__label">
+                                            С даты
+                                        </label>
+                                        <input
+                                            type="date"
+                                            id="fromDate"
+                                            name="fromDate"
+                                            value={fromDate}
+                                            onChange={handleDateChange}
+                                            className="search-card__date-input"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                    <div className="date-separator">—</div>
+                                    <div className="date-input-group">
+                                        <label htmlFor="toDate" className="search-card__label">
+                                            По дату
+                                        </label>
+                                        <input
+                                            type="date"
+                                            id="toDate"
+                                            name="toDate"
+                                            value={toDate}
+                                            onChange={handleDateChange}
+                                            className="search-card__date-input"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Кнопки */}
+                                <div className="search-card__buttons">
+                                    <button
+                                        onClick={handleCardNumberSearch}
+                                        disabled={!cardId.trim() || isLoading}
+                                        className={`search-card__button ${isLoading ? 'search-card__button--loading' : ''}`}
+                                    >
+                                        {isLoading ? 'Поиск...' : 'Найти'}
+                                    </button>
+                                    <button
+                                        onClick={clearFilters}
+                                        disabled={isLoading}
+                                        className="search-card__button search-card__button--secondary"
+                                    >
+                                        Очистить даты
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {/* Остальная часть компонента остается без изменений */}
                 {transactions.length > 0 && (
                     <div className="processing-integration__limits-table">
                         <div className="limits-table">
                             <div className="limits-table__header">
                                 <h2 className="limits-table__title">
                                     Транзакции по карте с id {displayCardId}
+                                    {fromDate && toDate && (
+                                        <span className="date-range">
+                                            ({fromDate} — {toDate})
+                                        </span>
+                                    )}
                                 </h2>
                             </div>
 
                             <div className="limits-table__wrapper">
                                 <table className="limits-table">
+                                    {/* thead остается без изменений */}
                                     <thead className="limits-table__head">
                                     <tr>
                                         <th className="limits-table__th">ID транзакции</th>
@@ -211,69 +299,43 @@ export default function DashboardOperatorProcessingTransactions() {
                                                 {transaction.cardNumber ? formatCardNumber(transaction.cardNumber) : 'N/A'}
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.reqamt || '0'}
-                                                </span>
+                                                <span className="default-value">{transaction.reqamt || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.amount || '0'}
-                                                </span>
+                                                <span className="default-value">{transaction.amount || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.conamt || '0'}
-                                                </span>
+                                                <span className="default-value">{transaction.conamt || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.acctbal || '0'}
-                                                </span>
+                                                <span className="default-value">{transaction.acctbal || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.netbal || '0'}
-                                                </span>
+                                                <span className="default-value">{transaction.netbal || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.utrnno || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.utrnno || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {getCurrencyCode(transaction.currency)}
-                                                </span>
+                                                <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.terminalId || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.terminalId || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.transactionTypeName || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.atmId || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.atmId || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.terminalAddress || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.localTransactionDate || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.localTransactionDate || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">
-                                                    {transaction.localTransactionTime || 'N/A'}
-                                                </span>
+                                                <span className="default-value">{transaction.localTransactionTime || 'N/A'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
                                                 {getStatusBadge(transaction.responseCode, transaction.reversal)}
@@ -284,7 +346,6 @@ export default function DashboardOperatorProcessingTransactions() {
                                 </table>
                             </div>
 
-                            {/* Статистика */}
                             <div className="limits-table__footer">
                                 <div className="limits-table__stats">
                                     <span className="limits-table__stat">
@@ -294,15 +355,19 @@ export default function DashboardOperatorProcessingTransactions() {
                                         Показано: {transactions.length}
                                     </span>
                                     <span className="limits-table__stat">
-                                        Карта: {transactions[0].cardNumber}
+                                        Карта: {transactions[0]?.cardNumber || 'N/A'}
                                     </span>
+                                    {fromDate && toDate && (
+                                        <span className="limits-table__stat">
+                                            Период: {fromDate} — {toDate}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Индикатор загрузки */}
                 {isLoading && (
                     <div className="processing-integration__loading">
                         <div className="loading-spinner">
@@ -312,12 +377,11 @@ export default function DashboardOperatorProcessingTransactions() {
                     </div>
                 )}
 
-                {/* Сообщение об отсутствии данных */}
                 {!isLoading && transactions.length === 0 && cardId.length > 0 && (
                     <div className="processing-integration__no-data">
                         <div className="no-data">
                             <h3>Данные не найдены</h3>
-                            <p>Для карты с id {displayCardId} не найдено транзакций. Нажми на поиск.</p>
+                            <p>Для карты с id {displayCardId} не найдено транзакций за выбранный период.</p>
                         </div>
                     </div>
                 )}
