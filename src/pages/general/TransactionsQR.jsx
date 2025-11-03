@@ -11,7 +11,7 @@ import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 // import { b, s } from "framer-motion/client";
 import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
-import { FcHighPriority, FcOk } from "react-icons/fc";
+import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 
 export default function TransactionsQR() {
   const { data, errors, setData } = useFormStore();
@@ -194,9 +194,10 @@ export default function TransactionsQR() {
                 onChange={(e) => handleFilterChange("status", e.target.value)}
               >
                 <option value="">Статус перевода</option>
-                <option value="success">успешно</option>
-                <option value="cancel">неудача</option>
-                <option value="processing">обрабатывается</option>
+                <option value="success">Успешно</option>
+                <option value="process">Обрабатывается</option>
+                <option value="cancel">Отмена</option>
+                <option value="error">Ошибка</option>
               </select>
               <input
                 placeholder="Сумма перевода"
@@ -282,8 +283,12 @@ export default function TransactionsQR() {
                           <td>
                             {row.status === "success" ? (
                               <FcOk style={{ fontSize: "24px" }} />
-                            ) : (
+                            ) : row.status === "error" ? (
                               <FcHighPriority style={{ fontSize: "24px" }} />
+                            ) : row.status === "cancel" ? (
+                              <FcCancel style={{ fontSize: "24px" }} />
+                            ) : (
+                              <FcProcess style={{ fontSize: "24px" }} />
                             )}
                           </td>
                           <td>{row.description}</td>
