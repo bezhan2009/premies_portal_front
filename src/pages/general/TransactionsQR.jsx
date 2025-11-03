@@ -195,7 +195,7 @@ export default function TransactionsQR() {
               >
                 <option value="">Статус перевода</option>
                 <option value="success">успешно</option>
-                <option value="failed">неудача</option>
+                <option value="cancel">неудача</option>
                 <option value="processing">обрабатывается</option>
               </select>
               <input
