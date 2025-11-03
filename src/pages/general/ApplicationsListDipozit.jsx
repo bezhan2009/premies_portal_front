@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 // import { b, s } from "framer-motion/client";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
+import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
 
 export default function ApplicationsListDipozit() {
   const { data, errors, setData } = useFormStore();
@@ -163,6 +164,19 @@ export default function ApplicationsListDipozit() {
   //   );
   // };
 
+  const deleteApplication = async (id) => {
+    try {
+      const valid = confirm("Вы уверены, что хотите удалить?");
+      if (valid) {
+        const res = await apiClientApplicationDipozit.delete(`/deposits/${id}`);
+        fetchData(null, true);
+        return res.data;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const filteredData = applyFilters(tableData);
 
   useEffect(() => {
@@ -215,7 +229,6 @@ export default function ApplicationsListDipozit() {
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
-           
             <button
               className="filter-toggle"
               onClick={() => setShowFilters(!showFilters)}
@@ -236,31 +249,45 @@ export default function ApplicationsListDipozit() {
             <div className="filters animate-slideIn">
               <input
                 placeholder="Код клиента"
-                onChange={(e) => handleFilterChange("client_code", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("client_code", e.target.value)
+                }
               />
               <input
                 placeholder="Тип депозита"
-                onChange={(e) => handleFilterChange("type_of_deposit", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("type_of_deposit", e.target.value)
+                }
               />
-               <input
+              <input
                 placeholder="Начисленный счет"
-                onChange={(e) => handleFilterChange("accrued_account", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("accrued_account", e.target.value)
+                }
               />
-               <input
+              <input
                 placeholder="Выводный счет"
-                onChange={(e) => handleFilterChange("withdraw_account", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("withdraw_account", e.target.value)
+                }
               />
               <input
                 placeholder="Сумма"
-                onChange={(e) => handleFilterChange("sum_of_deposit", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("sum_of_deposit", e.target.value)
+                }
               />
-               <input
+              <input
                 placeholder="Валюта"
-                onChange={(e) => handleFilterChange("deposit_currency", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("deposit_currency", e.target.value)
+                }
               />
-               <input
+              <input
                 placeholder="Месяцы"
-                onChange={(e) => handleFilterChange("deposit_term_month", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("deposit_term_month", e.target.value)
+                }
               />
             </div>
           )}
@@ -319,9 +346,11 @@ export default function ApplicationsListDipozit() {
                           <td>{row.sum_of_deposit}</td>
                           <td>{row.deposit_currency}</td>
                           <td>{row.deposit_term_month}</td>
-                          {/* <td className="active-table">
+                          <td className="active-table">
                             <AiFillEdit
-                              onClick={() => navigate(`/agent/card/${row.ID}`)}
+                              onClick={() =>
+                                navigate(`/agent/dipozit/card/${row.ID}`)
+                              }
                               style={{
                                 fontSize: 35,
                                 color: "green",
@@ -337,7 +366,7 @@ export default function ApplicationsListDipozit() {
                                 cursor: "pointer",
                               }}
                             />
-                          </td> */}
+                          </td>
                         </tr>
                       ))}
                 </tbody>

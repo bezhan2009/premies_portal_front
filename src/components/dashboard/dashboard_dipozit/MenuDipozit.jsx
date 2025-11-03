@@ -8,7 +8,7 @@ export default function HeaderDipozit({ activeLink = "reports" }) {
   const username = localStorage.getItem("username") || "Неизвестное имя";
 
   const links = [
-    { name: "Карта", href: "/agent/dipozit/card", key: "gift_card" },
+    { name: "Депозит", href: "/agent/dipozit/card", key: "gift_card" },
     {
       name: "Заявки",
       href: "/agent/dipozit/applications-list",

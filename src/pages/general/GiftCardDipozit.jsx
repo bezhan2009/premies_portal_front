@@ -58,21 +58,21 @@ export default function GiftCardDipozit({ edit = false }) {
     if (!isValid) return;
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_DIPOZIT_URL;
-
       if (edit) {
-        const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
-          method: "PATCH",
-          body: data,
-        });
+        const response = apiClientApplicationDipozit.put(
+          `deposits/${id}`,
+          {
+            ...data,
+            deposit_term_month: +data?.deposit_term_month,
+            sum_of_deposit: +data?.sum_of_deposit,
+          }
+        );
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-
-        const result = await response.json();
+        const result = await response;
         console.log("Успешно отправлено:", result);
         // setDataClear();
         alert("Данные успешно сохранены!");
+        navigate(0);
       } else {
         const response = apiClientApplicationDipozit.post(`deposits`, {
           ...data,
@@ -80,7 +80,7 @@ export default function GiftCardDipozit({ edit = false }) {
           sum_of_deposit: +data?.sum_of_deposit,
         });
 
-        const result = await response
+        const result = await response;
         console.log("Успешно отправлено:", result);
         // setDataClear();
         navigate(0);
@@ -98,15 +98,10 @@ export default function GiftCardDipozit({ edit = false }) {
         setLoading(true);
         console.log("edit id", id);
 
-        const data = await getApplicationById(id);
+        const res = await apiClientApplicationDipozit(`/deposits/${id}`);
+        const data = res.data;
         setDataMore({
           ...data,
-          gemder: data.gender === "Муж",
-          withdraw_account: formaterDate(data?.withdraw_account, "dateOnly"),
-          passport_issued_at: formaterDate(
-            data?.passport_issued_at,
-            "dateOnly"
-          ),
         });
       } catch (e) {
         console.error(e);

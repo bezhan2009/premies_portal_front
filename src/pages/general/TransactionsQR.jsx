@@ -1,9 +1,9 @@
-// ApplicationsList.jsx
 import React, { useEffect, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
 import { FcHighPriority, FcOk } from "react-icons/fc";
+import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 
 export default function TransactionsQR() {
@@ -13,8 +13,14 @@ export default function TransactionsQR() {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [isUsOnThem, setIsUsOnThem] = useState(false);
-  const [isThemOnUs, setIsThemOnUs] = useState(true); // по умолчанию — them on us
+  const [isThemOnUs, setIsThemOnUs] = useState(true);
   const [filters, setFilters] = useState({});
+  const [alert, setAlert] = useState(null); // ✅ для уведомлений
+
+  const showAlert = (message, type = "success") => {
+    setAlert({ message, type });
+    setTimeout(() => setAlert(null), 3500);
+  };
 
   const fetchData = async (type = "themOnUs") => {
     try {
@@ -22,14 +28,18 @@ export default function TransactionsQR() {
       const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
       const response = await fetch(
-        `${backendUrl}${endpoint}?start_date=${
-          data?.start_date || "2025-09-25"
-        }&end_date=${data?.end_date || "2025-10-01"}`
+        `${backendUrl}${endpoint}?start_date=${data?.start_date || "2025-09-25"}&end_date=${data?.end_date || "2025-10-01"}`
       );
+
+      if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
+
       const result = await response.json();
       setTableData(result);
+
+      showAlert(`Загружено ${result.length} записей`, "success"); // ✅ уведомление о количестве
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
+      showAlert("Ошибка загрузки данных. Проверьте подключение к серверу.", "error");
     } finally {
       setLoading(false);
     }
@@ -76,10 +86,19 @@ export default function TransactionsQR() {
     return d.toISOString().replace("T", " ").substring(0, 19);
   };
 
+  // ✅ При смене типа данных
   useEffect(() => {
     if (isUsOnThem) fetchData("usOnThem");
     else if (isThemOnUs) fetchData("themOnUs");
   }, [isUsOnThem, isThemOnUs]);
+
+  // ✅ При изменении даты сразу перезапрашиваем
+  useEffect(() => {
+    if (data?.start_date && data?.end_date) {
+      if (isUsOnThem) fetchData("usOnThem");
+      else if (isThemOnUs) fetchData("themOnUs");
+    }
+  }, [data.start_date, data.end_date]);
 
   useEffect(() => {
     setData("start_date", "2025-09-25");
@@ -90,6 +109,7 @@ export default function TransactionsQR() {
   return (
     <>
       <HeaderAgentQR activeLink="list" />
+
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
@@ -130,15 +150,11 @@ export default function TransactionsQR() {
                 <>
                   <input
                     placeholder="ФИО"
-                    onChange={(e) =>
-                      handleFilterChange("sender_name", e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange("sender_name", e.target.value)}
                   />
                   <input
                     placeholder="Телефон"
-                    onChange={(e) =>
-                      handleFilterChange("sender_phone", e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange("sender_phone", e.target.value)}
                   />
                 </>
               )}
@@ -147,22 +163,16 @@ export default function TransactionsQR() {
                 <>
                   <input
                     placeholder="Код мерчанта"
-                    onChange={(e) =>
-                      handleFilterChange("merchant_code", e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange("merchant_code", e.target.value)}
                   />
                   <input
                     placeholder="Код терминала"
-                    onChange={(e) =>
-                      handleFilterChange("terminal_code", e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange("terminal_code", e.target.value)}
                   />
                 </>
               )}
 
-              <select
-                onChange={(e) => handleFilterChange("status", e.target.value)}
-              >
+              <select onChange={(e) => handleFilterChange("status", e.target.value)}>
                 <option value="">Статус</option>
                 <option value="success">Успешно</option>
                 <option value="cancel">Неудача</option>
@@ -200,7 +210,9 @@ export default function TransactionsQR() {
           </div>
 
           <div className="my-applications-content" style={{ position: "relative" }}>
-            {filteredData.length === 0 ? (
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
+            ) : filteredData.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
                 Нет данных для отображения
               </div>
@@ -260,9 +272,7 @@ export default function TransactionsQR() {
 
                       <td>
                         {banks.find(
-                          (e) =>
-                            e.id === row?.sender_bank ||
-                            e.bankId === row?.sender
+                          (e) => e.id === row?.sender_bank || e.bankId === row?.sender
                         )?.bankName || "-"}
                       </td>
 
@@ -281,6 +291,15 @@ export default function TransactionsQR() {
           </div>
         </main>
       </div>
+
+      {/* ✅ Уведомление */}
+      {alert && (
+        <AlertMessage
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+        />
+      )}
     </>
   );
 }
