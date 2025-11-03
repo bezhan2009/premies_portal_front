@@ -16,6 +16,7 @@ import { FcHighPriority, FcOk } from "react-icons/fc";
 export default function TransactionsQR() {
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
@@ -52,6 +53,17 @@ export default function TransactionsQR() {
     } finally {
       setLoading(false);
       setFetching(false);
+    }
+  };
+
+  const getBanks = async () => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
+      const response = await fetch(`${backendUrl}banks`);
+      const result = await response.json();
+      setBanks(result);
+    } catch (error) {
+      console.log("Ошибка загрузки банков:", error);
     }
   };
 
@@ -126,12 +138,13 @@ export default function TransactionsQR() {
     fetchData(null, true);
   }, [data?.start_date, data?.end_date]);
 
-  console.log("filteredData", filteredData);
+  console.log("banks", banks);
   console.log("tableData", tableData);
 
   useEffect(() => {
     setData("start_date", "2025-09-25");
     setData("end_date", "2025-10-01");
+    getBanks();
   }, []);
 
   return (
@@ -235,12 +248,12 @@ export default function TransactionsQR() {
                   <tr>
                     {/* <th>Выбрать</th> */}
                     <th>ID</th>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    <th>Карта</th>
+                    {archive && <th>ФИО</th>}
+                    {archive && <th>Телефон</th>}
+                    <th>Статус</th>
                     <th>Коментарий</th>
                     <th>Банк</th>
-                    {/* <th>sender_bank</th> */}
+                    <th>Сумма</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -263,9 +276,9 @@ export default function TransactionsQR() {
                               }}
                             />
                           </td> */}
-                          <td>{row.ID}</td>
-                          <td>{`${row.sender_name}`}</td>
-                          <td>{row.sender_phone}</td>
+                          <td>{row.id}</td>
+                          {archive && <td>{`${row.sender_name}`}</td>}
+                          {archive && <td>{row.sender_phone}</td>}
                           <td>
                             {row.status === "success" ? (
                               <FcOk style={{ fontSize: "24px" }} />
@@ -274,7 +287,23 @@ export default function TransactionsQR() {
                             )}
                           </td>
                           <td>{row.description}</td>
-                          <td>{row.sender_bank}</td>
+                          {archive && (
+                            <td>
+                              {
+                                banks.find((e) => e.id === row?.sender_bank)
+                                  ?.bankName
+                              }
+                            </td>
+                          )}
+                          {!archive && (
+                            <td>
+                              {
+                                banks.find((e) => e.bankId === row?.sender)
+                                  ?.bankName
+                              }
+                            </td>
+                          )}
+                          <td>{row?.amount}с.</td>
                           <th></th>
                         </tr>
                       ))}
