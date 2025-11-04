@@ -6,6 +6,7 @@ import { FcHighPriority, FcOk } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 
 import "../../styles/checkbox.scss";
+import { idMargent } from "../../const/defConst.js";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
@@ -18,6 +19,8 @@ export default function TransactionsQR() {
   const [filters, setFilters] = useState({});
   const [alert, setAlert] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc"); // ✅ сортировка по ID
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const showAlert = (message, type = "success") => {
     setAlert({ message, type });
@@ -30,7 +33,9 @@ export default function TransactionsQR() {
       const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
       const response = await fetch(
-        `${backendUrl}${endpoint}?start_date=${data?.start_date || "2025-09-25"}&end_date=${data?.end_date || "2025-10-01"}`
+        `${backendUrl}${endpoint}?start_date=${
+          data?.start_date || "2025-09-25"
+        }&end_date=${data?.end_date || "2025-10-01"}`
       );
 
       if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
@@ -40,7 +45,10 @@ export default function TransactionsQR() {
       showAlert(`Загружено ${result.length} записей`, "success");
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
-      showAlert("Ошибка загрузки данных. Проверьте подключение к серверу.", "error");
+      showAlert(
+        "Ошибка загрузки данных. Проверьте подключение к серверу.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -113,6 +121,16 @@ export default function TransactionsQR() {
     getBanks();
   }, []);
 
+  useEffect(() => {
+    if (selectAll) {
+      setSelectedRows(sortedData.map((e) => e.id));
+    } else {
+      setSelectedRows([]);
+    }
+  }, [selectAll]);
+
+  console.log("selectedRows", selectedRows);
+
   return (
     <>
       <HeaderAgentQR activeLink="list" />
@@ -126,11 +144,11 @@ export default function TransactionsQR() {
             >
               Фильтры
             </button>
-            <pre>   </pre>
+            <pre> </pre>
 
             <div style={{ display: "flex", gap: "50px" }}>
               <button
-                className={`archive-toggle ${isUsOnThem ? "active" : ""}`}
+                className={`archive-toggle ${!isUsOnThem ? "active" : ""}`}
                 onClick={() => {
                   setIsUsOnThem(true);
                   setIsThemOnUs(false);
@@ -149,6 +167,14 @@ export default function TransactionsQR() {
                 Наш QR — чужой клиент (Them on Us)
               </button>
             </div>
+            <button
+              className={selectAll && "selectAll-toggle"}
+              onClick={() => {
+                setSelectAll(!selectAll);
+              }}
+            >
+              Выбрать все
+            </button>
           </div>
 
           {showFilters && (
@@ -157,11 +183,15 @@ export default function TransactionsQR() {
                 <>
                   <input
                     placeholder="ФИО"
-                    onChange={(e) => handleFilterChange("sender_name", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("sender_name", e.target.value)
+                    }
                   />
                   <input
                     placeholder="Телефон"
-                    onChange={(e) => handleFilterChange("sender_phone", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("sender_phone", e.target.value)
+                    }
                   />
                 </>
               )}
@@ -170,16 +200,22 @@ export default function TransactionsQR() {
                 <>
                   <input
                     placeholder="Код мерчанта"
-                    onChange={(e) => handleFilterChange("merchant_code", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("merchant_code", e.target.value)
+                    }
                   />
                   <input
                     placeholder="Код терминала"
-                    onChange={(e) => handleFilterChange("terminal_code", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("terminal_code", e.target.value)
+                    }
                   />
                 </>
               )}
 
-              <select onChange={(e) => handleFilterChange("status", e.target.value)}>
+              <select
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+              >
                 <option value="">Статус</option>
                 <option value="success">Успешно</option>
                 <option value="cancel">Неудача</option>
@@ -216,17 +252,25 @@ export default function TransactionsQR() {
             </div>
           </div>
 
-          <div className="my-applications-content" style={{ position: "relative" }}>
+          <div
+            className="my-applications-content"
+            style={{ position: "relative" }}
+          >
             {loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
+              <div style={{ textAlign: "center", padding: "2rem" }}>
+                Загрузка...
+              </div>
             ) : sortedData.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
+              <div
+                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+              >
                 Нет данных для отображения
               </div>
             ) : (
               <table>
                 <thead>
                   <tr>
+                    <th>Выбрать</th>
                     <th
                       onClick={toggleSort}
                       style={{ cursor: "pointer", userSelect: "none" }}
@@ -239,15 +283,22 @@ export default function TransactionsQR() {
                         <th>Телефон</th>
                       </>
                     )}
-                    {isThemOnUs && (
+                    {isThemOnUs ? (
                       <>
                         <th>Код мерчанта</th>
                         <th>Код терминала</th>
+                        <th>partner_trn_id</th>
+                      </>
+                    ) : (
+                      <>
+                        <th>trnId</th>
+                        <th>qrId</th>
                       </>
                     )}
                     <th>Статус</th>
                     <th>Комментарий</th>
-                    <th>Банк</th>
+                    <th>Банк отпровителя</th>
+                    <th>Банк получателя</th>
                     <th>Сумма</th>
                     <th>Дата создания</th>
                   </tr>
@@ -256,6 +307,21 @@ export default function TransactionsQR() {
                 <tbody>
                   {sortedData.map((row, i) => (
                     <tr key={i}>
+                      <td>
+                        {" "}
+                        <input
+                          type="checkbox"
+                          className="custom-checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={(e) => {
+                            setSelectedRows(
+                              e.target.checked
+                                ? [...selectedRows, row.id]
+                                : selectedRows.filter((id) => id !== row.id)
+                            );
+                          }}
+                        />
+                      </td>
                       <td>{row.id}</td>
 
                       {isUsOnThem && (
@@ -265,10 +331,19 @@ export default function TransactionsQR() {
                         </>
                       )}
 
-                      {isThemOnUs && (
+                      {isThemOnUs ? (
                         <>
-                          <td>{row.merchant_code || "-"}</td>
+                          <td>
+                            {idMargent.find((e) => e.value == row.merchant_code)
+                              ?.label || "-"}
+                          </td>
                           <td>{row.terminal_code || "-"}</td>
+                          <td>{row.partner_trn_id || "-"}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{row.trnId || "-"}</td>
+                          <td>{row.qrId || "-"}</td>
                         </>
                       )}
 
@@ -284,8 +359,14 @@ export default function TransactionsQR() {
 
                       <td>
                         {banks.find(
-                          (e) => e.id === row?.sender_bank || e.bankId === row?.sender
+                          (e) =>
+                            e.id === row?.sender_bank ||
+                            e.bankId === row?.sender
                         )?.bankName || "-"}
+                      </td>
+                      <td>
+                        {banks.find((e) => e.id === row?.receiver)?.bankName ||
+                          "-"}
                       </td>
 
                       <td>{row.amount} с.</td>
