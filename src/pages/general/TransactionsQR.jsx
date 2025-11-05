@@ -52,8 +52,9 @@ export default function TransactionsQR() {
     try {
       setLoading(true);
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-      const url = `${backendQR}${endpoint}?start_date=${data?.start_date || "2025-09-25"}&end_date=${data?.end_date || "2025-10-01"}`;
-
+      
+      const url = `${backendQR}${endpoint}?start_date=${data?.start_date ?? "2025-09-25"}&end_date=${data?.end_date ? new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1) && new Date(new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1)).toISOString().slice(0,10) : "2025-10-01"}`;
+      
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
