@@ -39,9 +39,16 @@ export default function TransactionsQR() {
     if (!dateString) return "";
     const d = new Date(dateString);
     if (isNaN(d)) return dateString;
-    return d.toISOString().replace("T", " ").substring(0, 19);
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const MM = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
   };
-
+  
   // возвращаем единый строковый ключ для строки (устойчивый)
   const getRowKey = (row) =>
     (row.id ?? row.tx_id ?? row.trnId ?? row.partner_trn_id ?? `${row.merchant_code || ""}-${row.terminal_code || ""}-${row.amount || ""}`)
@@ -360,7 +367,7 @@ export default function TransactionsQR() {
                       </>
                     ) : (
                       <>
-                        <th>trnId</th>
+                        <th>Номер в АРМ</th>
                         <th>qrId</th>
                       </>
                     )}

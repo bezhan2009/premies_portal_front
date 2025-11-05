@@ -273,12 +273,11 @@ export default function DashboardOperatorProcessingTransactions() {
                                     <tr>
                                         <th className="limits-table__th">ID транзакции</th>
                                         <th className="limits-table__th">Номер карты</th>
-                                        <th className="limits-table__th">reqamt</th>
-                                        <th className="limits-table__th">amount</th>
-                                        <th className="limits-table__th">conamt</th>
-                                        <th className="limits-table__th">acctbal</th>
-                                        <th className="limits-table__th">netbal</th>
-                                        <th className="limits-table__th">utrnno</th>
+                                        <th className="limits-table__th">Запроошенная сумма</th>
+                                        <th className="limits-table__th">Сумма операции</th>
+                                        <th className="limits-table__th">Сумма в валюте карты</th>
+                                        <th className="limits-table__th">Доступный баланс</th>
+                                        <th className="limits-table__th">Номер операции в ПЦ</th>
                                         <th className="limits-table__th">Валюта</th>
                                         <th className="limits-table__th">ID терминала</th>
                                         <th className="limits-table__th">Тип операции</th>
@@ -309,9 +308,6 @@ export default function DashboardOperatorProcessingTransactions() {
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
                                                 <span className="default-value">{transaction.acctbal || '0'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.netbal || '0'}</span>
                                             </td>
                                             <td className="limits-table__td limits-table__td--value">
                                                 <span className="default-value">{transaction.utrnno || 'N/A'}</span>
