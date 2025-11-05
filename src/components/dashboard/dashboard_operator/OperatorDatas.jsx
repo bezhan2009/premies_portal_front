@@ -1,39 +1,47 @@
-import React, { useState } from 'react';
-import '../../../styles/components/BlockInfo.scss';
-import Filters from '../../../components/dashboard/dashboard_general/Filters';
-import FiltersDatas from './FiltersData';
-import OfficeTable from './table_datas/TableOffice';
-import EmployeesTable from './table_datas/TableEmployees';
-import UnderDevelopmentPage from '../dashboard_general/UnderDevelopment';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState } from "react";
+import "../../../styles/components/BlockInfo.scss";
+import Filters from "../../../components/dashboard/dashboard_general/Filters";
+import FiltersDatas from "./FiltersData";
+import OfficeTable from "./table_datas/TableOffice";
+import EmployeesTable from "./table_datas/TableEmployees";
+import UnderDevelopmentPage from "../dashboard_general/UnderDevelopment";
+import { AnimatePresence, motion } from "framer-motion";
 import CardsTable from "./table_datas/TableCardPrices.jsx";
+import TableCardMargents from "./table_datas/TableCardMargents.jsx";
 
 const OperatorDatasBlockInfo = () => {
-  const [selectedTable, setSelectedTable] = useState('office');
+  const [selectedTable, setSelectedTable] = useState("office");
 
   const renderTable = () => {
     switch (selectedTable) {
-      case 'employees':
+      case "employees":
         return (
           <>
             <Filters modificationDesc="Сотрудники" />
             <EmployeesTable key="employees" />
           </>
         );
-      case 'office':
+      case "office":
         return (
           <>
             <Filters modificationDesc="Отделения" />
             <OfficeTable key="office" />
           </>
         );
-        case 'prices':
-            return (
-                <>
-                    <Filters modificationDesc="Отделения" />
-                    <CardsTable key="prices" />
-                </>
-            );
+      case "prices":
+        return (
+          <>
+            <Filters modificationDesc="Отделения" />
+            <CardsTable key="prices" />
+          </>
+        );
+      case "margents":
+        return (
+          <>
+            <Filters modificationDesc="Отделения" />
+            <TableCardMargents key="margents" />
+          </>
+        );
       default:
         return (
           <>
