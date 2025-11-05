@@ -87,13 +87,13 @@ export default function ApplicationsListDipozit() {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
-      const response = await fetch(`${backendUrl}/automation/application`, {
+      const response = await fetch(`${backendUrl}/automation/deposits`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ application_ids: selectedRows }),
+        body: JSON.stringify({ deposits_ids: selectedRows }),
       });
       if (!response.ok) throw new Error("Ошибка при получении файла");
       const blob = await response.blob();
@@ -229,6 +229,9 @@ export default function ApplicationsListDipozit() {
       <div className="applications-list">
         <main>
           <div className="my-applications-header">
+            <button className="Unloading" onClick={handleExport}>
+              Выгрузка
+            </button>
             <button
               className="filter-toggle"
               onClick={() => setShowFilters(!showFilters)}
