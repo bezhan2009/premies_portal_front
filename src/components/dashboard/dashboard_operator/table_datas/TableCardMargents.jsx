@@ -141,11 +141,11 @@ const TableCardMargents = () => {
 
   return (
     <div>
-      <h2>Цены карт</h2>
+      <h2>Мерчанты</h2>
 
       {/* Форма для добавления новой карты перемещена сюда */}
       <div className="add-card-form" style={{ marginBottom: "20px" }}>
-        <h3>Добавить новую карту</h3>
+        <h3>Добавить нового мерчанта</h3>
         <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
           <input
             value={newCard.title}
@@ -174,7 +174,7 @@ const TableCardMargents = () => {
           <thead>
             <tr>
               <th>Название</th>
-              <th>Цена карт</th>
+              <th>Код</th>
               <th>Действия</th>
             </tr>
           </thead>
