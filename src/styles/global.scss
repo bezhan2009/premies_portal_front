@@ -4,12 +4,19 @@ body {
   padding: 0;
   animation: fadeIn 0.5s ease-out;
 }
+
 .archive-toggle {
   background-color: #2566e8 !important;
 }
+
+.archive-toggle-activ {
+  background-color: #e21a1c !important;
+}
+
 .selectAll-toggle {
   background-color: #e21a1c !important;
 }
+
 .active-table {
   position: sticky;
   right: 0;
