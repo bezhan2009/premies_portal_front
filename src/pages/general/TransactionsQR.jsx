@@ -5,6 +5,7 @@ import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAge
 import { FcHighPriority, FcOk } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
+import QRStatistics from "./QRStatistics.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
@@ -214,6 +215,7 @@ export default function TransactionsQR() {
       <HeaderAgentQR activeLink="list" />
       <div className="applications-list">
         <main>
+        <QRStatistics />
           <div className="my-applications-header">
             <button
               className={!showFilters ? "filter-toggle" : "Unloading"}
@@ -413,9 +415,10 @@ export default function TransactionsQR() {
                       {isThemOnUs ? (
                         <>
                           <td>
-                            {merchants.find(
-                              (m) => m.code === row.merchant_code
-                            )?.title || row.merchant_code || "-"}
+                            {merchants.find((m) => m.code === row.merchant_code)
+                              ?.title ||
+                              row.merchant_code ||
+                              "-"}
                           </td>
                           <td>{row.terminal_code || "-"}</td>
                           <td>{row.partner_trn_id || "-"}</td>
@@ -475,4 +478,3 @@ export default function TransactionsQR() {
     </>
   );
 }
-
