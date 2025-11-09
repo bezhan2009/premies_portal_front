@@ -17,40 +17,16 @@ const { RangePicker } = DatePicker;
 
 const dateDef = [
   {
-    month: "Янв",
+    month: "00-00-0000",
     type: "Наш клиент — чужой QR (Us on Them)",
-    count: 120,
-    sum: 15000,
+    count: 0,
+    sum: 0,
   },
   {
-    month: "Фев",
-    type: "Наш клиент — чужой QR (Us on Them)",
-    count: 200,
-    sum: 22000,
-  },
-  {
-    month: "Март",
-    type: "Наш клиент — чужой QR (Us on Them)",
-    count: 180,
-    sum: 19000,
-  },
-  {
-    month: "Янв",
+    month: "00-00-0000",
     type: "Наш QR — чужой клиент (Them on Us)",
-    count: 20,
-    sum: 2000,
-  },
-  {
-    month: "Фев",
-    type: "Наш QR — чужой клиент (Them on Us)",
-    count: 35,
-    sum: 3000,
-  },
-  {
-    month: "Март",
-    type: "Наш QR — чужой клиент (Them on Us)",
-    count: 25,
-    sum: 2800,
+    count: 0,
+    sum: 0,
   },
 ];
 
