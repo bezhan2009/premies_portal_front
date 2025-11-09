@@ -9,13 +9,13 @@ const FiltersDatas = ({ onSelect }) => {
       class: "reports_filter__button--purple",
       key: "employees",
     },
-    { text: "Роли", class: "reports_filter__button--yellow", key: "roles" },
+    { text: "Мерчанты", class: "reports_filter__button--green", key: "margents" },
     {
       text: "Цены продуктов",
       class: "reports_filter__button--cyan",
       key: "prices",
     },
-    { text: "Мерчанты", class: "reports_filter__button--grey", key: "margents" },
+    { text: "Роли", class: "reports_filter__button--yellow", key: "roles" },
   ];
 
   return (
