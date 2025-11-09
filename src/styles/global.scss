@@ -529,7 +529,6 @@ tr:nth-child(14) {
         bottom: 0;
         margin: 0;
         color: #e21a1c;
-
       }
     }
 
@@ -782,7 +781,10 @@ tr:nth-child(14) {
     }
   }
 }
-
+.ant-picker {
+  margin-left: 10px;
+  margin-bottom: 20px;
+}
 .applications-list {
   display: flex;
   height: calc(100vh - 130px);
@@ -1415,4 +1417,3 @@ button:active {
   font-weight: 500;
   margin: 0;
 }
-
