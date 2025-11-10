@@ -85,8 +85,6 @@ const TableCardMargents = () => {
       console.error("Ошибка при сохранении:", e);
     }
   };
-
-  // удаление (DELETE)
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("access_token");

@@ -5,172 +5,29 @@ import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAge
 import { FcHighPriority, FcOk } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
-import {
-  ComposedChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
-
-function formatNumber(value) {
-  if (value == null || isNaN(value)) return "0";
-  return Number(value)
-    .toFixed(0)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
-
-const CustomQRTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const totalSum = payload.find(p => p.dataKey === 'sum')?.value || 0;
-    const successSum = payload.find(p => p.dataKey === 'successSum')?.value || 0;
-    const totalCount = payload.find(p => p.dataKey === 'count')?.value || 0;
-    const successCount = payload.find(p => p.dataKey === 'successCount')?.value || 0;
-    return (
-      <div
-        style={{
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "12px",
-          padding: "10px 14px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          backdropFilter: "blur(6px)",
-          fontSize: "14px",
-          color: "#333",
-          lineHeight: 1.6
-        }}
-      >
-        <div style={{ fontWeight: "600", fontSize: "13px", marginBottom: "4px" }}>{label}</div>
-        <div>
-          <span style={{color: "#41b8d5"}}>Общая сумма:</span> {formatNumber(totalSum)} с.
-        </div>
-        <div>
-          <span style={{color: "#417cd5"}}>Сумма успешных:</span> {formatNumber(successSum)} с.
-        </div>
-        <div>
-          <span style={{color: "#6ce5e8"}}>Общее количество:</span> {formatNumber(totalCount)}
-        </div>
-        <div>
-          <span style={{color: "#ff7300"}}>Количество успешных:</span> {formatNumber(successCount)}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-const QRChart = ({ chartData, title }) => {
-  if (chartData.length === 0) return (
-    <div style={{ padding: '10px', color: '#555', fontSize: '16px', textAlign: 'center', backgroundColor: '#f0f0f0', borderRadius: '4px' }}>
-      Нет данных для отображения
-    </div>
-  );
-  return (
-    <div className="chart-wrapper light-theme" style={{ margin: "20px 0" }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2>{title}</h2>
-        <p>Количество операций, сумма и т.д. по дням</p>
-      </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <defs>
-            <linearGradient id="totalSumGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#41b8d5" stopOpacity={0.8} />
-              <stop offset="100%" stopColor="#41b8d5" stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="successSumGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
-              <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-          <XAxis 
-            dataKey="date" 
-            stroke="#333" 
-            tick={{ fill: '#333', fontSize: 12 }} 
-            axisLine={false} 
-            tickLine={false} 
-          />
-          <YAxis 
-            yAxisId="left" 
-            stroke="#333" 
-            tick={{ fill: '#333', fontSize: 12 }} 
-            axisLine={false} 
-            tickLine={false} 
-            label={{ value: 'Сумма (с.)', angle: -90, position: 'insideLeft', style: { fill: '#333' } }} 
-          />
-          <YAxis 
-            yAxisId="right" 
-            orientation="right" 
-            stroke="#333" 
-            tick={{ fill: '#333', fontSize: 12 }} 
-            axisLine={false} 
-            tickLine={false} 
-            label={{ value: 'Количество', angle: 90, position: 'insideRight', style: { fill: '#333' } }} 
-          />
-          <Tooltip content={<CustomQRTooltip />} cursor={{ stroke: '#41b8d5', strokeWidth: 1 }} />
-          <Area 
-            yAxisId="left" 
-            type="monotone" 
-            dataKey="sum" 
-            name="Общая сумма" 
-            stroke="#41b8d5" 
-            fill="url(#totalSumGradient)" 
-            strokeWidth={3} 
-            dot={{ stroke: '#41b8d5', strokeWidth: 2, r: 3 }} 
-          />
-          <Area 
-            yAxisId="left" 
-            type="monotone" 
-            dataKey="successSum" 
-            name="Сумма успешных" 
-            stroke="#417cd5" 
-            fill="url(#successSumGradient)" 
-            strokeWidth={3} 
-            dot={{ stroke: '#417cd5', strokeWidth: 2, r: 3 }} 
-          />
-          <Line 
-            yAxisId="right" 
-            type="monotone" 
-            dataKey="count" 
-            name="Общее количество" 
-            stroke="#6ce5e8" 
-            strokeWidth={3} 
-            dot={{ stroke: '#6ce5e8', strokeWidth: 2, r: 3 }} 
-          />
-          <Line 
-            yAxisId="right" 
-            type="monotone" 
-            dataKey="successCount" 
-            name="Количество успешных" 
-            stroke="#ff7300" 
-            strokeWidth={3} 
-            dot={{ stroke: '#ff7300', strokeWidth: 2, r: 3 }} 
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+import QRStatistics from "./QRStatistics.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
+
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
   const [isUsOnThem, setIsUsOnThem] = useState(false);
   const [isThemOnUs, setIsThemOnUs] = useState(true);
+
   const [filters, setFilters] = useState({});
   const [alert, setAlert] = useState(null);
+
   const [sortOrder, setSortOrder] = useState("asc");
-  const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]); // хранит строковые ключи
   const [selectAll, setSelectAll] = useState(false);
-  const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
-  const backendMain = import.meta.env.VITE_BACKEND_URL;
+
+  const backendQR = import.meta.env.VITE_BACKEND_QR_URL; // для QR API (transactions, incoming_tx, banks)
+  const backendMain = import.meta.env.VITE_BACKEND_URL; // для /merchants и основных выгрузок
   const token = localStorage.getItem("access_token");
 
   const showAlert = (message, type = "success") => {
@@ -178,6 +35,7 @@ export default function TransactionsQR() {
     setTimeout(() => setAlert(null), 3500);
   };
 
+  // --- вспомогательные функции ---
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const d = new Date(dateString);
@@ -191,18 +49,20 @@ export default function TransactionsQR() {
     const ss = pad(d.getSeconds());
     return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
   };
-
+  
+  // возвращаем единый строковый ключ для строки (устойчивый)
   const getRowKey = (row) =>
     (row.id ?? row.tx_id ?? row.trnId ?? row.partner_trn_id ?? `${row.merchant_code || ""}-${row.terminal_code || ""}-${row.amount || ""}`)
       .toString();
 
+  // --- загрузчики данных ---
   const fetchData = async (type = "themOnUs") => {
     try {
       setLoading(true);
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-      const endDate = new Date(data?.end_date || "2025-10-01");
-      endDate.setDate(endDate.getDate() + 1);
-      const url = `${backendQR}${endpoint}?start_date=${data?.start_date ?? "2025-09-25"}&end_date=${endDate.toISOString().slice(0,10)}`;
+      
+      const url = `${backendQR}${endpoint}?start_date=${data?.start_date ?? "2025-09-25"}&end_date=${data?.end_date ? new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1) && new Date(new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1)).toISOString().slice(0,10) : "2025-10-01"}`;
+      
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
@@ -211,7 +71,7 @@ export default function TransactionsQR() {
     } catch (err) {
       console.error("Ошибка загрузки данных:", err);
       showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
-      setTableData([]);
+      setTableData([]); // на случай ошибки - очищаем
     } finally {
       setLoading(false);
     }
@@ -244,6 +104,7 @@ export default function TransactionsQR() {
     }
   };
 
+  // --- фильтрация и сортировка (мемоизируем) ---
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
     return tableData.filter((row) =>
@@ -260,6 +121,7 @@ export default function TransactionsQR() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
+      // используем ключ id или tx/trn для сортировки: fallback to numeric id if present
       const ka = Number(a.id ?? a.tx_id ?? a.trnId ?? 0);
       const kb = Number(b.id ?? b.tx_id ?? b.trnId ?? 0);
       return sortOrder === "asc" ? ka - kb : kb - ka;
@@ -267,59 +129,33 @@ export default function TransactionsQR() {
     return arr;
   }, [filteredData, sortOrder]);
 
-  const chartData = useMemo(() => {
-    if (!filteredData.length || !data?.start_date || !data?.end_date) return [];
-    const start = new Date(data.start_date);
-    const end = new Date(data.end_date);
-    const groups = {};
-    filteredData.forEach((row) => {
-      const dateStr = new Date(isUsOnThem ? row.created_at : row.creation_datetime).toISOString().slice(0, 10);
-      if (!groups[dateStr]) groups[dateStr] = { count: 0, sum: 0, successCount: 0, successSum: 0 };
-      groups[dateStr].count += 1;
-      groups[dateStr].sum += Number(row.amount) || 0;
-      if (row.status === "success") {
-        groups[dateStr].successCount += 1;
-        groups[dateStr].successSum += Number(row.amount) || 0;
-      }
-    });
-    const cd = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().slice(0, 10);
-      const vals = groups[dateStr] || { count: 0, sum: 0, successCount: 0, successSum: 0 };
-      cd.push({ date: dateStr, ...vals });
-    }
-    return cd;
-  }, [filteredData, data?.start_date, data?.end_date, isUsOnThem]);
-
-  const statsTitle = useMemo(() => {
-    if (isThemOnUs && filters.merchant_code) {
-      const merch = merchants.find((m) => m.code === filters.merchant_code);
-      return `Статистика для мерчанта ${merch?.title || filters.merchant_code}`;
-    } else if (isUsOnThem && filters.sender_name) {
-      return `Статистика для ${filters.sender_name}`;
-    }
-    return "Общая статистика по QR";
-  }, [filters, isThemOnUs, isUsOnThem, merchants]);
-
+  // --- эффекты (инициализация) ---
   useEffect(() => {
+    // начальные даты и загрузка справочников
     setData("start_date", data?.start_date ?? "2025-09-25");
     setData("end_date", data?.end_date ?? "2025-10-01");
     getBanks();
     getMerchants();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // один раз
 
+  // загрузка транзакций при переключении режима
   useEffect(() => {
     if (isUsOnThem) fetchData("usOnThem");
     else if (isThemOnUs) fetchData("themOnUs");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUsOnThem, isThemOnUs]);
 
+  // загрузка при смене дат
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
       if (isUsOnThem) fetchData("usOnThem");
       else if (isThemOnUs) fetchData("themOnUs");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.start_date, data?.end_date]);
 
+  // selectAll — устанавливаем массив ключей только когда selectAll меняется (и используем мемоизированный sortedData)
   useEffect(() => {
     if (selectAll) {
       const keys = sortedData.map((r) => getRowKey(r).toString());
@@ -327,13 +163,16 @@ export default function TransactionsQR() {
     } else {
       setSelectedRows([]);
     }
-  }, [selectAll, sortedData.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectAll, sortedData.length]); // depend on length to avoid deep array equality issues
 
+  // --- экспорт/выгрузка ---
   const [isLoading, setIsLoading] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
 
   const handleExport = async () => {
     try {
+      // формируем ids в зависимости от режима
       let ids = [];
       if (isUsOnThem) {
         ids = sortedData
@@ -346,12 +185,15 @@ export default function TransactionsQR() {
           .map((row) => Number(row.tx_id ?? row.partner_trn_id))
           .filter((n) => !isNaN(n));
       }
+
       if (!ids.length) {
         showAlert("Выберите хотя бы одну запись для выгрузки", "error");
         return;
       }
+
       setIsLoading(true);
       setLoadingCount(ids.length);
+
       const route = isUsOnThem ? "/automation/qr/us-on-them" : "/automation/qr/them-on-us";
       const resp = await fetch(`${backendMain}${route}`, {
         method: "POST",
@@ -361,20 +203,25 @@ export default function TransactionsQR() {
         },
         body: JSON.stringify({ qr_ids: ids }),
       });
+
       if (!resp.ok) throw new Error(`Ошибка выгрузки: ${resp.status}`);
+
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
       const typeName = isUsOnThem ? "Us-on-Them" : "Them-on-Us";
       a.download = allSelected && data?.start_date && data?.end_date
         ? `${typeName}_${data.start_date}_to_${data.end_date}.xlsx`
         : `${typeName}_QR_Report.xlsx`;
+
       a.href = url;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
       showAlert(`Файл успешно выгружен (${ids.length} записей)`, "success");
       setSelectedRows([]);
       setSelectAll(false);
@@ -387,6 +234,7 @@ export default function TransactionsQR() {
     }
   };
 
+  // --- UI handlers ---
   const handleCheckboxToggle = (key, checked) => {
     const k = key.toString();
     if (checked) {
@@ -397,62 +245,49 @@ export default function TransactionsQR() {
     }
   };
 
-  const handleRowClick = (row) => {
-    if (isThemOnUs) {
-      const merchantCode = row.merchant_code;
-      if (merchantCode) {
-        setFilters((p) => ({ ...p, merchant_code: merchantCode }));
-        const merch = merchants.find((m) => m.code === merchantCode);
-        showAlert(`Показана статистика для мерчанта ${merch?.title || merchantCode}`, "success");
-      }
-    } else if (isUsOnThem) {
-      const senderName = row.sender_name;
-      if (senderName) {
-        setFilters((p) => ({ ...p, sender_name: senderName }));
-        showAlert(`Показана статистика для ${senderName}`, "success");
-      }
-    }
-  };
-
+  // --- render ---
   return (
     <>
       <HeaderAgentQR activeLink="list" />
+
       <div className="applications-list">
         <main>
+        <QRStatistics />
           <div className="my-applications-header">
             <button className={!showFilters ? "filter-toggle" : "Unloading"} onClick={() => setShowFilters(!showFilters)}>
               Фильтры
             </button>
-            <pre> </pre>
+            <pre>    </pre>
             <div style={{ display: "flex", gap: "50px" }}>
               <button
-                className={`archive-toggle ${isUsOnThem ? "active" : ""}`}
+                className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
                 onClick={() => {
                   setIsUsOnThem(true);
                   setIsThemOnUs(false);
                   setSelectedRows([]);
                   setSelectAll(false);
-                  setFilters({});
                 }}
               >
                 Наш клиент — чужой QR (Us on Them)
               </button>
+
               <button
-                className={`archive-toggle-activ ${isThemOnUs ? "active" : ""}`}
+                className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
                 onClick={() => {
                   setIsThemOnUs(true);
                   setIsUsOnThem(false);
                   setSelectedRows([]);
                   setSelectAll(false);
-                  setFilters({});
                 }}
               >
                 Наш QR — чужой клиент (Them on Us)
               </button>
             </div>
+
             <button className="Unloading" onClick={handleExport}>
               Выгрузка QR
             </button>
+
             <button className={selectAll && "selectAll-toggle"} onClick={() => setSelectAll((s) => !s)}>
               Выбрать все
             </button>
@@ -472,17 +307,17 @@ export default function TransactionsQR() {
                   <input placeholder="Код терминала" onChange={(e) => setFilters((p) => ({ ...p, terminal_code: e.target.value }))} />
                 </>
               )}
+
               <select onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}>
                 <option value="">Статус</option>
                 <option value="success">Успешно</option>
                 <option value="cancel">Неудача</option>
                 <option value="processing">Обработка</option>
               </select>
+
               <input placeholder="Сумма" onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))} />
             </div>
           )}
-
-          <QRChart chartData={chartData} title={statsTitle} />
 
           <div className="my-applications-sub-header">
             <div>
@@ -518,7 +353,7 @@ export default function TransactionsQR() {
                   <tr>
                     <th>Выбрать</th>
                     <th style={{ cursor: "pointer" }} onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}>
-                      ID {sortOrder === "asc" ? "Up" : "Down"}
+                      ID {sortOrder === "asc" ? "▲" : "▼"}
                     </th>
                     {isUsOnThem ? (
                       <>
@@ -551,31 +386,26 @@ export default function TransactionsQR() {
                     const key = getRowKey(row).toString();
                     const merchantTitle = merchants.find((m) => m.code === row.merchant_code)?.title ?? row.merchant_code ?? "-";
                     return (
-                      <tr 
-                        key={key} 
-                        onClick={(e) => { 
-                          if (e.target.tagName !== 'INPUT') handleRowClick(row); 
-                        }}
-                        style={{ cursor: "pointer" }}
-                      >
+                      <tr key={key}>
                         <td>
                           <input
                             type="checkbox"
                             className="custom-checkbox"
                             checked={selectedRows.includes(key)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleCheckboxToggle(key, e.target.checked);
-                            }}
+                            onChange={(e) => handleCheckboxToggle(key, e.target.checked)}
                           />
                         </td>
+
+                        {/* show key in ID column to reflect actual used key */}
                         <td>{key}</td>
+
                         {isUsOnThem && (
                           <>
                             <td>{row.sender_name || "-"}</td>
                             <td>{row.sender_phone || "-"}</td>
                           </>
                         )}
+
                         {isThemOnUs ? (
                           <>
                             <td>{merchantTitle}</td>
@@ -588,12 +418,15 @@ export default function TransactionsQR() {
                             <td>{row.qrId || "-"}</td>
                           </>
                         )}
+
                         <td>{row.status === "success" ? <FcOk style={{ fontSize: 22 }} /> : <FcHighPriority style={{ fontSize: 22 }} />}</td>
                         <td>{row.description || "-"}</td>
+
                         <td>
                           {banks.find((b) => b.id === row?.sender_bank || b.bankId === row?.sender)?.bankName || "-"}
                         </td>
                         <td>{banks.find((b) => b.id === row?.receiver)?.bankName || "-"}</td>
+
                         <td>{row.amount} с.</td>
                         <td>{isUsOnThem ? formatDate(row.created_at) : formatDate(row.creation_datetime)}</td>
                       </tr>
@@ -614,6 +447,7 @@ export default function TransactionsQR() {
           </div>
         </div>
       )}
+
       {alert && <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
     </>
   );
