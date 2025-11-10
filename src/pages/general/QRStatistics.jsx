@@ -78,7 +78,7 @@ export default function QRStatistics() {
             month: key[0],
             type: "Наш клиент — чужой QR (Us on Them)",
             count: key[1].length,
-            sum: formatNumber(
+            sum: (
               key[1].reduce((sum, item) => sum + item.amount, 0)
             ),
           };
@@ -99,7 +99,7 @@ export default function QRStatistics() {
             month: key[0],
             type: "Наш QR — чужой клиент (Them on Us)",
             count: key[1].length,
-            sum: formatNumber(
+            sum: (
               key[1].reduce((sum, item) => sum + item.amount, 0)
             ),
           };
