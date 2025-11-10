@@ -648,7 +648,7 @@ export default function TransactionsQR() {
             className="my-applications-content"
             style={{ position: "relative" }}
           >
-            {!loading ? (
+            {loading ? (
               <div style={{ textAlign: "center", padding: "2rem" }}>
                 Загрузка...
               </div>
