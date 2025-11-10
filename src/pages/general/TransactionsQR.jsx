@@ -7,12 +7,237 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import QRStatistics from "./QRStatistics.jsx";
 
+// const result = [
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-01T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-02T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-02T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-02T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-02T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-05T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-05T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-05T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-05T21:30:28",
+//   },
+//   {
+//     id: 6822,
+//     trnId: 20225850,
+//     sender_phone: "992904411010",
+//     receiver: 3,
+//     amount: 90,
+//     description: "",
+//     sender_name: "САИДЗОДА Фарзоди",
+//     sender_bank: 27,
+//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
+//     status: "success",
+//     created_at: "2025-10-05T21:30:28",
+//   },
+// ];
+
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
-  const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState();
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -40,7 +265,7 @@ export default function TransactionsQR() {
     if (!dateString) return "";
     const d = new Date(dateString);
     if (isNaN(d)) return dateString;
-    const pad = (n) => String(n).padStart(2, '0');
+    const pad = (n) => String(n).padStart(2, "0");
     const yyyy = d.getFullYear();
     const MM = pad(d.getMonth() + 1);
     const dd = pad(d.getDate());
@@ -49,20 +274,42 @@ export default function TransactionsQR() {
     const ss = pad(d.getSeconds());
     return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
   };
-  
+
   // возвращаем единый строковый ключ для строки (устойчивый)
   const getRowKey = (row) =>
-    (row.id ?? row.tx_id ?? row.trnId ?? row.partner_trn_id ?? `${row.merchant_code || ""}-${row.terminal_code || ""}-${row.amount || ""}`)
-      .toString();
+    (
+      row.id ??
+      row.tx_id ??
+      row.trnId ??
+      row.partner_trn_id ??
+      `${row.merchant_code || ""}-${row.terminal_code || ""}-${
+        row.amount || ""
+      }`
+    ).toString();
 
   // --- загрузчики данных ---
   const fetchData = async (type = "themOnUs") => {
     try {
       setLoading(true);
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-      
-      const url = `${backendQR}${endpoint}?start_date=${data?.start_date ?? "2025-09-25"}&end_date=${data?.end_date ? new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1) && new Date(new Date(data.end_date).setDate(new Date(data.end_date).getDate() + 1)).toISOString().slice(0,10) : "2025-10-01"}`;
-      
+
+      const url = `${backendQR}${endpoint}?start_date=${
+        data?.start_date ?? "2025-09-25"
+      }&end_date=${
+        data?.end_date
+          ? new Date(data.end_date).setDate(
+              new Date(data.end_date).getDate() + 1
+            ) &&
+            new Date(
+              new Date(data.end_date).setDate(
+                new Date(data.end_date).getDate() + 1
+              )
+            )
+              .toISOString()
+              .slice(0, 10)
+          : "2025-10-01"
+      }`;
+
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
@@ -111,8 +358,10 @@ export default function TransactionsQR() {
       Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         const rowValue = row[key];
-        if (typeof rowValue === "number") return String(rowValue).includes(value);
-        if (typeof rowValue === "string") return rowValue.toLowerCase().includes(String(value).toLowerCase());
+        if (typeof rowValue === "number")
+          return String(rowValue).includes(value);
+        if (typeof rowValue === "string")
+          return rowValue.toLowerCase().includes(String(value).toLowerCase());
         return false;
       })
     );
@@ -194,7 +443,9 @@ export default function TransactionsQR() {
       setIsLoading(true);
       setLoadingCount(ids.length);
 
-      const route = isUsOnThem ? "/automation/qr/us-on-them" : "/automation/qr/them-on-us";
+      const route = isUsOnThem
+        ? "/automation/qr/us-on-them"
+        : "/automation/qr/them-on-us";
       const resp = await fetch(`${backendMain}${route}`, {
         method: "POST",
         headers: {
@@ -210,11 +461,13 @@ export default function TransactionsQR() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
 
-      const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
+      const allSelected =
+        selectedRows.length === sortedData.length && sortedData.length > 0;
       const typeName = isUsOnThem ? "Us-on-Them" : "Them-on-Us";
-      a.download = allSelected && data?.start_date && data?.end_date
-        ? `${typeName}_${data.start_date}_to_${data.end_date}.xlsx`
-        : `${typeName}_QR_Report.xlsx`;
+      a.download =
+        allSelected && data?.start_date && data?.end_date
+          ? `${typeName}_${data.start_date}_to_${data.end_date}.xlsx`
+          : `${typeName}_QR_Report.xlsx`;
 
       a.href = url;
       document.body.appendChild(a);
@@ -249,15 +502,23 @@ export default function TransactionsQR() {
   return (
     <>
       <HeaderAgentQR activeLink="list" />
-
-      <div className="applications-list">
+      <div
+        className="applications-list"
+        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+      >
         <main>
-        <QRStatistics />
+          {" "}
+          <QRStatistics />
+        </main>
+        <main>
           <div className="my-applications-header">
-            <button className={!showFilters ? "filter-toggle" : "Unloading"} onClick={() => setShowFilters(!showFilters)}>
+            <button
+              className={!showFilters ? "filter-toggle" : "Unloading"}
+              onClick={() => setShowFilters(!showFilters)}
+            >
               Фильтры
             </button>
-            <pre>    </pre>
+            <pre> </pre>
             <div style={{ display: "flex", gap: "50px" }}>
               <button
                 className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
@@ -288,7 +549,10 @@ export default function TransactionsQR() {
               Выгрузка QR
             </button>
 
-            <button className={selectAll && "selectAll-toggle"} onClick={() => setSelectAll((s) => !s)}>
+            <button
+              className={selectAll && "selectAll-toggle"}
+              onClick={() => setSelectAll((s) => !s)}
+            >
               Выбрать все
             </button>
           </div>
@@ -297,25 +561,63 @@ export default function TransactionsQR() {
             <div className="filters animate-slideIn">
               {isUsOnThem && (
                 <>
-                  <input placeholder="ФИО" onChange={(e) => setFilters((p) => ({ ...p, sender_name: e.target.value }))} />
-                  <input placeholder="Телефон" onChange={(e) => setFilters((p) => ({ ...p, sender_phone: e.target.value }))} />
+                  <input
+                    placeholder="ФИО"
+                    onChange={(e) =>
+                      setFilters((p) => ({ ...p, sender_name: e.target.value }))
+                    }
+                  />
+                  <input
+                    placeholder="Телефон"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        sender_phone: e.target.value,
+                      }))
+                    }
+                  />
                 </>
               )}
               {isThemOnUs && (
                 <>
-                  <input placeholder="Код мерчанта" onChange={(e) => setFilters((p) => ({ ...p, merchant_code: e.target.value }))} />
-                  <input placeholder="Код терминала" onChange={(e) => setFilters((p) => ({ ...p, terminal_code: e.target.value }))} />
+                  <input
+                    placeholder="Код мерчанта"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        merchant_code: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Код терминала"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        terminal_code: e.target.value,
+                      }))
+                    }
+                  />
                 </>
               )}
 
-              <select onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}>
+              <select
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, status: e.target.value }))
+                }
+              >
                 <option value="">Статус</option>
                 <option value="success">Успешно</option>
                 <option value="cancel">Неудача</option>
                 <option value="processing">Обработка</option>
               </select>
 
-              <input placeholder="Сумма" onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))} />
+              <input
+                placeholder="Сумма"
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, amount: e.target.value }))
+                }
+              />
             </div>
           )}
 
@@ -342,17 +644,31 @@ export default function TransactionsQR() {
             </div>
           </div>
 
-          <div className="my-applications-content" style={{ position: "relative" }}>
-            {loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
+          <div
+            className="my-applications-content"
+            style={{ position: "relative" }}
+          >
+            {!loading ? (
+              <div style={{ textAlign: "center", padding: "2rem" }}>
+                Загрузка...
+              </div>
             ) : sortedData.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>Нет данных для отображения</div>
+              <div
+                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+              >
+                Нет данных для отображения
+              </div>
             ) : (
               <table>
                 <thead>
                   <tr>
                     <th>Выбрать</th>
-                    <th style={{ cursor: "pointer" }} onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}>
+                    <th
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
+                      }
+                    >
                       ID {sortOrder === "asc" ? "▲" : "▼"}
                     </th>
                     {isUsOnThem ? (
@@ -384,7 +700,11 @@ export default function TransactionsQR() {
                 <tbody>
                   {sortedData.map((row) => {
                     const key = getRowKey(row).toString();
-                    const merchantTitle = merchants.find((m) => m.code === row.merchant_code)?.title ?? row.merchant_code ?? "-";
+                    const merchantTitle =
+                      merchants.find((m) => m.code === row.merchant_code)
+                        ?.title ??
+                      row.merchant_code ??
+                      "-";
                     return (
                       <tr key={key}>
                         <td>
@@ -392,7 +712,9 @@ export default function TransactionsQR() {
                             type="checkbox"
                             className="custom-checkbox"
                             checked={selectedRows.includes(key)}
-                            onChange={(e) => handleCheckboxToggle(key, e.target.checked)}
+                            onChange={(e) =>
+                              handleCheckboxToggle(key, e.target.checked)
+                            }
                           />
                         </td>
 
@@ -419,16 +741,33 @@ export default function TransactionsQR() {
                           </>
                         )}
 
-                        <td>{row.status === "success" ? <FcOk style={{ fontSize: 22 }} /> : <FcHighPriority style={{ fontSize: 22 }} />}</td>
+                        <td>
+                          {row.status === "success" ? (
+                            <FcOk style={{ fontSize: 22 }} />
+                          ) : (
+                            <FcHighPriority style={{ fontSize: 22 }} />
+                          )}
+                        </td>
                         <td>{row.description || "-"}</td>
 
                         <td>
-                          {banks.find((b) => b.id === row?.sender_bank || b.bankId === row?.sender)?.bankName || "-"}
+                          {banks.find(
+                            (b) =>
+                              b.id === row?.sender_bank ||
+                              b.bankId === row?.sender
+                          )?.bankName || "-"}
                         </td>
-                        <td>{banks.find((b) => b.id === row?.receiver)?.bankName || "-"}</td>
+                        <td>
+                          {banks.find((b) => b.id === row?.receiver)
+                            ?.bankName || "-"}
+                        </td>
 
                         <td>{row.amount} с.</td>
-                        <td>{isUsOnThem ? formatDate(row.created_at) : formatDate(row.creation_datetime)}</td>
+                        <td>
+                          {isUsOnThem
+                            ? formatDate(row.created_at)
+                            : formatDate(row.creation_datetime)}
+                        </td>
                       </tr>
                     );
                   })}
@@ -448,7 +787,13 @@ export default function TransactionsQR() {
         </div>
       )}
 
-      {alert && <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
+      {alert && (
+        <AlertMessage
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+        />
+      )}
     </>
   );
 }
