@@ -13,8 +13,6 @@ import {
 import { DatePicker, Select } from "antd";
 import AlertMessage from "../../components/general/AlertMessage";
 
-
-
 const { RangePicker } = DatePicker;
 
 const dateDef = [
@@ -37,7 +35,10 @@ export default function QRStatistics() {
   const [metric, setMetric] = useState("count");
   const [selectedRange, setSelectedRange] = useState(null);
   const [data, setData] = useState({});
-  const [date, setDate] = useState(dateDef);
+  const [date, setDate] = useState([]);
+  const [date2, setDate2] = useState([]);
+  const [globalDate, setGlobalDate2] = useState(dateDef);
+
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
@@ -95,7 +96,7 @@ export default function QRStatistics() {
             sum: key[1].reduce((sum, item) => sum + item.amount, 0),
           };
         });
-        setDate(finalResult);
+        setDate2(finalResult);
       }
       showAlert(`Загружено ${result.length} записей`, "success");
     } catch (error) {
@@ -106,13 +107,19 @@ export default function QRStatistics() {
     }
   };
 
-  const grouped = date.reduce((acc, cur) => {
+  const grouped = globalDate.reduce((acc, cur) => {
     acc[cur.type] = acc[cur.type] || [];
     acc[cur.type].push(cur);
     return acc;
   }, {});
 
   console.table("selectedRange", date);
+
+  useEffect(() => {
+    if (date && date2) {
+      setGlobalDate2([...date, ...date2]);
+    }
+  }, [date, date2]);
 
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
