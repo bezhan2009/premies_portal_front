@@ -59,8 +59,11 @@ export default function QRStatistics() {
       );
       if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
 
+      console.log("endpoint", endpoint);
+      
+
       const result = await response.json();
-      if (endpoint) {
+      if (type === "usOnThem") {
         let res = result.reduce((acc, curr) => {
           const date = curr.created_at.split("T")[0];
           if (!acc[date]) {
@@ -101,6 +104,9 @@ export default function QRStatistics() {
             ),
           };
         });
+
+        console.log("finalResult", finalResult);
+        
         setDate2(finalResult);
       }
       showAlert(`Загружено ${result.length} записей`, "success");
@@ -112,13 +118,13 @@ export default function QRStatistics() {
     }
   };
 
-  const grouped = globalDate.reduce((acc, cur) => {
+  const grouped = [...date, ...date2].reduce((acc, cur) => {
     acc[cur.type] = acc[cur.type] || [];
     acc[cur.type].push(cur);
     return acc;
   }, {});
 
-  console.table("selectedRange", date);
+  console.table("selectedRange", date, date2);
 
   useEffect(() => {
     if (date && date2) {
