@@ -54,13 +54,12 @@ export default function QRStatistics() {
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
       const response = await fetch(
         `${backendUrl}${endpoint}?start_date=${
-          data?.start_date || "2025-09-25"
-        }&end_date=${data?.end_date || "2025-10-01"}`
+          data?.start_date || "2025-01-01"
+        }&end_date=${data?.end_date || "2025-11-11"}`
       );
       if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
 
       console.log("endpoint", endpoint);
-      
 
       const result = await response.json();
       if (type === "usOnThem") {
@@ -78,9 +77,7 @@ export default function QRStatistics() {
             month: key[0],
             type: "Наш клиент — чужой QR (Us on Them)",
             count: key[1].length,
-            sum: (
-              key[1].reduce((sum, item) => sum + item.amount, 0)
-            ),
+            sum: key[1].reduce((sum, item) => sum + item.amount, 0),
           };
         });
         setDate(finalResult);
@@ -99,14 +96,12 @@ export default function QRStatistics() {
             month: key[0],
             type: "Наш QR — чужой клиент (Them on Us)",
             count: key[1].length,
-            sum: (
-              key[1].reduce((sum, item) => sum + item.amount, 0)
-            ),
+            sum: key[1].reduce((sum, item) => sum + item.amount, 0),
           };
         });
 
         console.log("finalResult", finalResult);
-        
+
         setDate2(finalResult);
       }
       showAlert(`Загружено ${result.length} записей`, "success");
@@ -138,6 +133,11 @@ export default function QRStatistics() {
       fetchData("themOnUs");
     }
   }, [data.start_date, data.end_date]);
+
+  useEffect(() => {
+    fetchData("usOnThem");
+    fetchData("themOnUs");
+  }, []);
 
   useEffect(() => {
     if (selectedRange?.[0] && selectedRange?.[1]) {
