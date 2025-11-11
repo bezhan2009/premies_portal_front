@@ -412,7 +412,6 @@ export default function TransactionsQR() {
     } else {
       setSelectedRows([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectAll, sortedData.length]); // depend on length to avoid deep array equality issues
 
   // --- экспорт/выгрузка ---
