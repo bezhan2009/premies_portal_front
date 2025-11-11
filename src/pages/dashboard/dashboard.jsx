@@ -31,6 +31,8 @@ function RedirectDashboard() {
       navigate("/agent/dipozit/applications-list");
     } else if (roleId === 13) {
       navigate("/agent-qr/transactions/list");
+    } else if (roleId === 14) {
+      navigate("/agent-sms/sms-sender")
     } else {
       navigate("/404");
     }

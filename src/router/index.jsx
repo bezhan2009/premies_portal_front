@@ -52,6 +52,8 @@ import GiftCardDipozit from "../pages/general/GiftCardDipozit.jsx";
 import DashboardDipozitKnowledgeBase, {
   DashboardQRKnowledgeBase,
 } from "../pages/general/KnowledgeBase.jsx";
+import SendSmsForm from "../pages/dashboard/dashboard_sms/SenderSMS.jsx";
+import DashboardAgentSMSKnowledgeBase from "../pages/dashboard/dashboard_sms/KnowledgeBase.jsx";
 
 export default function AppRouter() {
   return (
@@ -259,6 +261,23 @@ export default function AppRouter() {
             />
           </Route>
         </Route>
+
+        <Route
+            element={
+              <RequireRole allowedRoles={[14]}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route
+              path="agent-sms/sms-sender"
+              element={<SendSmsForm />}
+            />
+            <Route
+              path="agent-sms/knowledge-base"
+              element={<DashboardAgentSMSKnowledgeBase />}
+            />
+          </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
