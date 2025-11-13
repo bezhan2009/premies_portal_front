@@ -215,6 +215,7 @@ tr:nth-child(14) {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   position: relative;
   background-color: #fff;
   border-radius: 12px;
@@ -226,6 +227,7 @@ tr:nth-child(14) {
 
   img {
     max-height: 230px;
+    object-fit: cover;
     animation: scaleIn 0.3s ease-out;
   }
 
@@ -234,7 +236,16 @@ tr:nth-child(14) {
     animation: fadeIn 0.5s ease-out;
   }
 }
-
+.file:nth-child(7) {
+  img {
+    max-width: 200px;
+  }
+}
+.file:nth-child(5) {
+  img {
+    max-width: 200px;
+  }
+}
 .input {
   max-height: 100%;
   position: relative;
@@ -560,20 +571,21 @@ tr:nth-child(14) {
 
     .header-passport {
       background-color: #f1f1f1;
-      height: 230px;
+      // height: 230px;
       border-radius: 12px;
       display: flex;
       align-items: center;
-      display: grid;
-      grid-template-columns: 340px 16px 340px 16px 220px 16px 220px 1fr;
+      flex-wrap: wrap;
+      // display: grid;
+      // grid-template-columns: 340px 16px 340px 16px 220px 16px 220px 1fr;
       gap: 20px;
       padding: 20px;
       animation: fadeIn 0.5s ease-out;
-
       & > div {
         display: flex;
         flex-direction: column;
         align-items: center;
+        flex: 1;
         gap: 30px;
         animation: fadeIn 0.6s ease-out;
       }
@@ -792,9 +804,8 @@ tr:nth-child(14) {
   margin-left: 10px;
   margin-bottom: 20px;
 }
-.recharts-curve{
+.recharts-curve {
   background-color: transparent;
-  
 }
 .applications-list {
   display: flex;
