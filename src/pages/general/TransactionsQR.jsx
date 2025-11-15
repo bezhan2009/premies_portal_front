@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
-import { FcHighPriority, FcOk } from "react-icons/fc";
+import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import QRStatistics from "./QRStatistics.jsx";
@@ -608,7 +608,7 @@ export default function TransactionsQR() {
                 <option value="">Статус</option>
                 <option value="success">Успешно</option>
                 <option value="cancel">Неудача</option>
-                <option value="processing">Обработка</option>
+                <option value="process">Обработка</option>
               </select>
 
               <input
@@ -743,6 +743,10 @@ export default function TransactionsQR() {
                         <td>
                           {row.status === "success" ? (
                             <FcOk style={{ fontSize: 22 }} />
+                          ) : row.status === "process" ? (
+                            <FcProcess style={{ fontSize: 22 }} />
+                          ) : row.status === "cancel" ? (
+                            <FcCancel style={{ fontSize: 22 }}/>
                           ) : (
                             <FcHighPriority style={{ fontSize: 22 }} />
                           )}
