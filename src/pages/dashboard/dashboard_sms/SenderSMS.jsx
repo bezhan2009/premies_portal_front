@@ -36,7 +36,7 @@ export default function SendSmsForm() {
         </header>
         <div className="block_info_prems" align="center">
             <div style={{ maxWidth: 400, margin: "50px auto" }}>
-            <h2>Отправка SMS в Telegram</h2>
+            <h2>Отправка SMS</h2>
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div className="input">
                 <label>Номер телефона</label>
