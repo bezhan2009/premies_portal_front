@@ -7,7 +7,7 @@ function RedirectDashboard() {
   useEffect(() => {
     const accessToken = localStorage.getItem("access_token");
     const refreshToken = localStorage.getItem("refresh_token");
-    const roleId = Number(localStorage.getItem("role_id"));
+    const roleId = Number(localStorage.getItem("role_ids"));
 
     if (!accessToken || !refreshToken || !roleId) {
       navigate("/login");
