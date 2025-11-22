@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 export default function RequireRole({ allowedRoles, children }) {
     const location = useLocation();
-    const roleId = Number(localStorage.getItem('role_id'));
+    const roleId = Number(localStorage.getItem('role_ids'));
 
     if (!roleId) {
         // Если нет роли — считаем, что не авторизован
