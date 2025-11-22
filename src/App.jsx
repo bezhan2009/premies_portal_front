@@ -4,7 +4,7 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import TechnicalDayBanner from "./pages/general/TechnicalDate.jsx";
 
 function App() {
-  const isTechnicalDay = true; 
+  const isTechnicalDay = false; 
   if (isTechnicalDay === true) {
     return <TechnicalDayBanner />;
   }
