@@ -29,7 +29,7 @@ const EmployeesTable = () => {
               position: u.worker?.position || "",
               placeWork: u.worker?.place_work || "",
               salary: u.worker?.Salary || "",
-              group: translate_role_id(u.worker?.user.role_id),
+              group: translate_role_id(u.worker?.user.role_ids?.[0]),
             });
           });
         }
