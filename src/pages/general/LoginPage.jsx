@@ -38,9 +38,8 @@ export default function LoginPage() {
         localStorage.setItem("username", username);
       }
 
-
-      if (data.role_id !== undefined) {
-        localStorage.setItem("role_id", String(data.role_id));
+      if (data.role_ids !== undefined) {
+        localStorage.setItem("role_ids", String(data.role_ids?.[0]));
       }
 
       navigate(from, { replace: true });
