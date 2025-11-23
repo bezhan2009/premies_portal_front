@@ -86,7 +86,7 @@ export default function RegisterPage() {
             Phone: phone,
             full_name: fullName,
             Password: password,
-            role_id: roleId,
+            role_ids: [roleId],
         };
 
         if (roleId === 6 || roleId === 8) {
