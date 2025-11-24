@@ -20,7 +20,7 @@ export const ncCards = [
 ];
 
 export const statusCredit = [
-  { value: 0, label: "Статус кредита" },
+  { value: 1, label: "Статус кредита" },
   { value: 1, label: "Принято" },
   { value: 2, label: "Передано в обработку" },
   { value: 3, label: "Обработано" },
@@ -200,7 +200,7 @@ export const streetTypes = [
   { value: 30, label: "Шоссе" },
 ];
 export const status = [
-  { value: 0, label: "Статус" },
+  { value: 1, label: "Статус" },
   { value: 1, label: "Заявка принята" },
   { value: 2, label: "Заявка обработана" },
   { value: 3, label: "Карта открыта" },
