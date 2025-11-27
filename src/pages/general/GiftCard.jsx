@@ -31,9 +31,12 @@ import { getApplicationById } from "../../api/application/getApplicationById.js"
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
+import AlertMessage from "../../components/general/AlertMessage.jsx";
+
 
 export default function GiftCard({ edit = false }) {
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState(null); // Состояние для алерта
   const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -42,6 +45,16 @@ export default function GiftCard({ edit = false }) {
     surname: { required: true },
     name: { required: true },
     phone_number: { required: true },
+  };
+
+  // Функция для показа алерта
+  const showAlert = (message, type = "error", duration = 5000) => {
+    setAlert({ message, type, duration });
+  };
+
+  // Функция для закрытия алерта
+  const closeAlert = () => {
+    setAlert(null);
   };
 
   const formatDateForBackend = (dateStr) => {
@@ -141,7 +154,7 @@ export default function GiftCard({ edit = false }) {
         const result = await response.json();
         console.log("Успешно отправлено:", result);
         // setDataClear();
-        alert("Данные успешно сохранены!");
+        showAlert("Данные успешно сохранены!", "success", 4000);
       } else {
         const response = await fetch(`${backendUrl}/applications`, {
           method: "POST",
@@ -155,11 +168,11 @@ export default function GiftCard({ edit = false }) {
         console.log("Успешно отправлено:", result);
         // setDataClear();
         navigate(0);
-        alert("Данные успешно сохранены!");
+        showAlert("Данные успешно сохранены!", "success", 4000);
       }
     } catch (error) {
       console.error("Ошибка отправки:", error);
-      alert("Произошла ошибка при сохранении данных");
+      showAlert("Произошла ошибка при сохранении данных", "error", 5000);
     }
   };
 
@@ -181,6 +194,7 @@ export default function GiftCard({ edit = false }) {
         });
       } catch (e) {
         console.error(e);
+        showAlert("Ошибка при загрузке данных", "error", 5000);
       } finally {
         setLoading(false);
       }
@@ -197,6 +211,16 @@ export default function GiftCard({ edit = false }) {
     <>
       <HeaderAgent activeLink="gift_card" />
       <div className="gift-card">
+        {/* Отображение кастомного алерта */}
+        {alert && (
+          <AlertMessage
+            message={alert.message}
+            type={alert.type}
+            duration={alert.duration}
+            onClose={closeAlert}
+          />
+        )}
+        
         {loading ? (
           <Spinner />
         ) : (

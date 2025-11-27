@@ -2,23 +2,52 @@ import '../../../styles/components/Menu.scss';
 import LogoImageComponent from '../../Logo';
 import LogoutButton from '../../general/Logout';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useWebSocket } from "../../../api/application/wsnotifications.js";
+import AlertMessage from "../../general/AlertMessage.jsx";
 
 export default function HeaderAgent({ activeLink = 'reports' }) {
     const username = localStorage.getItem('username') || 'Неизвестное имя';
-
-    const links = [
-        { name: 'Карта', href: '/agent/card', key: 'gift_card' },
-        { name: 'Заявки', href: '/agent/applications-list', key: 'applications' },
-        { name: 'База знаний', href: '/agent/knowledge-base', key: 'knowledge' },
-    ];
-
+    const [hasNewApplications, setHasNewApplications] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [modalError, setModalError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [alert, setAlert] = useState({ show: false, message: "", type: "info" });
+
+    // WebSocket для новых заявок
+    const wsUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + '/applications/portal';
+
+    const handleNewApplication = useCallback((newApplication) => {
+        console.log('Новая заявка в хедере:', newApplication);
+        
+        // Устанавливаем красную точку
+        setHasNewApplications(true);
+
+        // Показываем всплывающее уведомление, если пользователь не на странице заявок
+        if (activeLink !== 'applications') {
+            setAlert({
+                show: true,
+                message: `Новая заявка #${newApplication.ID} от ${newApplication.request_сreator}`,
+                type: "info"
+                });
+        }
+    }, [activeLink]);
+
+    useWebSocket(wsUrl, handleNewApplication, [activeLink]);
+
+    const links = [
+        { name: 'Карта', href: '/agent/card', key: 'gift_card' },
+        { 
+            name: 'Заявки', 
+            href: '/agent/applications-list', 
+            key: 'applications',
+            hasNotification: hasNewApplications 
+        },
+        { name: 'База знаний', href: '/agent/knowledge-base', key: 'knowledge' },
+    ];
 
     const handleChangePassword = () => {
         setIsModalOpen(true);
@@ -60,9 +89,25 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
         }
     };
 
+    // Сбрасываем уведомление при клике на ссылку заявок
+    const handleApplicationsClick = () => {
+        setHasNewApplications(false);
+        setIsMobileMenuOpen(false);
+    };
+
     return (
         <>
             <header className="header">
+                {/* Всплывающее уведомление о новой заявке */}
+                {alert.show && (
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        onClose={() => setAlert({ ...alert, show: false })}
+                        duration={5000}
+                    />
+                )}
+
                 <div className="header-left">
                     <Link to="/">
                         <LogoImageComponent width={75} height={65} />
@@ -73,9 +118,10 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
                                 key={link.key}
                                 to={link.href}
                                 className={link.key === activeLink ? 'active' : ''}
-                                onClick={() => setIsMobileMenuOpen(false)}
+                                onClick={link.key === 'applications' ? handleApplicationsClick : () => setIsMobileMenuOpen(false)}
                             >
                                 {link.name}
+                                {link.hasNotification && <span className="notification-dot"></span>}
                             </Link>
                         ))}
                     </nav>

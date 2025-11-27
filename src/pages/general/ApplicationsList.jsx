@@ -1,5 +1,5 @@
 // ApplicationsList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Input from "../../components/elements/Input";
 import { useFormStore } from "../../hooks/useFormState";
 import { status } from "../../const/defConst";
@@ -11,8 +11,10 @@ import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
-// import { b, s } from "framer-motion/client";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
+import { useWebSocket } from "../../api/application/wsnotifications.js";
+import AlertMessage from "../../components/general/AlertMessage.jsx";
+import "../../styles/components/ApplicationsList.scss";
 
 export default function ApplicationsList() {
   const { data, errors, setData } = useFormStore();
@@ -31,7 +33,29 @@ export default function ApplicationsList() {
     resident: "",
     card: "",
   });
+  const [alert, setAlert] = useState({ show: false, message: "", type: "info" });
   const navigate = useNavigate();
+
+  // WebSocket для новых заявок
+  const wsUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + '/applications/portal';
+
+  const handleNewApplication = useCallback((newApplication) => {
+    console.log('Новая заявка получена:', newApplication);
+    
+    // Показываем уведомление
+    setAlert({
+      show: true,
+      message: `Новая заявка #${newApplication.ID} от ${newApplication.request_сreator}`,
+      type: "info"
+    });
+
+    // Если не в архиве, обновляем таблицу
+    if (!archive) {
+      setTableData(prev => [newApplication, ...prev]);
+    }
+  }, [archive]);
+
+  useWebSocket(wsUrl, handleNewApplication, [archive]);
 
   const fetchData = async (nextId = null, res = false) => {
     try {
@@ -132,26 +156,25 @@ export default function ApplicationsList() {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = (data) => {
-    return (
-      Array.isArray(data) &&
-      data?.filter((row) => {
-        const fullName =
-          `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
-        return (
-          fullName?.includes(filters?.fullName?.toLowerCase()) &&
-          row?.phone_number?.includes(filters?.phone) &&
-          (!filters?.resident ||
-            (filters?.resident === "Да"
-              ? row?.is_resident
-              : !row?.is_resident)) &&
-          (!filters?.card ||
-            row?.card_name
-              ?.toLowerCase()
-              ?.includes(filters?.card?.toLowerCase()))
-        );
-      })
-    );
+  // ФИКС: передаем filters как параметр в applyFilters
+  const applyFilters = (data, currentFilters) => {
+    if (!Array.isArray(data)) return [];
+    
+    return data.filter((row) => {
+      const fullName = `${row?.surname || ''} ${row?.name || ''} ${row?.patronymic || ''}`.toLowerCase();
+      return (
+        fullName?.includes(currentFilters?.fullName?.toLowerCase() || '') &&
+        row?.phone_number?.includes(currentFilters?.phone || '') &&
+        (!currentFilters?.resident ||
+          (currentFilters?.resident === "Да"
+            ? row?.is_resident
+            : !row?.is_resident)) &&
+        (!currentFilters?.card ||
+          row?.card_name
+            ?.toLowerCase()
+            ?.includes(currentFilters?.card?.toLowerCase() || ''))
+      );
+    });
   };
 
   const headers = [
@@ -167,6 +190,7 @@ export default function ApplicationsList() {
   ];
 
   const renderFileIcon = (path) => {
+    if (!path) return null;
     const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
     const fullUrl = `${backendUrl}/${path.replace(/\\/g, "/")}`;
     return (
@@ -190,7 +214,8 @@ export default function ApplicationsList() {
     }
   };
 
-  const filteredData = applyFilters(tableData);
+  // ФИКС: передаем filters в applyFilters
+  const filteredData = applyFilters(tableData, filters);
 
   const upDateStatusApplications = async (status) => {
     try {
@@ -207,12 +232,6 @@ export default function ApplicationsList() {
     } catch (e) {
       console.error(e);
     }
-    // if (selectedRows.length) {
-    //   setData("status", "");
-    //   fetchData(null, true);
-    //   setSelectedRows([]);
-    //   setSelectAll(false);
-    // }
   };
 
   useEffect(() => {
@@ -264,6 +283,16 @@ export default function ApplicationsList() {
       <HeaderAgent activeLink="applications" />
       <div className="applications-list">
         <main>
+          {/* Уведомление о новой заявке */}
+          {alert.show && (
+            <AlertMessage
+              message={alert.message}
+              type={alert.type}
+              onClose={() => setAlert({ ...alert, show: false })}
+              duration={5000}
+            />
+          )}
+
           <div className="my-applications-header">
             <Select
               style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
@@ -286,13 +315,13 @@ export default function ApplicationsList() {
               Фильтры
             </button>
             <button
-              className={archive && "archive-toggle"}
+              className={archive ? "archive-toggle active" : "archive-toggle"}
               onClick={() => setArchive(!archive)}
             >
               Архив
             </button>
             <button
-              className={selectAll && "selectAll-toggle"}
+              className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
               onClick={() => {
                 setSelectAll(!selectAll);
               }}
@@ -305,13 +334,16 @@ export default function ApplicationsList() {
             <div className="filters animate-slideIn">
               <input
                 placeholder="ФИО"
+                value={filters.fullName}
                 onChange={(e) => handleFilterChange("fullName", e.target.value)}
               />
               <input
                 placeholder="Телефон"
+                value={filters.phone}
                 onChange={(e) => handleFilterChange("phone", e.target.value)}
               />
               <select
+                value={filters.resident}
                 onChange={(e) => handleFilterChange("resident", e.target.value)}
               >
                 <option value="">Резидент</option>
@@ -320,6 +352,7 @@ export default function ApplicationsList() {
               </select>
               <input
                 placeholder="Карта"
+                value={filters.card}
                 onChange={(e) => handleFilterChange("card", e.target.value)}
               />
             </div>
@@ -333,7 +366,6 @@ export default function ApplicationsList() {
                 placeholder={""}
                 onChange={(e) => setData("month", e)}
                 value={data?.month}
-                // error={errors}
                 id={"month"}
               />{" "}
             </div>
@@ -344,7 +376,6 @@ export default function ApplicationsList() {
                 placeholder={""}
                 onChange={(e) => setData("year", e)}
                 value={data?.year}
-                // error={errors}
                 id={"year"}
               />{" "}
             </div>
@@ -359,7 +390,6 @@ export default function ApplicationsList() {
                     placeholder={""}
                     onChange={(e) => setData("limit", e)}
                     value={data?.limit}
-                    // error={errors}
                     id={"limit"}
                   />{" "}
                   записей
