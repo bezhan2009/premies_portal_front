@@ -6,12 +6,14 @@ import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import { translate_role_id } from "../../../../api/utils/translate_role_id.js";
 import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
+import ModalRoles from "../../../modal/ModalRoles.jsx";
 
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
+  const [openRoles, setOpenRoles] = useState({ data: null, open: false });
   const loadData = async () => {
     setLoading(true);
     try {
@@ -64,7 +66,7 @@ const EmployeesTable = () => {
     setFilteredEmployees(filtered || []);
   };
 
-  console.log("filteredEmployees", filteredEmployees);
+  console.log("openRoles", openRoles);
 
   return (
     <div className="report-table-container">
@@ -97,6 +99,7 @@ const EmployeesTable = () => {
                     <th>Место работы</th>
                     <th>Оклад</th>
                     <th>Группа продаж</th>
+                    <th>Перераспределение ролей</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,6 +196,9 @@ const EmployeesTable = () => {
                           row.group
                         )}
                       </td>
+                      <td>
+                        <button className="button-edit-roles" onClick={() => setOpenRoles({ data: row, open: true })}>Перераспределить</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -203,6 +209,7 @@ const EmployeesTable = () => {
           )}
         </>
       )}
+      <ModalRoles open={openRoles.open} data={openRoles.data} />  
     </div>
   );
 };
