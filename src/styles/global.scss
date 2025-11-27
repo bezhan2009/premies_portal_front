@@ -5,6 +5,21 @@ body {
   animation: fadeIn 0.5s ease-out;
 }
 
+.button-edit-roles {
+  border-radius: 12px;
+  padding: 10px 40px;
+  background-color: #999;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  animation: fadeIn 0.6s ease-out;
+
+  &:hover {
+    background-color: #e21a1c;
+  }
+}
+
 .archive-toggle {
   background-color: #2566e8 !important;
 }
