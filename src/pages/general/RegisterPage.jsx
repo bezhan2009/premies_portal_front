@@ -47,68 +47,70 @@ export default function RegisterPage() {
   const token = localStorage.getItem("access_token");
   const navigate = useNavigate();
 
-    // Загрузка ролей из API
-    useEffect(() => {
-        const fetchRoles = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+  // Загрузка ролей из API
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/roles`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-                if (!response.ok) {
-                    throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
-                }
-
-                const rolesData = await response.json();
-                setRoles(rolesData);
-            } catch (err) {
-                console.error('Ошибка загрузки ролей:', err);
-                setError('Не удалось загрузить список ролей');
-            } finally {
-                setLoadingRoles(false);
-            }
-        };
-
-        fetchRoles();
-    }, [token]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        const payload = {
-            Username: username,
-            Email: email,
-            Phone: phone,
-            full_name: fullName,
-            Password: password,
-            role_ids: [roleId],
-        };
-
-        if (roleId === 6 || roleId === 8) {
-            payload.Salary = Number(salary);
-            payload.position = position;
-            payload.plan = Number(plan);
-            payload.salary_project = Number(salaryProject);
-            payload.place_work = placeWork;
+        if (!response.ok) {
+          throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
         }
-      );
-      if (!response.ok) {
-        throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+
+        const rolesData = await response.json();
+        setRoles(rolesData);
+      } catch (err) {
+        console.error("Ошибка загрузки ролей:", err);
+        setError("Не удалось загрузить список ролей");
+      } finally {
+        setLoadingRoles(false);
       }
-      const rolesData = await response.json();
-      setRoles(rolesData);
-    } catch (err) {
-      console.error("Ошибка загрузки ролей:", err);
-      setError("Не удалось загрузить список ролей");
-    } finally {
-      setLoadingRoles(false);
-    }
-  };
+    };
+
+    fetchRoles();
+  }, [token]);
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError("");
+  //   setLoading(true);
+  //   try {
+  //     const payload = {
+  //       Username: username,
+  //       Email: email,
+  //       Phone: phone,
+  //       full_name: fullName,
+  //       Password: password,
+  //       role_ids: [roleId],
+  //     };
+
+  //     if (roleId === 6 || roleId === 8) {
+  //       payload.Salary = Number(salary);
+  //       payload.position = position;
+  //       payload.plan = Number(plan);
+  //       payload.salary_project = Number(salaryProject);
+  //       payload.place_work = placeWork;
+  //     }
+  //     if (!response.ok) {
+  //       throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+  //     }
+  //     const rolesData = await response.json();
+  //     setRoles(rolesData);
+  //   } catch (err) {
+  //     console.error("Ошибка загрузки ролей:", err);
+  //     setError("Не удалось загрузить список ролей");
+  //   } finally {
+  //     setLoadingRoles(false);
+  //   }
+  // };
 
   // Загрузка ролей из API
   useEffect(() => {
