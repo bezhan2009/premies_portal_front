@@ -99,7 +99,6 @@ const EmployeesTable = () => {
                     <th>Место работы</th>
                     <th>Оклад</th>
                     <th>Группа продаж</th>
-                    <th>Перераспределение ролей</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,9 +195,6 @@ const EmployeesTable = () => {
                           row.group
                         )}
                       </td>
-                      <td>
-                        <button className="button-edit-roles" onClick={() => setOpenRoles({ data: row, open: true })}>Перераспределить</button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -209,7 +205,11 @@ const EmployeesTable = () => {
           )}
         </>
       )}
-      <ModalRoles open={openRoles.open} data={openRoles.data} />  
+      <ModalRoles
+        open={openRoles.open}
+        data={openRoles.data}
+        setOpenRoles={setOpenRoles}
+      />
     </div>
   );
 };
