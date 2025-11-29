@@ -8,6 +8,7 @@ import UnderDevelopmentPage from "../dashboard_general/UnderDevelopment";
 import { AnimatePresence, motion } from "framer-motion";
 import CardsTable from "./table_datas/TableCardPrices.jsx";
 import TableCardMargents from "./table_datas/TableCardMargents.jsx";
+import RolesTable from "./table_datas/RolesTable.jsx";
 
 const OperatorDatasBlockInfo = () => {
   const [selectedTable, setSelectedTable] = useState("office");
@@ -40,6 +41,13 @@ const OperatorDatasBlockInfo = () => {
           <>
             <Filters modificationDesc="Отделения" />
             <TableCardMargents key="margents" />
+          </>
+        );
+      case "roles":
+        return (
+          <>
+            <Filters modificationDesc="Роли" />
+            <RolesTable key="roles" />
           </>
         );
       default:

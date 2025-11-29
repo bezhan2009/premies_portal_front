@@ -1,325 +1,343 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../../styles/login.scss";
-import "../../styles/extraForm.scss";
-import LogoImageComponent from "../../components/Logo";
-import Spinner from "../../components/Spinner";
-import { Helmet } from "react-helmet";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../../styles/login.scss';
+import '../../styles/extraForm.scss';
+import LogoImageComponent from '../../components/Logo';
+import Spinner from '../../components/Spinner';
+import { Helmet } from 'react-helmet';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-import { registerUser } from "../../api/auth";
+import { registerUser } from '../../api/auth';
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
-  const [roleId, setRoleId] = useState(3);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
-  const [salary, setSalary] = useState("");
-  const [position, setPosition] = useState("");
-  const [plan, setPlan] = useState("");
-  const [salaryProject, setSalaryProject] = useState("");
-  const [placeWork, setPlaceWork] = useState("");
-  const [offices, setOffices] = useState([]);
+    const [salary, setSalary] = useState('');
+    const [position, setPosition] = useState('');
+    const [plan, setPlan] = useState('');
+    const [salaryProject, setSalaryProject] = useState('');
+    const [placeWork, setPlaceWork] = useState('');
+    const [offices, setOffices] = useState([]);
 
-  const [officeTitle, setOfficeTitle] = useState("");
-  const [officeDesc, setOfficeDesc] = useState("");
+    const [officeTitle, setOfficeTitle] = useState('');
+    const [officeDesc, setOfficeDesc] = useState('');
 
-  const [roles, setRoles] = useState([]);
-  const [loadingRoles, setLoadingRoles] = useState(true);
+    const [roles, setRoles] = useState([]);
+    const [selectedRoles, setSelectedRoles] = useState([]);
+    const [loadingRoles, setLoadingRoles] = useState(true);
 
-  const token = localStorage.getItem("access_token");
-  const navigate = useNavigate();
+    const token = localStorage.getItem('access_token');
+    const navigate = useNavigate();
 
-  // Загрузка ролей из API
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+    // Загрузка ролей из API
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
 
-        if (!response.ok) {
-          throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+                }
+
+                const rolesData = await response.json();
+                setRoles(rolesData);
+            } catch (err) {
+                console.error('Ошибка загрузки ролей:', err);
+                setError('Не удалось загрузить список ролей');
+            } finally {
+                setLoadingRoles(false);
+            }
+        };
+
+        fetchRoles();
+    }, [token]);
+
+    const handleRoleChange = (e, roleId) => {
+        if (e.target.checked) {
+            if ((roleId === 6 && selectedRoles.includes(8)) || (roleId === 8 && selectedRoles.includes(6))) {
+                setError("Нельзя выбрать обе роли: Карточник и Кредитник");
+                return;
+            }
+            setSelectedRoles([...selectedRoles, roleId]);
+        } else {
+            setSelectedRoles(selectedRoles.filter(id => id !== roleId));
         }
-
-        const rolesData = await response.json();
-        setRoles(rolesData);
-      } catch (err) {
-        console.error('Ошибка загрузки ролей:', err);
-        setError('Не удалось загрузить список ролей');
-      } finally {
-        setLoadingRoles(false);
-      }
+        setError('');
     };
 
-    fetchRoles();
-  }, [token]);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (selectedRoles.length === 0) {
+            setError('Выберите хотя бы одну роль');
+            return;
+        }
+        if (selectedRoles.includes(6) && selectedRoles.includes(8)) {
+            setError('Нельзя выбрать обе роли: Карточник и Кредитник');
+            return;
+        }
+        setLoading(true);
 
-  // Загрузка офисов для определенных ролей
-  useEffect(() => {
-    const fetchOffices = async () => {
-      if ((roleId === 6 || roleId === 8) && offices.length === 0) {
+        const payload = {
+            Username: username,
+            Email: email,
+            Phone: phone,
+            full_name: fullName,
+            Password: password,
+            role_ids: selectedRoles,
+        };
+
+        const hasEmployeeRole = selectedRoles.some(r => [6, 8].includes(r));
+        if (hasEmployeeRole) {
+            payload.Salary = Number(salary);
+            payload.position = position;
+            payload.plan = Number(plan);
+            payload.salary_project = Number(salaryProject);
+            payload.place_work = placeWork;
+        }
+
+        if (selectedRoles.includes(5)) {
+            payload.office_title = officeTitle;
+            payload.office_desc = officeDesc;
+        }
+
         try {
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/office`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            const titles = data.map((item) => item.title);
-            setOffices(titles);
-          } else {
-            console.error("Сервер вернул не массив:", data);
-          }
+            await registerUser(payload);
+            navigate('/operator/reports', { replace: true });
         } catch (err) {
-          console.error("Ошибка загрузки офисов:", err);
+            if (err.message === "Failed to fetch") {
+                setError('Сервис сейчас недоступен');
+            } else {
+                setError(err.message || 'Ошибка регистрации');
+            }
+        } finally {
+            setLoading(false);
         }
-      }
     };
 
-    fetchOffices();
-  }, [roleId, token, offices.length]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const payload = {
-      Username: username,
-      Email: email,
-      Phone: phone,
-      full_name: fullName,
-      Password: password,
-      role_ids: [roleId],
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
     };
 
-    // Добавляем дополнительные поля для ролей 6 и 8
-    if (roleId === 6 || roleId === 8) {
-      payload.Salary = salary ? Number(salary) : 0;
-      payload.position = position || "";
-      payload.plan = plan ? Number(plan) : 0;
-      payload.salary_project = salaryProject ? Number(salaryProject) : 0;
-      payload.place_work = placeWork || "";
-    }
+    useEffect(() => {
+        const hasEmployeeRole = selectedRoles.some(r => [6, 8].includes(r));
+        if (hasEmployeeRole && offices.length === 0) {
+            fetch(`${import.meta.env.VITE_BACKEND_URL}/office`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Ошибка ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const titles = data.map(item => item.title);
+                        setOffices(titles);
+                    } else {
+                        console.error('Сервер вернул не массив:', data);
+                    }
+                })
+                .catch(err => console.error('Ошибка загрузки офисов:', err));
+        }
+    }, [selectedRoles, token, offices.length]);
 
-    // Добавляем поля для директора (роль 5)
-    if (roleId === 5) {
-      payload.office_title = officeTitle;
-      payload.office_desc = officeDesc;
-    }
+    return (
+        <>
+            <Helmet>
+                <title>Регистрация</title>
+            </Helmet>
+            <div className="login-container">
+                <form className="login-form" onSubmit={handleSubmit}>
+                    <div align="center" className='image-logo-login'>
+                        <LogoImageComponent width={125} height={105} />
+                    </div>
 
-    try {
-      await registerUser(payload);
-      navigate("/operator/reports", { replace: true });
-    } catch (err) {
-      if (err.message === "Failed to fetch") {
-        setError("Сервис сейчас недоступен");
-      } else {
-        setError(err.message || "Ошибка регистрации");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+                    <label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder='Логин'
+                            required
+                        />
+                    </label>
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+                    <label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder='Email'
+                            required
+                        />
+                    </label>
 
-  return (
-    <>
-      <Helmet>
-        <title>Регистрация</title>
-      </Helmet>
-      <div className="login-container">
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div align="center" className="image-logo-login">
-            <LogoImageComponent width={125} height={105} />
-          </div>
+                    <label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder='Телефон'
+                            required
+                        />
+                    </label>
 
-          <label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Логин"
-              required
-            />
-          </label>
+                    <label>
+                        <input
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder='ФИО'
+                            required
+                        />
+                    </label>
 
-          <label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-            />
-          </label>
+                    <label style={{ position: 'relative' }}>
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder='Пароль'
+                            required
+                        />
+                        <button
+                            type="button"
+                            className='toggle-password-visibility'
+                            onClick={togglePasswordVisibility}
+                        >
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                    </label>
 
-          <label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Телефон"
-              required
-            />
-          </label>
+                    <div className="roles-selection">
+                        <p>Роли:</p>
+                        {loadingRoles ? (
+                            <p>Загрузка ролей...</p>
+                        ) : (
+                            roles.map(role => (
+                                <div key={role.ID}>
+                                    <input
+                                        className='custom-checkbox'
+                                        type="checkbox"
+                                        id={`role-${role.ID}`}
+                                        checked={selectedRoles.includes(role.ID)}
+                                        onChange={(e) => handleRoleChange(e, role.ID)}
+                                        disabled={loadingRoles}
+                                    />
+                                    <label htmlFor={`role-${role.ID}`}>{role.Name}</label>
+                                </div>
+                            ))
+                        )}
+                    </div>
 
-          <label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="ФИО"
-              required
-            />
-          </label>
+                    {selectedRoles.some(r => [6, 8].includes(r)) && (
+                        <div className="extra-form visible">
+                            <label>
+                                <input
+                                    type="number"
+                                    value={salary}
+                                    onChange={(e) => setSalary(e.target.value)}
+                                    placeholder="Сумма оклада"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="text"
+                                    value={position}
+                                    onChange={(e) => setPosition(e.target.value)}
+                                    placeholder="Позиция"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="number"
+                                    value={plan}
+                                    onChange={(e) => setPlan(e.target.value)}
+                                    placeholder="План"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="number"
+                                    value={salaryProject}
+                                    onChange={(e) => setSalaryProject(e.target.value)}
+                                    placeholder="ЗП проект"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <select
+                                    value={placeWork}
+                                    onChange={(e) => setPlaceWork(e.target.value)}
+                                    required
+                                >
+                                    <option value="">Выберите место работы</option>
+                                    {offices.map((title, idx) => (
+                                        <option key={idx} value={title}>
+                                            {title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                    )}
 
-          <label style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Пароль"
-              required
-            />
-            <button
-              type="button"
-              className="toggle-password-visibility"
-              onClick={togglePasswordVisibility}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </button>
-          </label>
+                    {selectedRoles.includes(5) && (
+                        <div className="extra-form visible">
+                            <label>
+                                <input
+                                    type="text"
+                                    value={officeTitle}
+                                    onChange={(e) => setOfficeTitle(e.target.value)}
+                                    placeholder="Название офиса"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <textarea
+                                    value={officeDesc}
+                                    onChange={(e) => setOfficeDesc(e.target.value)}
+                                    placeholder="Описание офиса"
+                                    required
+                                    rows={3}
+                                />
+                            </label>
+                        </div>
+                    )}
 
-          <label>
-            <select
-              value={roleId}
-              onChange={(e) => setRoleId(Number(e.target.value))}
-              required
-              disabled={loadingRoles}
-            >
-              {loadingRoles ? (
-                <option value="">Загрузка ролей...</option>
-              ) : (
-                roles.map((role) => (
-                  <option key={role.ID} value={role.ID}>
-                    {role.Name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
+                    {error && <div align="center" className="error">{error}</div>}
 
-          {(roleId === 6 || roleId === 8) && (
-            <div className="extra-form visible">
-              <label>
-                <input
-                  type="number"
-                  value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
-                  placeholder="Сумма оклада"
-                />
-              </label>
-              <label>
-                <input
-                  type="text"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Позиция"
-                />
-              </label>
-              <label>
-                <input
-                  type="number"
-                  value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
-                  placeholder="План"
-                />
-              </label>
-              <label>
-                <input
-                  type="number"
-                  value={salaryProject}
-                  onChange={(e) => setSalaryProject(e.target.value)}
-                  placeholder="ЗП проект"
-                />
-              </label>
-              <label>
-                <select
-                  value={placeWork}
-                  onChange={(e) => setPlaceWork(e.target.value)}
-                >
-                  <option value="">Выберите место работы</option>
-                  {offices.map((title, idx) => (
-                    <option key={idx} value={title}>
-                      {title}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                    <button type="submit" disabled={loading || loadingRoles}>
+                        {loading ? (
+                            <div align="center">
+                                <Spinner />
+                            </div>
+                        ) : (
+                            'Зарегистрировать'
+                        )}
+                    </button>
+                </form>
             </div>
-          )}
-
-          {roleId === 5 && (
-            <div className="extra-form visible">
-              <label>
-                <input
-                  type="text"
-                  value={officeTitle}
-                  onChange={(e) => setOfficeTitle(e.target.value)}
-                  placeholder="Название офиса"
-                  required
-                />
-              </label>
-              <label>
-                <textarea
-                  value={officeDesc}
-                  onChange={(e) => setOfficeDesc(e.target.value)}
-                  placeholder="Описание офиса"
-                  required
-                  rows={3}
-                />
-              </label>
-            </div>
-          )}
-
-          {error && (
-            <div align="center" className="error">
-              {error}
-            </div>
-          )}
-
-          <button type="submit" disabled={loading || loadingRoles}>
-            {loading ? (
-              <div align="center">
-                <Spinner />
-              </div>
-            ) : (
-              "Зарегистрировать"
-            )}
-          </button>
-        </form>
-      </div>
-    </>
-  );
+        </>
+    );
 }

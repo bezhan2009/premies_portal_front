@@ -9,8 +9,8 @@ body {
 
 .login-container {
   @include flex-center;
-  // margin: 8%;
-  height: 100vh ;
+  min-height: 100vh;
+  padding: 2rem 0;
 }
 
 .login-form {
@@ -19,6 +19,8 @@ body {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
 
   label {
     display: block;
@@ -80,6 +82,71 @@ body {
 
     &:hover {
       background-color: #e21a1c;
+    }
+  }
+
+  .roles-selection {
+    margin: 1.5rem 0 1.2rem;
+
+    p {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 0.8rem;
+      text-align: left;
+    }
+
+    // Обёртка для каждой строки чекбокса
+    > div {
+      display: flex;
+      align-items: center;        // идеальное вертикальное центрирование
+      justify-content: flex-start;
+      margin-bottom: 0.75rem;
+      padding: 0.4rem 0;
+      transition: 0.2s ease;
+
+      &:hover {
+        background: rgba(226, 26, 28, 0.04);
+        border-radius: 6px;
+        padding-left: 0.4rem;
+      }
+
+      // Сам чекбокс
+      input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        margin-right: 12px;
+        position: relative;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #e21a1c;
+          background: rgba(226, 26, 28, 0.07);
+        }
+
+        &:checked {
+          background: #e21a1c;
+          border-color: #e21a1c;
+        }
+      }
+
+      // Текст роли
+      label {
+        font-size: 0.95rem;
+        color: #333;
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+        font-weight: 500;
+        line-height: 1.4;
+        width: 100%;
+      }
     }
   }
 }
