@@ -63,7 +63,10 @@ export default function AppRouter() {
       <Routes>
         {/* Публичный маршрут */}
         <Route path="/login" element={<LoginPage />} />
-
+        <Route
+              path="/user/knowledge-base"
+              element={<DashboardAgentKB />}
+        />
         {/* Защищённые маршруты */}
         <Route
           element={

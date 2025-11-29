@@ -9,17 +9,6 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 import { registerUser } from "../../api/auth";
 
-const ROLES = [
-  { id: 3, name: "Оператор" },
-  { id: 5, name: "Директор" },
-  { id: 6, name: "Карточник" },
-  { id: 8, name: "Кредитник" },
-  { id: 9, name: "Председатель" },
-  { id: 10, name: "Агент по заявкам" },
-  { id: 11, name: "Агент по кредитам" },
-  { id: 13, name: "Агент по QR" },
-];
-
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -47,73 +36,65 @@ export default function RegisterPage() {
   const token = localStorage.getItem("access_token");
   const navigate = useNavigate();
 
-    // Загрузка ролей из API
-    useEffect(() => {
-        const fetchRoles = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
-                }
-
-                const rolesData = await response.json();
-                setRoles(rolesData);
-            } catch (err) {
-                console.error('Ошибка загрузки ролей:', err);
-                setError('Не удалось загрузить список ролей');
-            } finally {
-                setLoadingRoles(false);
-            }
-        };
-
-        fetchRoles();
-    }, [token]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        const payload = {
-            Username: username,
-            Email: email,
-            Phone: phone,
-            full_name: fullName,
-            Password: password,
-            role_ids: [roleId],
-        };
-
-        if (roleId === 6 || roleId === 8) {
-            payload.Salary = Number(salary);
-            payload.position = position;
-            payload.plan = Number(plan);
-            payload.salary_project = Number(salaryProject);
-            payload.place_work = placeWork;
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
-      }
-      const rolesData = await response.json();
-      setRoles(rolesData);
-    } catch (err) {
-      console.error("Ошибка загрузки ролей:", err);
-      setError("Не удалось загрузить список ролей");
-    } finally {
-      setLoadingRoles(false);
-    }
-  };
-
   // Загрузка ролей из API
   useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+        }
+
+        const rolesData = await response.json();
+        setRoles(rolesData);
+      } catch (err) {
+        console.error('Ошибка загрузки ролей:', err);
+        setError('Не удалось загрузить список ролей');
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
     fetchRoles();
   }, [token]);
+
+  // Загрузка офисов для определенных ролей
+  useEffect(() => {
+    const fetchOffices = async () => {
+      if ((roleId === 6 || roleId === 8) && offices.length === 0) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/office`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            const titles = data.map((item) => item.title);
+            setOffices(titles);
+          } else {
+            console.error("Сервер вернул не массив:", data);
+          }
+        } catch (err) {
+          console.error("Ошибка загрузки офисов:", err);
+        }
+      }
+    };
+
+    fetchOffices();
+  }, [roleId, token, offices.length]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,17 +107,19 @@ export default function RegisterPage() {
       Phone: phone,
       full_name: fullName,
       Password: password,
-      role_id: roleId,
+      role_ids: [roleId],
     };
 
+    // Добавляем дополнительные поля для ролей 6 и 8
     if (roleId === 6 || roleId === 8) {
-      payload.Salary = Number(salary);
-      payload.position = position;
-      payload.plan = Number(plan);
-      payload.salary_project = Number(salaryProject);
-      payload.place_work = placeWork;
+      payload.Salary = salary ? Number(salary) : 0;
+      payload.position = position || "";
+      payload.plan = plan ? Number(plan) : 0;
+      payload.salary_project = salaryProject ? Number(salaryProject) : 0;
+      payload.place_work = placeWork || "";
     }
 
+    // Добавляем поля для директора (роль 5)
     if (roleId === 5) {
       payload.office_title = officeTitle;
       payload.office_desc = officeDesc;
@@ -159,32 +142,6 @@ export default function RegisterPage() {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
-  useEffect(() => {
-    if ((roleId === 6 || roleId === 8) && offices.length === 0) {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/office`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`Ошибка ${res.status}: ${res.statusText}`);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (Array.isArray(data)) {
-            const titles = data.map((item) => item.title);
-            setOffices(titles);
-          } else {
-            console.error("Сервер вернул не массив:", data);
-          }
-        })
-        .catch((err) => console.error("Ошибка загрузки офисов:", err));
-    }
-  }, [roleId, token, offices.length]);
 
   return (
     <>

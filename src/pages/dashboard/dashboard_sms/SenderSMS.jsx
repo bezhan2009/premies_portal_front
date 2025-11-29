@@ -1,9 +1,12 @@
 import { useState } from "react";
 import "../../../styles/components/BlockInfo.scss";
 import HeaderAgentSMS from "../../../components/dashboard/dashboard_agent_sms/MenuAgentSMS";
+import useSidebar from '../../../hooks/useSideBar.js';
+import Sidebar from '../../general/DynamicMenu.jsx';
 
 
 export default function SendSmsForm() {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const [phoneNumber, setPhoneNumber] = useState("");
   const [messageContent, setMessageContent] = useState("");
   const [status, setStatus] = useState("");
@@ -31,9 +34,8 @@ export default function SendSmsForm() {
 
   return (
     <>
-        <header className="dashboard-header">
-            <HeaderAgentSMS activeLink="sms" />
-        </header>
+      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+        <Sidebar activeLink="sms_send" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="block_info_prems" align="center">
             <div style={{ maxWidth: 400, margin: "50px auto" }}>
             <h2>Отправка SMS</h2>
@@ -83,6 +85,7 @@ export default function SendSmsForm() {
             )}
             </div>
         </div>
+      </div>
     </>
   );
 }

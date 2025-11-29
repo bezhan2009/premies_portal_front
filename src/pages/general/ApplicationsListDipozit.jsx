@@ -10,11 +10,14 @@ import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
-// import { b, s } from "framer-motion/client";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
+import useSidebar from "../../hooks/useSideBar.js";
+import Sidebar from "./DynamicMenu.jsx";
+
 
 export default function ApplicationsListDipozit() {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -225,164 +228,166 @@ export default function ApplicationsListDipozit() {
 
   return (
     <>
-      <HeaderDipozit activeLink="applications" />
-      <div className="applications-list">
-        <main>
-          <div className="my-applications-header">
-            <button className="Unloading" onClick={handleExport}>
-              Выгрузка
-            </button>
-            <button
-              className="filter-toggle"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            <button
-              className={selectAll && "selectAll-toggle"}
-              onClick={() => {
-                setSelectAll(!selectAll);
-              }}
-            >
-              Выбрать все
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="filters animate-slideIn">
-              <input
-                placeholder="Код клиента"
-                onChange={(e) =>
-                  handleFilterChange("client_code", e.target.value)
-                }
-              />
-              <input
-                placeholder="Тип депозита"
-                onChange={(e) =>
-                  handleFilterChange("type_of_deposit", e.target.value)
-                }
-              />
-              <input
-                placeholder="Начисленный счет"
-                onChange={(e) =>
-                  handleFilterChange("accrued_account", e.target.value)
-                }
-              />
-              <input
-                placeholder="Выводный счет"
-                onChange={(e) =>
-                  handleFilterChange("withdraw_account", e.target.value)
-                }
-              />
-              <input
-                placeholder="Сумма"
-                onChange={(e) =>
-                  handleFilterChange("sum_of_deposit", e.target.value)
-                }
-              />
-              <input
-                placeholder="Валюта"
-                onChange={(e) =>
-                  handleFilterChange("deposit_currency", e.target.value)
-                }
-              />
-              <input
-                placeholder="Месяцы"
-                onChange={(e) =>
-                  handleFilterChange("deposit_term_month", e.target.value)
-                }
-              />
-            </div>
-          )}
-
-          <div
-            className="my-applications-content"
-            onScroll={scrollHandler}
-            style={{ position: "relative" }}
-          >
-            {filteredData.length === 0 ? (
-              <div
-                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+        <Sidebar activeLink="deposits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+        <div className="applications-list">
+          <main>
+            <div className="my-applications-header">
+              <button className="Unloading" onClick={handleExport}>
+                Выгрузка
+              </button>
+              <button
+                className="filter-toggle"
+                onClick={() => setShowFilters(!showFilters)}
               >
-                Нет данных для отображения
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Выбрать</th>
-                    <th>Код клиента</th>
-                    <th>Тип депозита</th>
-                    <th>Капитал</th>
-                    <th>Начисленный счет</th>
-                    <th>Выводный счет</th>
-                    <th>Сумма</th>
-                    <th>Валюта</th>
-                    <th>Месяцы</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData &&
-                    filteredData
-                      // ?.slice(0, data?.limit || filteredData?.length)
-                      ?.map((row, index) => (
-                        <tr key={index}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              className="custom-checkbox"
-                              checked={selectedRows.includes(row.ID)}
-                              onChange={(e) => {
-                                setSelectedRows(
-                                  e.target.checked
-                                    ? [...selectedRows, row.ID]
-                                    : selectedRows.filter((id) => id !== row.ID)
-                                );
-                              }}
-                            />
-                          </td>
-                          <td>{row.client_code}</td>
-                          <td>{row.type_of_deposit}</td>
-                          <td>{row.is_capitalize ? "Да" : "Нет"}</td>
-                          <td>{row.accrued_account}</td>
-                          <td>{row.withdraw_account}</td>
-                          <td>{row.sum_of_deposit}</td>
-                          <td>{row.deposit_currency}</td>
-                          <td>{row.deposit_term_month}</td>
-                          <td className="active-table">
-                            <AiFillEdit
-                              onClick={() =>
-                                navigate(`/agent/dipozit/card/${row.ID}`)
-                              }
-                              style={{
-                                fontSize: 35,
-                                color: "green",
-                                cursor: "pointer",
-                                // marginBottom: "10px",
-                              }}
-                            />
-                            <AiFillDelete
-                              onClick={() => deleteApplication(row.ID)}
-                              style={{
-                                fontSize: 35,
-                                color: "#c31414",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </main>
-      </div>
+                Фильтры
+              </button>
+              <button
+                className={selectAll && "selectAll-toggle"}
+                onClick={() => {
+                  setSelectAll(!selectAll);
+                }}
+              >
+                Выбрать все
+              </button>
+            </div>
 
-      <ImagePreviewModal
-        imageUrl={previewImage}
-        onClose={() => setPreviewImage(null)}
-      />
+            {showFilters && (
+              <div className="filters animate-slideIn">
+                <input
+                  placeholder="Код клиента"
+                  onChange={(e) =>
+                    handleFilterChange("client_code", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Тип депозита"
+                  onChange={(e) =>
+                    handleFilterChange("type_of_deposit", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Начисленный счет"
+                  onChange={(e) =>
+                    handleFilterChange("accrued_account", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Выводный счет"
+                  onChange={(e) =>
+                    handleFilterChange("withdraw_account", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Сумма"
+                  onChange={(e) =>
+                    handleFilterChange("sum_of_deposit", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Валюта"
+                  onChange={(e) =>
+                    handleFilterChange("deposit_currency", e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Месяцы"
+                  onChange={(e) =>
+                    handleFilterChange("deposit_term_month", e.target.value)
+                  }
+                />
+              </div>
+            )}
+
+            <div
+              className="my-applications-content"
+              onScroll={scrollHandler}
+              style={{ position: "relative" }}
+            >
+              {filteredData.length === 0 ? (
+                <div
+                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                >
+                  Нет данных для отображения
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Выбрать</th>
+                      <th>Код клиента</th>
+                      <th>Тип депозита</th>
+                      <th>Капитал</th>
+                      <th>Начисленный счет</th>
+                      <th>Выводный счет</th>
+                      <th>Сумма</th>
+                      <th>Валюта</th>
+                      <th>Месяцы</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData &&
+                      filteredData
+                        // ?.slice(0, data?.limit || filteredData?.length)
+                        ?.map((row, index) => (
+                          <tr key={index}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="custom-checkbox"
+                                checked={selectedRows.includes(row.ID)}
+                                onChange={(e) => {
+                                  setSelectedRows(
+                                    e.target.checked
+                                      ? [...selectedRows, row.ID]
+                                      : selectedRows.filter((id) => id !== row.ID)
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td>{row.client_code}</td>
+                            <td>{row.type_of_deposit}</td>
+                            <td>{row.is_capitalize ? "Да" : "Нет"}</td>
+                            <td>{row.accrued_account}</td>
+                            <td>{row.withdraw_account}</td>
+                            <td>{row.sum_of_deposit}</td>
+                            <td>{row.deposit_currency}</td>
+                            <td>{row.deposit_term_month}</td>
+                            <td className="active-table">
+                              <AiFillEdit
+                                onClick={() =>
+                                  navigate(`/agent/dipozit/card/${row.ID}`)
+                                }
+                                style={{
+                                  fontSize: 35,
+                                  color: "green",
+                                  cursor: "pointer",
+                                  // marginBottom: "10px",
+                                }}
+                              />
+                              <AiFillDelete
+                                onClick={() => deleteApplication(row.ID)}
+                                style={{
+                                  fontSize: 35,
+                                  color: "#c31414",
+                                  cursor: "pointer",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </main>
+        </div>
+
+        <ImagePreviewModal
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+     </div>
     </>
   );
 }
