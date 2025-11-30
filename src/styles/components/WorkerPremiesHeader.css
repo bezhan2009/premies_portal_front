@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 .header-premis {
-  width: 100%;
+  width: 90%;
   max-width: 1200px;
   display: flex;
   align-items: center;
@@ -13,6 +13,7 @@
   font-family: "Roboto", sans-serif;
   animation: fadeIn 0.5s ease-out;
 }
+
 .header-premis__nav {
   width: 32px;
   height: 32px;

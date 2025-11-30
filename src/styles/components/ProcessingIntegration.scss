@@ -42,8 +42,8 @@ $gray-900: #111827;
 
 @mixin card-shadow {
   box-shadow:
-          0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -2px rgba(0, 0, 0, 0.1);
+          0 6px 8px -1px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }
 
 @mixin card-shadow-hover {
@@ -110,7 +110,6 @@ $gray-900: #111827;
 // Main component styles
 .processing-integration {
   min-height: 100vh;
-  background: $gray-50;
   padding: 2rem 0;
   animation: fadeInUp 0.6s ease;
 
@@ -148,7 +147,6 @@ $gray-900: #111827;
 }
 
 .search-card {
-  background: white;
   border-radius: 1rem;
   @include card-shadow;
   padding: 2rem;

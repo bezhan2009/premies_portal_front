@@ -14,9 +14,12 @@ import { deleteApplicationById } from "../../api/application/deleteApplicationBy
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
+import Sidebar from "./DynamicMenu.jsx";
+import useSidebar from "../../hooks/useSideBar.js";
 import "../../styles/components/ApplicationsList.scss";
 
 export default function ApplicationsList() {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -49,15 +52,23 @@ export default function ApplicationsList() {
       type: "info"
     });
 
-    // Если не в архиве, обновляем таблицу
+    // Если не в архиве, ОБНОВЛЯЕМ данные через API вместо прямого добавления
     if (!archive) {
-      setTableData(prev => [newApplication, ...prev]);
+      // Вариант 1: Просто обновляем весь список
+      fetchData(null, true);
+      
+      // ИЛИ Вариант 2: Добавляем только если заявки еще нет в списке
+      // setTableData(prev => {
+      //   const exists = prev.find(item => item.ID === newApplication.ID);
+      //   if (exists) return prev;
+      //   return [newApplication, ...prev];
+      // });
     }
   }, [archive]);
 
   useWebSocket(wsUrl, handleNewApplication, [archive]);
 
-  const fetchData = async (nextId = null, res = false) => {
+  const fetchData = async (nextId = null, reset = false) => {
     try {
       setLoading(true);
       const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
@@ -68,15 +79,25 @@ export default function ApplicationsList() {
       if (data?.year) query.append("year", data?.year);
       if (!selectedRows.length && data?.status)
         query.append("status_id", data?.status);
+
       const response = await fetch(
         `${backendUrl}/applications${
           archive ? "/archive" : `?${query.toString()}`
         }`
       );
       const result = await response.json();
-      if (res) {
+      
+      if (reset || nextId === null) {
+        // Полная замена данных
         setTableData(result);
-      } else setTableData([...tableData, ...result]);
+      } else {
+        // Добавление с проверкой на дубликаты
+        setTableData(prev => {
+          const existingIds = new Set(prev.map(item => item.ID));
+          const newItems = result.filter(item => !existingIds.has(item.ID));
+          return [...prev, ...newItems];
+        });
+      }
 
       setNextId(result?.[result?.length - 1]?.ID);
       setFetching(false);
@@ -87,6 +108,7 @@ export default function ApplicationsList() {
       setFetching(false);
     }
   };
+
 
   function ImagePreviewModal({ imageUrl, onClose }) {
     if (!imageUrl) return null;
@@ -277,229 +299,230 @@ export default function ApplicationsList() {
       setData("year", savedYear);
     }
   }, []);
-
   return (
     <>
-      <HeaderAgent activeLink="applications" />
-      <div className="applications-list">
-        <main>
-          {/* Уведомление о новой заявке */}
-          {alert.show && (
-            <AlertMessage
-              message={alert.message}
-              type={alert.type}
-              onClose={() => setAlert({ ...alert, show: false })}
-              duration={5000}
-            />
-          )}
-
-          <div className="my-applications-header">
-            <Select
-              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
-              id={"status"}
-              value={data?.status}
-              onChange={(e) => {
-                if (!selectedRows.length) setData("status", e);
-                else upDateStatusApplications(e);
-              }}
-              options={status}
-              error={errors}
-            />
-            <button className="Unloading" onClick={handleExport}>
-              Выгрузка для карт
-            </button>
-            <button
-              className="filter-toggle"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            <button
-              className={archive ? "archive-toggle active" : "archive-toggle"}
-              onClick={() => setArchive(!archive)}
-            >
-              Архив
-            </button>
-            <button
-              className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
-              onClick={() => {
-                setSelectAll(!selectAll);
-              }}
-            >
-              Выбрать все
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="filters animate-slideIn">
-              <input
-                placeholder="ФИО"
-                value={filters.fullName}
-                onChange={(e) => handleFilterChange("fullName", e.target.value)}
+      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+        <Sidebar activeLink="applications" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+        <div className="applications-list">
+          <main>
+            {/* Уведомление о новой заявке */}
+            {alert.show && (
+              <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onClose={() => setAlert({ ...alert, show: false })}
+                duration={5000}
               />
-              <input
-                placeholder="Телефон"
-                value={filters.phone}
-                onChange={(e) => handleFilterChange("phone", e.target.value)}
-              />
-              <select
-                value={filters.resident}
-                onChange={(e) => handleFilterChange("resident", e.target.value)}
-              >
-                <option value="">Резидент</option>
-                <option value="Да">Да</option>
-                <option value="Нет">Нет</option>
-              </select>
-              <input
-                placeholder="Карта"
-                value={filters.card}
-                onChange={(e) => handleFilterChange("card", e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="my-applications-sub-header">
-            <div>
-              Поиск по месяцам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("month", e)}
-                value={data?.month}
-                id={"month"}
-              />{" "}
-            </div>
-            <div>
-              Поиск по годам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("year", e)}
-                value={data?.year}
-                id={"year"}
-              />{" "}
-            </div>
-            {loading ? (
-              <Spinner />
-            ) : (
-              <>
-                <div>
-                  Показать{" "}
-                  <Input
-                    type="number"
-                    placeholder={""}
-                    onChange={(e) => setData("limit", e)}
-                    value={data?.limit}
-                    id={"limit"}
-                  />{" "}
-                  записей
-                </div>
-              </>
             )}
-          </div>
 
-          <div
-            className="my-applications-content"
-            onScroll={scrollHandler}
-            style={{ position: "relative" }}
-          >
-            {filteredData.length === 0 ? (
-              <div
-                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+            <div className="my-applications-header">
+              <Select
+                style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+                id={"status"}
+                value={data?.status}
+                onChange={(e) => {
+                  if (!selectedRows.length) setData("status", e);
+                  else upDateStatusApplications(e);
+                }}
+                options={status}
+                error={errors}
+              />
+              <button className="Unloading" onClick={handleExport}>
+                Выгрузка для карт
+              </button>
+              <button
+                className="filter-toggle"
+                onClick={() => setShowFilters(!showFilters)}
               >
-                Нет данных для отображения
+                Фильтры
+              </button>
+              <button
+                className={archive ? "archive-toggle active" : "archive-toggle"}
+                onClick={() => setArchive(!archive)}
+              >
+                Архив
+              </button>
+              <button
+                className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
+                onClick={() => {
+                  setSelectAll(!selectAll);
+                }}
+              >
+                Выбрать все
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="filters animate-slideIn">
+                <input
+                  placeholder="ФИО"
+                  value={filters.fullName}
+                  onChange={(e) => handleFilterChange("fullName", e.target.value)}
+                />
+                <input
+                  placeholder="Телефон"
+                  value={filters.phone}
+                  onChange={(e) => handleFilterChange("phone", e.target.value)}
+                />
+                <select
+                  value={filters.resident}
+                  onChange={(e) => handleFilterChange("resident", e.target.value)}
+                >
+                  <option value="">Резидент</option>
+                  <option value="Да">Да</option>
+                  <option value="Нет">Нет</option>
+                </select>
+                <input
+                  placeholder="Карта"
+                  value={filters.card}
+                  onChange={(e) => handleFilterChange("card", e.target.value)}
+                />
               </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Выбрать</th>
-                    <th>ID</th>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    <th>Карта</th>
-                    <th>Адрес</th>
-                    <th>Скан паспорта (лицевая)</th>
-                    <th>Скан паспорта (задняя)</th>
-                    <th>Скан паспорта (с лицом)</th>
-                    {headers.map((e, i) => (
-                      <th key={i}>{e}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData &&
-                    filteredData
-                      ?.slice(0, data?.limit || filteredData?.length)
-                      ?.map((row, index) => (
-                        <tr key={index}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              className="custom-checkbox"
-                              checked={selectedRows.includes(row.ID)}
-                              onChange={(e) => {
-                                setSelectedRows(
-                                  e.target.checked
-                                    ? [...selectedRows, row.ID]
-                                    : selectedRows.filter((id) => id !== row.ID)
-                                );
-                              }}
-                            />
-                          </td>
-                          <td>{row.ID}</td>
-                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>
-                            {renderFileIcon(row.front_side_of_the_passport)}
-                          </td>
-                          <td>
-                            {renderFileIcon(row.back_side_of_the_passport)}
-                          </td>
-                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.secret_word}</td>
-                          <td>{row.card_name}</td>
-                          <td>{row.gender}</td>
-                          <td>{row.is_resident ? "Да" : "Нет"}</td>
-                          <td>{row.type_of_certificate}</td>
-                          <td>{row.inn}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>{row.card_code}</td>
-                          <td className="active-table">
-                            <AiFillEdit
-                              onClick={() => navigate(`/agent/card/${row.ID}`)}
-                              style={{
-                                fontSize: 35,
-                                color: "green",
-                                cursor: "pointer",
-                                marginBottom: "10px",
-                              }}
-                            />
-                            <AiFillDelete
-                              onClick={() => deleteApplication(row.ID)}
-                              style={{
-                                fontSize: 35,
-                                color: "#c31414",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
             )}
-          </div>
-        </main>
-      </div>
 
-      <ImagePreviewModal
-        imageUrl={previewImage}
-        onClose={() => setPreviewImage(null)}
-      />
+            <div className="my-applications-sub-header">
+              <div>
+                Поиск по месяцам
+                <Input
+                  type="number"
+                  placeholder={""}
+                  onChange={(e) => setData("month", e)}
+                  value={data?.month}
+                  id={"month"}
+                />{" "}
+              </div>
+              <div>
+                Поиск по годам
+                <Input
+                  type="number"
+                  placeholder={""}
+                  onChange={(e) => setData("year", e)}
+                  value={data?.year}
+                  id={"year"}
+                />{" "}
+              </div>
+              {loading ? (
+                <Spinner />
+              ) : (
+                <>
+                  <div>
+                    Показать{" "}
+                    <Input
+                      type="number"
+                      placeholder={""}
+                      onChange={(e) => setData("limit", e)}
+                      value={data?.limit}
+                      id={"limit"}
+                    />{" "}
+                    записей
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div
+              className="my-applications-content"
+              onScroll={scrollHandler}
+              style={{ position: "relative" }}
+            >
+              {filteredData.length === 0 ? (
+                <div
+                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                >
+                  Нет данных для отображения
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Выбрать</th>
+                      <th>ID</th>
+                      <th>ФИО</th>
+                      <th>Телефон</th>
+                      <th>Карта</th>
+                      <th>Адрес</th>
+                      <th>Скан паспорта (лицевая)</th>
+                      <th>Скан паспорта (задняя)</th>
+                      <th>Скан паспорта (с лицом)</th>
+                      {headers.map((e, i) => (
+                        <th key={i}>{e}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData &&
+                      filteredData
+                        ?.slice(0, data?.limit || filteredData?.length)
+                        ?.map((row, index) => (
+                          <tr key={index}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="custom-checkbox"
+                                checked={selectedRows.includes(row.ID)}
+                                onChange={(e) => {
+                                  setSelectedRows(
+                                    e.target.checked
+                                      ? [...selectedRows, row.ID]
+                                      : selectedRows.filter((id) => id !== row.ID)
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td>{row.ID}</td>
+                            <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
+                            <td>{row.phone_number}</td>
+                            <td>{row.card_name}</td>
+                            <td>{row.delivery_address}</td>
+                            <td>
+                              {renderFileIcon(row.front_side_of_the_passport)}
+                            </td>
+                            <td>
+                              {renderFileIcon(row.back_side_of_the_passport)}
+                            </td>
+                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                            <td>{row.phone_number}</td>
+                            <td>{row.secret_word}</td>
+                            <td>{row.card_name}</td>
+                            <td>{row.gender}</td>
+                            <td>{row.is_resident ? "Да" : "Нет"}</td>
+                            <td>{row.type_of_certificate}</td>
+                            <td>{row.inn}</td>
+                            <td>{row.delivery_address}</td>
+                            <td>{row.card_code}</td>
+                            <td className="active-table">
+                              <AiFillEdit
+                                onClick={() => navigate(`/agent/card/${row.ID}`)}
+                                style={{
+                                  fontSize: 35,
+                                  color: "green",
+                                  cursor: "pointer",
+                                  marginBottom: "10px",
+                                }}
+                              />
+                              <AiFillDelete
+                                onClick={() => deleteApplication(row.ID)}
+                                style={{
+                                  fontSize: 35,
+                                  color: "#c31414",
+                                  cursor: "pointer",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </main>
+        </div>
+
+        <ImagePreviewModal
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+      </div>
     </>
   );
 }

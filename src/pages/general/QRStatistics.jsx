@@ -14,6 +14,7 @@ import Spinner from "../../components/Spinner";
 import AlertMessage from "../../components/general/AlertMessage";
 import dayjs from "dayjs";
 
+
 const { RangePicker } = DatePicker;
 
 function formatNumber(value) {
@@ -165,81 +166,81 @@ export default function QRStatistics() {
 
   return (
     <div className="p-6">
-      <div className="flex gap-4 items-center mb-4">
-        <Select
-          value={metric}
-          onChange={setMetric}
-          options={[
-            { label: "Количество", value: "count" },
-            { label: "Сумма", value: "sum" },
-          ]}
-          style={{ width: 160 }}
-        />
-        <RangePicker onChange={(dates) => setSelectedRange(dates)} />
+        <div className="flex gap-4 items-center mb-4">
+          <Select
+            value={metric}
+            onChange={setMetric}
+            options={[
+              { label: "Количество", value: "count" },
+              { label: "Сумма", value: "sum" },
+            ]}
+            style={{ width: 160 }}
+          />
+          <RangePicker onChange={(dates) => setSelectedRange(dates)} />
+        </div>
+
+        {loading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "80px 0",
+              transform: "scale(1.3)",
+            }}
+          >
+            <Spinner />
+          </div>
+        ) : (
+          <div style={{ width: "100%", height: 400 }}>
+            <ResponsiveContainer>
+              <AreaChart data={mergedData}>
+                <defs>
+                  <linearGradient id="usOnThem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="themOnUs" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+
+                <Area
+                  type="monotone"
+                  dataKey="usOnThem"
+                  name="Наш клиент — чужой QR"
+                  stroke="#417cd5"
+                  fill="url(#usOnThem)"
+                  strokeWidth={2.5}
+                  dot={{ r: 2 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="themOnUs"
+                  name="Наш QR — чужой клиент"
+                  stroke="#82ca9d"
+                  fill="url(#themOnUs)"
+                  strokeWidth={2.5}
+                  dot={{ r: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {alert && (
+          <AlertMessage
+            message={alert.message}
+            type={alert.type}
+            onClose={() => setAlert(null)}
+          />
+        )}
       </div>
-
-      {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "80px 0",
-            transform: "scale(1.3)",
-          }}
-        >
-          <Spinner />
-        </div>
-      ) : (
-        <div style={{ width: "100%", height: 400 }}>
-          <ResponsiveContainer>
-            <AreaChart data={mergedData}>
-              <defs>
-                <linearGradient id="usOnThem" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="themOnUs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-
-              <Area
-                type="monotone"
-                dataKey="usOnThem"
-                name="Наш клиент — чужой QR"
-                stroke="#417cd5"
-                fill="url(#usOnThem)"
-                strokeWidth={2.5}
-                dot={{ r: 2 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="themOnUs"
-                name="Наш QR — чужой клиент"
-                stroke="#82ca9d"
-                fill="url(#themOnUs)"
-                strokeWidth={2.5}
-                dot={{ r: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {alert && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={() => setAlert(null)}
-        />
-      )}
-    </div>
   );
 }

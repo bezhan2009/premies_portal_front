@@ -6,6 +6,8 @@ import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import QRStatistics from "./QRStatistics.jsx";
+import useSidebar from "../../hooks/useSideBar.js";
+import Sidebar from "./DynamicMenu.jsx";
 
 // const result = [
 //   {
@@ -234,6 +236,7 @@ import QRStatistics from "./QRStatistics.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
+  const { isSidebarOpen, toggleSidebar } = useSidebar();  
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
@@ -500,303 +503,305 @@ export default function TransactionsQR() {
   // --- render ---
   return (
     <>
-      <HeaderAgentQR activeLink="list" />
-      <div
-        className="applications-list"
-        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
-      >
-        <main>
-          {" "}
-          <QRStatistics />
-        </main>
-        <main>
-          <div className="my-applications-header">
-            <button
-              className={!showFilters ? "filter-toggle" : "Unloading"}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            <pre> </pre>
-            <div style={{ display: "flex", gap: "50px" }}>
+      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+        <Sidebar activeLink="list_qr" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+        <div
+          className="applications-list"
+          style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+        >
+          <main>
+            {" "}
+            <QRStatistics />
+          </main>
+          <main>
+            <div className="my-applications-header">
               <button
-                className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
-                onClick={() => {
-                  setIsUsOnThem(true);
-                  setIsThemOnUs(false);
-                  setSelectedRows([]);
-                  setSelectAll(false);
-                }}
+                className={!showFilters ? "filter-toggle" : "Unloading"}
+                onClick={() => setShowFilters(!showFilters)}
               >
-                Наш клиент — чужой QR (Us on Them)
+                Фильтры
+              </button>
+              <pre> </pre>
+              <div style={{ display: "flex", gap: "50px" }}>
+                <button
+                  className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
+                  onClick={() => {
+                    setIsUsOnThem(true);
+                    setIsThemOnUs(false);
+                    setSelectedRows([]);
+                    setSelectAll(false);
+                  }}
+                >
+                  Наш клиент — чужой QR (Us on Them)
+                </button>
+
+                <button
+                  className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
+                  onClick={() => {
+                    setIsThemOnUs(true);
+                    setIsUsOnThem(false);
+                    setSelectedRows([]);
+                    setSelectAll(false);
+                  }}
+                >
+                  Наш QR — чужой клиент (Them on Us)
+                </button>
+              </div>
+
+              <button className="Unloading" onClick={handleExport}>
+                Выгрузка QR
               </button>
 
               <button
-                className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
-                onClick={() => {
-                  setIsThemOnUs(true);
-                  setIsUsOnThem(false);
-                  setSelectedRows([]);
-                  setSelectAll(false);
-                }}
+                className={selectAll && "selectAll-toggle"}
+                onClick={() => setSelectAll((s) => !s)}
               >
-                Наш QR — чужой клиент (Them on Us)
+                Выбрать все
               </button>
             </div>
 
-            <button className="Unloading" onClick={handleExport}>
-              Выгрузка QR
-            </button>
-
-            <button
-              className={selectAll && "selectAll-toggle"}
-              onClick={() => setSelectAll((s) => !s)}
-            >
-              Выбрать все
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="filters animate-slideIn">
-              {isUsOnThem && (
-                <>
-                  <input
-                    placeholder="ФИО"
-                    onChange={(e) =>
-                      setFilters((p) => ({ ...p, sender_name: e.target.value }))
-                    }
-                  />
-                  <input
-                    placeholder="Телефон"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        sender_phone: e.target.value,
-                      }))
-                    }
-                  />
-                </>
-              )}
-              {isThemOnUs && (
-                <>
-                  <input
-                    placeholder="Код мерчанта"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        merchant_code: e.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    placeholder="Код терминала"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        terminal_code: e.target.value,
-                      }))
-                    }
-                  />
-                </>
-              )}
-
-              <select
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, status: e.target.value }))
-                }
-              >
-                <option value="">Статус</option>
-                <option value="success">Успешно</option>
-                <option value="cancel">Неудача</option>
-                <option value="process">Обработка</option>
-              </select>
-
-              <input
-                placeholder="Сумма"
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, amount: e.target.value }))
-                }
-              />
-            </div>
-          )}
-
-          <div className="my-applications-sub-header">
-            <div>
-              от{" "}
-              <Input
-                type="date"
-                onChange={(e) => setData("start_date", e)}
-                value={data?.start_date}
-                style={{ width: "150px" }}
-                id="start_date"
-              />
-            </div>
-            <div>
-              до{" "}
-              <Input
-                type="date"
-                onChange={(e) => setData("end_date", e)}
-                value={data?.end_date}
-                style={{ width: "150px" }}
-                id="end_date"
-              />
-            </div>
-          </div>
-
-          <div
-            className="my-applications-content"
-            style={{ position: "relative" }}
-          >
-            {loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>
-                Загрузка...
-              </div>
-            ) : sortedData.length === 0 ? (
-              <div
-                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
-              >
-                Нет данных для отображения
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Выбрать</th>
-                    <th
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
+            {showFilters && (
+              <div className="filters animate-slideIn">
+                {isUsOnThem && (
+                  <>
+                    <input
+                      placeholder="ФИО"
+                      onChange={(e) =>
+                        setFilters((p) => ({ ...p, sender_name: e.target.value }))
                       }
-                    >
-                      ID {sortOrder === "asc" ? "▲" : "▼"}
-                    </th>
-                    {isUsOnThem ? (
-                      <>
-                        <th>ФИО</th>
-                        <th>Телефон</th>
-                      </>
-                    ) : null}
-                    {isThemOnUs ? (
-                      <>
-                        <th>Мерчант</th>
-                        <th>Код терминала</th>
-                        <th>partner_trn_id</th>
-                      </>
-                    ) : (
-                      <>
-                        <th>Номер в АРМ</th>
-                        <th>qrId</th>
-                      </>
-                    )}
-                    <th>Статус</th>
-                    <th>Комментарий</th>
-                    <th>Банк отправителя</th>
-                    <th>Банк получателя</th>
-                    <th>Сумма</th>
-                    <th>Дата создания</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((row) => {
-                    const key = getRowKey(row).toString();
-                    const merchantTitle =
-                      merchants.find((m) => m.code === row.merchant_code)
-                        ?.title ??
-                      row.merchant_code ??
-                      "-";
-                    return (
-                      <tr key={key}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="custom-checkbox"
-                            checked={selectedRows.includes(key)}
-                            onChange={(e) =>
-                              handleCheckboxToggle(key, e.target.checked)
-                            }
-                          />
-                        </td>
+                    />
+                    <input
+                      placeholder="Телефон"
+                      onChange={(e) =>
+                        setFilters((p) => ({
+                          ...p,
+                          sender_phone: e.target.value,
+                        }))
+                      }
+                    />
+                  </>
+                )}
+                {isThemOnUs && (
+                  <>
+                    <input
+                      placeholder="Код мерчанта"
+                      onChange={(e) =>
+                        setFilters((p) => ({
+                          ...p,
+                          merchant_code: e.target.value,
+                        }))
+                      }
+                    />
+                    <input
+                      placeholder="Код терминала"
+                      onChange={(e) =>
+                        setFilters((p) => ({
+                          ...p,
+                          terminal_code: e.target.value,
+                        }))
+                      }
+                    />
+                  </>
+                )}
 
-                        {/* show key in ID column to reflect actual used key */}
-                        <td>{key}</td>
+                <select
+                  onChange={(e) =>
+                    setFilters((p) => ({ ...p, status: e.target.value }))
+                  }
+                >
+                  <option value="">Статус</option>
+                  <option value="success">Успешно</option>
+                  <option value="cancel">Неудача</option>
+                  <option value="process">Обработка</option>
+                </select>
 
-                        {isUsOnThem && (
-                          <>
-                            <td>{row.sender_name || "-"}</td>
-                            <td>{row.sender_phone || "-"}</td>
-                          </>
-                        )}
-
-                        {isThemOnUs ? (
-                          <>
-                            <td>{merchantTitle}</td>
-                            <td>{row.terminal_code || "-"}</td>
-                            <td>{row.partner_trn_id || "-"}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{row.trnId || "-"}</td>
-                            <td>{row.qrId || "-"}</td>
-                          </>
-                        )}
-
-                        <td>
-                          {row.status === "success" ? (
-                            <FcOk style={{ fontSize: 22 }} />
-                          ) : row.status === "process" ? (
-                            <FcProcess style={{ fontSize: 22 }} />
-                          ) : row.status === "cancel" ? (
-                            <FcCancel style={{ fontSize: 22 }}/>
-                          ) : (
-                            <FcHighPriority style={{ fontSize: 22 }} />
-                          )}
-                        </td>
-                        <td>{row.description || "-"}</td>
-
-                        <td>
-                          {banks.find(
-                            (b) =>
-                              b.id === row?.sender_bank ||
-                              b.bankId === row?.sender
-                          )?.bankName || "-"}
-                        </td>
-                        <td>
-                          {banks.find((b) => b.id === row?.receiver)
-                            ?.bankName || "-"}
-                        </td>
-
-                        <td>{row.amount} с.</td>
-                        <td>
-                          {isUsOnThem
-                            ? formatDate(row.created_at)
-                            : formatDate(row.creation_datetime)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                <input
+                  placeholder="Сумма"
+                  onChange={(e) =>
+                    setFilters((p) => ({ ...p, amount: e.target.value }))
+                  }
+                />
+              </div>
             )}
-          </div>
-        </main>
-      </div>
 
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="loading-box">
-            <div className="spinner" />
-            <p>Выгружается {loadingCount} записей...</p>
-          </div>
+            <div className="my-applications-sub-header">
+              <div>
+                от{" "}
+                <Input
+                  type="date"
+                  onChange={(e) => setData("start_date", e)}
+                  value={data?.start_date}
+                  style={{ width: "150px" }}
+                  id="start_date"
+                />
+              </div>
+              <div>
+                до{" "}
+                <Input
+                  type="date"
+                  onChange={(e) => setData("end_date", e)}
+                  value={data?.end_date}
+                  style={{ width: "150px" }}
+                  id="end_date"
+                />
+              </div>
+            </div>
+
+            <div
+              className="my-applications-content"
+              style={{ position: "relative" }}
+            >
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "2rem" }}>
+                  Загрузка...
+                </div>
+              ) : sortedData.length === 0 ? (
+                <div
+                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                >
+                  Нет данных для отображения
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Выбрать</th>
+                      <th
+                        style={{ cursor: "pointer" }}
+                        onClick={() =>
+                          setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
+                        }
+                      >
+                        ID {sortOrder === "asc" ? "▲" : "▼"}
+                      </th>
+                      {isUsOnThem ? (
+                        <>
+                          <th>ФИО</th>
+                          <th>Телефон</th>
+                        </>
+                      ) : null}
+                      {isThemOnUs ? (
+                        <>
+                          <th>Мерчант</th>
+                          <th>Код терминала</th>
+                          <th>partner_trn_id</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>Номер в АРМ</th>
+                          <th>qrId</th>
+                        </>
+                      )}
+                      <th>Статус</th>
+                      <th>Комментарий</th>
+                      <th>Банк отправителя</th>
+                      <th>Банк получателя</th>
+                      <th>Сумма</th>
+                      <th>Дата создания</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedData.map((row) => {
+                      const key = getRowKey(row).toString();
+                      const merchantTitle =
+                        merchants.find((m) => m.code === row.merchant_code)
+                          ?.title ??
+                        row.merchant_code ??
+                        "-";
+                      return (
+                        <tr key={key}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="custom-checkbox"
+                              checked={selectedRows.includes(key)}
+                              onChange={(e) =>
+                                handleCheckboxToggle(key, e.target.checked)
+                              }
+                            />
+                          </td>
+
+                          {/* show key in ID column to reflect actual used key */}
+                          <td>{key}</td>
+
+                          {isUsOnThem && (
+                            <>
+                              <td>{row.sender_name || "-"}</td>
+                              <td>{row.sender_phone || "-"}</td>
+                            </>
+                          )}
+
+                          {isThemOnUs ? (
+                            <>
+                              <td>{merchantTitle}</td>
+                              <td>{row.terminal_code || "-"}</td>
+                              <td>{row.partner_trn_id || "-"}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td>{row.trnId || "-"}</td>
+                              <td>{row.qrId || "-"}</td>
+                            </>
+                          )}
+
+                          <td>
+                            {row.status === "success" ? (
+                              <FcOk style={{ fontSize: 22 }} />
+                            ) : row.status === "process" ? (
+                              <FcProcess style={{ fontSize: 22 }} />
+                            ) : row.status === "cancel" ? (
+                              <FcCancel style={{ fontSize: 22 }}/>
+                            ) : (
+                              <FcHighPriority style={{ fontSize: 22 }} />
+                            )}
+                          </td>
+                          <td>{row.description || "-"}</td>
+
+                          <td>
+                            {banks.find(
+                              (b) =>
+                                b.id === row?.sender_bank ||
+                                b.bankId === row?.sender
+                            )?.bankName || "-"}
+                          </td>
+                          <td>
+                            {banks.find((b) => b.id === row?.receiver)
+                              ?.bankName || "-"}
+                          </td>
+
+                          <td>{row.amount} с.</td>
+                          <td>
+                            {isUsOnThem
+                              ? formatDate(row.created_at)
+                              : formatDate(row.creation_datetime)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </main>
         </div>
-      )}
 
-      {alert && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={() => setAlert(null)}
-        />
-      )}
+        {isLoading && (
+          <div className="loading-overlay">
+            <div className="loading-box">
+              <div className="spinner" />
+              <p>Выгружается {loadingCount} записей...</p>
+            </div>
+          </div>
+        )}
+
+        {alert && (
+          <AlertMessage
+            message={alert.message}
+            type={alert.type}
+            onClose={() => setAlert(null)}
+          />
+        )}
+      </div>
     </>
   );
 }

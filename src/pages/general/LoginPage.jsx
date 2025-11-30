@@ -38,8 +38,12 @@ export default function LoginPage() {
         localStorage.setItem("username", username);
       }
 
-      if (data.role_ids !== undefined) {
-        localStorage.setItem("role_ids", String(data.role_ids?.[0]));
+      // Сохраняем ВЕСЬ массив ролей как JSON-строку
+      if (data.role_ids && Array.isArray(data.role_ids)) {
+        localStorage.setItem("role_ids", JSON.stringify(data.role_ids));
+      } else if (data.role_ids !== undefined) {
+        // На случай, если бэкенд вдруг пришлёт одну роль (число)
+        localStorage.setItem("role_ids", JSON.stringify([data.role_ids]));
       }
 
       navigate(from, { replace: true });

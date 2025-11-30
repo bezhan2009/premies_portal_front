@@ -13,8 +13,11 @@ import { useNavigate } from "react-router-dom";
 import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
+import useSidebar from "../../hooks/useSideBar.js";
+import Sidebar from "./DynamicMenu.jsx";
 
 export default function ApplicationsListCredit() {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -269,238 +272,240 @@ export default function ApplicationsListCredit() {
 
   return (
     <>
-      <HeaderCredit activeLink="applications" />
-      <div className="applications-list">
-        <main>
-          <div className="my-applications-header">
-            <Select
-              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
-              id={"status"}
-              value={data?.status}
-              onChange={(e) => {
-                if (!selectedRows.length) setData("status", e);
-                else upDateStatusApplications(e);
-              }}
-              options={statusCredit}
-              error={errors}
-            />
-            <button className="Unloading" onClick={handleExport}>
-              Выгрузка для карт
-            </button>
-            <button
-              className="filter-toggle"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            <button
-              className={archive && "archive-toggle"}
-              onClick={() => setArchive(!archive)}
-            >
-              Архив
-            </button>
-            <button
-              className={selectAll && "selectAll-toggle"}
-              onClick={() => {
-                setSelectAll(!selectAll);
-              }}
-            >
-              Выбрать все
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="filters animate-slideIn">
-              <input
-                placeholder="ФИО"
-                onChange={(e) => handleFilterChange("fullName", e.target.value)}
+      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+        <Sidebar activeLink="credits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+        <div className="applications-list">
+          <main>
+            <div className="my-applications-header">
+              <Select
+                style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+                id={"status"}
+                value={data?.status}
+                onChange={(e) => {
+                  if (!selectedRows.length) setData("status", e);
+                  else upDateStatusApplications(e);
+                }}
+                options={statusCredit}
+                error={errors}
               />
-              <input
-                placeholder="Телефон"
-                onChange={(e) => handleFilterChange("phone", e.target.value)}
-              />
-              <select
-                onChange={(e) => handleFilterChange("resident", e.target.value)}
+              <button className="Unloading" onClick={handleExport}>
+                Выгрузка для карт
+              </button>
+              <button
+                className="filter-toggle"
+                onClick={() => setShowFilters(!showFilters)}
               >
-                <option value="">Резидент</option>
-                <option value="Да">Да</option>
-                <option value="Нет">Нет</option>
-              </select>
-              <input
-                placeholder="Карта"
-                onChange={(e) => handleFilterChange("card", e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="my-applications-sub-header">
-            <div>
-              Поиск по месяцам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("month", e)}
-                value={data?.month}
-                // error={errors}
-                id={"month"}
-              />{" "}
-            </div>
-            <div>
-              Поиск по годам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("year", e)}
-                value={data?.year}
-                // error={errors}
-                id={"year"}
-              />{" "}
-            </div>
-            <div>
-              Поиск по имени
-              <Input
-                type="text"
-                placeholder={""}
-                onChange={(e) => setData("name_filter", e)}
-                value={data?.name_filter}
-                // error={errors}
-                id={"name_filter"}
-              />{" "}
-            </div>
-            <div>
-              Поиск по телефону
-              <Input
-                type="text"
-                placeholder={""}
-                onChange={(e) => setData("phone_filter", e)}
-                value={data?.phone_filter}
-                id={"phone_filter"}
-              />
-            </div>
-            {loading ? (
-              <Spinner />
-            ) : (
-              <>
-                <div>
-                  Показать{" "}
-                  <Input
-                    type="number"
-                    placeholder={""}
-                    onChange={(e) => setData("limit", e)}
-                    value={data?.limit}
-                    // error={errors}
-                    id={"limit"}
-                  />{" "}
-                  записей
-                </div>
-              </>
-            )}
-          </div>
-
-          <div
-            className="my-applications-content"
-            onScroll={scrollHandler}
-            style={{ position: "relative" }}
-          >
-            {filteredData.length === 0 ? (
-              <div
-                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                Фильтры
+              </button>
+              <button
+                className={archive && "archive-toggle"}
+                onClick={() => setArchive(!archive)}
               >
-                Нет данных для отображения
+                Архив
+              </button>
+              <button
+                className={selectAll && "selectAll-toggle"}
+                onClick={() => {
+                  setSelectAll(!selectAll);
+                }}
+              >
+                Выбрать все
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="filters animate-slideIn">
+                <input
+                  placeholder="ФИО"
+                  onChange={(e) => handleFilterChange("fullName", e.target.value)}
+                />
+                <input
+                  placeholder="Телефон"
+                  onChange={(e) => handleFilterChange("phone", e.target.value)}
+                />
+                <select
+                  onChange={(e) => handleFilterChange("resident", e.target.value)}
+                >
+                  <option value="">Резидент</option>
+                  <option value="Да">Да</option>
+                  <option value="Нет">Нет</option>
+                </select>
+                <input
+                  placeholder="Карта"
+                  onChange={(e) => handleFilterChange("card", e.target.value)}
+                />
               </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Выбрать</th>
-                    <th>ID</th>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    {/* <th>Карта</th> */}
-                    <th>Адрес</th>
-                    <th>Скан паспорта (лицевая)</th>
-                    <th>Скан паспорта (задняя)</th>
-                    <th>Скан паспорта (с лицом)</th>
-                    <th>Документ подтверждающий доход</th>
-                    {headers.map((e, i) => (
-                      <th key={i}>{e}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData &&
-                    filteredData
-                      ?.slice(0, data?.limit || filteredData?.length)
-                      ?.map((row, index) => (
-                        <tr key={index}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              className="custom-checkbox"
-                              checked={selectedRows.includes(row.ID)}
-                              onChange={(e) => {
-                                setSelectedRows(
-                                  e.target.checked
-                                    ? [...selectedRows, row.ID]
-                                    : selectedRows.filter((id) => id !== row.ID)
-                                );
-                              }}
-                            />
-                          </td>
-                          <td>{row.ID}</td>
-                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                          <td>{row.phone}</td>
-                          {/* <td>{row.card_name}</td> */}
-                          <td>{row.address}</td>
-                          <td>
-                            {renderFileIcon(row.front_side_of_the_passport)}
-                          </td>
-                          <td>
-                            {renderFileIcon(row.back_side_of_the_passport)}
-                          </td>
-                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                          <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                          <td>{row.phone}</td>
-                          <td>{row.client_code}</td>
-                          <td>{row.loan_type}</td>
-                          <td>{row.salary}</td>
-                          <td>{row.loan_amount}</td>
-                          <td>{row.workplace}</td>
-                          <td>{row.inn}</td>
-                          <td>{row.salary}</td>
-                          {/* <td>{row.card_code}</td> */}
-                          <td className="active-table">
-                            <AiFillEdit
-                              onClick={() => navigate(`/credit/card/${row.ID}`)}
-                              style={{
-                                fontSize: 35,
-                                color: "green",
-                                cursor: "pointer",
-                                marginBottom: "10px",
-                              }}
-                            />
-                            <AiFillDelete
-                              onClick={() => deleteApplication(row.ID)}
-                              style={{
-                                fontSize: 35,
-                                color: "#c31414",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
             )}
-          </div>
-        </main>
-      </div>
 
-      <ImagePreviewModal
-        imageUrl={previewImage}
-        onClose={() => setPreviewImage(null)}
-      />
+            <div className="my-applications-sub-header">
+              <div>
+                Поиск по месяцам
+                <Input
+                  type="number"
+                  placeholder={""}
+                  onChange={(e) => setData("month", e)}
+                  value={data?.month}
+                  // error={errors}
+                  id={"month"}
+                />{" "}
+              </div>
+              <div>
+                Поиск по годам
+                <Input
+                  type="number"
+                  placeholder={""}
+                  onChange={(e) => setData("year", e)}
+                  value={data?.year}
+                  // error={errors}
+                  id={"year"}
+                />{" "}
+              </div>
+              <div>
+                Поиск по имени
+                <Input
+                  type="text"
+                  placeholder={""}
+                  onChange={(e) => setData("name_filter", e)}
+                  value={data?.name_filter}
+                  // error={errors}
+                  id={"name_filter"}
+                />{" "}
+              </div>
+              <div>
+                Поиск по телефону
+                <Input
+                  type="text"
+                  placeholder={""}
+                  onChange={(e) => setData("phone_filter", e)}
+                  value={data?.phone_filter}
+                  id={"phone_filter"}
+                />
+              </div>
+              {loading ? (
+                <Spinner />
+              ) : (
+                <>
+                  <div>
+                    Показать{" "}
+                    <Input
+                      type="number"
+                      placeholder={""}
+                      onChange={(e) => setData("limit", e)}
+                      value={data?.limit}
+                      // error={errors}
+                      id={"limit"}
+                    />{" "}
+                    записей
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div
+              className="my-applications-content"
+              onScroll={scrollHandler}
+              style={{ position: "relative" }}
+            >
+              {filteredData.length === 0 ? (
+                <div
+                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                >
+                  Нет данных для отображения
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Выбрать</th>
+                      <th>ID</th>
+                      <th>ФИО</th>
+                      <th>Телефон</th>
+                      {/* <th>Карта</th> */}
+                      <th>Адрес</th>
+                      <th>Скан паспорта (лицевая)</th>
+                      <th>Скан паспорта (задняя)</th>
+                      <th>Скан паспорта (с лицом)</th>
+                      <th>Документ подтверждающий доход</th>
+                      {headers.map((e, i) => (
+                        <th key={i}>{e}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData &&
+                      filteredData
+                        ?.slice(0, data?.limit || filteredData?.length)
+                        ?.map((row, index) => (
+                          <tr key={index}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="custom-checkbox"
+                                checked={selectedRows.includes(row.ID)}
+                                onChange={(e) => {
+                                  setSelectedRows(
+                                    e.target.checked
+                                      ? [...selectedRows, row.ID]
+                                      : selectedRows.filter((id) => id !== row.ID)
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td>{row.ID}</td>
+                            <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
+                            <td>{row.phone}</td>
+                            {/* <td>{row.card_name}</td> */}
+                            <td>{row.address}</td>
+                            <td>
+                              {renderFileIcon(row.front_side_of_the_passport)}
+                            </td>
+                            <td>
+                              {renderFileIcon(row.back_side_of_the_passport)}
+                            </td>
+                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                            <td>{row.phone}</td>
+                            <td>{row.client_code}</td>
+                            <td>{row.loan_type}</td>
+                            <td>{row.salary}</td>
+                            <td>{row.loan_amount}</td>
+                            <td>{row.workplace}</td>
+                            <td>{row.inn}</td>
+                            <td>{row.salary}</td>
+                            {/* <td>{row.card_code}</td> */}
+                            <td className="active-table">
+                              <AiFillEdit
+                                onClick={() => navigate(`/credit/card/${row.ID}`)}
+                                style={{
+                                  fontSize: 35,
+                                  color: "green",
+                                  cursor: "pointer",
+                                  marginBottom: "10px",
+                                }}
+                              />
+                              <AiFillDelete
+                                onClick={() => deleteApplication(row.ID)}
+                                style={{
+                                  fontSize: 35,
+                                  color: "#c31414",
+                                  cursor: "pointer",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </main>
+        </div>
+
+        <ImagePreviewModal
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+      </div>
     </>
   );
 }
