@@ -122,9 +122,9 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
           {loading ? (
             <Spinner />
           ) : (
-            <ul>
+            <div>
               {roles.map((role, idx) => (
-                <li key={idx}>
+                <span key={idx}>
                   <label>{role.Name}</label>{" "}
                   {loadingId === role.ID ? (
                     <Spinner />
@@ -144,9 +144,9 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                       )}
                     </>
                   )}
-                </li>
+                </span>
               ))}
-            </ul>
+            </div>
           )}
         </nav>
         <main>
