@@ -1,0 +1,164 @@
+.modal-roles {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.35s ease-out;
+
+  > main {
+    width: 94%;
+    max-width: 1000px;
+    height: 92vh;
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+    animation: slideUp 0.45s ease-out;
+
+    /* Шапка */
+    header {
+      padding: 30px 40px;
+      background: linear-gradient(135deg, #ca3535 0%, #b02a2a 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+
+      h2 { margin: 0; font-size: 29px; font-weight: 700; }
+      svg { font-size: 38px; cursor: pointer; transition: .25s; &:hover { transform: rotate(90deg) scale(1.15); } }
+    }
+
+    /* Карточка пользователя - теперь fixed (sticky) */
+    .user-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 30px;
+      padding: 40px;
+      background: linear-gradient(135deg, #fffbf0 0%, #fef5f5 100%);
+      border-bottom: 1px solid #fee2e2;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0; // После header, но рассчитай height header если нужно
+      z-index: 10;
+
+      .user-avatar { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(202, 53, 53, 0.18); flex-shrink: 0; img { width: 100%; height: 100%; object-fit: cover; } }
+
+      .user-info {
+        flex: 1;
+        min-width: 0;
+
+        h3 { margin: 0 0 15px; font-size: 26px; color: #1f1f1f; font-weight: 600; }
+        p { margin: 10px 0; color: #555; font-size: 15px; span { color: #222; font-weight: 500; } }
+        .roles-preview {
+          margin-top: 20px;
+          text-align: center;
+          strong { color: #ca3535; font-weight: 600; font-size: 15px; display: block; margin-bottom: 10px; }
+          .roles-list { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; animation: fadeInUp 0.6s ease-out; }
+          .role-tag { background: #ca3535; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; animation: popIn 0.4s ease-out forwards; }
+          .no-roles { color: #888; font-style: italic; font-size: 14px; }
+        }
+      }
+    }
+
+    /* Контент с прокруткой */
+    .modal-body { flex: 1 1 auto; overflow-y: auto; padding: 40px; background: #fdfbfb; }
+
+    /* Роли */
+    .roles-section {
+      margin-bottom: 60px;
+      h3 { margin: 0 0 30px; font-size: 23px; color: #222; font-weight: 600; }
+    }
+
+    .roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+
+    .role-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 28px;
+      background: white;
+      border: 2px solid #fbd5d5;
+      border-radius: 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.7s ease-out forwards;
+      opacity: 0;
+      transform: translateY(20px);
+      position: relative;
+      user-select: none;
+
+      &.active { background: #fff5f5; border-color: #ca3535; box-shadow: 0 10px 30px rgba(202, 53, 53, 0.16); transform: translateY(-3px); }
+
+      &.disabled { opacity: 0.48; cursor: not-allowed; background: #fef2f2; border-style: dashed; }
+
+      &:hover:not(.disabled) { transform: translateY(-5px); box-shadow: 0 14px 35px rgba(202, 53, 53, 0.2); }
+
+      input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+      .checkmark { width: 24px; height: 24px; border: 2px solid #ca3535; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: white; transition: all 0.25s; svg { width: 16px; height: 16px; stroke: white; stroke-width: 3; fill: none; opacity: 0; transform: scale(0.8); transition: all 0.2s; } }
+
+      &.active .checkmark { background: #ca3535; svg { opacity: 1; transform: scale(1); } }
+
+      .role-label { font-weight: 600; color: #2d2d2d; flex: 1; font-size: 15.5px; }
+
+      .conflict { font-size: 11.5px; color: #dc2626; font-weight: 500; white-space: nowrap; }
+    }
+
+    /* Дополнительные поля */
+    .extra-section {
+      margin-top: 60px;
+      padding: 40px;
+      background: white;
+      border-radius: 22px;
+      border: 2.5px solid #fee2e2;
+      box-shadow: 0 12px 40px rgba(202, 53, 53, 0.1);
+
+      h3 { margin: 0 0 30px; font-size: 22px; color: #ca3535; font-weight: 700; padding-bottom: 16px; border-bottom: 2px solid #fee2e2; position: relative; &::before { font-weight: 900; margin-right: 12px; } }
+
+      &.office-manager h3::before { content: "Руководитель"; }
+
+      &.employee-fields h3::before { content: "Сотрудник"; }
+
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; .full-width { grid-column: 1 / -1; } textarea { width: 100%; padding: 16px 20px; border: 2px solid #fbd5d5; border-radius: 16px; font-family: inherit; font-size: 15px; resize: vertical; transition: all 0.25s; &:focus { outline: none; border-color: #ca3535; box-shadow: 0 0 0 5px rgba(202, 53, 53, 0.12); } } }
+
+      .display-field { margin: 0; font-size: 15px; color: #333; font-weight: 500; padding: 12px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
+    }
+
+    /* Кнопки */
+    .actions {
+      padding: 40px;
+      background: #fafafa;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-end;
+      gap: 24px;
+      flex-shrink: 0;
+
+      .btn-confirm { padding: 16px 40px; background: #ca3535; color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s; &:hover { background: #b02a2a; transform: translateY(-3px); box-shadow: 0 12px 30px rgba(202, 53, 53, 0.35); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+
+      .btn-cancel { padding: 16px 36px; background: #f1f1f1; color: #555; border: 1.5px solid #ddd; border-radius: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; &:hover { background: #e5e5e5; } }
+    }
+  }
+}
+
+.modal-roles.closing {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Анимации */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+

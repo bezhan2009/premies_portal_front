@@ -3,11 +3,9 @@ import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
-import { translate_role_id } from "../../../../api/utils/translate_role_id.js";
 import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
-
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -18,7 +16,6 @@ const EmployeesTable = () => {
     setLoading(true);
     try {
       const offices = await fetchOffices();
-
       const users = [];
       offices.forEach((office) => {
         if (office.office_user && office.office_user.length > 0) {
@@ -27,31 +24,27 @@ const EmployeesTable = () => {
               ID: u.worker.user.ID,
               officeTitle: office.title,
               fio: u.worker?.user?.full_name || "",
-              login: u.worker?.user?.Username || "",
+              login: u.worker?.user?.username || "",
               position: u.worker?.position || "",
               placeWork: u.worker?.place_work || "",
               salary: u.worker?.Salary || "",
-              group: translate_role_id(u.worker?.user.role_ids?.[0]),
+              group: u.worker?.user?.roles?.map(role => role.Name).join(', ') || "",
             });
           });
         }
       });
-
       setEmployees(users);
       setFilteredEmployees(users);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadData();
   }, []);
-
   const handleChange = (key, value) => {
     setEdit({ ...edit, [key]: value });
   };
-
   const saveChange = async () => {
     try {
       await fullUpdateWorkers({ ...edit, fio: edit.fio.trim() });
@@ -61,13 +54,10 @@ const EmployeesTable = () => {
       console.error(e);
     }
   };
-
   const handleSearch = (filtered) => {
     setFilteredEmployees(filtered || []);
   };
-
   console.log("openRoles", openRoles);
-
   return (
     <div className="report-table-container">
       <SearchBar
@@ -79,7 +69,6 @@ const EmployeesTable = () => {
           (item) => item.officeTitle || "",
         ]}
       />
-
       {loading ? (
         <Spinner />
       ) : (
@@ -213,5 +202,4 @@ const EmployeesTable = () => {
     </div>
   );
 };
-
 export default EmployeesTable;

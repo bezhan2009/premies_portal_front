@@ -6,325 +6,348 @@ import {
 } from "../../api/roles/roles";
 import { IoIosClose } from "react-icons/io";
 import Spinner from "../Spinner";
-import { BsToggle2Off, BsToggle2On } from "react-icons/bs";
 import { getAllOffices } from "../../api/chairman/reports/employee_spec";
 import Input from "../elements/Input";
 import Select from "../elements/Select";
+import AlertMessage from "../general/AlertMessage";
+import UserPhoto from "../../assets/user.png";
+import { getWorkerByUserId } from "../../api/workers/getWorkerByUserId";
+import "../../styles/components/ModalRoles.scss";
 
 export default function ModalRoles({ open = true, data, setOpenRoles }) {
   const [loading, setLoading] = useState(false);
-  const [loadingId, setLoadingId] = useState(0);
   const [roles, setRoles] = useState([]);
   const [offices, setOffices] = useState([]);
   const [userRoles, setUserRoles] = useState([]);
-  const [details, setDetails] = useState({});
+  const [details, setDetails] = useState({
+    office_title: "",
+    office_desc: "",
+    Salary: "",
+    position: "",
+    plan: "",
+    salary_project: "",
+    place_work: ""
+  });
+  const [alert, setAlert] = useState({ message: "", type: "error" });
+  const [workerData, setWorkerData] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const rolesData = await getRoles();
-      setRoles(rolesData);
+      setRoles(rolesData || []);
+    } catch (err) {
+      console.error(err);
+      setAlert({ message: "Ошибка загрузки ролей", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   const loadDataUser = async () => {
+    if (!data?.ID) return;
     setLoading(true);
     try {
       const rolesData = await getRoleUserById(data.ID);
-      setUserRoles(rolesData);
+      setUserRoles(rolesData || []);
+    } catch (err) {
+      console.error(err);
+      setUserRoles([]);
+      setAlert({ message: "Ошибка загрузки ролей пользователя", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   const loadAllOffices = async () => {
-    setLoading(true);
     try {
-      const rolesData = await getAllOffices();
-      setOffices(rolesData);
-    } finally {
-      setLoading(false);
+      const officesData = await getAllOffices();
+      setOffices(officesData || []);
+    } catch (err) {
+      console.error(err);
+      setAlert({ message: "Ошибка загрузки офисов", type: "error" });
     }
   };
 
-  const toggleRole = async (role) => {
-    if (userRoles.find((el) => el.ID === role.ID)) {
-      setUserRoles(userRoles.filter((el) => el.ID !== role.ID));
-    } else {
-      setUserRoles([...userRoles, role]);
+  const loadWorkerData = async () => {
+    if (!data?.ID) return;
+    try {
+      const worker = await getWorkerByUserId(data.ID);
+      setDetails(prev => ({
+        ...prev,
+        Salary: worker.Salary || "",
+        position: worker.position || "",
+        plan: worker.plan || "",
+        salary_project: worker.salary_project || "",
+        place_work: worker.place_work || ""
+      }));
+      setWorkerData(worker);
+    } catch (err) {
+      if (err.response?.data?.error === "ErrUserNotFound") {
+        setWorkerData(null);
+        // Сбрасываем поля сотрудника если worker не найден
+        setDetails(prev => ({
+          ...prev,
+          Salary: "",
+          position: "",
+          plan: "",
+          salary_project: "",
+          place_work: ""
+        }));
+      } else {
+        console.error(err);
+      }
     }
+  };
+
+  const toggleRole = (role) => {
+    if (role.banned) return;
+
+    setUserRoles((prev) => {
+      const exists = prev.some((el) => el.ID === role.ID);
+      if (exists) {
+        return prev.filter((el) => el.ID !== role.ID);
+      }
+      return [...prev, role];
+    });
   };
 
   useEffect(() => {
-    loadData();
-    loadDataUser();
-    loadAllOffices();
-  }, []);
+    if (open && data) {
+      loadData();
+      loadDataUser();
+      loadAllOffices();
+      loadWorkerData();
+    }
+  }, [open, data]);
 
   useEffect(() => {
     const hasRole6 = userRoles.some((el) => el.ID === 6);
     const hasRole8 = userRoles.some((el) => el.ID === 8);
 
-    setRoles((prevRoles) =>
-      prevRoles.map((role) => {
-        if (role.ID === 8) {
-          return { ...role, banned: hasRole6 };
-        }
-        if (role.ID === 6) {
-          return { ...role, banned: hasRole8 };
-        }
-        return role;
-      })
+    setRoles((prev) =>
+      prev.map((role) => ({
+        ...role,
+        banned: (role.ID === 6 && hasRole8) || (role.ID === 8 && hasRole6),
+      }))
     );
   }, [userRoles]);
 
-  if (!open) {
-    return "";
-  }
-  console.log("roles", roles);
-  console.log("data", data);
-  console.log("userRoles", userRoles);
+  const isRoleActive = (roleId) => userRoles.some((el) => el.ID === roleId);
+
+  const validateFields = () => {
+    const errors = [];
+
+    if (isRoleActive(5)) {
+      if (!details.office_title?.trim()) errors.push("Название офиса");
+      if (!details.office_desc?.trim()) errors.push("Описание офиса");
+    }
+
+    if ((isRoleActive(6) || isRoleActive(8)) && !workerData) {
+      if (!details.Salary && details.Salary !== 0) errors.push("Сумма оклада");
+      if (!details.position?.trim()) errors.push("Должность");
+      if (!details.plan && details.plan !== 0) errors.push("План");
+      if (!details.salary_project && details.salary_project !== 0) errors.push("ЗП по проекту");
+      if (!details.place_work?.trim()) errors.push("Офис");
+    }
+
+    if (errors.length > 0) {
+      setAlert({
+        message: `Заполните обязательные поля: ${errors.join(", ")}`,
+        type: "warning",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateFields()) return;
+
+    setLoading(true);
+    try {
+      await updateRoleUserById(data.ID, {
+        ...data,
+        ...details,
+        Salary: +details.Salary || 0,
+        plan: +details.plan || 0,
+        salary_project: +details.salary_project || 0,
+        role_ids: userRoles.map((r) => r.ID),
+      });
+      setAlert({ message: "Изменения успешно сохранены!", type: "success" });
+      setTimeout(() => setOpenRoles({ open: false, data: null }), 500);
+    } catch (err) {
+      console.error(err);
+      setAlert({ message: "Ошибка сохранения изменений", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open || !data) return null;
 
   return (
     <div className="modal-roles">
       <main>
         <header>
-          <h2>Роспределение ролей</h2>
-          <IoIosClose
-            onClick={() => setOpenRoles({ open: false, data: null })}
-          />
+          <h2>Распределение ролей</h2>
+          <IoIosClose onClick={() => setOpenRoles({ open: false, data: null })} />
         </header>
-        <nav>
-          <h3>Данные сотрудника</h3>
-          <ul>
-            <li>
-              <label>ФИО:</label> {data.full_name}
-            </li>
-            <li>
-              <label>Логин:</label> {data.username}
-            </li>
-            <li>
-              <label>Номер телефона:</label> {data.phone}
-            </li>
-            <li>
-              <label>Email:</label> {data.email}
-            </li>
-            <li>
-              <label>Присвоенные роли:</label>{" "}
-              {userRoles.map((el) => el.Name).join(", ")}
-            </li>
-          </ul>
-        </nav>
-        <nav>
-          <h3 style={{ marginTop: 30 }}>Роспределение ролей</h3>
-          {loading ? (
-            <Spinner />
-          ) : (
-            <div>
-              {roles.map((role, idx) => (
-                <span key={idx}>
-                  <label>{role.Name}</label>{" "}
-                  {loadingId === role.ID ? (
-                    <Spinner />
-                  ) : (
-                    <>
-                      {userRoles.find((el) => el.ID === role.ID) ? (
-                        <BsToggle2On
-                          // disabled={role.ID === 6 && !role.banned}
-                          onClick={() => toggleRole(role)}
-                          style={{ color: "#28a745" }}
-                        />
-                      ) : (
-                        <BsToggle2Off
-                          onClick={() => !role?.banned && toggleRole(role)}
-                          style={{ color: role?.banned ? "red" : "#999" }}
-                        />
-                      )}
-                    </>
-                  )}
-                </span>
-              ))}
+
+        <div className="user-card">
+          <div className="user-avatar">
+            <img
+              src={data.avatar || UserPhoto}
+              alt={data.full_name}
+            />
+          </div>
+          <div className="user-info">
+            <h3>{data.full_name || "Не указано"}</h3>
+            <p>Email: <span>{data.email || "—"}</span></p>
+            <div className="roles-preview">
+              <strong>Роли:</strong>
+              <div className="roles-list">
+                {userRoles.length > 0 ? (
+                  userRoles.map((role) => (
+                    <span key={role.ID} className="role-tag">
+                      {role.Name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="no-roles">Нет ролей</span>
+                )}
+              </div>
             </div>
-          )}
-        </nav>
-        <main>
-          {userRoles?.find((el) => el.ID === 5) ? (
-            <>
-              <h3 style={{ marginTop: 30 }}>Дополнительная информация</h3>
-              <div>
-                <Input
-                  defValue={details?.place_work}
-                  type="text"
-                  value={details?.place_work}
-                  placeholder="Введите место работы"
-                  onChange={(e) => setDetails({ ...details, place_work: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
+          </div>
+        </div>
 
-                <Input
-                  defValue={details?.position}
-                  type="text"
-                  placeholder="Введите должность"
-                  value={details?.position}
-                  onChange={(e) => setDetails({ ...details, position: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
+        <div className="modal-body">
+          <section className="roles-section">
+            <h3>Доступные роли</h3>
+            {loading ? (
+              <Spinner />
+            ) : (
+              <div className="roles-grid">
+                {roles.map((role, index) => {
+                  const active = isRoleActive(role.ID);
+                  const banned = role.banned;
+                  const id = `role-${role.ID}`;
+
+                  return (
+                    <label
+                      key={role.ID}
+                      htmlFor={id}
+                      className={`role-item ${active ? "active" : ""} ${banned ? "disabled" : ""}`}
+                      style={{ animationDelay: `${index * 0.07}s` }}
+                    >
+                      <input
+                        id={id}
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggleRole(role)}
+                        disabled={banned}
+                      />
+                      <span className="checkmark">
+                        <svg viewBox="0 0 24 24">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                      <span className="role-label">{role.Name}</span>
+                      {banned && <span className="conflict">Конфликт с другой ролью</span>}
+                    </label>
+                  );
+                })}
               </div>
-            </>
-          ) : (
-            ""
-          )}
-          {userRoles?.find((el) => el.ID === 6) ? (
-            <>
-              <h3 style={{ marginTop: 30 }}>Дополнительная информация</h3>
-              <div>
-                <Input
-                  defValue={details?.salary_project}
-                  placeholder="Введите сумму проекта"
-                  type="number"
-                  value={details?.salary_project}
-                  onChange={(e) =>
-                    setDetails({ ...details, salary_project: e })
-                  }
-                  // onEnter={() => saveChange(edit)}
-                />
+            )}
+          </section>
 
+          {isRoleActive(5) && (
+            <section className="extra-section office-manager">
+              <h3>Данные руководителя офиса</h3>
+              <div className="form-grid">
                 <Input
-                  defValue={details?.plan}
-                  placeholder="Введите план"
-                  type="number"
-                  value={details?.plan}
-                  onChange={(e) => setDetails({ ...details, plan: e })}
-                  // onEnter={() => saveChange(edit)}
+                  placeholder="Название офиса"
+                  value={details.office_title || ""}
+                  onChange={(value) => setDetails({ ...details, office_title: value })}
                 />
-
-                <Input
-                  defValue={details?.Salary}
-                  placeholder="Сумма оклада"
-                  type="number"
-                  value={details?.Salary}
-                  onChange={(e) => setDetails({ ...details, Salary: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-                <Input
-                  defValue={details?.position}
-                  placeholder="Введите должность"
-                  type="text"
-                  value={details?.position}
-                  onChange={(e) => setDetails({ ...details, position: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-
-                <Select
-                  style={{ width: "100%" }}
-                  placeholder="Выберите офис"
-                  defValue={details?.place_work}
-                  value={details?.place_work}
-                  options={offices.map((el) => ({
-                    value: el.ID,
-                    label: el.title,
-                  }))}
-                  onChange={(e) =>
-                    setDetails({
-                      ...details,
-                      place_work: offices.find((item) => item.ID === +e)?.title,
-                    })
-                  }
-                  // onEnter={() => saveChange(edit)}
-                />
+                <div className="full-width">
+                  <textarea
+                    placeholder="Описание офиса"
+                    rows={4}
+                    value={details.office_desc || ""}
+                    onChange={(e) => setDetails({ ...details, office_desc: e.target.value })}
+                    style={{ width: "95%" }}
+                  />
+                </div>
               </div>
-            </>
-          ) : (
-            ""
+            </section>
           )}
-          {userRoles?.find((el) => el.ID === 8) ? (
-            <>
-              <h3 style={{ marginTop: 30 }}>Дополнительная информация</h3>
-              <div>
-                <Input
-                  defValue={details?.salary_project}
-                  placeholder="Введите сумму проекта"
-                  type="text"
-                  value={details?.salary_project}
-                  onChange={(e) =>
-                    setDetails({ ...details, salary_project: e })
-                  }
-                  // onEnter={() => saveChange(edit)}
-                />
 
-                <Input
-                  defValue={details?.plan}
-                  placeholder="Введите план"
-                  type="text"
-                  value={details?.plan}
-                  onChange={(e) => setDetails({ ...details, plan: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-
-                <Input
-                  defValue={details?.Salary}
-                  placeholder="Сумма оклада"
-                  type="text"
-                  value={details?.Salary}
-                  onChange={(e) => setDetails({ ...details, Salary: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-                <Input
-                  defValue={details?.position}
-                  placeholder="Введите должность"
-                  type="text"
-                  value={details?.position}
-                  onChange={(e) => setDetails({ ...details, position: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-
-                <Select
-                  style={{ width: "100%" }}
-                  placeholder="Выберите офис"
-                  defValue={details?.place_work}
-                  value={details?.place_work}
-                  options={offices.map((el) => ({
-                    value: el.ID,
-                    label: el.title,
-                  }))}
-                  onChange={(e) =>
-                    setDetails({
-                      ...details,
-                      place_work: offices.find((a) => a.ID === e).title,
-                    })
-                  }
-                  // onEnter={() => saveChange(edit)}
-                />
+          {(isRoleActive(6) || isRoleActive(8) || workerData) && (
+            <section className="extra-section employee-fields">
+              <h3>Данные сотрудника</h3>
+              <div className="form-grid">
+                {workerData ? (
+                  <>
+                    <p className="display-field">Сумма оклада: {details.Salary}</p>
+                    <p className="display-field">Должность: {details.position}</p>
+                    <p className="display-field">План: {details.plan}</p>
+                    <p className="display-field">ЗП по проекту: {details.salary_project}</p>
+                    <p className="display-field">Офис: {details.place_work}</p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      placeholder="Сумма оклада"
+                      type="number"
+                      value={details.Salary || ""}
+                      onChange={(value) => setDetails({ ...details, Salary: value })}
+                    />
+                    <Input
+                      placeholder="Должность"
+                      value={details.position || ""}
+                      onChange={(value) => setDetails({ ...details, position: value })}
+                    />
+                    <Input
+                      placeholder="План"
+                      type="number"
+                      value={details.plan || ""}
+                      onChange={(value) => setDetails({ ...details, plan: value })}
+                    />
+                    <Input
+                      placeholder="ЗП по проекту"
+                      type="number"
+                      value={details.salary_project || ""}
+                      onChange={(value) => setDetails({ ...details, salary_project: value })}
+                    />
+                    <Select
+                      placeholder="Офис"
+                      value={details.place_work || ""}
+                      options={offices.map((o) => ({ value: o.title, label: o.title }))}
+                      onChange={(val) => setDetails({ ...details, place_work: val })}
+                    />
+                  </>
+                )}
               </div>
-            </>
-          ) : (
-            ""
+            </section>
           )}
-        </main>
-        <div>
-          <button
-            className="button-edit-roles"
-            onClick={async () => {
-              await updateRoleUserById(data.ID, {
-                ...data,
-                ...details,
-                Salary: +details.Salary,
-                plan: +details.plan,
-                salary_project: +details.salary_project,
-                role_ids: userRoles.map((el) => el.ID),
-              });
-              setOpenRoles({ open: false, data: null });
-            }}
-          >
-            Подтвердить
+        </div>
+
+        {alert.message && (
+          <AlertMessage
+            message={alert.message}
+            type={alert.type}
+            onClose={() => setAlert({ message: "", type: "error" })}
+            duration={5000}
+          />
+        )}
+
+        <div className="actions">
+          <button className="btn-confirm" onClick={handleSave} disabled={loading}>
+            {loading ? <Spinner /> : "Сохранить"}
           </button>
-          <button
-            className="button-edit-roles"
-            onClick={() => setOpenRoles({ open: false, data: null })}
-          >
-            Отменить
+          <button className="btn-cancel" onClick={() => setOpenRoles({ open: false, data: null })}>
+            Отмена
           </button>
         </div>
       </main>

@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import CardsTable from "./table_datas/TableCardPrices.jsx";
 import TableCardMargents from "./table_datas/TableCardMargents.jsx";
 import RolesTable from "./table_datas/RolesTable.jsx";
+import RolesLogsTable from "./table_datas/RoleLogsTable.jsx";
 
 const OperatorDatasBlockInfo = () => {
   const [selectedTable, setSelectedTable] = useState("office");
@@ -48,6 +49,13 @@ const OperatorDatasBlockInfo = () => {
           <>
             <Filters modificationDesc="Роли" />
             <RolesTable key="roles" />
+          </>
+        );
+      case "role_logs":
+        return (
+          <>
+            <Filters modificationDesc="Логи обновления ролей" />
+            <RolesLogsTable key="role_logs" />
           </>
         );
       default:

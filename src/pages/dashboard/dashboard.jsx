@@ -40,7 +40,7 @@ function RedirectDashboard() {
     if (roleIds.includes(3)) {
       navigate("/operator/premies", { replace: true });
     } else if (roleIds.includes(6) || roleIds.includes(8)) {
-      navigate("/worker/cards", { replace: true });
+      navigate("/worker/premies", { replace: true });
     } else if (roleIds.includes(9)) {
       navigate("/chairman/reports", { replace: true });
     } else if (roleIds.includes(5)) {
