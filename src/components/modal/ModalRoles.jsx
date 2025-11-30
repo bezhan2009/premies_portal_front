@@ -181,18 +181,9 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
               <h3 style={{ marginTop: 30 }}>Дополнительная информация</h3>
               <div>
                 <Input
-                  defValue={details?.place_work}
-                  type="text"
-                  placeholder="Введите место работы"
-                  value={details?.place_work}
-                  onChange={(e) => setDetails({ ...details, place_work: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-
-                <Input
                   defValue={details?.salary_project}
                   placeholder="Введите сумму проекта"
-                  type="text"
+                  type="number"
                   value={details?.salary_project}
                   onChange={(e) =>
                     setDetails({ ...details, salary_project: e })
@@ -203,7 +194,7 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                 <Input
                   defValue={details?.plan}
                   placeholder="Введите план"
-                  type="text"
+                  type="number"
                   value={details?.plan}
                   onChange={(e) => setDetails({ ...details, plan: e })}
                   // onEnter={() => saveChange(edit)}
@@ -212,7 +203,7 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                 <Input
                   defValue={details?.Salary}
                   placeholder="Сумма оклада"
-                  type="text"
+                  type="number"
                   value={details?.Salary}
                   onChange={(e) => setDetails({ ...details, Salary: e })}
                   // onEnter={() => saveChange(edit)}
@@ -229,13 +220,18 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                 <Select
                   style={{ width: "100%" }}
                   placeholder="Выберите офис"
-                  defValue={details?.office_id}
-                  value={details?.office_id}
+                  defValue={details?.place_work}
+                  value={details?.place_work}
                   options={offices.map((el) => ({
                     value: el.ID,
                     label: el.title,
                   }))}
-                  onChange={(e) => setDetails({ ...details, office_id: e })}
+                  onChange={(e) =>
+                    setDetails({
+                      ...details,
+                      place_work: offices.find((item) => item.ID === +e)?.title,
+                    })
+                  }
                   // onEnter={() => saveChange(edit)}
                 />
               </div>
@@ -248,15 +244,6 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
               <h3 style={{ marginTop: 30 }}>Дополнительная информация</h3>
               <div>
                 <Input
-                  defValue={details?.place_work}
-                  type="text"
-                  placeholder="Введите место работы"
-                  value={details?.place_work}
-                  onChange={(e) => setDetails({ ...details, place_work: e })}
-                  // onEnter={() => saveChange(edit)}
-                />
-
-                <Input
                   defValue={details?.salary_project}
                   placeholder="Введите сумму проекта"
                   type="text"
@@ -296,13 +283,18 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                 <Select
                   style={{ width: "100%" }}
                   placeholder="Выберите офис"
-                  defValue={details?.office_id}
-                  value={details?.office_id}
+                  defValue={details?.place_work}
+                  value={details?.place_work}
                   options={offices.map((el) => ({
                     value: el.ID,
                     label: el.title,
                   }))}
-                  onChange={(e) => setDetails({ ...details, office_id: e })}
+                  onChange={(e) =>
+                    setDetails({
+                      ...details,
+                      place_work: offices.find((a) => a.ID === e).title,
+                    })
+                  }
                   // onEnter={() => saveChange(edit)}
                 />
               </div>
@@ -317,6 +309,10 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
             onClick={async () => {
               await updateRoleUserById(data.ID, {
                 ...data,
+                ...details,
+                Salary: +details.Salary,
+                plan: +details.plan,
+                salary_project: +details.salary_project,
                 role_ids: userRoles.map((el) => el.ID),
               });
               setOpenRoles({ open: false, data: null });
