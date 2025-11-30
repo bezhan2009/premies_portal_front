@@ -8,6 +8,7 @@ function RedirectDashboard() {
     const accessToken = localStorage.getItem("access_token");
     const refreshToken = localStorage.getItem("refresh_token");
     const roleIdsJson = localStorage.getItem("role_ids");
+    const roleId = localStorage.getItem("role_id"); // Старое поле
 
     // Если нет токенов — сразу на логин
     if (!accessToken || !refreshToken) {
@@ -15,17 +16,37 @@ function RedirectDashboard() {
       return;
     }
 
-    // Парсим роли
+    // ТРИГГЕР: Преобразование ролей в массив
     let roleIds = [];
     try {
+      // Случай 1: role_ids существует и это JSON массив
       if (roleIdsJson) {
         const parsed = JSON.parse(roleIdsJson);
         if (Array.isArray(parsed)) {
           roleIds = parsed.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
         }
+        // Случай 2: role_ids существует но это одно число (старый формат)
+        else if (!isNaN(parsed) && parsed > 0) {
+          roleIds = [Number(parsed)];
+          // Обновляем localStorage в новом формате
+          localStorage.setItem("role_ids", JSON.stringify(roleIds));
+        }
+      }
+      // Случай 3: role_ids не существует, но есть role_id (совсем старый формат)
+      else if (roleId && !isNaN(roleId) && roleId > 0) {
+        roleIds = [Number(roleId)];
+        // Сохраняем в новом формате и удаляем старое поле
+        localStorage.setItem("role_ids", JSON.stringify(roleIds));
+        localStorage.removeItem("role_id");
       }
     } catch (err) {
       console.error("Ошибка парсинга role_ids", err);
+      
+      // Случай 4: role_ids существует но это строка с числом
+      if (roleIdsJson && !isNaN(roleIdsJson) && roleIdsJson > 0) {
+        roleIds = [Number(roleIdsJson)];
+        localStorage.setItem("role_ids", JSON.stringify(roleIds));
+      }
     }
 
     // Если ролей нет вообще — на 404 или логин
