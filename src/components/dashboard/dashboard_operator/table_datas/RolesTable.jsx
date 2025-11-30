@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
-import { fetchOffices } from "../../../../api/offices/all_offices.js";
-import { translate_role_id } from "../../../../api/utils/translate_role_id.js";
 import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
@@ -11,77 +9,103 @@ import { getAllUsers } from "../../../../api/users/get_user.js";
 
 const RolesTable = () => {
   const [employees, setEmployees] = useState([]);
-  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [allEmployees, setAllEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [edit, setEdit] = useState(null);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
+  const observer = useRef();
 
-  const loadData = async ({ reset = false } = {}) => {
-    if (reset) {
-      setEmployees([]);
-      setHasMore(true);
-    }
-
-    const loadingState = reset ? setLoading : setLoadingMore;
-    loadingState(true);
-
+  // Загрузка первоначальных данных
+  const loadInitial = async () => {
+    setLoading(true);
     try {
-      const lastId = reset ? null : employees?.[employees?.length - 1]?.ID;
-      const { users } = await getAllUsers({
-        after: lastId,
-      });
-
-      if (users && users.length > 0) {
-        if (reset) {
-          setEmployees(users);
-          setFilteredEmployees(users);
-        } else {
-          setEmployees(prev => [...prev, ...users]);
-          setFilteredEmployees(prev => [...prev, ...users]);
-        }
-        
-        // Если получено меньше данных, чем ожидалось, значит это последняя страница
-        if (users.length < 20) { // Предполагаем, что размер страницы 20
-          setHasMore(false);
-        }
-      } else {
-        setHasMore(false);
-      }
+      const { users } = await getAllUsers({});
+      setEmployees(users || []);
+      setHasMore(users && users.length === 10);
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
+      setEmployees([]);
       setHasMore(false);
     } finally {
-      loadingState(false);
+      setLoading(false);
     }
   };
 
-  // Обработчик скролла для бесконечной прокрутки
-  const handleScroll = useCallback(() => {
-    const tableDiv = document.querySelector('.table-reports-div');
-    if (!tableDiv) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = tableDiv;
-    const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
-
-    if (isBottom && !loadingMore && hasMore) {
-      loadData();
-    }
-  }, [loadingMore, hasMore, employees]);
-
+  // Загрузка всех данных для поиска
   useEffect(() => {
-    loadData({ reset: true });
+    const loadAllData = async () => {
+      let all = [];
+      let afterID = null;
+
+      while (true) {
+        const { users } = await getAllUsers({ after: afterID });
+        if (!users || users.length === 0) break;
+
+        all = [...all, ...users];
+        afterID = users[users.length - 1]?.ID;
+        if (users.length < 10) break;
+      }
+
+      setAllEmployees(all);
+    };
+
+    loadAllData();
   }, []);
 
-  // Добавляем обработчик скролла
   useEffect(() => {
-    const tableDiv = document.querySelector('.table-reports-div');
-    if (tableDiv) {
-      tableDiv.addEventListener('scroll', handleScroll);
-      return () => tableDiv.removeEventListener('scroll', handleScroll);
+    loadInitial();
+  }, []);
+
+  // Обработчик поиска
+  const handleSearch = (filtered) => {
+    if (!filtered) {
+      setIsSearching(false);
+      loadInitial();
+      return;
     }
-  }, [handleScroll]);
+
+    setIsSearching(true);
+    setEmployees(filtered);
+    setHasMore(false);
+  };
+
+  // Загрузка дополнительных данных
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || employees.length === 0 || isSearching) return;
+
+    setLoadingMore(true);
+    try {
+      const lastId = employees[employees.length - 1]?.ID;
+      const { users } = await getAllUsers({ after: lastId });
+      
+      setEmployees(prev => [...prev, ...users]);
+      setHasMore(users && users.length === 10);
+    } catch (error) {
+      console.error("Ошибка загрузки дополнительных данных:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Intersection Observer для бесконечной прокрутки
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore]
+  );
 
   const handleChange = (key, value) => {
     setEdit({ ...edit, [key]: value });
@@ -90,22 +114,17 @@ const RolesTable = () => {
   const saveChange = async () => {
     try {
       await fullUpdateWorkers({ ...edit, full_name: edit.full_name.trim() });
-      // Обновляем данные сбросом к первой странице
-      loadData({ reset: true });
+      loadInitial();
       setEdit({ ID: null });
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleSearch = (filtered) => {
-    setFilteredEmployees(filtered || []);
-  };
-
   return (
     <div className="report-table-container">
       <SearchBar
-        allData={employees}
+        allData={allEmployees}
         onSearch={handleSearch}
         placeholder="Поиск по ФИО или названию офиса..."
         searchFields={[
@@ -118,7 +137,7 @@ const RolesTable = () => {
         <Spinner />
       ) : (
         <>
-          {filteredEmployees && filteredEmployees.length > 0 ? (
+          {employees && employees.length > 0 ? (
             <div
               className="table-reports-div"
               style={{ maxHeight: "calc(100vh - 480px)", overflow: "auto" }}
@@ -134,72 +153,76 @@ const RolesTable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((row, idx) => (
-                    <tr key={`${row.ID}-${idx}`}>
-                      <td onClick={() => setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.full_name || row.full_name}
-                            type="text"
-                            value={edit?.full_name}
-                            onChange={(e) => handleChange("full_name", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.full_name
-                        )}
-                      </td>
-                      <td onClick={() => setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.username || row.username}
-                            type="text"
-                            value={edit?.username}
-                            onChange={(e) => handleChange("username", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.username
-                        )}
-                      </td>
-                      <td onClick={() => setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.phone || row.phone}
-                            type="text"
-                            value={edit?.phone}
-                            onChange={(e) => handleChange("phone", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.phone
-                        )}
-                      </td>
-                      <td onClick={() => setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.email || row.email}
-                            type="text"
-                            value={edit?.email}
-                            onChange={(e) => handleChange("email", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.email
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className="button-edit-roles"
-                          onClick={() =>
-                            setOpenRoles({ data: row, open: true })
-                          }
-                        >
-                          Перераспределить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {employees.map((row, idx) => {
+                    const isLast = idx === employees.length - 1;
+                    
+                    return (
+                      <tr key={`${row.ID}-${idx}`} ref={isLast ? lastRowRef : null}>
+                        <td onClick={() => setEdit(row)}>
+                          {edit?.ID === row.ID ? (
+                            <Input
+                              defValue={edit?.full_name || row.full_name}
+                              type="text"
+                              value={edit?.full_name}
+                              onChange={(e) => handleChange("full_name", e)}
+                              onEnter={() => saveChange(edit)}
+                            />
+                          ) : (
+                            row.full_name
+                          )}
+                        </td>
+                        <td onClick={() => setEdit(row)}>
+                          {edit?.ID === row.ID ? (
+                            <Input
+                              defValue={edit?.username || row.username}
+                              type="text"
+                              value={edit?.username}
+                              onChange={(e) => handleChange("username", e)}
+                              onEnter={() => saveChange(edit)}
+                            />
+                          ) : (
+                            row.username
+                          )}
+                        </td>
+                        <td onClick={() => setEdit(row)}>
+                          {edit?.ID === row.ID ? (
+                            <Input
+                              defValue={edit?.phone || row.phone}
+                              type="text"
+                              value={edit?.phone}
+                              onChange={(e) => handleChange("phone", e)}
+                              onEnter={() => saveChange(edit)}
+                            />
+                          ) : (
+                            row.phone
+                          )}
+                        </td>
+                        <td onClick={() => setEdit(row)}>
+                          {edit?.ID === row.ID ? (
+                            <Input
+                              defValue={edit?.email || row.email}
+                              type="text"
+                              value={edit?.email}
+                              onChange={(e) => handleChange("email", e)}
+                              onEnter={() => saveChange(edit)}
+                            />
+                          ) : (
+                            row.email
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="button-edit-roles"
+                            onClick={() =>
+                              setOpenRoles({ data: row, open: true })
+                            }
+                          >
+                            Перераспределить
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               
@@ -211,7 +234,7 @@ const RolesTable = () => {
               )}
               
               {/* Сообщение о конце данных */}
-              {!hasMore && employees.length > 0 && (
+              {!hasMore && employees.length > 0 && !isSearching && (
                 <div style={{ 
                   textAlign: "center", 
                   padding: "10px", 
