@@ -16,7 +16,10 @@ const RolesTable = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [edit, setEdit] = useState(null);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
+  
+  const tableContainerRef = useRef();
   const observer = useRef();
+  const lastIdRef = useRef(null);
 
   // Загрузка первоначальных данных
   const loadInitial = async () => {
@@ -25,6 +28,11 @@ const RolesTable = () => {
       const { users } = await getAllUsers({});
       setEmployees(users || []);
       setHasMore(users && users.length === 10);
+      
+      // Сохраняем последний ID для пагинации
+      if (users && users.length > 0) {
+        lastIdRef.current = users[users.length - 1].ID;
+      }
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
       setEmployees([]);
@@ -74,15 +82,21 @@ const RolesTable = () => {
 
   // Загрузка дополнительных данных
   const loadMore = async () => {
-    if (loadingMore || !hasMore || employees.length === 0 || isSearching) return;
+    if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
     try {
-      const lastId = employees[employees.length - 1]?.ID;
-      const { users } = await getAllUsers({ after: lastId });
+      const { users } = await getAllUsers({ after: lastIdRef.current });
       
-      setEmployees(prev => [...prev, ...users]);
-      setHasMore(users && users.length === 10);
+      if (users && users.length > 0) {
+        setEmployees(prev => [...prev, ...users]);
+        setHasMore(users.length === 10);
+        
+        // Обновляем последний ID
+        lastIdRef.current = users[users.length - 1].ID;
+      } else {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error("Ошибка загрузки дополнительных данных:", error);
     } finally {
@@ -90,22 +104,32 @@ const RolesTable = () => {
     }
   };
 
-  // Intersection Observer для бесконечной прокрутки
-  const lastRowRef = useCallback(
-    (node) => {
-      if (loadingMore) return;
-      if (observer.current) observer.current.disconnect();
+  // Обработчик скролла для бесконечной прокрутки
+  const handleScroll = useCallback(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
 
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          loadMore();
-        }
-      });
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isBottom = scrollTop + clientHeight >= scrollHeight - 50;
 
-      if (node) observer.current.observe(node);
-    },
-    [loadingMore, hasMore]
-  );
+    if (isBottom && !loadingMore && hasMore && !isSearching) {
+      loadMore();
+    }
+  }, [loadingMore, hasMore, isSearching]);
+
+  // Добавляем обработчик скролла
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
+  // Также добавляем кнопку для ручной загрузки (на случай проблем со скроллом)
+  const handleLoadMoreClick = () => {
+    loadMore();
+  };
 
   const handleChange = (key, value) => {
     setEdit({ ...edit, [key]: value });
@@ -138,26 +162,25 @@ const RolesTable = () => {
       ) : (
         <>
           {employees && employees.length > 0 ? (
-            <div
-              className="table-reports-div"
-              style={{ maxHeight: "calc(100vh - 480px)", overflow: "auto" }}
-            >
-              <table className="table-reports">
-                <thead>
-                  <tr>
-                    <th>ФИО</th>
-                    <th>Логин</th>
-                    <th>Номер телефона</th>
-                    <th>Email</th>
-                    <th>Перераспределение ролей</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((row, idx) => {
-                    const isLast = idx === employees.length - 1;
-                    
-                    return (
-                      <tr key={`${row.ID}-${idx}`} ref={isLast ? lastRowRef : null}>
+            <>
+              <div
+                ref={tableContainerRef}
+                className="table-reports-div"
+                style={{ maxHeight: "calc(100vh - 480px)", overflow: "auto" }}
+              >
+                <table className="table-reports">
+                  <thead>
+                    <tr>
+                      <th>ФИО</th>
+                      <th>Логин</th>
+                      <th>Номер телефона</th>
+                      <th>Email</th>
+                      <th>Перераспределение ролей</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((row, idx) => (
+                      <tr key={`${row.ID}-${idx}`}>
                         <td onClick={() => setEdit(row)}>
                           {edit?.ID === row.ID ? (
                             <Input
@@ -221,30 +244,35 @@ const RolesTable = () => {
                           </button>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               
-              {/* Индикатор загрузки дополнительных данных */}
-              {loadingMore && (
-                <div style={{ textAlign: "center", padding: "10px" }}>
-                  <Spinner size="small" />
-                </div>
-              )}
-              
-              {/* Сообщение о конце данных */}
-              {!hasMore && employees.length > 0 && !isSearching && (
-                <div style={{ 
-                  textAlign: "center", 
-                  padding: "10px", 
-                  color: "#666",
-                  fontStyle: "italic"
-                }}>
-                  Все данные загружены
-                </div>
-              )}
-            </div>
+              {/* Кнопка и индикаторы загрузки */}
+              <div style={{ textAlign: "center", padding: "10px" }}>
+                {loadingMore && <Spinner size="small" />}
+                
+                {!loadingMore && hasMore && !isSearching && (
+                  <button 
+                    onClick={handleLoadMoreClick}
+                    className="button-edit-roles"
+                    style={{ margin: "10px 0" }}
+                  >
+                    Загрузить еще
+                  </button>
+                )}
+                
+                {!hasMore && employees.length > 0 && !isSearching && (
+                  <div style={{ 
+                    color: "#666",
+                    fontStyle: "italic"
+                  }}>
+                    Все данные загружены
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <h2>Нет данных</h2>
           )}
