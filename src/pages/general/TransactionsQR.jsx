@@ -236,7 +236,7 @@ import Sidebar from "./DynamicMenu.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
@@ -503,8 +503,16 @@ export default function TransactionsQR() {
   // --- render ---
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="list_qr" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+      <div
+        className={`dashboard-container ${
+          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+        }`}
+      >
+        <Sidebar
+          activeLink="list_qr"
+          isOpen={isSidebarOpen}
+          toggle={toggleSidebar}
+        />
         <div
           className="applications-list"
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
@@ -524,7 +532,9 @@ export default function TransactionsQR() {
               <pre> </pre>
               <div style={{ display: "flex", gap: "50px" }}>
                 <button
-                  className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
+                  className={`archive-toggle-activ ${
+                    isUsOnThem ? "active" : ""
+                  }`}
                   onClick={() => {
                     setIsUsOnThem(true);
                     setIsThemOnUs(false);
@@ -567,7 +577,10 @@ export default function TransactionsQR() {
                     <input
                       placeholder="ФИО"
                       onChange={(e) =>
-                        setFilters((p) => ({ ...p, sender_name: e.target.value }))
+                        setFilters((p) => ({
+                          ...p,
+                          sender_name: e.target.value,
+                        }))
                       }
                     />
                     <input
@@ -657,7 +670,11 @@ export default function TransactionsQR() {
                 </div>
               ) : sortedData.length === 0 ? (
                 <div
-                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+                  style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    color: "gray",
+                  }}
                 >
                   Нет данных для отображения
                 </div>
@@ -693,7 +710,7 @@ export default function TransactionsQR() {
                         </>
                       )}
                       <th>Статус</th>
-                      <th>Комментарий</th>
+                      {/* <th>Комментарий</th> */}
                       <th>Банк отправителя</th>
                       <th>Банк получателя</th>
                       <th>Сумма</th>
@@ -746,16 +763,28 @@ export default function TransactionsQR() {
 
                           <td>
                             {row.status === "success" ? (
-                              <FcOk style={{ fontSize: 22 }} />
+                              <>
+                                <FcOk style={{ fontSize: 22 }} />
+                                <span>Успешно</span>
+                              </>
                             ) : row.status === "process" ? (
-                              <FcProcess style={{ fontSize: 22 }} />
+                              <>
+                                <FcProcess style={{ fontSize: 22 }} />
+                                <span>В процессе</span>
+                              </>
                             ) : row.status === "cancel" ? (
-                              <FcCancel style={{ fontSize: 22 }}/>
+                              <>
+                                <FcCancel style={{ fontSize: 22 }} />
+                                <span>Отменено</span>
+                              </>
                             ) : (
-                              <FcHighPriority style={{ fontSize: 22 }} />
+                              <>
+                                <FcHighPriority style={{ fontSize: 22 }} />
+                                <span>Высокий приоритет</span>
+                              </>
                             )}
                           </td>
-                          <td>{row.description || "-"}</td>
+                          {/* <td>{row.description || "-"}</td> */}
 
                           <td>
                             {banks.find(
