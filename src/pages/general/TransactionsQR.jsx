@@ -763,25 +763,49 @@ export default function TransactionsQR() {
 
                           <td>
                             {row.status === "success" ? (
-                              <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                }}
+                              >
                                 <FcOk style={{ fontSize: 22 }} />
                                 <span>Успешно</span>
-                              </>
+                              </div>
                             ) : row.status === "process" ? (
-                              <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                }}
+                              >
                                 <FcProcess style={{ fontSize: 22 }} />
                                 <span>В процессе</span>
-                              </>
+                              </div>
                             ) : row.status === "cancel" ? (
-                              <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                }}
+                              >
                                 <FcCancel style={{ fontSize: 22 }} />
                                 <span>Отменено</span>
-                              </>
+                              </div>
                             ) : (
-                              <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                }}
+                              >
                                 <FcHighPriority style={{ fontSize: 22 }} />
                                 <span>Высокий приоритет</span>
-                              </>
+                              </div>
                             )}
                           </td>
                           {/* <td>{row.description || "-"}</td> */}
