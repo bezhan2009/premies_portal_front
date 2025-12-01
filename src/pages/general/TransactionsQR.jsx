@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import HeaderAgentQR from "../../components/dashboard/dashboard_agent_qr/MenuAgentQR.jsx";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
@@ -9,238 +8,13 @@ import QRStatistics from "./QRStatistics.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
 
-// const result = [
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-01T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-02T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-02T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-02T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-02T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-05T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-05T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-05T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-05T21:30:28",
-//   },
-//   {
-//     id: 6822,
-//     trnId: 20225850,
-//     sender_phone: "992904411010",
-//     receiver: 3,
-//     amount: 90,
-//     description: "",
-//     sender_name: "САИДЗОДА Фарзоди",
-//     sender_bank: 27,
-//     qrId: "4a6df3da29a146ece322a75b3e6c27d6",
-//     status: "success",
-//     created_at: "2025-10-05T21:30:28",
-//   },
-// ];
-
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
   const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
-  const [tableData, setTableData] = useState();
+  const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -251,11 +25,11 @@ export default function TransactionsQR() {
   const [alert, setAlert] = useState(null);
 
   const [sortOrder, setSortOrder] = useState("asc");
-  const [selectedRows, setSelectedRows] = useState([]); // хранит строковые ключи
+  const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  const backendQR = import.meta.env.VITE_BACKEND_QR_URL; // для QR API (transactions, incoming_tx, banks)
-  const backendMain = import.meta.env.VITE_BACKEND_URL; // для /merchants и основных выгрузок
+  const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
+  const backendMain = import.meta.env.VITE_BACKEND_URL;
   const token = localStorage.getItem("access_token");
 
   const showAlert = (message, type = "success") => {
@@ -263,65 +37,68 @@ export default function TransactionsQR() {
     setTimeout(() => setAlert(null), 3500);
   };
 
-  // --- вспомогательные функции ---
-  const formatDate = (dateString) => {
+  // Функция для конвертации времени в ISO формат с Z
+  const formatTimeForBackend = (dateString) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
-    if (isNaN(d)) return dateString;
-    const pad = (n) => String(n).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const MM = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mi = pad(d.getMinutes());
-    const ss = pad(d.getSeconds());
-    return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d)) return "";
+      
+      // Преобразуем в ISO строку и добавляем Z (UTC)
+      // Убираем миллисекунды если они есть
+      return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    } catch (e) {
+      console.error("Error formatting date:", e, dateString);
+      return "";
+    }
   };
 
-  // возвращаем единый строковый ключ для строки (устойчивый)
-  const getRowKey = (row) =>
-    (
-      row.id ??
-      row.tx_id ??
-      row.trnId ??
-      row.partner_trn_id ??
-      `${row.merchant_code || ""}-${row.terminal_code || ""}-${
-        row.amount || ""
-      }`
-    ).toString();
+  // Форматирование для отображения в таблице
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d)) return dateString;
+      const pad = (n) => String(n).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const MM = pad(d.getMonth() + 1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
+    } catch (e) {
+      return dateString;
+    }
+  };
 
-  // --- загрузчики данных ---
+  const getRowKey = (row) => {
+    if (isUsOnThem) {
+      return `${row.id || 0}-${row.trnId || 0}`;
+    } else {
+      return `${row.id || 0}-${row.tx_id || row.partner_trn_id || ""}`;
+    }
+  };
+
   const fetchData = async (type = "themOnUs") => {
     try {
       setLoading(true);
       const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
 
-      const url = `${backendQR}${endpoint}?start_date=${
-        data?.start_date ?? "2025-09-25"
-      }&end_date=${
-        data?.end_date
-          ? new Date(data.end_date).setDate(
-              new Date(data.end_date).getDate() + 1
-            ) &&
-            new Date(
-              new Date(data.end_date).setDate(
-                new Date(data.end_date).getDate() + 1
-              )
-            )
-              .toISOString()
-              .slice(0, 10)
-          : "2025-10-01"
-      }`;
+      const startDate = data?.start_date ?? "2025-09-25";
+      const endDate = data?.end_date ?? "2025-10-01";
+
+      const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
 
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
-      setTableData(json);
+      setTableData(json || []);
       showAlert(`Загружено ${json.length} записей`, "success");
     } catch (err) {
       console.error("Ошибка загрузки данных:", err);
       showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
-      setTableData([]); // на случай ошибки - очищаем
+      setTableData([]);
     } finally {
       setLoading(false);
     }
@@ -332,7 +109,7 @@ export default function TransactionsQR() {
       const resp = await fetch(`${backendQR}banks`);
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
-      setBanks(json);
+      setBanks(json || []);
     } catch (err) {
       console.error("Ошибка загрузки банков:", err);
       setBanks([]);
@@ -354,13 +131,13 @@ export default function TransactionsQR() {
     }
   };
 
-  // --- фильтрация и сортировка (мемоизируем) ---
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
     return tableData.filter((row) =>
       Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         const rowValue = row[key];
+        if (rowValue == null) return false;
         if (typeof rowValue === "number")
           return String(rowValue).includes(value);
         if (typeof rowValue === "string")
@@ -373,7 +150,6 @@ export default function TransactionsQR() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
-      // используем ключ id или tx/trn для сортировки: fallback to numeric id if present
       const ka = Number(a.id ?? a.tx_id ?? a.trnId ?? 0);
       const kb = Number(b.id ?? b.tx_id ?? b.trnId ?? 0);
       return sortOrder === "asc" ? ka - kb : kb - ka;
@@ -381,95 +157,95 @@ export default function TransactionsQR() {
     return arr;
   }, [filteredData, sortOrder]);
 
-  // --- эффекты (инициализация) ---
   useEffect(() => {
-    // начальные даты и загрузка справочников
     setData("start_date", data?.start_date ?? "2025-09-25");
     setData("end_date", data?.end_date ?? "2025-10-01");
     getBanks();
     getMerchants();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // один раз
+  }, []);
 
-  // загрузка транзакций при переключении режима
   useEffect(() => {
     if (isUsOnThem) fetchData("usOnThem");
     else if (isThemOnUs) fetchData("themOnUs");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUsOnThem, isThemOnUs]);
 
-  // загрузка при смене дат
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
       if (isUsOnThem) fetchData("usOnThem");
       else if (isThemOnUs) fetchData("themOnUs");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.start_date, data?.end_date]);
 
-  // selectAll — устанавливаем массив ключей только когда selectAll меняется (и используем мемоизированный sortedData)
   useEffect(() => {
     if (selectAll) {
-      const keys = sortedData.map((r) => getRowKey(r).toString());
+      const keys = sortedData.map((r) => getRowKey(r));
       setSelectedRows(keys);
     } else {
       setSelectedRows([]);
     }
-  }, [selectAll, sortedData.length]); // depend on length to avoid deep array equality issues
+  }, [selectAll, sortedData]);
 
-  // --- экспорт/выгрузка ---
   const [isLoading, setIsLoading] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
 
   const handleExport = async () => {
     try {
-      // формируем ids в зависимости от режима
-      let ids = [];
-      if (isUsOnThem) {
-        ids = sortedData
-          .filter((row) => selectedRows.includes(getRowKey(row).toString()))
-          .map((row) => Number(row.trnId))
-          .filter((n) => !isNaN(n));
-      } else {
-        ids = sortedData
-          .filter((row) => selectedRows.includes(getRowKey(row).toString()))
-          .map((row) => Number(row.tx_id ?? row.partner_trn_id))
-          .filter((n) => !isNaN(n));
-      }
+      const selectedTransactions = sortedData.filter((row) =>
+        selectedRows.includes(getRowKey(row))
+      );
 
-      if (!ids.length) {
+      if (selectedTransactions.length === 0) {
         showAlert("Выберите хотя бы одну запись для выгрузки", "error");
         return;
       }
 
       setIsLoading(true);
-      setLoadingCount(ids.length);
+      setLoadingCount(selectedTransactions.length);
 
       const route = isUsOnThem
         ? "/automation/qr/us-on-them"
         : "/automation/qr/them-on-us";
+
+      // Подготавливаем данные с правильным форматом времени
+      const dataToSend = selectedTransactions.map(transaction => {
+        const formattedTransaction = { ...transaction };
+        
+        // Форматируем время для backend
+        if (isUsOnThem && transaction.created_at) {
+          formattedTransaction.created_at = formatTimeForBackend(transaction.created_at);
+        } else if (isThemOnUs && transaction.creation_datetime) {
+          formattedTransaction.creation_datetime = formatTimeForBackend(transaction.creation_datetime);
+        }
+        
+        return formattedTransaction;
+      });
+
       const resp = await fetch(`${backendMain}${route}`, {
         method: "POST",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ qr_ids: ids }),
+        body: JSON.stringify(dataToSend),
       });
 
-      if (!resp.ok) throw new Error(`Ошибка выгрузки: ${resp.status}`);
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error("Ошибка сервера:", errorText);
+        throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
+      }
 
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
 
-      const allSelected =
-        selectedRows.length === sortedData.length && sortedData.length > 0;
+      const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
       const typeName = isUsOnThem ? "Us-on-Them" : "Them-on-Us";
+      const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       a.download =
         allSelected && data?.start_date && data?.end_date
           ? `${typeName}_${data.start_date}_to_${data.end_date}.xlsx`
-          : `${typeName}_QR_Report.xlsx`;
+          : `${typeName}_Report_${timestamp}.xlsx`;
 
       a.href = url;
       document.body.appendChild(a);
@@ -477,30 +253,37 @@ export default function TransactionsQR() {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      showAlert(`Файл успешно выгружен (${ids.length} записей)`, "success");
+      showAlert(`Файл успешно выгружен (${selectedTransactions.length} записей)`, "success");
       setSelectedRows([]);
       setSelectAll(false);
     } catch (err) {
       console.error("Ошибка выгрузки QR:", err);
-      showAlert("Ошибка выгрузки QR", "error");
+      showAlert(`Ошибка выгрузки QR: ${err.message}`, "error");
     } finally {
       setIsLoading(false);
       setLoadingCount(0);
     }
   };
 
-  // --- UI handlers ---
   const handleCheckboxToggle = (key, checked) => {
-    const k = key.toString();
     if (checked) {
-      setSelectedRows((prev) => (prev.includes(k) ? prev : [...prev, k]));
+      setSelectedRows((prev) => [...prev, key]);
     } else {
-      setSelectedRows((prev) => prev.filter((p) => p !== k));
+      setSelectedRows((prev) => prev.filter((p) => p !== key));
       setSelectAll(false);
     }
   };
 
-  // --- render ---
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRows([]);
+    } else {
+      const keys = sortedData.map((r) => getRowKey(r));
+      setSelectedRows(keys);
+    }
+    setSelectAll(!selectAll);
+  };
+
   return (
     <>
       <div
@@ -518,7 +301,6 @@ export default function TransactionsQR() {
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
         >
           <main>
-            {" "}
             <QRStatistics />
           </main>
           <main>
@@ -558,15 +340,19 @@ export default function TransactionsQR() {
                 </button>
               </div>
 
-              <button className="Unloading" onClick={handleExport}>
-                Выгрузка QR
+              <button 
+                className="Unloading" 
+                onClick={handleExport}
+                disabled={selectedRows.length === 0 || isLoading}
+              >
+                {isLoading ? `Выгрузка... (${loadingCount})` : "Выгрузка QR"}
               </button>
 
               <button
-                className={selectAll && "selectAll-toggle"}
-                onClick={() => setSelectAll((s) => !s)}
+                className={selectAll ? "selectAll-toggle" : ""}
+                onClick={toggleSelectAll}
               >
-                Выбрать все
+                {selectAll ? "Снять выделение" : "Выбрать все"}
               </button>
             </div>
 
@@ -682,7 +468,14 @@ export default function TransactionsQR() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Выбрать</th>
+                      <th>
+                        <input
+                          type="checkbox"
+                          className="custom-checkbox"
+                          checked={selectAll}
+                          onChange={toggleSelectAll}
+                        />
+                      </th>
                       <th
                         style={{ cursor: "pointer" }}
                         onClick={() =>
@@ -710,7 +503,6 @@ export default function TransactionsQR() {
                         </>
                       )}
                       <th>Статус</th>
-                      {/* <th>Комментарий</th> */}
                       <th>Банк отправителя</th>
                       <th>Банк получателя</th>
                       <th>Сумма</th>
@@ -719,7 +511,7 @@ export default function TransactionsQR() {
                   </thead>
                   <tbody>
                     {sortedData.map((row) => {
-                      const key = getRowKey(row).toString();
+                      const key = getRowKey(row);
                       const merchantTitle =
                         merchants.find((m) => m.code === row.merchant_code)
                           ?.title ??
@@ -738,7 +530,6 @@ export default function TransactionsQR() {
                             />
                           </td>
 
-                          {/* show key in ID column to reflect actual used key */}
                           <td>{key}</td>
 
                           {isUsOnThem && (
@@ -808,7 +599,6 @@ export default function TransactionsQR() {
                               </div>
                             )}
                           </td>
-                          {/* <td>{row.description || "-"}</td> */}
 
                           <td>
                             {banks.find(
@@ -825,8 +615,8 @@ export default function TransactionsQR() {
                           <td>{row.amount} с.</td>
                           <td>
                             {isUsOnThem
-                              ? formatDate(row.created_at)
-                              : formatDate(row.creation_datetime)}
+                              ? formatDateForDisplay(row.created_at)
+                              : formatDateForDisplay(row.creation_datetime)}
                           </td>
                         </tr>
                       );
