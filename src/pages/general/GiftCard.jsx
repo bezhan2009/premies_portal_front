@@ -134,6 +134,7 @@ export default function GiftCard({ edit = false }) {
       formData.append("is_resident", String(!!data.is_resident));
       formData.append("remote_application", String(!!data.remote_application));
       formData.append("identity_verified", String(!!data.identity_verified));
+      formData.append("receiving_office", data.receiving_office || "");
 
       formData.append(
         "delivery_address",
@@ -378,6 +379,14 @@ export default function GiftCard({ edit = false }) {
                   value={data?.secret_word}
                   error={errors}
                   id={"secret_word"}
+                />
+                <Input
+                  className={"div9"}
+                  placeholder={"Получаемый оффис"}
+                  onChange={(e) => setData("receiving_office", e)}
+                  value={data?.receiving_office}
+                  error={errors}
+                  id={"receiving_office"}
                 />
                 <Input
                   className={"div7"}

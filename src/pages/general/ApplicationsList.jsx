@@ -444,6 +444,7 @@ export default function ApplicationsList() {
                       <th>Скан паспорта (лицевая)</th>
                       <th>Скан паспорта (задняя)</th>
                       <th>Скан паспорта (с лицом)</th>
+                      <th>Получаемый оффис</th>
                       {headers.map((e, i) => (
                         <th key={i}>{e}</th>
                       ))}
@@ -481,6 +482,7 @@ export default function ApplicationsList() {
                               {renderFileIcon(row.back_side_of_the_passport)}
                             </td>
                             <td>{renderFileIcon(row.selfie_with_passport)}</td>
+                            <td>{row.receiving_office}</td>
                             <td>{row.phone_number}</td>
                             <td>{row.secret_word}</td>
                             <td>{row.card_name}</td>
