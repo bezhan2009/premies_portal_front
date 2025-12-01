@@ -771,7 +771,7 @@ export default function TransactionsQR() {
                                 }}
                               >
                                 <FcOk style={{ fontSize: 22 }} />
-                                <span>Успешно</span>
+                                <span style={{ color: "green" }}>Успешно</span>
                               </div>
                             ) : row.status === "process" ? (
                               <div
@@ -782,7 +782,7 @@ export default function TransactionsQR() {
                                 }}
                               >
                                 <FcProcess style={{ fontSize: 22 }} />
-                                <span>В процессе</span>
+                                <span style={{ color: "orange" }}>В процессе</span>
                               </div>
                             ) : row.status === "cancel" ? (
                               <div
@@ -793,7 +793,7 @@ export default function TransactionsQR() {
                                 }}
                               >
                                 <FcCancel style={{ fontSize: 22 }} />
-                                <span>Отменено</span>
+                                <span style={{ color: "red" }}>Отменено</span>
                               </div>
                             ) : (
                               <div
@@ -804,7 +804,7 @@ export default function TransactionsQR() {
                                 }}
                               >
                                 <FcHighPriority style={{ fontSize: 22 }} />
-                                <span>Высокий приоритет</span>
+                                <span style={{ color: "red" }}>Высокий приоритет</span>
                               </div>
                             )}
                           </td>
