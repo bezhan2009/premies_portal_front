@@ -11,27 +11,28 @@ export const visaCards = [
 ];
 
 export const ncCards = [
-  // { id: 0, name: "Нет" },
-  { id: undefined, name: "Korti Milli Fast Card" },
-  { id: undefined, name: "Oson Korti Milli" },
+  { id: 1637.01, name: "Korti Milli Fast Card" },
+  { id: 1637.01, name: "Oson Korti Milli" },
   { id: 1637.01, name: "Korti Milli" },
   { id: 1637.02, name: "Korti Milli Salary" },
 ];
 
 export const mcCards = [
-  { id: undefined, name: "MC Platinum Salary (bank)" },
-  { id: undefined, name: "MC Platinum Salary (Зачисление  TJS)" },
-  { id: 1636.20, name: "MC Platinum Nonresident" },
+  { id: 1136.11, name: "MC Platinum Salary (bank)" },
+  { id: 1136.08, name: "MC Platinum Salary (Зачисление  TJS)" },
+  { id: 1636.2, name: "MC Platinum Nonresident" },
   { id: 1636.04, name: "MC Platinum" },
-  { id: undefined, name: "MC Platinum Salary  (Зачисление  USD, EUR)" },
-  { id: 1636.15, name: "MC Unembossed" },
+  { id: 1136.17, name: "MC Platinum Salary  (Зачисление  USD, EUR)" },
   { id: 1636.03, name: "MC World" },
   { id: 1636.21, name: "MC World Nonresident" },
   { id: 1636.02, name: "MC Standard" },
-  { id: undefined, name: "MC Standart Salary Зарплатные проекты  (Зачисление  TJS)" },
-  { id: undefined, name: "MC Standart Salary (bank)" },
-  { id: undefined, name: "MC Standart Salary (Зачисление  USD, EUR)" },
-  { id: undefined, name: "MC Business" },
+  {
+    id: 1136.06,
+    name: "MC Standart Salary Зарплатные проекты  (Зачисление  TJS)",
+  },
+  { id: 1136.1, name: "MC Standart Salary (bank)" },
+  { id: 1136.05, name: "MC Standart Salary (Зачисление  USD, EUR)" },
+  { id: 1136.23, name: "MC Business" },
 ];
 
 export const statusCredit = [
