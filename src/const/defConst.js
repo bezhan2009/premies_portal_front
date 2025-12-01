@@ -1,13 +1,16 @@
 export const visaCards = [
-  { id: 1635.11, name: "Visa Business" },
-  { id: 1635.07, name: "Visa Gold Salary (Зачисление  TJS)" },
-  { id: 1635.16, name: "Visa Gold Nonresident" },
   { id: 1635.03, name: "Visa Gold" },
-  { id: 1635.09, name: "Visa Gold Salary (bank)" },
-  { id: 1635.07, name: "Visa Gold Salary  (Зачисление  USD, EUR)" },
-  { id: 1635.15, name: "Easy Visa" },
+  { id: 1635.07, name: "Visa Gold Salary (3aqncneHHe TJS)" },
+  { id: 1635.09, name: "Visa Gold Salary (bark)" },
+  { id: 1635.11, name: "Visa Business" },
+  { id: 1635.13, name: "Visa Gold Salary (3awcneHHe I-JSD, EWR)" },
+  { id: 1635.16, name: "Visa Gold Nonresident" },
   { id: 1635.17, name: "Visa Signature Legal" },
   { id: 1635.18, name: "Visa Signature Individual" },
+  { id: 1635.19, name: "Visa Signature Nonresident" },
+  { id: 1635.22, name: "Maxcyc Visa Business" },
+  { id: 1635.23, name: "Maxcyc Visa Signature Individual" },
+  { id: 1635.29, name: "Visa Signature Zero" },
 ];
 
 export const ncCards = [
@@ -18,21 +21,40 @@ export const ncCards = [
 ];
 
 export const mcCards = [
-  { id: 1136.11, name: "MC Platinum Salary (bank)" },
-  { id: 1136.08, name: "MC Platinum Salary (Зачисление  TJS)" },
-  { id: 1636.2, name: "MC Platinum Nonresident" },
-  { id: 1636.04, name: "MC Platinum" },
-  { id: 1136.17, name: "MC Platinum Salary  (Зачисление  USD, EUR)" },
-  { id: 1636.03, name: "MC World" },
-  { id: 1636.21, name: "MC World Nonresident" },
   { id: 1636.02, name: "MC Standard" },
+  { id: 1636.03, name: "MC World" },
+  { id: 1636.04, name: "MC Platinum" },
+  { id: 1636.05, name: "MC Standart Salary (3aqucneHHe LISD, EWR)" },
   {
-    id: 1136.06,
-    name: "MC Standart Salary Зарплатные проекты  (Зачисление  TJS)",
+    id: 1636.06,
+    name: "MC Standart Salary 3apnnaTHb1e npoeKTb1 (3aqncneHHe TJS)",
   },
-  { id: 1136.1, name: "MC Standart Salary (bank)" },
-  { id: 1136.05, name: "MC Standart Salary (Зачисление  USD, EUR)" },
-  { id: 1136.23, name: "MC Business" },
+  {
+    id: 1636.07,
+    name: "MC World Salary 3apnnaTHble npoeKTb1 (3aqucneHHe TJS)",
+  },
+  { id: 1636.08, name: "MC Platinum Salary (3aqucneHHe TJS)" },
+  { id: 1636.09, name: "MC World Salary (bank)" },
+  { id: 1636.1, name: "MC Standart Salary (bank)" },
+  { id: 1636.11, name: "MC Platinum Salary (bank)" },
+  {
+    id: 1636.12,
+    name: "MC Unembossed Salary 3apnnaTHble npoeKTb1 (3aqucneHHe TJS)",
+  },
+  { id: 1636.17, name: "MC Platinum Salary (3aqncneHHe LISD. EUR)" },
+  { id: 1636.18, name: "MC World salary" },
+  { id: 1636.19, name: "MC Unembossed Salary (3aqucneHHe LISD, EWR)" },
+  { id: 1636.2, name: "MC Platinum Nonresident" },
+  { id: 1636.21, name: "MC World Nonresident" },
+  { id: 1636.22, name: "MC Preferred individual" },
+  { id: 1636.23, name: "MC Business" },
+  { id: 1636.24, name: "MC World Elite" },
+  { id: 1636.25, name: "MC World Elite Nonresident" },
+  { id: 1636.26, name: "Elite salary" },
+  { id: 1636.27, name: "MC Business salary" },
+  { id: 1636.28, name: "MC WORLD ELITE" },
+  { id: 1636.31, name: "Maxcyc MC Business Personal" },
+  { id: 1636.32, name: "MC World Zero" },
 ];
 
 export const statusCredit = [
