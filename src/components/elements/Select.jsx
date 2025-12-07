@@ -7,9 +7,11 @@ export default function Select({
   className = "",
   onEnter,
   style,
+  title,
 }) {
   return (
     <label className={`select ${className}`} htmlFor={id}>
+      {title && title}
       <select
         style={style}
         id={id}
@@ -17,7 +19,7 @@ export default function Select({
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={`${id}-error`}
         onKeyDown={(e) => {
-          if (e.key === "Enter") { 
+          if (e.key === "Enter") {
             e.preventDefault();
             onEnter?.(value);
           }

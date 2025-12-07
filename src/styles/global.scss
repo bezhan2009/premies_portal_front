@@ -5,6 +5,62 @@ body {
   animation: fadeIn 0.5s ease-out;
 }
 
+.updating-transaction-type {
+  > main {
+    font-family: "Inter", -apple-system, sans-serif;
+    background-color: #fff;
+    padding: 20px;
+    padding-bottom: 40px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    > .select {
+      width: 300px;
+      margin-bottom: -16px;
+      > select {
+        margin-top: 5px;
+      }
+      > p {
+        color: #e21a1c;
+        margin: 0;
+        // display: none;
+      }
+    }
+    > .input {
+      width: 300px;
+    }
+    > button {
+      width: 300px;
+      height: 40px;
+      border-radius: 100px;
+      font-family: "Inter", -apple-system, sans-serif;
+      font-size: 15px;
+      cursor: pointer;
+      border: none;
+      background-color: #e21a1c;
+      color: #fff;
+    }
+  }
+}
+.button-loading {
+  background-color: #333 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  > span {
+    // display: block;
+    width: 15px;
+    height: 15px;
+    border-radius: 10px;
+    color: #fff;
+    // background-color: #6d6d6d;
+    border: 2px solid #6d6d6d;
+    border-top: 2px solid #fff;
+    animation: spin 1s linear infinite;
+  }
+}
 .button-edit-roles {
   border-radius: 12px;
   padding: 10px 40px;
@@ -194,8 +250,6 @@ tr:nth-child(14) {
   animation-delay: 1.4s;
 }
 /* ... и так далее по необходимости */
-
-
 
 //.modal {
 //  max-width: 100% !important;
