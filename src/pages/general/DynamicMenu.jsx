@@ -263,6 +263,16 @@ export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(15)) {
+            additionalLinks.push({
+                name: 'Агент по транзакциям',
+                key: 'transactions',
+                children: [
+                    { name: 'Обновление типа транзакции', href: '/agent-transaction/update-transaction', key: 'update_transaction' },
+                ]
+            });
+        }
+
         if (roles.includes(16)) {
             additionalLinks.push({
                 name: 'Агент по таможне',

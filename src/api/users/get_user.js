@@ -2,6 +2,7 @@ import { apiClient } from "../utils/apiClient";
 
 export const fetchUserById = async (id) => {
   const token = localStorage.getItem("access_token");
+  console.log(token);
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

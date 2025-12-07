@@ -56,11 +56,12 @@ import SendSmsForm from "../pages/dashboard/dashboard_sms/SenderSMS.jsx";
 import DashboardAgentSMSKnowledgeBase from "../pages/dashboard/dashboard_sms/KnowledgeBase.jsx";
 import CheckTokenVersion from "./CheckTokenVersion.jsx";
 import EQMSList from "../pages/general/EqmsTableList.jsx";
+import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <CheckTokenVersion />
+      {/*<CheckTokenVersion />*/}
       <Routes>
         {/* Публичный маршрут */}
         <Route path="/login" element={<LoginPage />} />
@@ -280,6 +281,16 @@ export default function AppRouter() {
                   path="agent-sms/knowledge-base"
                   element={<DashboardAgentSMSKnowledgeBase />}
               />
+          </Route>
+
+          <Route
+              element={
+                  <RequireRole allowedRoles={[15]}>
+                      <Outlet />
+                  </RequireRole>
+              }
+          >
+              <Route path="agent-transaction/update-transaction" element={<UpdatingTransactionType />} />
           </Route>
 
           <Route

@@ -76,6 +76,8 @@ function RedirectDashboard() {
       navigate("/agent-qr/transactions/list", { replace: true });
     } else if (roleIds.includes(14)) {
         navigate("/agent-sms/sms-sender", { replace: true });
+    } else if (roleIds.includes(15)) {
+        navigate("/agent-transaction/update-transaction", { replace: true });
     } else if (roleIds.includes(16)) {
         navigate("agent-custom/eqms", { replace: true });
     } else {

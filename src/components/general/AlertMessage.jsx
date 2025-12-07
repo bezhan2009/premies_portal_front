@@ -1,44 +1,23 @@
-import React, { useEffect, useState } from "react";
-import "../../styles/components/AlertMessage.scss";
+import React, { useEffect } from "react";
+import { toast } from "react-toastify";
 
-export default function AlertMessage({ message, type = "error", onClose, duration = 3000 }) {
-    const [isClosing, setIsClosing] = useState(false);
+export default function AlertMessage({ message, type = "error", duration = 3000 }) {
 
     useEffect(() => {
-        // Таймер для автоматического закрытия
-        const closeTimer = setTimeout(() => {
-            handleClose();
-        }, duration);
+        if (!message) return;
 
-        return () => {
-            clearTimeout(closeTimer);
-        };
-    }, [duration]);
-
-    const handleClose = () => {
-        if (!isClosing) {
-            setIsClosing(true);
-            // Даем время для анимации исчезновения
-            setTimeout(() => {
-                onClose();
-            }, 500); // Совпадает с длительностью alertSlideOut
+        if (type === "success") {
+            toast.success(message, { autoClose: duration });
+        } else if (type === "info") {
+            toast.info(message, { autoClose: duration });
+        } else if (type === "warning") {
+            toast.warning(message, { autoClose: duration });
+        } else {
+            toast.error(message, { autoClose: duration });
         }
-    };
 
-    const handleCloseClick = (e) => {
-        e.stopPropagation();
-        handleClose();
-    };
+    }, [message, type, duration]);
 
-    return (
-        <div className={`alert alert--${type} ${isClosing ? 'alert--closing' : ''}`}>
-            {message}
-            <button
-                className="alert-close"
-                onClick={handleCloseClick}
-                aria-label="Закрыть уведомление"
-                type="button"
-            />
-        </div>
-    );
+    return null;
 }
+

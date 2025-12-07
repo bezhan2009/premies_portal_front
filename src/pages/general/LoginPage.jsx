@@ -26,17 +26,27 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await login(username, password);
-      console.log("Logged in:", data);
-      const v2Token = await getV2Token({ token: data.access_token });
+        const data = await login(username, password);
+        console.log("Logged in:", data);
 
-      console.log("v2Token", v2Token);
+        // Попробуем обменять на v2 токен. Если обмен прошёл — используем v2, иначе — исходные токены.
+        let finalAccess = data.access_token;
+        let finalRefresh = data.refresh_token;
+        try {
+            const v2Token = await getV2Token({ token: data.access_token });
+                if (v2Token && v2Token.access_token) {
+                finalAccess = v2Token.access_token;
+                if (v2Token.refresh_token) finalRefresh = v2Token.refresh_token;
+            }
+        } catch (err) {
+            // Если обмен не прошёл — просто используем исходные токены (и логируем ошибку).
+            console.warn("getV2Token failed, using original tokens", err);
+        }
 
-      if (!v2Token) {
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("refresh_token", data.refresh_token);
+        // Сохраняем актуальные токены всегда
+        localStorage.setItem("access_token", finalAccess);
+        if (finalRefresh) localStorage.setItem("refresh_token", finalRefresh);
         localStorage.setItem("username", username);
-      }
 
       // Сохраняем ВЕСЬ массив ролей как JSON-строку
       if (data.role_ids && Array.isArray(data.role_ids)) {

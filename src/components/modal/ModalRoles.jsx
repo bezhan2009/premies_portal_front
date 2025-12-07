@@ -175,7 +175,7 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
         role_ids: userRoles.map((r) => r.ID),
       });
       setAlert({ message: "Изменения успешно сохранены!", type: "success" });
-      setTimeout(() => setOpenRoles({ open: false, data: null }), 500);
+      setTimeout(() => setOpenRoles({ open: false, data: null }), 10);
     } catch (err) {
       console.error(err);
       setAlert({ message: "Ошибка сохранения изменений", type: "error" });

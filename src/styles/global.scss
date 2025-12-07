@@ -5,45 +5,6 @@ body {
   animation: fadeIn 0.5s ease-out;
 }
 
-.updating-transaction-type {
-  > main {
-    font-family: "Inter", -apple-system, sans-serif;
-    background-color: #fff;
-    padding: 20px;
-    padding-bottom: 40px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    > .select {
-      width: 300px;
-      margin-bottom: -16px;
-      > select {
-        margin-top: 5px;
-      }
-      > p {
-        color: #e21a1c;
-        margin: 0;
-        // display: none;
-      }
-    }
-    > .input {
-      width: 300px;
-    }
-    > button {
-      width: 300px;
-      height: 40px;
-      border-radius: 100px;
-      font-family: "Inter", -apple-system, sans-serif;
-      font-size: 15px;
-      cursor: pointer;
-      border: none;
-      background-color: #e21a1c;
-      color: #fff;
-    }
-  }
-}
 .button-loading {
   background-color: #333 !important;
   display: flex;
