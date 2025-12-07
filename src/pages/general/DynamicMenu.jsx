@@ -252,14 +252,23 @@ export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
                 ]
             });
         }
-        
-        // Агент по SMS (роль 10)
+
         if (roles.includes(14)) {
             additionalLinks.push({
                 name: 'Агент по SMS',
                 key: 'sms',
                 children: [
                     { name: 'Отправка SMS', href: '/agent-sms/sms-sender', key: 'sms_send' },
+                ]
+            });
+        }
+
+        if (roles.includes(16)) {
+            additionalLinks.push({
+                name: 'Агент по таможне',
+                key: 'customs',
+                children: [
+                    { name: 'Просмотр/Оплата таможни', href: '/agent-custom/eqms', key: 'eqms_list' },
                 ]
             });
         }

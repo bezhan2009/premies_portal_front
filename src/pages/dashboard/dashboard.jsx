@@ -75,7 +75,9 @@ function RedirectDashboard() {
     } else if (roleIds.includes(13)) {
       navigate("/agent-qr/transactions/list", { replace: true });
     } else if (roleIds.includes(14)) {
-      navigate("/agent-sms/sms-sender", { replace: true });
+        navigate("/agent-sms/sms-sender", { replace: true });
+    } else if (roleIds.includes(16)) {
+        navigate("agent-custom/eqms", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });

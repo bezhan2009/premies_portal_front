@@ -1,0 +1,593 @@
+import React, { useEffect, useMemo, useState } from "react";
+import Input from "../../components/elements/Input.jsx";
+import { useFormStore } from "../../hooks/useFormState.js";
+import { FcCancel, FcHighPriority, FcOk, FcProcess, FcMoneyTransfer } from "react-icons/fc";
+import AlertMessage from "../../components/general/AlertMessage.jsx";
+import "../../styles/checkbox.scss";
+import useSidebar from "../../hooks/useSideBar.js";
+import Sidebar from "./DynamicMenu.jsx";
+import PayIcon from "../../assets/pay_icon.png"
+import PayedIcon from "../../assets/payed_icon.png"
+
+
+export default function EQMSList() {
+    const { data, setData } = useFormStore();
+    const { isSidebarOpen, toggleSidebar } = useSidebar();
+
+    const [tableData, setTableData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filters, setFilters] = useState({});
+    const [alert, setAlert] = useState(null);
+    const [selectedRows, setSelectedRows] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+    const [payingId, setPayingId] = useState(null);
+
+    const backendMain = import.meta.env.VITE_BACKEND_URL;
+    const token = localStorage.getItem("access_token");
+
+    const showAlert = (message, type = "success") => {
+        setAlert({ message, type });
+        setTimeout(() => setAlert(null), 3500);
+    };
+
+    // Проверка, оплачена ли уже таможня
+    const isAlreadyPaid = (payedAt) => {
+        if (!payedAt) return false;
+
+        // Проверяем, не является ли дата 0001-01-01T00:00:00Z или подобной
+        if (payedAt.includes('0001-01-01')) return false;
+
+        try {
+            const date = new Date(payedAt);
+            // Если дата после 2000 года, считаем оплаченной
+            return date.getFullYear() >= 2000;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    // Получение статуса оплаты
+    const getPaymentStatus = (row) => {
+        if (row.status === "Paid" || row.status === "Success") return "paid";
+        if (isAlreadyPaid(row.payedAt)) return "already_paid";
+        return "pending";
+    };
+
+    // Форматирование даты для отображения
+    const formatDateForDisplay = (dateString) => {
+        if (!dateString) return "";
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d)) return dateString;
+
+            if (dateString.includes('0001-01-01')) {
+                return "Не оплачено";
+            }
+
+            const pad = (n) => String(n).padStart(2, "0");
+            const yyyy = d.getFullYear();
+            const MM = pad(d.getMonth() + 1);
+            const dd = pad(d.getDate());
+            const hh = pad(d.getHours());
+            const mi = pad(d.getMinutes());
+            const ss = pad(d.getSeconds());
+            return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Загрузка данных с бэкенда
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
+
+            const url = `${backendMain}/eqms?date=${selectedDate}`;
+            const resp = await fetch(url, {
+                method: "GET",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
+
+            if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
+            const json = await resp.json();
+            setTableData(json || []);
+            showAlert(`Загружено ${json.length} записей`, "success");
+        } catch (err) {
+            console.error("Ошибка загрузки данных:", err);
+            showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
+            setTableData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Фильтрация данных
+    const filteredData = useMemo(() => {
+        if (!Array.isArray(tableData)) return [];
+        return tableData.filter((row) =>
+            Object.entries(filters).every(([key, value]) => {
+                if (!value) return true;
+                const rowValue = row[key];
+                if (rowValue == null) return false;
+
+                // Специальная обработка для payedAt
+                if (key === 'payedAt' && value === 'paid') {
+                    return isAlreadyPaid(rowValue);
+                }
+                if (key === 'payedAt' && value === 'not_paid') {
+                    return !isAlreadyPaid(rowValue);
+                }
+
+                if (typeof rowValue === "number")
+                    return String(rowValue).includes(value);
+                if (typeof rowValue === "boolean")
+                    return String(rowValue).toLowerCase() === value.toLowerCase();
+                if (typeof rowValue === "string")
+                    return rowValue.toLowerCase().includes(String(value).toLowerCase());
+                return false;
+            })
+        );
+    }, [tableData, filters]);
+
+    // Сортировка по ID
+    const sortedData = useMemo(() => {
+        const arr = [...filteredData];
+        arr.sort((a, b) => b.id - a.id);
+        return arr;
+    }, [filteredData]);
+
+    // Функция оплаты одной записи
+    const handlePay = async (transaction) => {
+        const paymentStatus = getPaymentStatus(transaction);
+
+        // Если уже оплачено — сразу показываем предупреждение и выходим
+        if (paymentStatus === "already_paid") {
+            showAlert("Таможня уже оплачена ранее", "warning");
+            return;
+        }
+
+        if (paymentStatus === "paid") {
+            showAlert("Оплата уже была отправлена (статус Success)", "info");
+            return;
+        }
+
+        try {
+            setPayingId(transaction.id);
+
+            const resp = await fetch(`${backendMain}/eqms/pay`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(transaction),
+            });
+
+            const result = await resp.json();
+
+            if (!resp.ok) {
+                throw new Error(result.error || `Ошибка сервера: ${resp.status}`);
+            }
+
+            if (result.error) {
+                showAlert(result.error, "error");
+            } else {
+                showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
+                // Обновляем таблицу
+                setTimeout(() => fetchData(), 1000); // небольшая задержка для актуальности
+            }
+        } catch (err) {
+            console.error("Ошибка оплаты:", err);
+            showAlert(err.message || "Не удалось отправить оплату", "error");
+        } finally {
+            setPayingId(null);
+        }
+    };
+
+    // Функция выгрузки выбранных записей
+    const handleExport = async () => {
+        try {
+            const selectedTransactions = sortedData.filter((row) =>
+                selectedRows.includes(row.id)
+            );
+
+            if (selectedTransactions.length === 0) {
+                showAlert("Выберите хотя бы одну запись для выгрузки", "error");
+                return;
+            }
+
+            const resp = await fetch(`${backendMain}/automation/eqms`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: token ? `Bearer ${token}` : "",
+                },
+                body: JSON.stringify(selectedTransactions),
+            });
+
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
+            }
+
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+
+            const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
+            const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
+
+            a.download = allSelected
+                ? `EQMS_Report_${selectedDate}.xlsx`
+                : `EQMS_Report_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`;
+
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            showAlert(`Файл успешно выгружен (${selectedTransactions.length} записей)`, "success");
+            setSelectedRows([]);
+            setSelectAll(false);
+        } catch (err) {
+            console.error("Ошибка выгрузки:", err);
+            showAlert(`Ошибка выгрузки: ${err.message}`, "error");
+        }
+    };
+
+    // Обработка чекбоксов
+    const handleCheckboxToggle = (id, checked) => {
+        if (checked) {
+            setSelectedRows((prev) => [...prev, id]);
+        } else {
+            setSelectedRows((prev) => prev.filter((p) => p !== id));
+            setSelectAll(false);
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectAll) {
+            setSelectedRows([]);
+        } else {
+            const ids = sortedData.map((r) => r.id);
+            setSelectedRows(ids);
+        }
+        setSelectAll(!selectAll);
+    };
+
+    // Получение ключей из первого объекта для отображения столбцов
+    const tableHeaders = useMemo(() => {
+        if (sortedData.length === 0) return [];
+        const firstRow = sortedData[0];
+        const excludedHeaders = ['payedAt']; // payedAt обрабатываем отдельно
+        return Object.keys(firstRow).filter(header => !excludedHeaders.includes(header));
+    }, [sortedData]);
+
+    // Инициализация даты при загрузке
+    useEffect(() => {
+        if (!data?.eqms_date) {
+            const today = new Date().toISOString().split('T')[0];
+            setData("eqms_date", today);
+        }
+    }, []);
+
+    // Загрузка данных при изменении даты
+    useEffect(() => {
+        if (data?.eqms_date) {
+            fetchData();
+        }
+    }, [data?.eqms_date]);
+
+    // Обработка выбора всех
+    useEffect(() => {
+        if (selectAll) {
+            const ids = sortedData.map((r) => r.id);
+            setSelectedRows(ids);
+        } else {
+            setSelectedRows([]);
+        }
+    }, [selectAll, sortedData]);
+
+    return (
+        <>
+            <div
+                className={`dashboard-container ${
+                    isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+                }`}
+            >
+                <Sidebar
+                    activeLink="eqms_list"
+                    isOpen={isSidebarOpen}
+                    toggle={toggleSidebar}
+                />
+                <div
+                    className="applications-list"
+                    style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+                >
+                    <main>
+                        <div className="my-applications-header">
+                            <button
+                                className={!showFilters ? "filter-toggle" : "Unloading"}
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                Фильтры
+                            </button>
+                            <pre> </pre>
+
+                            <button
+                                className="Unloading"
+                                onClick={handleExport}
+                                disabled={selectedRows.length === 0}
+                            >
+                                Выгрузка EQMS
+                            </button>
+
+                            <button
+                                className={selectAll ? "selectAll-toggle" : ""}
+                                onClick={toggleSelectAll}
+                            >
+                                {selectAll ? "Снять выделение" : "Выбрать все"}
+                            </button>
+                        </div>
+
+                        {showFilters && (
+                            <div className="filters animate-slideIn">
+                                <input
+                                    placeholder="ID"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({
+                                            ...p,
+                                            id: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <input
+                                    placeholder="Doc ID"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({
+                                            ...p,
+                                            docId: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <input
+                                    placeholder="Transaction ID"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({
+                                            ...p,
+                                            transactionId: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <input
+                                    placeholder="Payer Name"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({
+                                            ...p,
+                                            payerName: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <input
+                                    placeholder="Receiver Name"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({
+                                            ...p,
+                                            recName: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <select
+                                    onChange={(e) =>
+                                        setFilters((p) => ({ ...p, status: e.target.value }))
+                                    }
+                                >
+                                    <option value="">Статус</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Success">Success</option>
+                                    <option value="Failed">Failed</option>
+                                </select>
+                                <select
+                                    onChange={(e) =>
+                                        setFilters((p) => ({ ...p, payedAt: e.target.value }))
+                                    }
+                                >
+                                    <option value="">Статус оплаты</option>
+                                    <option value="paid">Оплачено</option>
+                                    <option value="not_paid">Не оплачено</option>
+                                </select>
+                                <input
+                                    placeholder="Amount"
+                                    type="number"
+                                    onChange={(e) =>
+                                        setFilters((p) => ({ ...p, amount: e.target.value }))
+                                    }
+                                />
+                            </div>
+                        )}
+
+                        <div className="my-applications-sub-header">
+                            <div>
+                                Дата для загрузки EQMS:{" "}
+                                <Input
+                                    type="date"
+                                    onChange={(e) => setData("eqms_date", e)}
+                                    value={data?.eqms_date || ""}
+                                    style={{ width: "150px" }}
+                                    id="eqms_date"
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            className="my-applications-content"
+                            style={{ position: "relative" }}
+                        >
+                            {loading ? (
+                                <div style={{ textAlign: "center", padding: "2rem" }}>
+                                    Загрузка...
+                                </div>
+                            ) : sortedData.length === 0 ? (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        padding: "2rem",
+                                        color: "gray",
+                                    }}
+                                >
+                                    Нет данных для отображения
+                                </div>
+                            ) : (
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th>
+                                            <input
+                                                type="checkbox"
+                                                className="custom-checkbox"
+                                                checked={selectAll}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
+                                        {tableHeaders.map((header) => (
+                                            <th key={header}>
+                                                {header === 'resiFlg' ? 'resiFlag' : header}
+                                            </th>
+                                        ))}
+                                        <th>Оплачено в</th>
+                                        <th className="active-table">Действия</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {sortedData.map((row) => {
+                                        const paymentStatus = getPaymentStatus(row);
+                                        const isPaid = paymentStatus === "already_paid" || paymentStatus === "paid";
+                                        const isPaying = payingId === row.id;
+
+                                        return (
+                                            <tr key={row.id}>
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="custom-checkbox"
+                                                        checked={selectedRows.includes(row.id)}
+                                                        onChange={(e) =>
+                                                            handleCheckboxToggle(row.id, e.target.checked)
+                                                        }
+                                                    />
+                                                </td>
+
+                                                {tableHeaders.map((header) => {
+                                                    let value = row[header];
+
+                                                    if (header.includes('date') || header.includes('Date') || header === 'date' || header === 'docDate' || header === 'dateVal' || header === 'dataOpr') {
+                                                        value = formatDateForDisplay(value);
+                                                    } else if (header === 'resiFlg') {
+                                                        value = value ? "Да" : "Нет";
+                                                    } else if (header === 'status') {
+                                                        return (
+                                                            <td key={header}>
+                                                                {row.status === "Pending" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcProcess style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "orange" }}>Pending</span>
+                                                                    </div>
+                                                                ) : row.status === "Success" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcOk style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "green" }}>Success</span>
+                                                                    </div>
+                                                                ) : row.status === "Failed" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcCancel style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "red" }}>Failed</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcHighPriority style={{ fontSize: 22 }} />
+                                                                        <span>{row.status}</span>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    }
+
+                                                    return <td key={header}>{value}</td>;
+                                                })}
+                                                <td>
+                                                    <div style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "10px",
+                                                        color: isPaid ? "green" : "gray",
+                                                        fontWeight: isPaid ? "500" : "normal"
+                                                    }}>
+                                                        {isPaid && <FcOk style={{ fontSize: 22 }} />}
+                                                        <br />
+                                                        <small style={{ opacity: 0.7 }}>
+                                                            {formatDateForDisplay(row.payedAt)}
+                                                        </small>
+                                                    </div>
+                                                </td>
+
+                                                <td className="active-table">
+                                                    <button
+                                                        className={`pay-button ${isPaid ? "paid" : ""}`}
+                                                        onClick={() => handlePay(row)}
+                                                        disabled={isPaying || isPaid}
+                                                        style={{
+                                                            padding: "8px 12px",
+                                                            borderRadius: "6px",
+                                                            border: "none",
+                                                            cursor: isPaid || isPaying ? "not-allowed" : "pointer",
+                                                            opacity: isPaying ? 0.7 : isPaid ? 0.6 : 1,
+
+                                                            color: isPaid || isPaying ? "#333" : "#333",
+                                                            fontWeight: "500",
+                                                            transition: "all 0.2s",
+                                                            minWidth: "120px",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            gap: "8px"
+                                                        }}
+                                                    >
+                                                        {isPaying ? (
+                                                            <>Оплачивается...</>
+                                                        ) : isPaid ? (
+                                                            <>
+                                                                <img src={PayedIcon} width="24" height="24" alt="Оплачено" />
+                                                                Оплачено
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <img src={PayIcon} width="24" height="24" alt="Оплатить" />
+                                                                Оплатить
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </main>
+                </div>
+
+                {alert && (
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        onClose={() => setAlert(null)}
+                    />
+                )}
+            </div>
+        </>
+    );
+}
