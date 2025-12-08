@@ -203,3 +203,11 @@
     background-color: transparent;
   }
 }
+
+tr.paid-row {
+  background-color: #e8f5e9 !important;
+}
+
+tr.paid-row:hover {
+  background-color: #d4edda !important;
+}

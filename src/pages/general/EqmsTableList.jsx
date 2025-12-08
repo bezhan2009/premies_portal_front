@@ -4,16 +4,15 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess, FcMoneyTransfer } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
+import "../../styles/components/StatsEQMS.scss"
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
 import PayIcon from "../../assets/pay_icon.png"
 import PayedIcon from "../../assets/payed_icon.png"
 
-
 export default function EQMSList() {
     const { data, setData } = useFormStore();
     const { isSidebarOpen, toggleSidebar } = useSidebar();
-
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -21,23 +20,18 @@ export default function EQMSList() {
     const [alert, setAlert] = useState(null);
     const [selectedRows, setSelectedRows] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
-    const [payingId, setPayingId] = useState(null);
-
+    const [payingIds, setPayingIds] = useState(new Set());
     const backendMain = import.meta.env.VITE_BACKEND_URL;
     const token = localStorage.getItem("access_token");
-
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
         setTimeout(() => setAlert(null), 3500);
     };
-
     // Проверка, оплачена ли уже таможня
     const isAlreadyPaid = (payedAt) => {
         if (!payedAt) return false;
-
         // Проверяем, не является ли дата 0001-01-01T00:00:00Z или подобной
         if (payedAt.includes('0001-01-01')) return false;
-
         try {
             const date = new Date(payedAt);
             // Если дата после 2000 года, считаем оплаченной
@@ -46,25 +40,21 @@ export default function EQMSList() {
             return false;
         }
     };
-
     // Получение статуса оплаты
     const getPaymentStatus = (row) => {
         if (row.status === "Paid" || row.status === "Success") return "paid";
         if (isAlreadyPaid(row.payedAt)) return "already_paid";
         return "pending";
     };
-
     // Форматирование даты для отображения
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return "";
         try {
             const d = new Date(dateString);
             if (isNaN(d)) return dateString;
-
             if (dateString.includes('0001-01-01')) {
                 return "Не оплачено";
             }
-
             const pad = (n) => String(n).padStart(2, "0");
             const yyyy = d.getFullYear();
             const MM = pad(d.getMonth() + 1);
@@ -77,19 +67,16 @@ export default function EQMSList() {
             return dateString;
         }
     };
-
     // Загрузка данных с бэкенда
     const fetchData = async () => {
         try {
             setLoading(true);
             const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
-
             const url = `${backendMain}/eqms?date=${selectedDate}`;
             const resp = await fetch(url, {
                 method: "GET",
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined,
             });
-
             if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
             const json = await resp.json();
             setTableData(json || []);
@@ -102,7 +89,6 @@ export default function EQMSList() {
             setLoading(false);
         }
     };
-
     // Фильтрация данных
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
@@ -111,7 +97,6 @@ export default function EQMSList() {
                 if (!value) return true;
                 const rowValue = row[key];
                 if (rowValue == null) return false;
-
                 // Специальная обработка для payedAt
                 if (key === 'payedAt' && value === 'paid') {
                     return isAlreadyPaid(rowValue);
@@ -119,7 +104,6 @@ export default function EQMSList() {
                 if (key === 'payedAt' && value === 'not_paid') {
                     return !isAlreadyPaid(rowValue);
                 }
-
                 if (typeof rowValue === "number")
                     return String(rowValue).includes(value);
                 if (typeof rowValue === "boolean")
@@ -130,74 +114,117 @@ export default function EQMSList() {
             })
         );
     }, [tableData, filters]);
-
     // Сортировка по ID
     const sortedData = useMemo(() => {
         const arr = [...filteredData];
         arr.sort((a, b) => b.id - a.id);
         return arr;
     }, [filteredData]);
-
+    // Внутренняя функция для оплаты одной записи без алертов и установки состояний
+    const paySingle = async (transaction) => {
+        const resp = await fetch(`${backendMain}/eqms/pay`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(transaction),
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            throw new Error(result.error || `Ошибка сервера: ${resp.status}`);
+        }
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        return result;
+    };
     // Функция оплаты одной записи
     const handlePay = async (transaction) => {
         const paymentStatus = getPaymentStatus(transaction);
-
         // Если уже оплачено — сразу показываем предупреждение и выходим
         if (paymentStatus === "already_paid") {
             showAlert("Таможня уже оплачена ранее", "warning");
             return;
         }
-
         if (paymentStatus === "paid") {
             showAlert("Оплата уже была отправлена (статус Success)", "info");
             return;
         }
-
+        setPayingIds((prev) => new Set([...prev, transaction.id]));
         try {
-            setPayingId(transaction.id);
-
-            const resp = await fetch(`${backendMain}/eqms/pay`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(transaction),
-            });
-
-            const result = await resp.json();
-
-            if (!resp.ok) {
-                throw new Error(result.error || `Ошибка сервера: ${resp.status}`);
-            }
-
-            if (result.error) {
-                showAlert(result.error, "error");
-            } else {
-                showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
-                // Обновляем таблицу
-                setTimeout(() => fetchData(), 1000); // небольшая задержка для актуальности
-            }
+            await paySingle(transaction);
+            showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
+            // Обновляем таблицу
+            setTimeout(() => fetchData(), 1000); // небольшая задержка для актуальности
         } catch (err) {
             console.error("Ошибка оплаты:", err);
             showAlert(err.message || "Не удалось отправить оплату", "error");
         } finally {
-            setPayingId(null);
+            setPayingIds((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(transaction.id);
+                return newSet;
+            });
         }
     };
-
+    // Функция оплаты всех выбранных неоплаченных записей с батчингом
+    const handlePayAll = async () => {
+        const toPay = sortedData.filter(
+            (row) => selectedRows.includes(row.id) && getPaymentStatus(row) === "pending"
+        );
+        if (toPay.length === 0) {
+            showAlert("Нет выбранных неоплаченных записей для оплаты", "warning");
+            return;
+        }
+        setPayingIds((prev) => new Set([...prev, ...toPay.map((r) => r.id)]));
+        let successes = 0;
+        let fails = [];
+        const batchSize = 150;
+        const delayMs = 9000;
+        try {
+            for (let i = 0; i < toPay.length; i += batchSize) {
+                const batch = toPay.slice(i, i + batchSize);
+                const promises = batch.map(async (transaction) => {
+                    try {
+                        await paySingle(transaction);
+                        successes++;
+                    } catch (err) {
+                        fails.push({ id: transaction.id, error: err.message });
+                    }
+                });
+                await Promise.all(promises);
+                if (i + batchSize < toPay.length) {
+                    await new Promise((resolve) => setTimeout(resolve, delayMs));
+                }
+            }
+            const message = `Успешно оплачено: ${successes}. Ошибок: ${fails.length}.`;
+            showAlert(message, fails.length === 0 ? "success" : "warning");
+            if (fails.length > 0) {
+                console.error("Ошибки оплаты:", fails);
+            }
+            // Обновляем таблицу
+            setTimeout(() => fetchData(), 1000);
+        } catch (err) {
+            showAlert("Критическая ошибка во время массовой оплаты", "error");
+        } finally {
+            setPayingIds((prev) => {
+                const newSet = new Set(prev);
+                toPay.forEach((r) => newSet.delete(r.id));
+                return newSet;
+            });
+        }
+    };
     // Функция выгрузки выбранных записей
     const handleExport = async () => {
         try {
             const selectedTransactions = sortedData.filter((row) =>
                 selectedRows.includes(row.id)
             );
-
             if (selectedTransactions.length === 0) {
                 showAlert("Выберите хотя бы одну запись для выгрузки", "error");
                 return;
             }
-
             const resp = await fetch(`${backendMain}/automation/eqms`, {
                 method: "POST",
                 headers: {
@@ -206,29 +233,23 @@ export default function EQMSList() {
                 },
                 body: JSON.stringify(selectedTransactions),
             });
-
             if (!resp.ok) {
                 const errorText = await resp.text();
                 throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
             }
-
             const blob = await resp.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
-
             const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
             const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
-
             a.download = allSelected
                 ? `EQMS_Report_${selectedDate}.xlsx`
                 : `EQMS_Report_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`;
-
             a.href = url;
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-
             showAlert(`Файл успешно выгружен (${selectedTransactions.length} записей)`, "success");
             setSelectedRows([]);
             setSelectAll(false);
@@ -237,7 +258,6 @@ export default function EQMSList() {
             showAlert(`Ошибка выгрузки: ${err.message}`, "error");
         }
     };
-
     // Обработка чекбоксов
     const handleCheckboxToggle = (id, checked) => {
         if (checked) {
@@ -247,7 +267,6 @@ export default function EQMSList() {
             setSelectAll(false);
         }
     };
-
     const toggleSelectAll = () => {
         if (selectAll) {
             setSelectedRows([]);
@@ -257,7 +276,16 @@ export default function EQMSList() {
         }
         setSelectAll(!selectAll);
     };
-
+    const selectAllUnpaid = () => {
+        const ids = sortedData.filter((row) => getPaymentStatus(row) === "pending").map((r) => r.id);
+        setSelectedRows(ids);
+        setSelectAll(false);
+    };
+    const selectAllPaid = () => {
+        const ids = sortedData.filter((row) => getPaymentStatus(row) !== "pending").map((r) => r.id);
+        setSelectedRows(ids);
+        setSelectAll(false);
+    };
     // Получение ключей из первого объекта для отображения столбцов
     const tableHeaders = useMemo(() => {
         if (sortedData.length === 0) return [];
@@ -265,7 +293,13 @@ export default function EQMSList() {
         const excludedHeaders = ['payedAt']; // payedAt обрабатываем отдельно
         return Object.keys(firstRow).filter(header => !excludedHeaders.includes(header));
     }, [sortedData]);
-
+    const totalSelected = selectedRows.length;
+    const totalPaid = useMemo(() => sortedData.filter((row) => getPaymentStatus(row) !== "pending").length, [sortedData]);
+    const totalAmountSelected = useMemo(() => {
+        return sortedData
+            .filter((row) => selectedRows.includes(row.id))
+            .reduce((sum, row) => sum + (row.amount || 0), 0);
+    }, [sortedData, selectedRows]);
     // Инициализация даты при загрузке
     useEffect(() => {
         if (!data?.eqms_date) {
@@ -273,24 +307,21 @@ export default function EQMSList() {
             setData("eqms_date", today);
         }
     }, []);
-
     // Загрузка данных при изменении даты
     useEffect(() => {
         if (data?.eqms_date) {
             fetchData();
         }
     }, [data?.eqms_date]);
-
     // Обработка выбора всех
     useEffect(() => {
         if (selectAll) {
             const ids = sortedData.map((r) => r.id);
             setSelectedRows(ids);
-        } else {
+        } else if (selectedRows.length === sortedData.length) {
             setSelectedRows([]);
         }
     }, [selectAll, sortedData]);
-
     return (
         <>
             <div
@@ -316,7 +347,6 @@ export default function EQMSList() {
                                 Фильтры
                             </button>
                             <pre> </pre>
-
                             <button
                                 className="Unloading"
                                 onClick={handleExport}
@@ -324,15 +354,50 @@ export default function EQMSList() {
                             >
                                 Выгрузка EQMS
                             </button>
-
+                            <button
+                                className="save"
+                                onClick={handlePayAll}
+                                disabled={selectedRows.length === 0 || payingIds.size > 0}
+                            >
+                                Оплатить всё
+                            </button>
                             <button
                                 className={selectAll ? "selectAll-toggle" : ""}
                                 onClick={toggleSelectAll}
                             >
                                 {selectAll ? "Снять выделение" : "Выбрать все"}
                             </button>
+                            <button
+                                className="edit"
+                                onClick={selectAllUnpaid}
+                            >
+                                Выбрать все неоплаченные
+                            </button>
+                            <button
+                                className="save"
+                                onClick={selectAllPaid}
+                            >
+                                Выбрать все оплаченные
+                            </button>
+                            <div className="selection-stats-card">
+                                <div className="stat">
+                                    <span className="label">Выбрано</span>
+                                    <strong className="value">{totalSelected}</strong>
+                                </div>
+                                <div className="divider" />
+                                <div className="stat">
+                                    <span className="label">Оплачено всего</span>
+                                    <strong className="value paid">{totalPaid}</strong>
+                                </div>
+                                <div className="divider" />
+                                <div className="stat highlight">
+                                    <span className="label">Сумма выбранных</span>
+                                    <strong className="value amount">
+                                        {totalAmountSelected.toLocaleString("ru-RU")} С
+                                    </strong>
+                                </div>
+                            </div>
                         </div>
-
                         {showFilters && (
                             <div className="filters animate-slideIn">
                                 <input
@@ -408,7 +473,6 @@ export default function EQMSList() {
                                 />
                             </div>
                         )}
-
                         <div className="my-applications-sub-header">
                             <div>
                                 Дата для загрузки EQMS:{" "}
@@ -421,7 +485,6 @@ export default function EQMSList() {
                                 />
                             </div>
                         </div>
-
                         <div
                             className="my-applications-content"
                             style={{ position: "relative" }}
@@ -465,10 +528,12 @@ export default function EQMSList() {
                                     {sortedData.map((row) => {
                                         const paymentStatus = getPaymentStatus(row);
                                         const isPaid = paymentStatus === "already_paid" || paymentStatus === "paid";
-                                        const isPaying = payingId === row.id;
-
+                                        const isPaying = payingIds.has(row.id);
                                         return (
-                                            <tr key={row.id}>
+                                            <tr
+                                                key={row.id}
+                                                style={{ backgroundColor: isPaid ? "#e6ffe6" : "transparent" }}
+                                            >
                                                 <td>
                                                     <input
                                                         type="checkbox"
@@ -479,10 +544,8 @@ export default function EQMSList() {
                                                         }
                                                     />
                                                 </td>
-
                                                 {tableHeaders.map((header) => {
                                                     let value = row[header];
-
                                                     if (header.includes('date') || header.includes('Date') || header === 'date' || header === 'docDate' || header === 'dateVal' || header === 'dataOpr') {
                                                         value = formatDateForDisplay(value);
                                                     } else if (header === 'resiFlg') {
@@ -514,7 +577,6 @@ export default function EQMSList() {
                                                             </td>
                                                         );
                                                     }
-
                                                     return <td key={header}>{value}</td>;
                                                 })}
                                                 <td>
@@ -532,7 +594,6 @@ export default function EQMSList() {
                                                         </small>
                                                     </div>
                                                 </td>
-
                                                 <td className="active-table">
                                                     <button
                                                         className={`pay-button ${isPaid ? "paid" : ""}`}
@@ -544,7 +605,6 @@ export default function EQMSList() {
                                                             border: "none",
                                                             cursor: isPaid || isPaying ? "not-allowed" : "pointer",
                                                             opacity: isPaying ? 0.7 : isPaid ? 0.6 : 1,
-
                                                             color: isPaid || isPaying ? "#333" : "#333",
                                                             fontWeight: "500",
                                                             transition: "all 0.2s",
@@ -579,7 +639,6 @@ export default function EQMSList() {
                         </div>
                     </main>
                 </div>
-
                 {alert && (
                     <AlertMessage
                         message={alert.message}

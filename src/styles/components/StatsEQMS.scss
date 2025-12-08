@@ -1,0 +1,89 @@
+.selection-stats-card {
+  margin-left: 24px;
+  background: #ffffff;
+  padding: 12px 20px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eef2f6;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-weight: 500;
+  backdrop-filter: blur(4px);
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+
+    .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+
+      &.paid {
+        color: #16a34a;
+      }
+
+      &.amount {
+        color: #4361ee;
+        font-size: 21px;
+      }
+    }
+  }
+
+  .divider {
+    width: 1px;
+    height: 36px;
+    background: #e2e8f0;
+  }
+
+  .highlight {
+    padding-left: 4px;
+  }
+}
+
+/* Адаптивность — на маленьких экранах статистика уходит вниз */
+@media (max-width: 11400px) {
+  .my-applications-header {
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .selection-stats-card {
+      margin-left: 0;
+      margin-top: 8px;
+      order: 99;
+    }
+  }
+}
+
+@media (max-width: 168px) {
+  .selection-stats-card {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+
+    .divider {
+      display: none;
+    }
+
+    .stat {
+      flex-direction: row;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 0;
+      border-bottom: 1px dashed #e2e8f0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+}
