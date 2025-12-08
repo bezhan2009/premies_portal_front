@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BACKEND_TRANSACTIONS_URL;
+const BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL;
 
 // const token = localStorage.getItem("access_token");
 
