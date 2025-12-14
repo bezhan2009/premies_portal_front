@@ -847,15 +847,16 @@
   color: #333;
   font-weight: 570;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.96rem;
   padding: 0.75rem 1rem;
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: background 0.3s ease, transform 0.3s ease;
+  transform: scale(0.95, 0.95);
   &:hover {
     background: rgba(227, 25, 25, 0.05);
-    transform: translateY(-4px);
   }
   &.active {
     background: rgba(227, 25, 25, 0.1);

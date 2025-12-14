@@ -21,31 +21,48 @@ export default function EQMSList() {
     const [selectedRows, setSelectedRows] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [payingIds, setPayingIds] = useState(new Set());
+    const [pendingRetries, setPendingRetries] = useState(new Map());
     const backendMain = import.meta.env.VITE_BACKEND_URL;
     const token = localStorage.getItem("access_token");
+    
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
         setTimeout(() => setAlert(null), 3500);
     };
-    // Проверка, оплачена ли уже таможня
-    const isAlreadyPaid = (payedAt) => {
-        if (!payedAt) return false;
-        // Проверяем, не является ли дата 0001-01-01T00:00:00Z или подобной
-        if (payedAt.includes('0001-01-01')) return false;
+    
+    // Проверка, находится ли текущее время в рабочем часе (до 17:10)
+    const isWorkingHours = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        return currentHour < 17 || (currentHour === 17 && currentMinute <= 10);
+    };
+    
+    // Упрощенная проверка оплаты через поле isPayed
+    const isPaidCustoms = (row) => {
+        // Используем новое поле isPayed (boolean)
+        if (row.isPayed !== undefined && row.isPayed !== null) {
+            return Boolean(row.isPayed);
+        }
+        
+        // Если поле isPayed отсутствует, используем старую логику для обратной совместимости
+        if (!row.payedAt) return false;
+        if (row.payedAt.includes('0001-01-01')) return false;
         try {
-            const date = new Date(payedAt);
-            // Если дата после 2000 года, считаем оплаченной
+            const date = new Date(row.payedAt);
             return date.getFullYear() >= 2000;
         } catch (e) {
             return false;
         }
     };
-    // Получение статуса оплаты
+    
+    // Получение статуса оплаты (упрощенная версия)
     const getPaymentStatus = (row) => {
         if (row.status === "Paid" || row.status === "Success") return "paid";
-        if (isAlreadyPaid(row.payedAt)) return "already_paid";
+        if (isPaidCustoms(row)) return "already_paid";
         return "pending";
     };
+    
     // Форматирование даты для отображения
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return "";
@@ -67,6 +84,7 @@ export default function EQMSList() {
             return dateString;
         }
     };
+    
     // Загрузка данных с бэкенда
     const fetchData = async () => {
         try {
@@ -89,6 +107,7 @@ export default function EQMSList() {
             setLoading(false);
         }
     };
+    
     // Фильтрация данных
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
@@ -96,14 +115,17 @@ export default function EQMSList() {
             Object.entries(filters).every(([key, value]) => {
                 if (!value) return true;
                 const rowValue = row[key];
-                if (rowValue == null) return false;
-                // Специальная обработка для payedAt
+                
+                // Специальная обработка для payedAt (используем isPayed для фильтрации)
                 if (key === 'payedAt' && value === 'paid') {
-                    return isAlreadyPaid(rowValue);
+                    return isPaidCustoms(row);
                 }
                 if (key === 'payedAt' && value === 'not_paid') {
-                    return !isAlreadyPaid(rowValue);
+                    return !isPaidCustoms(row);
                 }
+                
+                if (rowValue == null) return false;
+                
                 if (typeof rowValue === "number")
                     return String(rowValue).includes(value);
                 if (typeof rowValue === "boolean")
@@ -114,13 +136,15 @@ export default function EQMSList() {
             })
         );
     }, [tableData, filters]);
+    
     // Сортировка по ID
     const sortedData = useMemo(() => {
         const arr = [...filteredData];
         arr.sort((a, b) => b.id - a.id);
         return arr;
     }, [filteredData]);
-    // Внутренняя функция для оплаты одной записи без алертов и установки состояний
+    
+    // Внутренняя функция для оплаты одной записи
     const paySingle = async (transaction) => {
         const resp = await fetch(`${backendMain}/eqms/pay`, {
             method: "POST",
@@ -139,9 +163,35 @@ export default function EQMSList() {
         }
         return result;
     };
+    
+    // Функция оплаты с автоматическим повторением в рабочее время
+    const handlePayWithRetry = async (transaction, retryCount = 0) => {
+        const maxRetries = 3;
+        const retryDelay = 2000;
+        
+        try {
+            const result = await paySingle(transaction);
+            return result;
+        } catch (err) {
+            if (retryCount >= maxRetries || !isWorkingHours()) {
+                throw err;
+            }
+            
+            showAlert(
+                `Платеж с ID ${transaction.id} завершился с ошибкой: "${err.message}". Повторная попытка ${retryCount + 1} из ${maxRetries}...`,
+                "warning"
+            );
+            
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            
+            return await handlePayWithRetry(transaction, retryCount + 1);
+        }
+    };
+    
     // Функция оплаты одной записи
     const handlePay = async (transaction) => {
         const paymentStatus = getPaymentStatus(transaction);
+        
         // Если уже оплачено — сразу показываем предупреждение и выходим
         if (paymentStatus === "already_paid") {
             showAlert("Таможня уже оплачена ранее", "warning");
@@ -151,15 +201,30 @@ export default function EQMSList() {
             showAlert("Оплата уже была отправлена (статус Success)", "info");
             return;
         }
+        
         setPayingIds((prev) => new Set([...prev, transaction.id]));
+        
         try {
-            await paySingle(transaction);
-            showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
-            // Обновляем таблицу
-            setTimeout(() => fetchData(), 1000); // небольшая задержка для актуальности
+            if (isWorkingHours()) {
+                await handlePayWithRetry(transaction, 0);
+                showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
+            } else {
+                await paySingle(transaction);
+                showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
+            }
+            
+            setTimeout(() => fetchData(), 1000);
         } catch (err) {
             console.error("Ошибка оплаты:", err);
-            showAlert(err.message || "Не удалось отправить оплату", "error");
+            
+            if (isWorkingHours()) {
+                showAlert(
+                    `Платеж с ID ${transaction.id} завершился с ошибкой после нескольких попыток: ${err.message}`,
+                    "error"
+                );
+            } else {
+                showAlert(err.message || "Не удалось отправить оплату", "error");
+            }
         } finally {
             setPayingIds((prev) => {
                 const newSet = new Set(prev);
@@ -168,42 +233,55 @@ export default function EQMSList() {
             });
         }
     };
+    
     // Функция оплаты всех выбранных неоплаченных записей с батчингом
     const handlePayAll = async () => {
         const toPay = sortedData.filter(
             (row) => selectedRows.includes(row.id) && getPaymentStatus(row) === "pending"
         );
+        
         if (toPay.length === 0) {
             showAlert("Нет выбранных неоплаченных записей для оплаты", "warning");
             return;
         }
+        
         setPayingIds((prev) => new Set([...prev, ...toPay.map((r) => r.id)]));
+        
         let successes = 0;
         let fails = [];
         const batchSize = 150;
         const delayMs = 9000;
+        
         try {
             for (let i = 0; i < toPay.length; i += batchSize) {
                 const batch = toPay.slice(i, i + batchSize);
                 const promises = batch.map(async (transaction) => {
                     try {
-                        await paySingle(transaction);
+                        if (isWorkingHours()) {
+                            await handlePayWithRetry(transaction, 0);
+                        } else {
+                            await paySingle(transaction);
+                        }
                         successes++;
                     } catch (err) {
                         fails.push({ id: transaction.id, error: err.message });
                     }
                 });
+                
                 await Promise.all(promises);
+                
                 if (i + batchSize < toPay.length) {
                     await new Promise((resolve) => setTimeout(resolve, delayMs));
                 }
             }
+            
             const message = `Успешно оплачено: ${successes}. Ошибок: ${fails.length}.`;
             showAlert(message, fails.length === 0 ? "success" : "warning");
+            
             if (fails.length > 0) {
                 console.error("Ошибки оплаты:", fails);
             }
-            // Обновляем таблицу
+            
             setTimeout(() => fetchData(), 1000);
         } catch (err) {
             showAlert("Критическая ошибка во время массовой оплаты", "error");
@@ -215,16 +293,19 @@ export default function EQMSList() {
             });
         }
     };
+    
     // Функция выгрузки выбранных записей
     const handleExport = async () => {
         try {
             const selectedTransactions = sortedData.filter((row) =>
                 selectedRows.includes(row.id)
             );
+            
             if (selectedTransactions.length === 0) {
                 showAlert("Выберите хотя бы одну запись для выгрузки", "error");
                 return;
             }
+            
             const resp = await fetch(`${backendMain}/automation/eqms`, {
                 method: "POST",
                 headers: {
@@ -233,15 +314,18 @@ export default function EQMSList() {
                 },
                 body: JSON.stringify(selectedTransactions),
             });
+            
             if (!resp.ok) {
                 const errorText = await resp.text();
                 throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
             }
+            
             const blob = await resp.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
             const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
+            
             a.download = allSelected
                 ? `EQMS_Report_${selectedDate}.xlsx`
                 : `EQMS_Report_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`;
@@ -250,6 +334,7 @@ export default function EQMSList() {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
+            
             showAlert(`Файл успешно выгружен (${selectedTransactions.length} записей)`, "success");
             setSelectedRows([]);
             setSelectAll(false);
@@ -258,6 +343,7 @@ export default function EQMSList() {
             showAlert(`Ошибка выгрузки: ${err.message}`, "error");
         }
     };
+    
     // Обработка чекбоксов
     const handleCheckboxToggle = (id, checked) => {
         if (checked) {
@@ -267,6 +353,7 @@ export default function EQMSList() {
             setSelectAll(false);
         }
     };
+    
     const toggleSelectAll = () => {
         if (selectAll) {
             setSelectedRows([]);
@@ -276,23 +363,28 @@ export default function EQMSList() {
         }
         setSelectAll(!selectAll);
     };
+    
     const selectAllUnpaid = () => {
         const ids = sortedData.filter((row) => getPaymentStatus(row) === "pending").map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
     };
+    
     const selectAllPaid = () => {
         const ids = sortedData.filter((row) => getPaymentStatus(row) !== "pending").map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
     };
+    
     // Получение ключей из первого объекта для отображения столбцов
+    // Исключаем isPayed, так как оно используется только для логики
     const tableHeaders = useMemo(() => {
         if (sortedData.length === 0) return [];
         const firstRow = sortedData[0];
-        const excludedHeaders = ['payedAt']; // payedAt обрабатываем отдельно
+        const excludedHeaders = ['payedAt', 'isPayed']; // isPayed скрываем, используем только логически
         return Object.keys(firstRow).filter(header => !excludedHeaders.includes(header));
     }, [sortedData]);
+    
     const totalSelected = selectedRows.length;
     const totalPaid = useMemo(() => sortedData.filter((row) => getPaymentStatus(row) !== "pending").length, [sortedData]);
     const totalAmountSelected = useMemo(() => {
@@ -300,6 +392,7 @@ export default function EQMSList() {
             .filter((row) => selectedRows.includes(row.id))
             .reduce((sum, row) => sum + (row.amount || 0), 0);
     }, [sortedData, selectedRows]);
+    
     // Инициализация даты при загрузке
     useEffect(() => {
         if (!data?.eqms_date) {
@@ -307,12 +400,14 @@ export default function EQMSList() {
             setData("eqms_date", today);
         }
     }, []);
+    
     // Загрузка данных при изменении даты
     useEffect(() => {
         if (data?.eqms_date) {
             fetchData();
         }
     }, [data?.eqms_date]);
+    
     // Обработка выбора всех
     useEffect(() => {
         if (selectAll) {
@@ -322,6 +417,7 @@ export default function EQMSList() {
             setSelectedRows([]);
         }
     }, [selectAll, sortedData]);
+    
     return (
         <>
             <div
@@ -529,6 +625,7 @@ export default function EQMSList() {
                                         const paymentStatus = getPaymentStatus(row);
                                         const isPaid = paymentStatus === "already_paid" || paymentStatus === "paid";
                                         const isPaying = payingIds.has(row.id);
+                                        
                                         return (
                                             <tr
                                                 key={row.id}

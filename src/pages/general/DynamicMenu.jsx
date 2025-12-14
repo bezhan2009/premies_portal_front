@@ -235,7 +235,7 @@ export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
                 key: 'deposit',
                 children: [
                     { name: "Депозит", href: "/agent/dipozit/card", key: "gift_deposit" },
-                    { name: "Заявки", href: "/agent/dipozit/my-applications", key: "deposits" },
+                    { name: "Заявки", href: "/agent/dipozit/applications-list", key: "deposits" },
                 ]
             });
         }

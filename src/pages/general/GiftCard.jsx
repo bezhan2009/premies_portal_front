@@ -38,7 +38,8 @@ import Sidebar from "./DynamicMenu.jsx";
 export default function GiftCard({ edit = false }) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState(null); // Состояние для алерта
+  const [downloading, setDownloading] = useState(false);
+  const [alert, setAlert] = useState(null);
   const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -49,25 +50,79 @@ export default function GiftCard({ edit = false }) {
     phone_number: { required: true },
   };
 
-  // Функция для показа алерта
   const showAlert = (message, type = "error", duration = 5000) => {
     setAlert({ message, type, duration });
   };
 
-  // Функция для закрытия алерта
   const closeAlert = () => {
     setAlert(null);
   };
 
   const formatDateForBackend = (dateStr) => {
     if (!dateStr) return "";
-    // Преобразует "2025-08-04" в ISO формат "2025-08-04T00:00:00Z"
     return new Date(dateStr).toISOString();
   };
 
-  const onSend = async () => {
+  const downloadFile = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const downloadPoll = async (applicationId) => {
+    try {
+      setDownloading(true);
+      const automationUrl = import.meta.env.VITE_BACKEND_URL;
+      const token = localStorage.getItem("access_token");
+
+      const response = await fetch(`${automationUrl}/automation/poll`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          application_ids: [applicationId]
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const filename = `poll_${applicationId}.zip`;
+      downloadFile(blob, filename);
+      
+      showAlert("Анкета успешно скачана!", "success", 4000);
+    } catch (error) {
+      console.error("Ошибка скачивания анкеты:", error);
+      showAlert("Произошла ошибка при скачивании анкеты", "error", 5000);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleSaveAndDownload = async () => {
+    // Сначала сохраняем/обновляем заявку
+    const saved = await onSend(true); // передаем флаг, что это вызов из скачивания
+    if (!saved) {
+      return; // Если сохранение не удалось, выходим
+    }
+    
+    // Если edit = true, то у нас уже есть ID в data.ID
+    // Если edit = false, то ID придет из ответа сервера в onSend
+  };
+
+  const onSend = async (fromDownload = false) => {
     const isValid = validate(ValidData);
-    if (!isValid) return;
+    if (!isValid) return false;
+
     try {
       const formData = new FormData();
 
@@ -144,6 +199,7 @@ export default function GiftCard({ edit = false }) {
       );
 
       const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+      let applicationId = data.ID;
 
       if (edit) {
         const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
@@ -155,9 +211,17 @@ export default function GiftCard({ edit = false }) {
           throw new Error(`HTTP error! status: ${response.status}`);
 
         const result = await response.json();
-        console.log("Успешно отправлено:", result);
-        // setDataClear();
-        showAlert("Данные успешно сохранены!", "success", 4000);
+        console.log("Успешно обновлено:", result);
+        
+        if (!fromDownload) {
+          showAlert("Данные успешно сохранены!", "success", 4000);
+        }
+        
+        // Если вызвано из скачивания, запускаем скачивание
+        if (fromDownload && applicationId) {
+          downloadPoll(applicationId);
+        }
+        return true;
       } else {
         const response = await fetch(`${backendUrl}/applications`, {
           method: "POST",
@@ -168,14 +232,27 @@ export default function GiftCard({ edit = false }) {
           throw new Error(`HTTP error! status: ${response.status}`);
 
         const result = await response.json();
-        console.log("Успешно отправлено:", result);
-        // setDataClear();
-        navigate(0);
-        showAlert("Данные успешно сохранены!", "success", 4000);
+        console.log("Успешно создано:", result);
+        
+        // Получаем ID новой заявки
+        applicationId = result.ID || result.id;
+        
+        if (!fromDownload) {
+          // Если это обычное сохранение, перезагружаем страницу
+          navigate(0);
+          showAlert("Данные успешно сохранены!", "success", 4000);
+        } else {
+          // Если вызвано из скачивания, запускаем скачивание
+          if (applicationId) {
+            downloadPoll(applicationId);
+          }
+        }
+        return true;
       }
     } catch (error) {
       console.error("Ошибка отправки:", error);
       showAlert("Произошла ошибка при сохранении данных", "error", 5000);
+      return false;
     }
   };
 
@@ -215,7 +292,6 @@ export default function GiftCard({ edit = false }) {
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <Sidebar activeLink="gift_card" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="gift-card">
-          {/* Отображение кастомного алерта */}
           {alert && (
             <AlertMessage
               message={alert.message}
@@ -574,7 +650,7 @@ export default function GiftCard({ edit = false }) {
                 />
               </div>
               <footer>
-                <button onClick={() => onSend()}>
+                <button onClick={() => onSend(false)} disabled={downloading}>
                   <img src={save} alt="" />
                   <span>Сохранить</span>
                 </button>
@@ -582,9 +658,14 @@ export default function GiftCard({ edit = false }) {
                   <img src={card} alt="" />
                   <span>Открыть карту</span>
                 </button>
-                <button>
+                <button 
+                  onClick={handleSaveAndDownload} 
+                  disabled={downloading}
+                >
                   <img src={download} alt="" />
-                  <span>Скачать анкету</span>
+                  <span>
+                    {downloading ? "Скачивание..." : "Скачать анкету"}
+                  </span>
                 </button>
                 <button>
                   <img src={share} alt="" />

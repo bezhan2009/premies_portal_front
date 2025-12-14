@@ -5,6 +5,40 @@ body {
   animation: fadeIn 0.5s ease-out;
 }
 
+
+::selection {
+  background-color: #dd3a37; 
+  color: white;
+}
+
+/* Для Firefox */
+::-moz-selection {
+  background-color: #dd3a37;
+  color: white;
+}
+
+/* Кастомный фокус для всех элементов */
+:focus {
+  outline: 2px solid #f32121;
+  outline-offset: 2px;
+}
+
+/* Удаление стандартного outline и добавление кастомного */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(243, 33, 33, 0.3);
+  border-color: #f32121;
+}
+
+/* Для кнопок в вашем EQMS */
+.pay-button:focus {
+  box-shadow: 0 0 0 3px rgba(175, 76, 76, 0.4);
+  transform: translateY(-2px);
+}
+
 .button-loading {
   background-color: #333 !important;
   display: flex;
@@ -22,6 +56,7 @@ body {
     animation: spin 1s linear infinite;
   }
 }
+
 .button-edit-roles {
   border-radius: 12px;
   padding: 10px 40px;
