@@ -1,4 +1,10 @@
-@import '../variables/general.scss';
+$primary-color: #644cd1;
+$primary-hover: #6039bb;
+$background: #111;
+$text-color: #333;
+$border-color: #ccc;
+$primary-opacity: 0.85;
+$general-width: 93%;
 
 @mixin flex-center {
   display: flex;
@@ -13,7 +19,7 @@
 
 @mixin font {
   font-weight: 470;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 @mixin input-focus {
