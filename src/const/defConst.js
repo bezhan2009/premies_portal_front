@@ -56,6 +56,13 @@
 //   { id: 1636.31, name: "Maxcyc MC Business Personal" },
 //   { id: 1636.32, name: "MC World Zero" },
 // ];
+export const transactionTypes = [
+  // { value: "0", label: "Тип транзакции" },
+  { value: "2", label: "Снятие" },
+  { value: "1", label: "Пополнение" },
+  { value: "3", label: "Параметры" },
+  { value: "4", label: "Мусор" },
+];
 
 export const visaCards = [
   { id: 1635.11, name: "Visa Business" },
