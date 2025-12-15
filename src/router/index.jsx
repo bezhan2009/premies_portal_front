@@ -65,10 +65,7 @@ export default function AppRouter() {
       <Routes>
         {/* Публичный маршрут */}
         <Route path="/login" element={<LoginPage />} />
-        <Route
-              path="/user/knowledge-base"
-              element={<DashboardAgentKB />}
-        />
+        <Route path="/user/knowledge-base" element={<DashboardAgentKB />} />
         {/* Защищённые маршруты */}
         <Route
           element={
@@ -269,39 +266,42 @@ export default function AppRouter() {
           </Route>
         </Route>
 
+        <Route
+          element={
+            <RequireRole allowedRoles={[14]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route path="agent-sms/sms-sender" element={<SendSmsForm />} />
           <Route
-              element={
-                  <RequireRole allowedRoles={[14]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route path="agent-sms/sms-sender" element={<SendSmsForm />} />
-              <Route
-                  path="agent-sms/knowledge-base"
-                  element={<DashboardAgentSMSKnowledgeBase />}
-              />
-          </Route>
+            path="agent-sms/knowledge-base"
+            element={<DashboardAgentSMSKnowledgeBase />}
+          />
+        </Route>
 
+        <Route
+          element={
+            <RequireRole allowedRoles={[15]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
           <Route
-              element={
-                  <RequireRole allowedRoles={[15]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route path="agent-transaction/update-transaction" element={<UpdatingTransactionType />} />
-          </Route>
+            path="agent-transaction/update-transaction"
+            element={<UpdatingTransactionType />}
+          />
+        </Route>
 
-          <Route
-              element={
-                  <RequireRole allowedRoles={[16]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route path="agent-custom/eqms" element={<EQMSList />} />
-          </Route>
+        <Route
+          element={
+            <RequireRole allowedRoles={[16]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route path="agent-custom/eqms" element={<EQMSList />} />
+        </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
