@@ -598,18 +598,6 @@ export default function GiftCardCredit({ edit = false }) {
                   <img src={save} alt="" />
                   <span>Сохранить</span>
                 </button>
-                <button>
-                  <img src={card} alt="" />
-                  <span>Открыть карту</span>
-                </button>
-                <button>
-                  <img src={download} alt="" />
-                  <span>Скачать анкету</span>
-                </button>
-                <button>
-                  <img src={share} alt="" />
-                  <span>Загрузить анкету</span>
-                </button>
               </footer>
             </main>
           )}
