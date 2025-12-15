@@ -19,6 +19,7 @@ const TableReportsCards = ({ month, year }) => {
   const lastElementRef = useRef(null);
   const [edit, setEdit] = useState(null);
 
+
   /**
    * 🔥 Подзагрузка “всех” данных для поиска – ОГРАНИЧЕНА MAX_PAGES,
    * чтобы не ходить в бек вечность при очень большом объёме
@@ -197,6 +198,8 @@ const TableReportsCards = ({ month, year }) => {
       return newState;
     });
   };
+  
+ 
 
   const saveChange = async (edit) => {
     try {
@@ -233,6 +236,8 @@ const TableReportsCards = ({ month, year }) => {
         className="table-reports-div"
         style={{ maxHeight: "calc(100vh - 480px)" }}
       >
+       
+
         <table className="table-reports">
           <thead>
             <tr>
