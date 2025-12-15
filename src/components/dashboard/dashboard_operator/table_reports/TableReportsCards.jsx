@@ -280,25 +280,25 @@ const TableReportsCards = ({ month, year }) => {
                           //   onChange={(e) => handleChange("card_type", e)}
                           //   onEnter={() => saveChange(edit)}
                           // />
-                          <Select
-                            onChange={(e) => handleChange("card_type", e)}
-                            value={edit?.card_type || row.card_type}
-                            onEnter={() => saveChange(edit)}
-                            options={[
-                              ...visaCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                              ...ncCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                              ...mcCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                            ]}
-                          />
+                            <Select
+                              onChange={(e) => handleChange("card_type", e)}
+                              value={edit?.card_type || row.card_type}
+                              onEnter={() => saveChange(edit)}
+                              options={[
+                                ...visaCards.map((c) => ({
+                                  label: c.name,
+                                  value: c.name,
+                                })),
+                                ...ncCards.map((c) => ({
+                                  label: c.name,
+                                  value: c.name,
+                                })),
+                                ...mcCards.map((c) => ({
+                                  label: c.name,
+                                  value: c.name,
+                                })),
+                              ]}
+                            />
                         ) : (
                           row.card_type || ""
                         )}
