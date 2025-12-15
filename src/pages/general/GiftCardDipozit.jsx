@@ -1,15 +1,5 @@
 import RadioSelect from "../../components/elements/RadioSelect";
-import {
-  depositCurrency,
-  districtTypes,
-  docTypes,
-  mcCards,
-  ncCards,
-  reginTypes,
-  streetTypes,
-  USTypes,
-  visaCards,
-} from "../../const/defConst";
+import { depositCurrency } from "../../const/defConst";
 import file from "../../assets/file.jpg";
 import back_side_of_the_passport_file from "../../assets/back-passport.jpg";
 import front_side_of_the_passport_file from "../../assets/front-passport.jpg";
@@ -37,9 +27,8 @@ import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicatio
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
 
-
 export default function GiftCardDipozit({ edit = false }) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [loading, setLoading] = useState(false);
   const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
@@ -63,14 +52,11 @@ export default function GiftCardDipozit({ edit = false }) {
 
     try {
       if (edit) {
-        const response = apiClientApplicationDipozit.put(
-          `deposits/${id}`,
-          {
-            ...data,
-            deposit_term_month: +data?.deposit_term_month,
-            sum_of_deposit: +data?.sum_of_deposit,
-          }
-        );
+        const response = apiClientApplicationDipozit.put(`deposits/${id}`, {
+          ...data,
+          deposit_term_month: +data?.deposit_term_month,
+          sum_of_deposit: +data?.sum_of_deposit,
+        });
 
         const result = await response;
         console.log("Успешно отправлено:", result);
@@ -123,8 +109,16 @@ export default function GiftCardDipozit({ edit = false }) {
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="gift_deposit" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+      <div
+        className={`dashboard-container ${
+          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+        }`}
+      >
+        <Sidebar
+          activeLink="gift_deposit"
+          isOpen={isSidebarOpen}
+          toggle={toggleSidebar}
+        />
         <div className="gift-card">
           {loading ? (
             <Spinner />

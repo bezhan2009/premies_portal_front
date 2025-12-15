@@ -110,7 +110,7 @@ export default function GiftCard({ edit = false }) {
         "card_code",
         data.visa_card || data.mc_card || data.nc_card || ""
       );
-      formData.append("type_of_certificate", data.type_of_certificate || "");
+      formData.append("type_of_certificate", +data.type_of_certificate || "");
       formData.append("documents_series", data.documents_series || "");
       formData.append("document_number", data.document_number || "");
       formData.append(
