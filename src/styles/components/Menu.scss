@@ -857,6 +857,7 @@
   transform: scale(0.95, 0.95);
   &:hover {
     background: rgba(227, 25, 25, 0.05);
+    transform: translateY(-2px) scale(0.95, 0.95);
   }
   &.active {
     background: rgba(227, 25, 25, 0.1);
@@ -908,7 +909,7 @@
   &:hover {
     background: rgba(227, 25, 25, 0.05);
     color: #e31919;
-    transform: translateX(4px);
+    transform: translateX(2px);
   }
   &.active {
     background: rgba(227, 25, 25, 0.08);
