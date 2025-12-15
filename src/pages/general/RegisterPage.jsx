@@ -5,7 +5,7 @@ import '../../styles/extraForm.scss';
 import LogoImageComponent from '../../components/Logo';
 import Spinner from '../../components/Spinner';
 import { Helmet } from 'react-helmet';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 
 import { registerUser } from '../../api/auth';
 
@@ -35,6 +35,11 @@ export default function RegisterPage() {
 
     const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
+
+    // Функция для возврата на предыдущую страницу
+    const handleGoBack = () => {
+        navigate(-1);
+    };
 
     // Загрузка ролей из API
     useEffect(() => {
@@ -163,6 +168,17 @@ export default function RegisterPage() {
             <Helmet>
                 <title>Регистрация</title>
             </Helmet>
+
+            {/* Кнопка "Назад" в левом верхнем углу */}
+            <button
+                className="back-button"
+                onClick={handleGoBack}
+                aria-label="Назад"
+                title="Назад"
+            >
+                <FaArrowLeft />
+            </button>
+
             <div className="login-container">
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div align="center" className='image-logo-login'>
