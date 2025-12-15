@@ -6,22 +6,16 @@ body {
   padding: 0;
   background-color: #fff;
 }
-
-// Общие стили для div
 div {
   display: block;
   unicode-bidi: isolate;
 }
-
-// Для секций последнего элемента
 .content {
   .section:last-child,
   [class^='section']:last-child {
     margin-bottom: 0;
   }
 }
-
-// Стиль блока ошибки 404
 .section__not_found {
   display: flex;
   flex-direction: column;
@@ -45,8 +39,6 @@ div {
     max-width: 600px;
   }
 }
-
-// Заголовки крупного размера, адаптив
 .section__index__products_card,
 .section__not_found .item__title {
   margin-bottom: 56px;
@@ -55,8 +47,6 @@ div {
     margin-bottom: 32px;
   }
 }
-
-// Общие стили для текста
 .alert,
 .section__not_found .item__title,
 h3,
@@ -66,8 +56,6 @@ h3,
   font-weight: 400;
   line-height: $line-height-normal;
 }
-
-// Кнопки, ссылки и прочие элементы
 .banner-block__btn,
 .category__block .category__nav .nav__link,
 .category__block .category__nav .nav__link .section__not_found ul li,
@@ -85,7 +73,6 @@ h3,
 .section__not_found .item__subtitle,
 .section__not_found .jobs__wrap .item__jobs .item__category ul li,
 .section__not_found .list-inline li,
-  // Обобщённые стили
 li {
   font-size: 18px;
   font-weight: 400;
@@ -95,7 +82,6 @@ li {
   margin: 0;
 }
 
-// Удаление внешних отступов у списков
 ol,
 ul {
   margin-top: 0;
@@ -103,7 +89,6 @@ ul {
   padding-left: 0;
 }
 
-// Стиль ссылок в списках
 .list-inline,
 .list-unstyled,
 .list_style ul,
