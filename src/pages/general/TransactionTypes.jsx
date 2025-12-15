@@ -14,33 +14,28 @@ import {
   putTransactionsNumber,
 } from "../../api/transactions/api.js";
 
-const transactionTypes = [
-  // { value: "0", label: "Тип транзакции" },
-  { value: "1", label: "Снятие" },
-  { value: "2", label: "Пополнение" },
-  { value: "3", label: "Параметры" },
-  { value: "4", label: "Мусор" },
-];
-
 const ValidData = {
   type: { required: true },
   name: { required: true },
   number: { required: true },
 };
 
-import { tableDataDef } from "../../const/defConst";
-// import { useModal } from "../../hooks/useModal";
-import Modal from "../../components/modal/Modal";
-import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
-import { Button } from "antd";
+import { tableDataDef, transactionTypes } from "../../const/defConst";
+// import { useModal } from "../../hooks/useModal"
 
 export default function MyApplications() {
-  const { data, errors, setData, validate } = useFormStore();
+  const { data, setData, validate } = useFormStore();
   const [loading, setLoading] = useState(false);
   // const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState(tableDataDef);
   const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [edit, setEdit] = useState(null);
+  const [filters, setFilters] = useState({
+    type: "",
+    name: "",
+    number: "",
+    id: "",
+  });
 
   // console.log("selectedRows", selectedRows);
 
@@ -99,16 +94,42 @@ export default function MyApplications() {
     }
   };
 
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
   const getItems = async () => {
     try {
       const response = await getTransactions();
       // console.log("response", response.data);
 
-      setTableData(response.data);
+      setTableData(
+        response.data.map((item) => ({
+          type: String(item.type),
+          name: item.name,
+          number: String(item.number),
+          id: String(item.id),
+        }))
+      );
     } catch (e) {
       console.error("Ошибка при обновлении:", e);
     }
   };
+
+  const applyFilters = (data, currentFilters) => {
+    if (!Array.isArray(data)) return [];
+
+    return data.filter((row) => {
+      return (
+        row?.type?.includes(currentFilters?.type || "") &&
+        row?.name?.includes(currentFilters?.name || "") &&
+        row?.number?.includes(currentFilters?.number || "") &&
+        row?.id?.includes(currentFilters?.id || "")
+      );
+    });
+  };
+
+  const filteredData = applyFilters(tableData, filters);
 
   useEffect(() => {
     getItems();
@@ -137,6 +158,30 @@ export default function MyApplications() {
             <button>Фильтр</button>
             <button>Редактировать</button>
           </div> */}
+            <div className="filters animate-slideIn">
+              <input
+                placeholder="Тип транзакции"
+                value={filters.type}
+                onChange={(e) => handleFilterChange("type", e.target.value)}
+              />
+              <input
+                placeholder="Название операции"
+                value={filters.name}
+                onChange={(e) => handleFilterChange("name", e.target.value)}
+              />
+
+              <input
+                placeholder="Вид операции"
+                value={filters.number}
+                onChange={(e) => handleFilterChange("number", e.target.value)}
+              />
+
+              <input
+                placeholder="id"
+                value={filters.id}
+                onChange={(e) => handleFilterChange("id", e.target.value)}
+              />
+            </div>
             <div className="my-applications-content">
               <table>
                 <thead>
@@ -148,7 +193,7 @@ export default function MyApplications() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tableData.map((row, rowIndex) => (
+                  {filteredData.map((row, rowIndex) => (
                     <tr
                       key={rowIndex}
                       style={{
