@@ -147,7 +147,7 @@ export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
         if (activeLink !== 'applications') {
             setAlert({
                 show: true,
-                message: `Новая заявка #${newApplication.ID} от ${newApplication.request_creator}`,
+                message: `Новая заявка #${newApplication.ID}`,
                 type: "info"
             });
         }
@@ -282,6 +282,18 @@ export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
                 ]
             });
         }
+
+        if (roles.includes(17)) {
+            additionalLinks.push({
+                name: 'Фронтовик',
+                key: 'frontovik',
+                children: [
+                    { name: 'Поиск клиента', href: '/frontovik/abs-search', key: 'abs_search' },
+                ]
+            });
+        }
+
+
 
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);

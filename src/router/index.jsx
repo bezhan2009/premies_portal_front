@@ -57,6 +57,9 @@ import DashboardAgentSMSKnowledgeBase from "../pages/dashboard/dashboard_sms/Kno
 import CheckTokenVersion from "./CheckTokenVersion.jsx";
 import EQMSList from "../pages/general/EqmsTableList.jsx";
 import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
+import ABSClientSearch from "../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
+import DashboardFrontovikAbsSearch from "../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
+
 
 export default function AppRouter() {
   return (
@@ -293,15 +296,25 @@ export default function AppRouter() {
           />
         </Route>
 
-        <Route
-          element={
-            <RequireRole allowedRoles={[16]}>
-              <Outlet />
-            </RequireRole>
-          }
-        >
-          <Route path="agent-custom/eqms" element={<EQMSList />} />
-        </Route>
+          <Route
+              element={
+                  <RequireRole allowedRoles={[16]}>
+                      <Outlet />
+                  </RequireRole>
+              }
+          >
+              <Route path="agent-custom/eqms" element={<EQMSList />} />
+          </Route>
+
+          <Route
+              element={
+                  <RequireRole allowedRoles={[17]}>
+                      <Outlet />
+                  </RequireRole>
+              }
+          >
+              <Route path="frontovik/abs-search" element={<DashboardFrontovikAbsSearch />} />
+          </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

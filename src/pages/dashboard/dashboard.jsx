@@ -79,7 +79,9 @@ function RedirectDashboard() {
     } else if (roleIds.includes(15)) {
         navigate("/agent-transaction/update-transaction", { replace: true });
     } else if (roleIds.includes(16)) {
-        navigate("agent-custom/eqms", { replace: true });
+        navigate("/agent-custom/eqms", { replace: true });
+    } else if (roleIds.includes(17)) {
+        navigate("/frontovik/abs-search", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });
