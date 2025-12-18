@@ -35,6 +35,7 @@ import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
+import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
 export default function GiftCard({ edit = false }) {
     const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -45,6 +46,11 @@ export default function GiftCard({ edit = false }) {
     const { data, errors, setData, validate, setDataMore } = useFormStore();
     const navigate = useNavigate();
     const { id } = useParams();
+
+    // Состояния для работы с несколькими клиентами
+    const [foundClients, setFoundClients] = useState([]);
+    const [showClientSelector, setShowClientSelector] = useState(false);
+    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
 
     const ValidData = {
         surname: { required: true },
@@ -60,7 +66,41 @@ export default function GiftCard({ edit = false }) {
         setAlert(null);
     };
 
-    // Функция для поиска клиента в АБС
+    // Функция для заполнения формы данными клиента
+    const fillFormWithClientData = (clientData) => {
+        setData("surname", clientData.surname || "");
+        setData("name", clientData.name || "");
+        setData("patronymic", clientData.patronymic || "");
+        setData("phone_number", clientData.phone || "");
+
+        // Формируем имя на карте: сначала имя(ltn_name) потом фамилия(ltn_surname)
+        const cardName = `${clientData.ltn_name || ""} ${clientData.ltn_surname || ""}`.trim();
+        setData("card_name", cardName);
+
+        // Заполняем данные документа
+        // Сопоставляем тип документа из АБС с значением из docTypes
+        const docType = docTypes.find(item => item.label === clientData.identdoc_name);
+        if (docType) {
+            setData("type_of_certificate", docType.value);
+        }
+
+        setData("documents_series", clientData.identdoc_series || "");
+        setData("document_number", clientData.identdoc_num || "");
+
+        // Преобразуем дату из формата dd.mm.yyyy в yyyy-mm-dd для input type="date"
+        if (clientData.identdoc_date) {
+            const dateParts = clientData.identdoc_date.split('.');
+            if (dateParts.length === 3) {
+                const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                setData("passport_issued_at", formattedDate);
+            }
+        }
+
+        setData("issued_by", clientData.identdoc_orgname || "");
+        setData("inn", clientData.tax_code || "");
+        setData("client_code", clientData.client_code || "");
+    };
+
     // Функция для поиска клиента в АБС
     const handleSearchClient = async () => {
         // Проверяем заполнено ли поле телефон
@@ -90,57 +130,51 @@ export default function GiftCard({ edit = false }) {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    showAlert("Клиент не найден в АБС", "error", 5000);
+                    showAlert("Клиенты не найдены в АБС", "error", 5000);
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                setFoundClients([]);
                 return;
             }
 
-            const clientData = await response.json();
+            const clientsData = await response.json();
 
-            // Автоматически заполняем поля данными из АБС
-            setData("surname", clientData.surname || "");
-            setData("name", clientData.name || "");
-            setData("patronymic", clientData.patronymic || "");
-            setData("phone_number", clientData.phone || phoneNumber);
-
-            // Формируем имя на карте: сначала имя(ltn_name) потом фамилия(ltn_surname)
-            const cardName = `${clientData.ltn_name || ""} ${clientData.ltn_surname || ""}`.trim();
-            setData("card_name", cardName);
-
-            // Заполняем данные документа
-            // Сопоставляем тип документа из АБС с значением из docTypes
-            const docType = docTypes.find(item => item.label === clientData.identdoc_name);
-            if (docType) {
-                setData("type_of_certificate", docType.value);
+            if (clientsData.length === 0) {
+                showAlert("Клиенты не найдены в АБС", "error", 5000);
+                setFoundClients([]);
+                return;
             }
 
-            setData("documents_series", clientData.identdoc_series || "");
-            setData("document_number", clientData.identdoc_num || "");
+            // Сохраняем всех найденных клиентов
+            setFoundClients(clientsData);
 
-            // Преобразуем дату из формата dd.mm.yyyy в yyyy-mm-dd для input type="date"
-            if (clientData.identdoc_date) {
-                const dateParts = clientData.identdoc_date.split('.');
-                if (dateParts.length === 3) {
-                    const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
-                    setData("passport_issued_at", formattedDate);
-                }
+            if (clientsData.length === 1) {
+                // Если клиент только один, заполняем форму сразу
+                fillFormWithClientData(clientsData[0]);
+                showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+            } else {
+                // Если клиентов несколько, показываем модальное окно для выбора
+                setSelectedClientIndex(0);
+                setShowClientSelector(true);
+                showAlert(`Найдено ${clientsData.length} клиентов. Выберите нужного.`, "info", 5000);
             }
-
-            setData("issued_by", clientData.identdoc_orgname || "");
-            setData("inn", clientData.tax_code || "");
-
-            // Заполняем код клиента в АБС
-            setData("client_code", clientData.client_code || "");
-
-            showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
 
         } catch (error) {
             console.error("Ошибка при поиске клиента в АБС:", error);
             showAlert("Произошла ошибка при поиске клиента в АБС", "error", 5000);
+            setFoundClients([]);
         } finally {
             setSearching(false);
+        }
+    };
+
+    // Функция для выбора клиента из модального окна
+    const handleSelectClient = (clientIndex) => {
+        if (foundClients[clientIndex]) {
+            fillFormWithClientData(foundClients[clientIndex]);
+            setShowClientSelector(false);
+            showAlert(`Данные клиента ${clientIndex + 1} успешно загружены`, "success", 5000);
         }
     };
 
@@ -385,6 +419,18 @@ export default function GiftCard({ edit = false }) {
                             type={alert.type}
                             duration={alert.duration}
                             onClose={closeAlert}
+                        />
+                    )}
+
+                    {/* Модальное окно выбора клиента */}
+                    {showClientSelector && foundClients.length > 1 && (
+                        <ClientSelectorModal
+                            clients={foundClients}
+                            selectedIndex={selectedClientIndex}
+                            onSelect={handleSelectClient}
+                            onClose={() => setShowClientSelector(false)}
+                            title="Выберите клиента"
+                            description={`Найдено ${foundClients.length} клиентов с номером телефона ${data.phone_number}. Выберите нужного:`}
                         />
                     )}
 

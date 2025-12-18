@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import '../../../styles/ABSSearch.scss'
+import '../../../styles/ABSSearch.scss';
 import '../../../styles/components/BlockInfo.scss';
 import '../../../styles/components/ProcessingIntegration.scss';
 import AlertMessage from "../../general/AlertMessage.jsx";
+
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
 export default function ABSClientSearch() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [displayPhone, setDisplayPhone] = useState('');
-    const [clientData, setClientData] = useState(null);
+    const [clientsData, setClientsData] = useState([]);
+    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({
         show: false,
@@ -72,10 +74,11 @@ export default function ABSClientSearch() {
     const handleClear = () => {
         setPhoneNumber('');
         setDisplayPhone('');
-        setClientData(null);
+        setClientsData([]);
+        setSelectedClientIndex(0);
     };
 
-    // Функция для поиска клиента в АБС
+    // Функция для поиска клиентов в АБС
     const handleSearchClient = async () => {
         if (!phoneNumber) {
             showAlert('Пожалуйста, введите номер телефона', 'error');
@@ -102,21 +105,28 @@ export default function ABSClientSearch() {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    showAlert("Клиент не найден в АБС", "error");
+                    showAlert("Клиенты не найдены в АБС", "error");
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                setClientsData([]);
                 return;
             }
 
             const data = await response.json();
-            setClientData(data);
-            showAlert("Данные клиента успешно загружены из АБС", "success");
+            setClientsData(data);
+            setSelectedClientIndex(0);
+
+            if (data.length === 0) {
+                showAlert("Клиенты не найдены в АБС", "error");
+            } else {
+                showAlert(`Найдено клиентов: ${data.length}`, "success");
+            }
 
         } catch (error) {
             console.error("Ошибка при поиске клиента в АБС:", error);
             showAlert("Произошла ошибка при поиске клиента в АБС", "error");
-            setClientData(null);
+            setClientsData([]);
         } finally {
             setIsLoading(false);
         }
@@ -132,27 +142,42 @@ export default function ABSClientSearch() {
         });
     };
 
+    // Функция для копирования всех клиентов в JSON
+    const copyAllClientsToClipboard = () => {
+        copyToClipboard(JSON.stringify(clientsData, null, 2));
+    };
+
+    // Функция для копирования выбранного клиента в JSON
+    const copySelectedClientToClipboard = () => {
+        if (clientsData[selectedClientIndex]) {
+            copyToClipboard(JSON.stringify(clientsData[selectedClientIndex], null, 2));
+        }
+    };
+
+    // Получение выбранного клиента
+    const selectedClient = clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+
     // Подготовка данных для таблицы
-    const tableData = clientData ? [
-        { label: 'Телефон', key: 'phone', value: clientData.phone },
-        { label: 'Флаг ARC', key: 'arc_flag', value: clientData.arc_flag },
-        { label: 'Тип клиента', key: 'client_type_name', value: clientData.client_type_name },
-        { label: 'Флаг банковского счета', key: 'ban_acc_open_flag', value: clientData.ban_acc_open_flag },
-        { label: 'Код департамента', key: 'dep_code', value: clientData.dep_code },
-        { label: 'Код клиента в АБС', key: 'client_code', value: clientData.client_code },
-        { label: 'Фамилия', key: 'surname', value: clientData.surname },
-        { label: 'Имя', key: 'name', value: clientData.name },
-        { label: 'Отчество', key: 'patronymic', value: clientData.patronymic },
-        { label: 'Фамилия (латиница)', key: 'ltn_surname', value: clientData.ltn_surname },
-        { label: 'Имя (латиница)', key: 'ltn_name', value: clientData.ltn_name },
-        { label: 'Отчество (латиница)', key: 'ltn_patronymic', value: clientData.ltn_patronymic },
-        { label: 'ИНН', key: 'tax_code', value: clientData.tax_code },
-        { label: 'Тип документа', key: 'identdoc_name', value: clientData.identdoc_name },
-        { label: 'Серия документа', key: 'identdoc_series', value: clientData.identdoc_series },
-        { label: 'Номер документа', key: 'identdoc_num', value: clientData.identdoc_num },
-        { label: 'Дата выдачи', key: 'identdoc_date', value: clientData.identdoc_date },
-        { label: 'Кем выдан', key: 'identdoc_orgname', value: clientData.identdoc_orgname },
-        { label: 'SV ID', key: 'sv_id', value: clientData.sv_id }
+    const tableData = selectedClient ? [
+        { label: 'Телефон', key: 'phone', value: selectedClient.phone },
+        { label: 'Флаг ARC', key: 'arc_flag', value: selectedClient.arc_flag },
+        { label: 'Тип клиента', key: 'client_type_name', value: selectedClient.client_type_name },
+        { label: 'Флаг банковского счета', key: 'ban_acc_open_flag', value: selectedClient.ban_acc_open_flag },
+        { label: 'Код департамента', key: 'dep_code', value: selectedClient.dep_code },
+        { label: 'Код клиента в АБС', key: 'client_code', value: selectedClient.client_code },
+        { label: 'Фамилия', key: 'surname', value: selectedClient.surname },
+        { label: 'Имя', key: 'name', value: selectedClient.name },
+        { label: 'Отчество', key: 'patronymic', value: selectedClient.patronymic },
+        { label: 'Фамилия (латиница)', key: 'ltn_surname', value: selectedClient.ltn_surname },
+        { label: 'Имя (латиница)', key: 'ltn_name', value: selectedClient.ltn_name },
+        { label: 'Отчество (латиница)', key: 'ltn_patronymic', value: selectedClient.ltn_patronymic },
+        { label: 'ИНН', key: 'tax_code', value: selectedClient.tax_code },
+        { label: 'Тип документа', key: 'identdoc_name', value: selectedClient.identdoc_name },
+        { label: 'Серия документа', key: 'identdoc_series', value: selectedClient.identdoc_series },
+        { label: 'Номер документа', key: 'identdoc_num', value: selectedClient.identdoc_num },
+        { label: 'Дата выдачи', key: 'identdoc_date', value: selectedClient.identdoc_date },
+        { label: 'Кем выдан', key: 'identdoc_orgname', value: selectedClient.identdoc_orgname },
+        { label: 'SV ID', key: 'sv_id', value: selectedClient.sv_id }
     ] : [];
 
     return (
@@ -218,21 +243,75 @@ export default function ABSClientSearch() {
                             </div>
                         </div>
 
+                        {/* Если найдено несколько клиентов, показываем селектор */}
+                        {clientsData.length > 1 && (
+                            <div className="processing-integration__client-selector">
+                                <div className="client-selector">
+                                    <h3 className="client-selector__title">
+                                        Найдено клиентов: {clientsData.length}
+                                    </h3>
+                                    <div className="client-selector__controls">
+                                        <select
+                                            value={selectedClientIndex}
+                                            onChange={(e) => setSelectedClientIndex(parseInt(e.target.value))}
+                                            className="client-selector__select"
+                                        >
+                                            {clientsData.map((client, index) => (
+                                                <option key={index} value={index}>
+                                                    {index + 1}. {client.surname} {client.name} {client.patronymic}
+                                                    {client.tax_code && ` (ИНН: ${client.tax_code})`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="client-selector__navigation">
+                                            <button
+                                                onClick={() => setSelectedClientIndex(prev => Math.max(0, prev - 1))}
+                                                disabled={selectedClientIndex === 0}
+                                                className="client-selector__nav-btn client-selector__nav-btn--prev"
+                                            >
+                                                ← Предыдущий
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedClientIndex(prev => Math.min(clientsData.length - 1, prev + 1))}
+                                                disabled={selectedClientIndex === clientsData.length - 1}
+                                                className="client-selector__nav-btn client-selector__nav-btn--next"
+                                            >
+                                                Следующий →
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Таблица с данными клиента */}
-                        {clientData && (
+                        {selectedClient && (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
                                         <h2 className="limits-table__title">
                                             Данные клиента из АБС
+                                            {clientsData.length > 1 && (
+                                                <span className="limits-table__client-counter">
+                                                    (Клиент {selectedClientIndex + 1} из {clientsData.length})
+                                                </span>
+                                            )}
                                         </h2>
                                         <div className="limits-table__actions">
                                             <button
-                                                onClick={() => copyToClipboard(JSON.stringify(clientData, null, 2))}
+                                                onClick={copySelectedClientToClipboard}
                                                 className="limits-table__action-btn limits-table__action-btn--secondary"
                                             >
-                                                Скопировать JSON
+                                                Скопировать JSON клиента
                                             </button>
+                                            {clientsData.length > 1 && (
+                                                <button
+                                                    onClick={copyAllClientsToClipboard}
+                                                    className="limits-table__action-btn limits-table__action-btn--secondary"
+                                                >
+                                                    Скопировать JSON всех клиентов
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 
@@ -265,9 +344,9 @@ export default function ABSClientSearch() {
                                                         </div>
                                                     </td>
                                                     <td className="limits-table__td limits-table__td--value">
-                                <span className="current-value">
-                                  {item.value || 'Не указано'}
-                                </span>
+                                                            <span className="current-value">
+                                                                {item.value || 'Не указано'}
+                                                            </span>
                                                     </td>
                                                     <td className="limits-table__td limits-table__td--actions">
                                                         <div className="action-buttons">
@@ -290,18 +369,18 @@ export default function ABSClientSearch() {
                                     {/* Сводная информация */}
                                     <div className="limits-table__footer">
                                         <div className="limits-table__stats">
-                        <span className="limits-table__stat">
-                          Найден: {clientData.surname} {clientData.name} {clientData.patronymic}
-                        </span>
                                             <span className="limits-table__stat">
-                          Телефон: {clientData.phone}
-                        </span>
+                                                ФИО: {selectedClient.surname} {selectedClient.name} {selectedClient.patronymic}
+                                            </span>
                                             <span className="limits-table__stat">
-                          ИНН: {clientData.tax_code}
-                        </span>
+                                                Телефон: {selectedClient.phone}
+                                            </span>
                                             <span className="limits-table__stat">
-                          Код клиента: {clientData.client_code}
-                        </span>
+                                                ИНН: {selectedClient.tax_code}
+                                            </span>
+                                            <span className="limits-table__stat">
+                                                Код клиента: {selectedClient.client_code}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -319,8 +398,11 @@ export default function ABSClientSearch() {
                         )}
 
                         {/* Сообщение об отсутствии данных */}
-                        {!isLoading && !clientData && phoneNumber && (
+                        {!isLoading && clientsData.length === 0 && phoneNumber && (
                             <div className="processing-integration__no-data">
+                                <div className="no-data-message">
+                                    <p>По данному номеру телефона клиенты не найдены</p>
+                                </div>
                             </div>
                         )}
                     </div>
