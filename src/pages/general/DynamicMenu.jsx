@@ -1,510 +1,614 @@
-import '../../styles/components/Menu.scss';
-import LogoImageComponent from '../../components/Logo';
-import LogoutButton from '../../components/general/Logout';
-import RowDown from '../../assets/row_down.png';
-import { Link } from 'react-router-dom';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useWebSocket } from '../../api/application/wsnotifications.js';
-import ChangePasswordIcon from '../../assets/change_password.png';
-import AlertMessage from '../../components/general/AlertMessage.jsx';
+import "../../styles/components/Menu.scss";
+import LogoImageComponent from "../../components/Logo";
+import LogoutButton from "../../components/general/Logout";
+import RowDown from "../../assets/row_down.png";
+import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useWebSocket } from "../../api/application/wsnotifications.js";
+import ChangePasswordIcon from "../../assets/change_password.png";
+import AlertMessage from "../../components/general/AlertMessage.jsx";
 
-export default function Sidebar({ activeLink = 'reports', isOpen, toggle }) {
-    const username = localStorage.getItem('username') || 'Неизвестное имя';
-    const [hasNewApplications, setHasNewApplications] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [modalError, setModalError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [alert, setAlert] = useState({ show: false, message: "", type: "info" });
-    const [roles, setRoles] = useState([]);
-    const [ws, setWs] = useState(null);
+export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
+  const username = localStorage.getItem("username") || "Неизвестное имя";
+  const [hasNewApplications, setHasNewApplications] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [modalError, setModalError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({
+    show: false,
+    message: "",
+    type: "info",
+  });
+  const [roles, setRoles] = useState([]);
+  const [ws, setWs] = useState(null);
 
-    // WebSocket для обновления ролей
-    useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
+  // WebSocket для обновления ролей
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
 
-        // Передаем токен в query параметре Authorization
-        const wsUrl = `${import.meta.env.VITE_BACKEND_URL_WS}/listen/roles?Authorization=${encodeURIComponent(token)}`;
-        
-        const websocket = new WebSocket(wsUrl);
+    // Передаем токен в query параметре Authorization
+    const wsUrl = `${
+      import.meta.env.VITE_BACKEND_URL_WS
+    }/listen/roles?Authorization=${encodeURIComponent(token)}`;
 
-        websocket.onopen = () => {
-            console.log('WebSocket for roles connected');
-        };
+    const websocket = new WebSocket(wsUrl);
 
-        websocket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Received roles update:', data);
-                
-                if (data.role_ids && Array.isArray(data.role_ids)) {
-                    // Обновляем localStorage
-                    localStorage.setItem('role_ids', JSON.stringify(data.role_ids));
-                    // Обновляем состояние
-                    setRoles(data.role_ids);
-                    
-                    // Показываем уведомление об обновлении ролей
-                    setAlert({
-                        show: true,
-                        message: "Роли пользователя были обновлены",
-                        type: "success"
-                    });
-                }
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
-            }
-        };
-
-        websocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        websocket.onclose = (event) => {
-            console.log('WebSocket for roles closed', event.code, event.reason);
-            
-            // Автоматическое переподключение при аварийном закрытии
-            if (event.code !== 1000 && event.code !== 1001) {
-                console.log('WebSocket connection lost. Attempting to reconnect...');
-                setTimeout(() => {
-                    if (localStorage.getItem('access_token')) {
-                        // Пересоздаем соединение
-                        const newWebsocket = new WebSocket(`${import.meta.env.VITE_BACKEND_URL_WS}/listen/roles?Authorization=${encodeURIComponent(localStorage.getItem('access_token'))}`);
-                        setWs(newWebsocket);
-                    }
-                }, 3000);
-            }
-        };
-
-        setWs(websocket);
-
-        return () => {
-            if (websocket && websocket.readyState === WebSocket.OPEN) {
-                websocket.close(1000, 'Component unmounting');
-            }
-        };
-    }, []);
-
-    // Инициализация ролей из localStorage
-    useEffect(() => {
-        let storedRoles = [];
-        try {
-            const item = localStorage.getItem('role_ids');
-            if (item) {
-                storedRoles = JSON.parse(item);
-                if (!Array.isArray(storedRoles)) {
-                    storedRoles = [];
-                    localStorage.removeItem('role_ids');
-                }
-            }
-        } catch (err) {
-            console.error('Error parsing role_ids from localStorage:', err);
-            storedRoles = [];
-            localStorage.removeItem('role_ids');
-        }
-        setRoles(storedRoles);
-
-        // Дополнительная загрузка ролей с сервера
-        const fetchRoles = async () => {
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                try {
-                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles/user/my`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        let ids = [];
-                        if (Array.isArray(data)) {
-                            ids = data.map((role) => role.ID).filter((id) => Number.isInteger(id));
-                        } else {
-                            console.error('Fetched roles data is not an array:', data);
-                        }
-                        localStorage.setItem('role_ids', JSON.stringify(ids));
-                        setRoles(ids);
-                    } else {
-                        console.error('Failed to fetch roles:', res.status);
-                    }
-                } catch (err) {
-                    console.error('Error fetching roles:', err);
-                }
-            }
-        };
-        fetchRoles();
-    }, []);
-
-    // WebSocket для новых заявок
-    const wsUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + '/applications/portal';
-    const handleNewApplication = useCallback((newApplication) => {
-        console.log('Новая заявка в хедере:', newApplication);
-       
-        // Устанавливаем красную точку
-        setHasNewApplications(true);
-        // Показываем всплывающее уведомление, если пользователь не на странице заявок
-        if (activeLink !== 'applications') {
-            setAlert({
-                show: true,
-                message: `Новая заявка #${newApplication.ID} от ${newApplication.request_creator}`,
-                type: "info"
-            });
-        }
-    }, [activeLink]);
-    useWebSocket(wsUrl, handleNewApplication, [activeLink]);
-
-    // Базовые ссылки меню (доступны всем) и дополнительные в зависимости от ролей
-    const links = useMemo(() => {
-        const baseLinks = [
-            { name: 'База знаний', href: '/user/knowledge-base', key: 'knowledge' },
-        ];
-
-        const additionalLinks = [];
-
-        if (roles.includes(6) || roles.includes(8)) {
-            additionalLinks.push(
-                { name: 'Тесты', href: '/worker/tests', key: 'tests' },
-                { name: 'Моя премия', href: '/worker/premies', key: 'worker_premies' },
-            );
-        }
-        
-        
-        if (roles.includes(5)) {
-            additionalLinks.push({ name: 'Статистика моего офиса', href: '/director/reports', key: 'director' });
-        }
-
-        // Председатель (роль 10)
-        if (roles.includes(9)) {
-            additionalLinks.push({ name: 'Статистика банка', href: '/chairman/reports', key: 'chairman' });
-        }
-
-        if (roles.includes(3)) {
-        additionalLinks.push(
-            {
-                name: 'Оператор',
-                key: 'operator',
-                children: [
-                    { name: 'Премии', href: '/operator/premies', key: 'premi' },
-                    { name: 'Отчеты', href: '/operator/reports', key: 'reports_operator' },
-                    { name: 'Данные', href: '/operator/data', key: 'data' },
-                    { name: 'Тесты', href: '/operator/tests', key: 'tests_operator' },
-                    { name: 'Управление Базой знаний', href: '/operator/knowledge-base', key: 'kb_operator' },
-                ]
-            },
-            {
-                name: 'Процессинг',
-                key: 'processing',
-                children: [
-                    { name: 'Лимиты', href: '/operator/processing/limits', key: 'limits', description: 'Управление лимитами карт' },
-                    { name: 'Транзакции', href: '/operator/processing/transactions', key: 'transactions', description: 'Мониторинг транзакций' },
-                ]
-            },
-        );
-    }    
-        if (roles.includes(10)) {
-            additionalLinks.push({
-                name: 'Заявки на карты',
-                key: 'application',
-                children: [
-                    { name: 'Карта', href: '/agent/card', key: 'gift_card' },
-                    { 
-                        name: 'Заявки', 
-                        href: '/agent/applications-list', 
-                        key: 'applications',
-                        hasNotification: hasNewApplications 
-                    }
-                ]
-            });
-        }
-
-        if (roles.includes(11)) {
-            additionalLinks.push({
-                name: 'Заявки на кредиты',
-                key: 'credit',
-                children: [
-                    { name: "Кредит", href: "/credit/card", key: "gift_credit" },
-                    { name: "Заявки", href: "/credit/applications-list", key: "credits" },
-                ]
-            });
-        }
-
-        if (roles.includes(12)) {
-            additionalLinks.push({
-                name: 'Заявки на депозиты',
-                key: 'deposit',
-                children: [
-                    { name: "Депозит", href: "/agent/dipozit/card", key: "gift_deposit" },
-                    { name: "Заявки", href: "/agent/dipozit/applications-list", key: "deposits" },
-                ]
-            });
-        }
-
-        if (roles.includes(13)) {
-            additionalLinks.push({
-                name: 'Агент по QR-ам',
-                key: 'qr',
-                children: [          {
-                    name: "Транзакции",
-                    href: "/agent-qr/transactions/list",
-                    key: "list_qr",
-                    },
-                ]
-            });
-        }
-
-        if (roles.includes(14)) {
-            additionalLinks.push({
-                name: 'Агент по SMS',
-                key: 'sms',
-                children: [
-                    { name: 'Отправка SMS', href: '/agent-sms/sms-sender', key: 'sms_send' },
-                ]
-            });
-        }
-
-        if (roles.includes(15)) {
-            additionalLinks.push({
-                name: 'Агент по транзакциям',
-                key: 'transactions',
-                children: [
-                    { name: 'Обновление типа транзакции', href: '/agent-transaction/update-transaction', key: 'update_transaction' },
-                ]
-            });
-        }
-
-        if (roles.includes(16)) {
-            additionalLinks.push({
-                name: 'Агент по таможне',
-                key: 'customs',
-                children: [
-                    { name: 'Просмотр/Оплата таможни', href: '/agent-custom/eqms', key: 'eqms_list' },
-                ]
-            });
-        }
-
-        return [...baseLinks, ...additionalLinks];
-    }, [roles, hasNewApplications]);
-
-    const [openDropdowns, setOpenDropdowns] = useState({});
-
-    useEffect(() => {
-        const newOpen = {};
-        links.forEach((link) => {
-            if (link.children && link.children.some((child) => child.key === activeLink)) {
-                newOpen[link.key] = true;
-            }
-        });
-        setOpenDropdowns((prev) => ({
-            ...prev,
-            ...newOpen
-        }));
-    }, [links, activeLink]);
-
-    const toggleDropdown = (key) => {
-        setOpenDropdowns((prev) => ({ ...prev, [key]: !prev[key] }));
+    websocket.onopen = () => {
+      console.log("WebSocket for roles connected");
     };
 
-    const createRipple = (event) => {
-        const element = event.currentTarget;
-        const circle = document.createElement('span');
-        const diameter = Math.max(element.clientWidth, element.clientHeight);
-        const radius = diameter / 2;
-        circle.style.width = circle.style.height = `${diameter}px`;
-        circle.style.left = `${event.clientX - element.getBoundingClientRect().left - radius}px`;
-        circle.style.top = `${event.clientY - element.getBoundingClientRect().top - radius}px`;
-        circle.classList.add('ripple-effect');
+    websocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received roles update:", data);
 
-        const existingRipple = element.querySelector('.ripple-effect');
-        if (existingRipple) {
-            existingRipple.remove();
+        if (data.role_ids && Array.isArray(data.role_ids)) {
+          // Обновляем localStorage
+          localStorage.setItem("role_ids", JSON.stringify(data.role_ids));
+          // Обновляем состояние
+          setRoles(data.role_ids);
+
+          // Показываем уведомление об обновлении ролей
+          setAlert({
+            show: true,
+            message: "Роли пользователя были обновлены",
+            type: "success",
+          });
         }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
 
-        element.appendChild(circle);
+    websocket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
+    websocket.onclose = (event) => {
+      console.log("WebSocket for roles closed", event.code, event.reason);
+
+      // Автоматическое переподключение при аварийном закрытии
+      if (event.code !== 1000 && event.code !== 1001) {
+        console.log("WebSocket connection lost. Attempting to reconnect...");
         setTimeout(() => {
-            circle.remove();
-        }, 600);
+          if (localStorage.getItem("access_token")) {
+            // Пересоздаем соединение
+            const newWebsocket = new WebSocket(
+              `${
+                import.meta.env.VITE_BACKEND_URL_WS
+              }/listen/roles?Authorization=${encodeURIComponent(
+                localStorage.getItem("access_token")
+              )}`
+            );
+            setWs(newWebsocket);
+          }
+        }, 3000);
+      }
     };
 
-    const handleChangePassword = () => {
-        setIsModalOpen(true);
-        setModalError('');
-        setOldPassword('');
-        setNewPassword('');
-    };
+    setWs(websocket);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setModalError('');
-        setLoading(true);
+    return () => {
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.close(1000, "Component unmounting");
+      }
+    };
+  }, []);
+
+  // Инициализация ролей из localStorage
+  useEffect(() => {
+    let storedRoles = [];
+    try {
+      const item = localStorage.getItem("role_ids");
+      if (item) {
+        storedRoles = JSON.parse(item);
+        if (!Array.isArray(storedRoles)) {
+          storedRoles = [];
+          localStorage.removeItem("role_ids");
+        }
+      }
+    } catch (err) {
+      console.error("Error parsing role_ids from localStorage:", err);
+      storedRoles = [];
+      localStorage.removeItem("role_ids");
+    }
+    setRoles(storedRoles);
+
+    // Дополнительная загрузка ролей с сервера
+    const fetchRoles = async () => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
         try {
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    old_password: oldPassword,
-                    new_password: newPassword
-                })
-            });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData?.detail || 'Походу вы ввели неправильный пароль');
+          const res = await fetch(
+            `${import.meta.env.VITE_BACKEND_URL}/roles/user/my`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
-            setIsModalOpen(false);
-            alert('Пароль успешно изменен!');
+          );
+          if (res.ok) {
+            const data = await res.json();
+            let ids = [];
+            if (Array.isArray(data)) {
+              ids = data
+                .map((role) => role.ID)
+                .filter((id) => Number.isInteger(id));
+            } else {
+              console.error("Fetched roles data is not an array:", data);
+            }
+            localStorage.setItem("role_ids", JSON.stringify(ids));
+            setRoles(ids);
+          } else {
+            console.error("Failed to fetch roles:", res.status);
+          }
         } catch (err) {
-            setModalError(err.message);
-        } finally {
-            setLoading(false);
+          console.error("Error fetching roles:", err);
         }
+      }
     };
+    fetchRoles();
+  }, []);
 
-    // Сбрасываем уведомление при клике на ссылку заявок
-    const handleApplicationsClick = () => {
-        setHasNewApplications(false);
-        if (window.innerWidth <= 768) {
-            toggle();
+  // WebSocket для новых заявок
+  const wsUrl =
+    import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + "/applications/portal";
+  const handleNewApplication = useCallback(
+    (newApplication) => {
+      console.log("Новая заявка в хедере:", newApplication);
+
+      // Устанавливаем красную точку
+      setHasNewApplications(true);
+      // Показываем всплывающее уведомление, если пользователь не на странице заявок
+      if (activeLink !== "applications") {
+        setAlert({
+          show: true,
+          message: `Новая заявка #${newApplication.ID} от ${newApplication.request_creator}`,
+          type: "info",
+        });
+      }
+    },
+    [activeLink]
+  );
+  useWebSocket(wsUrl, handleNewApplication, [activeLink]);
+
+  // Базовые ссылки меню (доступны всем) и дополнительные в зависимости от ролей
+  const links = useMemo(() => {
+    const baseLinks = [
+      { name: "База знаний", href: "/user/knowledge-base", key: "knowledge" },
+    ];
+
+    const additionalLinks = [];
+
+    if (roles.includes(6) || roles.includes(8)) {
+      additionalLinks.push(
+        { name: "Тесты", href: "/worker/tests", key: "tests" },
+        { name: "Моя премия", href: "/worker/premies", key: "worker_premies" }
+      );
+    }
+
+    if (roles.includes(5)) {
+      additionalLinks.push({
+        name: "Статистика моего офиса",
+        href: "/director/reports",
+        key: "director",
+      });
+    }
+
+    // Председатель (роль 10)
+    if (roles.includes(9)) {
+      additionalLinks.push({
+        name: "Статистика банка",
+        href: "/chairman/reports",
+        key: "chairman",
+      });
+    }
+
+    if (roles.includes(3)) {
+      additionalLinks.push(
+        {
+          name: "Оператор",
+          key: "operator",
+          children: [
+            { name: "Премии", href: "/operator/premies", key: "premi" },
+            {
+              name: "Отчеты",
+              href: "/operator/reports",
+              key: "reports_operator",
+            },
+            { name: "Данные", href: "/operator/data", key: "data" },
+            { name: "Тесты", href: "/operator/tests", key: "tests_operator" },
+            {
+              name: "Управление Базой знаний",
+              href: "/operator/knowledge-base",
+              key: "kb_operator",
+            },
+          ],
+        },
+        {
+          name: "Процессинг",
+          key: "processing",
+          children: [
+            {
+              name: "Лимиты",
+              href: "/operator/processing/limits",
+              key: "limits",
+              description: "Управление лимитами карт",
+            },
+            {
+              name: "Транзакции",
+              href: "/operator/processing/transactions",
+              key: "transactions",
+              description: "Мониторинг транзакций",
+            },
+          ],
         }
-    };
+      );
+    }
+    if (roles.includes(10)) {
+      additionalLinks.push({
+        name: "Заявки на карты",
+        key: "application",
+        children: [
+          { name: "Карта", href: "/agent/card", key: "gift_card" },
+          {
+            name: "Заявки",
+            href: "/agent/applications-list",
+            key: "applications",
+            hasNotification: hasNewApplications,
+          },
+        ],
+      });
+    }
 
-    const handleLinkClick = () => {
-        if (window.innerWidth <= 768) {
-            toggle();
-        }
-    };
+    if (roles.includes(11)) {
+      additionalLinks.push({
+        name: "Заявки на кредиты",
+        key: "credit",
+        children: [
+          { name: "Кредит", href: "/credit/card", key: "gift_credit" },
+          { name: "Заявки", href: "/credit/applications-list", key: "credits" },
+        ],
+      });
+    }
 
-    return (
-        <>
-            {/* Всплывающее уведомление о новой заявке */}
-            {alert.show && (
-                <AlertMessage
-                    message={alert.message}
-                    type={alert.type}
-                    onClose={() => setAlert({ ...alert, show: false })}
-                    duration={5000}
+    if (roles.includes(12)) {
+      additionalLinks.push({
+        name: "Заявки на депозиты",
+        key: "deposit",
+        children: [
+          { name: "Депозит", href: "/agent/dipozit/card", key: "gift_deposit" },
+          {
+            name: "Заявки",
+            href: "/agent/dipozit/applications-list",
+            key: "deposits",
+          },
+        ],
+      });
+    }
+
+    if (roles.includes(13)) {
+      additionalLinks.push({
+        name: "Агент по QR-ам",
+        key: "qr",
+        children: [
+          {
+            name: "Транзакции",
+            href: "/agent-qr/transactions/list",
+            key: "list_qr",
+          },
+        ],
+      });
+    }
+
+    if (roles.includes(14)) {
+      additionalLinks.push({
+        name: "Агент по SMS",
+        key: "sms",
+        children: [
+          {
+            name: "Отправка SMS",
+            href: "/agent-sms/sms-sender",
+            key: "sms_send",
+          },
+        ],
+      });
+    }
+
+    if (roles.includes(15)) {
+      additionalLinks.push({
+        name: "Агент по транзакциям",
+        key: "transactions",
+        children: [
+          {
+            name: "Обновление типа транзакции",
+            href: "/agent-transaction/update-transaction",
+            key: "update_transaction",
+          },
+          {
+            name: "Названия терминалов",
+            href: "/agent-transaction/terminal-names",
+            key: "terminal_names",
+          },
+        ],
+      });
+    }
+
+    if (roles.includes(16)) {
+      additionalLinks.push({
+        name: "Агент по таможне",
+        key: "customs",
+        children: [
+          {
+            name: "Просмотр/Оплата таможни",
+            href: "/agent-custom/eqms",
+            key: "eqms_list",
+          },
+        ],
+      });
+    }
+
+    return [...baseLinks, ...additionalLinks];
+  }, [roles, hasNewApplications]);
+
+  const [openDropdowns, setOpenDropdowns] = useState({});
+
+  useEffect(() => {
+    const newOpen = {};
+    links.forEach((link) => {
+      if (
+        link.children &&
+        link.children.some((child) => child.key === activeLink)
+      ) {
+        newOpen[link.key] = true;
+      }
+    });
+    setOpenDropdowns((prev) => ({
+      ...prev,
+      ...newOpen,
+    }));
+  }, [links, activeLink]);
+
+  const toggleDropdown = (key) => {
+    setOpenDropdowns((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const createRipple = (event) => {
+    const element = event.currentTarget;
+    const circle = document.createElement("span");
+    const diameter = Math.max(element.clientWidth, element.clientHeight);
+    const radius = diameter / 2;
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${
+      event.clientX - element.getBoundingClientRect().left - radius
+    }px`;
+    circle.style.top = `${
+      event.clientY - element.getBoundingClientRect().top - radius
+    }px`;
+    circle.classList.add("ripple-effect");
+
+    const existingRipple = element.querySelector(".ripple-effect");
+    if (existingRipple) {
+      existingRipple.remove();
+    }
+
+    element.appendChild(circle);
+
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  };
+
+  const handleChangePassword = () => {
+    setIsModalOpen(true);
+    setModalError("");
+    setOldPassword("");
+    setNewPassword("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setModalError("");
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(
+          errorData?.detail || "Походу вы ввели неправильный пароль"
+        );
+      }
+      setIsModalOpen(false);
+      alert("Пароль успешно изменен!");
+    } catch (err) {
+      setModalError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Сбрасываем уведомление при клике на ссылку заявок
+  const handleApplicationsClick = () => {
+    setHasNewApplications(false);
+    if (window.innerWidth <= 768) {
+      toggle();
+    }
+  };
+
+  const handleLinkClick = () => {
+    if (window.innerWidth <= 768) {
+      toggle();
+    }
+  };
+
+  return (
+    <>
+      {/* Всплывающее уведомление о новой заявке */}
+      {alert.show && (
+        <AlertMessage
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert({ ...alert, show: false })}
+          duration={5000}
+        />
+      )}
+      <aside className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
+        <div className="sidebar-top">
+          <Link to="/" onClick={handleLinkClick}>
+            <LogoImageComponent
+              width={isOpen ? 75 : 53}
+              height={isOpen ? 65 : 46}
+            />
+          </Link>
+          <button
+            className={`sidebar-toggle ${isOpen ? "open" : ""}`}
+            onClick={toggle}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+        <nav className={`nav-links ${isOpen ? "visible" : "hidden"}`}>
+          {links.map((link) => {
+            if (link.children) {
+              const isDropdownOpen = openDropdowns[link.key] || false;
+              const isActive = link.children.some(
+                (child) => child.key === activeLink
+              );
+              return (
+                <div key={link.key} className="dropdown-wrapper">
+                  <button
+                    className={`dropdown-toggle ${isActive ? "active" : ""}`}
+                    onClick={(e) => {
+                      createRipple(e);
+                      toggleDropdown(link.key);
+                    }}
+                  >
+                    {link.name}
+                    <span
+                      className={`dropdown-arrow ${
+                        isDropdownOpen ? "open" : ""
+                      }`}
+                    >
+                      <img src={RowDown} alt="▼" width="16" height="10" />
+                    </span>
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="sub-menu">
+                      {link.children.map((child) => (
+                        <Link
+                          key={child.key}
+                          to={child.href}
+                          className={`sub-link ${
+                            child.key === activeLink ? "active" : ""
+                          }`}
+                          onClick={(e) => {
+                            createRipple(e);
+                            handleLinkClick();
+                          }}
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <Link
+                key={link.key}
+                to={link.href}
+                className={`${link.key === activeLink ? "active" : ""}`}
+                onClick={(e) => {
+                  createRipple(e);
+                  if (link.key === "applications") {
+                    handleApplicationsClick();
+                  } else {
+                    handleLinkClick();
+                  }
+                }}
+              >
+                {link.name}
+                {link.hasNotification && (
+                  <span className="notification-dot"></span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>
+          <div className="username-wrapper">
+            <span>
+              Пользователь: <strong>{username}</strong>
+            </span>
+            <button
+              className="change-password-btn"
+              onClick={handleChangePassword}
+            >
+              <img
+                src={ChangePasswordIcon}
+                alt="Изменить пароль"
+                width={27}
+                height={27}
+                title="Изменить пароль"
+              />
+            </button>
+          </div>
+          <LogoutButton />
+        </div>
+      </aside>
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Смена пароля</h3>
+            <form onSubmit={handleSubmit}>
+              <label>
+                Старый пароль:
+                <input
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  required
                 />
-            )}
-            <aside className={`sidebar ${isOpen ? 'open' : 'collapsed'}`}>
-                <div className="sidebar-top">
-                    <Link to="/" onClick={handleLinkClick}>
-                        <LogoImageComponent width={isOpen ? 75 : 53} height={isOpen ? 65 : 46} />
-                    </Link>
-                    <button className={`sidebar-toggle ${isOpen ? 'open' : ''}`} onClick={toggle}>
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-                <nav className={`nav-links ${isOpen ? 'visible' : 'hidden'}`}>
-                    {links.map((link) => {
-                        if (link.children) {
-                            const isDropdownOpen = openDropdowns[link.key] || false;
-                            const isActive = link.children.some((child) => child.key === activeLink);
-                            return (
-                                <div key={link.key} className="dropdown-wrapper">
-                                    <button
-                                        className={`dropdown-toggle ${isActive ? 'active' : ''}`}
-                                        onClick={(e) => {
-                                            createRipple(e);
-                                            toggleDropdown(link.key);
-                                        }}
-                                    >
-                                        {link.name}
-                                        <span className={`dropdown-arrow ${isDropdownOpen ? 'open' : ''}`}>
-                                            <img src={RowDown} alt="▼" width="16" height="10" />
-                                        </span>
-                                    </button>
-                                    {isDropdownOpen && (
-                                        <div className="sub-menu">
-                                            {link.children.map((child) => (
-                                                <Link
-                                                    key={child.key}
-                                                    to={child.href}
-                                                    className={`sub-link ${child.key === activeLink ? 'active' : ''}`}
-                                                    onClick={(e) => {
-                                                        createRipple(e);
-                                                        handleLinkClick();
-                                                    }}
-                                                >
-                                                    {child.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        }
-                        return (
-                            <Link
-                                key={link.key}
-                                to={link.href}
-                                className={`${link.key === activeLink ? 'active' : ''}`}
-                                onClick={(e) => {
-                                    createRipple(e);
-                                    if (link.key === 'applications') {
-                                        handleApplicationsClick();
-                                    } else {
-                                        handleLinkClick();
-                                    }
-                                }}
-                            >
-                                {link.name}
-                                {link.hasNotification && <span className="notification-dot"></span>}
-                            </Link>
-                        );
-                    })}
-                </nav>
-                <div className={`sidebar-bottom ${isOpen ? '' : 'collapsed'}`}>
-                    <div className="username-wrapper">
-                        <span>
-                          Пользователь: <strong>{username}</strong>
-                        </span>
-                        <button className="change-password-btn" onClick={handleChangePassword}>
-                            <img src={ChangePasswordIcon} alt="Изменить пароль" width={27} height={27} title="Изменить пароль" />
-                        </button>
-                    </div>
-                    <LogoutButton />
-                </div>
-            </aside>
-            {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <h3>Смена пароля</h3>
-                        <form onSubmit={handleSubmit}>
-                            <label>
-                                Старый пароль:
-                                <input
-                                    type="password"
-                                    value={oldPassword}
-                                    onChange={(e) => setOldPassword(e.target.value)}
-                                    required
-                                />
-                            </label>
-                            <label>
-                                Новый пароль:
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    required
-                                />
-                            </label>
-                            {modalError && <div className="modal-error">{modalError}</div>}
-                            <div className="modal-buttons">
-                                <button type="submit" disabled={loading}>
-                                    {loading ? 'Сохраняю...' : 'Сменить пароль'}
-                                </button>
-                                <button type="button" onClick={() => setIsModalOpen(false)}>
-                                    Отмена
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+              </label>
+              <label>
+                Новый пароль:
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </label>
+              {modalError && <div className="modal-error">{modalError}</div>}
+              <div className="modal-buttons">
+                <button type="submit" disabled={loading}>
+                  {loading ? "Сохраняю..." : "Сменить пароль"}
+                </button>
+                <button type="button" onClick={() => setIsModalOpen(false)}>
+                  Отмена
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
