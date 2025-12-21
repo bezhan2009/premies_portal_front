@@ -23,7 +23,7 @@ const ValidData = {
 import { tableDataDef, transactionTypes } from "../../const/defConst";
 // import { useModal } from "../../hooks/useModal"
 
-export default function MyApplications() {
+export default function TransactionTypes() {
   const { data, setData, validate } = useFormStore();
   const [loading, setLoading] = useState(false);
   // const [selectedRows, setSelectedRows] = useState([]);
