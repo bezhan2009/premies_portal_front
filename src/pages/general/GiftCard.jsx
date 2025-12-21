@@ -1,14 +1,15 @@
 import RadioSelect from "../../components/elements/RadioSelect";
 import {
-  districtTypes,
-  docTypes,
-  mcCards,
-  ncCards,
-  reginTypes,
-  streetTypes,
-  USTypes,
-  visaCards,
+    districtTypes,
+    docTypes,
+    mcCards,
+    ncCards,
+    reginTypes,
+    streetTypes,
+    USTypes,
+    visaCards,
 } from "../../const/defConst";
+import search_user from "../../assets/search_user.png"
 import file from "../../assets/file.jpg";
 import back_side_of_the_passport_file from "../../assets/back-passport.jpg";
 import front_side_of_the_passport_file from "../../assets/front-passport.jpg";
@@ -34,648 +35,798 @@ import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
+import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
 export default function GiftCard({ edit = false }) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
-  const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [alert, setAlert] = useState(null);
-  const { data, errors, setData, validate, setDataMore } = useFormStore();
-  const navigate = useNavigate();
-  const { id } = useParams();
+    const { isSidebarOpen, toggleSidebar } = useSidebar();
+    const [loading, setLoading] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [alert, setAlert] = useState(null);
+    const { data, errors, setData, validate, setDataMore } = useFormStore();
+    const navigate = useNavigate();
+    const { id } = useParams();
 
-  const ValidData = {
-    surname: { required: true },
-    name: { required: true },
-    phone_number: { required: true },
-  };
+    // Состояния для работы с несколькими клиентами
+    const [foundClients, setFoundClients] = useState([]);
+    const [showClientSelector, setShowClientSelector] = useState(false);
+    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
 
-  const showAlert = (message, type = "error", duration = 5000) => {
-    setAlert({ message, type, duration });
-  };
+    const ValidData = {
+        surname: { required: true },
+        name: { required: true },
+        phone_number: { required: true },
+    };
 
-  const closeAlert = () => {
-    setAlert(null);
-  };
+    const showAlert = (message, type = "error", duration = 5000) => {
+        setAlert({ message, type, duration });
+    };
 
-  const formatDateForBackend = (dateStr) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toISOString();
-  };
+    const closeAlert = () => {
+        setAlert(null);
+    };
 
-  const downloadFile = (blob, filename) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  };
+    // Функция для заполнения формы данными клиента
+    const fillFormWithClientData = (clientData) => {
+        setData("surname", clientData.surname || "");
+        setData("name", clientData.name || "");
+        setData("patronymic", clientData.patronymic || "");
+        setData("phone_number", clientData.phone || "");
 
-  const downloadPoll = async (applicationId) => {
-    try {
-      setDownloading(true);
-      const automationUrl = import.meta.env.VITE_BACKEND_URL;
-      const token = localStorage.getItem("access_token");
+        // Формируем имя на карте: сначала имя(ltn_name) потом фамилия(ltn_surname)
+        const cardName = `${clientData.ltn_name || ""} ${clientData.ltn_surname || ""}`.trim();
+        setData("card_name", cardName);
 
-      const response = await fetch(`${automationUrl}/automation/poll`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          application_ids: [applicationId]
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const filename = `poll_${applicationId}.zip`;
-      downloadFile(blob, filename);
-      
-      showAlert("Анкета успешно скачана!", "success", 4000);
-    } catch (error) {
-      console.error("Ошибка скачивания анкеты:", error);
-      showAlert("Произошла ошибка при скачивании анкеты", "error", 5000);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const handleSaveAndDownload = async () => {
-    // Сначала сохраняем/обновляем заявку
-    const saved = await onSend(true); // передаем флаг, что это вызов из скачивания
-    if (!saved) {
-      return; // Если сохранение не удалось, выходим
-    }
-    
-    // Если edit = true, то у нас уже есть ID в data.ID
-    // Если edit = false, то ID придет из ответа сервера в onSend
-  };
-
-  const onSend = async (fromDownload = false) => {
-    const isValid = validate(ValidData);
-    if (!isValid) return false;
-
-    try {
-      const formData = new FormData();
-
-      // Проверка файлов
-      if (data.front_side_of_the_passport_file) {
-        formData.append(
-          "front_side_of_the_passport_file",
-          data.front_side_of_the_passport_file
-        );
-      }
-      if (data.back_side_of_the_passport_file) {
-        formData.append(
-          "back_side_of_the_passport_file",
-          data.back_side_of_the_passport_file
-        );
-      }
-      if (data.selfie_with_passport_file) {
-        formData.append(
-          "selfie_with_passport_file",
-          data.selfie_with_passport_file
-        );
-      }
-
-      // Добавление остальных полей
-      formData.append("name", data.name.trim() || "");
-      formData.append("surname", data.surname.trim() || "");
-      formData.append("patronymic", data.patronymic.trim() || "");
-      formData.append("gender", data.gender === true ? "Муж" : "Жен");
-      formData.append("client_index", data.client_index || "");
-      formData.append("issued_by", data.issued_by || "");
-      formData.append(
-        "issued_at",
-        formatDateForBackend(data.passport_issued_at)
-      );
-      formData.append("birth_date", formatDateForBackend(data.birth_date));
-      formData.append("phone_number", data.phone_number || "");
-      formData.append("secret_word", data.secret_word || "");
-      formData.append("card_name", data.card_name || "");
-      formData.append(
-        "card_code",
-        data.visa_card || data.mc_card || data.nc_card || ""
-      );
-      formData.append("type_of_certificate", +data.type_of_certificate || "");
-      formData.append("documents_series", data.documents_series || "");
-      formData.append("document_number", data.document_number || "");
-      formData.append(
-        "passport_issued_at",
-        formatDateForBackend(data.passport_issued_at)
-      );
-      formData.append("inn", data.inn || "");
-      formData.append("country", data.country || "");
-      formData.append("email", data.email || "");
-      formData.append("region", data.region || "");
-      formData.append("population_type", data.population_type || "");
-      formData.append("populated", data.populated || "");
-      formData.append("district", data.district || "");
-      formData.append("street_type", data.street_type || "");
-      formData.append("street", data.street || "");
-      formData.append("house_number", data.house_number || "");
-      formData.append("corpus", data.corpus || "");
-      formData.append("apartment_number", data.apartment_number || "");
-
-      // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
-      formData.append("is_resident", String(!!data.is_resident));
-      formData.append("remote_application", String(!!data.remote_application));
-      formData.append("identity_verified", String(!!data.identity_verified));
-      formData.append("receiving_office", data.receiving_office || "");
-
-      formData.append(
-        "delivery_address",
-        `${data.country || ""}, ${data.region || ""}, ${
-          data.populated || ""
-        }, ${data.street || ""} ${data.house_number || ""}`
-      );
-
-      const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-      let applicationId = data.ID;
-
-      if (edit) {
-        const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
-          method: "PATCH",
-          body: formData,
-        });
-
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-
-        const result = await response.json();
-        console.log("Успешно обновлено:", result);
-        
-        if (!fromDownload) {
-          showAlert("Данные успешно сохранены!", "success", 4000);
+        // Заполняем данные документа
+        // Сопоставляем тип документа из АБС с значением из docTypes
+        const docType = docTypes.find(item => item.label === clientData.identdoc_name);
+        if (docType) {
+            setData("type_of_certificate", docType.value);
         }
-        
-        // Если вызвано из скачивания, запускаем скачивание
-        if (fromDownload && applicationId) {
-          downloadPoll(applicationId);
+
+        setData("documents_series", clientData.identdoc_series || "");
+        setData("document_number", clientData.identdoc_num || "");
+
+        // Преобразуем дату из формата dd.mm.yyyy в yyyy-mm-dd для input type="date"
+        if (clientData.identdoc_date) {
+            const dateParts = clientData.identdoc_date.split('.');
+            if (dateParts.length === 3) {
+                const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                setData("passport_issued_at", formattedDate);
+            }
         }
-        return true;
-      } else {
-        const response = await fetch(`${backendUrl}/applications`, {
-          method: "POST",
-          body: formData,
-        });
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
+        setData("issued_by", clientData.identdoc_orgname || "");
+        setData("inn", clientData.tax_code || "");
+        setData("client_code", clientData.client_code || "");
+    };
 
-        const result = await response.json();
-        console.log("Успешно создано:", result);
-        
-        // Получаем ID новой заявки
-        applicationId = result.ID || result.id;
-        
-        if (!fromDownload) {
-          // Если это обычное сохранение, перезагружаем страницу
-          navigate(0);
-          showAlert("Данные успешно сохранены!", "success", 4000);
-        } else {
-          // Если вызвано из скачивания, запускаем скачивание
-          if (applicationId) {
-            downloadPoll(applicationId);
-          }
+    // Функция для поиска клиента в АБС
+    const handleSearchClient = async () => {
+        // Проверяем заполнено ли поле телефон
+        if (!data.phone_number) {
+            showAlert("Пожалуйста, заполните поле 'Телефон'", "error", 5000);
+            return;
         }
-        return true;
-      }
-    } catch (error) {
-      console.error("Ошибка отправки:", error);
-      showAlert("Произошла ошибка при сохранении данных", "error", 5000);
-      return false;
-    }
-  };
 
-  const getData = async () => {
-    if (edit) {
-      try {
-        setLoading(true);
-        console.log("edit id", id);
+        // Форматируем телефонный номер
+        let phoneNumber = data.phone_number.trim();
 
-        const data = await getApplicationById(id);
-        setDataMore({
-          ...data,
-          gemder: data.gender === "Муж",
-          birth_date: formaterDate(data?.birth_date, "dateOnly"),
-          passport_issued_at: formaterDate(
-            data?.passport_issued_at,
-            "dateOnly"
-          ),
-        });
-      } catch (e) {
-        console.error(e);
-        showAlert("Ошибка при загрузке данных", "error", 5000);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+        // Удаляем все нецифровые символы
+        phoneNumber = phoneNumber.replace(/\D/g, '');
 
-  console.log("data", data);
+        try {
+            setSearching(true);
+            const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+            const token = localStorage.getItem("access_token");
 
-  useEffect(() => {
-    getData();
-  }, []);
+            const response = await fetch(`${backendUrl}/client/info?phoneNumber=${phoneNumber}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-  return (
-    <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="gift_card" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="gift-card">
-          {alert && (
-            <AlertMessage
-              message={alert.message}
-              type={alert.type}
-              duration={alert.duration}
-              onClose={closeAlert}
-            />
-          )}
-          
-          {loading ? (
-            <Spinner />
-          ) : (
-            <main>
-              <h1>
-                Выберите карту! Нажав на <img src={file} alt="file" width={16} />{" "}
-                вы можете посмотреть и распечатать тарифы.
-              </h1>
-              <div className="header-form">
-                <div>
-                  <img src={visa} alt="visa" width={70} />
-                  <RadioSelect
-                    options={visaCards}
-                    selectedValue={data?.visa_card}
-                    onChange={(e) => {
-                      setData("visa_card", e);
-                      setData("mc_card", 0);
-                      setData("nc_card", 0);
-                    }}
-                  />
-                </div>
-                <div>
-                  <img src={mc} alt="mc" width={70} />
-                  <RadioSelect
-                    options={mcCards}
-                    selectedValue={data?.mc_card}
-                    onChange={(e) => {
-                      setData("mc_card", e);
-                      setData("visa_card", 0);
-                      setData("nc_card", 0);
-                    }}
-                  />
-                </div>
-                <div>
-                  <img src={nc} alt="nc" width={70} />
-                  <RadioSelect
-                    options={ncCards}
-                    selectedValue={data?.nc_card}
-                    onChange={(e) => {
-                      setData("nc_card", e);
-                      setData("visa_card", 0);
-                      setData("mc_card", 0);
-                    }}
-                  />
-                </div>
-              </div>
-              <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
+            if (!response.ok) {
+                if (response.status === 404) {
+                    showAlert("Клиенты не найдены в АБС", "error", 5000);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                setFoundClients([]);
+                return;
+            }
 
-              <div className="header-passport">
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("front_side_of_the_passport_file", e)}
-                  placeholderImage={front_side_of_the_passport_file}
-                  id={"front_side_of_the_passport_file"}
-                  value={
-                    edit
-                      ? data?.front_side_of_the_passport
-                      : data?.front_side_of_the_passport_file
-                  }
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                  placeholderImage={back_side_of_the_passport_file}
-                  id={"back_side_of_the_passport_file"}
-                  value={
-                    edit
-                      ? data?.back_side_of_the_passport
-                      : data?.back_side_of_the_passport_file
-                  }
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
+            const clientsData = await response.json();
 
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("selfie_with_passport_file", e)}
-                  placeholderImage={personImg}
-                  id={"selfie_with_passport_file"}
-                  value={
-                    edit
-                      ? data?.selfie_with_passport
-                      : data?.selfie_with_passport_file
-                  }
-                  width={220}
-                />
+            if (clientsData.length === 0) {
+                showAlert("Клиенты не найдены в АБС", "error", 5000);
+                setFoundClients([]);
+                return;
+            }
 
-                <div>
-                  <CheckBox
-                    title={"Личность подтверждена?"}
-                    value={data.identity_verified}
-                    onChange={(e) => setData("identity_verified", e)}
-                  />
-                  <CheckBox
-                    title={"Заявка дистанционная?"}
-                    value={data.remote_application}
-                    onChange={(e) => setData("remote_application", e)}
-                  />
-                </div>
-              </div>
-              <div className="content-form">
-                <Input
-                  className={"div1"}
-                  placeholder={"Фамилия"}
-                  onChange={(e) => setData("surname", e)}
-                  value={data?.surname}
-                  error={errors}
-                  id={"surname"}
-                />
-                <Input
-                  className={"div2"}
-                  placeholder={"Имя"}
-                  onChange={(e) => setData("name", e)}
-                  value={data?.name}
-                  error={errors}
-                  id={"name"}
-                />
-                <Input
-                  className={"div3"}
-                  placeholder={"Отчество"}
-                  onChange={(e) => setData("patronymic", e)}
-                  value={data?.patronymic}
-                  error={errors}
-                  id={"patronymic"}
-                />
-                <Input
-                  type="date"
-                  className={"div4"}
-                  placeholder={"Дата рождения"}
-                  onChange={(e) => setData("birth_date", e)}
-                  value={data?.birth_date}
-                  error={errors}
-                  id={"birth_date"}
-                />
-                <Input
-                  className={"div5"}
-                  placeholder={"Телефон"}
-                  onChange={(e) => setData("phone_number", e)}
-                  value={data?.phone_number}
-                  error={errors}
-                  id={"phone_number"}
-                />
-                <Input
-                  className={"div6"}
-                  placeholder={"Кодовое"}
-                  onChange={(e) => setData("secret_word", e)}
-                  value={data?.secret_word}
-                  error={errors}
-                  id={"secret_word"}
-                />
-                <Input
-                  className={"div9"}
-                  placeholder={"Получаемый оффис"}
-                  onChange={(e) => setData("receiving_office", e)}
-                  value={data?.receiving_office}
-                  error={errors}
-                  id={"receiving_office"}
-                />
-                <Input
-                  className={"div7"}
-                  placeholder={"Почта"}
-                  onChange={(e) => setData("email", e)}
-                  value={data?.email}
-                  error={errors}
-                  id={"email"}
-                />
-                <Input
-                  className={"div8"}
-                  placeholder={"Имя на карте"}
-                  onChange={(e) => setData("card_name", e)}
-                  value={data?.card_name}
-                  error={errors}
-                  id={"card_name"}
-                />
-                <CheckBox
-                  yes={"Муж"}
-                  no={"Жен"}
-                  className={"div9 form-check-box"}
-                  title={"Пол"}
-                  value={data.gender}
-                  onChange={(e) => setData("gender", e)}
-                />
-                <CheckBox
-                  className={"div10 form-check-box"}
-                  title={"Резидент Тадж-на?"}
-                  value={data.is_resident}
-                  onChange={(e) => setData("is_resident", e)}
-                />
-                <Select
-                  className={"div11"}
-                  id={"type_of_certificate"}
-                  value={data?.type_of_certificate}
-                  onChange={(e) => setData("type_of_certificate", e)}
-                  options={docTypes}
-                  error={errors}
-                />
-                <Input
-                  className={"div12"}
-                  placeholder={"Серия"}
-                  onChange={(e) => setData("documents_series", e)}
-                  value={data?.documents_series}
-                  error={errors}
-                  id={"documents_series"}
-                />
-                <Input
-                  className={"div13"}
-                  placeholder={"Номер"}
-                  onChange={(e) => setData("document_number", e)}
-                  value={data?.document_number}
-                  error={errors}
-                  id={"document_number"}
-                />
+            // Сохраняем всех найденных клиентов
+            setFoundClients(clientsData);
 
-                <Input
-                  type="date"
-                  className={"div14"}
-                  placeholder={"Дата выдачи"}
-                  onChange={(e) => setData("passport_issued_at", e)}
-                  value={data?.passport_issued_at}
-                  error={errors}
-                  id={"passport_issued_at"}
-                />
-                <Input
-                  className={"div15"}
-                  placeholder={"Кем выдан"}
-                  onChange={(e) => setData("issued_by", e)}
-                  value={data?.issued_by}
-                  error={errors}
-                  id={"issued_by"}
-                />
-                <Input
-                  className={"div16"}
-                  placeholder={"ИНН"}
-                  onChange={(e) => setData("inn", e)}
-                  value={data?.inn}
-                  error={errors}
-                  id={"inn"}
-                />
-                <Input
-                  className={"div17"}
-                  placeholder={"Страна"}
-                  onChange={(e) => setData("country", e)}
-                  value={data?.country}
-                  error={errors}
-                  id={"country"}
-                />
-                <Select
-                  className={"div18"}
-                  id={"regin_type"}
-                  value={data?.regin_type}
-                  onChange={(e) => setData("regin_type", e)}
-                  options={reginTypes}
-                  error={errors}
-                />
-                <Input
-                  className={"div19"}
-                  placeholder={"Регион"}
-                  onChange={(e) => setData("region", e)}
-                  value={data?.region}
-                  error={errors}
-                  id={"region"}
-                />
-                <Select
-                  className={"div20"}
-                  id={"population_type"}
-                  value={data?.population_type}
-                  onChange={(e) => setData("population_type", e)}
-                  options={USTypes}
-                  error={errors}
-                />
-                <Input
-                  className={"div21"}
-                  placeholder={"Нас пункт"}
-                  onChange={(e) => setData("populated", e)}
-                  value={data?.populated}
-                  error={errors}
-                  id={"populated"}
-                />
-                <Select
-                  className={"div22"}
-                  id={"district_type"}
-                  value={data?.district_type}
-                  onChange={(e) => setData("district_type", e)}
-                  options={districtTypes}
-                  error={errors}
-                />
-                <Input
-                  className={"div23"}
-                  placeholder={"Района"}
-                  onChange={(e) => setData("district", e)}
-                  value={data?.district}
-                  error={errors}
-                  id={"district"}
-                />
-                <Select
-                  className={"div24"}
-                  id={"street_type"}
-                  value={data?.street_type}
-                  onChange={(e) => setData("street_type", e)}
-                  options={streetTypes}
-                  error={errors}
-                />
-                <Input
-                  className={"div25"}
-                  placeholder={"Улица"}
-                  onChange={(e) => setData("street", e)}
-                  value={data?.street}
-                  error={errors}
-                  id={"street"}
-                />
-                <Input
-                  className={"div26"}
-                  placeholder={"Дом"}
-                  onChange={(e) => setData("house_number", e)}
-                  value={data?.house_number}
-                  error={errors}
-                  id={"house_number"}
-                />
-                <Input
-                  className={"div27"}
-                  placeholder={"Корпус"}
-                  onChange={(e) => setData("corpus", e)}
-                  value={data?.corpus}
-                  error={errors}
-                  id={"corpus"}
-                />
-                <Input
-                  className={"div29"}
-                  placeholder={"Кв"}
-                  onChange={(e) => setData("apartment_number", e)}
-                  value={data?.apartment_number}
-                  error={errors}
-                  id={"apartment_number"}
-                />
-                <Input
-                  className={"div28"}
-                  placeholder={"Индекс"}
-                  onChange={(e) => setData("client_index", e)}
-                  value={data?.client_index}
-                  error={errors}
-                  id={"client_index"}
-                />
-              </div>
-              <footer>
-                <button onClick={() => onSend(false)} disabled={downloading}>
-                  <img src={save} alt="" />
-                  <span>Сохранить</span>
-                </button>
-                <button>
-                  <img src={card} alt="" />
-                  <span>Открыть карту</span>
-                </button>
-                <button 
-                  onClick={handleSaveAndDownload} 
-                  disabled={downloading}
-                >
-                  <img src={download} alt="" />
-                  <span>
+            if (clientsData.length === 1) {
+                // Если клиент только один, заполняем форму сразу
+                fillFormWithClientData(clientsData[0]);
+                showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+            } else {
+                // Если клиентов несколько, показываем модальное окно для выбора
+                setSelectedClientIndex(0);
+                setShowClientSelector(true);
+                showAlert(`Найдено ${clientsData.length} клиентов. Выберите нужного.`, "info", 5000);
+            }
+
+        } catch (error) {
+            console.error("Ошибка при поиске клиента в АБС:", error);
+            showAlert("Произошла ошибка при поиске клиента в АБС", "error", 5000);
+            setFoundClients([]);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    // Функция для выбора клиента из модального окна
+    const handleSelectClient = (clientIndex) => {
+        if (foundClients[clientIndex]) {
+            fillFormWithClientData(foundClients[clientIndex]);
+            setShowClientSelector(false);
+            showAlert(`Данные клиента ${clientIndex + 1} успешно загружены`, "success", 5000);
+        }
+    };
+
+    const formatDateForBackend = (dateStr) => {
+        if (!dateStr) return "";
+        return new Date(dateStr).toISOString();
+    };
+
+    const downloadFile = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    };
+
+    const downloadPoll = async (applicationId) => {
+        try {
+            setDownloading(true);
+            const automationUrl = import.meta.env.VITE_BACKEND_URL;
+            const token = localStorage.getItem("access_token");
+
+            const response = await fetch(`${automationUrl}/automation/poll`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    application_ids: [applicationId]
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = `poll_${applicationId}.zip`;
+            downloadFile(blob, filename);
+
+            showAlert("Анкета успешно скачана!", "success", 4000);
+        } catch (error) {
+            console.error("Ошибка скачивания анкеты:", error);
+            showAlert("Произошла ошибка при скачивании анкеты", "error", 5000);
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const handleSaveAndDownload = async () => {
+        // Сначала сохраняем/обновляем заявку
+        const saved = await onSend(true); // передаем флаг, что это вызов из скачивания
+        if (!saved) {
+            return; // Если сохранение не удалось, выходим
+        }
+
+        // Если edit = true, то у нас уже есть ID в data.ID
+        // Если edit = false, то ID придет из ответа сервера в onSend
+    };
+
+    const onSend = async (fromDownload = false) => {
+        const isValid = validate(ValidData);
+        if (!isValid) return false;
+
+        try {
+            const formData = new FormData();
+
+            // Проверка файлов
+            if (data.front_side_of_the_passport_file) {
+                formData.append(
+                    "front_side_of_the_passport_file",
+                    data.front_side_of_the_passport_file
+                );
+            }
+            if (data.back_side_of_the_passport_file) {
+                formData.append(
+                    "back_side_of_the_passport_file",
+                    data.back_side_of_the_passport_file
+                );
+            }
+            if (data.selfie_with_passport_file) {
+                formData.append(
+                    "selfie_with_passport_file",
+                    data.selfie_with_passport_file
+                );
+            }
+
+            // Добавление остальных полей
+            formData.append("name", data.name.trim() || "");
+            formData.append("surname", data.surname.trim() || "");
+            formData.append("patronymic", data.patronymic.trim() || "");
+            formData.append("gender", data.gender === true ? "Муж" : "Жен");
+            formData.append("client_index", data.client_index || "");
+            formData.append("issued_by", data.issued_by || "");
+            formData.append(
+                "issued_at",
+                formatDateForBackend(data.passport_issued_at)
+            );
+            formData.append("birth_date", formatDateForBackend(data.birth_date));
+            formData.append("phone_number", data.phone_number || "");
+            formData.append("secret_word", data.secret_word || "");
+            formData.append("card_name", data.card_name || "");
+            formData.append(
+                "card_code",
+                data.visa_card || data.mc_card || data.nc_card || ""
+            );
+            formData.append("type_of_certificate", +data.type_of_certificate || "");
+            formData.append("documents_series", data.documents_series || "");
+            formData.append("document_number", data.document_number || "");
+            formData.append(
+                "passport_issued_at",
+                formatDateForBackend(data.passport_issued_at)
+            );
+            formData.append("inn", data.inn || "");
+            formData.append("country", data.country || "");
+            formData.append("email", data.email || "");
+            formData.append("region", data.region || "");
+            formData.append("population_type", data.population_type || "");
+            formData.append("populated", data.populated || "");
+            formData.append("district", data.district || "");
+            formData.append("street_type", data.street_type || "");
+            formData.append("street", data.street || "");
+            formData.append("house_number", data.house_number || "");
+            formData.append("corpus", data.corpus || "");
+            formData.append("apartment_number", data.apartment_number || "");
+            formData.append("client_code", data.client_code || ""); // Добавляем код клиента в АБС
+
+            // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
+            formData.append("is_resident", String(!!data.is_resident));
+            formData.append("remote_application", String(!!data.remote_application));
+            formData.append("identity_verified", String(!!data.identity_verified));
+            formData.append("receiving_office", data.receiving_office || "");
+
+            formData.append(
+                "delivery_address",
+                `${data.country || ""}, ${data.region || ""}, ${
+                    data.populated || ""
+                }, ${data.street || ""} ${data.house_number || ""}`
+            );
+
+            const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+            let applicationId = data.ID;
+
+            if (edit) {
+                const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
+                    method: "PATCH",
+                    body: formData,
+                });
+
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+
+                const result = await response.json();
+                console.log("Успешно обновлено:", result);
+
+                if (!fromDownload) {
+                    showAlert("Данные успешно сохранены!", "success", 4000);
+                }
+
+                // Если вызвано из скачивания, запускаем скачивание
+                if (fromDownload && applicationId) {
+                    downloadPoll(applicationId);
+                }
+                return true;
+            } else {
+                const response = await fetch(`${backendUrl}/applications`, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+
+                const result = await response.json();
+                console.log("Успешно создано:", result);
+
+                // Получаем ID новой заявки
+                applicationId = result.ID || result.id;
+
+                if (!fromDownload) {
+                    // Если это обычное сохранение, перезагружаем страницу
+                    navigate(0);
+                    showAlert("Данные успешно сохранены!", "success", 4000);
+                } else {
+                    // Если вызвано из скачивания, запускаем скачивание
+                    if (applicationId) {
+                        downloadPoll(applicationId);
+                    }
+                }
+                return true;
+            }
+        } catch (error) {
+            console.error("Ошибка отправки:", error);
+            showAlert("Произошла ошибка при сохранении данных", "error", 5000);
+            return false;
+        }
+    };
+
+    const getData = async () => {
+        if (edit) {
+            try {
+                setLoading(true);
+                console.log("edit id", id);
+
+                const data = await getApplicationById(id);
+                setDataMore({
+                    ...data,
+                    gemder: data.gender === "Муж",
+                    birth_date: formaterDate(data?.birth_date, "dateOnly"),
+                    passport_issued_at: formaterDate(
+                        data?.passport_issued_at,
+                        "dateOnly"
+                    ),
+                });
+            } catch (e) {
+                console.error(e);
+                showAlert("Ошибка при загрузке данных", "error", 5000);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    console.log("data", data);
+
+    useEffect(() => {
+        getData();
+    }, []);
+
+    return (
+        <>
+            <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+                <Sidebar activeLink="gift_card" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+                <div className="gift-card">
+                    {alert && (
+                        <AlertMessage
+                            message={alert.message}
+                            type={alert.type}
+                            duration={alert.duration}
+                            onClose={closeAlert}
+                        />
+                    )}
+
+                    {/* Модальное окно выбора клиента */}
+                    {showClientSelector && foundClients.length > 1 && (
+                        <ClientSelectorModal
+                            clients={foundClients}
+                            selectedIndex={selectedClientIndex}
+                            onSelect={handleSelectClient}
+                            onClose={() => setShowClientSelector(false)}
+                            title="Выберите клиента"
+                            description={`Найдено ${foundClients.length} клиентов с номером телефона ${data.phone_number}. Выберите нужного:`}
+                        />
+                    )}
+
+                    {loading ? (
+                        <Spinner />
+                    ) : (
+                        <main>
+                            <h1>
+                                Выберите карту! Нажав на <img src={file} alt="file" width={16} />{" "}
+                                вы можете посмотреть и распечатать тарифы.
+                            </h1>
+                            <div className="header-form">
+                                <div>
+                                    <img src={visa} alt="visa" width={70} />
+                                    <RadioSelect
+                                        options={visaCards}
+                                        selectedValue={data?.visa_card}
+                                        onChange={(e) => {
+                                            setData("visa_card", e);
+                                            setData("mc_card", 0);
+                                            setData("nc_card", 0);
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <img src={mc} alt="mc" width={70} />
+                                    <RadioSelect
+                                        options={mcCards}
+                                        selectedValue={data?.mc_card}
+                                        onChange={(e) => {
+                                            setData("mc_card", e);
+                                            setData("visa_card", 0);
+                                            setData("nc_card", 0);
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <img src={nc} alt="nc" width={70} />
+                                    <RadioSelect
+                                        options={ncCards}
+                                        selectedValue={data?.nc_card}
+                                        onChange={(e) => {
+                                            setData("nc_card", e);
+                                            setData("visa_card", 0);
+                                            setData("mc_card", 0);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
+
+                            <div className="header-passport">
+                                <File
+                                    edit={edit}
+                                    errors={errors}
+                                    onChange={(e) => setData("front_side_of_the_passport_file", e)}
+                                    placeholderImage={front_side_of_the_passport_file}
+                                    id={"front_side_of_the_passport_file"}
+                                    value={
+                                        edit
+                                            ? data?.front_side_of_the_passport
+                                            : data?.front_side_of_the_passport_file
+                                    }
+                                    width={340}
+                                />
+                                <img src={file} alt="file" width={16} />
+                                <File
+                                    edit={edit}
+                                    errors={errors}
+                                    onChange={(e) => setData("back_side_of_the_passport_file", e)}
+                                    placeholderImage={back_side_of_the_passport_file}
+                                    id={"back_side_of_the_passport_file"}
+                                    value={
+                                        edit
+                                            ? data?.back_side_of_the_passport
+                                            : data?.back_side_of_the_passport_file
+                                    }
+                                    width={340}
+                                />
+                                <img src={file} alt="file" width={16} />
+
+                                <File
+                                    edit={edit}
+                                    errors={errors}
+                                    onChange={(e) => setData("selfie_with_passport_file", e)}
+                                    placeholderImage={personImg}
+                                    id={"selfie_with_passport_file"}
+                                    value={
+                                        edit
+                                            ? data?.selfie_with_passport
+                                            : data?.selfie_with_passport_file
+                                    }
+                                    width={220}
+                                />
+
+                                <div>
+                                    <CheckBox
+                                        title={"Личность подтверждена?"}
+                                        value={data.identity_verified}
+                                        onChange={(e) => setData("identity_verified", e)}
+                                    />
+                                    <CheckBox
+                                        title={"Заявка дистанционная?"}
+                                        value={data.remote_application}
+                                        onChange={(e) => setData("remote_application", e)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="content-form">
+                                <Input
+                                    className={"div1"}
+                                    placeholder={"Фамилия"}
+                                    onChange={(e) => setData("surname", e)}
+                                    value={data?.surname}
+                                    error={errors}
+                                    id={"surname"}
+                                />
+                                <Input
+                                    className={"div2"}
+                                    placeholder={"Имя"}
+                                    onChange={(e) => setData("name", e)}
+                                    value={data?.name}
+                                    error={errors}
+                                    id={"name"}
+                                />
+                                <Input
+                                    className={"div3"}
+                                    placeholder={"Отчество"}
+                                    onChange={(e) => setData("patronymic", e)}
+                                    value={data?.patronymic}
+                                    error={errors}
+                                    id={"patronymic"}
+                                />
+                                <Input
+                                    type="date"
+                                    className={"div4"}
+                                    placeholder={"Дата рождения"}
+                                    onChange={(e) => setData("birth_date", e)}
+                                    value={data?.birth_date}
+                                    error={errors}
+                                    id={"birth_date"}
+                                />
+                                <Input
+                                    className={"div5"}
+                                    placeholder={"Телефон"}
+                                    onChange={(e) => setData("phone_number", e)}
+                                    value={data?.phone_number}
+                                    error={errors}
+                                    id={"phone_number"}
+                                />
+                                <Input
+                                    className={"div6"}
+                                    placeholder={"Кодовое"}
+                                    onChange={(e) => setData("secret_word", e)}
+                                    value={data?.secret_word}
+                                    error={errors}
+                                    id={"secret_word"}
+                                />
+                                <Input
+                                    className={"div9"}
+                                    placeholder={"Получаемый оффис"}
+                                    onChange={(e) => setData("receiving_office", e)}
+                                    value={data?.receiving_office}
+                                    error={errors}
+                                    id={"receiving_office"}
+                                />
+                                <Input
+                                    className={"div7"}
+                                    placeholder={"Почта"}
+                                    onChange={(e) => setData("email", e)}
+                                    value={data?.email}
+                                    error={errors}
+                                    id={"email"}
+                                />
+                                <Input
+                                    className={"div8"}
+                                    placeholder={"Имя на карте"}
+                                    onChange={(e) => setData("card_name", e)}
+                                    value={data?.card_name}
+                                    error={errors}
+                                    id={"card_name"}
+                                />
+                                <Input
+                                    className={"div30"}
+                                    placeholder={"Код клиента в АБС"}
+                                    onChange={(e) => setData("client_code", e)}
+                                    value={data?.client_code}
+                                    error={errors}
+                                    id={"client_code"}
+                                    readOnly={true}
+                                />
+                                <CheckBox
+                                    yes={"Муж"}
+                                    no={"Жен"}
+                                    className={"div9 form-check-box"}
+                                    title={"Пол"}
+                                    value={data.gender}
+                                    onChange={(e) => setData("gender", e)}
+                                />
+                                <CheckBox
+                                    className={"div10 form-check-box"}
+                                    title={"Резидент Тадж-на?"}
+                                    value={data.is_resident}
+                                    onChange={(e) => setData("is_resident", e)}
+                                />
+                                <Select
+                                    className={"div11"}
+                                    id={"type_of_certificate"}
+                                    value={data?.type_of_certificate}
+                                    onChange={(e) => setData("type_of_certificate", e)}
+                                    options={docTypes}
+                                    error={errors}
+                                />
+                                <Input
+                                    className={"div12"}
+                                    placeholder={"Серия"}
+                                    onChange={(e) => setData("documents_series", e)}
+                                    value={data?.documents_series}
+                                    error={errors}
+                                    id={"documents_series"}
+                                />
+                                <Input
+                                    className={"div13"}
+                                    placeholder={"Номер"}
+                                    onChange={(e) => setData("document_number", e)}
+                                    value={data?.document_number}
+                                    error={errors}
+                                    id={"document_number"}
+                                />
+
+                                <Input
+                                    type="date"
+                                    className={"div14"}
+                                    placeholder={"Дата выдачи"}
+                                    onChange={(e) => setData("passport_issued_at", e)}
+                                    value={data?.passport_issued_at}
+                                    error={errors}
+                                    id={"passport_issued_at"}
+                                />
+                                <Input
+                                    className={"div15"}
+                                    placeholder={"Кем выдан"}
+                                    onChange={(e) => setData("issued_by", e)}
+                                    value={data?.issued_by}
+                                    error={errors}
+                                    id={"issued_by"}
+                                />
+                                <Input
+                                    className={"div16"}
+                                    placeholder={"ИНН"}
+                                    onChange={(e) => setData("inn", e)}
+                                    value={data?.inn}
+                                    error={errors}
+                                    id={"inn"}
+                                />
+                                <Input
+                                    className={"div17"}
+                                    placeholder={"Страна"}
+                                    onChange={(e) => setData("country", e)}
+                                    value={data?.country}
+                                    error={errors}
+                                    id={"country"}
+                                />
+                                <Select
+                                    className={"div18"}
+                                    id={"regin_type"}
+                                    value={data?.regin_type}
+                                    onChange={(e) => setData("regin_type", e)}
+                                    options={reginTypes}
+                                    error={errors}
+                                />
+                                <Input
+                                    className={"div19"}
+                                    placeholder={"Регион"}
+                                    onChange={(e) => setData("region", e)}
+                                    value={data?.region}
+                                    error={errors}
+                                    id={"region"}
+                                />
+                                <Select
+                                    className={"div20"}
+                                    id={"population_type"}
+                                    value={data?.population_type}
+                                    onChange={(e) => setData("population_type", e)}
+                                    options={USTypes}
+                                    error={errors}
+                                />
+                                <Input
+                                    className={"div21"}
+                                    placeholder={"Нас пункт"}
+                                    onChange={(e) => setData("populated", e)}
+                                    value={data?.populated}
+                                    error={errors}
+                                    id={"populated"}
+                                />
+                                <Select
+                                    className={"div22"}
+                                    id={"district_type"}
+                                    value={data?.district_type}
+                                    onChange={(e) => setData("district_type", e)}
+                                    options={districtTypes}
+                                    error={errors}
+                                />
+                                <Input
+                                    className={"div23"}
+                                    placeholder={"Района"}
+                                    onChange={(e) => setData("district", e)}
+                                    value={data?.district}
+                                    error={errors}
+                                    id={"district"}
+                                />
+                                <Select
+                                    className={"div24"}
+                                    id={"street_type"}
+                                    value={data?.street_type}
+                                    onChange={(e) => setData("street_type", e)}
+                                    options={streetTypes}
+                                    error={errors}
+                                />
+                                <Input
+                                    className={"div25"}
+                                    placeholder={"Улица"}
+                                    onChange={(e) => setData("street", e)}
+                                    value={data?.street}
+                                    error={errors}
+                                    id={"street"}
+                                />
+                                <Input
+                                    className={"div26"}
+                                    placeholder={"Дом"}
+                                    onChange={(e) => setData("house_number", e)}
+                                    value={data?.house_number}
+                                    error={errors}
+                                    id={"house_number"}
+                                />
+                                <Input
+                                    className={"div27"}
+                                    placeholder={"Корпус"}
+                                    onChange={(e) => setData("corpus", e)}
+                                    value={data?.corpus}
+                                    error={errors}
+                                    id={"corpus"}
+                                />
+                                <Input
+                                    className={"div29"}
+                                    placeholder={"Кв"}
+                                    onChange={(e) => setData("apartment_number", e)}
+                                    value={data?.apartment_number}
+                                    error={errors}
+                                    id={"apartment_number"}
+                                />
+                                <Input
+                                    className={"div28"}
+                                    placeholder={"Индекс"}
+                                    onChange={(e) => setData("client_index", e)}
+                                    value={data?.client_index}
+                                    error={errors}
+                                    id={"client_index"}
+                                />
+                            </div>
+                            <footer>
+                                <button onClick={() => onSend(false)} disabled={downloading}>
+                                    <img src={save} alt="" />
+                                    <span>Сохранить</span>
+                                </button>
+                                <button>
+                                    <img src={card} alt="" />
+                                    <span>Открыть карту</span>
+                                </button>
+                                <button
+                                    onClick={handleSaveAndDownload}
+                                    disabled={downloading}
+                                >
+                                    <img src={download} alt="" />
+                                    <span>
                     {downloading ? "Скачивание..." : "Скачать анкету"}
                   </span>
-                </button>
-                <button>
-                  <img src={share} alt="" />
-                  <span>Загрузить анкету</span>
-                </button>
-              </footer>
-            </main>
-          )}
-        </div>
-      </div>
-    </>
-  );
+                                </button>
+                                <button>
+                                    <img src={share} alt="" />
+                                    <span>Загрузить анкету</span>
+                                </button>
+                                <button
+                                    onClick={handleSearchClient}
+                                    disabled={searching}
+                                >
+                                    <img src={search_user} alt="" />
+                                    <span>
+                    {searching ? "Поиск..." : "Найти клиента в АБС"}
+                  </span>
+                                </button>
+                            </footer>
+                        </main>
+                    )}
+                </div>
+            </div>
+        </>
+    );
 }
