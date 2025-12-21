@@ -57,6 +57,7 @@ import DashboardAgentSMSKnowledgeBase from "../pages/dashboard/dashboard_sms/Kno
 import CheckTokenVersion from "./CheckTokenVersion.jsx";
 import EQMSList from "../pages/general/EqmsTableList.jsx";
 import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
+import TerminalNames from "../pages/general/TerminalNames.jsx";
 
 export default function AppRouter() {
   return (
@@ -290,6 +291,10 @@ export default function AppRouter() {
           <Route
             path="agent-transaction/update-transaction"
             element={<UpdatingTransactionType />}
+          />
+          <Route
+            path="/agent-transaction/terminal-names"
+            element={<TerminalNames />}
           />
         </Route>
 
