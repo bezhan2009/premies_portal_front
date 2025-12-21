@@ -43,3 +43,54 @@ export const getTransactions = async () => {
     console.error("Ошибка при обновлении:", e);
   }
 };
+
+export const getTerminalNames = async () => {
+  try {
+    const response = await apiClientTransactions.get(
+      "/api/TransactionTypeAtmDescriptions"
+    );
+    return response;
+  } catch (e) {
+    console.error("Ошибка при обновлении:", e);
+  }
+};
+export const postTerminalNames = async (data) => {
+  try {
+    const response = await apiClientTransactions.post(
+      "/api/TransactionTypeAtmDescriptions",
+      {
+        ...data,
+        transactionType: +data?.transactionType,
+      }
+    );
+    return response;
+  } catch (e) {
+    console.error("Ошибка при обновлении:", e);
+  }
+};
+
+export const putTerminalNames = async (data) => {
+  try {
+    const response = await apiClientTransactions.put(
+      "/api/TransactionTypeAtmDescriptions",
+      {
+        ...data,
+        transactionType: +data?.transactionType,
+      }
+    );
+    return response;
+  } catch (e) {
+    console.error("Ошибка при обновлении:", e);
+  }
+};
+
+export const deleteTerminalNames = async (id) => {
+  try {
+    const response = await apiClientTransactions.delete(
+      `/api/TransactionTypeAtmDescriptions/${id}`
+    );
+    return response;
+  } catch (e) {
+    console.error("Ошибка при обновлении:", e);
+  }
+};
