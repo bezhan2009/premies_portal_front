@@ -1,5 +1,6 @@
 export const fetchTransactionsByCardId = async (cardID, fromDate = null, toDate = null) => {
-    const url = new URL(`${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-card/${cardID}`);
+    const url = new URL(`${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-cards`);
+    url.searchParams.append('cardIds', cardID);
     if (fromDate) {
         url.searchParams.append('fromDate', fromDate);
     }

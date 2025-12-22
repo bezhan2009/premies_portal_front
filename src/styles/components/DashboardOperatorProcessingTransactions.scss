@@ -1,0 +1,301 @@
+// Стили для таблицы транзакций
+.limits-table__container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.limits-table__wrapper {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 70vh;
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.limits-table__content {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1500px; // Минимальная ширина для всех колонок
+}
+
+.limits-table__head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.limits-table__body {
+  background: white;
+}
+
+.limits-table__row {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// Стили для строк с разными типами транзакций
+.transaction-row {
+  &.transaction-row--type-1 {
+    background-color: rgba(76, 175, 80, 0.08); // Зеленый полупрозрачный
+    &:hover {
+      background-color: rgba(76, 175, 80, 0.15); // Более насыщенный при наведении
+    }
+  }
+
+  &.transaction-row--type-2 {
+    background-color: rgba(244, 67, 54, 0.08); // Красный полупрозрачный
+    &:hover {
+      background-color: rgba(244, 67, 54, 0.15); // Более насыщенный при наведении
+    }
+  }
+
+  &.transaction-row--type-3 {
+    background-color: rgba(255, 193, 7, 0.08); // Желтый полупрозрачный
+    &:hover {
+      background-color: rgba(255, 193, 7, 0.15); // Более насыщенный при наведении
+    }
+  }
+
+  &.transaction-row--type-4 {
+    background-color: rgba(33, 150, 243, 0.08); // Синий полупрозрачный
+    &:hover {
+      background-color: rgba(33, 150, 243, 0.15); // Более насыщенный при наведении
+    }
+  }
+}
+
+.limits-table__td {
+  padding: 12px;
+  font-size: 14px;
+  color: #333;
+  border-right: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.amount-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.default-value {
+  color: #666;
+}
+
+// Стили для статусов
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
+
+  &--success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #2e7d32;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+  }
+
+  &--warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #f57c00;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+  }
+
+  &--error {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #d32f2f;
+    border: 1px solid rgba(244, 67, 54, 0.2);
+  }
+
+  &--reversed {
+    background-color: rgba(158, 158, 158, 0.1);
+    color: #616161;
+    border: 1px solid rgba(158, 158, 158, 0.2);
+  }
+
+  &--unknown {
+    background-color: rgba(96, 125, 139, 0.1);
+    color: #455a64;
+    border: 1px solid rgba(96, 125, 139, 0.2);
+  }
+}
+
+// Стили для заголовка таблицы
+.limits-table__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+
+  .date-range {
+    font-size: 14px;
+    font-weight: normal;
+    color: #666;
+    margin-left: 12px;
+  }
+}
+
+// Стили для статистики в футере
+.limits-table__stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid #e0e0e0;
+  font-size: 14px;
+  color: #666;
+}
+
+.limits-table__stat {
+  display: flex;
+  align-items: center;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #667eea;
+    margin-right: 8px;
+  }
+
+  &:nth-child(2)::before {
+    background-color: #764ba2;
+  }
+
+  &:nth-child(3)::before {
+    background-color: #4CAF50;
+  }
+
+  &:nth-child(4)::before {
+    background-color: #FF9800;
+  }
+}
+
+// Адаптивность
+@media (max-width: 1200px) {
+  .limits-table__wrapper {
+    max-height: 60vh;
+  }
+
+  .limits-table__th,
+  .limits-table__td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .amount-value {
+    font-size: 13px;
+  }
+}
+
+// Прокрутка таблицы
+.limits-table__wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.limits-table__wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.limits-table__wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+
+  &:hover {
+    background: #a8a8a8;
+  }
+}
+
+// Анимация для строк
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.limits-table__row {
+  animation: fadeIn 0.3s ease-out forwards;
+
+  @for $i from 1 through 50 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{0.05 * $i}s;
+    }
+  }
+}
+
+// Подсказка о типах транзакций
+.transaction-type-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #666;
+
+    &::before {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    &--type-1::before {
+      background-color: rgba(76, 175, 80, 0.15);
+    }
+
+    &--type-2::before {
+      background-color: rgba(244, 67, 54, 0.15);
+    }
+
+    &--type-3::before {
+      background-color: rgba(255, 193, 7, 0.15);
+    }
+
+    &--type-4::before {
+      background-color: rgba(33, 150, 243, 0.15);
+    }
+  }
+}
