@@ -297,21 +297,21 @@ export default function DashboardOperatorProcessingTransactions() {
                                     <table className="limits-table__content">
                                         <thead className="limits-table__head">
                                         <tr>
-                                            <th className="limits-table__th">ID транзакции</th>
-                                            <th className="limits-table__th">Номер карты</th>
-                                            <th className="limits-table__th">Запрошенная сумма</th>
-                                            <th className="limits-table__th">Сумма операции</th>
-                                            <th className="limits-table__th">Сумма в валюте карты</th>
-                                            <th className="limits-table__th">Доступный баланс</th>
-                                            <th className="limits-table__th">Номер операции в ПЦ</th>
-                                            <th className="limits-table__th">Валюта</th>
-                                            <th className="limits-table__th">ID терминала</th>
-                                            <th className="limits-table__th">Тип операции</th>
-                                            <th className="limits-table__th">ID АТМ</th>
-                                            <th className="limits-table__th">Адрес терминала</th>
                                             <th className="limits-table__th">Дата</th>
                                             <th className="limits-table__th">Время</th>
                                             <th className="limits-table__th">Статус</th>
+                                            <th className="limits-table__th">Номер карты</th>
+                                            <th className="limits-table__th">Тип операции</th>
+                                            <th className="limits-table__th">Сумма операции</th>
+                                            <th className="limits-table__th">Валюта</th>
+                                            <th className="limits-table__th">Сумма в валюте карты</th>
+                                            <th className="limits-table__th">Доступный баланс</th>
+                                            <th className="limits-table__th">Номер операции в ПЦ</th>
+                                            <th className="limits-table__th">ID терминала</th>
+                                            <th className="limits-table__th">ID АТМ</th>
+                                            <th className="limits-table__th">Запрошенная сумма</th>
+                                            <th className="limits-table__th">Адрес терминала</th>
+                                            <th className="limits-table__th">ID транзакции</th>
                                         </tr>
                                         </thead>
                                         <tbody className="limits-table__body">
@@ -320,17 +320,26 @@ export default function DashboardOperatorProcessingTransactions() {
                                                 key={transaction.id}
                                                 className={`limits-table__row transaction-row ${getRowClass(transaction.transactionTypeNumber)}`}
                                             >
-                                                <td className="limits-table__td limits-table__td--info">
-                                                    {transaction.id}
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.localTransactionDate || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.localTransactionTime || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    {getStatusBadge(transaction.responseCode, transaction.reversal)}
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--info">
                                                     {transaction.cardNumber ? formatCardNumber(transaction.cardNumber) : 'N/A'}
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">{formatAmount(transaction.reqamt)}</span>
+                                                    <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="amount-value">{formatAmount(transaction.amount)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="amount-value">{formatAmount(transaction.conamt)}</span>
@@ -342,28 +351,19 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     <span className="default-value">{transaction.utrnno || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
-                                                </td>
-                                                <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.terminalId || 'N/A'}</span>
-                                                </td>
-                                                <td className="limits-table__td limits-table__td--value">
-                                                    <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.atmId || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.reqamt)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
                                                 </td>
-                                                <td className="limits-table__td limits-table__td--value">
-                                                    <span className="default-value">{transaction.localTransactionDate || 'N/A'}</span>
-                                                </td>
-                                                <td className="limits-table__td limits-table__td--value">
-                                                    <span className="default-value">{transaction.localTransactionTime || 'N/A'}</span>
-                                                </td>
-                                                <td className="limits-table__td limits-table__td--value">
-                                                    {getStatusBadge(transaction.responseCode, transaction.reversal)}
+                                                <td className="limits-table__td limits-table__td--info">
+                                                    {transaction.id}
                                                 </td>
                                             </tr>
                                         ))}
