@@ -351,6 +351,21 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
       });
     }
 
+
+  if (roles.includes(17)) {
+      additionalLinks.push({
+          name: "Фронтовик",
+          key: "frontovik",
+          children: [
+              {
+                  name: "Поиск клиентов в АБС",
+                  href: "/frontovik/abs-search",
+                  key: "abs_search",
+              },
+          ],
+      });
+  }
+
     return [...baseLinks, ...additionalLinks];
   }, [roles, hasNewApplications]);
 
