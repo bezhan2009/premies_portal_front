@@ -385,6 +385,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/agent-custom/eqms",
                         key: "eqms_list",
                     },
+                    {
+                        name: "Просмотр выписки со счетов",
+                        href: "/agent-custom/account-operations",
+                        key: "account_operations",
+                    },
                 ],
             });
         }
@@ -398,6 +403,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         name: "Поиск клиентов в АБС",
                         href: "/frontovik/abs-search",
                         key: "abs_search",
+                    },
+                    {
+                        name: "Просмотр выписки со счетов",
+                        href: "/frontovik/account-operations",
+                        key: "account_operations",
                     },
                 ],
             });
