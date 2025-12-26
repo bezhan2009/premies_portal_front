@@ -4,6 +4,7 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess, FcMoneyTransfer } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
+import "../../styles/components/Logout.scss";
 import "../../styles/components/StatsEQMS.scss"
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
@@ -24,7 +25,9 @@ export default function EQMSList() {
     const [pendingRetries, setPendingRetries] = useState(new Map());
     const backendMain = import.meta.env.VITE_BACKEND_URL;
     const token = localStorage.getItem("access_token");
-    
+    const [showPayConfirmation, setShowPayConfirmation] = useState(false);
+    const [paymentsToProcess, setPaymentsToProcess] = useState([]); // Убрано any[]
+
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
         setTimeout(() => setAlert(null), 3500);
@@ -233,25 +236,31 @@ export default function EQMSList() {
             });
         }
     };
-    
-    // Функция оплаты всех выбранных неоплаченных записей с батчингом
+
     const handlePayAll = async () => {
         const toPay = sortedData.filter(
             (row) => selectedRows.includes(row.id) && getPaymentStatus(row) === "pending"
         );
-        
+
         if (toPay.length === 0) {
             showAlert("Нет выбранных неоплаченных записей для оплаты", "warning");
             return;
         }
-        
+
+        // Сохраняем данные для оплаты и показываем модальное окно
+        setPaymentsToProcess(toPay);
+        setShowPayConfirmation(true);
+    };
+
+    // 3. Новая функция для непосредственного выполнения оплаты
+    const performPayment = async (toPay) => {
         setPayingIds((prev) => new Set([...prev, ...toPay.map((r) => r.id)]));
-        
+
         let successes = 0;
         let fails = [];
         const batchSize = 150;
-        const delayMs = 9000;
-        
+        const delayMs = 10000;
+
         try {
             for (let i = 0; i < toPay.length; i += batchSize) {
                 const batch = toPay.slice(i, i + batchSize);
@@ -267,21 +276,21 @@ export default function EQMSList() {
                         fails.push({ id: transaction.id, error: err.message });
                     }
                 });
-                
+
                 await Promise.all(promises);
-                
+
                 if (i + batchSize < toPay.length) {
                     await new Promise((resolve) => setTimeout(resolve, delayMs));
                 }
             }
-            
+
             const message = `Успешно оплачено: ${successes}. Ошибок: ${fails.length}.`;
             showAlert(message, fails.length === 0 ? "success" : "warning");
-            
+
             if (fails.length > 0) {
                 console.error("Ошибки оплаты:", fails);
             }
-            
+
             setTimeout(() => fetchData(), 1000);
         } catch (err) {
             showAlert("Критическая ошибка во время массовой оплаты", "error");
@@ -293,7 +302,20 @@ export default function EQMSList() {
             });
         }
     };
-    
+
+    // 4. Обработчики для модального окна
+    const handleConfirmPayment = () => {
+        setShowPayConfirmation(false);
+        performPayment(paymentsToProcess);
+        setPaymentsToProcess([]);
+    };
+
+    const handleCancelPayment = () => {
+        setShowPayConfirmation(false);
+        setPaymentsToProcess([]);
+    };
+
+
     // Функция выгрузки выбранных записей
     const handleExport = async () => {
         try {
@@ -744,6 +766,29 @@ export default function EQMSList() {
                     />
                 )}
             </div>
+            {showPayConfirmation && (
+                <div className="logout-confirmation">
+                    <div className="confirmation-box">
+                        <div>
+                            <h1>Подтверждение оплаты</h1>
+                            <p>
+                                Вы уверены, что хотите оплатить все выбранные таможни?<br />
+                                Количество: {paymentsToProcess.length}<br />
+                                <br />
+                                После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
+                            </p>
+                        </div>
+                        <div className="confirmation-buttons">
+                            <button className="confirm-btn" onClick={handleConfirmPayment}>
+                                Да, оплатить
+                            </button>
+                            <button className="cancel-btn" onClick={handleCancelPayment}>
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
