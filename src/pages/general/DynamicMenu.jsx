@@ -385,11 +385,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/agent-custom/eqms",
                         key: "eqms_list",
                     },
-                    {
-                        name: "Просмотр выписки со счетов",
-                        href: "/agent-custom/account-operations",
-                        key: "account_operations",
-                    },
                 ],
             });
         }
