@@ -59,6 +59,7 @@ import EQMSList from "../pages/general/EqmsTableList.jsx";
 import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
 import ABSClientSearch from "../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import DashboardFrontovikAbsSearch from "../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
+import TerminalNames from "../pages/general/TerminalNames.jsx";
 
 
 export default function AppRouter() {
