@@ -60,6 +60,7 @@ import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
 import ABSClientSearch from "../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import DashboardFrontovikAbsSearch from "../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import TerminalNames from "../pages/general/TerminalNames.jsx";
+import AccountOperations from "../pages/general/AccountOperations.jsx";
 
 
 export default function AppRouter() {
@@ -319,6 +320,7 @@ export default function AppRouter() {
               }
           >
               <Route path="frontovik/abs-search" element={<DashboardFrontovikAbsSearch />} />
+              <Route path="frontovik/account-operations" element={<AccountOperations />} />
           </Route>
 
         <Route path="*" element={<PageNotFound />} />

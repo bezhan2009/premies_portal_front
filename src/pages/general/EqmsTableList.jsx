@@ -4,6 +4,7 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess, FcMoneyTransfer } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
+import "../../styles/components/Logout.scss";
 import "../../styles/components/StatsEQMS.scss"
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
@@ -23,13 +24,22 @@ export default function EQMSList() {
     const [payingIds, setPayingIds] = useState(new Set());
     const [pendingRetries, setPendingRetries] = useState(new Map());
     const backendMain = import.meta.env.VITE_BACKEND_URL;
+    const backendABS = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
     const token = localStorage.getItem("access_token");
-    
+    const [showPayConfirmation, setShowPayConfirmation] = useState(false);
+    const [paymentsToProcess, setPaymentsToProcess] = useState([]); // Убрано any[]
+    const [showStatement, setShowStatement] = useState(false);
+    const [statementData, setStatementData] = useState([]);
+    const [statementLoading, setStatementLoading] = useState(false);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const accountNumber = '26202972381810638175';
+
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
         setTimeout(() => setAlert(null), 3500);
     };
-    
+
     // Проверка, находится ли текущее время в рабочем часе (до 17:10)
     const isWorkingHours = () => {
         const now = new Date();
@@ -37,14 +47,14 @@ export default function EQMSList() {
         const currentMinute = now.getMinutes();
         return currentHour < 17 || (currentHour === 17 && currentMinute <= 10);
     };
-    
+
     // Упрощенная проверка оплаты через поле isPayed
     const isPaidCustoms = (row) => {
         // Используем новое поле isPayed (boolean)
         if (row.isPayed !== undefined && row.isPayed !== null) {
             return Boolean(row.isPayed);
         }
-        
+
         // Если поле isPayed отсутствует, используем старую логику для обратной совместимости
         if (!row.payedAt) return false;
         if (row.payedAt.includes('0001-01-01')) return false;
@@ -55,14 +65,14 @@ export default function EQMSList() {
             return false;
         }
     };
-    
+
     // Получение статуса оплаты (упрощенная версия)
     const getPaymentStatus = (row) => {
         if (row.status === "Paid" || row.status === "Success") return "paid";
         if (isPaidCustoms(row)) return "already_paid";
         return "pending";
     };
-    
+
     // Форматирование даты для отображения
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return "";
@@ -84,13 +94,14 @@ export default function EQMSList() {
             return dateString;
         }
     };
-    
+
     // Загрузка данных с бэкенда
     const fetchData = async () => {
         try {
             setLoading(true);
-            const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
-            const url = `${backendMain}/eqms?date=${selectedDate}`;
+            const start = data?.eqms_start_date || new Date().toISOString().split('T')[0];
+            const end = data?.eqms_end_date || new Date().toISOString().split('T')[0];
+            const url = `${backendMain}/eqms?start_date=${start}&end_date=${end}`;
             const resp = await fetch(url, {
                 method: "GET",
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -107,7 +118,7 @@ export default function EQMSList() {
             setLoading(false);
         }
     };
-    
+
     // Фильтрация данных
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
@@ -115,7 +126,7 @@ export default function EQMSList() {
             Object.entries(filters).every(([key, value]) => {
                 if (!value) return true;
                 const rowValue = row[key];
-                
+
                 // Специальная обработка для payedAt (используем isPayed для фильтрации)
                 if (key === 'payedAt' && value === 'paid') {
                     return isPaidCustoms(row);
@@ -123,9 +134,9 @@ export default function EQMSList() {
                 if (key === 'payedAt' && value === 'not_paid') {
                     return !isPaidCustoms(row);
                 }
-                
+
                 if (rowValue == null) return false;
-                
+
                 if (typeof rowValue === "number")
                     return String(rowValue).includes(value);
                 if (typeof rowValue === "boolean")
@@ -136,14 +147,14 @@ export default function EQMSList() {
             })
         );
     }, [tableData, filters]);
-    
+
     // Сортировка по ID
     const sortedData = useMemo(() => {
         const arr = [...filteredData];
         arr.sort((a, b) => b.id - a.id);
         return arr;
     }, [filteredData]);
-    
+
     // Внутренняя функция для оплаты одной записи
     const paySingle = async (transaction) => {
         const resp = await fetch(`${backendMain}/eqms/pay`, {
@@ -163,12 +174,12 @@ export default function EQMSList() {
         }
         return result;
     };
-    
+
     // Функция оплаты с автоматическим повторением в рабочее время
     const handlePayWithRetry = async (transaction, retryCount = 0) => {
         const maxRetries = 3;
         const retryDelay = 2000;
-        
+
         try {
             const result = await paySingle(transaction);
             return result;
@@ -176,22 +187,22 @@ export default function EQMSList() {
             if (retryCount >= maxRetries || !isWorkingHours()) {
                 throw err;
             }
-            
+
             showAlert(
                 `Платеж с ID ${transaction.id} завершился с ошибкой: "${err.message}". Повторная попытка ${retryCount + 1} из ${maxRetries}...`,
                 "warning"
             );
-            
+
             await new Promise(resolve => setTimeout(resolve, retryDelay));
-            
+
             return await handlePayWithRetry(transaction, retryCount + 1);
         }
     };
-    
+
     // Функция оплаты одной записи
     const handlePay = async (transaction) => {
         const paymentStatus = getPaymentStatus(transaction);
-        
+
         // Если уже оплачено — сразу показываем предупреждение и выходим
         if (paymentStatus === "already_paid") {
             showAlert("Таможня уже оплачена ранее", "warning");
@@ -201,9 +212,9 @@ export default function EQMSList() {
             showAlert("Оплата уже была отправлена (статус Success)", "info");
             return;
         }
-        
+
         setPayingIds((prev) => new Set([...prev, transaction.id]));
-        
+
         try {
             if (isWorkingHours()) {
                 await handlePayWithRetry(transaction, 0);
@@ -212,11 +223,11 @@ export default function EQMSList() {
                 await paySingle(transaction);
                 showAlert("Оплата успешно отправлена! Ожидаем подтверждения...", "success");
             }
-            
+
             setTimeout(() => fetchData(), 1000);
         } catch (err) {
             console.error("Ошибка оплаты:", err);
-            
+
             if (isWorkingHours()) {
                 showAlert(
                     `Платеж с ID ${transaction.id} завершился с ошибкой после нескольких попыток: ${err.message}`,
@@ -233,25 +244,31 @@ export default function EQMSList() {
             });
         }
     };
-    
-    // Функция оплаты всех выбранных неоплаченных записей с батчингом
+
     const handlePayAll = async () => {
         const toPay = sortedData.filter(
             (row) => selectedRows.includes(row.id) && getPaymentStatus(row) === "pending"
         );
-        
+
         if (toPay.length === 0) {
             showAlert("Нет выбранных неоплаченных записей для оплаты", "warning");
             return;
         }
-        
+
+        // Сохраняем данные для оплаты и показываем модальное окно
+        setPaymentsToProcess(toPay);
+        setShowPayConfirmation(true);
+    };
+
+    // 3. Новая функция для непосредственного выполнения оплаты
+    const performPayment = async (toPay) => {
         setPayingIds((prev) => new Set([...prev, ...toPay.map((r) => r.id)]));
-        
+
         let successes = 0;
         let fails = [];
         const batchSize = 150;
-        const delayMs = 9000;
-        
+        const delayMs = 10000;
+
         try {
             for (let i = 0; i < toPay.length; i += batchSize) {
                 const batch = toPay.slice(i, i + batchSize);
@@ -267,21 +284,21 @@ export default function EQMSList() {
                         fails.push({ id: transaction.id, error: err.message });
                     }
                 });
-                
+
                 await Promise.all(promises);
-                
+
                 if (i + batchSize < toPay.length) {
                     await new Promise((resolve) => setTimeout(resolve, delayMs));
                 }
             }
-            
+
             const message = `Успешно оплачено: ${successes}. Ошибок: ${fails.length}.`;
             showAlert(message, fails.length === 0 ? "success" : "warning");
-            
+
             if (fails.length > 0) {
                 console.error("Ошибки оплаты:", fails);
             }
-            
+
             setTimeout(() => fetchData(), 1000);
         } catch (err) {
             showAlert("Критическая ошибка во время массовой оплаты", "error");
@@ -293,19 +310,32 @@ export default function EQMSList() {
             });
         }
     };
-    
+
+    // 4. Обработчики для модального окна
+    const handleConfirmPayment = () => {
+        setShowPayConfirmation(false);
+        performPayment(paymentsToProcess);
+        setPaymentsToProcess([]);
+    };
+
+    const handleCancelPayment = () => {
+        setShowPayConfirmation(false);
+        setPaymentsToProcess([]);
+    };
+
+
     // Функция выгрузки выбранных записей
     const handleExport = async () => {
         try {
             const selectedTransactions = sortedData.filter((row) =>
                 selectedRows.includes(row.id)
             );
-            
+
             if (selectedTransactions.length === 0) {
                 showAlert("Выберите хотя бы одну запись для выгрузки", "error");
                 return;
             }
-            
+
             const resp = await fetch(`${backendMain}/automation/eqms`, {
                 method: "POST",
                 headers: {
@@ -314,27 +344,29 @@ export default function EQMSList() {
                 },
                 body: JSON.stringify(selectedTransactions),
             });
-            
+
             if (!resp.ok) {
                 const errorText = await resp.text();
                 throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
             }
-            
+
             const blob = await resp.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
-            const selectedDate = data?.eqms_date || new Date().toISOString().split('T')[0];
-            
+            const start = data?.eqms_start_date || '';
+            const end = data?.eqms_end_date || '';
+            const todayFormatted = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
             a.download = allSelected
-                ? `EQMS_Report_${selectedDate}.xlsx`
-                : `EQMS_Report_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`;
+                ? `EQMS_Report_${start}_to_${end}.xlsx`
+                : `EQMS_Report_${todayFormatted}.xlsx`;
             a.href = url;
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-            
+
             showAlert(`Файл успешно выгружен (${selectedTransactions.length} записей)`, "success");
             setSelectedRows([]);
             setSelectAll(false);
@@ -343,7 +375,7 @@ export default function EQMSList() {
             showAlert(`Ошибка выгрузки: ${err.message}`, "error");
         }
     };
-    
+
     // Обработка чекбоксов
     const handleCheckboxToggle = (id, checked) => {
         if (checked) {
@@ -353,7 +385,7 @@ export default function EQMSList() {
             setSelectAll(false);
         }
     };
-    
+
     const toggleSelectAll = () => {
         if (selectAll) {
             setSelectedRows([]);
@@ -363,19 +395,19 @@ export default function EQMSList() {
         }
         setSelectAll(!selectAll);
     };
-    
+
     const selectAllUnpaid = () => {
         const ids = sortedData.filter((row) => getPaymentStatus(row) === "pending").map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
     };
-    
+
     const selectAllPaid = () => {
         const ids = sortedData.filter((row) => getPaymentStatus(row) !== "pending").map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
     };
-    
+
     // Получение ключей из первого объекта для отображения столбцов
     // Исключаем isPayed, так как оно используется только для логики
     const tableHeaders = useMemo(() => {
@@ -384,7 +416,7 @@ export default function EQMSList() {
         const excludedHeaders = ['payedAt', 'isPayed']; // isPayed скрываем, используем только логически
         return Object.keys(firstRow).filter(header => !excludedHeaders.includes(header));
     }, [sortedData]);
-    
+
     const totalSelected = selectedRows.length;
     const totalPaid = useMemo(() => sortedData.filter((row) => getPaymentStatus(row) !== "pending").length, [sortedData]);
     const totalAmountSelected = useMemo(() => {
@@ -392,22 +424,23 @@ export default function EQMSList() {
             .filter((row) => selectedRows.includes(row.id))
             .reduce((sum, row) => sum + (row.amount || 0), 0);
     }, [sortedData, selectedRows]);
-    
+
     // Инициализация даты при загрузке
     useEffect(() => {
-        if (!data?.eqms_date) {
+        if (!data?.eqms_start_date || !data?.eqms_end_date) {
             const today = new Date().toISOString().split('T')[0];
-            setData("eqms_date", today);
+            setData("eqms_start_date", today);
+            setData("eqms_end_date", today);
         }
     }, []);
-    
+
     // Загрузка данных при изменении даты
     useEffect(() => {
-        if (data?.eqms_date) {
+        if (data?.eqms_start_date && data?.eqms_end_date) {
             fetchData();
         }
-    }, [data?.eqms_date]);
-    
+    }, [data?.eqms_start_date, data?.eqms_end_date]);
+
     // Обработка выбора всех
     useEffect(() => {
         if (selectAll) {
@@ -417,7 +450,50 @@ export default function EQMSList() {
             setSelectedRows([]);
         }
     }, [selectAll, sortedData]);
-    
+
+    const formatDateForQuery = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}.${m}.${y}`;
+    };
+
+    const handleFetchStatement = async () => {
+        setStatementLoading(true);
+        const sd = formatDateForQuery(startDate);
+        const ed = formatDateForQuery(endDate);
+        const url = `${backendABS}/account/operations?startDate=${sd}&endDate=${ed}&accountNumber=${accountNumber}`;
+        try {
+            const resp = await fetch(url, {
+                method: "GET",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
+            if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
+            const json = await resp.json();
+            setStatementData(json || []);
+            setShowStatement(true);
+            showAlert(`Загружено ${json.length} дней с транзакциями`, "success");
+        } catch (err) {
+            console.error("Ошибка загрузки выписки:", err);
+            showAlert("Ошибка загрузки выписки. Проверьте сервер.", "error");
+            setStatementData([]);
+        } finally {
+            setStatementLoading(false);
+        }
+    };
+
+    const statementHeaders = useMemo(() => {
+        if (statementData.length === 0) return [];
+        const firstTx = statementData[0]?.Transactions?.[0];
+        if (!firstTx) return [];
+        return ['DOPER', ...Object.keys(firstTx)];
+    }, [statementData]);
+
+    const flatStatementData = useMemo(() => {
+        return statementData.flatMap(day =>
+            day.Transactions.map(tx => ({ ...tx, DOPER: day.DOPER }))
+        );
+    }, [statementData]);
+
     return (
         <>
             <div
@@ -436,65 +512,80 @@ export default function EQMSList() {
                 >
                     <main>
                         <div className="my-applications-header">
-                            <button
-                                className={!showFilters ? "filter-toggle" : "Unloading"}
-                                onClick={() => setShowFilters(!showFilters)}
-                            >
-                                Фильтры
-                            </button>
+                            {!showStatement && (
+                                <button
+                                    className={!showFilters ? "filter-toggle" : "Unloading"}
+                                    onClick={() => setShowFilters(!showFilters)}
+                                >
+                                    Фильтры
+                                </button>
+                            )}
                             <pre> </pre>
+                            {!showStatement && (
+                                <>
+                                    <button
+                                        className="Unloading"
+                                        onClick={handleExport}
+                                        disabled={selectedRows.length === 0}
+                                    >
+                                        Выгрузка EQMS
+                                    </button>
+                                    <button
+                                        className="save"
+                                        onClick={handlePayAll}
+                                        disabled={selectedRows.length === 0 || payingIds.size > 0}
+                                    >
+                                        Оплатить всё
+                                    </button>
+                                    <button
+                                        className={selectAll ? "selectAll-toggle" : ""}
+                                        onClick={toggleSelectAll}
+                                    >
+                                        {selectAll ? "Снять выделение" : "Выбрать все"}
+                                    </button>
+                                    <button
+                                        className="edit"
+                                        onClick={selectAllUnpaid}
+                                    >
+                                        Выбрать все неоплаченные
+                                    </button>
+                                    <button
+                                        className="save"
+                                        onClick={selectAllPaid}
+                                    >
+                                        Выбрать все оплаченные
+                                    </button>
+                                </>
+                            )}
                             <button
                                 className="Unloading"
-                                onClick={handleExport}
-                                disabled={selectedRows.length === 0}
+                                onClick={handleFetchStatement}
+                                disabled={statementLoading}
                             >
-                                Выгрузка EQMS
+                                Просмотреть выписку с АБС
                             </button>
-                            <button
-                                className="save"
-                                onClick={handlePayAll}
-                                disabled={selectedRows.length === 0 || payingIds.size > 0}
-                            >
-                                Оплатить всё
-                            </button>
-                            <button
-                                className={selectAll ? "selectAll-toggle" : ""}
-                                onClick={toggleSelectAll}
-                            >
-                                {selectAll ? "Снять выделение" : "Выбрать все"}
-                            </button>
-                            <button
-                                className="edit"
-                                onClick={selectAllUnpaid}
-                            >
-                                Выбрать все неоплаченные
-                            </button>
-                            <button
-                                className="save"
-                                onClick={selectAllPaid}
-                            >
-                                Выбрать все оплаченные
-                            </button>
-                            <div className="selection-stats-card">
-                                <div className="stat">
-                                    <span className="label">Выбрано</span>
-                                    <strong className="value">{totalSelected}</strong>
+                            {!showStatement && (
+                                <div className="selection-stats-card">
+                                    <div className="stat">
+                                        <span className="label">Выбрано</span>
+                                        <strong className="value">{totalSelected}</strong>
+                                    </div>
+                                    <div className="divider" />
+                                    <div className="stat">
+                                        <span className="label">Оплачено всего</span>
+                                        <strong className="value paid">{totalPaid}</strong>
+                                    </div>
+                                    <div className="divider" />
+                                    <div className="stat highlight">
+                                        <span className="label">Сумма выбранных</span>
+                                        <strong className="value amount">
+                                            {totalAmountSelected.toLocaleString("ru-RU")} С
+                                        </strong>
+                                    </div>
                                 </div>
-                                <div className="divider" />
-                                <div className="stat">
-                                    <span className="label">Оплачено всего</span>
-                                    <strong className="value paid">{totalPaid}</strong>
-                                </div>
-                                <div className="divider" />
-                                <div className="stat highlight">
-                                    <span className="label">Сумма выбранных</span>
-                                    <strong className="value amount">
-                                        {totalAmountSelected.toLocaleString("ru-RU")} С
-                                    </strong>
-                                </div>
-                            </div>
+                            )}
                         </div>
-                        {showFilters && (
+                        {showFilters && !showStatement && (
                             <div className="filters animate-slideIn">
                                 <input
                                     placeholder="ID"
@@ -570,22 +661,110 @@ export default function EQMSList() {
                             </div>
                         )}
                         <div className="my-applications-sub-header">
-                            <div>
-                                Дата для загрузки EQMS:{" "}
-                                <Input
-                                    type="date"
-                                    onChange={(e) => setData("eqms_date", e)}
-                                    value={data?.eqms_date || ""}
-                                    style={{ width: "150px" }}
-                                    id="eqms_date"
-                                />
-                            </div>
+                            {!showStatement && (
+                                <>
+                                    <div>
+                                        С {" "}
+                                        <Input
+                                            type="date"
+                                            onChange={(e) => setData("eqms_start_date", e)}
+                                            value={data?.eqms_start_date || ""}
+                                            style={{ width: "150px" }}
+                                            id="eqms_start_date"
+                                        />
+                                    </div>
+                                    <div>
+                                        По {" "}
+                                        <Input
+                                            type="date"
+                                            onChange={(e) => setData("eqms_end_date", e)}
+                                            value={data?.eqms_end_date || ""}
+                                            style={{ width: "150px" }}
+                                            id="eqms_end_date"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            {showStatement && (
+                                <>
+                                    <div>
+                                        Начальная дата для выписки:{" "}
+                                        <Input
+                                            type="date"
+                                            onChange={(e) => setStartDate(e)}
+                                            value={startDate}
+                                            style={{ width: "150px" }}
+                                        />
+                                    </div>
+                                    <div>
+                                        Конечная дата для выписки:{" "}
+                                        <Input
+                                            type="date"
+                                            onChange={(e) => setEndDate(e)}
+                                            value={endDate}
+                                            style={{ width: "150px" }}
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div
                             className="my-applications-content"
                             style={{ position: "relative" }}
                         >
-                            {loading ? (
+                            {showStatement ? (
+                                <>
+                                    <button
+                                        style={{
+                                            /* здесь задайте нужные стили, заменяя класс "save" */
+                                            backgroundColor: '#2566e8',   // пример
+                                            color: '#fff',
+                                            border: 'none',
+                                            padding: '8px 16px',
+                                            borderRadius: '10px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px'
+                                        }}
+                                        onClick={() => setShowStatement(false)}
+                                    >
+                                        Назад к списку EQMS
+                                    </button>
+                                    {statementLoading ? (
+                                        <div style={{ textAlign: "center", padding: "2rem" }}>
+                                            Загрузка выписки...
+                                        </div>
+                                    ) : flatStatementData.length === 0 ? (
+                                        <div
+                                            style={{
+                                                textAlign: "center",
+                                                padding: "2rem",
+                                                color: "gray",
+                                            }}
+                                        >
+                                            Нет данных для отображения в выписке
+                                        </div>
+                                    ) : (
+                                        <table>
+                                            <thead>
+                                            <tr>
+                                                {statementHeaders.map((header) => (
+                                                    <th key={header}>{header}</th>
+                                                ))}
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {flatStatementData.map((tx, index) => (
+                                                <tr key={index}>
+                                                    {statementHeaders.map((header) => (
+                                                        <td key={header}>{tx[header]}</td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </>
+                            ) : loading ? (
                                 <div style={{ textAlign: "center", padding: "2rem" }}>
                                     Загрузка...
                                 </div>
@@ -625,7 +804,7 @@ export default function EQMSList() {
                                         const paymentStatus = getPaymentStatus(row);
                                         const isPaid = paymentStatus === "already_paid" || paymentStatus === "paid";
                                         const isPaying = payingIds.has(row.id);
-                                        
+
                                         return (
                                             <tr
                                                 key={row.id}
@@ -744,6 +923,29 @@ export default function EQMSList() {
                     />
                 )}
             </div>
+            {showPayConfirmation && (
+                <div className="logout-confirmation">
+                    <div className="confirmation-box">
+                        <div>
+                            <h1>Подтверждение оплаты</h1>
+                            <p>
+                                Вы уверены, что хотите оплатить все выбранные таможни?<br />
+                                Количество: {paymentsToProcess.length}<br />
+                                <br />
+                                После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
+                            </p>
+                        </div>
+                        <div className="confirmation-buttons">
+                            <button className="confirm-btn" onClick={handleConfirmPayment}>
+                                Да, оплатить
+                            </button>
+                            <button className="cancel-btn" onClick={handleCancelPayment}>
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

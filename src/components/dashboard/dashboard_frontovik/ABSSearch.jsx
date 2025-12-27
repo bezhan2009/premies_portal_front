@@ -38,25 +38,7 @@ export default function ABSClientSearch() {
 
     // Функция для форматирования номера телефона
     const formatPhoneNumber = (value) => {
-        const digitsOnly = value.replace(/\D/g, '');
-
-        // Если номер начинается с 992, форматируем по-особому
-        if (digitsOnly.startsWith('992')) {
-            const rest = digitsOnly.substring(3);
-            if (rest.length <= 2) return `+${digitsOnly}`;
-            if (rest.length <= 5) return `+${digitsOnly.substring(0, 3)} ${rest.substring(0, 2)} ${rest.substring(2)}`;
-            if (rest.length <= 7) return `+${digitsOnly.substring(0, 3)} ${rest.substring(0, 2)} ${rest.substring(2, 5)} ${rest.substring(5)}`;
-            return `+${digitsOnly.substring(0, 3)} ${rest.substring(0, 2)} ${rest.substring(2, 5)}-${rest.substring(5, 7)}-${rest.substring(7)}`;
-        }
-
-        // Общий формат для других номеров
-        const match = digitsOnly.match(/^(\d{1,3})(\d{0,3})(\d{0,3})(\d{0,4})$/);
-        if (!match) return digitsOnly;
-
-        const parts = match.slice(1).filter(Boolean);
-        if (parts.length === 0) return '';
-
-        return `+${parts.join(' ')}`;
+        return value;
     };
 
     // Обработка изменения номера телефона
@@ -217,7 +199,7 @@ export default function ABSClientSearch() {
                                             id="phoneNumber"
                                             value={displayPhone}
                                             onChange={handlePhoneChange}
-                                            placeholder="+992 XX XXX-XX-XX"
+                                            placeholder="Введите номер телефона"
                                             className="search-card__input"
                                             maxLength={20}
                                             disabled={isLoading}

@@ -1,6 +1,7 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import '../../../../styles/components/ProcessingIntegration.scss';
 import '../../../../styles/components/BlockInfo.scss';
+import '../../../../styles/components/DashboardOperatorProcessingTransactions.scss';
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import {fetchTransactionsByCardId} from "../../../../api/operator/processing_transactions.js";
 import {getCurrencyCode} from "../../../../api/utils/getCurrencyCode.js";
@@ -18,17 +19,42 @@ export default function DashboardOperatorProcessingTransactions() {
         type: 'success'
     });
 
+    // Функция для форматирования суммы
+    const formatAmount = (amount) => {
+        if (amount === null || amount === undefined || amount === '') return 'N/A';
+
+        const amountStr = amount.toString();
+        if (amountStr.length <= 2) {
+            return `0,${amountStr.padStart(2, '0')}`;
+        }
+
+        const integerPart = amountStr.slice(0, -2);
+        const decimalPart = amountStr.slice(-2);
+        return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')},${decimalPart}`;
+    };
+
     // Устанавливаем даты по умолчанию (последние 30 дней)
     useEffect(() => {
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
-        
+
         const formatDate = (date) => date.toISOString().split('T')[0];
-        
+
         setFromDate(formatDate(thirtyDaysAgo));
         setToDate(formatDate(today));
     }, []);
+
+    // Получаем класс для строки в зависимости от типа транзакции
+    const getRowClass = (transactionTypeNumber) => {
+        switch(transactionTypeNumber) {
+            case 1: return 'transaction-row--type-1';
+            case 2: return 'transaction-row--type-2';
+            case 3: return 'transaction-row--type-3';
+            case 4: return 'transaction-row--type-4';
+            default: return '';
+        }
+    };
 
     const showAlert = (message, type = 'success') => {
         setAlert({
@@ -72,8 +98,8 @@ export default function DashboardOperatorProcessingTransactions() {
             setIsLoading(true);
             try {
                 const transactionsData = await fetchTransactionsByCardId(
-                    cardId, 
-                    fromDate || undefined, 
+                    cardId,
+                    fromDate || undefined,
                     toDate || undefined
                 );
 
@@ -141,7 +167,7 @@ export default function DashboardOperatorProcessingTransactions() {
             case '02':
                 return <span className="status-badge status-badge--error">Отклонено</span>;
             default:
-                return <span className="status-badge status-badge--unknown">Неизвестно</span>;
+                return <span className="status-badge status-badge--warning">Ошибка</span>;
         }
     };
 
@@ -251,7 +277,7 @@ export default function DashboardOperatorProcessingTransactions() {
                     </div>
                 </div>
 
-                {/* Остальная часть компонента остается без изменений */}
+                {/* Таблица транзакций */}
                 {transactions.length > 0 && (
                     <div className="processing-integration__limits-table">
                         <div className="limits-table">
@@ -266,98 +292,102 @@ export default function DashboardOperatorProcessingTransactions() {
                                 </h2>
                             </div>
 
-                            <div className="limits-table__wrapper">
-                                <table className="limits-table">
-                                    {/* thead остается без изменений */}
-                                    <thead className="limits-table__head">
-                                    <tr>
-                                        <th className="limits-table__th">ID транзакции</th>
-                                        <th className="limits-table__th">Номер карты</th>
-                                        <th className="limits-table__th">Запроошенная сумма</th>
-                                        <th className="limits-table__th">Сумма операции</th>
-                                        <th className="limits-table__th">Сумма в валюте карты</th>
-                                        <th className="limits-table__th">Доступный баланс</th>
-                                        <th className="limits-table__th">Номер операции в ПЦ</th>
-                                        <th className="limits-table__th">Валюта</th>
-                                        <th className="limits-table__th">ID терминала</th>
-                                        <th className="limits-table__th">Тип операции</th>
-                                        <th className="limits-table__th">ID АТМ</th>
-                                        <th className="limits-table__th">Адрес терминала</th>
-                                        <th className="limits-table__th">Дата</th>
-                                        <th className="limits-table__th">Время</th>
-                                        <th className="limits-table__th">Статус</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="limits-table__body">
-                                    {transactions.map((transaction) => (
-                                        <tr key={transaction.id} className="limits-table__row">
-                                            <td className="limits-table__td limits-table__td--info">
-                                                {transaction.id}
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--info">
-                                                {transaction.cardNumber ? formatCardNumber(transaction.cardNumber) : 'N/A'}
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.reqamt || '0'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.amount || '0'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.conamt || '0'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.acctbal || '0'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.utrnno || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.terminalId || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.atmId || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.localTransactionDate || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                <span className="default-value">{transaction.localTransactionTime || 'N/A'}</span>
-                                            </td>
-                                            <td className="limits-table__td limits-table__td--value">
-                                                {getStatusBadge(transaction.responseCode, transaction.reversal)}
-                                            </td>
+                            <div className="limits-table__container">
+                                <div className="limits-table__wrapper">
+                                    <table className="limits-table__content">
+                                        <thead className="limits-table__head">
+                                        <tr>
+                                            <th className="limits-table__th">Дата</th>
+                                            <th className="limits-table__th">Время</th>
+                                            <th className="limits-table__th">Статус</th>
+                                            <th className="limits-table__th">Номер карты</th>
+                                            <th className="limits-table__th">Тип операции</th>
+                                            <th className="limits-table__th">Сумма операции</th>
+                                            <th className="limits-table__th">Валюта</th>
+                                            <th className="limits-table__th">Сумма в валюте карты</th>
+                                            <th className="limits-table__th">Доступный баланс</th>
+                                            <th className="limits-table__th">Номер операции в ПЦ</th>
+                                            <th className="limits-table__th">ID терминала</th>
+                                            <th className="limits-table__th">ID АТМ</th>
+                                            <th className="limits-table__th">Запрошенная сумма</th>
+                                            <th className="limits-table__th">Адрес терминала</th>
+                                            <th className="limits-table__th">ID транзакции</th>
                                         </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="limits-table__body">
+                                        {transactions.map((transaction) => (
+                                            <tr
+                                                key={transaction.id}
+                                                className={`limits-table__row transaction-row ${getRowClass(transaction.transactionTypeNumber)}`}
+                                            >
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.localTransactionDate || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.localTransactionTime || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    {getStatusBadge(transaction.responseCode, transaction.reversal)}
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--info">
+                                                    {transaction.cardNumber ? formatCardNumber(transaction.cardNumber) : 'N/A'}
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.amount)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.conamt)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.acctbal)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.utrnno || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.terminalId || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.atmId || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.reqamt)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--info">
+                                                    {transaction.id}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                            <div className="limits-table__footer">
-                                <div className="limits-table__stats">
-                                    <span className="limits-table__stat">
-                                        Всего записей: {transactions.length}
-                                    </span>
-                                    <span className="limits-table__stat">
-                                        Показано: {transactions.length}
-                                    </span>
-                                    <span className="limits-table__stat">
-                                        Карта: {transactions[0]?.cardNumber || 'N/A'}
-                                    </span>
-                                    {fromDate && toDate && (
+                                <div className="limits-table__footer">
+                                    <div className="limits-table__stats">
                                         <span className="limits-table__stat">
-                                            Период: {fromDate} — {toDate}
+                                            Всего записей: {transactions.length}
                                         </span>
-                                    )}
+                                        <span className="limits-table__stat">
+                                            Показано: {transactions.length}
+                                        </span>
+                                        <span className="limits-table__stat">
+                                            Карта: {transactions[0]?.cardNumber || 'N/A'}
+                                        </span>
+                                        {fromDate && toDate && (
+                                            <span className="limits-table__stat">
+                                                Период: {fromDate} — {toDate}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

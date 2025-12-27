@@ -151,7 +151,7 @@ export default function GiftCardCredit({ edit = false }) {
 
       // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
       // formData.append("is_resident", String(!!data.is_resident));
-      // formData.append("remote_application", String(!!data.remote_application));
+      // formData.append("is_new_client", String(!!data.is_new_client));
       // formData.append("identity_verified", String(!!data.identity_verified));
 
       formData.append("address", data.address);
@@ -344,9 +344,9 @@ export default function GiftCardCredit({ edit = false }) {
                     onChange={(e) => setData("identity_verified", e)}
                   />
                   <CheckBox
-                    title={"Заявка дистанционная?"}
-                    value={data.remote_application}
-                    onChange={(e) => setData("remote_application", e)}
+                    title={"Отправить СМС?"}
+                    value={data.is_new_client}
+                    onChange={(e) => setData("is_new_client", e)}
                   />
                 </div>
               </div>
