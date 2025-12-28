@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import { FcCancel, FcHighPriority, FcOk, FcProcess, FcMoneyTransfer } from "react-icons/fc";
+import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import "../../styles/components/Logout.scss";
@@ -829,17 +829,17 @@ export default function EQMSList() {
                                                     } else if (header === 'status') {
                                                         return (
                                                             <td key={header}>
-                                                                {row.status === "Pending" ? (
+                                                                {row.status === "pending" ? (
                                                                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                                                                         <FcProcess style={{ fontSize: 22 }} />
                                                                         <span style={{ color: "orange" }}>Pending</span>
                                                                     </div>
-                                                                ) : row.status === "Success" ? (
+                                                                ) : row.status === "success" ? (
                                                                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                                                                         <FcOk style={{ fontSize: 22 }} />
                                                                         <span style={{ color: "green" }}>Success</span>
                                                                     </div>
-                                                                ) : row.status === "Failed" ? (
+                                                                ) : row.status === "failed" ? (
                                                                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                                                                         <FcCancel style={{ fontSize: 22 }} />
                                                                         <span style={{ color: "red" }}>Failed</span>

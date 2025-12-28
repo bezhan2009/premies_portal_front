@@ -377,6 +377,17 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
+    const withUploadsPrefix = (path) => {
+        if (!path) return null;
+
+        // если уже абсолютный URL или уже /uploads — не трогаем
+        if (path.startsWith("http") || path.startsWith("uploads")) {
+            return path;
+        }
+
+        return `uploads/${path}`;
+    };
+
     const getData = async () => {
         if (edit) {
             try {
@@ -487,40 +498,43 @@ export default function GiftCard({ edit = false }) {
                                     edit={edit}
                                     errors={errors}
                                     onChange={(e) => setData("front_side_of_the_passport_file", e)}
-                                    placeholderImage={front_side_of_the_passport_file}
+                                    placeholderImage={withUploadsPrefix(front_side_of_the_passport_file)}
                                     id={"front_side_of_the_passport_file"}
                                     value={
                                         edit
-                                            ? data?.front_side_of_the_passport
+                                            ? withUploadsPrefix(data?.front_side_of_the_passport)
                                             : data?.front_side_of_the_passport_file
                                     }
                                     width={340}
                                 />
+
                                 <img src={file} alt="file" width={16} />
+
                                 <File
                                     edit={edit}
                                     errors={errors}
                                     onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                                    placeholderImage={back_side_of_the_passport_file}
+                                    placeholderImage={withUploadsPrefix(back_side_of_the_passport_file)}
                                     id={"back_side_of_the_passport_file"}
                                     value={
                                         edit
-                                            ? data?.back_side_of_the_passport
+                                            ? withUploadsPrefix(data?.back_side_of_the_passport)
                                             : data?.back_side_of_the_passport_file
                                     }
                                     width={340}
                                 />
+
                                 <img src={file} alt="file" width={16} />
 
                                 <File
                                     edit={edit}
                                     errors={errors}
                                     onChange={(e) => setData("selfie_with_passport_file", e)}
-                                    placeholderImage={personImg}
+                                    placeholderImage={withUploadsPrefix(personImg)}
                                     id={"selfie_with_passport_file"}
                                     value={
                                         edit
-                                            ? data?.selfie_with_passport
+                                            ? withUploadsPrefix(data?.selfie_with_passport)
                                             : data?.selfie_with_passport_file
                                     }
                                     width={220}

@@ -214,7 +214,7 @@ export default function ApplicationsList() {
   const renderFileIcon = (path) => {
     if (!path) return null;
     const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-    const fullUrl = `${backendUrl}/${path.replace(/\\/g, "/")}`;
+    const fullUrl = `${backendUrl}/uploads/${path.replace(/\\/g, "/")}`;
     return (
       <button
         className="file-icon-button"
