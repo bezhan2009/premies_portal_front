@@ -352,7 +352,7 @@ export default function OperatorTestsPage() {
                             <p>
                               <strong>Правильный вариант:</strong>{" "}
                               {a.question?.Options?.find(
-                                (opt) => opt.is_correct
+                                (opt) => opt.is_correct,
                               )?.text || "Нет данных"}
                             </p>
                           </>
@@ -373,7 +373,7 @@ export default function OperatorTestsPage() {
                             </p>
                             <ul className="multi-list">
                               {a.question?.Options?.filter(
-                                (opt) => opt.is_correct
+                                (opt) => opt.is_correct,
                               )?.map((opt) => (
                                 <li key={opt.ID}>{opt.text}</li>
                               ))}
@@ -454,11 +454,14 @@ function CrudModal({ modal, onClose, onSave }) {
     if (modal.entity === "option") {
       form.is_correct = form.is_correct === "true" || form.is_correct === true;
     }
+    if (modal.entity === "question") {
+      form.time_limit = Number(form.time_limit) * 60 * 1000;
+    }
     onSave(
       modal.entity,
       modal.mode,
       form,
-      modal.data?.ID || form.question_id || form.test_id
+      modal.data?.ID || form.question_id || form.test_id,
     );
   };
 
@@ -470,8 +473,8 @@ function CrudModal({ modal, onClose, onSave }) {
           {modal.entity === "question"
             ? "вопрос"
             : modal.entity === "option"
-            ? "вариант"
-            : "тест"}
+              ? "вариант"
+              : "тест"}
         </h3>
         <div className="kb-modal-content">
           {modal.entity === "test" && (
@@ -505,7 +508,16 @@ function CrudModal({ modal, onClose, onSave }) {
                 placeholder="Текст вопроса"
               />
               {errors.text && <span className="error-msg">{errors.text}</span>}
-
+              <input
+                name="time_limit"
+                value={form?.time_limit || ""}
+                onChange={handleChange}
+                type="number"
+                placeholder="Время на ответ (в минутах)"
+              />
+              {errors.time_limit && (
+                <span className="error-msg">{errors.time_limit}</span>
+              )}
               <select
                 name="type"
                 value={form.type || ""}
