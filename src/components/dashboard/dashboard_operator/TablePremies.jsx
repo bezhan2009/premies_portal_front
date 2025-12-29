@@ -6,7 +6,7 @@ import SearchBar from "../../general/SearchBar.jsx";
 import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
 import { DownloadCloud } from "lucide-react";
 import Input from "../../elements/Input.jsx";
-import { fullUpdateWorkers } from "../../../api/workers/FullUpdateWorkers.js";
+import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
 
 const TablePremies = ({ month, year }) => {
   const [workers, setWorkers] = useState([]);
