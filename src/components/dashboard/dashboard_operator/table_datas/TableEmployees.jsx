@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import Input from "../../../elements/Input.jsx";
-import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
+import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -28,7 +28,9 @@ const EmployeesTable = () => {
               position: u.worker?.position || "",
               placeWork: u.worker?.place_work || "",
               salary: u.worker?.Salary || "",
-              group: u.worker?.user?.roles?.map(role => role.Name).join(', ') || "",
+              group:
+                u.worker?.user?.roles?.map((role) => role.Name).join(", ") ||
+                "",
             });
           });
         }

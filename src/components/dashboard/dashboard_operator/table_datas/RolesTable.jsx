@@ -3,7 +3,7 @@ import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import Input from "../../../elements/Input.jsx";
-import { fullUpdateWorkers } from "../../../../api/workers/FullUpdateWorkers.js";
+import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { getAllUsers } from "../../../../api/users/get_user.js";
 
@@ -18,7 +18,7 @@ const RolesTable = () => {
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
   
   const tableContainerRef = useRef();
-  const observer = useRef();
+  // const observer = useRef();
   const lastIdRef = useRef(null);
 
   // Загрузка первоначальных данных
