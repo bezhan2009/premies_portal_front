@@ -188,6 +188,10 @@ const CURRENCIES = {
     '999': 'XXX', // Нет валюты
 };
 
+export const getCurrenciesCode = () => {
+    return CURRENCIES
+}
+
 export const getCurrencyCode = (currencyNumber) => {
     return CURRENCIES[currencyNumber] || currencyNumber;
 };

@@ -17,10 +17,11 @@ import personImg from "../../assets/person.svg";
 import visa from "../../assets/visa.jpg";
 import nc from "../../assets/nc.jpg";
 import mc from "../../assets/mc.jpg";
-import card from "../../assets/card.jpg";
 import download from "../../assets/download.jpg";
 import share from "../../assets/share.jpg";
 import save from "../../assets/save.jpg";
+import offer from "../../assets/offer.png";
+import "../../styles/components/GiftCard.scss"
 import { useFormStore } from "../../hooks/useFormState";
 import File from "../../components/elements/File";
 import CheckBox from "../../components/elements/CheckBox";
@@ -41,6 +42,7 @@ export default function GiftCard({ edit = false }) {
     const { isSidebarOpen, toggleSidebar } = useSidebar();
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [downloadingOffer, setDownloadingOffer] = useState(false);
     const [searching, setSearching] = useState(false);
     const [alert, setAlert] = useState(null);
     const { data, errors, setData, validate, setDataMore } = useFormStore();
@@ -51,6 +53,14 @@ export default function GiftCard({ edit = false }) {
     const [foundClients, setFoundClients] = useState([]);
     const [showClientSelector, setShowClientSelector] = useState(false);
     const [selectedClientIndex, setSelectedClientIndex] = useState(0);
+
+    // Состояние для выбора типа SMS
+    const [showSMSType, setShowSMSType] = useState(false);
+    const [smsTypes] = useState([
+        { value: "accepted", label: "Заявка принята" },
+        { value: "rejected", label: "Заявка отклонена" },
+        { value: "card_opened", label: "Карта успешно открыта" },
+    ]);
 
     const ValidData = {
         surname: { required: true },
@@ -66,6 +76,24 @@ export default function GiftCard({ edit = false }) {
         setAlert(null);
     };
 
+    // Обновленный обработчик для чекбокса SMS
+    const handleSMSChange = (value) => {
+        setData("is_new_client", value);
+        setShowSMSType(value);
+        if (!value) {
+            setData("message_type", "");
+            setData("rejection_reason", "");
+        }
+    };
+
+    // Обработчик для типа SMS
+    const handleSMSTypeChange = (value) => {
+        setData("message_type", value);
+        if (value !== "rejected") {
+            setData("rejection_reason", "");
+        }
+    };
+
     // Функция для заполнения формы данными клиента
     const fillFormWithClientData = (clientData) => {
         setData("surname", clientData.surname || "");
@@ -73,12 +101,9 @@ export default function GiftCard({ edit = false }) {
         setData("patronymic", clientData.patronymic || "");
         setData("phone_number", clientData.phone || "");
 
-        // Формируем имя на карте: сначала имя(ltn_name) потом фамилия(ltn_surname)
         const cardName = `${clientData.ltn_name || ""} ${clientData.ltn_surname || ""}`.trim();
         setData("card_name", cardName);
 
-        // Заполняем данные документа
-        // Сопоставляем тип документа из АБС с значением из docTypes
         const docType = docTypes.find(item => item.label === clientData.identdoc_name);
         if (docType) {
             setData("type_of_certificate", docType.value);
@@ -87,7 +112,6 @@ export default function GiftCard({ edit = false }) {
         setData("documents_series", clientData.identdoc_series || "");
         setData("document_number", clientData.identdoc_num || "");
 
-        // Преобразуем дату из формата dd.mm.yyyy в yyyy-mm-dd для input type="date"
         if (clientData.identdoc_date) {
             const dateParts = clientData.identdoc_date.split('.');
             if (dateParts.length === 3) {
@@ -103,16 +127,12 @@ export default function GiftCard({ edit = false }) {
 
     // Функция для поиска клиента в АБС
     const handleSearchClient = async () => {
-        // Проверяем заполнено ли поле телефон
         if (!data.phone_number) {
             showAlert("Пожалуйста, заполните поле 'Телефон'", "error", 5000);
             return;
         }
 
-        // Форматируем телефонный номер
         let phoneNumber = data.phone_number.trim();
-
-        // Удаляем все нецифровые символы
         phoneNumber = phoneNumber.replace(/\D/g, '');
 
         try {
@@ -146,15 +166,12 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            // Сохраняем всех найденных клиентов
             setFoundClients(clientsData);
 
             if (clientsData.length === 1) {
-                // Если клиент только один, заполняем форму сразу
                 fillFormWithClientData(clientsData[0]);
                 showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
             } else {
-                // Если клиентов несколько, показываем модальное окно для выбора
                 setSelectedClientIndex(0);
                 setShowClientSelector(true);
                 showAlert(`Найдено ${clientsData.length} клиентов. Выберите нужного.`, "info", 5000);
@@ -194,6 +211,7 @@ export default function GiftCard({ edit = false }) {
         document.body.removeChild(a);
     };
 
+    // Функция для скачивания анкеты
     const downloadPoll = async (applicationId) => {
         try {
             setDownloading(true);
@@ -228,25 +246,109 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    const handleSaveAndDownload = async () => {
-        // Сначала сохраняем/обновляем заявку
-        const saved = await onSend(true); // передаем флаг, что это вызов из скачивания
-        if (!saved) {
-            return; // Если сохранение не удалось, выходим
-        }
+    // Функция для скачивания оферта
+    const downloadOffer = async (applicationId) => {
+        try {
+            setDownloadingOffer(true);
+            const automationUrl = import.meta.env.VITE_BACKEND_URL;
+            const token = localStorage.getItem("access_token");
 
-        // Если edit = true, то у нас уже есть ID в data.ID
-        // Если edit = false, то ID придет из ответа сервера в onSend
+            const response = await fetch(`${automationUrl}/automation/offer`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    application_ids: [applicationId]
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = `offer_${applicationId}.zip`;
+            downloadFile(blob, filename);
+
+            showAlert("Оферт успешно скачан!", "success", 4000);
+        } catch (error) {
+            console.error("Ошибка скачивания оферта:", error);
+            showAlert("Произошла ошибка при скачивании оферта", "error", 5000);
+        } finally {
+            setDownloadingOffer(false);
+        }
     };
 
-    const onSend = async (fromDownload = false) => {
+    // Функция для проверки полей оферта
+    const validateOfferFields = () => {
+        const requiredFields = [
+            { field: "account_usd", label: "Счет USD" },
+            { field: "account_eur", label: "Счет EUR" },
+            { field: "account_tjs", label: "Счет TJS" },
+            { field: "contract_number", label: "Номер договора" },
+            { field: "contract_date", label: "Дата договора" },
+        ];
+
+        for (const { field, label } of requiredFields) {
+            if (!data[field] || data[field].toString().trim() === "") {
+                showAlert(`Заполните поле: ${label}`, "error", 5000);
+                return false;
+            }
+        }
+
+        // Проверяем, что выбрана карта (product)
+        if (!data.visa_card && !data.mc_card && !data.nc_card) {
+            showAlert("Выберите тип карты", "error", 5000);
+            return false;
+        }
+
+        return true;
+    };
+
+    // Обработчик для сохранения и скачивания анкеты
+    const handleSaveAndDownload = async () => {
+        const saved = await onSend(true, false);
+        if (!saved) {
+            return;
+        }
+    };
+
+    // Обработчик для сохранения и скачивания оферта
+    const handleSaveAndDownloadOffer = async () => {
+        // Проверяем обязательные поля для оферта
+        if (!validateOfferFields()) {
+            return;
+        }
+
+        const saved = await onSend(false, true);
+        if (!saved) {
+            return;
+        }
+    };
+
+    // Обновленная функция onSend с поддержкой обоих типов скачивания
+    const onSend = async (isForPoll = false, isForOffer = false) => {
         const isValid = validate(ValidData);
         if (!isValid) return false;
+
+        // Проверяем тип SMS если включено
+        if (data.is_new_client) {
+            if (!data.message_type) {
+                showAlert("Выберите тип SMS для отправки", "error", 5000);
+                return false;
+            }
+            if (data.message_type === "rejected" && !data.rejection_reason) {
+                showAlert("Укажите причину отклонения заявки", "error", 5000);
+                return false;
+            }
+        }
 
         try {
             const formData = new FormData();
 
-            // Проверка файлов
+            // Файлы
             if (data.front_side_of_the_passport_file) {
                 formData.append(
                     "front_side_of_the_passport_file",
@@ -266,58 +368,80 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // Добавление остальных полей
-            formData.append("name", data.name.trim() || "");
-            formData.append("surname", data.surname.trim() || "");
-            formData.append("patronymic", data.patronymic.trim() || "");
-            formData.append("gender", data.gender === true ? "Муж" : "Жен");
-            formData.append("client_index", data.client_index || "");
-            formData.append("issued_by", data.issued_by || "");
-            formData.append(
-                "issued_at",
-                formatDateForBackend(data.passport_issued_at)
-            );
-            formData.append("birth_date", formatDateForBackend(data.birth_date));
-            formData.append("phone_number", data.phone_number || "");
-            formData.append("secret_word", data.secret_word || "");
-            formData.append("card_name", data.card_name || "");
-            formData.append(
-                "card_code",
-                data.visa_card || data.mc_card || data.nc_card || ""
-            );
-            formData.append("type_of_certificate", +data.type_of_certificate || "");
-            formData.append("documents_series", data.documents_series || "");
-            formData.append("document_number", data.document_number || "");
-            formData.append(
-                "passport_issued_at",
-                formatDateForBackend(data.passport_issued_at)
-            );
-            formData.append("inn", data.inn || "");
-            formData.append("country", data.country || "");
-            formData.append("email", data.email || "");
-            formData.append("region", data.region || "");
-            formData.append("population_type", data.population_type || "");
-            formData.append("populated", data.populated || "");
-            formData.append("district", data.district || "");
-            formData.append("street_type", data.street_type || "");
-            formData.append("street", data.street || "");
-            formData.append("house_number", data.house_number || "");
-            formData.append("corpus", data.corpus || "");
-            formData.append("apartment_number", data.apartment_number || "");
-            formData.append("client_code", data.client_code || ""); // Добавляем код клиента в АБС
+            // Определяем продукт на основе выбранной карты
+            let selectedProduct = "";
+            if (data.visa_card) {
+                const visaCard = visaCards.find(card => card.value === data.visa_card);
+                selectedProduct = visaCard ? visaCard.label : "";
+            } else if (data.mc_card) {
+                const mcCard = mcCards.find(card => card.value === data.mc_card);
+                selectedProduct = mcCard ? mcCard.label : "";
+            } else if (data.nc_card) {
+                const ncCard = ncCards.find(card => card.value === data.nc_card);
+                selectedProduct = ncCard ? ncCard.label : "";
+            }
 
-            // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
-            formData.append("is_resident", String(!!data.is_resident));
-            formData.append("is_new_client", String(!!data.is_new_client));
-            formData.append("identity_verified", String(!!data.identity_verified));
-            formData.append("receiving_office", data.receiving_office || "");
+            // Вспомогательная функция для безопасного trim
+            const safeTrim = (value) => {
+                return value ? value.toString().trim() : "";
+            };
 
-            formData.append(
-                "delivery_address",
-                `${data.country || ""}, ${data.region || ""}, ${
-                    data.populated || ""
-                }, ${data.street || ""} ${data.house_number || ""}`
-            );
+            // Добавление всех полей
+            const fieldsToAppend = [
+                { key: "name", value: safeTrim(data.name) },
+                { key: "surname", value: safeTrim(data.surname) },
+                { key: "patronymic", value: safeTrim(data.patronymic) },
+                { key: "gender", value: data.gender === true ? "Муж" : "Жен" },
+                { key: "client_index", value: safeTrim(data.client_index) },
+                { key: "issued_by", value: safeTrim(data.issued_by) },
+                { key: "issued_at", value: formatDateForBackend(data.passport_issued_at) },
+                { key: "birth_date", value: formatDateForBackend(data.birth_date) },
+                { key: "phone_number", value: safeTrim(data.phone_number) },
+                { key: "secret_word", value: safeTrim(data.secret_word) },
+                { key: "card_name", value: safeTrim(data.card_name) },
+                { key: "card_code", value: data.visa_card || data.mc_card || data.nc_card || "" },
+                { key: "type_of_certificate", value: data.type_of_certificate ? +data.type_of_certificate : "" },
+                { key: "documents_series", value: safeTrim(data.documents_series) },
+                { key: "document_number", value: safeTrim(data.document_number) },
+                { key: "passport_issued_at", value: formatDateForBackend(data.passport_issued_at) },
+                { key: "inn", value: safeTrim(data.inn) },
+                { key: "country", value: safeTrim(data.country) },
+                { key: "email", value: safeTrim(data.email) },
+                { key: "region", value: safeTrim(data.region) },
+                { key: "population_type", value: safeTrim(data.population_type) },
+                { key: "populated", value: safeTrim(data.populated) },
+                { key: "district", value: safeTrim(data.district) },
+                { key: "street_type", value: safeTrim(data.street_type) },
+                { key: "street", value: safeTrim(data.street) },
+                { key: "house_number", value: safeTrim(data.house_number) },
+                { key: "corpus", value: safeTrim(data.corpus) },
+                { key: "apartment_number", value: safeTrim(data.apartment_number) },
+                { key: "client_code", value: safeTrim(data.client_code) },
+                { key: "is_resident", value: String(!!data.is_resident) },
+                { key: "is_new_client", value: String(!!data.is_new_client) },
+                { key: "identity_verified", value: String(!!data.identity_verified) },
+                { key: "receiving_office", value: safeTrim(data.receiving_office) },
+                { key: "delivery_address", value: `${safeTrim(data.country)}, ${safeTrim(data.region)}, ${safeTrim(data.populated)}, ${safeTrim(data.street)} ${safeTrim(data.house_number)}` },
+
+                // Новые поля
+                { key: "message_type", value: safeTrim(data.message_type) },
+                { key: "product", value: selectedProduct },
+                { key: "account_usd", value: safeTrim(data.account_usd) },
+                { key: "account_eur", value: safeTrim(data.account_eur) },
+                { key: "account_tjs", value: safeTrim(data.account_tjs) },
+                { key: "contract_number", value: safeTrim(data.contract_number) },
+                { key: "contract_date", value: formatDateForBackend(data.contract_date) },
+            ];
+
+            // Если есть причина отклонения, добавляем в comment
+            if (data.message_type === "rejected" && data.rejection_reason) {
+                fieldsToAppend.push({ key: "comment", value: safeTrim(data.rejection_reason) });
+            }
+
+            // Добавляем все поля в FormData
+            fieldsToAppend.forEach(({ key, value }) => {
+                formData.append(key, value);
+            });
 
             const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
             let applicationId = data.ID;
@@ -334,13 +458,13 @@ export default function GiftCard({ edit = false }) {
                 const result = await response.json();
                 console.log("Успешно обновлено:", result);
 
-                if (!fromDownload) {
-                    showAlert("Данные успешно сохранены!", "success", 4000);
-                }
-
-                // Если вызвано из скачивания, запускаем скачивание
-                if (fromDownload && applicationId) {
+                // Запускаем скачивание в зависимости от типа
+                if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
+                } else if (isForOffer && applicationId) {
+                    downloadOffer(applicationId);
+                } else if (!isForPoll && !isForOffer) {
+                    showAlert("Данные успешно сохранены!", "success", 4000);
                 }
                 return true;
             } else {
@@ -355,18 +479,16 @@ export default function GiftCard({ edit = false }) {
                 const result = await response.json();
                 console.log("Успешно создано:", result);
 
-                // Получаем ID новой заявки
                 applicationId = result.ID || result.id;
 
-                if (!fromDownload) {
-                    // Если это обычное сохранение, перезагружаем страницу
+                // Запускаем скачивание в зависимости от типа
+                if (isForPoll && applicationId) {
+                    downloadPoll(applicationId);
+                } else if (isForOffer && applicationId) {
+                    downloadOffer(applicationId);
+                } else {
                     navigate(0);
                     showAlert("Данные успешно сохранены!", "success", 4000);
-                } else {
-                    // Если вызвано из скачивания, запускаем скачивание
-                    if (applicationId) {
-                        downloadPoll(applicationId);
-                    }
                 }
                 return true;
             }
@@ -380,7 +502,6 @@ export default function GiftCard({ edit = false }) {
     const withUploadsPrefix = (path) => {
         if (!path) return null;
 
-        // если уже абсолютный URL или уже /uploads — не трогаем
         if (path.startsWith("http") || path.startsWith("uploads")) {
             return path;
         }
@@ -394,16 +515,19 @@ export default function GiftCard({ edit = false }) {
                 setLoading(true);
                 console.log("edit id", id);
 
-                const data = await getApplicationById(id);
+                const responseData = await getApplicationById(id);
                 setDataMore({
-                    ...data,
-                    gemder: data.gender === "Муж",
-                    birth_date: formaterDate(data?.birth_date, "dateOnly"),
-                    passport_issued_at: formaterDate(
-                        data?.passport_issued_at,
-                        "dateOnly"
-                    ),
+                    ...responseData,
+                    gemder: responseData.gender === "Муж",
+                    birth_date: formaterDate(responseData?.birth_date, "dateOnly"),
+                    passport_issued_at: formaterDate(responseData?.passport_issued_at, "dateOnly"),
+                    contract_date: formaterDate(responseData?.contract_date, "dateOnly"),
                 });
+
+                // Устанавливаем состояние для SMS
+                if (responseData.is_new_client) {
+                    setShowSMSType(true);
+                }
             } catch (e) {
                 console.error(e);
                 showAlert("Ошибка при загрузке данных", "error", 5000);
@@ -540,7 +664,7 @@ export default function GiftCard({ edit = false }) {
                                     width={220}
                                 />
 
-                                <div>
+                                <div className="verification-section">
                                     <CheckBox
                                         title={"Личность подтверждена?"}
                                         value={data.identity_verified}
@@ -549,10 +673,69 @@ export default function GiftCard({ edit = false }) {
                                     <CheckBox
                                         title={"Отправить СМС?"}
                                         value={data.is_new_client}
-                                        onChange={(e) => setData("is_new_client", e)}
+                                        onChange={handleSMSChange}
                                     />
                                 </div>
                             </div>
+
+                            {/* Секция выбора типа SMS */}
+                            {showSMSType && (
+                                <div className="sms-section" style={{
+                                    margin: "20px 0",
+                                    padding: "15px",
+                                    border: "1px solid #e31e24",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#fff5f5"
+                                }}>
+                                    <h3 style={{ color: "#e31e24", marginBottom: "10px" }}>Настройки SMS</h3>
+                                    <div className="sms-type-selector">
+                                        <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+                                            Выберите тип SMS:
+                                        </label>
+                                        <select
+                                            value={data.message_type || ""}
+                                            onChange={(e) => handleSMSTypeChange(e.target.value)}
+                                            style={{
+                                                padding: "8px 12px",
+                                                borderRadius: "4px",
+                                                border: "1px solid #ddd",
+                                                width: "100%",
+                                                maxWidth: "300px"
+                                            }}
+                                        >
+                                            <option value="">-- Выберите тип --</option>
+                                            {smsTypes.map((type) => (
+                                                <option key={type.value} value={type.value}>
+                                                    {type.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {data.message_type === "rejected" && (
+                                        <div className="rejection-reason" style={{ marginTop: "15px" }}>
+                                            <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+                                                Причина отклонения:
+                                            </label>
+                                            <textarea
+                                                value={data.rejection_reason || ""}
+                                                onChange={(e) => setData("rejection_reason", e.target.value)}
+                                                placeholder="Введите причину отклонения заявки"
+                                                rows={3}
+                                                style={{
+                                                    width: "100%",
+                                                    maxWidth: "500px",
+                                                    padding: "10px",
+                                                    borderRadius: "4px",
+                                                    border: "1px solid #ddd",
+                                                    fontFamily: "inherit"
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="content-form">
                                 <Input
                                     className={"div1"}
@@ -804,24 +987,75 @@ export default function GiftCard({ edit = false }) {
                                     error={errors}
                                     id={"client_index"}
                                 />
+                                <Input
+                                    className={"div31"}
+                                    placeholder={"Счет USD*"}
+                                    onChange={(e) => setData("account_usd", e)}
+                                    value={data?.account_usd}
+                                    error={errors}
+                                    id={"account_usd"}
+                                    required={true}
+                                />
+                                <Input
+                                    className={"div32"}
+                                    placeholder={"Счет EUR*"}
+                                    onChange={(e) => setData("account_eur", e)}
+                                    value={data?.account_eur}
+                                    error={errors}
+                                    id={"account_eur"}
+                                    required={true}
+                                />
+                                <Input
+                                    className={"div33"}
+                                    placeholder={"Счет TJS*"}
+                                    onChange={(e) => setData("account_tjs", e)}
+                                    value={data?.account_tjs}
+                                    error={errors}
+                                    id={"account_tjs"}
+                                    required={true}
+                                />
+                                <Input
+                                    className={"div34"}
+                                    placeholder={"Номер договора*"}
+                                    onChange={(e) => setData("contract_number", e)}
+                                    value={data?.contract_number}
+                                    error={errors}
+                                    id={"contract_number"}
+                                    required={true}
+                                />
+                                <Input
+                                    type="date"
+                                    className={"div35"}
+                                    placeholder={"Дата договора*"}
+                                    onChange={(e) => setData("contract_date", e)}
+                                    value={data?.contract_date}
+                                    error={errors}
+                                    id={"contract_date"}
+                                    required={true}
+                                />
                             </div>
                             <footer>
-                                <button onClick={() => onSend(false)} disabled={downloading}>
+                                <button onClick={() => onSend(false, false)} disabled={downloading || downloadingOffer}>
                                     <img src={save} alt="" />
                                     <span>Сохранить</span>
                                 </button>
-                                <button>
-                                    <img src={card} alt="" />
-                                    <span>Открыть карту</span>
+                                <button
+                                    onClick={handleSaveAndDownloadOffer}
+                                    disabled={downloading || downloadingOffer}
+                                >
+                                    <img src={offer} alt="" />
+                                    <span>
+                                        {downloadingOffer ? "Загрузка..." : "Загрузить оферт"}
+                                    </span>
                                 </button>
                                 <button
                                     onClick={handleSaveAndDownload}
-                                    disabled={downloading}
+                                    disabled={downloading || downloadingOffer}
                                 >
                                     <img src={download} alt="" />
                                     <span>
-                    {downloading ? "Скачивание..." : "Скачать анкету"}
-                  </span>
+                                        {downloading ? "Скачивание..." : "Скачать анкету"}
+                                    </span>
                                 </button>
                                 <button>
                                     <img src={share} alt="" />
@@ -833,8 +1067,8 @@ export default function GiftCard({ edit = false }) {
                                 >
                                     <img src={search_user} alt="" />
                                     <span>
-                    {searching ? "Поиск..." : "Найти клиента в АБС"}
-                  </span>
+                                        {searching ? "Поиск..." : "Найти клиента в АБС"}
+                                    </span>
                                 </button>
                             </footer>
                         </main>
