@@ -266,24 +266,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         },
                     ],
                 },
-                {
-                    name: "Процессинг",
-                    key: "processing",
-                    children: [
-                        {
-                            name: "Лимиты",
-                            href: "/operator/processing/limits",
-                            key: "limits",
-                            description: "Управление лимитами карт",
-                        },
-                        {
-                            name: "Транзакции",
-                            href: "/operator/processing/transactions",
-                            key: "transactions",
-                            description: "Мониторинг транзакций",
-                        },
-                    ],
-                }
             );
         }
         if (roles.includes(10)) {
@@ -406,6 +388,28 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     },
                 ],
             });
+        }
+
+        if (roles.includes(18)) {
+            additionalLinks.push(
+                {
+                    name: "Процессинг",
+                    key: "processing",
+                    children: [
+                        {
+                            name: "Лимиты",
+                            href: "/processing/limits",
+                            key: "limits",
+                            description: "Управление лимитами карт",
+                        },
+                        {
+                            name: "Транзакции",
+                            href: "/processing/transactions",
+                            key: "transactions",
+                            description: "Мониторинг транзакций",
+                        },
+                    ],
+                });
         }
 
         return [...baseLinks, ...additionalLinks];

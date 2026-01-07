@@ -82,6 +82,8 @@ function RedirectDashboard() {
         navigate("/agent-custom/eqms", { replace: true });
     } else if (roleIds.includes(17)) {
         navigate("/frontovik/abs-search", { replace: true });
+    } else if (roleIds.includes(18)) {
+        navigate("/processing/limits", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });

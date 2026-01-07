@@ -110,14 +110,6 @@ export default function AppRouter() {
               path="/operator/tests"
               element={<DashboardOperatorTests />}
             />
-            <Route
-              path="/operator/processing/limits"
-              element={<DashboardOperatorProcessing />}
-            />
-            <Route
-              path="/operator/processing/transactions"
-              element={<DashboardOperatorProcessingTransactions />}
-            />
             <Route path="/auth/register" element={<RegisterPage />} />
           </Route>
 
@@ -321,6 +313,23 @@ export default function AppRouter() {
           >
               <Route path="frontovik/abs-search" element={<DashboardFrontovikAbsSearch />} />
               <Route path="frontovik/account-operations" element={<AccountOperations />} />
+          </Route>
+
+          <Route
+              element={
+                  <RequireRole allowedRoles={[18]}>
+                      <Outlet />
+                  </RequireRole>
+              }
+          >
+              <Route
+                  path="/processing/limits"
+                  element={<DashboardOperatorProcessing />}
+              />
+              <Route
+                  path="/processing/transactions"
+                  element={<DashboardOperatorProcessingTransactions />}
+              />
           </Route>
 
         <Route path="*" element={<PageNotFound />} />
