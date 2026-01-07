@@ -20,17 +20,26 @@ export default function DashboardOperatorProcessingTransactions() {
     });
 
     // Функция для форматирования суммы
-    const formatAmount = (amount) => {
+    const formatAmount = (amount, transactionTypeNumber) => {
         if (amount === null || amount === undefined || amount === '') return 'N/A';
 
         const amountStr = amount.toString();
+        let formattedAmount;
+
         if (amountStr.length <= 2) {
-            return `0,${amountStr.padStart(2, '0')}`;
+            formattedAmount = `0,${amountStr.padStart(2, '0')}`;
+        } else {
+            const integerPart = amountStr.slice(0, -2);
+            const decimalPart = amountStr.slice(-2);
+            formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')},${decimalPart}`;
         }
 
-        const integerPart = amountStr.slice(0, -2);
-        const decimalPart = amountStr.slice(-2);
-        return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')},${decimalPart}`;
+        // Добавляем минус для красных операций (transactionTypeNumber 2)
+        if (transactionTypeNumber === 2) {
+            return `-${formattedAmount}`;
+        }
+
+        return formattedAmount;
     };
 
     // Устанавливаем даты по умолчанию (последние 30 дней)
@@ -336,13 +345,17 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">{formatAmount(transaction.amount)}</span>
+                                                    <span className="amount-value">
+                                                        {formatAmount(transaction.amount, transaction.transactionTypeNumber)}
+                                                    </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">{formatAmount(transaction.conamt)}</span>
+                                                    <span className="amount-value">
+                                                        {formatAmount(transaction.conamt, transaction.transactionTypeNumber)}
+                                                    </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="amount-value">{formatAmount(transaction.acctbal)}</span>
@@ -357,7 +370,9 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     <span className="default-value">{transaction.atmId || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">{formatAmount(transaction.reqamt)}</span>
+                                                    <span className="amount-value">
+                                                        {formatAmount(transaction.reqamt, transaction.transactionTypeNumber)}
+                                                    </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
