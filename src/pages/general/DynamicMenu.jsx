@@ -204,7 +204,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             if (activeLink !== "applications") {
                 setAlert({
                     show: true,
-                    message: `Новая заявка #${newApplication.ID} от ${newApplication.request_creator}`,
+                    message: `Новая заявка #${newApplication.ID} от ${newApplication.request_сreator}`,
                     type: "info",
                 });
             }

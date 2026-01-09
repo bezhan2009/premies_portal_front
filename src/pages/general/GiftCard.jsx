@@ -284,6 +284,7 @@ export default function GiftCard({ edit = false }) {
     // Функция для проверки полей оферта
     const validateOfferFields = () => {
         const requiredFields = [
+            { field: "product", label: "Продукт" },
             { field: "account_usd", label: "Счет USD" },
             { field: "account_eur", label: "Счет EUR" },
             { field: "account_tjs", label: "Счет TJS" },
@@ -368,23 +369,11 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // Определяем продукт на основе выбранной карты
-            let selectedProduct = "";
-            if (data.visa_card) {
-                const visaCard = visaCards.find(card => card.value === data.visa_card);
-                selectedProduct = visaCard ? visaCard.label : "";
-            } else if (data.mc_card) {
-                const mcCard = mcCards.find(card => card.value === data.mc_card);
-                selectedProduct = mcCard ? mcCard.label : "";
-            } else if (data.nc_card) {
-                const ncCard = ncCards.find(card => card.value === data.nc_card);
-                selectedProduct = ncCard ? ncCard.label : "";
-            }
-
             // Вспомогательная функция для безопасного trim
             const safeTrim = (value) => {
                 return value ? value.toString().trim() : "";
             };
+
 
             // Добавление всех полей
             const fieldsToAppend = [
@@ -425,7 +414,7 @@ export default function GiftCard({ edit = false }) {
 
                 // Новые поля
                 { key: "message_type", value: safeTrim(data.message_type) },
-                { key: "product", value: selectedProduct },
+                { key: "product", value: safeTrim(data.product) },
                 { key: "account_usd", value: safeTrim(data.account_usd) },
                 { key: "account_eur", value: safeTrim(data.account_eur) },
                 { key: "account_tjs", value: safeTrim(data.account_tjs) },
@@ -434,8 +423,20 @@ export default function GiftCard({ edit = false }) {
             ];
 
             // Если есть причина отклонения, добавляем в comment
-            if (data.message_type === "rejected" && data.rejection_reason) {
+            if (data.message_type === "rejected" && data.rejection_reason && !(isForPoll || isForOffer)) {
                 fieldsToAppend.push({ key: "comment", value: safeTrim(data.rejection_reason) });
+            }
+
+            if (data.is_new_client === undefined || data.is_new_client === false) {
+                data.message_type = "no_client";
+            }
+
+            if (isForOffer === true) {
+                data.message_type = "nosms"
+            }
+
+            if (isForPoll === true) {
+                data.message_type = "nosms"
             }
 
             // Добавляем все поля в FormData
@@ -817,7 +818,6 @@ export default function GiftCard({ edit = false }) {
                                     value={data?.client_code}
                                     error={errors}
                                     id={"client_code"}
-                                    readOnly={true}
                                 />
                                 <CheckBox
                                     yes={"Муж"}
@@ -986,6 +986,15 @@ export default function GiftCard({ edit = false }) {
                                     value={data?.client_index}
                                     error={errors}
                                     id={"client_index"}
+                                />
+                                <Input
+                                    className={"div36"}
+                                    placeholder={"Продукт"}
+                                    onChange={(e) => setData("product", e)}
+                                    value={data?.product}
+                                    error={errors}
+                                    id={"product"}
+                                    required={true}
                                 />
                                 <Input
                                     className={"div31"}

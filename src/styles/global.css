@@ -242,7 +242,7 @@ tr:nth-child(14) {
   color: initial;
 }
 .input input:hover {
-  outline: #e21a1c solid 2px;
+    box-shadow: 0 10px 20px rgba(255, 0, 0, 0.5);
 }
 .input input:focus {
   outline: #e21a1c solid 2px;
