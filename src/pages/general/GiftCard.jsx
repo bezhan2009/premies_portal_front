@@ -27,7 +27,6 @@ import File from "../../components/elements/File";
 import CheckBox from "../../components/elements/CheckBox";
 import Input from "../../components/elements/Input";
 import Select from "../../components/elements/Select";
-import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import { useEffect, useState } from "react";
 import { getApplicationById } from "../../api/application/getApplicationById.js";
 import { useNavigate, useParams } from "react-router-dom";
@@ -94,8 +93,35 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для заполнения формы данными клиента
-    const fillFormWithClientData = (clientData) => {
+    // Функция для загрузки дополнительных данных клиента по client_code
+    const loadClientDetails = async (clientCode) => {
+        try {
+            const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+            const token = localStorage.getItem("access_token");
+
+            const response = await fetch(`${backendUrl}/addresses?clientIndex=${clientCode}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const clientDetails = await response.json();
+            return clientDetails;
+        } catch (error) {
+            console.error("Ошибка при загрузке деталей клиента:", error);
+            throw error;
+        }
+    };
+
+    // Функция для заполнения формы данными клиента (теперь с дополнительными данными)
+    const fillFormWithClientData = async (clientData) => {
+        // Сначала заполняем базовые данные из первого API
         setData("surname", clientData.surname || "");
         setData("name", clientData.name || "");
         setData("patronymic", clientData.patronymic || "");
@@ -123,6 +149,107 @@ export default function GiftCard({ edit = false }) {
         setData("issued_by", clientData.identdoc_orgname || "");
         setData("inn", clientData.tax_code || "");
         setData("client_code", clientData.client_code || "");
+
+        // Загружаем дополнительные данные из второго API
+        try {
+            setSearching(true);
+            const clientDetails = await loadClientDetails(clientData.client_code);
+
+            // Заполняем дополнительные поля из второго API
+            if (clientDetails.birth_date) {
+                const birthDate = new Date(clientDetails.birth_date);
+                const formattedBirthDate = birthDate.toISOString().split('T')[0];
+                setData("birth_date", formattedBirthDate);
+            }
+
+            // Резидентность
+            if (clientDetails.is_resident !== undefined) {
+                setData("is_resident", clientDetails.is_resident);
+            }
+
+            // Страна
+            if (clientDetails.country && clientDetails.country.Name) {
+                setData("country", clientDetails.country.Name);
+            }
+
+            // Пол
+            if (clientDetails.sex === "M") {
+                setData("gender", true); // Мужской
+            } else if (clientDetails.sex === "F") {
+                setData("gender", false); // Женский
+            }
+
+            // Адресные данные
+            if (clientDetails.detailed_addresses && clientDetails.detailed_addresses.length > 0) {
+                const address = clientDetails.detailed_addresses[0];
+
+                // Регион
+                if (address.region) {
+                    setData("region", address.region);
+                }
+
+                // Населенный пункт
+                if (address.city) {
+                    setData("populated", address.city);
+                }
+
+                // Район (если есть в данных)
+                if (address.district) {
+                    setData("district", address.district);
+                }
+
+                // Улица
+                if (address.street) {
+                    setData("street", address.street);
+                }
+
+                // Номер дома
+                if (address.house_number) {
+                    setData("house_number", address.house_number);
+                }
+
+                // Квартира
+                if (address.flat && address.flat !== "0") {
+                    setData("apartment_number", address.flat);
+                }
+
+                // Страна из адреса
+                if (address.country) {
+                    setData("country", address.country);
+                }
+            }
+
+            // Дополнительные поля из второго API
+            if (clientDetails.tax_identification_number) {
+                setData("inn", clientDetails.tax_identification_number);
+            }
+
+            if (clientDetails.name) {
+                setData("surname", clientDetails.last_name || clientDetails.name || "");
+            }
+
+            if (clientDetails.first_name) {
+                setData("name", clientDetails.first_name || "");
+            }
+
+            if (clientDetails.middle_name) {
+                setData("patronymic", clientDetails.middle_name || "");
+            }
+
+            // SWIFT имя для карты (если нужно)
+            if (clientDetails.swift_name) {
+                setData("card_name", clientDetails.swift_name);
+            } else if (clientDetails.latin_first_name && clientDetails.latin_last_name) {
+                setData("card_name", `${clientDetails.latin_first_name} ${clientDetails.latin_last_name}`);
+            }
+
+            showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+        } catch (error) {
+            console.error("Ошибка при загрузке деталей клиента:", error);
+            showAlert("Основные данные загружены, но не удалось загрузить детали клиента", "warning", 5000);
+        } finally {
+            setSearching(false);
+        }
     };
 
     // Функция для поиска клиента в АБС
@@ -169,7 +296,7 @@ export default function GiftCard({ edit = false }) {
             setFoundClients(clientsData);
 
             if (clientsData.length === 1) {
-                fillFormWithClientData(clientsData[0]);
+                await fillFormWithClientData(clientsData[0]);
                 showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
             } else {
                 setSelectedClientIndex(0);
@@ -187,9 +314,9 @@ export default function GiftCard({ edit = false }) {
     };
 
     // Функция для выбора клиента из модального окна
-    const handleSelectClient = (clientIndex) => {
+    const handleSelectClient = async (clientIndex) => {
         if (foundClients[clientIndex]) {
-            fillFormWithClientData(foundClients[clientIndex]);
+            await fillFormWithClientData(foundClients[clientIndex]);
             setShowClientSelector(false);
             showAlert(`Данные клиента ${clientIndex + 1} успешно загружены`, "success", 5000);
         }
@@ -373,7 +500,6 @@ export default function GiftCard({ edit = false }) {
             const safeTrim = (value) => {
                 return value ? value.toString().trim() : "";
             };
-
 
             // Добавление всех полей
             const fieldsToAppend = [
