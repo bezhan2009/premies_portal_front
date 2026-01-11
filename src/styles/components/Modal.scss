@@ -1,0 +1,89 @@
+// Modal.scss
+$modal-overlay-bg: rgba(0, 0, 0, 0.5);
+$modal-bg: #fff;
+$modal-radius: 8px;
+$modal-padding: 24px;
+$modal-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+$modal-z-index: 1000;
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: $modal-overlay-bg;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: $modal-z-index;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.modal-container {
+  background-color: $modal-bg;
+  border-radius: $modal-radius;
+  box-shadow: $modal-shadow;
+  width: 90%;
+  max-width: 800px; // Adjust as needed
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease;
+
+  @media (max-width: 768px) {
+    width: 95%;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $modal-padding;
+    border-bottom: 1px solid #eee;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #000;
+      }
+    }
+  }
+
+  &__content {
+    padding: $modal-padding;
+    overflow-y: auto;
+    flex: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

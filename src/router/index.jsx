@@ -57,7 +57,7 @@ import DashboardAgentSMSKnowledgeBase from "../pages/dashboard/dashboard_sms/Kno
 import CheckTokenVersion from "./CheckTokenVersion.jsx";
 import EQMSList from "../pages/general/EqmsTableList.jsx";
 import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
-import ABSClientSearch from "../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
+// import ABSClientSearch from "../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import DashboardFrontovikAbsSearch from "../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import TerminalNames from "../pages/general/TerminalNames.jsx";
 import AccountOperations from "../pages/general/AccountOperations.jsx";

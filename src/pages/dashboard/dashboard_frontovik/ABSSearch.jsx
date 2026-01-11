@@ -20,6 +20,7 @@ export default function DashboardFrontovikAbsSearch() {
           <div className="dashboard-container">
             <ABSClientSearch />
           </div>
+          
         </div>
     </>
   );
