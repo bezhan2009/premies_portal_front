@@ -480,33 +480,55 @@ export default function ABSClientSearch() {
                 <table className="limits-table">
                   <thead className="limits-table__head">
                     <tr>
-                      <th className="limits-table__th">ID Карты</th>
-                      <th className="limits-table__th">Тип</th>
+                      <th className="limits-table__th">Номер договора</th>
+                      <th className="limits-table__th">Референс</th>
                       <th className="limits-table__th">Статус</th>
-                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Сумма</th>
                       <th className="limits-table__th">Валюта</th>
-                      <th className="limits-table__th">Остаток</th>
+                      <th className="limits-table__th">Дата начала</th>
+                      <th className="limits-table__th">Дата окончания</th>
+                      <th className="limits-table__th">Продукт</th>
+                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Отдел</th>
+                      <th className="limits-table__th">Баланс</th>
                     </tr>
                   </thead>
                   <tbody className="limits-table__body">
-                    {showCardsModal?.data?.map((card, idx) => (
+                    {showCardsModal?.data?.map((item, idx) => (
                       <tr key={idx} className="limits-table__row">
                         <td className="limits-table__td">
-                          {card.contractNumber}
+                          {item.AgreementData?.Code}
                         </td>
-                        <td className="limits-table__td">{card.referenceId}</td>
-                        <td className="limits-table__td">{card.status}</td>
-                        <td className="limits-table__td">{card.statusName}</td>
-                        <td className="limits-table__td">{card.amount}</td>
-                        <td className="limits-table__td">{card.cardId}</td>
-                        <td className="limits-table__td">{card.type}</td>
-                        <td className="limits-table__td">{card.statusName}</td>
                         <td className="limits-table__td">
-                          {card.expirationDate}
+                          {item.AgreementData?.ColvirReferenceId}
                         </td>
-                        <td className="limits-table__td">{card.currency}</td>
                         <td className="limits-table__td">
-                          {card.accounts?.[0]?.state || "-"}
+                          {item.AgreementData?.Status?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Amount}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Currency}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateFrom}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateTo}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Product?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DepoTermTU}{" "}
+                          {item.AgreementData?.DepoTermTimeType}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Department?.Code}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.BalanceAccounts?.[0]?.Balance || "-"}
                         </td>
                       </tr>
                     ))}
@@ -521,14 +543,14 @@ export default function ABSClientSearch() {
               justifyContent: "flex-end",
             }}
           >
-            <button
+            {/* <button
               onClick={() =>
                 copyToClipboard(JSON.stringify(showCardsModal?.data, null, 2))
               }
               className="limits-table__action-btn limits-table__action-btn--secondary"
             >
               Копировать JSON карт
-            </button>
+            </button> */}
           </div>
         </Modal>
 
@@ -557,6 +579,11 @@ export default function ABSClientSearch() {
                       placeholder="Введите номер телефона"
                       className="search-card__input"
                       maxLength={20}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && phoneNumber) {
+                          handleSearchClient();
+                        }
+                      }}
                       disabled={isLoading}
                     />
                   </div>
