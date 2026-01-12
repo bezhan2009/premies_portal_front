@@ -4,13 +4,17 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
+import "../../styles/components/TransactionsQR.scss"
 import QRStatistics from "./QRStatistics.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "./DynamicMenu.jsx";
 
+
+
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
   const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const [activeBankLimit, setActiveBankLimit] = useState(null);
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
@@ -32,7 +36,20 @@ export default function TransactionsQR() {
   const backendMain = import.meta.env.VITE_BACKEND_URL;
   const token = localStorage.getItem("access_token");
 
-  const showAlert = (message, type = "success") => {
+    const getActiveBankLimit = async () => {
+        try {
+            const resp = await fetch(`${import.meta.env.VITE_BACKEND_QR_URL}limit`);
+            if (!resp.ok) throw new Error("Ошибка загрузки лимита");
+            const json = await resp.json();
+            setActiveBankLimit(json?.limit ?? 0);
+        } catch (e) {
+            console.error("Ошибка лимита:", e);
+            setActiveBankLimit(null);
+        }
+    };
+
+
+    const showAlert = (message, type = "success") => {
     setAlert({ message, type });
     setTimeout(() => setAlert(null), 3500);
   };
@@ -162,6 +179,7 @@ export default function TransactionsQR() {
     setData("end_date", data?.end_date ?? "2025-10-01");
     getBanks();
     getMerchants();
+    getActiveBankLimit();
   }, []);
 
   useEffect(() => {
@@ -304,7 +322,7 @@ export default function TransactionsQR() {
             <QRStatistics />
           </main>
           <main>
-            <div className="my-applications-header">
+            <div className="my-applications-header header-with-balance">
               <button
                 className={!showFilters ? "filter-toggle" : "Unloading"}
                 onClick={() => setShowFilters(!showFilters)}
@@ -340,8 +358,8 @@ export default function TransactionsQR() {
                 </button>
               </div>
 
-              <button 
-                className="Unloading" 
+              <button
+                className="Unloading"
                 onClick={handleExport}
                 disabled={selectedRows.length === 0 || isLoading}
               >
@@ -354,6 +372,15 @@ export default function TransactionsQR() {
               >
                 {selectAll ? "Снять выделение" : "Выбрать все"}
               </button>
+
+                <div className="activebank-balance">
+                    <span className="label">Баланс Активбанк</span>
+                    <span className="value">
+                        {activeBankLimit !== null
+                            ? `${activeBankLimit.toLocaleString("ru-RU")} с.`
+                            : "—"}
+                        </span>
+                </div>
             </div>
 
             {showFilters && (
@@ -420,6 +447,7 @@ export default function TransactionsQR() {
                     setFilters((p) => ({ ...p, amount: e.target.value }))
                   }
                 />
+
               </div>
             )}
 
