@@ -329,7 +329,6 @@ export default function TransactionsQR() {
               >
                 Фильтры
               </button>
-              <pre> </pre>
               <div style={{ display: "flex", gap: "50px" }}>
                 <button
                   className={`archive-toggle-activ ${
