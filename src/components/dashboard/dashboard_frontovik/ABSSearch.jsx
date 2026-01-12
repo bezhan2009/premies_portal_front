@@ -7,6 +7,8 @@ import Modal from "../../general/Modal.jsx";
 import {
   getUserAccounts,
   getUserCards,
+  getUserCredits,
+  getUserDeposits,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
@@ -19,8 +21,13 @@ export default function ABSClientSearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [cardsData, setCardsData] = useState([]);
   const [accountsData, setAccountsData] = useState([]);
-  const [showCardsModal, setShowCardsModal] = useState(false);
-  const [showAccountsModal, setShowAccountsModal] = useState(false);
+  const [creditsData, setCreditsData] = useState([]);
+  const [depositsData, setDepositsData] = useState([]);
+  const [showCardsModal, setShowCardsModal] = useState({
+    active: false,
+    data: [],
+  });
+  //   const [showAccountsModal, setShowAccountsModal] = useState(false);
   const [alert, setAlert] = useState({
     show: false,
     message: "",
@@ -133,9 +140,13 @@ export default function ABSClientSearch() {
       const clientCode = clientsData[selectedClientIndex]?.client_code;
       const resCards = await getUserCards(clientCode);
       const resAcc = await getUserAccounts(clientCode);
+      const resCredits = await getUserCredits(clientCode);
+      const resDeposits = await getUserDeposits(clientCode);
 
       setCardsData(resCards || []);
       setAccountsData(resAcc || []);
+      setCreditsData(resCredits || []);
+      setDepositsData(resDeposits || []);
     } catch (error) {
       console.error("Error fetching user cards/accounts:", error);
       showAlert("Ошибка при получении данных карт/счетов", "error");
@@ -205,12 +216,62 @@ export default function ABSClientSearch() {
             cardsData.length > 0 ? (
               <button
                 className="limits-table__action-btn"
-                onClick={() => setShowCardsModal(true)}
+                onClick={() =>
+                  setShowCardsModal({
+                    active: true,
+                    data: cardsData,
+                    type: "cards",
+                  })
+                }
               >
                 Показать ({cardsData.length})
               </button>
             ) : (
               "Нет карт"
+            ),
+          isAction: true,
+        },
+        {
+          label: "Депозиты",
+          key: "deposits",
+          value:
+            depositsData.length > 0 ? (
+              <button
+                className="limits-table__action-btn"
+                onClick={() =>
+                  setShowCardsModal({
+                    active: true,
+                    data: depositsData,
+                    type: "deposits",
+                  })
+                }
+              >
+                Показать ({depositsData.length})
+              </button>
+            ) : (
+              "Нет депозитов"
+            ),
+          isAction: true,
+        },
+        {
+          label: "Кредиты",
+          key: "credits",
+          value:
+            creditsData.length > 0 ? (
+              <button
+                className="limits-table__action-btn"
+                onClick={() =>
+                  setShowCardsModal({
+                    active: true,
+                    data: creditsData,
+                    type: "credits",
+                  })
+                }
+              >
+                Показать ({creditsData.length})
+              </button>
+            ) : (
+              "Нет кредитов"
             ),
           isAction: true,
         },
@@ -221,7 +282,13 @@ export default function ABSClientSearch() {
             accountsData.length > 0 ? (
               <button
                 className="limits-table__action-btn"
-                onClick={() => setShowAccountsModal(true)}
+                onClick={() =>
+                  setShowCardsModal({
+                    active: true,
+                    data: accountsData,
+                    type: "accounts",
+                  })
+                }
               >
                 Показать ({accountsData.length})
               </button>
@@ -298,39 +365,176 @@ export default function ABSClientSearch() {
           />
         )}
 
-        {/* Modal for Cards */}
         <Modal
-          isOpen={showCardsModal}
+          isOpen={showCardsModal?.active}
           onClose={() => setShowCardsModal(false)}
-          title={`Карты клиента (Всего: ${cardsData.length})`}
+          title={`Элементы (Всего: ${showCardsModal?.data?.length})`}
         >
           <div className="limits-table__wrapper">
-            <table className="limits-table">
-              <thead className="limits-table__head">
-                <tr>
-                  <th className="limits-table__th">ID Карты</th>
-                  <th className="limits-table__th">Тип</th>
-                  <th className="limits-table__th">Статус</th>
-                  <th className="limits-table__th">Срок</th>
-                  <th className="limits-table__th">Валюта</th>
-                  <th className="limits-table__th">Остаток</th>
-                </tr>
-              </thead>
-              <tbody className="limits-table__body">
-                {cardsData.map((card, idx) => (
-                  <tr key={idx} className="limits-table__row">
-                    <td className="limits-table__td">{card.cardId}</td>
-                    <td className="limits-table__td">{card.type}</td>
-                    <td className="limits-table__td">{card.statusName}</td>
-                    <td className="limits-table__td">{card.expirationDate}</td>
-                    <td className="limits-table__td">{card.currency}</td>
-                    <td className="limits-table__td">
-                      {card.accounts?.[0]?.state || "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {showCardsModal?.type === "cards" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">ID Карты</th>
+                      <th className="limits-table__th">Тип</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Остаток</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((card, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">{card.cardId}</td>
+                        <td className="limits-table__td">{card.type}</td>
+                        <td className="limits-table__td">{card.statusName}</td>
+                        <td className="limits-table__td">
+                          {card.expirationDate}
+                        </td>
+                        <td className="limits-table__td">{card.currency}</td>
+                        <td className="limits-table__td">
+                          {card.accounts?.[0]?.state || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            {showCardsModal?.type === "accounts" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер счета</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Баланс</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Дата открытия</th>
+                      <th className="limits-table__th">Филиал</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {accountsData.map((acc, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">{acc.Number}</td>
+                        <td className="limits-table__td">
+                          {acc.Currency?.Code}
+                        </td>
+                        <td className="limits-table__td">{acc.Balance}</td>
+                        <td className="limits-table__td">{acc.Status?.Name}</td>
+                        <td className="limits-table__td">{acc.DateOpened}</td>
+                        <td className="limits-table__td">{acc.Branch?.Name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            {showCardsModal?.type === "credits" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер контракта</th>
+                      <th className="limits-table__th">Идентификатор ссылки</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">СтатусИмя</th>
+                      <th className="limits-table__th">Сумма</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Дата документа</th>
+                      <th className="limits-table__th">КлиентКод</th>
+                      <th className="limits-table__th">Код продукта</th>
+                      <th className="limits-table__th">Название продукта</th>
+                      <th className="limits-table__th">Отдел</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((card, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">
+                          {card.contractNumber}
+                        </td>
+                        <td className="limits-table__td">{card.referenceId}</td>
+                        <td className="limits-table__td">{card.status}</td>
+                        <td className="limits-table__td">{card.statusName}</td>
+                        <td className="limits-table__td">{card.amount}</td>
+                        <td className="limits-table__td">{card.currency}</td>
+                        <td className="limits-table__td">
+                          {card.documentDate}
+                        </td>
+                        <td className="limits-table__td">{card.clientCode}</td>
+                        <td className="limits-table__td">{card.productCode}</td>
+                        <td className="limits-table__td">{card.productName}</td>
+                        <td className="limits-table__td">
+                          {card.department || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+            {showCardsModal?.type === "deposits" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер договора</th>
+                      <th className="limits-table__th">Референс</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Сумма</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Дата начала</th>
+                      <th className="limits-table__th">Дата окончания</th>
+                      <th className="limits-table__th">Продукт</th>
+                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Отдел</th>
+                      <th className="limits-table__th">Баланс</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((item, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Code}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.ColvirReferenceId}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Status?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Amount}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Currency}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateFrom}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateTo}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Product?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DepoTermTU}{" "}
+                          {item.AgreementData?.DepoTermTimeType}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Department?.Code}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.BalanceAccounts?.[0]?.Balance || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
           </div>
           <div
             style={{
@@ -339,64 +543,14 @@ export default function ABSClientSearch() {
               justifyContent: "flex-end",
             }}
           >
-            <button
+            {/* <button
               onClick={() =>
-                copyToClipboard(JSON.stringify(cardsData, null, 2))
+                copyToClipboard(JSON.stringify(showCardsModal?.data, null, 2))
               }
               className="limits-table__action-btn limits-table__action-btn--secondary"
             >
               Копировать JSON карт
-            </button>
-          </div>
-        </Modal>
-
-        {/* Modal for Accounts */}
-        <Modal
-          isOpen={showAccountsModal}
-          onClose={() => setShowAccountsModal(false)}
-          title={`Счета клиента (Всего: ${accountsData.length})`}
-        >
-          <div className="limits-table__wrapper">
-            <table className="limits-table">
-              <thead className="limits-table__head">
-                <tr>
-                  <th className="limits-table__th">Номер счета</th>
-                  <th className="limits-table__th">Валюта</th>
-                  <th className="limits-table__th">Баланс</th>
-                  <th className="limits-table__th">Статус</th>
-                  <th className="limits-table__th">Дата открытия</th>
-                  <th className="limits-table__th">Филиал</th>
-                </tr>
-              </thead>
-              <tbody className="limits-table__body">
-                {accountsData.map((acc, idx) => (
-                  <tr key={idx} className="limits-table__row">
-                    <td className="limits-table__td">{acc.Number}</td>
-                    <td className="limits-table__td">{acc.Currency?.Code}</td>
-                    <td className="limits-table__td">{acc.Balance}</td>
-                    <td className="limits-table__td">{acc.Status?.Name}</td>
-                    <td className="limits-table__td">{acc.DateOpened}</td>
-                    <td className="limits-table__td">{acc.Branch?.Name}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div
-            style={{
-              marginTop: "20px",
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
-            <button
-              onClick={() =>
-                copyToClipboard(JSON.stringify(accountsData, null, 2))
-              }
-              className="limits-table__action-btn limits-table__action-btn--secondary"
-            >
-              Копировать JSON счетов
-            </button>
+            </button> */}
           </div>
         </Modal>
 
@@ -425,6 +579,11 @@ export default function ABSClientSearch() {
                       placeholder="Введите номер телефона"
                       className="search-card__input"
                       maxLength={20}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && phoneNumber) {
+                          handleSearchClient();
+                        }
+                      }}
                       disabled={isLoading}
                     />
                   </div>
