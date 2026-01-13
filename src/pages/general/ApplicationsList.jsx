@@ -225,7 +225,16 @@ export default function ApplicationsList() {
     );
   };
 
-  const deleteApplication = async (id) => {
+    const formatDate = (date) => {
+        if (!date) return '';
+
+        const d = new Date(date);
+        if (isNaN(d)) return '';
+
+        return d.toISOString().split('T')[0];
+    };
+
+    const deleteApplication = async (id) => {
     try {
       const res = await deleteApplicationById(id);
       if (res) {
@@ -448,6 +457,8 @@ export default function ApplicationsList() {
                       {headers.map((e, i) => (
                         <th key={i}>{e}</th>
                       ))}
+                      <th>Заявка создана в</th>
+                      <th>Заявка обновлена в</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -492,6 +503,8 @@ export default function ApplicationsList() {
                             <td>{row.inn}</td>
                             <td>{row.delivery_address}</td>
                             <td>{row.card_code}</td>
+                            <td>{formatDate(row.CreatedAt)}</td>
+                            <td>{formatDate(row.UpdatedAt)}</td>
                             <td className="active-table">
                               <AiFillEdit
                                 onClick={() => navigate(`/agent/card/${row.ID}`)}

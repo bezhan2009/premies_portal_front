@@ -649,6 +649,9 @@ export default function GiftCard({ edit = false }) {
                     birth_date: formaterDate(responseData?.birth_date, "dateOnly"),
                     passport_issued_at: formaterDate(responseData?.passport_issued_at, "dateOnly"),
                     contract_date: formaterDate(responseData?.contract_date, "dateOnly"),
+
+                    CreatedAt: formaterDate(responseData?.CreatedAt, "dateOnly"),
+                    UpdatedAt: formaterDate(responseData?.UpdatedAt, "dateOnly"),
                 });
 
                 // Устанавливаем состояние для SMS
@@ -862,7 +865,6 @@ export default function GiftCard({ edit = false }) {
                                     )}
                                 </div>
                             )}
-
                             <div className="content-form">
                                 <Input
                                     className={"div1"}
@@ -1168,6 +1170,28 @@ export default function GiftCard({ edit = false }) {
                                     id={"contract_date"}
                                     required={true}
                                 />
+                                {edit && (
+                                    <>
+                                        <Input
+                                            type="text"
+                                            className="div37"
+                                            placeholder="Создан в"
+                                            value={data?.CreatedAt ? `Создано: ${data.CreatedAt}` : ""}
+                                            disabled
+                                            id="CreatedAt"
+                                            style={{ width: "100%" }}
+                                        />
+
+                                        <Input
+                                            type="text"
+                                            className="div51"
+                                            placeholder="Обновлен в"
+                                            value={data?.UpdatedAt ? `Обновлено: ${data.UpdatedAt}` : ""}
+                                            disabled
+                                            id="UpdatedAt"
+                                        />
+                                    </>
+                                )}
                             </div>
                             <footer>
                                 <button onClick={() => onSend(false, false)} disabled={downloading || downloadingOffer}>

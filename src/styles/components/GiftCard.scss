@@ -1,1 +1,11 @@
 // empty
+
+.date-section {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-auto-rows: minmax(60px, auto);
+  animation: fadeIn 0.5s ease-out;
+
+  > div {
+    grid-area: auto !important;
+  }
+}

@@ -8,6 +8,7 @@ export default function Input({
   className = "",
   type = "text",
   defValue,
+  disabled = false,
   onEnter,
   style,
 }) {
@@ -25,6 +26,7 @@ export default function Input({
         defaultValue={defValue}
         placeholder={placeholder}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
