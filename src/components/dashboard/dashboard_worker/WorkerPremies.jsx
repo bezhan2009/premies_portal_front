@@ -227,11 +227,11 @@ export default function Dashboard() {
                         year={year}
                     />
                 </RenderPage>
-            </div>
-
-            <div className="dashboard__report">
                 <ReportButton navigateTo='/worker/reports' descButton='Отчет' />
             </div>
+
+            {/* <div className="dashboard__report">
+            </div> */}
         </>
     );
 }

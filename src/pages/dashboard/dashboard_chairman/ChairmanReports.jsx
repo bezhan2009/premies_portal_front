@@ -14,12 +14,12 @@ export default function DashboardChairmanReports() {
             <Helmet>
                 <title>Карты</title>
             </Helmet>
-            <div className={` ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+            {/* <div className={` ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}> */}
                 <Sidebar activeLink="chairman" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-                <div className="dashboard-container">
+                <div>
                     <GetBlockInfo page="chairman_reports" />
                 </div>
-            </div>
+            {/* </div> */}
         </>
     );
 }

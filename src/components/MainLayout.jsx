@@ -37,7 +37,7 @@ const MainLayout = () => {
         isOpen={isSidebarOpen}
         toggle={toggleSidebar}
       /> */}
-      <div className="main-content-wrapper">
+      <div className="main-content-wrapper dashboard-container">
         <Outlet />
       </div>
     </div>

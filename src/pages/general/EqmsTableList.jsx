@@ -6,10 +6,15 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
+import useSidebar from "../../hooks/useSideBar.js";
+import { tableDataDef } from "../../const/defConst.js";
+import Sidebar from "./DynamicMenu.jsx";
 
 export default function EQMSList() {
   const { data, setData } = useFormStore();
-  const [tableData, setTableData] = useState([]);
+  // const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState(tableDataDef);
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({});
@@ -519,229 +524,276 @@ export default function EQMSList() {
   }, [statementData]);
 
   return (
-    <div className="page-content-wrapper">
+    <>
       <div
-        className="applications-list"
-        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+        className={`dashboard-container ${
+          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+        }`}
+        style={{ paddingBottom: 0, paddingTop: 0 }}
       >
-        <main>
-          <div className="my-applications-header">
-            {!showStatement && (
-              <button
-                className={!showFilters ? "filter-toggle" : "Unloading"}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                Фильтры
-              </button>
-            )}
-            <pre> </pre>
-            {!showStatement && (
-              <>
+        <Sidebar
+          activeLink="terminal_names"
+          isOpen={isSidebarOpen}
+          toggle={toggleSidebar}
+        />
+        <div className="page-content-wrapper">
+          <div
+            className="applications-list"
+            style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+          >
+            <main>
+              <div className="my-applications-header">
+                {!showStatement && (
+                  <button
+                    className={!showFilters ? "filter-toggle" : "Unloading"}
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    Фильтры
+                  </button>
+                )}
+                <pre> </pre>
+                {!showStatement && (
+                  <>
+                    <button
+                      className="Unloading"
+                      onClick={handleExport}
+                      disabled={selectedRows.length === 0}
+                    >
+                      Выгрузка EQMS
+                    </button>
+                    <button
+                      className="save"
+                      onClick={handlePayAll}
+                      disabled={selectedRows.length === 0 || payingIds.size > 0}
+                    >
+                      Оплатить всё
+                    </button>
+                    <button
+                      className={selectAll ? "selectAll-toggle" : ""}
+                      onClick={toggleSelectAll}
+                    >
+                      {selectAll ? "Снять выделение" : "Выбрать все"}
+                    </button>
+                    <button className="edit" onClick={selectAllUnpaid}>
+                      Выбрать все неоплаченные
+                    </button>
+                    <button className="save" onClick={selectAllPaid}>
+                      Выбрать все оплаченные
+                    </button>
+                  </>
+                )}
                 <button
                   className="Unloading"
-                  onClick={handleExport}
-                  disabled={selectedRows.length === 0}
+                  onClick={handleFetchStatement}
+                  disabled={statementLoading}
                 >
-                  Выгрузка EQMS
+                  Просмотреть выписку с АБС
                 </button>
-                <button
-                  className="save"
-                  onClick={handlePayAll}
-                  disabled={selectedRows.length === 0 || payingIds.size > 0}
-                >
-                  Оплатить всё
-                </button>
-                <button
-                  className={selectAll ? "selectAll-toggle" : ""}
-                  onClick={toggleSelectAll}
-                >
-                  {selectAll ? "Снять выделение" : "Выбрать все"}
-                </button>
-                <button className="edit" onClick={selectAllUnpaid}>
-                  Выбрать все неоплаченные
-                </button>
-                <button className="save" onClick={selectAllPaid}>
-                  Выбрать все оплаченные
-                </button>
-              </>
-            )}
-            <button
-              className="Unloading"
-              onClick={handleFetchStatement}
-              disabled={statementLoading}
-            >
-              Просмотреть выписку с АБС
-            </button>
-            {!showStatement && (
-              <div className="selection-stats-card">
-                <div className="stat">
-                  <span className="label">Выбрано</span>
-                  <strong className="value">{totalSelected}</strong>
-                </div>
-                <div className="divider" />
-                <div className="stat">
-                  <span className="label">Оплачено всего</span>
-                  <strong className="value paid">{totalPaid}</strong>
-                </div>
-                <div className="divider" />
-                <div className="stat highlight">
-                  <span className="label">Сумма выбранных</span>
-                  <strong className="value amount">
-                    {totalAmountSelected.toLocaleString("ru-RU")} С
-                  </strong>
-                </div>
-              </div>
-            )}
-          </div>
-          {showFilters && !showStatement && (
-            <div className="filters animate-slideIn">
-              <input
-                placeholder="ID"
-                onChange={(e) =>
-                  setFilters((p) => ({
-                    ...p,
-                    id: e.target.value,
-                  }))
-                }
-              />
-              <input
-                placeholder="Doc ID"
-                onChange={(e) =>
-                  setFilters((p) => ({
-                    ...p,
-                    docId: e.target.value,
-                  }))
-                }
-              />
-              <input
-                placeholder="Transaction ID"
-                onChange={(e) =>
-                  setFilters((p) => ({
-                    ...p,
-                    transactionId: e.target.value,
-                  }))
-                }
-              />
-              <input
-                placeholder="Payer Name"
-                onChange={(e) =>
-                  setFilters((p) => ({
-                    ...p,
-                    payerName: e.target.value,
-                  }))
-                }
-              />
-              <input
-                placeholder="Receiver Name"
-                onChange={(e) =>
-                  setFilters((p) => ({
-                    ...p,
-                    recName: e.target.value,
-                  }))
-                }
-              />
-              <select
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, status: e.target.value }))
-                }
-              >
-                <option value="">Статус</option>
-                <option value="Pending">Pending</option>
-                <option value="Success">Success</option>
-                <option value="Failed">Failed</option>
-              </select>
-              <select
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, payedAt: e.target.value }))
-                }
-              >
-                <option value="">Статус оплаты</option>
-                <option value="paid">Оплачено</option>
-                <option value="not_paid">Не оплачено</option>
-              </select>
-              <input
-                placeholder="Amount"
-                type="number"
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, amount: e.target.value }))
-                }
-              />
-            </div>
-          )}
-          <div className="my-applications-sub-header">
-            {!showStatement && (
-              <>
-                <div>
-                  С{" "}
-                  <Input
-                    type="date"
-                    onChange={(e) => setData("eqms_start_date", e)}
-                    value={data?.eqms_start_date || ""}
-                    style={{ width: "150px" }}
-                    id="eqms_start_date"
-                  />
-                </div>
-                <div>
-                  По{" "}
-                  <Input
-                    type="date"
-                    onChange={(e) => setData("eqms_end_date", e)}
-                    value={data?.eqms_end_date || ""}
-                    style={{ width: "150px" }}
-                    id="eqms_end_date"
-                  />
-                </div>
-              </>
-            )}
-            {showStatement && (
-              <>
-                <div>
-                  Начальная дата для выписки:{" "}
-                  <Input
-                    type="date"
-                    onChange={(e) => setStartDate(e)}
-                    value={startDate}
-                    style={{ width: "150px" }}
-                  />
-                </div>
-                <div>
-                  Конечная дата для выписки:{" "}
-                  <Input
-                    type="date"
-                    onChange={(e) => setEndDate(e)}
-                    value={endDate}
-                    style={{ width: "150px" }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <div
-            className="my-applications-content"
-            style={{ position: "relative" }}
-          >
-            {showStatement ? (
-              <>
-                <button
-                  style={{
-                    /* здесь задайте нужные стили, заменяя класс "save" */
-                    backgroundColor: "#2566e8", // пример
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 16px",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                  }}
-                  onClick={() => setShowStatement(false)}
-                >
-                  Назад к списку EQMS
-                </button>
-                {statementLoading ? (
-                  <div style={{ textAlign: "center", padding: "2rem" }}>
-                    Загрузка выписки...
+                {!showStatement && (
+                  <div className="selection-stats-card">
+                    <div className="stat">
+                      <span className="label">Выбрано</span>
+                      <strong className="value">{totalSelected}</strong>
+                    </div>
+                    <div className="divider" />
+                    <div className="stat">
+                      <span className="label">Оплачено всего</span>
+                      <strong className="value paid">{totalPaid}</strong>
+                    </div>
+                    <div className="divider" />
+                    <div className="stat highlight">
+                      <span className="label">Сумма выбранных</span>
+                      <strong className="value amount">
+                        {totalAmountSelected.toLocaleString("ru-RU")} С
+                      </strong>
+                    </div>
                   </div>
-                ) : flatStatementData.length === 0 ? (
+                )}
+              </div>
+              {showFilters && !showStatement && (
+                <div className="filters animate-slideIn">
+                  <input
+                    placeholder="ID"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        id: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Doc ID"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        docId: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Transaction ID"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        transactionId: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Payer Name"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        payerName: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Receiver Name"
+                    onChange={(e) =>
+                      setFilters((p) => ({
+                        ...p,
+                        recName: e.target.value,
+                      }))
+                    }
+                  />
+                  <select
+                    onChange={(e) =>
+                      setFilters((p) => ({ ...p, status: e.target.value }))
+                    }
+                  >
+                    <option value="">Статус</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Success">Success</option>
+                    <option value="Failed">Failed</option>
+                  </select>
+                  <select
+                    onChange={(e) =>
+                      setFilters((p) => ({ ...p, payedAt: e.target.value }))
+                    }
+                  >
+                    <option value="">Статус оплаты</option>
+                    <option value="paid">Оплачено</option>
+                    <option value="not_paid">Не оплачено</option>
+                  </select>
+                  <input
+                    placeholder="Amount"
+                    type="number"
+                    onChange={(e) =>
+                      setFilters((p) => ({ ...p, amount: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
+              <div className="my-applications-sub-header">
+                {!showStatement && (
+                  <>
+                    <div>
+                      С{" "}
+                      <Input
+                        type="date"
+                        onChange={(e) => setData("eqms_start_date", e)}
+                        value={data?.eqms_start_date || ""}
+                        style={{ width: "150px" }}
+                        id="eqms_start_date"
+                      />
+                    </div>
+                    <div>
+                      По{" "}
+                      <Input
+                        type="date"
+                        onChange={(e) => setData("eqms_end_date", e)}
+                        value={data?.eqms_end_date || ""}
+                        style={{ width: "150px" }}
+                        id="eqms_end_date"
+                      />
+                    </div>
+                  </>
+                )}
+                {showStatement && (
+                  <>
+                    <div>
+                      Начальная дата для выписки:{" "}
+                      <Input
+                        type="date"
+                        onChange={(e) => setStartDate(e)}
+                        value={startDate}
+                        style={{ width: "150px" }}
+                      />
+                    </div>
+                    <div>
+                      Конечная дата для выписки:{" "}
+                      <Input
+                        type="date"
+                        onChange={(e) => setEndDate(e)}
+                        value={endDate}
+                        style={{ width: "150px" }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div
+                className="my-applications-content"
+                style={{ position: "relative" }}
+              >
+                {showStatement ? (
+                  <>
+                    <button
+                      style={{
+                        /* здесь задайте нужные стили, заменяя класс "save" */
+                        backgroundColor: "#2566e8", // пример
+                        color: "#fff",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                      onClick={() => setShowStatement(false)}
+                    >
+                      Назад к списку EQMS
+                    </button>
+                    {statementLoading ? (
+                      <div style={{ textAlign: "center", padding: "2rem" }}>
+                        Загрузка выписки...
+                      </div>
+                    ) : flatStatementData.length === 0 ? (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "2rem",
+                          color: "gray",
+                        }}
+                      >
+                        Нет данных для отображения в выписке
+                      </div>
+                    ) : (
+                      <table>
+                        <thead>
+                          <tr>
+                            {statementHeaders.map((header) => (
+                              <th key={header}>{header}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {flatStatementData.map((tx, index) => (
+                            <tr key={index}>
+                              {statementHeaders.map((header) => (
+                                <td key={header}>{tx[header]}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                ) : loading ? (
+                  <div style={{ textAlign: "center", padding: "2rem" }}>
+                    Загрузка...
+                  </div>
+                ) : sortedData.length === 0 ? (
                   <div
                     style={{
                       textAlign: "center",
@@ -749,280 +801,256 @@ export default function EQMSList() {
                       color: "gray",
                     }}
                   >
-                    Нет данных для отображения в выписке
+                    Нет данных для отображения
                   </div>
                 ) : (
                   <table>
                     <thead>
                       <tr>
-                        {statementHeaders.map((header) => (
-                          <th key={header}>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {flatStatementData.map((tx, index) => (
-                        <tr key={index}>
-                          {statementHeaders.map((header) => (
-                            <td key={header}>{tx[header]}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </>
-            ) : loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>
-                Загрузка...
-              </div>
-            ) : sortedData.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "2rem",
-                  color: "gray",
-                }}
-              >
-                Нет данных для отображения
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>
-                      <input
-                        type="checkbox"
-                        className="custom-checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    {tableHeaders.map((header) => (
-                      <th key={header}>
-                        {header === "resiFlg" ? "resiFlag" : header}
-                      </th>
-                    ))}
-                    <th>Оплачено в</th>
-                    <th className="active-table">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((row) => {
-                    const paymentStatus = getPaymentStatus(row);
-                    const isPaid =
-                      paymentStatus === "already_paid" ||
-                      paymentStatus === "paid";
-                    const isPaying = payingIds.has(row.id);
-
-                    return (
-                      <tr
-                        key={row.id}
-                        style={{
-                          backgroundColor: isPaid ? "#e6ffe6" : "transparent",
-                        }}
-                      >
-                        <td>
+                        <th>
                           <input
                             type="checkbox"
                             className="custom-checkbox"
-                            checked={selectedRows.includes(row.id)}
-                            onChange={(e) =>
-                              handleCheckboxToggle(row.id, e.target.checked)
-                            }
+                            checked={selectAll}
+                            onChange={toggleSelectAll}
                           />
-                        </td>
-                        {tableHeaders.map((header) => {
-                          let value = row[header];
-                          if (
-                            header.includes("date") ||
-                            header.includes("Date") ||
-                            header === "date" ||
-                            header === "docDate" ||
-                            header === "dateVal" ||
-                            header === "dataOpr"
-                          ) {
-                            value = formatDateForDisplay(value);
-                          } else if (header === "resiFlg") {
-                            value = value ? "Да" : "Нет";
-                          } else if (header === "status") {
-                            return (
-                              <td key={header}>
-                                {row.status === "pending" ? (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <FcProcess style={{ fontSize: 22 }} />
-                                    <span style={{ color: "orange" }}>
-                                      Pending
-                                    </span>
-                                  </div>
-                                ) : row.status === "success" ? (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <FcOk style={{ fontSize: 22 }} />
-                                    <span style={{ color: "green" }}>
-                                      Success
-                                    </span>
-                                  </div>
-                                ) : row.status === "failed" ? (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <FcCancel style={{ fontSize: 22 }} />
-                                    <span style={{ color: "red" }}>Failed</span>
-                                  </div>
-                                ) : (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <FcHighPriority style={{ fontSize: 22 }} />
-                                    <span>{row.status}</span>
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          }
-                          return <td key={header}>{value}</td>;
-                        })}
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              color: isPaid ? "green" : "gray",
-                              fontWeight: isPaid ? "500" : "normal",
-                            }}
-                          >
-                            {isPaid && <FcOk style={{ fontSize: 22 }} />}
-                            <br />
-                            <small style={{ opacity: 0.7 }}>
-                              {formatDateForDisplay(row.payedAt)}
-                            </small>
-                          </div>
-                        </td>
-                        <td className="active-table">
-                          <button
-                            className={`pay-button ${isPaid ? "paid" : ""}`}
-                            onClick={() =>
-                              row.status === "success"
-                                ? handlePay(row)
-                                : toast.error("Таможня не оплачена")
-                            }
-                            disabled={isPaying || isPaid}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "6px",
-                              border: "none",
-                              cursor:
-                                row.status !== "success"
-                                  ? "not-allowed"
-                                  : isPaid || isPaying
-                                  ? "not-allowed"
-                                  : "pointer",
-                              opacity:
-                                row.status === "success"
-                                  ? 1
-                                  : isPaying
-                                  ? 0.7
-                                  : isPaid
-                                  ? 0.6
-                                  : 0.6,
-                              color: isPaid || isPaying ? "#333" : "#333",
-                              fontWeight: "500",
-                              transition: "all 0.2s",
-                              minWidth: "120px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            {isPaying ? (
-                              <>Оплачивается...</>
-                            ) : isPaid ? (
-                              <>
-                                <img
-                                  src={PayedIcon}
-                                  width="24"
-                                  height="24"
-                                  alt="Оплачено"
-                                />
-                                Оплачено
-                              </>
-                            ) : (
-                              <>
-                                <img
-                                  src={PayIcon}
-                                  width="24"
-                                  height="24"
-                                  alt="Оплатить"
-                                />
-                                Оплатить
-                              </>
-                            )}
-                          </button>
-                        </td>
+                        </th>
+                        {tableHeaders.map((header) => (
+                          <th key={header}>
+                            {header === "resiFlg" ? "resiFlag" : header}
+                          </th>
+                        ))}
+                        <th>Оплачено в</th>
+                        <th className="active-table">Действия</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                    </thead>
+                    <tbody>
+                      {sortedData.map((row) => {
+                        const paymentStatus = getPaymentStatus(row);
+                        const isPaid =
+                          paymentStatus === "already_paid" ||
+                          paymentStatus === "paid";
+                        const isPaying = payingIds.has(row.id);
+
+                        return (
+                          <tr
+                            key={row.id}
+                            style={{
+                              backgroundColor: isPaid
+                                ? "#e6ffe6"
+                                : "transparent",
+                            }}
+                          >
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="custom-checkbox"
+                                checked={selectedRows.includes(row.id)}
+                                onChange={(e) =>
+                                  handleCheckboxToggle(row.id, e.target.checked)
+                                }
+                              />
+                            </td>
+                            {tableHeaders.map((header) => {
+                              let value = row[header];
+                              if (
+                                header.includes("date") ||
+                                header.includes("Date") ||
+                                header === "date" ||
+                                header === "docDate" ||
+                                header === "dateVal" ||
+                                header === "dataOpr"
+                              ) {
+                                value = formatDateForDisplay(value);
+                              } else if (header === "resiFlg") {
+                                value = value ? "Да" : "Нет";
+                              } else if (header === "status") {
+                                return (
+                                  <td key={header}>
+                                    {row.status === "pending" ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "10px",
+                                        }}
+                                      >
+                                        <FcProcess style={{ fontSize: 22 }} />
+                                        <span style={{ color: "orange" }}>
+                                          Pending
+                                        </span>
+                                      </div>
+                                    ) : row.status === "success" ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "10px",
+                                        }}
+                                      >
+                                        <FcOk style={{ fontSize: 22 }} />
+                                        <span style={{ color: "green" }}>
+                                          Success
+                                        </span>
+                                      </div>
+                                    ) : row.status === "failed" ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "10px",
+                                        }}
+                                      >
+                                        <FcCancel style={{ fontSize: 22 }} />
+                                        <span style={{ color: "red" }}>
+                                          Failed
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "10px",
+                                        }}
+                                      >
+                                        <FcHighPriority
+                                          style={{ fontSize: 22 }}
+                                        />
+                                        <span>{row.status}</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              }
+                              return <td key={header}>{value}</td>;
+                            })}
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  color: isPaid ? "green" : "gray",
+                                  fontWeight: isPaid ? "500" : "normal",
+                                }}
+                              >
+                                {isPaid && <FcOk style={{ fontSize: 22 }} />}
+                                <br />
+                                <small style={{ opacity: 0.7 }}>
+                                  {formatDateForDisplay(row.payedAt)}
+                                </small>
+                              </div>
+                            </td>
+                            <td className="active-table">
+                              <button
+                                className={`pay-button ${isPaid ? "paid" : ""}`}
+                                onClick={() =>
+                                  row.status === "success"
+                                    ? handlePay(row)
+                                    : toast.error("Таможня не оплачена")
+                                }
+                                disabled={isPaying || isPaid}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: "6px",
+                                  border: "none",
+                                  cursor:
+                                    row.status !== "success"
+                                      ? "not-allowed"
+                                      : isPaid || isPaying
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  opacity:
+                                    row.status === "success"
+                                      ? 1
+                                      : isPaying
+                                      ? 0.7
+                                      : isPaid
+                                      ? 0.6
+                                      : 0.6,
+                                  color: isPaid || isPaying ? "#333" : "#333",
+                                  fontWeight: "500",
+                                  transition: "all 0.2s",
+                                  minWidth: "120px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                {isPaying ? (
+                                  <>Оплачивается...</>
+                                ) : isPaid ? (
+                                  <>
+                                    <img
+                                      src={PayedIcon}
+                                      width="24"
+                                      height="24"
+                                      alt="Оплачено"
+                                    />
+                                    Оплачено
+                                  </>
+                                ) : (
+                                  <>
+                                    <img
+                                      src={PayIcon}
+                                      width="24"
+                                      height="24"
+                                      alt="Оплатить"
+                                    />
+                                    Оплатить
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
-      {alert && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={() => setAlert(null)}
-        />
-      )}
-      {showPayConfirmation && (
-        <div className="logout-confirmation">
-          <div className="confirmation-box">
-            <div>
-              <h1>Подтверждение оплаты</h1>
-              <p>
-                Вы уверены, что хотите оплатить все выбранные таможни?
-                <br />
-                Количество: {paymentsToProcess.length}
-                <br />
-                <br />
-                После подтверждения начнется процесс оплаты. Отменить операцию
-                будет невозможно.
-              </p>
+          {alert && (
+            <AlertMessage
+              message={alert.message}
+              type={alert.type}
+              onClose={() => setAlert(null)}
+            />
+          )}
+          {showPayConfirmation && (
+            <div className="logout-confirmation">
+              <div className="confirmation-box">
+                <div>
+                  <h1>Подтверждение оплаты</h1>
+                  <p>
+                    Вы уверены, что хотите оплатить все выбранные таможни?
+                    <br />
+                    Количество: {paymentsToProcess.length}
+                    <br />
+                    <br />
+                    После подтверждения начнется процесс оплаты. Отменить
+                    операцию будет невозможно.
+                  </p>
+                </div>
+                <div className="confirmation-buttons">
+                  <button
+                    className="confirm-btn"
+                    onClick={handleConfirmPayment}
+                  >
+                    Да, оплатить
+                  </button>
+                  <button className="cancel-btn" onClick={handleCancelPayment}>
+                    Отмена
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="confirmation-buttons">
-              <button className="confirm-btn" onClick={handleConfirmPayment}>
-                Да, оплатить
-              </button>
-              <button className="cancel-btn" onClick={handleCancelPayment}>
-                Отмена
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
