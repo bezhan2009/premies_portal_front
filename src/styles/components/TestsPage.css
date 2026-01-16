@@ -1,6 +1,6 @@
 .tests-module {
   width: 93%;
-  margin: 10px auto;
+  /* margin: 10px auto; */
   display: flex;
   gap: 20px;
   padding: 20px;

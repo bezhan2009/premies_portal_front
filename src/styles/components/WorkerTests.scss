@@ -1,14 +1,15 @@
 .worker-tests-page {
-  max-width: 97%;
-  margin: 10px auto;
-  padding: 0 20px;
-  height: calc(100vh - 165px);
+  // max-width: 97.5%;
+  // margin: 10px auto;
+  // padding: 0 20px;
+  // height: calc(100vh - 165px);
   font-family: "Roboto", sans-serif;
   animation: fadeIn 0.5s ease-out;
 }
 
 .worker-test-card {
   height: 100%;
+  width: 97.5%;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -207,7 +208,7 @@
 
 .worker-submit-bar {
   padding: 20px 40px;
-  background:   #fff3f3;
+  background: #fff3f3;
   border-top: 1px solid #ddd;
   display: flex;
   justify-content: flex-end;

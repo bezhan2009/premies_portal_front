@@ -3,23 +3,23 @@ body {
   margin: 0;
   padding: 0;
   animation: fadeIn 0.5s ease-out;
+  font-family: "Inter", sans-serif;
 }
 
-
 ::selection {
-  background-color: #dd3a37; 
+  background-color: #e21a1c;
   color: white;
 }
 
 /* Для Firefox */
 ::-moz-selection {
-  background-color: #dd3a37;
+  background-color: #e21a1c;
   color: white;
 }
 
 /* Кастомный фокус для всех элементов */
 :focus {
-  outline: 2px solid #f32121;
+  outline: 2px solid #e21a1c;
   outline-offset: 2px;
 }
 
@@ -29,8 +29,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(243, 33, 33, 0.3);
-  border-color: #f32121;
+  box-shadow: 0 0 0 3px rgba(226, 26, 28, 0.3);
+  border-color: #e21a1c;
 }
 
 /* Для кнопок в вашем EQMS */
@@ -577,10 +577,10 @@ tr:nth-child(14) {
 
 .gift-card,
 .gift-card-credit {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 30px;
+  // display: flex;
+  // justify-content: center;
+  // align-items: center;
+  // margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
   main {
@@ -880,7 +880,6 @@ tr:nth-child(14) {
   background-color: transparent;
 }
 
-
 .applications-list {
   display: flex;
   height: calc(100vh - 130px);
@@ -1021,6 +1020,23 @@ body {
   overflow-x: hidden;
 }
 
+.main-content-wrapper {
+  flex: 1;
+  // padding: 24px;
+  overflow-y: auto;
+  height: 100vh;
+  background-color: #f1f1f1;
+}
+
+.page-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .modal {
   > main {
     width: 95vw;
@@ -1040,7 +1056,7 @@ body {
   // height: auto;
   // min-height: 100vh;
   // padding: 0 2vw;
-  margin-top: 30px;
+  // margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
   > main {
@@ -1048,8 +1064,8 @@ body {
     // max-height: 90vh;
     overflow: hidden;
     // padding: 2vh 2vw;
-    width: 95%;
-    margin: 0 auto;
+    // width: 95%;
+    // margin: 0 auto;
     animation: fadeIn 0.4s ease-out;
 
     .content-form {

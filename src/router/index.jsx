@@ -61,7 +61,7 @@ import UpdatingTransactionType from "../pages/general/TransactionTypes.jsx";
 import DashboardFrontovikAbsSearch from "../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
 import TerminalNames from "../pages/general/TerminalNames.jsx";
 import AccountOperations from "../pages/general/AccountOperations.jsx";
-
+import MainLayout from "../components/MainLayout.jsx";
 
 export default function AppRouter() {
   return (
@@ -75,7 +75,7 @@ export default function AppRouter() {
         <Route
           element={
             <RequireAuth>
-              <Outlet />
+              <MainLayout />
             </RequireAuth>
           }
         >
@@ -294,43 +294,49 @@ export default function AppRouter() {
           />
         </Route>
 
-          <Route
-              element={
-                  <RequireRole allowedRoles={[16]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route path="agent-custom/eqms" element={<EQMSList />} />
-          </Route>
+        <Route
+          element={
+            <RequireRole allowedRoles={[16]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route path="agent-custom/eqms" element={<EQMSList />} />
+        </Route>
 
+        <Route
+          element={
+            <RequireRole allowedRoles={[17]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
           <Route
-              element={
-                  <RequireRole allowedRoles={[17]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route path="frontovik/abs-search" element={<DashboardFrontovikAbsSearch />} />
-              <Route path="frontovik/account-operations" element={<AccountOperations />} />
-          </Route>
+            path="frontovik/abs-search"
+            element={<DashboardFrontovikAbsSearch />}
+          />
+          <Route
+            path="frontovik/account-operations"
+            element={<AccountOperations />}
+          />
+        </Route>
 
+        <Route
+          element={
+            <RequireRole allowedRoles={[18]}>
+              <Outlet />
+            </RequireRole>
+          }
+        >
           <Route
-              element={
-                  <RequireRole allowedRoles={[18]}>
-                      <Outlet />
-                  </RequireRole>
-              }
-          >
-              <Route
-                  path="/processing/limits"
-                  element={<DashboardOperatorProcessing />}
-              />
-              <Route
-                  path="/processing/transactions"
-                  element={<DashboardOperatorProcessingTransactions />}
-              />
-          </Route>
+            path="/processing/limits"
+            element={<DashboardOperatorProcessing />}
+          />
+          <Route
+            path="/processing/transactions"
+            element={<DashboardOperatorProcessingTransactions />}
+          />
+        </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>

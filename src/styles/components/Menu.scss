@@ -1,4 +1,4 @@
-@import '../mixins/general.scss';
+@import "../mixins/general.scss";
 
 .header {
   display: flex;
@@ -6,7 +6,7 @@
   align-items: center;
   width: 99%;
   background: white;
-  padding: 0.50rem 1rem;
+  padding: 0.5rem 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   position: relative;
 
@@ -15,7 +15,7 @@
     align-items: center;
 
     img:hover {
-      @include hover-opacity
+      @include hover-opacity;
     }
 
     .nav-links {
@@ -29,15 +29,15 @@
         text-decoration: none;
         color: #333;
         font-weight: 470;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         padding: 0.5rem 0;
 
         &:hover {
-          @include hover-opacity
+          @include hover-opacity;
         }
 
         &::after {
-          content: '';
+          content: "";
           position: absolute;
           left: 50%;
           transform: translateX(-50%) scaleX(0);
@@ -99,9 +99,8 @@
           background: white;
           border-radius: 12px;
           padding: 8px;
-          box-shadow:
-                  0 20px 40px rgba(0, 0, 0, 0.1),
-                  0 0 0 1px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1),
+            0 0 0 1px rgba(0, 0, 0, 0.05);
           backdrop-filter: blur(20px);
           min-width: 280px;
 
@@ -230,7 +229,7 @@
     span {
       font-size: 0.9rem;
       font-weight: 470;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
   }
 }
@@ -311,7 +310,7 @@
   }
 
   .change-password-btn {
-    opacity: .9;
+    opacity: 0.9;
     margin-left: 6px;
     background: transparent;
     font-family: sans-serif;
@@ -371,7 +370,7 @@
     padding-bottom: 8px;
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       left: 0;
       bottom: 0;
@@ -477,8 +476,12 @@
 
 /* Анимации */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalSlideUp {
@@ -493,9 +496,18 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
 }
 
 // Добавьте эти стили в существующий SCSS
@@ -539,9 +551,7 @@
     background: white;
     border-radius: 12px;
     padding: 8px;
-    box-shadow:
-            0 20px 40px rgba(0, 0, 0, 0.1),
-            0 0 0 1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(20px);
     min-width: 280px;
 
@@ -688,12 +698,12 @@
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(227, 25, 25, 0.7);
   }
-  
+
   70% {
     transform: scale(1);
     box-shadow: 0 0 0 6px rgba(227, 25, 25, 0);
   }
-  
+
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(227, 25, 25, 0);
@@ -704,43 +714,48 @@
   position: relative;
   display: flex;
   align-items: center;
-  
+
   &.active .notification-dot {
     background-color: white;
   }
 }
 
-@import '../mixins/general.scss';
+@import "../mixins/general.scss";
 
 .dashboard-container {
-  padding-left: 60px;
+  // padding-left: 60px;
   transition: padding-left 0.3s ease;
+  display: flex;
+  gap: 20px;
+  > div {
+    flex: 1;
+    width: auto;
+  }
 }
 
 .dashboard-container.sidebar-open {
-  padding-left: 260px;
+  // padding-left: 120px;
 }
 
-.applications-list {
-  padding-left: 20px;
-}
+// .applications-list {
+//   padding-left: 20px;
+// }
 
 .gift-card {
-  padding-left: 20px;
+  // padding-left: 20px;
 }
 
 .gift-card-credit {
-  padding-left: 20px;
+  // padding-left: 20px;
 }
 
-.my-applications {
-  padding-left: 20px;
-}
+// .my-applications {
+//   padding-left: 20px;
+// }
 
 .block_info_prems {
   position: relative;
 }
-
 
 @media (max-width: 768px) {
   .dashboard-container {
@@ -760,9 +775,9 @@
   background: white;
   padding: 1rem;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
-  position: fixed;  
-  left: 0;
-  top: 0;
+  // position: fixed;
+  // left: 0;
+  // top: 0;
   transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
   z-index: 1000;
   border-radius: 0 16px 16px 0;
@@ -792,7 +807,7 @@
 }
 
 .sidebar-top img:hover {
-  @include hover-opacity
+  @include hover-opacity;
 }
 
 .nav-links {
@@ -802,14 +817,16 @@
   flex: 1;
   overflow-y: auto;
   opacity: 1;
-  transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 0.2s transform cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    0.2s transform cubic-bezier(0.25, 0.1, 0.25, 1);
   a {
     position: relative;
     overflow: hidden;
     text-decoration: none;
     color: #333;
     font-weight: 470;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     padding: 0.75rem 1rem;
     border-radius: 6px;
     display: flex;
@@ -846,7 +863,7 @@
   text-align: left;
   color: #333;
   font-weight: 570;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 0.96rem;
   padding: 0.75rem 1rem;
   border-radius: 6px;
@@ -939,7 +956,7 @@
   padding-top: 0.5rem;
   border-top: none;
   .username-wrapper {
-      @include hide-focuc;
+    @include hide-focuc;
   }
 }
 
@@ -1044,7 +1061,7 @@
     }
   }
   .change-password-btn {
-    opacity: .9;
+    opacity: 0.9;
     margin-left: 6px;
     background: transparent;
     font-family: sans-serif;
@@ -1100,7 +1117,7 @@
     position: relative;
     padding-bottom: 8px;
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       left: 0;
       bottom: 0;
@@ -1193,8 +1210,12 @@
 
 /* Анимации */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalSlideUp {
@@ -1209,8 +1230,16 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
 }
-
