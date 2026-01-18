@@ -329,7 +329,7 @@ export default function TransactionsQR() {
               >
                 Фильтры
               </button>
-              <div style={{ display: "flex", gap: "50px" }}>
+              {/* <div style={{ display: "flex", gap: "50px" }}> */}
                 <button
                   className={`archive-toggle-activ ${
                     isUsOnThem ? "active" : ""
@@ -355,7 +355,7 @@ export default function TransactionsQR() {
                 >
                   Наш QR — чужой клиент (Them on Us)
                 </button>
-              </div>
+              {/* </div> */}
 
               <button
                 className="Unloading"
