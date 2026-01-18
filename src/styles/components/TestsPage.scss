@@ -38,7 +38,9 @@
       padding: 10px 8px;
       cursor: pointer;
       border-radius: 4px;
-      transition: background 0.2s, transform 0.2s;
+      transition:
+        background 0.2s,
+        transform 0.2s;
       animation: fadeIn 0.6s ease;
 
       &:hover,
@@ -81,7 +83,9 @@
   border: 1px solid #dcdcdc;
   border-radius: 8px;
   padding: 20px;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
   animation: fadeIn 0.6s ease;
   margin-bottom: 20px;
 
@@ -232,17 +236,17 @@
 
 select {
   padding: 8px 12px;
-  border: 2px solid #6b3dcf;
+  border: 2px solid #e21a1c;
   border-radius: 4px;
   font-size: 16px;
   outline: none;
   color: #fff;
-  background-color: #6b3dcf;
+  background-color: #e21a1c;
 }
 
 option {
   color: #fff;
-  background-color: #6b3dcf;
+  background-color: #e21a1c;
 }
 
 select:hover {
@@ -266,7 +270,9 @@ option:hover {
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
     transform: scale(1.02);
@@ -285,7 +291,7 @@ option:hover {
     }
 
     .answer-type {
-      background: #6b3dcf;
+      background: #e21a1c;
       color: #fff;
       padding: 4px 8px;
       border-radius: 4px;

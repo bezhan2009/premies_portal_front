@@ -1,10 +1,10 @@
-@import 'variables/general';
-@import 'variables/input';
-@import 'mixins/general';
+@import "variables/general";
+@import "variables/input";
+@import "mixins/general";
 
 body {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .login-container {
@@ -40,8 +40,8 @@ body {
       font-size: 0.9rem;
 
       &::placeholder {
-          color: #999;
-          font-weight: 700;
+        color: #999;
+        font-weight: 700;
       }
     }
 
@@ -99,7 +99,7 @@ body {
     // Обёртка для каждой строки чекбокса
     > div {
       display: flex;
-      align-items: center;        // идеальное вертикальное центрирование
+      align-items: center; // идеальное вертикальное центрирование
       justify-content: flex-start;
       margin-bottom: 0.75rem;
       padding: 0.4rem 0;
@@ -155,7 +155,7 @@ body {
   position: fixed;
   top: 20px;
   left: 20px;
-  background: #e31e24;
+  background: #e21a1c;
   color: white;
   border: none;
   border-radius: 50%;
@@ -172,7 +172,7 @@ body {
 }
 
 .back-button:hover {
-  background: #b61b20;
+  background: #c31414;
   transform: scale(1.1);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -195,7 +195,6 @@ body {
     font-size: 16px;
   }
 }
-
 
 .error {
   color: #e21a1c;

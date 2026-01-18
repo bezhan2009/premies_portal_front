@@ -1,9 +1,9 @@
 body {
-  background: #f1f1f1;
+  background: white;
   margin: 0;
   padding: 0;
   animation: fadeIn 0.5s ease-out;
-  font-family: "Inter", sans-serif;
+  font-family: sans-serif;
 }
 
 ::selection {
@@ -78,7 +78,7 @@ textarea:focus {
 }
 
 .archive-toggle {
-  background-color: #2566e8 !important;
+  background-color: #999 !important;
 }
 
 .archive-toggle-activ {
@@ -129,7 +129,7 @@ table {
   border-collapse: collapse;
   width: 100%;
   // min-height: 1400px;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: sans-serif;
   font-size: 14px;
   background: white;
   border-radius: 8px;
@@ -139,7 +139,7 @@ table {
     position: sticky;
     top: 0;
     background-color: white;
-    border-bottom: 2px solid #ff4757;
+    border-bottom: 2px solid #e21a1c;
     z-index: 2;
   }
 }
@@ -175,7 +175,7 @@ tr {
 
 /* Подсветка строки при наведении */
 tr:hover td {
-  background: rgba(255, 71, 87, 0.03);
+  background: rgba(226, 26, 28, 0.03);
 }
 
 /* Разделители столбцов (тонкие линии) */
@@ -917,11 +917,11 @@ tr:nth-child(14) {
       }
 
       .edit {
-        background-color: #6b3dcf;
+        background-color: #999;
       }
 
       .save {
-        background-color: #2566e8;
+        background-color: #e21a1c;
       }
 
       .Unloading {
@@ -1226,7 +1226,9 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s, transform 0.2s;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
 }
 
 .custom-modal-close:hover {
@@ -1259,7 +1261,9 @@ body {
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 16px;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -1348,7 +1352,9 @@ option {
   background-color: #ff1a1a; /* Зеленый фон */
   padding: 10px;
   border-radius: 8px;
-  transition: background-color 0.3s, transform 0.2s;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
 }
 
 /* При наведении - изменение цвета и поднятие */

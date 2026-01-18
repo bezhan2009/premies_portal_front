@@ -55,7 +55,10 @@ div.scrolling::-webkit-scrollbar-thumb {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
   font-size: 14px;
   background: white;
   border-radius: 8px;
@@ -797,10 +800,10 @@ tr:nth-child(14) {
   background-color: #999;
 }
 .applications-list > main .my-applications-header .edit {
-  background-color: #6b3dcf;
+  background-color: #999;
 }
 .applications-list > main .my-applications-header .save {
-  background-color: #2566e8;
+  background-color: #e21a1c;
 }
 .applications-list > main .my-applications-header .Unloading {
   background-color: green;
@@ -1063,7 +1066,9 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s, transform 0.2s;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
 }
 
 .custom-modal-close:hover {
@@ -1092,7 +1097,9 @@ body {
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 16px;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -1177,7 +1184,9 @@ option {
   background-color: #ff1a1a; /* Зеленый фон */
   padding: 10px;
   border-radius: 8px;
-  transition: background-color 0.3s, transform 0.2s;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
 }
 
 /* При наведении - изменение цвета и поднятие */

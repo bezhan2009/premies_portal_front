@@ -21,7 +21,7 @@
 }
 .knowledge-module {
   width: 93%;
-   /*height: calc(100vh - 170px); */
+  /*height: calc(100vh - 170px); */
   /* margin: 10px auto; */
   display: flex;
   gap: 20px;
@@ -61,10 +61,13 @@
   border-radius: 4px;
   display: flex;
   align-items: center;
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
   animation: fadeIn 0.6s ease;
 }
-.kb-sidebar ul li.active, .kb-sidebar ul li:hover {
+.kb-sidebar ul li.active,
+.kb-sidebar ul li:hover {
   background: #fff3f3;
   transform: scale(1.02);
 }
@@ -114,7 +117,10 @@
   border-radius: 8px;
   padding: 16px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
   animation: fadeIn 0.6s ease;
 }
 .kb-detail .kb-items .kb-item:hover {
@@ -164,7 +170,7 @@
   width: 24px;
   height: 24px;
   -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
   margin-right: 8px;
 }
 .kb-detail .kb-docs-list li a:hover,
@@ -239,7 +245,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-.kb-modal-content input[type=file] {
+.kb-modal-content input[type="file"] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -249,15 +255,17 @@
   border: 1px solid #ccc;
   background-color: #f9f9f9;
   cursor: pointer;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
   /* Кнопка внутри file-input */
 }
-.kb-modal-content input[type=file]:focus {
+.kb-modal-content input[type="file"]:focus {
   border-color: #c31414;
   box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
-.kb-modal-content input[type=file]::file-selector-button {
+.kb-modal-content input[type="file"]::file-selector-button {
   background-color: #c31414;
   color: #fff;
   border: none;
@@ -268,7 +276,7 @@
   margin-right: 10px;
   transition: background-color 0.3s ease;
 }
-.kb-modal-content input[type=file]::file-selector-button:hover {
+.kb-modal-content input[type="file"]::file-selector-button:hover {
   background-color: rgb(148.7441860465, 15.2558139535, 15.2558139535);
 }
 
@@ -287,7 +295,7 @@
   cursor: pointer;
 }
 .kb-modal-actions button:hover {
-  background: #6b3dcf;
+  background: #e21a1c;
 }
 
 .kb-doc-item {
@@ -313,4 +321,4 @@
 .kb-doc-actions span {
   margin-left: 8px;
   cursor: pointer;
-}/*# sourceMappingURL=KnowledgeBase.css.map */
+} /*# sourceMappingURL=KnowledgeBase.css.map */

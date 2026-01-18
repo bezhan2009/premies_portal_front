@@ -63,7 +63,9 @@
       border-radius: 4px;
       display: flex;
       align-items: center;
-      transition: background 0.2s, transform 0.2s;
+      transition:
+        background 0.2s,
+        transform 0.2s;
       animation: fadeIn 0.6s ease;
 
       &.active,
@@ -122,7 +124,10 @@
       border-radius: 8px;
       padding: 16px;
       cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      transition:
+        border-color 0.2s,
+        box-shadow 0.2s,
+        transform 0.2s;
       animation: fadeIn 0.6s ease;
 
       &:hover {
@@ -269,7 +274,9 @@
     border: 1px solid #ccc;
     background-color: #f9f9f9;
     cursor: pointer;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
 
     &:focus {
       border-color: #c31414;
@@ -311,7 +318,7 @@
     cursor: pointer;
 
     &:hover {
-      background: #6b3dcf;
+      background: #e21a1c;
     }
   }
 }

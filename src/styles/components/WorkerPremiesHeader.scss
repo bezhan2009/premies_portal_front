@@ -1,15 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 
 .header-premis {
-  width: 90%;
-  max-width: 1200px;
+  width: calc(100% - 32px);
+  // max-width: 1200px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(183, 155, 255, 0.3);
+  background: rgba(227, 25, 25, 0.1);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  margin: 0 auto 20px;
+  // margin: 0 auto 20px;
   padding: 12px 16px;
   font-family: "Roboto", sans-serif;
   animation: fadeIn 0.5s ease-out;

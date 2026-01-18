@@ -725,12 +725,14 @@
 .dashboard-container {
   // padding-left: 60px;
   transition: padding-left 0.3s ease;
+  background: #f1f1f1 !important;
   display: flex;
   gap: 20px;
   > div {
     flex: 1;
     width: auto;
     overflow: auto;
+    // margin:20px 0; 
   }
 }
 

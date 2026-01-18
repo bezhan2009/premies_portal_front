@@ -1,8 +1,8 @@
 // Variables
-$primary-color: #6b3dcf;
-$primary-hover: #5a32b3;
-$primary-light: rgba(107, 61, 207, 0.1);
-$primary-glow: rgba(107, 61, 207, 0.3);
+$primary-color: #e21a1c;
+$primary-hover: #c31414;
+$primary-light: rgba(226, 26, 28, 0.1);
+$primary-glow: rgba(226, 26, 28, 0.3);
 
 $danger-color: #c31414;
 $danger-hover: #a01212;
@@ -42,14 +42,14 @@ $gray-900: #111827;
 
 @mixin card-shadow {
   box-shadow:
-          0 6px 8px -1px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    0 6px 8px -1px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }
 
 @mixin card-shadow-hover {
   box-shadow:
-          0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
 // Keyframes for simple animations
@@ -87,13 +87,21 @@ $gray-900: #111827;
 }
 
 @keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
@@ -240,7 +248,7 @@ $gray-900: #111827;
       color: transparent;
 
       &::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 50%;
         left: 50%;
@@ -680,7 +688,7 @@ $gray-900: #111827;
     overflow-x: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
     line-height: 1.5;
   }
 }
@@ -1013,107 +1021,106 @@ $gray-900: #111827;
 
 // === ПОЛЯ ДАТ — ПОЛНОСТЬЮ ОБНОВЛЁННЫЕ СТИЛИ ===
 .search-card__date-group {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex: 1;
-    min-width: 300px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex: 1;
+  min-width: 300px;
 }
 
 .date-input-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 140px;
 }
 
 .search-card__date-input {
-    width: 100%;
-    padding: 1rem 1.25rem; // Точно такой же, как у основного input
-    border: 2px solid $gray-300;
-    border-radius: 0.75rem;
-    font-size: 1rem;
-    background: white;
-    height: 3.5rem; // Фиксированная высота = 56px (как у основного input)
-    box-sizing: border-box;
-    @include smooth-transition;
+  width: 100%;
+  padding: 1rem 1.25rem; // Точно такой же, как у основного input
+  border: 2px solid $gray-300;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background: white;
+  height: 3.5rem; // Фиксированная высота = 56px (как у основного input)
+  box-sizing: border-box;
+  @include smooth-transition;
 
-    // Убираем стандартные стили браузера для input[type=date]
-    appearance: none;
-    -webkit-appearance: none;
+  // Убираем стандартные стили браузера для input[type=date]
+  appearance: none;
+  -webkit-appearance: none;
 
-    &:focus {
-        outline: none;
-        border-color: $danger-color;
-        box-shadow: 0 0 0 3px $danger-light;
+  &:focus {
+    outline: none;
+    border-color: $danger-color;
+    box-shadow: 0 0 0 3px $danger-light;
+  }
+
+  &:disabled {
+    background: $gray-100;
+    color: $gray-500;
+    cursor: not-allowed;
+  }
+
+  // Стили для иконки календаря (опционально, если браузер показывает)
+  &::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    margin-left: 8px;
+
+    &:hover {
+      opacity: 1;
     }
-
-    &:disabled {
-        background: $gray-100;
-        color: $gray-500;
-        cursor: not-allowed;
-    }
-
-    // Стили для иконки календаря (опционально, если браузер показывает)
-    &::-webkit-calendar-picker-indicator {
-        cursor: pointer;
-        opacity: 0.6;
-        margin-left: 8px;
-
-        &:hover {
-            opacity: 1;
-        }
-    }
+  }
 }
 
 .date-separator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: $gray-500;
-    padding-bottom: 1rem; // Выравнивание с полями
-    min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $gray-500;
+  padding-bottom: 1rem; // Выравнивание с полями
+  min-width: 30px;
 }
 
 // Кнопки
 .search-card__buttons {
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .search-card__button--secondary {
-    padding: 1.1rem 1.8rem;
-    background: $gray-600;
-    color: white;
-    border: none;
-    border-radius: 0.75rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    @include smooth-transition;
-    height: 3.5rem; // Такая же высота, как у полей
+  padding: 1.1rem 1.8rem;
+  background: $gray-600;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  @include smooth-transition;
+  height: 3.5rem; // Такая же высота, как у полей
 
-    &:hover:not(:disabled) {
-        background: $gray-700;
-    }
+  &:hover:not(:disabled) {
+    background: $gray-700;
+  }
 
-    &:disabled {
-        background: $gray-400;
-        cursor: not-allowed;
-    }
+  &:disabled {
+    background: $gray-400;
+    cursor: not-allowed;
+  }
 }
 
 .date-range {
-    background: rgba(0, 102, 204, 0.1);
-    color: #0066cc;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    margin-left: 16px;
+  background: rgba(0, 102, 204, 0.1);
+  color: #0066cc;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 16px;
 }
-
