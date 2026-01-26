@@ -1,98 +1,613 @@
-// Стили для таблицы транзакций
-.limits-table__container {
+// Variables
+$primary-color: #e21a1c;
+$primary-hover: #c31414;
+$primary-light: rgba(226, 26, 28, 0.1);
+$primary-glow: rgba(226, 26, 28, 0.3);
+
+$secondary-color: #e21a1c;
+$secondary-hover: #c31414;
+$secondary-light: rgba(185, 69, 69, 0.1);
+
+$danger-color: #c31414;
+$danger-hover: #a01212;
+$danger-light: rgba(195, 20, 20, 0.1);
+$danger-glow: rgba(195, 20, 20, 0.3);
+
+$success-color: #10b981;
+$success-hover: #059669;
+$warning-color: #f59e0b;
+$warning-hover: #d97706;
+
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+
+// Mixins
+@mixin flex-center {
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
-.limits-table__wrapper {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 70vh;
-  position: relative;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 16px;
+@mixin smooth-transition {
+  transition: all 0.3s ease;
 }
 
-.limits-table__content {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1500px; // Минимальная ширина для всех колонок
+@mixin fast-transition {
+  transition: all 0.2s ease;
 }
 
-.limits-table__head {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+@mixin card-shadow {
+  box-shadow:
+          0 6px 8px -1px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+@mixin card-shadow-hover {
+  box-shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+// Keyframes for simple animations
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.limits-table__body {
-  background: white;
+@keyframes slideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.limits-table__row {
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s ease;
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Main component styles
+.processing-integration {
+  min-height: 100vh;
+  padding: 2rem 0;
+  animation: fadeInUp 0.6s ease;
+
+  &__container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeInUp 0.6s ease 0.1s both;
+  }
+
+  &__title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: $primary-color;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  &__subtitle {
+    font-size: 1.125rem;
+    color: $gray-600;
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+}
+
+// Search card styles
+.processing-integration__search-card {
+  animation: slideInFromLeft 0.6s ease 0.2s both;
+}
+
+.search-card {
+  border-radius: 1rem;
+  @include card-shadow;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  @include smooth-transition;
 
   &:hover {
-    background-color: #f8f9fa;
+    @include card-shadow-hover;
+    transform: translateY(-2px);
   }
 
-  &:last-child {
-    border-bottom: none;
+  &__content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-end;
+  }
+
+  &__select-group {
+    position: relative;
+    width: 100%;
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $gray-700;
+    margin-bottom: 0.75rem;
+  }
+
+  &__select {
+    width: 100%;
+    padding: 0rem 1.25rem;
+    border: 2px solid $gray-300;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    background: white;
+    appearance: none;
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    cursor: pointer;
+    @include smooth-transition;
+
+    &:hover {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px $secondary-light;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px $secondary-light;
+    }
+
+    option {
+      padding: 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  &__input-group {
+    flex: 1;
+    min-width: 200px;
+
+    &:only-child {
+      flex: 2;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid $gray-300;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    background: white;
+    @include smooth-transition;
+
+    &:focus {
+      outline: none;
+      border-color: $danger-color;
+      box-shadow: 0 0 0 3px $danger-light;
+    }
+
+    &::placeholder {
+      color: $gray-400;
+    }
+  }
+
+  // Специальный стиль для полей суммы
+  &__amount-group {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+
+    .search-card__input-group {
+      flex: 1;
+    }
+  }
+
+  &__date-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1;
+    min-width: 300px;
+  }
+
+  &__date-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid $gray-300;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    background: white;
+    height: 3.5rem;
+    box-sizing: border-box;
+    @include smooth-transition;
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+      outline: none;
+      border-color: $danger-color;
+      box-shadow: 0 0 0 3px $danger-light;
+    }
+
+    &:disabled {
+      background: $gray-100;
+      color: $gray-500;
+      cursor: not-allowed;
+    }
+
+    &::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      margin-left: 8px;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  &__buttons {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  &__button {
+    padding: 1.1rem 2.1rem;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transform: translateY(-1px);
+    cursor: pointer;
+    height: 3.5rem;
+    @include smooth-transition;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+      box-shadow: 0 0 0 3px $primary-light;
+    }
+
+    &:active {
+      outline: none;
+      transform: translateZ(-1px);
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px $primary-light;
+    }
+
+    &:disabled {
+      background: $gray-400;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    &--loading {
+      position: relative;
+      color: transparent;
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    &--secondary {
+      background: $gray-600;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: $gray-700;
+      }
+
+      &:disabled {
+        background: $gray-400;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 140px;
+}
+
+.date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $gray-500;
+  padding-bottom: 1rem;
+  min-width: 30px;
+}
+
+// Limits table styles
+.processing-integration__limits-table {
+  animation: slideInFromRight 0.6s ease 0.3s both;
+}
+
+.limits-table {
+  background: white;
+  border-radius: 1rem;
+  @include card-shadow;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  @include smooth-transition;
+
+  &:hover {
+    @include card-shadow-hover;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    border-bottom: 1px solid $gray-200;
+    background: $gray-50;
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin: 0;
+  }
+
+  &__container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  &__wrapper {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 70vh;
+    position: relative;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  &__content {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 2000px;
+  }
+
+  &__head {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: $gray-50;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  &__th {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: $gray-600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    background: $gray-50;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  &__body {
+    background: white;
+  }
+
+  &__row {
+    @include smooth-transition;
+
+    &:hover {
+      background: $gray-50;
+      transform: translateX(2px);
+    }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid $gray-200;
+    }
+  }
+
+  &__td {
+    padding: 1.25rem 1.5rem;
+    font-size: 0.875rem;
+    border-right: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &--value {
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    &--info {
+      font-weight: 600;
+      color: $gray-800;
+    }
+  }
+
+  &__footer {
+    padding: 1.5rem 2rem;
+    background: $gray-50;
+    border-top: 1px solid $gray-200;
+  }
+
+  &__stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  &__stat {
+    font-size: 0.875rem;
+    color: $gray-600;
+    font-weight: 500;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: $primary-color;
+      margin-right: 8px;
+    }
+
+    &:nth-child(2)::before {
+      background-color: $secondary-color;
+    }
+
+    &:nth-child(3)::before {
+      background-color: $success-color;
+    }
+
+    &:nth-child(4)::before {
+      background-color: $warning-color;
+    }
   }
 }
 
 // Стили для строк с разными типами транзакций
 .transaction-row {
   &.transaction-row--type-1 {
-    background-color: rgba(76, 175, 80, 0.08); // Зеленый полупрозрачный
+    background-color: rgba(76, 175, 80, 0.08);
+
     &:hover {
-      background-color: rgba(76, 175, 80, 0.15); // Более насыщенный при наведении
+      background-color: rgba(76, 175, 80, 0.15);
     }
   }
 
   &.transaction-row--type-2 {
-    background-color: rgba(244, 67, 54, 0.08); // Красный полупрозрачный
+    background-color: rgba(244, 67, 54, 0.08);
+
     &:hover {
-      background-color: rgba(244, 67, 54, 0.15); // Более насыщенный при наведении
+      background-color: rgba(244, 67, 54, 0.15);
     }
   }
 
   &.transaction-row--type-3 {
-    background-color: rgba(255, 193, 7, 0.08); // Желтый полупрозрачный
+    background-color: rgba(255, 193, 7, 0.08);
+
     &:hover {
-      background-color: rgba(255, 193, 7, 0.15); // Более насыщенный при наведении
+      background-color: rgba(255, 193, 7, 0.15);
     }
   }
 
   &.transaction-row--type-4 {
-    background-color: rgba(33, 150, 243, 0.08); // Синий полупрозрачный
+    background-color: rgba(33, 150, 243, 0.08);
+
     &:hover {
-      background-color: rgba(33, 150, 243, 0.15); // Более насыщенный при наведении
+      background-color: rgba(33, 150, 243, 0.15);
     }
-  }
-}
-
-.limits-table__td {
-  padding: 12px;
-  font-size: 14px;
-  color: #333;
-  border-right: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-right: none;
   }
 }
 
@@ -141,105 +656,107 @@
     color: #616161;
     border: 1px solid rgba(158, 158, 158, 0.2);
   }
-
-  &--unknown {
-    background-color: rgba(96, 125, 139, 0.1);
-    color: #455a64;
-    border: 1px solid rgba(96, 125, 139, 0.2);
-  }
 }
 
-// Стили для заголовка таблицы
-.limits-table__title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-
-  .date-range {
-    font-size: 14px;
-    font-weight: normal;
-    color: #666;
-    margin-left: 12px;
-  }
-}
-
-// Стили для статистики в футере
-.limits-table__stats {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding: 12px 0;
-  border-top: 1px solid #e0e0e0;
+.date-range {
+  background: rgba(0, 102, 204, 0.1);
+  color: #0066cc;
+  padding: 4px 12px;
+  border-radius: 20px;
   font-size: 14px;
-  color: #666;
+  font-weight: 500;
+  margin-left: 16px;
 }
 
-.limits-table__stat {
-  display: flex;
-  align-items: center;
+// Loading and no-data states
+.processing-integration {
+  &__loading {
+    @include flex-center;
+    padding: 3rem;
+  }
 
-  &::before {
+  &__no-data {
+    @include flex-center;
+    padding: 3rem;
+  }
+}
+
+.loading-spinner {
+  text-align: center;
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid $gray-200;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  p {
+    color: $gray-600;
+    font-size: 1rem;
+  }
+}
+
+.no-data {
+  text-align: center;
+  color: $gray-600;
+
+  h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: $gray-700;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+}
+
+// Custom select improvement
+.custom-select {
+  position: relative;
+
+  &::after {
     content: '';
-    display: inline-block;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid $gray-500;
+    pointer-events: none;
+  }
+}
+
+// Scrollbar styling
+.limits-table__wrapper {
+  &::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background-color: #667eea;
-    margin-right: 8px;
   }
 
-  &:nth-child(2)::before {
-    background-color: #764ba2;
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
   }
 
-  &:nth-child(3)::before {
-    background-color: #4CAF50;
-  }
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
 
-  &:nth-child(4)::before {
-    background-color: #FF9800;
-  }
-}
-
-// Адаптивность
-@media (max-width: 1200px) {
-  .limits-table__wrapper {
-    max-height: 60vh;
-  }
-
-  .limits-table__th,
-  .limits-table__td {
-    padding: 10px 8px;
-    font-size: 13px;
-  }
-
-  .amount-value {
-    font-size: 13px;
+    &:hover {
+      background: #a8a8a8;
+    }
   }
 }
 
-// Прокрутка таблицы
-.limits-table__wrapper::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.limits-table__wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.limits-table__wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-
-  &:hover {
-    background: #a8a8a8;
-  }
-}
-
-// Анимация для строк
+// Анимация для строк таблицы
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -261,41 +778,110 @@
   }
 }
 
-// Подсказка о типах транзакций
-.transaction-type-legend {
-  display: flex;
-  gap: 16px;
-  margin-top: 12px;
-  flex-wrap: wrap;
+// Responsive design
+@media (max-width: 768px) {
+  .processing-integration {
+    padding: 1.5rem 0;
 
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #666;
-
-    &::before {
-      content: '';
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
+    &__title {
+      font-size: 2rem;
     }
 
-    &--type-1::before {
-      background-color: rgba(76, 175, 80, 0.15);
+    &__subtitle {
+      font-size: 1rem;
+    }
+  }
+
+  .search-card {
+    padding: 1.5rem;
+
+    &__content {
+      gap: 1.25rem;
     }
 
-    &--type-2::before {
-      background-color: rgba(244, 67, 54, 0.15);
+    &__input-group {
+      min-width: 100%;
     }
 
-    &--type-3::before {
-      background-color: rgba(255, 193, 7, 0.15);
+    &__date-group {
+      min-width: 100%;
     }
 
-    &--type-4::before {
-      background-color: rgba(33, 150, 243, 0.15);
+    &__buttons {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    &__button {
+      flex: 1;
+      min-width: 120px;
+    }
+  }
+
+  .date-input-group {
+    min-width: calc(50% - 6px);
+  }
+
+  .limits-table {
+    &__header {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+
+    &__title {
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    &__th,
+    &__td {
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+    }
+
+    &__stats {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .processing-integration {
+    padding: 1rem 0;
+
+    &__container {
+      padding: 0 1rem;
+    }
+
+    &__header {
+      margin-bottom: 1.5rem;
+    }
+
+    &__title {
+      font-size: 1.75rem;
+    }
+  }
+
+  .search-card {
+    padding: 1.25rem;
+
+    &__button {
+      padding: 1rem 1.5rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  .limits-table {
+    &__header {
+      padding: 1.25rem;
+    }
+
+    &__th,
+    &__td {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
     }
   }
 }
