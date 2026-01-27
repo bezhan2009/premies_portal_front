@@ -3,12 +3,28 @@ import '../../../../styles/components/ProcessingIntegration.scss';
 import '../../../../styles/components/BlockInfo.scss';
 import '../../../../styles/components/DashboardOperatorProcessingTransactions.scss';
 import AlertMessage from "../../../general/AlertMessage.jsx";
-import {fetchTransactionsByCardId} from "../../../../api/operator/processing_transactions.js";
+import {
+    fetchTransactionsByCardId,
+    fetchTransactionsByATM,
+    fetchTransactionsByUTRNNO,
+    fetchTransactionsByType,
+    fetchTransactionsByAmount,
+    fetchTransactionsByReversal,
+    fetchTransactionsByMCC
+} from "../../../../api/processing/transactions.js";
 import {getCurrencyCode} from "../../../../api/utils/getCurrencyCode.js";
 
 export default function DashboardOperatorProcessingTransactions() {
+    const [searchType, setSearchType] = useState('cardId'); // По умолчанию поиск по карте
     const [displayCardId, setDisplayCardId] = useState('');
     const [cardId, setCardId] = useState('');
+    const [atmId, setAtmId] = useState('');
+    const [utrnno, setUtrnno] = useState('');
+    const [transactionType, setTransactionType] = useState('');
+    const [amountFrom, setAmountFrom] = useState('');
+    const [amountTo, setAmountTo] = useState('');
+    const [reversal, setReversal] = useState('');
+    const [mcc, setMcc] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +34,17 @@ export default function DashboardOperatorProcessingTransactions() {
         message: '',
         type: 'success'
     });
+
+    // Опции для выбора типа поиска
+    const searchOptions = [
+        { value: 'cardId', label: 'Поиск по идентификатору карты' },
+        { value: 'atmId', label: 'Поиск по номеру терминала' },
+        { value: 'utrnno', label: 'Поиск по номеру операции (UTRNNO)' },
+        { value: 'transactionType', label: 'Поиск по типу транзакции' },
+        { value: 'amount', label: 'Поиск по сумме операции' },
+        { value: 'reversal', label: 'Поиск по статусу отмены' },
+        { value: 'mcc', label: 'Поиск по MCC коду' }
+    ];
 
     // Функция для форматирования суммы
     const formatAmount = (amount, transactionTypeNumber) => {
@@ -87,6 +114,22 @@ export default function DashboardOperatorProcessingTransactions() {
         setCardId(value.replace(/\s/g, ''));
     };
 
+    const handleSearchTypeChange = (e) => {
+        const value = e.target.value;
+        setSearchType(value);
+        // Очищаем все поля при смене типа поиска
+        setDisplayCardId('');
+        setCardId('');
+        setAtmId('');
+        setUtrnno('');
+        setTransactionType('');
+        setAmountFrom('');
+        setAmountTo('');
+        setReversal('');
+        setMcc('');
+        setTransactions([]);
+    };
+
     const handleDateChange = (e) => {
         const { name, value } = e.target;
         if (name === 'fromDate') {
@@ -96,66 +139,167 @@ export default function DashboardOperatorProcessingTransactions() {
         }
     };
 
-    const handleCardNumberSearch = async () => {
-        if (cardId.trim()) {
-            // Проверяем корректность дат
-            if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
-                showAlert('Дата "С" не может быть больше даты "По"', 'error');
-                return;
-            }
+    const validateSearch = () => {
+        // Проверяем корректность дат
+        if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
+            showAlert('Дата "С" не может быть больше даты "По"', 'error');
+            return false;
+        }
 
-            setIsLoading(true);
-            try {
-                const transactionsData = await fetchTransactionsByCardId(
-                    cardId,
-                    fromDate || undefined,
-                    toDate || undefined
-                );
-
-                if (transactionsData && Array.isArray(transactionsData)) {
-                    const formattedTransactions = transactionsData.map(transaction => ({
-                        id: transaction.id,
-                        cardNumber: transaction.cardNumber,
-                        responseCode: transaction.responseCode,
-                        responseDescription: transaction.responseDescription,
-                        reqamt: transaction.reqamt,
-                        amount: transaction.amount,
-                        conamt: transaction.conamt,
-                        acctbal: transaction.acctbal,
-                        netbal: transaction.netbal,
-                        utrnno: transaction.utrnno,
-                        currency: transaction.currency,
-                        terminalId: transaction.terminalId,
-                        reversal: transaction.reversal,
-                        transactionType: transaction.transactionType,
-                        transactionTypeName: transaction.transactionTypeName,
-                        transactionTypeNumber: transaction.transactionTypeNumber,
-                        atmId: transaction.atmId,
-                        terminalAddress: transaction.terminalAddress,
-                        localTransactionDate: transaction.localTransactionDate,
-                        localTransactionTime: transaction.localTransactionTime,
-                    }));
-
-                    setTransactions(formattedTransactions);
-                    showAlert(`Загружено ${formattedTransactions.length} транзакций`, 'success');
-                } else {
-                    setTransactions([]);
-                    showAlert('Транзакции не найдены', 'warning');
+        // Валидация в зависимости от типа поиска
+        switch (searchType) {
+            case 'cardId':
+                if (!cardId.trim()) {
+                    showAlert('Введите идентификатор карты', 'warning');
+                    return false;
                 }
-            } catch (error) {
-                showAlert('Ошибка при загрузке данных: ' + error.message, 'error');
-                setTransactions([]);
-            } finally {
-                setIsLoading(false);
+                break;
+            case 'atmId':
+                if (!atmId.trim()) {
+                    showAlert('Введите номер терминала', 'warning');
+                    return false;
+                }
+                break;
+            case 'utrnno':
+                if (!utrnno.trim()) {
+                    showAlert('Введите номер операции', 'warning');
+                    return false;
+                }
+                break;
+            case 'transactionType':
+                if (!transactionType.trim()) {
+                    showAlert('Введите тип транзакции', 'warning');
+                    return false;
+                }
+                break;
+            case 'amount':
+                if (!amountFrom.trim() || !amountTo.trim()) {
+                    showAlert('Введите диапазон сумм', 'warning');
+                    return false;
+                }
+                break;
+            case 'reversal':
+                if (!reversal.trim()) {
+                    showAlert('Введите статус отмены (0 или 1)', 'warning');
+                    return false;
+                }
+                break;
+            case 'mcc':
+                if (!mcc.trim()) {
+                    showAlert('Введите MCC код', 'warning');
+                    return false;
+                }
+                break;
+            default:
+                showAlert('Выберите тип поиска', 'warning');
+                return false;
+        }
+        return true;
+    };
+
+    const handleSearch = async () => {
+        if (!validateSearch()) return;
+
+        setIsLoading(true);
+        try {
+            let transactionsData = [];
+
+            switch (searchType) {
+                case 'cardId':
+                    transactionsData = await fetchTransactionsByCardId(
+                        cardId,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                case 'atmId':
+                    transactionsData = await fetchTransactionsByATM(
+                        atmId,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                case 'utrnno':
+                    transactionsData = await fetchTransactionsByUTRNNO(utrnno);
+                    break;
+                case 'transactionType':
+                    transactionsData = await fetchTransactionsByType(
+                        transactionType,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                case 'amount':
+                    transactionsData = await fetchTransactionsByAmount(
+                        amountFrom,
+                        amountTo,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                case 'reversal':
+                    transactionsData = await fetchTransactionsByReversal(
+                        reversal,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                case 'mcc':
+                    transactionsData = await fetchTransactionsByMCC(
+                        mcc,
+                        fromDate || undefined,
+                        toDate || undefined
+                    );
+                    break;
+                default:
+                    throw new Error('Неизвестный тип поиска');
             }
-        } else {
-            showAlert('Введите номер карты', 'warning');
+
+            if (transactionsData && Array.isArray(transactionsData)) {
+                const formattedTransactions = transactionsData.map(transaction => ({
+                    id: transaction.id,
+                    cardNumber: transaction.cardNumber,
+                    cardId: transaction.cardId,
+                    responseCode: transaction.responseCode,
+                    responseDescription: transaction.responseDescription,
+                    reqamt: transaction.reqamt,
+                    amount: transaction.amount,
+                    conamt: transaction.conamt,
+                    acctbal: transaction.acctbal,
+                    netbal: transaction.netbal,
+                    utrnno: transaction.utrnno,
+                    currency: transaction.currency,
+                    conCurrency: transaction.conCurrency,
+                    terminalId: transaction.terminalId,
+                    reversal: transaction.reversal,
+                    transactionType: transaction.transactionType,
+                    transactionTypeName: transaction.transactionTypeName,
+                    transactionTypeNumber: transaction.transactionTypeNumber,
+                    atmId: transaction.atmId,
+                    terminalAddress: transaction.terminalAddress,
+                    localTransactionDate: transaction.localTransactionDate,
+                    localTransactionTime: transaction.localTransactionTime,
+                    mcc: transaction.mcc,
+                    account: transaction.account
+                }));
+
+                setTransactions(formattedTransactions);
+                showAlert(`Загружено ${formattedTransactions.length} транзакций`, 'success');
+            } else {
+                setTransactions([]);
+                showAlert('Транзакции не найдены', 'warning');
+            }
+        } catch (error) {
+            showAlert('Ошибка при загрузке данных: ' + error.message, 'error');
+            setTransactions([]);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
-            handleCardNumberSearch();
+            handleSearch();
         }
     };
 
@@ -186,7 +330,227 @@ export default function DashboardOperatorProcessingTransactions() {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         setFromDate(thirtyDaysAgo.toISOString().split('T')[0]);
         setToDate(today);
+
+        // Очищаем все поля поиска в зависимости от выбранного типа
+        switch (searchType) {
+            case 'cardId':
+                setDisplayCardId('');
+                setCardId('');
+                break;
+            case 'atmId':
+                setAtmId('');
+                break;
+            case 'utrnno':
+                setUtrnno('');
+                break;
+            case 'transactionType':
+                setTransactionType('');
+                break;
+            case 'amount':
+                setAmountFrom('');
+                setAmountTo('');
+                break;
+            case 'reversal':
+                setReversal('');
+                break;
+            case 'mcc':
+                setMcc('');
+                break;
+        }
+        setTransactions([]);
     };
+
+    // Визуализация полей ввода в зависимости от типа поиска
+    const renderSearchFields = () => {
+        switch (searchType) {
+            case 'cardId':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="cardNumber" className="search-card__label">
+                            Идентификатор карты
+                        </label>
+                        <input
+                            type="text"
+                            id="cardNumber"
+                            value={displayCardId}
+                            onChange={handleCardIdChange}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="Введите идентификатор карты"
+                            maxLength={19}
+                        />
+                    </div>
+                );
+            case 'atmId':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="atmId" className="search-card__label">
+                            Номер терминала (ATM ID)
+                        </label>
+                        <input
+                            type="text"
+                            id="atmId"
+                            value={atmId}
+                            onChange={(e) => setAtmId(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="Например: 00000014"
+                        />
+                    </div>
+                );
+            case 'utrnno':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="utrnno" className="search-card__label">
+                            Номер операции (UTRNNO)
+                        </label>
+                        <input
+                            type="text"
+                            id="utrnno"
+                            value={utrnno}
+                            onChange={(e) => setUtrnno(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="Например: 353403802"
+                        />
+                    </div>
+                );
+            case 'transactionType':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="transactionType" className="search-card__label">
+                            Код типа транзакции
+                        </label>
+                        <input
+                            type="text"
+                            id="transactionType"
+                            value={transactionType}
+                            onChange={(e) => setTransactionType(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="Например: 774"
+                        />
+                    </div>
+                );
+            case 'amount':
+                return (
+                    <>
+                        <div className="search-card__input-group">
+                            <label htmlFor="amountFrom" className="search-card__label">
+                                Сумма от
+                            </label>
+                            <input
+                                type="number"
+                                id="amountFrom"
+                                value={amountFrom}
+                                onChange={(e) => setAmountFrom(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                className="search-card__input"
+                                disabled={isLoading}
+                                placeholder="Например: 10"
+                                min="0"
+                            />
+                        </div>
+                        <div className="search-card__input-group">
+                            <label htmlFor="amountTo" className="search-card__label">
+                                Сумма до
+                            </label>
+                            <input
+                                type="number"
+                                id="amountTo"
+                                value={amountTo}
+                                onChange={(e) => setAmountTo(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                className="search-card__input"
+                                disabled={isLoading}
+                                placeholder="Например: 1000"
+                                min="0"
+                            />
+                        </div>
+                    </>
+                );
+            case 'reversal':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="reversal" className="search-card__label">
+                            Статус отмены (0 - нет, 1 - да)
+                        </label>
+                        <input
+                            type="text"
+                            id="reversal"
+                            value={reversal}
+                            onChange={(e) => setReversal(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="0 или 1"
+                            maxLength="1"
+                        />
+                    </div>
+                );
+            case 'mcc':
+                return (
+                    <div className="search-card__input-group">
+                        <label htmlFor="mcc" className="search-card__label">
+                            MCC код
+                        </label>
+                        <input
+                            type="text"
+                            id="mcc"
+                            value={mcc}
+                            onChange={(e) => setMcc(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="search-card__input"
+                            disabled={isLoading}
+                            placeholder="Например: 6011"
+                        />
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    // Получение заголовка для таблицы в зависимости от типа поиска
+    const getTableTitle = () => {
+        const baseTitle = "Найденные транзакции";
+        let searchInfo = "";
+
+        switch (searchType) {
+            case 'cardId':
+                searchInfo = `по карте с id ${displayCardId}`;
+                break;
+            case 'atmId':
+                searchInfo = `по терминалу ${atmId}`;
+                break;
+            case 'utrnno':
+                searchInfo = `по операции ${utrnno}`;
+                break;
+            case 'transactionType':
+                searchInfo = `по типу транзакции ${transactionType}`;
+                break;
+            case 'amount':
+                searchInfo = `по сумме от ${amountFrom} до ${amountTo}`;
+                break;
+            case 'reversal':
+                searchInfo = `по статусу отмены ${reversal}`;
+                break;
+            case 'mcc':
+                searchInfo = `по MCC коду ${mcc}`;
+                break;
+        }
+
+        return `${baseTitle} ${searchInfo}`;
+    };
+
+    // Проверка, нужны ли даты для текущего типа поиска
+    const needsDateRange = useMemo(() => {
+        return searchType !== 'utrnno'; // Для utrnno даты не нужны
+    }, [searchType]);
 
     return <>
         {alert.show && (
@@ -213,62 +577,71 @@ export default function DashboardOperatorProcessingTransactions() {
                     <div className="processing-integration__search-card">
                         <div className="search-card">
                             <div className="search-card__content">
-                                {/* Номер карты */}
-                                <div className="search-card__input-group">
-                                    <label htmlFor="cardNumber" className="search-card__label">
-                                        Идентификатор карты
+                                {/* Выбор типа поиска */}
+                                <div className="search-card__input-group search-card__select-group">
+                                    <label htmlFor="searchType" className="search-card__label">
+                                        Тип поиска
                                     </label>
-                                    <input
-                                        type="text"
-                                        id="cardNumber"
-                                        value={displayCardId}
-                                        onChange={handleCardIdChange}
-                                        onKeyPress={handleKeyPress}
-                                        className="search-card__input"
-                                        disabled={isLoading}
-                                        placeholder="Введите идентификатор карты"
-                                        maxLength={19}
-                                    />
+                                    <div className="custom-select">
+                                        <select
+                                            id="searchType"
+                                            value={searchType}
+                                            onChange={handleSearchTypeChange}
+                                            className="search-card__select"
+                                            disabled={isLoading}
+                                        >
+                                            {searchOptions.map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
-                                {/* Блок дат */}
-                                <div className="search-card__date-group">
-                                    <div className="date-input-group">
-                                        <label htmlFor="fromDate" className="search-card__label">
-                                            С даты
-                                        </label>
-                                        <input
-                                            type="date"
-                                            id="fromDate"
-                                            name="fromDate"
-                                            value={fromDate}
-                                            onChange={handleDateChange}
-                                            className="search-card__date-input"
-                                            disabled={isLoading}
-                                        />
+                                {/* Поля для поиска (зависит от типа) */}
+                                {renderSearchFields()}
+
+                                {/* Блок дат (скрываем для поиска по utrnno) */}
+                                {needsDateRange && (
+                                    <div className="search-card__date-group">
+                                        <div className="date-input-group">
+                                            <label htmlFor="fromDate" className="search-card__label">
+                                                С даты
+                                            </label>
+                                            <input
+                                                type="date"
+                                                id="fromDate"
+                                                name="fromDate"
+                                                value={fromDate}
+                                                onChange={handleDateChange}
+                                                className="search-card__date-input"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        <div className="date-separator">—</div>
+                                        <div className="date-input-group">
+                                            <label htmlFor="toDate" className="search-card__label">
+                                                По дату
+                                            </label>
+                                            <input
+                                                type="date"
+                                                id="toDate"
+                                                name="toDate"
+                                                value={toDate}
+                                                onChange={handleDateChange}
+                                                className="search-card__date-input"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="date-separator">—</div>
-                                    <div className="date-input-group">
-                                        <label htmlFor="toDate" className="search-card__label">
-                                            По дату
-                                        </label>
-                                        <input
-                                            type="date"
-                                            id="toDate"
-                                            name="toDate"
-                                            value={toDate}
-                                            onChange={handleDateChange}
-                                            className="search-card__date-input"
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Кнопки */}
                                 <div className="search-card__buttons">
                                     <button
-                                        onClick={handleCardNumberSearch}
-                                        disabled={!cardId.trim() || isLoading}
+                                        onClick={handleSearch}
+                                        disabled={isLoading}
                                         className={`search-card__button ${isLoading ? 'search-card__button--loading' : ''}`}
                                     >
                                         {isLoading ? 'Поиск...' : 'Найти'}
@@ -278,7 +651,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                         disabled={isLoading}
                                         className="search-card__button search-card__button--secondary"
                                     >
-                                        Очистить даты
+                                        Очистить фильтры
                                     </button>
                                 </div>
                             </div>
@@ -292,11 +665,11 @@ export default function DashboardOperatorProcessingTransactions() {
                         <div className="limits-table">
                             <div className="limits-table__header">
                                 <h2 className="limits-table__title">
-                                    Транзакции по карте с id {displayCardId}
-                                    {fromDate && toDate && (
+                                    {getTableTitle()}
+                                    {fromDate && toDate && needsDateRange && (
                                         <span className="date-range">
-                                            ({fromDate} — {toDate})
-                                        </span>
+                      ({fromDate} — {toDate})
+                    </span>
                                     )}
                                 </h2>
                             </div>
@@ -310,16 +683,20 @@ export default function DashboardOperatorProcessingTransactions() {
                                             <th className="limits-table__th">Время</th>
                                             <th className="limits-table__th">Статус</th>
                                             <th className="limits-table__th">Номер карты</th>
+                                            <th className="limits-table__th">ID карты</th>
                                             <th className="limits-table__th">Тип операции</th>
                                             <th className="limits-table__th">Сумма операции</th>
                                             <th className="limits-table__th">Валюта</th>
                                             <th className="limits-table__th">Сумма в валюте карты</th>
                                             <th className="limits-table__th">Доступный баланс</th>
+                                            <th className="limits-table__th">Баланс карты</th>
                                             <th className="limits-table__th">Номер операции в ПЦ</th>
                                             <th className="limits-table__th">ID терминала</th>
                                             <th className="limits-table__th">ID АТМ</th>
                                             <th className="limits-table__th">Запрошенная сумма</th>
                                             <th className="limits-table__th">Адрес терминала</th>
+                                            <th className="limits-table__th">MCC код</th>
+                                            <th className="limits-table__th">Счет</th>
                                             <th className="limits-table__th">ID транзакции</th>
                                         </tr>
                                         </thead>
@@ -341,24 +718,30 @@ export default function DashboardOperatorProcessingTransactions() {
                                                 <td className="limits-table__td limits-table__td--info">
                                                     {transaction.cardNumber ? formatCardNumber(transaction.cardNumber) : 'N/A'}
                                                 </td>
+                                                <td className="limits-table__td limits-table__td--info">
+                                                    {transaction.cardId || 'N/A'}
+                                                </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.transactionTypeName || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">
-                                                        {formatAmount(transaction.amount, transaction.transactionTypeNumber)}
-                                                    </span>
+                          <span className="amount-value">
+                            {formatAmount(transaction.amount, transaction.transactionTypeNumber)}
+                          </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{getCurrencyCode(transaction.currency)}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">
-                                                        {formatAmount(transaction.conamt, transaction.transactionTypeNumber)}
-                                                    </span>
+                          <span className="amount-value">
+                            {formatAmount(transaction.conamt, transaction.transactionTypeNumber)}
+                          </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="amount-value">{formatAmount(transaction.acctbal)}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="amount-value">{formatAmount(transaction.netbal)}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.utrnno || 'N/A'}</span>
@@ -370,12 +753,18 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     <span className="default-value">{transaction.atmId || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
-                                                    <span className="amount-value">
-                                                        {formatAmount(transaction.reqamt, transaction.transactionTypeNumber)}
-                                                    </span>
+                          <span className="amount-value">
+                            {formatAmount(transaction.reqamt, transaction.transactionTypeNumber)}
+                          </span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--value">
                                                     <span className="default-value">{transaction.terminalAddress || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.mcc || 'N/A'}</span>
+                                                </td>
+                                                <td className="limits-table__td limits-table__td--value">
+                                                    <span className="default-value">{transaction.account || 'N/A'}</span>
                                                 </td>
                                                 <td className="limits-table__td limits-table__td--info">
                                                     {transaction.id}
@@ -388,20 +777,20 @@ export default function DashboardOperatorProcessingTransactions() {
 
                                 <div className="limits-table__footer">
                                     <div className="limits-table__stats">
+                    <span className="limits-table__stat">
+                      Всего записей: {transactions.length}
+                    </span>
                                         <span className="limits-table__stat">
-                                            Всего записей: {transactions.length}
-                                        </span>
-                                        <span className="limits-table__stat">
-                                            Показано: {transactions.length}
-                                        </span>
-                                        <span className="limits-table__stat">
-                                            Карта: {transactions[0]?.cardNumber || 'N/A'}
-                                        </span>
-                                        {fromDate && toDate && (
+                      Показано: {transactions.length}
+                    </span>
+                                        {needsDateRange && fromDate && toDate && (
                                             <span className="limits-table__stat">
-                                                Период: {fromDate} — {toDate}
-                                            </span>
+                        Период: {fromDate} — {toDate}
+                      </span>
                                         )}
+                                        <span className="limits-table__stat">
+                      Тип поиска: {searchOptions.find(opt => opt.value === searchType)?.label}
+                    </span>
                                     </div>
                                 </div>
                             </div>
@@ -418,11 +807,11 @@ export default function DashboardOperatorProcessingTransactions() {
                     </div>
                 )}
 
-                {!isLoading && transactions.length === 0 && cardId.length > 0 && (
+                {!isLoading && transactions.length === 0 && (
                     <div className="processing-integration__no-data">
                         <div className="no-data">
                             <h3>Данные не найдены</h3>
-                            <p>Для карты с id {displayCardId} не найдено транзакций за выбранный период.</p>
+                            <p>По заданным критериям не найдено транзакций.</p>
                         </div>
                     </div>
                 )}
