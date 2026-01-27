@@ -816,11 +816,11 @@ tr:nth-child(14) {
   display: flex;
   // justify-content: center;
   align-items: start;
-  height: 100vh;
+  // height: 100vh;
   animation: fadeIn 0.3s ease-out;
 
   > main {
-    height: 1103px;
+    height: calc(100% - 40px) !important;
     width: 98%;
     background-color: #fff;
     border-radius: 12px;
@@ -882,7 +882,7 @@ tr:nth-child(14) {
 
 .applications-list {
   display: flex;
-  height: calc(100vh - 130px);
+  // height: calc(100vh - 130px);
   animation: fadeIn 0.3s ease-out;
 
   > main {
