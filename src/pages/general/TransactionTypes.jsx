@@ -109,7 +109,7 @@ export default function TransactionTypes() {
           name: item.name,
           number: String(item.number),
           id: String(item.id),
-        }))
+        })),
       );
     } catch (e) {
       console.error("Ошибка при обновлении:", e);
@@ -152,8 +152,8 @@ export default function TransactionTypes() {
           toggle={toggleSidebar}
         />
 
-        <div className="my-applications" style={{ marginTop: 10 }}>
-          <main style={{ overflow: "auto", height: "100%" }}>
+        <div className="my-applications content-page">
+          <main>
             {/* <div className="my-applications-header">
             <button>Фильтр</button>
             <button>Редактировать</button>

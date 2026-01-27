@@ -90,7 +90,7 @@ export default function OperatorKnowledgeBaseBlockInfo() {
   };
 
   return (
-    <div className="knowledge-module">
+    <div className="knowledge-module content-page">
       <aside className="kb-sidebar">
         <h3>
           Базы знаний

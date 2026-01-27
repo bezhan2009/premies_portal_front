@@ -315,7 +315,7 @@ export default function TransactionsQR() {
           toggle={toggleSidebar}
         />
         <div
-          className="applications-list"
+          className="applications-list content-page"
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
         >
           <main>

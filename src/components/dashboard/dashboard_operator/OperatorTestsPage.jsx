@@ -135,7 +135,7 @@ export default function OperatorTestsPage() {
   };
 
   return (
-    <div className="tests-module">
+    <div className="tests-module content-page">
       <aside className="kb-sidebar">
         <h3>Тесты</h3>
         <button

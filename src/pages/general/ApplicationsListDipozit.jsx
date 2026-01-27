@@ -230,7 +230,7 @@ export default function ApplicationsListDipozit() {
     <>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <Sidebar activeLink="deposits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="applications-list">
+        <div className="applications-list content-page">
           <main>
             <div className="my-applications-header">
               <button className="Unloading" onClick={handleExport}>

@@ -7,7 +7,7 @@ const ChairmanReports = () => {
 
   return (
     <>
-      <div className="block_info_prems">
+      <div className="block_info_prems content-page">
         <ReportFilters activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <div className="filters-content">

@@ -44,7 +44,7 @@ export default function GeneralKnowledgeBaseBlockInfo() {
   }, [bases]);
 
   return (
-    <div className="knowledge-module">
+    <div className="knowledge-module content-page">
       <aside className="kb-sidebar">
         <h3>Базы знаний</h3>
         <ul>

@@ -274,7 +274,7 @@ export default function ApplicationsListCredit() {
     <>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <Sidebar activeLink="credits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="applications-list">
+        <div className="applications-list content-page">
           <main>
             <div className="my-applications-header">
               <Select

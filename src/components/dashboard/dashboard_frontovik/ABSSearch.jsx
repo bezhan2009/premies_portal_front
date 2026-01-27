@@ -103,7 +103,7 @@ export default function ABSClientSearch() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -175,7 +175,7 @@ export default function ABSClientSearch() {
   const copySelectedClientToClipboard = () => {
     if (clientsData[selectedClientIndex]) {
       copyToClipboard(
-        JSON.stringify(clientsData[selectedClientIndex], null, 2)
+        JSON.stringify(clientsData[selectedClientIndex], null, 2),
       );
     }
   };
@@ -355,7 +355,7 @@ export default function ABSClientSearch() {
 
   return (
     <>
-      <div className="block_info_prems" align="center">
+      <div className="block_info_prems content-page" align="center">
         {alert.show && (
           <AlertMessage
             message={alert.message}
@@ -636,7 +636,7 @@ export default function ABSClientSearch() {
                       <button
                         onClick={() =>
                           setSelectedClientIndex((prev) =>
-                            Math.max(0, prev - 1)
+                            Math.max(0, prev - 1),
                           )
                         }
                         disabled={selectedClientIndex === 0}
@@ -647,7 +647,7 @@ export default function ABSClientSearch() {
                       <button
                         onClick={() =>
                           setSelectedClientIndex((prev) =>
-                            Math.min(clientsData.length - 1, prev + 1)
+                            Math.min(clientsData.length - 1, prev + 1),
                           )
                         }
                         disabled={

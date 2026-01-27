@@ -219,8 +219,8 @@ export default function TerminalNames() {
                     toggle={toggleSidebar}
                 />
 
-                <div className="my-applications" style={{ marginTop: 10 }}>
-                    <main style={{ overflow: "auto", height: "100%" }}>
+                <div className="my-applications content-page">
+                    <main >
                         <div className="filters animate-slideIn">
                             <input
                                 style={{

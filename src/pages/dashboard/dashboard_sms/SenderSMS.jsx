@@ -1,12 +1,11 @@
 import { useState } from "react";
 import "../../../styles/components/BlockInfo.scss";
 import HeaderAgentSMS from "../../../components/dashboard/dashboard_agent_sms/MenuAgentSMS";
-import useSidebar from '../../../hooks/useSideBar.js';
-import Sidebar from '../../general/DynamicMenu.jsx';
-
+import useSidebar from "../../../hooks/useSideBar.js";
+import Sidebar from "../../general/DynamicMenu.jsx";
 
 export default function SendSmsForm() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [messageContent, setMessageContent] = useState("");
   const [status, setStatus] = useState("");
@@ -34,56 +33,70 @@ export default function SendSmsForm() {
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="sms_send" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="block_info_prems" align="center">
-            <div style={{ maxWidth: 400, margin: "50px auto" }}>
+      <div
+        className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
+      >
+        <Sidebar
+          activeLink="sms_send"
+          isOpen={isSidebarOpen}
+          toggle={toggleSidebar}
+        />
+        <div className="block_info_prems content-page" align="center">
+          <div style={{ maxWidth: 400, margin: "50px auto" }}>
             <h2>Отправка SMS</h2>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div className="input">
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+            >
+              <div className="input">
                 <label>Номер телефона</label>
                 <input
-                    type="text"
-                    placeholder="Например: 992937394747"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
+                  type="text"
+                  placeholder="Например: 992937394747"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
                 />
-                </div>
+              </div>
 
-                <div className="input">
+              <div className="input">
                 <label>Текст сообщения</label>
                 <input
-                    type="text"
-                    placeholder="Привет, как дела?"
-                    value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    required
+                  type="text"
+                  placeholder="Привет, как дела?"
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  required
                 />
-                </div>
+              </div>
 
-                <button
+              <button
                 type="submit"
                 style={{
-                    height: "40px",
-                    backgroundColor: "#e21a1c",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    transition: "0.2s",
+                  height: "40px",
+                  backgroundColor: "#e21a1c",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  transition: "0.2s",
                 }}
-                >
+              >
                 Отправить
-                </button>
+              </button>
             </form>
 
             {status && (
-                <p style={{ marginTop: "20px", color: status.startsWith("✅") ? "green" : "red" }}>
+              <p
+                style={{
+                  marginTop: "20px",
+                  color: status.startsWith("✅") ? "green" : "red",
+                }}
+              >
                 {status}
-                </p>
+              </p>
             )}
-            </div>
+          </div>
         </div>
       </div>
     </>

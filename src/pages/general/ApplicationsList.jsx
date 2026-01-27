@@ -312,7 +312,7 @@ export default function ApplicationsList() {
     <>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <Sidebar activeLink="applications" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="applications-list">
+        <div className="applications-list content-page">
           <main>
             {/* Уведомление о новой заявке */}
             {alert.show && (

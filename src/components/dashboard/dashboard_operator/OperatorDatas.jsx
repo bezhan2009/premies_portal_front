@@ -68,7 +68,7 @@ const OperatorDatasBlockInfo = () => {
   };
 
   return (
-    <div className="block_info_prems" align="center">
+    <div className="block_info_prems content-page" align="center">
       <FiltersDatas onSelect={setSelectedTable} />
 
       <AnimatePresence mode="wait">

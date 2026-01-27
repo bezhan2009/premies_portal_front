@@ -29,7 +29,7 @@ function LogoutButton() {
         title="Выход"
         onClick={() => setShowConfirmation(true)}
       >
-        <LogoutImageComponent width={57} height={37} />
+        <LogoutImageComponent width={40} height={26} />
       </button>
       {showConfirmation && (
         <div className="logout-confirmation">

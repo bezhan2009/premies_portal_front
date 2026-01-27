@@ -112,7 +112,7 @@ export default function GiftCardDipozit({ edit = false }) {
           isOpen={isSidebarOpen}
           toggle={toggleSidebar}
         />
-        <div className="gift-card">
+        <div className="gift-card content-page">
           {loading ? (
             <Spinner />
           ) : (

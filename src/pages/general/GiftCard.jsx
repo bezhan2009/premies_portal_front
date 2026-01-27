@@ -677,7 +677,7 @@ export default function GiftCard({ edit = false }) {
         <>
             <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
                 <Sidebar activeLink="gift_card" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-                <div className="gift-card">
+                <div className="gift-card content-page">
                     {alert && (
                         <AlertMessage
                             message={alert.message}

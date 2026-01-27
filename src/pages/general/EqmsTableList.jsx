@@ -536,7 +536,7 @@ export default function EQMSList() {
           isOpen={isSidebarOpen}
           toggle={toggleSidebar}
         />
-        <div className="page-content-wrapper">
+        <div className="page-content-wrapper content-page">
           <div
             className="applications-list"
             style={{ flexDirection: "column", gap: "20px", height: "auto" }}

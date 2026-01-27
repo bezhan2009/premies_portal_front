@@ -148,7 +148,7 @@ export default function WorkerTestsPage() {
 
   if (allowed === false) {
     return (
-      <div className="block_info_prems" align="center">
+      <div className="block_info_prems content-page" align="center">
         <div className="worker-page-blocked">
           <h2>Вы уже проходили тест в этом месяце</h2>
           <p>Ответить снова можно через месяц.</p>
@@ -159,7 +159,7 @@ export default function WorkerTestsPage() {
 
   if (!test) {
     return (
-      <div className="worker-tests-page">
+      <div className="worker-tests-page content-page">
         <div className="worker-test-card">
           <div className="worker-test-header">
             <h2>Тест</h2>
@@ -185,7 +185,7 @@ export default function WorkerTestsPage() {
     );
   } else {
     return (
-      <div className="worker-tests-page">
+      <div className="worker-tests-page content-page">
         <div className="worker-test-card">
           <div className="worker-test-header">
             <div>

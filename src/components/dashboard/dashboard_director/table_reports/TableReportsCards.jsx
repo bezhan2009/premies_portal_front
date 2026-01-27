@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import '../../../../styles/components/Table.scss';
+import React, { useState, useEffect } from "react";
+import "../../../../styles/components/Table.scss";
 import LastModified from "../../dashboard_general/LastModified.jsx";
-import '../../../../styles/components/TablesChairman.scss';
+import "../../../../styles/components/TablesChairman.scss";
 import Spinner from "../../../Spinner.jsx";
 import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js";
 
 const ReportTableCardsDirector = ({ onSelect }) => {
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
-    year:  new Date().getFullYear(),
+    year: new Date().getFullYear(),
   });
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
         const url = `${dateFilter.year}/director/office`;
         onSelect?.(url);
 
-        const list = await fetchEmployee(dateFilter.month, url) || [];
+        const list = (await fetchEmployee(dateFilter.month, url)) || [];
 
         if (!list.length) {
           setRow(null);
@@ -41,7 +41,8 @@ const ReportTableCardsDirector = ({ onSelect }) => {
           officeData.office_user.forEach(({ worker }) => {
             if (worker?.CardSales?.length) {
               const sales = worker.CardSales[0];
-              totalCardsForMonth += sales.cards_for_month || sales.cards_sailed || 0;
+              totalCardsForMonth +=
+                sales.cards_for_month || sales.cards_sailed || 0;
               totalDebOsd += sales.deb_osd || 0;
               totalDebOsk += sales.deb_osk || 0;
               totalOutBalance += sales.out_balance || 0;
@@ -58,8 +59,12 @@ const ReportTableCardsDirector = ({ onSelect }) => {
             concreteCards: totalCardsForMonth.toLocaleString(),
             concreteCardsGeneral: totalCardsInGeneral.toLocaleString(),
             concreteActiveCards: totalActivatedCards.toLocaleString(),
-            overdraftDebt: totalDebOsd.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-            overdraftCredit: totalDebOsk.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+            overdraftDebt: totalDebOsd.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            }),
+            overdraftCredit: totalDebOsk.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            }),
             balanceCards: totalOutBalance.toLocaleString(),
           });
         }
@@ -72,9 +77,9 @@ const ReportTableCardsDirector = ({ onSelect }) => {
           let sumOutBalance = 0;
           let sumCardsInGeneral = 0;
 
-          list.forEach(w => {
+          list.forEach((w) => {
             if (Array.isArray(w.CardSales)) {
-              w.CardSales.forEach(s => {
+              w.CardSales.forEach((s) => {
                 sumCardsForMonth += s.cards_for_month || s.cards_sailed || 0;
                 sumDebOsd += s.deb_osd || 0;
                 sumDebOsk += s.deb_osk || 0;
@@ -84,7 +89,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
             }
 
             if (Array.isArray(w.CardTurnovers)) {
-              w.CardTurnovers.forEach(t => {
+              w.CardTurnovers.forEach((t) => {
                 sumActivatedCards += t.activated_cards || 0;
               });
             }
@@ -94,8 +99,12 @@ const ReportTableCardsDirector = ({ onSelect }) => {
             concreteCards: sumCardsForMonth.toLocaleString(),
             concreteCardsGeneral: sumCardsInGeneral.toLocaleString(),
             concreteActiveCards: sumActivatedCards.toLocaleString(),
-            overdraftDebt: sumDebOsd.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-            overdraftCredit: sumDebOsk.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+            overdraftDebt: sumDebOsd.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            }),
+            overdraftCredit: sumDebOsk.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            }),
             balanceCards: sumOutBalance.toLocaleString(),
           });
         }
@@ -111,53 +120,55 @@ const ReportTableCardsDirector = ({ onSelect }) => {
   }, [dateFilter, onSelect]);
 
   return (
-      <div className="block_info_prems" align="center">
-        <div className="report-table-container">
-          <div className="date-filter-container">
-            <span className="label">Период</span>
-            <LastModified
-                initialDate={new Date(dateFilter.year, dateFilter.month - 1, 1)}
-                onChange={({ month, year }) => setDateFilter({ month, year })}
-            />
-          </div>
-
-          {loading ? (
-              <div style={{
-                transform:   'scale(2)',
-                display:     'flex',
-                justifyContent: 'center',
-                alignItems:  'center',
-                marginBottom:  '100px',
-                width:        'auto',
-              }}>
-                <Spinner />
-              </div>
-          ) : (
-              <table className="table-reports">
-                <thead>
-                <tr>
-                  <th>Всего карт до текущего периода</th>
-                  <th>Выдано карт в текущем периоде</th>
-                  <th>Активных карт за текущий период</th>
-                  <th>Оборот по дебету</th>
-                  <th>Оборот по кредиту</th>
-                  <th>Остатки на картах</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                  <td>{row?.concreteCardsGeneral ?? '0'}</td>
-                  <td>{row?.concreteCards ?? '0'}</td>
-                  <td>{row?.concreteActiveCards ?? '0'}</td>
-                  <td>{row?.overdraftDebt ?? '0.00'}</td>
-                  <td>{row?.overdraftCredit ?? '0.00'}</td>
-                  <td>{row?.balanceCards ?? '0'}</td>
-                </tr>
-                </tbody>
-              </table>
-          )}
+    <div className="block_info_prems content-page" align="center">
+      <div className="report-table-container">
+        <div className="date-filter-container">
+          <span className="label">Период</span>
+          <LastModified
+            initialDate={new Date(dateFilter.year, dateFilter.month - 1, 1)}
+            onChange={({ month, year }) => setDateFilter({ month, year })}
+          />
         </div>
+
+        {loading ? (
+          <div
+            style={{
+              transform: "scale(2)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "100px",
+              width: "auto",
+            }}
+          >
+            <Spinner />
+          </div>
+        ) : (
+          <table className="table-reports">
+            <thead>
+              <tr>
+                <th>Всего карт до текущего периода</th>
+                <th>Выдано карт в текущем периоде</th>
+                <th>Активных карт за текущий период</th>
+                <th>Оборот по дебету</th>
+                <th>Оборот по кредиту</th>
+                <th>Остатки на картах</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{row?.concreteCardsGeneral ?? "0"}</td>
+                <td>{row?.concreteCards ?? "0"}</td>
+                <td>{row?.concreteActiveCards ?? "0"}</td>
+                <td>{row?.overdraftDebt ?? "0.00"}</td>
+                <td>{row?.overdraftCredit ?? "0.00"}</td>
+                <td>{row?.balanceCards ?? "0"}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </div>
+    </div>
   );
 };
 

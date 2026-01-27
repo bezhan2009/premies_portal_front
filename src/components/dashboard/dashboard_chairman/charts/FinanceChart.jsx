@@ -229,7 +229,7 @@ const ChairmanReportFinanceBlockInfo = ({ url }) => {
   };
 
   return (
-    <div className="block_info_prems" align="center">
+    <div className="block_info_prems content-page" align="center">
       <AnimatePresence mode="wait">
         <motion.div key={url} {...commonProps}>
           <ChartReportFinance url={url} />

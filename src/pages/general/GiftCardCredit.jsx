@@ -227,7 +227,7 @@ export default function GiftCardCredit({ edit = false }) {
     <>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <Sidebar activeLink="gift_credit" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="gift-card-credit">
+        <div className="gift-card-credit content-page">
           {loading ? (
             <Spinner />
           ) : (
