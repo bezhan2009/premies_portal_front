@@ -699,52 +699,57 @@ export default function ABSClientSearch() {
                     <table className="limits-table">
                       <thead className="limits-table__head">
                         <tr>
-                          <th className="limits-table__th limits-table__th--field">
-                            Поле
-                          </th>
-                          <th className="limits-table__th limits-table__th--value">
-                            Значение
-                          </th>
-                          <th className="limits-table__th limits-table__th--actions">
-                            Действия
-                          </th>
+                          {tableData &&
+                            tableData.map((item, i) => (
+                              <th
+                                key={i}
+                                className="limits-table__th limits-table__th--field"
+                              >
+                                {item.label}
+                              </th>
+                            ))}
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {tableData.map((item) => (
-                          <tr key={item.key} className="limits-table__row">
-                            <td className="limits-table__td limits-table__td--info">
-                              <div className="limit-info">
-                                <div className="limit-info__name">
-                                  {item.label}
+                        {/* <tr>{tableData}</tr> */}
+                        <tr className="limits-table__row">
+                          {tableData.map((item) => (
+                            <>
+                              <td
+                                key={item.key}
+                                className="limits-table__td limits-table__td--value"
+                              >
+                                <span className="current-value">
+                                  {item.value ||
+                                    (item.value === 0 ? 0 : "Не указано")}
+                                </span>
+                              </td>
+                            </>
+                          ))}
+                        </tr>
+
+                        {/* <tr className="limits-table__row">
+                          {tableData.map((item) => (
+                            <>
+                              <td className="limits-table__td limits-table__td--actions">
+                                <div className="action-buttons">
+                                  {!item.isAction && (
+                                    <button
+                                      onClick={() =>
+                                        copyToClipboard(item.value || "")
+                                      }
+                                      className="action-buttons__btn action-buttons__btn--copy"
+                                      disabled={!item.value}
+                                      title="Скопировать значение"
+                                    >
+                                      Копировать
+                                    </button>
+                                  )}
                                 </div>
-                                <div className="limit-info__id">{item.key}</div>
-                              </div>
-                            </td>
-                            <td className="limits-table__td limits-table__td--value">
-                              <span className="current-value">
-                                {item.value ||
-                                  (item.value === 0 ? 0 : "Не указано")}
-                              </span>
-                            </td>
-                            <td className="limits-table__td limits-table__td--actions">
-                              <div className="action-buttons">
-                                {!item.isAction && (
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(item.value || "")
-                                    }
-                                    className="action-buttons__btn action-buttons__btn--copy"
-                                    disabled={!item.value}
-                                    title="Скопировать значение"
-                                  >
-                                    Копировать
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </>
+                          ))}
+                        </tr> */}
                       </tbody>
                     </table>
                   </div>
