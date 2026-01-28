@@ -127,3 +127,23 @@ export const fetchTransactionsByMCC = async (mcc, fromDate, toDate) => {
         throw error;
     }
 };
+
+export const fetchTransactionsByCardBinAndType = async (cardBin, transactionType, date, fromTime, toTime) => {
+    try {
+        const params = new URLSearchParams();
+        params.append('cardBin', cardBin);
+        params.append('transactionType', transactionType);
+        params.append('date', date);
+
+        if (fromTime) params.append('fromTime', fromTime);
+        if (toTime) params.append('toTime', toTime);
+
+        const response = await axios.get(
+            `${BASE_URL}/api/Transactions/search?${params.toString()}`
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching transactions by card bin and type:', error);
+        throw error;
+    }
+};

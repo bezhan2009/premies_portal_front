@@ -73,7 +73,7 @@ export default function WorkerTestsPage() {
       setLoading(false);
     }
   };
-
+  
   const handleAnswer = (questionId, payload) => {
     setAnswers((prev) => ({
       ...prev,
