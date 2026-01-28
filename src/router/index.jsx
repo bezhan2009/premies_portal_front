@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import LoginPage from "../pages/general/LoginPage";
+import DashboardAgentKB from "../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
 import DashboardRedirectPage from "../pages/dashboard/dashboard";
 import UnderDevelopmentPage from "../pages/general/UnderDevelopmentPage";
 import RequireAuth from "../middlewares/RequireAuth";
@@ -17,8 +18,9 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Публичный маршрут */}
+        {/* Публичные маршруты */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/user/knowledge-base" element={<DashboardAgentKB />} />
 
         {/* Защищённые маршруты */}
         <Route
