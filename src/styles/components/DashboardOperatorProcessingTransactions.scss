@@ -137,8 +137,8 @@ $gray-900: #111827;
   animation: fadeInUp 0.6s ease;
 
   &__container {
-    max-width: 1400px;
-    margin: 0 auto;
+    // max-width: 1400px;
+    // margin: 0 auto;
     padding: 0 1.5rem;
   }
 
@@ -170,6 +170,8 @@ $gray-900: #111827;
 }
 
 .search-card {
+   margin: 0 auto;
+  max-width: 1200px;
   border-radius: 1rem;
   @include card-shadow;
   padding: 2rem;
