@@ -1,36 +1,25 @@
+import { apiClient } from "./utils/apiClient";
+
 export async function login(username, password) {
-  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/sign-in`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.message || 'Неверный логин или пароль');
+  try {
+    const response = await apiClient.post("/auth/sign-in", {
+      username,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    const message =
+      error.response?.data?.message || "Неверный логин или пароль";
+    throw new Error(message);
   }
-
-  return res.json();
 }
 
 export async function registerUser(payload) {
-  const token = localStorage.getItem('access_token');
-
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/sign-up`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Ошибка регистрации');
+  try {
+    const response = await apiClient.post("/auth/sign-up", payload);
+    return response.data;
+  } catch (error) {
+    const message = error.response?.data?.message || "Ошибка регистрации";
+    throw new Error(message);
   }
-
-  return await response.json();
 }
