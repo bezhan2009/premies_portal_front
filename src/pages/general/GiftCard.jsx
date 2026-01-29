@@ -61,7 +61,7 @@ export default function GiftCard({ edit = false }) {
         cardName: useRef(null)
     };
 
-    // Функция для проверки в списке террористов
+    // ИСПРАВЛЕННАЯ функция для проверки в списке террористов с query параметрами
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
@@ -78,7 +78,8 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`;
+            // ИСПРАВЛЕНО: используем query параметры вместо path параметра
+            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list?name=${encodeURIComponent(name.trim())}`;
 
             if (birthDate && birthDate.trim() !== '') {
                 url += `&bday=${encodeURIComponent(birthDate.trim())}`;
@@ -132,6 +133,7 @@ export default function GiftCard({ edit = false }) {
         }, 800);
     }, [checkTerrorList, data.birth_date]);
 
+    // НОВЫЙ обработчик для изменения даты рождения
     const handleBirthDateChange = (value) => {
         setData("birth_date", value);
 
@@ -172,21 +174,17 @@ export default function GiftCard({ edit = false }) {
         setAlert(null);
     };
 
-    // Обновленный обработчик для чекбокса SMS
     const handleSMSChange = (value) => {
         setData("is_new_client", value);
         setShowSMSType(value);
         if (!value) {
-            // Когда галочка снята, всегда устанавливаем nosms
             setData("message_type", "nosms");
             setData("rejection_reason", "");
         } else {
-            // Когда галочка поставлена, очищаем message_type для выбора
             setData("message_type", "");
         }
     };
 
-    // Обработчик для типа SMS
     const handleSMSTypeChange = (value) => {
         setData("message_type", value);
         if (value !== "rejected") {
@@ -209,7 +207,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Обработчик для изменения имени на карте с проверкой террористов
     const handleCardNameChange = (value) => {
         setData("card_name", value);
 
@@ -220,7 +217,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для загрузки дополнительных данных клиента по client_code
     const loadClientDetails = async (clientCode) => {
         try {
             const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
@@ -249,9 +245,7 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для заполнения формы данными клиента (теперь с дополнительными данными)
     const fillFormWithClientData = async (clientData) => {
-        // Сначала заполняем базовые данные из первого API
         setData("surname", clientData.surname || "");
         setData("name", clientData.name || "");
         setData("patronymic", clientData.patronymic || "");
@@ -287,79 +281,65 @@ export default function GiftCard({ edit = false }) {
         setData("inn", clientData.tax_code || "");
         setData("client_code", clientData.client_code || "");
 
-        // Загружаем дополнительные данные из второго API
         try {
             setSearching(true);
             const clientDetails = await loadClientDetails(clientData.client_code);
 
-            // Заполняем дополнительные поля из второго API
             if (clientDetails.birth_date) {
                 const birthDate = new Date(clientDetails.birth_date);
                 const formattedBirthDate = birthDate.toISOString().split("T")[0];
                 setData("birth_date", formattedBirthDate);
             }
 
-            // Резидентность
             if (clientDetails.is_resident !== undefined) {
                 setData("is_resident", clientDetails.is_resident);
             }
 
-            // Страна
             if (clientDetails.country && clientDetails.country.Name) {
                 setData("country", clientDetails.country.Name);
             }
 
-            // Пол
             if (clientDetails.sex === "M") {
-                setData("gender", true); // Мужской
+                setData("gender", true);
             } else if (clientDetails.sex === "F") {
-                setData("gender", false); // Женский
+                setData("gender", false);
             }
 
-            // Адресные данные
             if (
                 clientDetails.detailed_addresses &&
                 clientDetails.detailed_addresses.length > 0
             ) {
                 const address = clientDetails.detailed_addresses[0];
 
-                // Регион
                 if (address.region) {
                     setData("region", address.region);
                 }
 
-                // Населенный пункт
                 if (address.city) {
                     setData("populated", address.city);
                 }
 
-                // Район (если есть в данных)
                 if (address.district) {
                     setData("district", address.district);
                 }
 
-                // Улица
                 if (address.street) {
                     setData("street", address.street);
                 }
 
-                // Номер дома
                 if (address.house_number) {
                     setData("house_number", address.house_number);
                 }
 
-                // Квартира
                 if (address.flat && address.flat !== "0") {
                     setData("apartment_number", address.flat);
                 }
 
-                // Страна из адреса
                 if (address.country) {
                     setData("country", address.country);
                 }
             }
 
-            // Дополнительные поля из второго API
             if (clientDetails.tax_identification_number) {
                 setData("inn", clientDetails.tax_identification_number);
             }
@@ -376,7 +356,6 @@ export default function GiftCard({ edit = false }) {
                 setData("patronymic", clientDetails.middle_name || "");
             }
 
-            // SWIFT имя для карты (если нужно)
             if (clientDetails.swift_name) {
                 setData("card_name", clientDetails.swift_name);
             } else if (
@@ -389,7 +368,7 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // Проверяем ФИО в списке террористов
+            // ИСПРАВЛЕНО: Проверяем ФИО в списке террористов с датой рождения
             const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""}`.trim();
             const birthDate = clientDetails.birth_date ? new Date(clientDetails.birth_date).toISOString().split("T")[0] : null;
 
@@ -416,7 +395,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для поиска клиента в АБС
     const handleSearchClient = async () => {
         if (!data.phone_number) {
             showAlert("Пожалуйста, заполните поле 'Телефон'", "error", 5000);
@@ -483,7 +461,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для выбора клиента из модального окна
     const handleSelectClient = async (clientIndex) => {
         if (foundClients[clientIndex]) {
             await fillFormWithClientData(foundClients[clientIndex]);
@@ -512,7 +489,6 @@ export default function GiftCard({ edit = false }) {
         document.body.removeChild(a);
     };
 
-    // Функция для скачивания анкеты
     const downloadPoll = async (applicationId) => {
         try {
             setDownloading(true);
@@ -547,7 +523,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для скачивания оферта
     const downloadOffer = async (applicationId) => {
         try {
             setDownloadingOffer(true);
@@ -582,7 +557,6 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Функция для проверки полей оферта
     const validateOfferFields = () => {
         const requiredFields = [
             { field: "product", label: "Продукт" },
@@ -600,7 +574,6 @@ export default function GiftCard({ edit = false }) {
             }
         }
 
-        // Проверяем, что выбрана карта (product)
         if (!data.visa_card && !data.mc_card && !data.nc_card) {
             showAlert("Выберите тип карты", "error", 5000);
             return false;
@@ -609,7 +582,6 @@ export default function GiftCard({ edit = false }) {
         return true;
     };
 
-    // Обработчик для сохранения и скачивания анкеты
     const handleSaveAndDownload = async () => {
         const saved = await onSend(true, false);
         if (!saved) {
@@ -617,9 +589,7 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Обработчик для сохранения и скачивания оферта
     const handleSaveAndDownloadOffer = async () => {
-        // Проверяем обязательные поля для оферта
         if (!validateOfferFields()) {
             return;
         }
@@ -630,12 +600,10 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Обновленная функция onSend с поддержкой обоих типов скачивания
     const onSend = async (isForPoll = false, isForOffer = false) => {
         const isValid = validate(ValidData);
         if (!isValid) return false;
 
-        // Проверяем тип SMS если включено
         if (data.is_new_client) {
             if (!data.message_type) {
                 showAlert("Выберите тип SMS для отправки", "error", 5000);
@@ -650,7 +618,6 @@ export default function GiftCard({ edit = false }) {
         try {
             const formData = new FormData();
 
-            // Файлы
             if (data.front_side_of_the_passport_file) {
                 formData.append(
                     "front_side_of_the_passport_file",
@@ -670,12 +637,10 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // Вспомогательная функция для безопасного trim
             const safeTrim = (value) => {
                 return value ? value.toString().trim() : "";
             };
 
-            // Добавление всех полей
             const fieldsToAppend = [
                 { key: "name", value: safeTrim(data.name) },
                 { key: "surname", value: safeTrim(data.surname) },
@@ -730,8 +695,6 @@ export default function GiftCard({ edit = false }) {
                         data.house_number
                     )}`,
                 },
-
-                // Новые поля
                 { key: "message_type", value: safeTrim(data.message_type) },
                 { key: "product", value: safeTrim(data.product) },
                 { key: "account_usd", value: safeTrim(data.account_usd) },
@@ -744,7 +707,6 @@ export default function GiftCard({ edit = false }) {
                 },
             ];
 
-            // Если есть причина отклонения, добавляем в comment
             if (
                 data.message_type === "rejected" &&
                 data.rejection_reason &&
@@ -756,17 +718,14 @@ export default function GiftCard({ edit = false }) {
                 });
             }
 
-            // ВАЖНОЕ ИСПРАВЛЕНИЕ: если галочка на "нет" или снята, всегда отправляем nosms
             if (!data.is_new_client) {
                 data.message_type = "nosms";
             }
 
-            // Если скачиваем анкету или оферт, также устанавливаем nosms
             if (isForOffer === true || isForPoll === true) {
                 data.message_type = "nosms";
             }
 
-            // Добавляем все поля в FormData
             fieldsToAppend.forEach(({ key, value }) => {
                 formData.append(key, value);
             });
@@ -786,7 +745,6 @@ export default function GiftCard({ edit = false }) {
                 const result = await response.json();
                 console.log("Успешно обновлено:", result);
 
-                // Запускаем скачивание в зависимости от типа
                 if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
@@ -809,7 +767,6 @@ export default function GiftCard({ edit = false }) {
 
                 applicationId = result.ID || result.id;
 
-                // Запускаем скачивание в зависимости от типа
                 if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
@@ -853,12 +810,16 @@ export default function GiftCard({ edit = false }) {
                         "dateOnly"
                     ),
                     contract_date: formaterDate(responseData?.contract_date, "dateOnly"),
-
                     CreatedAt: formaterDate(responseData?.CreatedAt, "dateOnly"),
                     UpdatedAt: formaterDate(responseData?.UpdatedAt, "dateOnly"),
                 });
 
+                // ИСПРАВЛЕНО: Проверяем террористов с датой рождения
                 const birthDate = formaterDate(responseData?.birth_date, "dateOnly");
+
+                if (responseData.is_new_client) {
+                    setShowSMSType(true);
+                }
 
                 if (responseData.name && responseData.surname) {
                     const fullName = `${responseData.surname} ${responseData.name}`.trim();
@@ -870,25 +831,6 @@ export default function GiftCard({ edit = false }) {
                 if (responseData.card_name) {
                     if (responseData.card_name.trim().length >= 2) {
                         await checkTerrorList(responseData.card_name.trim(), birthDate, "cardName");
-                    }
-                }
-
-                // Устанавливаем состояние для SMS
-                if (responseData.is_new_client) {
-                    setShowSMSType(true);
-                }
-
-                // Проверяем существующие данные в списке террористов при загрузке
-                if (responseData.name && responseData.surname) {
-                    const fullName = `${responseData.surname} ${responseData.name}`.trim();
-                    if (fullName.length >= 2) {
-                        debouncedCheckFullName(fullName);
-                    }
-                }
-
-                if (responseData.card_name) {
-                    if (responseData.card_name.trim().length >= 2) {
-                        debouncedCheckCardName(responseData.card_name.trim());
                     }
                 }
             } catch (e) {
@@ -906,7 +848,6 @@ export default function GiftCard({ edit = false }) {
         getData();
     }, []);
 
-    // Очищаем таймауты при размонтировании
     useEffect(() => {
         return () => {
             Object.values(terrorCheckTimeoutRefs).forEach(ref => {
@@ -917,7 +858,6 @@ export default function GiftCard({ edit = false }) {
         };
     }, []);
 
-    // Проверяем, есть ли хотя бы одно совпадение
     const hasTerrorMatch = terrorCheckResults.fullName === true || terrorCheckResults.cardName === true;
 
     return (
@@ -942,7 +882,6 @@ export default function GiftCard({ edit = false }) {
                         />
                     )}
 
-                    {/* Модальное окно выбора клиента */}
                     {showClientSelector && foundClients.length > 1 && (
                         <ClientSelectorModal
                             clients={foundClients}
@@ -973,10 +912,9 @@ export default function GiftCard({ edit = false }) {
                                             setData("visa_card", e);
                                             setData("mc_card", 0);
                                             setData("nc_card", 0);
-                                            setData(
-                                                "product",
-                                                data?.nc_card?.find((item) => item.id === e)?.name
-                                            );
+                                            // ИСПРАВЛЕНО: ищем в массиве visaCards
+                                            const selectedCard = visaCards.find((item) => item.value === e);
+                                            setData("product", selectedCard?.label || "");
                                         }}
                                     />
                                 </div>
@@ -989,10 +927,9 @@ export default function GiftCard({ edit = false }) {
                                             setData("mc_card", e);
                                             setData("visa_card", 0);
                                             setData("nc_card", 0);
-                                            setData(
-                                                "product",
-                                                data?.nc_card?.find((item) => item.id === e)?.name
-                                            );
+                                            // ИСПРАВЛЕНО: ищем в массиве mcCards
+                                            const selectedCard = mcCards.find((item) => item.value === e);
+                                            setData("product", selectedCard?.label || "");
                                         }}
                                     />
                                 </div>
@@ -1005,16 +942,14 @@ export default function GiftCard({ edit = false }) {
                                             setData("nc_card", e);
                                             setData("visa_card", 0);
                                             setData("mc_card", 0);
-                                            setData(
-                                                "product",
-                                                data?.nc_card?.find((item) => item.id === e)?.name
-                                            );
+                                            // ИСПРАВЛЕНО: ищем в массиве ncCards
+                                            const selectedCard = ncCards.find((item) => item.value === e);
+                                            setData("product", selectedCard?.label || "");
                                         }}
                                     />
                                 </div>
                             </div>
 
-                            {/* Отображение предупреждения о террористе */}
                             {hasTerrorMatch && (
                                 <div className="terror-warning">
                                     <div className="terror-warning-header">
@@ -1112,7 +1047,6 @@ export default function GiftCard({ edit = false }) {
                                 </div>
                             </div>
 
-                            {/* Секция выбора типа SMS */}
                             {showSMSType && (
                                 <div className="sms-section">
                                     <div className="sms-section-header">
