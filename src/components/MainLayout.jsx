@@ -5,7 +5,7 @@ import useSidebar from "../hooks/useSideBar.js";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const location = useLocation();
+  // const location = useLocation();
 
   // Extract the active link from the current path to pass to Sidebar
   // This is a bit of a heuristic, but can be improved
