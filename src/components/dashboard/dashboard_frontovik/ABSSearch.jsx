@@ -10,6 +10,7 @@ import {
   getUserCredits,
   getUserDeposits,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
@@ -23,6 +24,7 @@ export default function ABSClientSearch() {
   const [accountsData, setAccountsData] = useState([]);
   const [creditsData, setCreditsData] = useState([]);
   const [depositsData, setDepositsData] = useState([]);
+  const navigate = useNavigate();
   const [showCardsModal, setShowCardsModal] = useState({
     active: false,
     data: [],
@@ -731,6 +733,18 @@ export default function ABSClientSearch() {
                             </td>
                             <td className="limits-table__td">
                               {card.accounts?.[0]?.state || "-"}
+                            </td>
+                            <td className="limits-table__td">
+                              <button
+                                className="selectAll-toggle "
+                                onClick={() =>
+                                  navigate(
+                                    "/processing/transactions/" + card.cardId,
+                                  )
+                                }
+                              >
+                                Поиск
+                              </button>
                             </td>
                           </tr>
                         ))}
