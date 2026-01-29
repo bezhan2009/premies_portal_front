@@ -1,5 +1,5 @@
-import React from "react"
-import OperatorPremiBlockInfo from '../dashboard/dashboard_operator/OperatorPremi.jsx'
+import React from "react";
+import OperatorPremiBlockInfo from "../dashboard/dashboard_operator/OperatorPremi.jsx";
 import OperatorReportsBlockInfo from "../dashboard/dashboard_operator/OperatorReports.jsx";
 import OperatorDatasBlockInfo from "../dashboard/dashboard_operator/OperatorDatas.jsx";
 import OperatorKnowledgeBaseBlockInfo from "../dashboard/dashboard_operator/OperatorKnowledgeBase.jsx";
@@ -7,7 +7,7 @@ import GeneralUnderDevelopment from "./UnderDevelopment.jsx";
 import WorkerPremiesBlockInfo from "../dashboard/dashboard_worker/WorkerPremies.jsx";
 import RenderReports from "../dashboard/dashboard_worker/reports_table/RenderReports.jsx";
 import ChairmanReports from "../dashboard/dashboard_chairman/ChairmanReports.jsx";
-import '../../styles/components/BlockInfo.scss'
+import "../../styles/components/BlockInfo.scss";
 import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/GeneralKnowledgeBase.jsx";
 import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTestsPage.jsx";
 import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";
@@ -16,39 +16,26 @@ import DirectorReports from "../dashboard/dashboard_director/DirectorReports.jsx
 import ProcessingIntegrationLimits from "../dashboard/dashboard_operator/processing/Limits.jsx";
 import ProcessingIntegrationTransactions from "../dashboard/dashboard_operator/processing/Transactions.jsx";
 
+const pageMap = {
+  worker_knowledge_base: GeneralKnowledgeBaseBlockInfo,
+  operator_premi: OperatorPremiBlockInfo,
+  operator_reports: OperatorReportsBlockInfo,
+  operator_data: OperatorDatasBlockInfo,
+  operator_knowledge_base: OperatorKnowledgeBaseBlockInfo,
+  operator_tests: OperatorTestsDashboard,
+  operator_processing_limits: ProcessingIntegrationLimits,
+  operator_processing_transactions: ProcessingIntegrationTransactions,
+  worker_premi: WorkerPremiesBlockInfo,
+  worker_report: RenderReports,
+  worker_tests: WorkerTestsPage,
+  application_cards_worker: WorkerApplicationsCards,
+  chairman_reports: ChairmanReports,
+  director_reports: DirectorReports,
+};
+
 function GetBlockInfo({ page }) {
-    switch (page) {
-        case "worker_knowledge_base":
-            return <GeneralKnowledgeBaseBlockInfo />;
-        case "operator_premi":
-            return <OperatorPremiBlockInfo />;
-        case "operator_reports":
-            return <OperatorReportsBlockInfo />;
-        case "operator_data":
-            return <OperatorDatasBlockInfo />;
-        case "operator_knowledge_base":
-            return <OperatorKnowledgeBaseBlockInfo />;
-        case "operator_tests":
-            return <OperatorTestsDashboard />;
-        case "operator_processing_limits":
-            return <ProcessingIntegrationLimits />
-        case "operator_processing_transactions":
-            return <ProcessingIntegrationTransactions />
-        case "worker_premi":
-            return <WorkerPremiesBlockInfo />;
-        case "worker_report":
-            return <RenderReports />;
-        case "worker_tests":
-            return <WorkerTestsPage />;
-        case "application_cards_worker":
-            return <WorkerApplicationsCards />
-        case "chairman_reports":
-            return <ChairmanReports />
-        case "director_reports":
-            return <DirectorReports />
-        default:
-            return <GeneralUnderDevelopment />;
-    }
+  const Component = pageMap[page] || GeneralUnderDevelopment;
+  return <Component />;
 }
 
 export default GetBlockInfo;

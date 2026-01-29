@@ -532,7 +532,7 @@ export default function EQMSList() {
         style={{ paddingBottom: 0, paddingTop: 0 }}
       >
         <Sidebar
-          activeLink="terminal_names"
+          activeLink="eqms_list"
           isOpen={isSidebarOpen}
           toggle={toggleSidebar}
         />
