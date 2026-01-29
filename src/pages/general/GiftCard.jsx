@@ -62,7 +62,7 @@ export default function GiftCard({ edit = false }) {
     };
 
     // Функция для проверки в списке террористов
-    const checkTerrorList = useCallback(async (name, type) => {
+    const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
@@ -78,7 +78,13 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`, {
+            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`;
+
+            if (birthDate && birthDate.trim() !== '') {
+                url += `&bday=${encodeURIComponent(birthDate.trim())}`;
+            }
+
+            const response = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -88,7 +94,6 @@ export default function GiftCard({ edit = false }) {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    // Если 404 - значит не найдено, это нормально
                     setTerrorCheckResults(prev => ({ ...prev, [type]: false }));
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -106,13 +111,13 @@ export default function GiftCard({ edit = false }) {
     }, []);
 
     // Debounced проверка для полного имени
-    const debouncedCheckFullName = useCallback((fullName) => {
+    const debouncedCheckFullName = useCallback((fullName, birthDate) => {
         if (terrorCheckTimeoutRefs.fullName.current) {
             clearTimeout(terrorCheckTimeoutRefs.fullName.current);
         }
 
         terrorCheckTimeoutRefs.fullName.current = setTimeout(async () => {
-            await checkTerrorList(fullName, "fullName");
+            await checkTerrorList(fullName, birthDate, "fullName");
         }, 800);
     }, [checkTerrorList]);
 
@@ -123,9 +128,22 @@ export default function GiftCard({ edit = false }) {
         }
 
         terrorCheckTimeoutRefs.cardName.current = setTimeout(async () => {
-            await checkTerrorList(cardName, "cardName");
+            await checkTerrorList(cardName, data.birth_date, "cardName");
         }, 800);
-    }, [checkTerrorList]);
+    }, [checkTerrorList, data.birth_date]);
+
+    const handleBirthDateChange = (value) => {
+        setData("birth_date", value);
+
+        const fullName = `${data.surname || ''} ${data.name || ''}`.trim();
+        if (fullName.length >= 2) {
+            debouncedCheckFullName(fullName, value);
+        }
+
+        if (data.card_name && data.card_name.trim().length >= 2) {
+            debouncedCheckCardName(data.card_name.trim());
+        }
+    };
 
     // Состояния для работы с несколькими клиентами
     const [foundClients, setFoundClients] = useState([]);
@@ -180,13 +198,12 @@ export default function GiftCard({ edit = false }) {
     const handleNameChange = (field, value) => {
         setData(field, value);
 
-        // Собираем полное имя для проверки
         const surname = field === 'surname' ? value : data.surname || '';
         const name = field === 'name' ? value : data.name || '';
         const fullName = `${surname} ${name}`.trim();
 
         if (fullName.length >= 2) {
-            debouncedCheckFullName(fullName);
+            debouncedCheckFullName(fullName, data.birth_date);
         } else {
             setTerrorCheckResults(prev => ({ ...prev, fullName: null }));
         }
@@ -374,15 +391,16 @@ export default function GiftCard({ edit = false }) {
 
             // Проверяем ФИО в списке террористов
             const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""}`.trim();
+            const birthDate = clientDetails.birth_date ? new Date(clientDetails.birth_date).toISOString().split("T")[0] : null;
+
             if (fullName.length >= 2) {
-                debouncedCheckFullName(fullName);
+                debouncedCheckFullName(fullName, birthDate);
             }
 
-            // Проверяем имя на карте в списке террористов
             const cardNameForCheck = clientDetails.swift_name ||
                 `${clientDetails.latin_first_name || ""} ${clientDetails.latin_last_name || ""}`.trim();
             if (cardNameForCheck.length >= 2) {
-                debouncedCheckCardName(cardNameForCheck);
+                await checkTerrorList(cardNameForCheck, birthDate, "cardName");
             }
 
             showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
@@ -840,6 +858,21 @@ export default function GiftCard({ edit = false }) {
                     UpdatedAt: formaterDate(responseData?.UpdatedAt, "dateOnly"),
                 });
 
+                const birthDate = formaterDate(responseData?.birth_date, "dateOnly");
+
+                if (responseData.name && responseData.surname) {
+                    const fullName = `${responseData.surname} ${responseData.name}`.trim();
+                    if (fullName.length >= 2) {
+                        debouncedCheckFullName(fullName, birthDate);
+                    }
+                }
+
+                if (responseData.card_name) {
+                    if (responseData.card_name.trim().length >= 2) {
+                        await checkTerrorList(responseData.card_name.trim(), birthDate, "cardName");
+                    }
+                }
+
                 // Устанавливаем состояние для SMS
                 if (responseData.is_new_client) {
                     setShowSMSType(true);
@@ -1197,7 +1230,7 @@ export default function GiftCard({ edit = false }) {
                                     type="date"
                                     className={"div4"}
                                     placeholder={"Дата рождения"}
-                                    onChange={(e) => setData("birth_date", e)}
+                                    onChange={handleBirthDateChange}
                                     value={data?.birth_date}
                                     error={errors}
                                     id={"birth_date"}
