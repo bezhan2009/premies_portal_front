@@ -16,7 +16,7 @@ import {
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 
 export default function DashboardOperatorProcessingTransactions() {
-    const [searchType, setSearchType] = useState('cardId'); // По умолчанию поиск по карте
+    const [searchType, setSearchType] = useState('cardId');
     const [displayCardId, setDisplayCardId] = useState('');
     const [cardId, setCardId] = useState('');
     const [atmId, setAtmId] = useState('');
@@ -26,7 +26,6 @@ export default function DashboardOperatorProcessingTransactions() {
     const [amountTo, setAmountTo] = useState('');
     const [reversal, setReversal] = useState('');
     const [mcc, setMcc] = useState('');
-    // Новые поля для поиска по BIN и типу
     const [cardBin, setCardBin] = useState('');
     const [searchTransactionType, setSearchTransactionType] = useState('');
     const [searchDate, setSearchDate] = useState('');
