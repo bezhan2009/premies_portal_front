@@ -76,6 +76,10 @@ const managementRoutes = (
         path="/processing/transactions"
         element={<DashboardOperatorProcessingTransactions />}
       />
+      <Route
+        path="/processing/transactions/:id"
+        element={<DashboardOperatorProcessingTransactions />}
+      />
     </Route>
   </>
 );
