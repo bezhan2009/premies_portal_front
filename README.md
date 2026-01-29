@@ -1,12 +1,46 @@
-# React + Vite
+# Premies Portal Front-end
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Приложение для управления и отслеживания премий сотрудников. Построено на React + Vite.
 
-Currently, two official plugins are available:
+## Архитектура проекта
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Проект организован по модульному принципу для обеспечения масштабируемости и удобства поддержки.
 
-## Expanding the ESLint configuration
+### 1. Слой API (`src/api/`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Унифицированные клиенты**: Все запросы проходят через настроенные экземпляры `axios` (находятся в `src/api/utils/`).
+- **Интерцепторы**: Автоматическая подстановка `access_token` из `localStorage` во все запросы через централизованную функцию `addInterceptors`.
+- **Логика по доменам**: API вызовы разделены по папкам (например, `auth.js`, `operator/`, `workers/`).
+
+### 2. Роутинг (`src/router/`)
+
+- **Модульность**: Основной роутер `src/router/index.jsx` максимально упрощен. Логика маршрутизации разделена на модули по ролям пользователей:
+  - `operator.routes.jsx` — маршруты операторов.
+  - `worker.routes.jsx` — маршруты рядовых сотрудников.
+  - `agent.routes.jsx` — маршруты агентов (кредиты, депозиты, QR и др.).
+  - `management.routes.jsx` — маршруты руководителей (Director, Chairman).
+- **Защита маршрутов**: Использование `RequireAuth` и `RequireRole` для контроля доступа.
+
+### 3. Компоненты (`src/components/`)
+
+- **Разделение отвественности**: Сложная логика выносится в кастомные хуки (например, `src/hooks/useWorkers.js`).
+- **Реестр страниц**: Компоненты для отображения различных страниц в дашборде организованы через карту (`pageMap`) в `GeneralBlockInfo.jsx`.
+- **UI элементы**: Общие компоненты (кнопки, инпуты, спиннеры) вынесены в `src/components/elements/` и `src/components/general/`.
+
+### 4. Стили (`src/styles/`)
+
+- Использование SCSS для стилизации.
+- Глобальные переменные и миксины для обеспечения консистентности дизайна.
+
+## Разработка
+
+```bash
+# Установка зависимостей
+npm install
+
+# Запуск в режиме разработки
+npm run dev
+
+# Сборка проекта
+npm run build
+```

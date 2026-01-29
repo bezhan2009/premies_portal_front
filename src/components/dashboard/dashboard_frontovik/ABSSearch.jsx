@@ -10,6 +10,7 @@ import {
   getUserCredits,
   getUserDeposits,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
@@ -23,6 +24,7 @@ export default function ABSClientSearch() {
   const [accountsData, setAccountsData] = useState([]);
   const [creditsData, setCreditsData] = useState([]);
   const [depositsData, setDepositsData] = useState([]);
+  const navigate = useNavigate();
   const [showCardsModal, setShowCardsModal] = useState({
     active: false,
     data: [],
@@ -208,94 +210,6 @@ export default function ABSClientSearch() {
           label: "Код клиента в АБС",
           key: "client_code",
           value: selectedClient.client_code,
-        },
-        {
-          label: "Карты",
-          key: "cards",
-          value:
-            cardsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: cardsData,
-                    type: "cards",
-                  })
-                }
-              >
-                Показать ({cardsData.length})
-              </button>
-            ) : (
-              "Нет карт"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Депозиты",
-          key: "deposits",
-          value:
-            depositsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: depositsData,
-                    type: "deposits",
-                  })
-                }
-              >
-                Показать ({depositsData.length})
-              </button>
-            ) : (
-              "Нет депозитов"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Кредиты",
-          key: "credits",
-          value:
-            creditsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: creditsData,
-                    type: "credits",
-                  })
-                }
-              >
-                Показать ({creditsData.length})
-              </button>
-            ) : (
-              "Нет кредитов"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Счета",
-          key: "accounts",
-          value:
-            accountsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: accountsData,
-                    type: "accounts",
-                  })
-                }
-              >
-                Показать ({accountsData.length})
-              </button>
-            ) : (
-              "Нет счетов"
-            ),
-          isAction: true,
         },
         { label: "Фамилия", key: "surname", value: selectedClient.surname },
         { label: "Имя", key: "name", value: selectedClient.name },
@@ -699,52 +613,57 @@ export default function ABSClientSearch() {
                     <table className="limits-table">
                       <thead className="limits-table__head">
                         <tr>
-                          <th className="limits-table__th limits-table__th--field">
-                            Поле
-                          </th>
-                          <th className="limits-table__th limits-table__th--value">
-                            Значение
-                          </th>
-                          <th className="limits-table__th limits-table__th--actions">
-                            Действия
-                          </th>
+                          {tableData &&
+                            tableData.map((item, i) => (
+                              <th
+                                key={i}
+                                className="limits-table__th limits-table__th--field"
+                              >
+                                {item.label}
+                              </th>
+                            ))}
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {tableData.map((item) => (
-                          <tr key={item.key} className="limits-table__row">
-                            <td className="limits-table__td limits-table__td--info">
-                              <div className="limit-info">
-                                <div className="limit-info__name">
-                                  {item.label}
+                        {/* <tr>{tableData}</tr> */}
+                        <tr className="limits-table__row">
+                          {tableData.map((item) => (
+                            <>
+                              <td
+                                key={item.key}
+                                className="limits-table__td limits-table__td--value"
+                              >
+                                <span className="current-value">
+                                  {item.value ||
+                                    (item.value === 0 ? 0 : "Не указано")}
+                                </span>
+                              </td>
+                            </>
+                          ))}
+                        </tr>
+
+                        {/* <tr className="limits-table__row">
+                          {tableData.map((item) => (
+                            <>
+                              <td className="limits-table__td limits-table__td--actions">
+                                <div className="action-buttons">
+                                  {!item.isAction && (
+                                    <button
+                                      onClick={() =>
+                                        copyToClipboard(item.value || "")
+                                      }
+                                      className="action-buttons__btn action-buttons__btn--copy"
+                                      disabled={!item.value}
+                                      title="Скопировать значение"
+                                    >
+                                      Копировать
+                                    </button>
+                                  )}
                                 </div>
-                                <div className="limit-info__id">{item.key}</div>
-                              </div>
-                            </td>
-                            <td className="limits-table__td limits-table__td--value">
-                              <span className="current-value">
-                                {item.value ||
-                                  (item.value === 0 ? 0 : "Не указано")}
-                              </span>
-                            </td>
-                            <td className="limits-table__td limits-table__td--actions">
-                              <div className="action-buttons">
-                                {!item.isAction && (
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(item.value || "")
-                                    }
-                                    className="action-buttons__btn action-buttons__btn--copy"
-                                    disabled={!item.value}
-                                    title="Скопировать значение"
-                                  >
-                                    Копировать
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </>
+                          ))}
+                        </tr> */}
                       </tbody>
                     </table>
                   </div>
@@ -766,6 +685,279 @@ export default function ABSClientSearch() {
                         Код клиента: {selectedClient.client_code}
                       </span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные карт
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">ID Карты</th>
+                          <th className="limits-table__th">Тип</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Срок</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Остаток</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {cardsData?.map((card, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">{card.cardId}</td>
+                            <td className="limits-table__td">{card.type}</td>
+                            <td className="limits-table__td">
+                              {card.statusName}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.expirationDate}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.accounts?.[0]?.state || "-"}
+                            </td>
+                            <td className="limits-table__td">
+                              <button
+                                className="selectAll-toggle "
+                                onClick={() =>
+                                  navigate(
+                                    "/processing/transactions/" + card.cardId,
+                                  )
+                                }
+                              >
+                                Поиск
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные счетов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер счета</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Баланс</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Дата открытия</th>
+                          <th className="limits-table__th">Филиал</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {accountsData.map((acc, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">{acc.Number}</td>
+                            <td className="limits-table__td">
+                              {acc.Currency?.Code}
+                            </td>
+                            <td className="limits-table__td">{acc.Balance}</td>
+                            <td className="limits-table__td">
+                              {acc.Status?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {acc.DateOpened}
+                            </td>
+                            <td className="limits-table__td">
+                              {acc.Branch?.Name}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные кредитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер контракта</th>
+                          <th className="limits-table__th">
+                            Идентификатор ссылки
+                          </th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">СтатусИмя</th>
+                          <th className="limits-table__th">Сумма</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Дата документа</th>
+                          <th className="limits-table__th">КлиентКод</th>
+                          <th className="limits-table__th">Код продукта</th>
+                          <th className="limits-table__th">
+                            Название продукта
+                          </th>
+                          <th className="limits-table__th">Отдел</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {creditsData?.map((card, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">
+                              {card.contractNumber}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.referenceId}
+                            </td>
+                            <td className="limits-table__td">{card.status}</td>
+                            <td className="limits-table__td">
+                              {card.statusName}
+                            </td>
+                            <td className="limits-table__td">{card.amount}</td>
+                            <td className="limits-table__td">
+                              {card.currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.documentDate}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.clientCode}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.productCode}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.productName}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.department || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные депозитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер договора</th>
+                          <th className="limits-table__th">Референс</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Сумма</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Дата начала</th>
+                          <th className="limits-table__th">Дата окончания</th>
+                          <th className="limits-table__th">Продукт</th>
+                          <th className="limits-table__th">Срок</th>
+                          <th className="limits-table__th">Отдел</th>
+                          <th className="limits-table__th">Баланс</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {depositsData?.map((item, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Code}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.ColvirReferenceId}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Status?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Amount}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DateFrom}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DateTo}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Product?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DepoTermTU}{" "}
+                              {item.AgreementData?.DepoTermTimeType}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Department?.Code}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.BalanceAccounts?.[0]?.Balance || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

@@ -1,25 +1,31 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Spinner from "../../Spinner.jsx";
 import "../../../styles/components/Table.scss";
-import { fetchWorkers } from "../../../api/operator/reports/operator_premies.js";
 import SearchBar from "../../general/SearchBar.jsx";
 import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
 import { DownloadCloud } from "lucide-react";
 import Input from "../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
+import { useWorkers } from "../../../hooks/useWorkers";
+import DownloadModal from "./DownloadModal.jsx";
 
 const TablePremies = ({ month, year }) => {
-  const [workers, setWorkers] = useState([]);
-  const [allWorkers, setAllWorkers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const {
+    workers,
+    allWorkers,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    handleSearch,
+    loadMore,
+    refresh,
+  } = useWorkers(month, year);
+
   const [edit, setEdit] = useState({ ID: null });
   const observer = useRef();
 
-  // NEW: State for modal
+  // State for modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadUser, setDownloadUser] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState("");
@@ -40,85 +46,6 @@ const TablePremies = ({ month, year }) => {
     { name: "Декабрь", value: 12 },
   ];
 
-  useEffect(() => {
-    const loadInitial = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchWorkers(month, year);
-        setWorkers(data);
-        setHasMore(data.length === 10);
-      } catch (err) {
-        setError("Не удалось загрузить данные.");
-        setWorkers([]);
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInitial();
-  }, [month, year]);
-
-  const handleSearch = async (filtered) => {
-    if (!filtered) {
-      setIsSearching(false);
-      setLoading(true);
-      try {
-        const data = await fetchWorkers(month, year);
-        setWorkers(data);
-        setHasMore(data.length === 10);
-      } catch {
-        setError("Не удалось загрузить данные.");
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    setIsSearching(true);
-    setWorkers(filtered);
-    setHasMore(false);
-  };
-
-  useEffect(() => {
-    const loadAllData = async () => {
-      let all = [];
-      let afterID = null;
-
-      while (true) {
-        const chunk = await fetchWorkers(month, year, afterID);
-        if (!chunk || chunk.length === 0) break;
-
-        all = [...all, ...chunk];
-        afterID = chunk[chunk.length - 1]?.ID;
-        if (chunk.length < 10) break;
-      }
-
-      setAllWorkers(all);
-    };
-
-    loadAllData();
-  }, [month, year]);
-
-  const loadMore = async () => {
-    if (loadingMore || !hasMore || workers.length === 0 || isSearching) return;
-
-    setLoadingMore(true);
-    setError(null);
-    try {
-      const lastId = workers[workers.length - 1]?.ID;
-      const data = await fetchWorkers(month, year, lastId);
-      setWorkers((prev) => [...prev, ...data]);
-      setHasMore(data.length === 10);
-    } catch (err) {
-      setError("Не удалось загрузить дополнительные данные.");
-      console.log(err);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
   const lastRowRef = useCallback(
     (node) => {
       if (loadingMore) return;
@@ -132,16 +59,14 @@ const TablePremies = ({ month, year }) => {
 
       if (node) observer.current.observe(node);
     },
-    [loadingMore, hasMore, workers]
+    [loadingMore, hasMore, loadMore],
   );
 
   const upDateUserWorkers = async () => {
     try {
       await fullUpdateWorkers(edit, false);
       setEdit({ ID: null });
-      const data = await fetchWorkers(month, year);
-      setWorkers(data);
-      setHasMore(data.length === 10);
+      refresh();
     } catch (e) {
       console.error(e);
     }
@@ -371,7 +296,7 @@ const TablePremies = ({ month, year }) => {
                         onChange={(e) =>
                           onChangeEdit(
                             "CardSales[0].cards_sailed_in_general",
-                            e
+                            e,
                           )
                         }
                         value={
@@ -544,44 +469,17 @@ const TablePremies = ({ month, year }) => {
         </div>
       )}
 
-      {/* NEW: Download Modal */}
-      {showDownloadModal && (
-        <div className="filters__modal">
-          <div className="filters__modal-content">
-            <h3>Выгрузка отчёта для {downloadUser?.full_name}</h3>
-
-            <div className="filters__date-selection">
-              <select
-                value={downloadMonth}
-                onChange={(e) => setDownloadMonth(e.target.value)}
-              >
-                <option value="">-- Выберите месяц --</option>
-                {monthOptions.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.name}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                // type="text"
-                type="number"
-                placeholder="Год"
-                value={downloadYear}
-                onChange={(e) => setDownloadYear(e.target.value)}
-                className="filters__year-input"
-              />
-            </div>
-
-            <div className="filters__modal-actions">
-              <button onClick={executeDownload}>Выгрузить</button>
-              <button onClick={() => setShowDownloadModal(false)}>
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DownloadModal
+        show={showDownloadModal}
+        user={downloadUser}
+        month={downloadMonth}
+        year={downloadYear}
+        onMonthChange={setDownloadMonth}
+        onYearChange={setDownloadYear}
+        onDownload={executeDownload}
+        onClose={() => setShowDownloadModal(false)}
+        monthOptions={monthOptions}
+      />
     </div>
   );
 };

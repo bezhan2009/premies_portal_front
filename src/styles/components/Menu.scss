@@ -742,7 +742,8 @@
   > div {
     flex: 1;
     width: auto;
-    overflow: auto;
+    overflow: hidden;
+    overflow-y: auto;
     // margin:20px 0; 
   }
 }
@@ -750,6 +751,7 @@
 .content-page {
   height: calc(100vh - 54px);
   margin: 27px 0;
+
 }
 
 .dashboard-container.sidebar-open {
