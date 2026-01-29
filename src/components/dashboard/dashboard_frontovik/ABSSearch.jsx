@@ -741,6 +741,214 @@ export default function ABSClientSearch() {
               </div>
             )}
 
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные счетов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер счета</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Баланс</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Дата открытия</th>
+                          <th className="limits-table__th">Филиал</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {accountsData.map((acc, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">{acc.Number}</td>
+                            <td className="limits-table__td">
+                              {acc.Currency?.Code}
+                            </td>
+                            <td className="limits-table__td">{acc.Balance}</td>
+                            <td className="limits-table__td">
+                              {acc.Status?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {acc.DateOpened}
+                            </td>
+                            <td className="limits-table__td">
+                              {acc.Branch?.Name}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные кредитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер контракта</th>
+                          <th className="limits-table__th">
+                            Идентификатор ссылки
+                          </th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">СтатусИмя</th>
+                          <th className="limits-table__th">Сумма</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Дата документа</th>
+                          <th className="limits-table__th">КлиентКод</th>
+                          <th className="limits-table__th">Код продукта</th>
+                          <th className="limits-table__th">
+                            Название продукта
+                          </th>
+                          <th className="limits-table__th">Отдел</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {creditsData?.map((card, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">
+                              {card.contractNumber}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.referenceId}
+                            </td>
+                            <td className="limits-table__td">{card.status}</td>
+                            <td className="limits-table__td">
+                              {card.statusName}
+                            </td>
+                            <td className="limits-table__td">{card.amount}</td>
+                            <td className="limits-table__td">
+                              {card.currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.documentDate}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.clientCode}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.productCode}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.productName}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.department || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные депозитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">Номер договора</th>
+                          <th className="limits-table__th">Референс</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Сумма</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Дата начала</th>
+                          <th className="limits-table__th">Дата окончания</th>
+                          <th className="limits-table__th">Продукт</th>
+                          <th className="limits-table__th">Срок</th>
+                          <th className="limits-table__th">Отдел</th>
+                          <th className="limits-table__th">Баланс</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {depositsData?.map((item, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Code}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.ColvirReferenceId}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Status?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Amount}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DateFrom}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DateTo}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Product?.Name}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.DepoTermTU}{" "}
+                              {item.AgreementData?.DepoTermTimeType}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.AgreementData?.Department?.Code}
+                            </td>
+                            <td className="limits-table__td">
+                              {item.BalanceAccounts?.[0]?.Balance || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Индикатор загрузки */}
             {isLoading && (
               <div className="processing-integration__loading">
