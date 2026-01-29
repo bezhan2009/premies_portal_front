@@ -209,94 +209,6 @@ export default function ABSClientSearch() {
           key: "client_code",
           value: selectedClient.client_code,
         },
-        {
-          label: "Карты",
-          key: "cards",
-          value:
-            cardsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: cardsData,
-                    type: "cards",
-                  })
-                }
-              >
-                Показать ({cardsData.length})
-              </button>
-            ) : (
-              "Нет карт"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Депозиты",
-          key: "deposits",
-          value:
-            depositsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: depositsData,
-                    type: "deposits",
-                  })
-                }
-              >
-                Показать ({depositsData.length})
-              </button>
-            ) : (
-              "Нет депозитов"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Кредиты",
-          key: "credits",
-          value:
-            creditsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: creditsData,
-                    type: "credits",
-                  })
-                }
-              >
-                Показать ({creditsData.length})
-              </button>
-            ) : (
-              "Нет кредитов"
-            ),
-          isAction: true,
-        },
-        {
-          label: "Счета",
-          key: "accounts",
-          value:
-            accountsData.length > 0 ? (
-              <button
-                className="limits-table__action-btn"
-                onClick={() =>
-                  setShowCardsModal({
-                    active: true,
-                    data: accountsData,
-                    type: "accounts",
-                  })
-                }
-              >
-                Показать ({accountsData.length})
-              </button>
-            ) : (
-              "Нет счетов"
-            ),
-          isAction: true,
-        },
         { label: "Фамилия", key: "surname", value: selectedClient.surname },
         { label: "Имя", key: "name", value: selectedClient.name },
         {
@@ -771,6 +683,59 @@ export default function ABSClientSearch() {
                         Код клиента: {selectedClient.client_code}
                       </span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedClient && (
+              <div className="processing-integration__limits-table">
+                <div className="limits-table">
+                  <div className="limits-table__header">
+                    <h2 className="limits-table__title">
+                      Данные карт
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
+                  </div>
+
+                  <div className="limits-table__wrapper">
+                    <table className="limits-table">
+                      <thead className="limits-table__head">
+                        <tr>
+                          <th className="limits-table__th">ID Карты</th>
+                          <th className="limits-table__th">Тип</th>
+                          <th className="limits-table__th">Статус</th>
+                          <th className="limits-table__th">Срок</th>
+                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Остаток</th>
+                        </tr>
+                      </thead>
+                      <tbody className="limits-table__body">
+                        {cardsData?.map((card, idx) => (
+                          <tr key={idx} className="limits-table__row">
+                            <td className="limits-table__td">{card.cardId}</td>
+                            <td className="limits-table__td">{card.type}</td>
+                            <td className="limits-table__td">
+                              {card.statusName}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.expirationDate}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.currency}
+                            </td>
+                            <td className="limits-table__td">
+                              {card.accounts?.[0]?.state || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
