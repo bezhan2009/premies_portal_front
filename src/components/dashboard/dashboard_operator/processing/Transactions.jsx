@@ -134,7 +134,6 @@ export default function DashboardOperatorProcessingTransactions() {
   const handleSearchTypeChange = (e) => {
     const value = e.target.value;
     setSearchType(value);
-    // Очищаем все поля при смене типа поиска
     setDisplayCardId("");
     setCardId("");
     setAtmId("");
