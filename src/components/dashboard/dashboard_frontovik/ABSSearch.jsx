@@ -95,6 +95,9 @@ export default function ABSClientSearch() {
     setSelectedClientIndex(0);
     setCardsData([]);
     setAccountsData([]);
+    setCreditsData([]);
+    setDepositsData([]);
+    setIsMobile(null);
   };
 
   // Функция для поиска клиентов в АБС
@@ -533,15 +536,29 @@ export default function ABSClientSearch() {
                     </div>
                   </div>
 
-                  <div style={{ paddingBottom: 2 }}>
-                    {isMobile ? (
-                      <MdOutlinePhonelinkRing color="#4ee14e" size={"40px"} />
-                    ) : isMobile !== null ? (
-                      <MdOutlinePhonelinkErase color="#e21a1c" size={"40px"} />
-                    ) : (
-                      <MdOutlineSmartphone size={"40px"} />
-                    )}
-                  </div>
+                  {selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value && (
+                    <div className="search-card__mobile-group">
+                      {isMobile ? (
+                        <>
+                          <MdOutlinePhonelinkRing
+                            color="#4ee14e"
+                            size={"30px"}
+                          />
+                          счет: {isMobile?.Iban || "000"}
+                        </>
+                      ) : isMobile !== null ? (
+                        <>
+                          <MdOutlinePhonelinkErase
+                            color="#e21a1c"
+                            size={"30px"}
+                          />
+                          Не подключен к мобильному банку
+                        </>
+                      ) : (
+                        <MdOutlineSmartphone size={"30px"} />
+                      )}
+                    </div>
+                  )}
                   <div className="search-card__input-group">
                     <label htmlFor="phoneNumber" className="search-card__label">
                       Номер телефона
