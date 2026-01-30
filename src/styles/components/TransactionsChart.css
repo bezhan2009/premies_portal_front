@@ -1,0 +1,225 @@
+/* TransactionsChart.css */
+
+.chart-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.chart-content {
+    padding: 20px;
+}
+
+.chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.header-left {
+    flex: 1;
+    min-width: 300px;
+}
+
+.chart-title {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+}
+
+.chart-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.chart-description {
+    font-size: 13px;
+    color: #888;
+}
+
+.header-right {
+    flex-shrink: 0;
+}
+
+.stats-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.stats-chip {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #f0f0f0;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    border: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+.chart-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 16px 0;
+    width: 100%;
+}
+
+.chart-container {
+    height: 360px;
+    width: 100%;
+}
+
+/* Custom tooltip styles */
+.custom-tooltip {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 240px;
+}
+
+.tooltip-header {
+    font-weight: 700;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+}
+
+.tooltip-content {
+    font-size: 13px;
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.tooltip-row:last-child {
+    margin-bottom: 0;
+}
+
+.tooltip-label {
+    color: #666;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.tooltip-value {
+    color: #333;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+/* Recharts customizations */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: #f0f0f0;
+}
+
+.recharts-bar-rectangle {
+    transition: opacity 0.2s;
+}
+
+.recharts-bar-rectangle:hover {
+    opacity: 0.8;
+}
+
+.recharts-default-tooltip {
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+.recharts-tooltip-label {
+    font-weight: 700 !important;
+    color: #333 !important;
+    margin-bottom: 4px !important;
+}
+
+.recharts-tooltip-item {
+    color: #555 !important;
+}
+
+.recharts-tooltip-item-name {
+    font-weight: 500 !important;
+}
+
+.recharts-tooltip-item-value {
+    font-weight: 600 !important;
+    color: #333 !important;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .chart-header {
+        flex-direction: column;
+    }
+
+    .header-right {
+        align-self: flex-start;
+    }
+
+    .stats-chips {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-content {
+        padding: 16px;
+    }
+
+    .chart-title {
+        font-size: 18px;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+
+    .stats-chip {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .header-left,
+    .header-right {
+        width: 100%;
+    }
+
+    .stats-chips {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stats-chip {
+        width: 100%;
+        text-align: left;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+}

@@ -1635,3 +1635,78 @@ button:active {
     }
   }
 }
+
+/* Дополнительные стили для AtmStickyTable */
+
+.search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.refresh-button-small {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.refresh-button-small:hover {
+  background-color: #e0e0e0;
+  transform: rotate(90deg);
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.refresh-button {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.refresh-button:hover {
+  background-color: #388e3c;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.table-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+}
+
+.table-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.atm-id {
+  font-weight: 600;
+  color: #333;
+}

@@ -412,6 +412,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 });
         }
 
+        if (roles.includes(19)) {
+            additionalLinks.push(
+                {
+                    name: "Банкоматы",
+                    key: "atms",
+                    children: [
+                        {
+                            name: "Таблица банкоматов",
+                            href: "/atm/table",
+                            key: "atm_table",
+                            description: "Таблица ATM",
+                        },
+                    ],
+                });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 

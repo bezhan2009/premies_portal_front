@@ -3,7 +3,7 @@ import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
 export const getUserCards = async (clientIndex) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/cards?clientIndex=" + clientIndex
+      "/cards?clientIndex=" + clientIndex,
     );
     return res.data;
   } catch (err) {
@@ -14,7 +14,7 @@ export const getUserCards = async (clientIndex) => {
 export const getUserAccounts = async (clientIndex) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/accounts?clientIndex=" + clientIndex
+      "/accounts?clientIndex=" + clientIndex,
     );
     return res.data;
   } catch (err) {
@@ -25,7 +25,7 @@ export const getUserAccounts = async (clientIndex) => {
 export const getUserCredits = async (clientIndex) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/credits?clientIndex=" + clientIndex
+      "/credits?clientIndex=" + clientIndex,
     );
     return res.data;
   } catch (err) {
@@ -36,7 +36,18 @@ export const getUserCredits = async (clientIndex) => {
 export const getUserDeposits = async (clientIndex) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/deposits?clientIndex=" + clientIndex
+      "/deposits?clientIndex=" + clientIndex,
+    );
+    return res.data;
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export const getUserInfoPhone = async (clientNumber) => {
+  try {
+    const res = await apiClientABS_Frontovik(
+      "account/user/" + clientNumber,
     );
     return res.data;
   } catch (err) {

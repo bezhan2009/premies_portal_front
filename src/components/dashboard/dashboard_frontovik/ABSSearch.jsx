@@ -9,12 +9,30 @@ import {
   getUserCards,
   getUserCredits,
   getUserDeposits,
+  getUserInfoPhone,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
 import { useNavigate } from "react-router-dom";
+import { Select } from "antd";
+import {
+  MdOutlinePhonelinkErase,
+  MdOutlinePhonelinkRing,
+  MdOutlineSmartphone,
+} from "react-icons/md";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
+const TYPE_SEARCH_CLIENT = [
+  { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
+  {
+    label: "Поиск по Номеру индекса",
+    value: "/client-index?clientIndex=",
+    inputLabel: "Номер индекса",
+  },
+  { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
+];
+
 export default function ABSClientSearch() {
+  const [isMobile, setIsMobile] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [displayPhone, setDisplayPhone] = useState("");
   const [clientsData, setClientsData] = useState([]);
@@ -24,11 +42,14 @@ export default function ABSClientSearch() {
   const [accountsData, setAccountsData] = useState([]);
   const [creditsData, setCreditsData] = useState([]);
   const [depositsData, setDepositsData] = useState([]);
+  const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
+    TYPE_SEARCH_CLIENT[0].value,
+  );
   const navigate = useNavigate();
-  const [showCardsModal, setShowCardsModal] = useState({
-    active: false,
-    data: [],
-  });
+  // const [showCardsModal, setShowCardsModal] = useState({
+  //   active: false,
+  //   data: [],
+  // });
   //   const [showAccountsModal, setShowAccountsModal] = useState(false);
   const [alert, setAlert] = useState({
     show: false,
@@ -78,6 +99,9 @@ export default function ABSClientSearch() {
     setSelectedClientIndex(0);
     setCardsData([]);
     setAccountsData([]);
+    setCreditsData([]);
+    setDepositsData([]);
+    setIsMobile(null);
   };
 
   // Функция для поиска клиентов в АБС
@@ -94,11 +118,19 @@ export default function ABSClientSearch() {
     formattedPhone = formattedPhone.replace(/\D/g, "");
 
     try {
+      let isMobile = null;
+
+      if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
+        isMobile = await getUserInfoPhone(formattedPhone);
+      }
+
+      setIsMobile(isMobile);
+
       setIsLoading(true);
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
-        `${API_BASE_URL}/client/info?phoneNumber=${formattedPhone}`,
+        `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedPhone}`,
         {
           method: "GET",
           headers: {
@@ -118,8 +150,14 @@ export default function ABSClientSearch() {
         return;
       }
 
-      const data = await response.json();
-      setClientsData(data);
+      let data = await response.json();
+
+      if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+        // data = [data];
+        setClientsData([data]);
+      } else {
+        setClientsData(data);
+      }
       setSelectedClientIndex(0);
 
       if (data.length === 0) {
@@ -181,6 +219,8 @@ export default function ABSClientSearch() {
       );
     }
   };
+
+  console.log("isMobile", isMobile);
 
   // Получение выбранного клиента
   const selectedClient =
@@ -279,7 +319,7 @@ export default function ABSClientSearch() {
           />
         )}
 
-        <Modal
+        {/* <Modal
           isOpen={showCardsModal?.active}
           onClose={() => setShowCardsModal(false)}
           title={`Элементы (Всего: ${showCardsModal?.data?.length})`}
@@ -457,16 +497,9 @@ export default function ABSClientSearch() {
               justifyContent: "flex-end",
             }}
           >
-            {/* <button
-              onClick={() =>
-                copyToClipboard(JSON.stringify(showCardsModal?.data, null, 2))
-              }
-              className="limits-table__action-btn limits-table__action-btn--secondary"
-            >
-              Копировать JSON карт
-            </button> */}
+         
           </div>
-        </Modal>
+        </Modal> */}
 
         <div className="processing-integration">
           <div className="processing-integration__container">
@@ -481,16 +514,65 @@ export default function ABSClientSearch() {
             <div className="processing-integration__search-card">
               <div className="search-card">
                 <div className="search-card__content">
+                  <div className="search-card__select-group">
+                    <div className="custom-select">
+                      <label
+                        htmlFor="phoneNumber"
+                        className="search-card__label"
+                      >
+                        Поиск клиента по
+                      </label>
+                      <select
+                        id="searchType"
+                        value={selectTypeSearchClient}
+                        onChange={(e) =>
+                          setSelectTypeSearchClient(e.target.value)
+                        }
+                        className="search-card__select"
+                        disabled={isLoading}
+                      >
+                        {TYPE_SEARCH_CLIENT.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value && (
+                    <div className="search-card__mobile-group">
+                      {isMobile ? (
+                        <>
+                          <MdOutlinePhonelinkRing
+                            color="#4ee14e"
+                            size={"30px"}
+                          />
+                          счет: {isMobile?.Iban || "000"}
+                        </>
+                      ) : isMobile !== null ? (
+                        <>
+                          <MdOutlinePhonelinkErase
+                            color="#e21a1c"
+                            size={"30px"}
+                          />
+                          Не подключен к мобильному банку
+                        </>
+                      ) : (
+                        <MdOutlineSmartphone size={"30px"} />
+                      )}
+                    </div>
+                  )}
                   <div className="search-card__input-group">
                     <label htmlFor="phoneNumber" className="search-card__label">
-                      Номер телефона
+                      {TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel}
                     </label>
                     <input
                       type="text"
                       id="phoneNumber"
                       value={displayPhone}
                       onChange={handlePhoneChange}
-                      placeholder="Введите номер телефона"
+                      placeholder={"Введите " + TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel.toLocaleLowerCase()}
                       className="search-card__input"
                       maxLength={20}
                       onKeyDown={(e) => {
@@ -690,7 +772,9 @@ export default function ABSClientSearch() {
               </div>
             )}
 
-            {selectedClient && (
+            {!selectedClient && !cardsData?.length ? (
+              ""
+            ) : (
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
@@ -755,7 +839,9 @@ export default function ABSClientSearch() {
               </div>
             )}
 
-            {selectedClient && (
+            {!selectedClient && !accountsData?.length ? (
+              ""
+            ) : (
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
@@ -808,7 +894,9 @@ export default function ABSClientSearch() {
               </div>
             )}
 
-            {selectedClient && (
+            {!selectedClient && !creditsData?.length ? (
+              ""
+            ) : (
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
@@ -885,7 +973,9 @@ export default function ABSClientSearch() {
               </div>
             )}
 
-            {selectedClient && (
+            {!selectedClient && !depositsData?.length ? (
+              ""
+            ) : (
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
