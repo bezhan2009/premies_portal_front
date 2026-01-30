@@ -22,9 +22,13 @@ import {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
 const TYPE_SEARCH_CLIENT = [
-  { label: "Поиск по Номеру телефона", value: "?phoneNumber=" },
-  { label: "Поиск по Номеру индекса", value: "/client-index?clientIndex=" },
-  { label: "Поиск по INN", value: "/inn?inn=" },
+  { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
+  {
+    label: "Поиск по Номеру индекса",
+    value: "/client-index?clientIndex=",
+    inputLabel: "Номер индекса",
+  },
+  { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
 
 export default function ABSClientSearch() {
@@ -561,14 +565,14 @@ export default function ABSClientSearch() {
                   )}
                   <div className="search-card__input-group">
                     <label htmlFor="phoneNumber" className="search-card__label">
-                      Номер телефона
+                      {TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel}
                     </label>
                     <input
                       type="text"
                       id="phoneNumber"
                       value={displayPhone}
                       onChange={handlePhoneChange}
-                      placeholder="Введите номер телефона"
+                      placeholder={"Введите " + TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel.toLocaleLowerCase()}
                       className="search-card__input"
                       maxLength={20}
                       onKeyDown={(e) => {
