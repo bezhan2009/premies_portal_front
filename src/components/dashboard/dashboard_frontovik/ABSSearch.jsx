@@ -22,9 +22,13 @@ import {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
 const TYPE_SEARCH_CLIENT = [
-  { label: "Поиск по Номеру телефона", value: "?phoneNumber=" },
-  { label: "Поиск по Номеру индекса", value: "/client-index?clientIndex=" },
-  { label: "Поиск по INN", value: "/inn?inn=" },
+  { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
+  {
+    label: "Поиск по Номеру индекса",
+    value: "/client-index?clientIndex=",
+    inputLabel: "Номер индекса",
+  },
+  { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
 
 export default function ABSClientSearch() {
@@ -95,6 +99,9 @@ export default function ABSClientSearch() {
     setSelectedClientIndex(0);
     setCardsData([]);
     setAccountsData([]);
+    setCreditsData([]);
+    setDepositsData([]);
+    setIsMobile(null);
   };
 
   // Функция для поиска клиентов в АБС
@@ -533,25 +540,39 @@ export default function ABSClientSearch() {
                     </div>
                   </div>
 
-                  <div style={{ paddingBottom: 2 }}>
-                    {isMobile ? (
-                      <MdOutlinePhonelinkRing color="#4ee14e" size={"40px"} />
-                    ) : isMobile !== null ? (
-                      <MdOutlinePhonelinkErase color="#e21a1c" size={"40px"} />
-                    ) : (
-                      <MdOutlineSmartphone size={"40px"} />
-                    )}
-                  </div>
+                  {selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value && (
+                    <div className="search-card__mobile-group">
+                      {isMobile ? (
+                        <>
+                          <MdOutlinePhonelinkRing
+                            color="#4ee14e"
+                            size={"30px"}
+                          />
+                          счет: {isMobile?.Iban || "000"}
+                        </>
+                      ) : isMobile !== null ? (
+                        <>
+                          <MdOutlinePhonelinkErase
+                            color="#e21a1c"
+                            size={"30px"}
+                          />
+                          Не подключен к мобильному банку
+                        </>
+                      ) : (
+                        <MdOutlineSmartphone size={"30px"} />
+                      )}
+                    </div>
+                  )}
                   <div className="search-card__input-group">
                     <label htmlFor="phoneNumber" className="search-card__label">
-                      Номер телефона
+                      {TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel}
                     </label>
                     <input
                       type="text"
                       id="phoneNumber"
                       value={displayPhone}
                       onChange={handlePhoneChange}
-                      placeholder="Введите номер телефона"
+                      placeholder={"Введите " + TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel.toLocaleLowerCase()}
                       className="search-card__input"
                       maxLength={20}
                       onKeyDown={(e) => {
