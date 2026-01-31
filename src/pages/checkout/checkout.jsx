@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import TransactionsChartBarsEach from "../../components/graph/graph";
+import TransactionsChartATM from "../../components/graph/graph";
 import CheckoutTable from "../../components/checkout-table/checkout-table";
 import { fetchTransactionsByATM } from "../../api/atm/transactions.js";
 import useSidebar from "../../hooks/useSideBar.js";
