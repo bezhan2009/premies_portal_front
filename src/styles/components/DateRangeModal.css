@@ -89,7 +89,7 @@
 
 .date-input:focus {
     outline: none;
-    border-color: #1976d2;
+    border-color: #f63b3b;
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
 }
 
@@ -124,7 +124,7 @@
 
 .submit-button {
     padding: 10px 20px;
-    background: #1976d2;
+    background: #f63b3b;
     border: none;
     border-radius: 6px;
     color: white;
@@ -135,7 +135,7 @@
 }
 
 .submit-button:hover:not(:disabled) {
-    background: #1565c0;
+    background: #f63b3b;
 }
 
 .submit-button:disabled {

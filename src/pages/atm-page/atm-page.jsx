@@ -41,17 +41,23 @@ export default function AtmPage() {
     if (error) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-                <Sidebar activeLink="director" isOpen={isSidebarOpen} toggle={toggleSidebar} />
+                <Sidebar
+                    activeLink="director"
+                    isOpen={isSidebarOpen}
+                    toggle={toggleSidebar}
+                />
                 <div className="dashboard-container">
-                <div className='error-container'>
-                <div className='error-message'>Возникла непредвиденная ошибка: {error}</div>
-                <button
-                    onClick={() => window.location.reload()}
-                    className='retry-button'
-                >
-                    Повторить попытку
-                </button>
-            </div>
+                    <div className="block_info_prems content-page" align="center">
+                        <div className="error-container">
+                            <div className="error-message">Возникла непредвиденная ошибка: {error}</div>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="retry-button"
+                            >
+                                Повторить попытку
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -61,15 +67,16 @@ export default function AtmPage() {
         <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
             <Sidebar activeLink="atm_table" isOpen={isSidebarOpen} toggle={toggleSidebar} />
             <div className="dashboard-container">
-
-            <div className='flex flex-col gap-8 w-[95%] mx-auto '>
-            <div className='mt-5'>
-                <AtmMap bankomats={bankomats} />
-            </div>
-            <div>
-                <AtmStickyTable />
-            </div>
-        </div>
+                <div className="block_info_prems content-page" align="center">
+                    <div className='flex flex-col gap-8 w-[95%] mx-auto '>
+                        <div className='mt-5'>
+                            <AtmMap bankomats={bankomats}/>
+                        </div>
+                        <div>
+                            <AtmStickyTable/>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

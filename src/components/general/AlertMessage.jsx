@@ -20,4 +20,3 @@ export default function AlertMessage({ message, type = "error", duration = 3000 
 
     return null;
 }
-
