@@ -44,7 +44,7 @@ export default function AtmPage() {
                 <Sidebar activeLink="director" isOpen={isSidebarOpen} toggle={toggleSidebar} />
                 <div className="dashboard-container">
                 <div className='error-container'>
-                <div className='error-message'>Ошибка: {error}</div>
+                <div className='error-message'>Возникла непредвиденная ошибка: {error}</div>
                 <button
                     onClick={() => window.location.reload()}
                     className='retry-button'

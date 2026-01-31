@@ -1056,10 +1056,7 @@ export default function ABSClientSearch() {
             {/* Индикатор загрузки */}
             {isLoading && (
               <div className="processing-integration__loading">
-                <div className="loading-spinner">
                   <div className="spinner"></div>
-                  <p>Поиск клиента в АБС...</p>
-                </div>
               </div>
             )}
 
