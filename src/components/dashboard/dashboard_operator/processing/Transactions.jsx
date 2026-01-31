@@ -1040,10 +1040,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
           {isLoading && (
             <div className="processing-integration__loading">
-              <div className="loading-spinner">
                 <div className="spinner"></div>
-                <p>Загрузка транзакций...</p>
-              </div>
             </div>
           )}
 
