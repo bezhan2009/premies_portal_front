@@ -102,6 +102,7 @@ export default function ABSClientSearch() {
     setCreditsData([]);
     setDepositsData([]);
     setIsMobile(null);
+    sessionStorage.removeItem('absClientSearchState');
   };
 
   // Функция для поиска клиентов в АБС
@@ -174,6 +175,7 @@ export default function ABSClientSearch() {
     }
   };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleGetDataUser = async () => {
     if (!clientsData?.[0]?.client_code) return;
     try {
@@ -305,9 +307,49 @@ export default function ABSClientSearch() {
 
   useEffect(() => {
     if (selectedClient?.client_code) handleGetDataUser();
-  }, [selectedClient?.client_code]);
+  }, [handleGetDataUser, selectedClient?.client_code]);
 
-  return (
+    useEffect(() => {
+        // Восстанавливаем состояние при монтировании компонента
+        const savedState = sessionStorage.getItem('absClientSearchState');
+        if (savedState) {
+            const state = JSON.parse(savedState);
+            setPhoneNumber(state.phoneNumber || '');
+            setDisplayPhone(state.displayPhone || '');
+            setClientsData(state.clientsData || []);
+            setSelectedClientIndex(state.selectedClientIndex || 0);
+            setSelectTypeSearchClient(state.selectTypeSearchClient || TYPE_SEARCH_CLIENT[0].value);
+            setIsMobile(state.isMobile || null);
+            setCardsData(state.cardsData || []);
+            setAccountsData(state.accountsData || []);
+            setCreditsData(state.creditsData || []);
+            setDepositsData(state.depositsData || []);
+        }
+    }, []);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const saveState = () => {
+        const stateToSave = {
+            phoneNumber,
+            displayPhone,
+            clientsData,
+            selectedClientIndex,
+            selectTypeSearchClient,
+            isMobile,
+            cardsData,
+            accountsData,
+            creditsData,
+            depositsData
+        };
+        sessionStorage.setItem('absClientSearchState', JSON.stringify(stateToSave));
+    };
+
+    useEffect(() => {
+        saveState();
+    }, [phoneNumber, clientsData, selectedClientIndex, cardsData, saveState]);
+
+
+    return (
     <>
       <div className="block_info_prems content-page" align="center">
         {alert.show && (
