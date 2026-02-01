@@ -55,6 +55,7 @@ export default function DateRangeModal({ open, onClose, onSubmit }) {
 
                 <div className="modal-footer">
                     <button
+                        className="button"
                         type="button"
                         onClick={onClose}
                     >

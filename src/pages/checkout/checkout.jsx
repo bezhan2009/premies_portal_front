@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import TransactionsChart from "../../components/graph/graph";
 import CheckoutTable from "../../components/checkout-table/checkout-table";
 import { fetchTransactionsByATM } from "../../api/atm/transactions.js";
 import useSidebar from "../../hooks/useSideBar.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import {Sidebar} from "lucide-react";
+import { FaArrowLeft } from 'react-icons/fa';
 
 export default function Checkout() {
     const { id } = useParams();
     const [params] = useSearchParams();
+    const navigate = useNavigate();
     const { isSidebarOpen, toggleSidebar } = useSidebar();
 
     const [transactions, setTransactions] = useState([]);
@@ -19,6 +21,11 @@ export default function Checkout() {
 
     const fromDate = params.get("from");
     const toDate = params.get("to");
+
+    // Функция для возврата на предыдущую страницу
+    const handleGoBack = () => {
+        navigate(-1);
+    };
 
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
@@ -60,6 +67,16 @@ export default function Checkout() {
                     toggle={toggleSidebar}
                 />
                 <div className="block_info_prems content-page" align="center">
+                    {/* Кнопка Назад */}
+                    <button
+                        className="back-button"
+                        onClick={handleGoBack}
+                        aria-label="Назад"
+                        title="Назад"
+                    >
+                        <FaArrowLeft />
+                    </button>
+
                     <div className="loading-container">
                         <div className="loading-text">Загрузка данных транзакций...</div>
                     </div>
@@ -77,6 +94,16 @@ export default function Checkout() {
                     toggle={toggleSidebar}
                 />
                 <div className="block_info_prems content-page" align="center">
+                    {/* Кнопка Назад */}
+                    <button
+                        className="back-button"
+                        onClick={handleGoBack}
+                        aria-label="Назад"
+                        title="Назад"
+                    >
+                        <FaArrowLeft />
+                    </button>
+
                     <div className="error-container">
                         <div className="error-message">Ошибка: {error}</div>
                         <button
@@ -99,7 +126,17 @@ export default function Checkout() {
                     isOpen={isSidebarOpen}
                     toggle={toggleSidebar}
                 />
-                <div className="block_info_prems content-page" align="center">
+                <div className="block_info_prems content-page" align="center" style={{ position: 'relative' }}>
+                    {/* Кнопка Назад */}
+                    <button
+                        className="back-button"
+                        onClick={handleGoBack}
+                        aria-label="Назад"
+                        title="Назад"
+                    >
+                        <FaArrowLeft />
+                    </button>
+
                     <div className="flex flex-col gap-10 p-4">
                         <div className="mt-5">
                             <TransactionsChart transactions={transactions} />
