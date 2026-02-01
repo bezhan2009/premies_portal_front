@@ -473,7 +473,7 @@ export default function AtmStickyTable() {
 
                                     <td className="table-cell table-cell-actions">
                                         <button
-                                            className="action-button"
+                                            className="button"
                                             onClick={() => handleOpenModal(row.id)}
                                         >
                                             выписка
