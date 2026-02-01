@@ -1718,3 +1718,239 @@ button:active {
   font-weight: 500;
   margin: 0 5px;
 }
+
+/* ===== GENERAL BUTTON STYLES ===== */
+
+button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  outline: none;
+  font-family: inherit;
+}
+
+button:hover {
+  background: #C41E3A;
+  color: #ffffff;
+  border-color: #C41E3A;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+button:disabled:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Focus state для accessibility */
+button:focus-visible {
+  outline: 2px solid #C41E3A;
+  outline-offset: 2px;
+}
+
+/* Primary variant - изначально красная кнопка */
+button.primary {
+  background: #C41E3A;
+  color: #ffffff;
+  border-color: #C41E3A;
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+}
+
+button.primary:hover {
+  background: #a01830;
+  border-color: #a01830;
+  box-shadow: 0 6px 16px rgba(196, 30, 58, 0.4);
+}
+
+/* Secondary variant - серая с красным hover */
+button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+button.secondary:hover {
+  background: #C41E3A;
+  color: #ffffff;
+  border-color: #C41E3A;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+}
+
+/* Outline variant - прозрачная с границей */
+button.outline {
+  background: transparent;
+  color: #C41E3A;
+  border: 2px solid #C41E3A;
+  box-shadow: none;
+}
+
+button.outline:hover {
+  background: #C41E3A;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+}
+
+/* Ghost variant - только текст */
+button.ghost {
+  background: transparent;
+  color: #374151;
+  border: none;
+  box-shadow: none;
+}
+
+button.ghost:hover {
+  background: rgba(196, 30, 58, 0.1);
+  color: #C41E3A;
+  box-shadow: 0 2px 8px rgba(196, 30, 58, 0.15);
+}
+
+/* Size variants */
+button.small {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+button.medium {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+button.large {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+/* Icon button */
+button.icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+button.icon:hover {
+  border-radius: 50%;
+}
+
+/* Full width */
+button.full-width {
+  width: 100%;
+}
+
+/* Danger variant - для опасных действий */
+button.danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+button.danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Success variant */
+button.success {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+button.success:hover {
+  background: #059669;
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Анимация загрузки */
+button.loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent;
+}
+
+button.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Group buttons - когда несколько кнопок рядом */
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.button-group button {
+  flex: 1;
+  min-width: max-content;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  button.large {
+    padding: 12px 24px;
+    font-size: 15px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}
