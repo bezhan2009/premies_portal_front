@@ -61,11 +61,6 @@ export default function Checkout() {
     if (loading) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-                <Sidebar
-                    activeLink="atm_transactions"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
                 <div className="block_info_prems content-page" align="center">
                     {/* Кнопка Назад */}
                     <button
