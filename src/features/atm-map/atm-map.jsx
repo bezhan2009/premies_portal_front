@@ -156,7 +156,6 @@ export default function AtmMap() {
     marginBottom: isFullscreen ? 0 : 10,
   };
 
-  // ❗️ВАЖНО: без transition height (часто ломает Leaflet)
   const normalWrapStyle = {
     height: isCollapsed ? 56 : "40vh",
     width: "100%",
@@ -172,7 +171,6 @@ export default function AtmMap() {
       {/* кнопки */}
       <div style={barStyle}>
         <button
-          style={buttonBase}
           onClick={() => {
             setIsCollapsed((v) => {
               const next = !v;
