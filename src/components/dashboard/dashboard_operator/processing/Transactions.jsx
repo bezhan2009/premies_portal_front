@@ -750,7 +750,7 @@ export default function DashboardOperatorProcessingTransactions() {
           duration={3000}
         />
       )}
-      <div className="block_info_prems" align="center">
+      <div className="block_info_prems content-page" align="center">
         <div className="processing-integration">
           <div className="processing-integration__container">
             <div className="processing-integration__header">
@@ -1040,10 +1040,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
           {isLoading && (
             <div className="processing-integration__loading">
-              <div className="loading-spinner">
                 <div className="spinner"></div>
-                <p>Загрузка транзакций...</p>
-              </div>
             </div>
           )}
 
