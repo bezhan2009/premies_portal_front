@@ -1,73 +1,50 @@
-import { useMemo, useState } from "react";
-import "../../styles/components/TransactionsQR.scss";
+import { useMemo } from "react";
+import "../../styles/components/TransactionsChart.css";
+
 import {
-    AreaChart,
-    Area,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    CartesianGrid,
     XAxis,
     YAxis,
-    CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    Legend,
+    ReferenceLine,
 } from "recharts";
-import { Select } from "antd";
-import Spinner from "../../components/Spinner";
-import dayjs from "dayjs";
 
-const { Option } = Select;
-
-function formatNumber(value) {
-    if (value == null || isNaN(value)) return "0";
-    return Number(value)
-        .toFixed(0)
-        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-        .replace(".", ",");
+/** ===== utils ===== */
+function pad2(n) {
+    return String(n).padStart(2, "0");
 }
 
-// Кастомный тултип как в QR странице
-const CustomTooltip = ({ active, payload, label, metric }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div
-                style={{
-                    background: "rgba(255,255,255,0.85)",
-                    padding: "10px 14px",
-                    borderRadius: "10px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    backdropFilter: "blur(8px)",
-                    fontSize: "13px",
-                    color: "#333",
-                }}
-            >
-                <div style={{ fontWeight: "600", marginBottom: "6px" }}>{label}</div>
-                {payload.map((p, i) => (
-                    <div key={i}>
-                        <span style={{ color: p.color }}>{p.name}: </span>
-                        {metric === "count" ? p.value : formatNumber(p.value)}
-                    </div>
-                ))}
-            </div>
-        );
-    }
-    return null;
-};
-
-// Функции для обработки данных банкомата
-function parseTxTimestamp(t) {
-    const date = String(t.localTransactionDate || "").slice(0, 10);
-    const time = String(t.localTransactionTime || "00:00:00").slice(0, 8);
-    if (!date) return null;
-    const ts = new Date(`${date}T${time}`).getTime();
-    return Number.isFinite(ts) ? ts : null;
+function formatDDMM(ts) {
+    const d = new Date(ts);
+    return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
 }
 
+function formatHHMMSS(ts) {
+    const d = new Date(ts);
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
+function formatDDMMHHMMSS(ts) {
+    return `${formatDDMM(ts)} ${formatHHMMSS(ts)}`;
+}
+
+function formatWeekday(ts) {
+    return new Date(ts).toLocaleDateString("ru-RU", { weekday: "short" });
+}
+
+// банкомат выдаёт только целые; если пришло в "копейках" — делим на 100
 function normalizeAmount(raw) {
     const v = Number(raw);
     if (!Number.isFinite(v)) return 0;
+
     const normalized = v >= 1000 && v % 100 === 0 ? v / 100 : v;
     return Math.round(normalized);
 }
 
+// 1.234.567
 function formatIntWithDots(num) {
     const n = Number(num);
     if (!Number.isFinite(n)) return "—";
@@ -75,213 +52,244 @@ function formatIntWithDots(num) {
     return s.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-function formatMoneySmart(amount, currency) {
-    const v = Number(amount);
-    if (!Number.isFinite(v)) return "—";
-    const normalized = v >= 1000 && v % 100 === 0 ? v / 100 : v;
-    const suffix = currency === 972 ? "с." : "";
-    return `${formatIntWithDots(normalized)} ${suffix}`.trim();
+function dayKeyFromTs(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
-export default function TransactionsChartATM({ transactions = [] }) {
-    const [metric, setMetric] = useState("count");
-    const [loading, setLoading] = useState(false);
+function dayStartTs(dayKey) {
+    return new Date(`${dayKey}T00:00:00`).getTime();
+}
 
-    // Агрегируем данные по дням и статусам как в QR
-    const { aggregatedData, statistics } = useMemo(() => {
-        if (!transactions.length) {
-            return { aggregatedData: [], statistics: {} };
+function parseTxTimestamp(t) {
+    const date = String(t.localTransactionDate || "").slice(0, 10);
+    const time = String(t.localTransactionTime || "00:00:00").slice(0, 8);
+    if (!date) return null;
+
+    const ts = new Date(`${date}T${time}`).getTime();
+    return Number.isFinite(ts) ? ts : null;
+}
+
+function pickMostFrequent(items) {
+    const map = new Map();
+    for (const it of items) {
+        const v = String(it || "").trim();
+        if (!v) continue;
+        map.set(v, (map.get(v) || 0) + 1);
+    }
+    let best = "";
+    let bestCount = 0;
+    for (const [k, c] of map.entries()) {
+        if (c > bestCount) {
+            best = k;
+            bestCount = c;
         }
+    }
+    return best || "—";
+}
 
-        const dayMap = new Map();
-        let totalCount = 0;
-        let totalSum = 0;
-        let successCount = 0;
-        let cancelCount = 0;
-        let successSum = 0;
-        let cancelSum = 0;
+/** ===== Tooltip - ИДЕНТИЧНЫЙ QR СТИЛЮ ===== */
+function CustomTxTooltip({ active, payload }) {
+    if (!active || !payload?.length) return null;
+    const p = payload[0]?.payload;
+    if (!p) return null;
 
-        transactions.forEach(t => {
-            const ts = parseTxTimestamp(t);
-            if (!ts) return;
+    const weekday = formatWeekday(p.ts);
+    const dt = formatDDMMHHMMSS(p.ts);
 
-            const date = dayjs(ts).format("YYYY-MM-DD");
-            const amount = normalizeAmount(t.amount);
-            const reversal = Number(t.reversal) === 1;
-            const isSuccess = !reversal;
+    return (
+        <div
+            style={{
+                background: "rgba(255,255,255,0.85)",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                backdropFilter: "blur(8px)",
+                fontSize: "13px",
+                color: "#333",
+            }}
+        >
+            <div style={{ fontWeight: "600", marginBottom: "6px" }}>
+                {weekday}, {dt}
+            </div>
 
-            if (!dayMap.has(date)) {
-                dayMap.set(date, {
-                    date,
-                    successCount: 0,
-                    cancelCount: 0,
-                    successSum: 0,
-                    cancelSum: 0,
-                    totalCount: 0,
-                    totalSum: 0
-                });
-            }
+            <div>
+                <div style={{ marginBottom: "4px" }}>
+                    <span style={{ color: "#666" }}>Сумма: </span>
+                    <span style={{ fontWeight: "500" }}>{formatIntWithDots(p.amount)}</span>
+                </div>
 
-            const dayData = dayMap.get(date);
+                {p.terminalId && (
+                    <div style={{ marginBottom: "4px" }}>
+                        <span style={{ color: "#666" }}>Банкомат: </span>
+                        <span style={{ fontWeight: "500" }}>{p.terminalId}</span>
+                    </div>
+                )}
 
-            if (isSuccess) {
-                dayData.successCount += 1;
-                dayData.successSum += amount;
-                successCount += 1;
-                successSum += amount;
-            } else {
-                dayData.cancelCount += 1;
-                dayData.cancelSum += amount;
-                cancelCount += 1;
-                cancelSum += amount;
-            }
+                {p.rrn && (
+                    <div style={{ marginBottom: "4px" }}>
+                        <span style={{ color: "#666" }}>RRN: </span>
+                        <span style={{ fontWeight: "500" }}>{p.rrn}</span>
+                    </div>
+                )}
 
-            dayData.totalCount += 1;
-            dayData.totalSum += amount;
-            totalCount += 1;
-            totalSum += amount;
+                {p.stan && (
+                    <div>
+                        <span style={{ color: "#666" }}>STAN: </span>
+                        <span style={{ fontWeight: "500" }}>{p.stan}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function TransactionsChartBarsEach({ transactions = [] }) {
+    const {
+        data,
+        daySeparators,
+        totalCount,
+        totalSum,
+        avgAmount,
+        avgOpsPerDay,
+        atmAddress,
+    } = useMemo(() => {
+        // фильтр
+        const filtered = transactions.filter((t) => {
+            const amount = Number(t.amount);
+            const reversal = Number(t.reversal);
+            return Number.isFinite(amount) && amount > 0 && reversal !== 1;
         });
 
-        // Преобразуем в массив и сортируем по дате
-        const dataArray = Array.from(dayMap.values()).sort((a, b) =>
-            new Date(a.date) - new Date(b.date)
-        );
+        // адрес: берём самый частый terminalAddress
+        const atmAddress = pickMostFrequent(filtered.map((t) => t.terminalAddress));
 
-        // Рассчитываем статистику
-        const avgAmount = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
-        const successRate = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+        // каждая операция = столбик
+        const rows = [];
+        for (const t of filtered) {
+            const ts = parseTxTimestamp(t);
+            if (!ts) continue;
+
+            rows.push({
+                ts,
+                amount: normalizeAmount(t.amount),
+                terminalId: t.terminalId || t.atmId || t.terminal || "",
+                rrn: t.rrn || "",
+                stan: t.stan || "",
+                dayKey: dayKeyFromTs(ts),
+            });
+        }
+
+        rows.sort((a, b) => a.ts - b.ts);
+
+        const seen = new Set();
+        const data = [];
+        for (const r of rows) {
+            const key = `${r.ts}|${r.amount}|${r.rrn}|${r.stan}|${r.terminalId}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            data.push({
+                ...r,
+                xKey: String(data.length),
+            });
+        }
+
+        const daySeparators = [];
+        let prevDay = null;
+        for (const d of data) {
+            if (d.dayKey !== prevDay) {
+                daySeparators.push({
+                    dayKey: d.dayKey,
+                    xKey: d.xKey,
+                    label: formatDDMM(dayStartTs(d.dayKey)),
+                });
+                prevDay = d.dayKey;
+            }
+        }
+
+        const totalCount = data.length;
+        const totalSum = data.reduce((s, r) => s + (r.amount || 0), 0);
+        const avgAmount = totalCount ? Math.round(totalSum / totalCount) : 0;
+
+        const daysCount = daySeparators.length;
+        const avgOpsPerDayRaw = daysCount ? totalCount / daysCount : 0;
+        const avgOpsPerDay = Math.floor(avgOpsPerDayRaw + 0.5);
 
         return {
-            aggregatedData: dataArray,
-            statistics: {
-                totalCount,
-                totalSum,
-                successCount,
-                cancelCount,
-                successSum,
-                cancelSum,
-                avgAmount,
-                successRate
-            }
+            data,
+            daySeparators,
+            totalCount,
+            totalSum,
+            avgAmount,
+            avgOpsPerDay,
+            atmAddress,
         };
     }, [transactions]);
 
-    // Подготавливаем данные для графика
-    const chartData = useMemo(() => {
-        return aggregatedData.map(item => {
-            if (metric === "count") {
-                return {
-                    date: item.date,
-                    success: item.successCount,
-                    cancel: item.cancelCount,
-                    total: item.totalCount
-                };
-            } else {
-                return {
-                    date: item.date,
-                    success: item.successSum,
-                    cancel: item.cancelSum,
-                    total: item.totalSum
-                };
-            }
-        });
-    }, [aggregatedData, metric]);
-
-    if (loading) {
-        return (
-            <div className="p-6">
-                <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
-                    <Spinner />
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="p-6">
-            <div className="flex gap-4 items-center mb-4">
-                <Select
-                    value={metric}
-                    onChange={setMetric}
-                    style={{ width: 160 }}
-                >
-                    <Option value="count">Количество</Option>
-                    <Option value="sum">Сумма</Option>
-                </Select>
+        <div className="chart-card">
+            <div className="chart-content">
+                <div className="chart-header">
+                    <div className="header-left">
+                        <h2 className="chart-title">Транзакции банкомата</h2>
+                        <div className="chart-subtitle">
+                            Адрес: {atmAddress}
+                        </div>
+                        <div className="chart-description">
+                            каждый столбик = 1 операция • разделение по дням
+                        </div>
+                    </div>
 
-                <div className="stats-info">
-                    <div className="stats-row">
-                        <span className="stat-label">Всего операций:</span>
-                        <span className="stat-value">{statistics.totalCount || 0}</span>
-                    </div>
-                    <div className="stats-row">
-                        <span className="stat-label">Общая сумма:</span>
-                        <span className="stat-value">
-                            {formatMoneySmart(statistics.totalSum || 0, 972)}
-                        </span>
-                    </div>
-                    <div className="stats-row">
-                        <span className="stat-label">Средний чек:</span>
-                        <span className="stat-value">
-                            {formatMoneySmart(statistics.avgAmount || 0, 972)}
-                        </span>
-                    </div>
-                    <div className="stats-row">
-                        <span className="stat-label">Успешных:</span>
-                        <span className="stat-value">{statistics.successRate || 0}%</span>
+                    <div className="header-right">
+                        <div className="stats-chips">
+                            <span className="stats-chip">Кол-во операций: {totalCount}</span>
+                            <span className="stats-chip">Общая сумма: {formatIntWithDots(totalSum)}</span>
+                            <span className="stats-chip">Средний чек: {formatIntWithDots(avgAmount)}</span>
+                            <span className="stats-chip">Среднее операций/день: {avgOpsPerDay}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div style={{ width: "100%", height: 400 }}>
-                <ResponsiveContainer>
-                    <AreaChart data={chartData}>
-                        <defs>
-                            <linearGradient id="success" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
-                                <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
-                            </linearGradient>
-                            <linearGradient id="cancel" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#ff7c7c" stopOpacity={0.8} />
-                                <stop offset="100%" stopColor="#ff7c7c" stopOpacity={0.1} />
-                            </linearGradient>
-                        </defs>
+                <div className="chart-divider"></div>
 
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={(value) => dayjs(value).format("DD.MM")}
-                        />
-                        <YAxis
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(value) => metric === "count" ? value : formatNumber(value)}
-                        />
-                        <Tooltip
-                            content={<CustomTooltip metric={metric} />}
-                        />
-                        <Legend />
+                <div className="chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data} margin={{ top: 10, right: 16, bottom: 10, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                            <XAxis dataKey="xKey" hide />
+                            <YAxis
+                                tick={{ fontSize: 11 }}
+                                width={70}
+                                tickFormatter={(v) => formatIntWithDots(v)}
+                                stroke="#666"
+                            />
+                            <Tooltip content={<CustomTxTooltip />} />
 
-                        <Area
-                            type="monotone"
-                            dataKey="success"
-                            name="Успешные операции"
-                            stroke="#82ca9d"
-                            fill="url(#success)"
-                            strokeWidth={2.5}
-                            dot={{ r: 3 }}
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey="cancel"
-                            name="Отмененные операции"
-                            stroke="#ff7c7c"
-                            fill="url(#cancel)"
-                            strokeWidth={2.5}
-                            dot={{ r: 3 }}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
+                            {daySeparators.map((d) => (
+                                <ReferenceLine
+                                    key={d.dayKey}
+                                    x={d.xKey}
+                                    stroke="rgba(196,30,58,0.6)"
+                                    strokeDasharray="4 4"
+                                    label={{
+                                        value: d.label,
+                                        position: "insideTopLeft",
+                                        fontSize: 11,
+                                        fill: "rgba(196,30,58,0.9)",
+                                    }}
+                                />
+                            ))}
+
+                            <Bar
+                                dataKey="amount"
+                                name="Amount"
+                                fill="#C41E3A"
+                                radius={[4, 4, 0, 0]}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
         </div>
     );
