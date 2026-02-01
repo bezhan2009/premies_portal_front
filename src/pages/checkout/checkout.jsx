@@ -5,7 +5,6 @@ import CheckoutTable from "../../components/checkout-table/checkout-table";
 import { fetchTransactionsByATM } from "../../api/atm/transactions.js";
 import useSidebar from "../../hooks/useSideBar.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import {Sidebar} from "lucide-react";
 import { FaArrowLeft } from 'react-icons/fa';
 
 export default function Checkout() {
@@ -83,11 +82,6 @@ export default function Checkout() {
     if (error) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-                <Sidebar
-                    activeLink="atm_transactions"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
                 <div className="block_info_prems content-page" align="center">
                     {/* Кнопка Назад */}
                     <button
@@ -116,11 +110,6 @@ export default function Checkout() {
     return (
         <>
             <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-                <Sidebar
-                    activeLink="atm_transactions"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
                 <div className="block_info_prems content-page" align="center" style={{ position: 'relative' }}>
                     {/* Кнопка Назад */}
                     <button
