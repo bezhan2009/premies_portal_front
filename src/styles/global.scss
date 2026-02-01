@@ -1721,7 +1721,7 @@ button:active {
 
 /* ===== GENERAL BUTTON STYLES ===== */
 
-button {
+.button {
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 600;
@@ -1737,20 +1737,20 @@ button {
   font-family: inherit;
 }
 
-button:hover {
+.button:hover {
   background: #C41E3A;
-  color: #ffffff;
   border-color: #C41E3A;
+  color: #f2f2f2;
   box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
   transform: translateY(-1px);
 }
 
-button:active {
+.button:active {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
 }
 
-button:disabled {
+.button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #f3f4f6;
@@ -1759,7 +1759,7 @@ button:disabled {
   box-shadow: none;
 }
 
-button:disabled:hover {
+.button:disabled:hover {
   background: #f3f4f6;
   color: #9ca3af;
   border-color: #e5e7eb;
@@ -1768,33 +1768,33 @@ button:disabled:hover {
 }
 
 /* Focus state для accessibility */
-button:focus-visible {
+.button:focus-visible {
   outline: 2px solid #C41E3A;
   outline-offset: 2px;
 }
 
 /* Primary variant - изначально красная кнопка */
-button.primary {
+.button.primary {
   background: #C41E3A;
   color: #ffffff;
   border-color: #C41E3A;
   box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
 }
 
-button.primary:hover {
+.button.primary:hover {
   background: #a01830;
   border-color: #a01830;
   box-shadow: 0 6px 16px rgba(196, 30, 58, 0.4);
 }
 
 /* Secondary variant - серая с красным hover */
-button.secondary {
+.button.secondary {
   background: #f3f4f6;
   color: #374151;
   border-color: #d1d5db;
 }
 
-button.secondary:hover {
+.button.secondary:hover {
   background: #C41E3A;
   color: #ffffff;
   border-color: #C41E3A;
@@ -1802,51 +1802,51 @@ button.secondary:hover {
 }
 
 /* Outline variant - прозрачная с границей */
-button.outline {
+.button.outline {
   background: transparent;
   color: #C41E3A;
   border: 2px solid #C41E3A;
   box-shadow: none;
 }
 
-button.outline:hover {
+.button.outline:hover {
   background: #C41E3A;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
 }
 
 /* Ghost variant - только текст */
-button.ghost {
+.button.ghost {
   background: transparent;
   color: #374151;
   border: none;
   box-shadow: none;
 }
 
-button.ghost:hover {
+.button.ghost:hover {
   background: rgba(196, 30, 58, 0.1);
   color: #C41E3A;
   box-shadow: 0 2px 8px rgba(196, 30, 58, 0.15);
 }
 
 /* Size variants */
-button.small {
+.button.small {
   padding: 6px 14px;
   font-size: 12px;
 }
 
-button.medium {
+.button.medium {
   padding: 10px 20px;
   font-size: 14px;
 }
 
-button.large {
+.button.large {
   padding: 14px 28px;
   font-size: 16px;
 }
 
 /* Icon button */
-button.icon {
+.button.icon {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -1856,49 +1856,49 @@ button.icon {
   border-radius: 50%;
 }
 
-button.icon:hover {
+.button.icon:hover {
   border-radius: 50%;
 }
 
 /* Full width */
-button.full-width {
+.button.full-width {
   width: 100%;
 }
 
 /* Danger variant - для опасных действий */
-button.danger {
+.button.danger {
   background: #dc2626;
   color: #ffffff;
   border-color: #dc2626;
 }
 
-button.danger:hover {
+.button.danger:hover {
   background: #b91c1c;
   border-color: #b91c1c;
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 /* Success variant */
-button.success {
+.button.success {
   background: #10b981;
   color: #ffffff;
   border-color: #10b981;
 }
 
-button.success:hover {
+.button.success:hover {
   background: #059669;
   border-color: #059669;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 /* Анимация загрузки */
-button.loading {
+.button.loading {
   position: relative;
   pointer-events: none;
   color: transparent;
 }
 
-button.loading::after {
+.button.loading::after {
   content: "";
   position: absolute;
   width: 16px;

@@ -180,6 +180,7 @@ export default function AtmStickyTable() {
                             </td>
                             <td>
                                 <button
+                                    className="button"
                                     onClick={() => {
                                         setSelectedAtm(r.id);
                                         setOpenModal(true);
