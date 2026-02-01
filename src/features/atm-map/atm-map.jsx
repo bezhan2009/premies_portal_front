@@ -88,11 +88,13 @@ export default function AtmMap() {
             const w = el.clientWidth;
             const h = el.clientHeight;
 
+            // контейнер ещё не имеет нормальных размеров
             if (w === 0 || h === 0) {
                 if (attempts-- > 0) requestAnimationFrame(step);
                 return;
             }
 
+            // стабильность размеров
             if (w === lastW && h === lastH) stableCount += 1;
             else stableCount = 0;
 
@@ -101,6 +103,7 @@ export default function AtmMap() {
 
             map.invalidateSize(true);
 
+            // 3 стабильных кадра подряд — достаточно
             if (stableCount >= 3) return;
 
             if (attempts-- > 0) requestAnimationFrame(step);
@@ -142,19 +145,6 @@ export default function AtmMap() {
         invalidateUntilStable(map, el);
     }, [isCollapsed, isFullscreen]);
 
-    const buttonBase = {
-        padding: "10px 16px",
-        borderRadius: 10,
-        border: "1px solid rgba(0,0,0,0.15)",
-        background: "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(8px)",
-        cursor: "pointer",
-        fontWeight: 700,
-        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-        fontSize: "14px",
-        transition: "all 0.2s ease",
-    };
-
     const barStyle = {
         position: isFullscreen ? "fixed" : "relative",
         top: isFullscreen ? 20 : "auto",
@@ -182,25 +172,25 @@ export default function AtmMap() {
         <div style={{ padding: 12 }}>
             {/* кнопки */}
             <div style={barStyle}>
-                <button
-                    style={{
-                        ...buttonBase,
-                        background: isCollapsed ? "#f0f0f0" : "rgba(255,255,255,0.95)",
-                    }}
-                    onClick={() => {
-                        setIsCollapsed((v) => {
-                            const next = !v;
-                            if (next) setIsFullscreen(false);
-                            return next;
-                        });
-                    }}
-                >
-                    {isCollapsed ? "Показать карту" : "Скрыть карту"}
-                </button>
+                {/* Скрываем кнопку "Скрыть карту" в полноэкранном режиме */}
+                {!isFullscreen && (
+                    <button
+                        className="map-control-button"
+                        onClick={() => {
+                            setIsCollapsed((v) => {
+                                const next = !v;
+                                if (next) setIsFullscreen(false);
+                                return next;
+                            });
+                        }}
+                    >
+                        {isCollapsed ? "Показать карту" : "Скрыть карту"}
+                    </button>
+                )}
 
                 {!isCollapsed && !isFullscreen && (
                     <button
-                        style={{ ...buttonBase, background: "#4a6bff", color: "white" }}
+                        className="map-control-button map-control-button-primary"
                         onClick={() => setIsFullscreen(true)}
                     >
                         На весь экран
@@ -211,18 +201,9 @@ export default function AtmMap() {
             {/* обычная карта */}
             {!isFullscreen && (
                 <div ref={normalWrapRef} style={normalWrapStyle}>
+                    {/* Если свернуто — просто показываем плашку, карту не монтируем */}
                     {isCollapsed ? (
-                        <div
-                            style={{
-                                height: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: 800,
-                                opacity: 0.7,
-                                background: "#f8f9fa",
-                            }}
-                        >
+                        <div className="map-collapsed-placeholder">
                             Карта скрыта
                         </div>
                     ) : (
@@ -241,100 +222,38 @@ export default function AtmMap() {
             {/* fullscreen через portal */}
             {isFullscreen &&
                 createPortal(
-                    <div
-                        style={{
-                            position: "fixed",
-                            inset: 0,
-                            width: "100vw",
-                            height: "100vh",
-                            background: "#fff",
-                            zIndex: 9000,
-                        }}
-                    >
-                        {/* Панель управления в полноэкранном режиме */}
-                        <div
-                            style={{
-                                position: "fixed",
-                                top: 20,
-                                right: 20,
-                                left: 20,
-                                zIndex: 10001,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "12px 20px",
-                                background: "rgba(255,255,255,0.9)",
-                                backdropFilter: "blur(10px)",
-                                borderRadius: 12,
-                                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                                margin: "0 auto",
-                                maxWidth: "calc(100% - 40px)",
-                            }}
-                        >
-                            <div style={{ fontWeight: 700, fontSize: "16px" }}>
-                                Полноэкранный режим карты
-                            </div>
-                            <div style={{ display: "flex", gap: 10 }}>
-                                <button
-                                    style={{
-                                        ...buttonBase,
-                                        background: "#ff4a4a",
-                                        color: "white",
-                                        padding: "8px 16px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                    }}
-                                    onClick={() => {
-                                        setIsFullscreen(false);
-                                        setTimeout(() => {
-                                            const map = normalMapRef.current;
-                                            const el = normalWrapRef.current;
-                                            invalidateUntilStable(map, el);
-                                        }, 0);
-                                    }}
-                                >
-                                    <span>✕</span>
-                                    Выйти из полноэкранного режима
-                                </button>
-                            </div>
+                    <div className="map-fullscreen-container">
+                        <div className="map-fullscreen-controls">
+                            <button
+                                className="map-control-button map-control-button-exit"
+                                onClick={() => {
+                                    setIsFullscreen(false);
+                                    // после выхода — пересчёт обычной карты
+                                    setTimeout(() => {
+                                        const map = normalMapRef.current;
+                                        const el = normalWrapRef.current;
+                                        invalidateUntilStable(map, el);
+                                    }, 0);
+                                }}
+                            >
+                                ✕ Выйти из полноэкранного режима
+                            </button>
                         </div>
 
-                        {/* Карта в полноэкранном режиме */}
-                        <div
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                paddingTop: "70px", // Отступ для панели управления
-                            }}
-                        >
+                        <div className="map-fullscreen-content">
                             <MapView
                                 atms={ATMS}
                                 center={center}
                                 onMap={(map) => {
                                     fullMapRef.current = map;
+                                    // в portal обычно и так ок, но пусть будет
                                     requestAnimationFrame(() => map.invalidateSize(true));
                                     setTimeout(() => map.invalidateSize(true), 60);
                                 }}
                             />
                         </div>
 
-                        {/* Подсказка внизу экрана */}
-                        <div
-                            style={{
-                                position: "fixed",
-                                bottom: 20,
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                                zIndex: 10001,
-                                background: "rgba(0,0,0,0.7)",
-                                color: "white",
-                                padding: "8px 16px",
-                                borderRadius: 8,
-                                fontSize: "14px",
-                                backdropFilter: "blur(4px)",
-                            }}
-                        >
+                        <div className="map-fullscreen-hint">
                             Нажмите ESC или кнопку выше, чтобы выйти из полноэкранного режима
                         </div>
                     </div>,
