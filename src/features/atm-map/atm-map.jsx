@@ -183,7 +183,7 @@ export default function AtmMap() {
         </button>
 
         {!isCollapsed && (
-          <button style={buttonBase} onClick={() => setIsFullscreen(true)}>
+          <button onClick={() => setIsFullscreen(true)}>
             На весь экран
           </button>
         )}
