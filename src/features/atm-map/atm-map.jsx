@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -77,6 +77,28 @@ export default function AtmMap() {
 
     const center = useMemo(() => [38.5598, 68.787], []);
 
+    const exitFullscreen = useCallback(() => {
+        setIsFullscreen(false);
+        // после выхода — пересчёт обычной карты
+        setTimeout(() => {
+            const map = normalMapRef.current;
+            const el = normalWrapRef.current;
+            invalidateUntilStable(map, el);
+        }, 0);
+    }, []);
+
+    // Обработка нажатия Escape
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape" && isFullscreen) {
+                exitFullscreen();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isFullscreen, exitFullscreen]);
+
     const invalidateUntilStable = (map, el, attempts = 45) => {
         if (!map || !el) return;
 
@@ -133,33 +155,28 @@ export default function AtmMap() {
         invalidateUntilStable(map, el);
     }, [isCollapsed, isFullscreen]);
 
-    const handleExitFullscreen = () => {
-        setIsFullscreen(false);
-        // после выхода — пересчёт обычной карты
-        setTimeout(() => {
-            const map = normalMapRef.current;
-            const el = normalWrapRef.current;
-            invalidateUntilStable(map, el);
-        }, 0);
-    };
-
-    const buttonBase = {
-        padding: "10px 20px",
-        borderRadius: 8,
-        border: "none",
-        background: "#ffffff",
+    const buttonStyle = {
+        padding: "10px 16px",
+        borderRadius: 12,
+        border: "1px solid rgba(0,0,0,0.15)",
+        background: "rgba(255,255,255,0.95)",
+        backdropFilter: "blur(8px)",
         cursor: "pointer",
-        fontWeight: 600,
+        fontWeight: 700,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
         fontSize: "14px",
-        color: "#374151",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        transition: "all 0.3s ease",
+        color: "#333",
+        transition: "all 0.2s",
     };
 
-    const buttonHoverStyle = {
-        background: "#C41E3A",
-        color: "#ffffff",
-        boxShadow: "0 4px 12px rgba(196, 30, 58, 0.3)",
+    const exitButtonStyle = {
+        ...buttonStyle,
+        background: "rgba(255, 50, 50, 0.95)",
+        color: "white",
+        border: "1px solid rgba(255, 50, 50, 0.3)",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
     };
 
     const barStyle = {
@@ -182,7 +199,6 @@ export default function AtmMap() {
         overflow: "hidden",
         border: "1px solid rgba(0,0,0,0.08)",
         background: "#fff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
     };
 
     return (
@@ -190,7 +206,7 @@ export default function AtmMap() {
             {/* кнопки */}
             <div style={barStyle}>
                 <button
-                    style={buttonBase}
+                    style={buttonStyle}
                     onClick={() => {
                         setIsCollapsed((v) => {
                             const next = !v;
@@ -198,30 +214,14 @@ export default function AtmMap() {
                             return next;
                         });
                     }}
-                    onMouseEnter={(e) => {
-                        Object.assign(e.target.style, buttonHoverStyle);
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.background = "#ffffff";
-                        e.target.style.color = "#374151";
-                        e.target.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
-                    }}
                 >
                     {isCollapsed ? "Показать карту" : "Скрыть карту"}
                 </button>
 
-                {!isCollapsed && (
+                {!isCollapsed && !isFullscreen && (
                     <button
-                        style={buttonBase}
+                        style={buttonStyle}
                         onClick={() => setIsFullscreen(true)}
-                        onMouseEnter={(e) => {
-                            Object.assign(e.target.style, buttonHoverStyle);
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.color = "#374151";
-                            e.target.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
-                        }}
                     >
                         На весь экран
                     </button>
@@ -239,9 +239,8 @@ export default function AtmMap() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                fontWeight: 600,
-                                opacity: 0.6,
-                                color: "#6b7280",
+                                fontWeight: 800,
+                                opacity: 0.7,
                             }}
                         >
                             Карта скрыта
@@ -269,41 +268,38 @@ export default function AtmMap() {
                             width: "100vw",
                             height: "100vh",
                             background: "#fff",
-                            zIndex: 9999,
+                            zIndex: 9000,
                         }}
                     >
-                        {/* Кнопка выхода из полноэкранного режима */}
+                        {/* Кнопка выхода */}
                         <div
                             style={{
-                                position: "absolute",
-                                top: 20,
-                                right: 20,
+                                position: "fixed",
+                                top: 12,
+                                right: 12,
                                 zIndex: 10001,
                                 display: "flex",
                                 gap: 10,
+                                alignItems: "center",
                             }}
                         >
+                            <div style={{
+                                background: "rgba(0,0,0,0.7)",
+                                color: "white",
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                            }}>
+                                Нажмите ESC для выхода
+                            </div>
                             <button
-                                style={{
-                                    ...buttonBase,
-                                    padding: "12px 24px",
-                                    fontSize: "15px",
-                                    fontWeight: 700,
-                                    background: "#ffffff",
-                                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                                }}
-                                onClick={handleExitFullscreen}
-                                onMouseEnter={(e) => {
-                                    Object.assign(e.target.style, buttonHoverStyle);
-                                    e.target.style.boxShadow = "0 6px 20px rgba(196, 30, 58, 0.4)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.background = "#ffffff";
-                                    e.target.style.color = "#374151";
-                                    e.target.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2)";
-                                }}
+                                style={exitButtonStyle}
+                                onClick={exitFullscreen}
+                                title="Выйти из полноэкранного режима"
                             >
-                                ✕ Закрыть полноэкранный режим
+                                <span style={{ fontSize: "18px" }}>×</span>
+                                Закрыть
                             </button>
                         </div>
 
