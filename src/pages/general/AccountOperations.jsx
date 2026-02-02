@@ -521,10 +521,7 @@ export default function DashboardAccountOperations() {
             )}
             {isLoading && (
               <div className="processing-integration__loading">
-                <div className="loading-spinner">
                   <div className="spinner"></div>
-                  <p>Загрузка операций...</p>
-                </div>
               </div>
             )}
             {!isLoading &&

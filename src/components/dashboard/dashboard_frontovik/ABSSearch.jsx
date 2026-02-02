@@ -1,316 +1,297 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../../../styles/ABSSearch.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import AlertMessage from "../../general/AlertMessage.jsx";
 import Modal from "../../general/Modal.jsx";
 import {
-  getUserAccounts,
-  getUserCards,
-  getUserCredits,
-  getUserDeposits,
-  getUserInfoPhone,
+    getUserAccounts,
+    getUserCards,
+    getUserCredits,
+    getUserDeposits,
+    getUserInfoPhone,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
 import { useNavigate } from "react-router-dom";
-import { Select } from "antd";
 import {
-  MdOutlinePhonelinkErase,
-  MdOutlinePhonelinkRing,
-  MdOutlineSmartphone,
+    MdOutlinePhonelinkErase,
+    MdOutlinePhonelinkRing,
+    MdOutlineSmartphone,
 } from "react-icons/md";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
 const TYPE_SEARCH_CLIENT = [
-  { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
-  {
-    label: "Поиск по Номеру индекса",
-    value: "/client-index?clientIndex=",
-    inputLabel: "Номер индекса",
-  },
-  { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
+    { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
+    {
+        label: "Поиск по Номеру индекса",
+        value: "/client-index?clientIndex=",
+        inputLabel: "Номер индекса",
+    },
+    { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
 
 export default function ABSClientSearch() {
-  const [isMobile, setIsMobile] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [displayPhone, setDisplayPhone] = useState("");
-  const [clientsData, setClientsData] = useState([]);
-  const [selectedClientIndex, setSelectedClientIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [cardsData, setCardsData] = useState([]);
-  const [accountsData, setAccountsData] = useState([]);
-  const [creditsData, setCreditsData] = useState([]);
-  const [depositsData, setDepositsData] = useState([]);
-  const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
-    TYPE_SEARCH_CLIENT[0].value,
-  );
-  const navigate = useNavigate();
-  // const [showCardsModal, setShowCardsModal] = useState({
-  //   active: false,
-  //   data: [],
-  // });
-  //   const [showAccountsModal, setShowAccountsModal] = useState(false);
-  const [alert, setAlert] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
-
-  // Функция для показа уведомления
-  const showAlert = (message, type = "success") => {
-    setAlert({
-      show: true,
-      message,
-      type,
+    const [isMobile, setIsMobile] = useState(null);
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [displayPhone, setDisplayPhone] = useState("");
+    const [clientsData, setClientsData] = useState([]);
+    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [cardsData, setCardsData] = useState([]);
+    const [accountsData, setAccountsData] = useState([]);
+    const [creditsData, setCreditsData] = useState([]);
+    const [depositsData, setDepositsData] = useState([]);
+    const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
+        TYPE_SEARCH_CLIENT[0].value,
+    );
+    const navigate = useNavigate();
+    const [alert, setAlert] = useState({
+        show: false,
+        message: "",
+        type: "success",
     });
-  };
 
-  // Функция для скрытия уведомления
-  const hideAlert = () => {
-    setAlert({
-      show: false,
-      message: "",
-      type: "success",
-    });
-  };
+    const showAlert = (message, type = "success") => {
+        setAlert({
+            show: true,
+            message,
+            type,
+        });
+    };
 
-  // Функция для форматирования номера телефона
-  const formatPhoneNumber = (value) => {
-    return value;
-  };
+    const hideAlert = () => {
+        setAlert({
+            show: false,
+            message: "",
+            type: "success",
+        });
+    };
 
-  // Обработка изменения номера телефона
-  const handlePhoneChange = (e) => {
-    const value = e.target.value;
-    const digitsOnly = value.replace(/\D/g, "");
+    const formatPhoneNumber = (value) => {
+        return value;
+    };
 
-    // Сохраняем только цифры в state для отправки
-    setPhoneNumber(digitsOnly);
-    // Сохраняем форматированный номер для отображения
-    setDisplayPhone(formatPhoneNumber(digitsOnly));
-  };
+    const handlePhoneChange = (e) => {
+        const value = e.target.value;
+        const digitsOnly = value.replace(/\D/g, "");
+        setPhoneNumber(digitsOnly);
+        setDisplayPhone(formatPhoneNumber(digitsOnly));
+    };
 
-  // Функция для очистки всех полей
-  const handleClear = () => {
-    setPhoneNumber("");
-    setDisplayPhone("");
-    setClientsData([]);
-    setSelectedClientIndex(0);
-    setCardsData([]);
-    setAccountsData([]);
-    setCreditsData([]);
-    setDepositsData([]);
-    setIsMobile(null);
-    sessionStorage.removeItem('absClientSearchState');
-  };
-
-  // Функция для поиска клиентов в АБС
-  const handleSearchClient = async () => {
-    if (!phoneNumber) {
-      showAlert("Пожалуйста, введите номер телефона", "error");
-      return;
-    }
-
-    // Форматируем телефонный номер
-    let formattedPhone = phoneNumber.trim();
-
-    // Удаляем все нецифровые символы
-    formattedPhone = formattedPhone.replace(/\D/g, "");
-
-    try {
-      let isMobile = null;
-
-      if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-        isMobile = await getUserInfoPhone(formattedPhone);
-      }
-
-      setIsMobile(isMobile);
-
-      setIsLoading(true);
-      const token = localStorage.getItem("access_token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedPhone}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          showAlert("Клиенты не найдены в АБС", "error");
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    const handleClear = () => {
+        setPhoneNumber("");
+        setDisplayPhone("");
         setClientsData([]);
-        return;
-      }
+        setSelectedClientIndex(0);
+        setCardsData([]);
+        setAccountsData([]);
+        setCreditsData([]);
+        setDepositsData([]);
+        setIsMobile(null);
+        sessionStorage.removeItem('absClientSearchState');
+    };
 
-      let data = await response.json();
+    const handleSearchClient = async () => {
+        if (!phoneNumber) {
+            showAlert("Пожалуйста, введите номер телефона", "error");
+            return;
+        }
 
-      if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
-        // data = [data];
-        setClientsData([data]);
-      } else {
-        setClientsData(data);
-      }
-      setSelectedClientIndex(0);
+        let formattedPhone = phoneNumber.trim().replace(/\D/g, "");
 
-      if (data.length === 0) {
-        showAlert("Клиенты не найдены в АБС", "error");
-      } else {
-        showAlert(`Найдено клиентов: ${data.length}`, "success");
-      }
-    } catch (error) {
-      console.error("Ошибка при поиске клиента в АБС:", error);
-      showAlert("Произошла ошибка при поиске клиента в АБС", "error");
-      setClientsData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        try {
+            let isMobile = null;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleGetDataUser = async () => {
-    if (!clientsData?.[0]?.client_code) return;
-    try {
-      const clientCode = clientsData[selectedClientIndex]?.client_code;
-      const resCards = await getUserCards(clientCode);
-      const resAcc = await getUserAccounts(clientCode);
-      const resCredits = await getUserCredits(clientCode);
-      const resDeposits = await getUserDeposits(clientCode);
+            if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
+                isMobile = await getUserInfoPhone(formattedPhone);
+            }
 
-      setCardsData(resCards || []);
-      setAccountsData(resAcc || []);
-      setCreditsData(resCredits || []);
-      setDepositsData(resDeposits || []);
-    } catch (error) {
-      console.error("Error fetching user cards/accounts:", error);
-      showAlert("Ошибка при получении данных карт/счетов", "error");
-    }
-  };
+            setIsMobile(isMobile);
 
-  // Функция для копирования значения в буфер обмена
-  const copyToClipboard = (text) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        showAlert("Скопировано в буфер обмена", "success");
-      })
-      .catch((err) => {
-        console.error("Ошибка копирования: ", err);
-        showAlert("Не удалось скопировать", "error");
-      });
-  };
+            setIsLoading(true);
+            const token = localStorage.getItem("access_token");
 
-  // Функция для копирования всех клиентов в JSON
-  const copyAllClientsToClipboard = () => {
-    copyToClipboard(JSON.stringify(clientsData, null, 2));
-  };
+            const response = await fetch(
+                `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedPhone}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                },
+            );
 
-  // Функция для копирования выбранного клиента в JSON
-  const copySelectedClientToClipboard = () => {
-    if (clientsData[selectedClientIndex]) {
-      copyToClipboard(
-        JSON.stringify(clientsData[selectedClientIndex], null, 2),
-      );
-    }
-  };
+            if (!response.ok) {
+                if (response.status === 404) {
+                    showAlert("Клиенты не найдены в АБС", "error");
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                setClientsData([]);
+                return;
+            }
 
-  console.log("isMobile", isMobile);
+            let data = await response.json();
 
-  // Получение выбранного клиента
-  const selectedClient =
-    clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+            if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+                setClientsData([data]);
+            } else {
+                setClientsData(data);
+            }
+            setSelectedClientIndex(0);
 
-  // Подготовка данных для таблицы
-  const tableData = selectedClient
-    ? [
-        { label: "Телефон", key: "phone", value: selectedClient.phone },
-        { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
-        {
-          label: "Тип клиента",
-          key: "client_type_name",
-          value: selectedClient.client_type_name,
-        },
-        {
-          label: "Флаг банковского счета",
-          key: "ban_acc_open_flag",
-          value: selectedClient.ban_acc_open_flag,
-        },
-        {
-          label: "Код департамента",
-          key: "dep_code",
-          value: selectedClient.dep_code,
-        },
-        {
-          label: "Код клиента в АБС",
-          key: "client_code",
-          value: selectedClient.client_code,
-        },
-        { label: "Фамилия", key: "surname", value: selectedClient.surname },
-        { label: "Имя", key: "name", value: selectedClient.name },
-        {
-          label: "Отчество",
-          key: "patronymic",
-          value: selectedClient.patronymic,
-        },
-        {
-          label: "Фамилия (латиница)",
-          key: "ltn_surname",
-          value: selectedClient.ltn_surname,
-        },
-        {
-          label: "Имя (латиница)",
-          key: "ltn_name",
-          value: selectedClient.ltn_name,
-        },
-        {
-          label: "Отчество (латиница)",
-          key: "ltn_patronymic",
-          value: selectedClient.ltn_patronymic,
-        },
-        { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
-        {
-          label: "Тип документа",
-          key: "identdoc_name",
-          value: selectedClient.identdoc_name,
-        },
-        {
-          label: "Серия документа",
-          key: "identdoc_series",
-          value: selectedClient.identdoc_series,
-        },
-        {
-          label: "Номер документа",
-          key: "identdoc_num",
-          value: selectedClient.identdoc_num,
-        },
-        {
-          label: "Дата выдачи",
-          key: "identdoc_date",
-          value: selectedClient.identdoc_date,
-        },
-        {
-          label: "Кем выдан",
-          key: "identdoc_orgname",
-          value: selectedClient.identdoc_orgname,
-        },
-        { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
-      ]
-    : [];
+            if (data.length === 0) {
+                showAlert("Клиенты не найдены в АБС", "error");
+            } else {
+                showAlert(`Найдено клиентов: ${data.length}`, "success");
+            }
+        } catch (error) {
+            console.error("Ошибка при поиске клиента в АБС:", error);
+            showAlert("Произошла ошибка при поиске клиента в АБС", "error");
+            setClientsData([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  useEffect(() => {
-    if (selectedClient?.client_code) handleGetDataUser();
-  }, [handleGetDataUser, selectedClient?.client_code]);
+    // Используем useCallback чтобы функция не пересоздавалась при каждом рендере
+    const handleGetDataUser = useCallback(async () => {
+        if (!clientsData?.[selectedClientIndex]?.client_code) return;
 
+        try {
+            const clientCode = clientsData[selectedClientIndex]?.client_code;
+            const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
+                getUserCards(clientCode),
+                getUserAccounts(clientCode),
+                getUserCredits(clientCode),
+                getUserDeposits(clientCode),
+            ]);
+
+            setCardsData(resCards || []);
+            setAccountsData(resAcc || []);
+            setCreditsData(resCredits || []);
+            setDepositsData(resDeposits || []);
+        } catch (error) {
+            console.error("Error fetching user cards/accounts:", error);
+            showAlert("Ошибка при получении данных карт/счетов", "error");
+        }
+    }, [clientsData, selectedClientIndex]); // Зависимости: clientsData и selectedClientIndex
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard
+            .writeText(text)
+            .then(() => {
+                showAlert("Скопировано в буфер обмена", "success");
+            })
+            .catch((err) => {
+                console.error("Ошибка копирования: ", err);
+                showAlert("Не удалось скопировать", "error");
+            });
+    };
+
+    const copyAllClientsToClipboard = () => {
+        copyToClipboard(JSON.stringify(clientsData, null, 2));
+    };
+
+    const copySelectedClientToClipboard = () => {
+        if (clientsData[selectedClientIndex]) {
+            copyToClipboard(
+                JSON.stringify(clientsData[selectedClientIndex], null, 2),
+            );
+        }
+    };
+
+    console.log("isMobile", isMobile);
+
+    const selectedClient =
+        clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+
+    const tableData = selectedClient
+        ? [
+            { label: "Телефон", key: "phone", value: selectedClient.phone },
+            { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
+            {
+                label: "Тип клиента",
+                key: "client_type_name",
+                value: selectedClient.client_type_name,
+            },
+            {
+                label: "Флаг банковского счета",
+                key: "ban_acc_open_flag",
+                value: selectedClient.ban_acc_open_flag,
+            },
+            {
+                label: "Код департамента",
+                key: "dep_code",
+                value: selectedClient.dep_code,
+            },
+            {
+                label: "Код клиента в АБС",
+                key: "client_code",
+                value: selectedClient.client_code,
+            },
+            { label: "Фамилия", key: "surname", value: selectedClient.surname },
+            { label: "Имя", key: "name", value: selectedClient.name },
+            {
+                label: "Отчество",
+                key: "patronymic",
+                value: selectedClient.patronymic,
+            },
+            {
+                label: "Фамилия (латиница)",
+                key: "ltn_surname",
+                value: selectedClient.ltn_surname,
+            },
+            {
+                label: "Имя (латиница)",
+                key: "ltn_name",
+                value: selectedClient.ltn_name,
+            },
+            {
+                label: "Отчество (латиница)",
+                key: "ltn_patronymic",
+                value: selectedClient.ltn_patronymic,
+            },
+            { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
+            {
+                label: "Тип документа",
+                key: "identdoc_name",
+                value: selectedClient.identdoc_name,
+            },
+            {
+                label: "Серия документа",
+                key: "identdoc_series",
+                value: selectedClient.identdoc_series,
+            },
+            {
+                label: "Номер документа",
+                key: "identdoc_num",
+                value: selectedClient.identdoc_num,
+            },
+            {
+                label: "Дата выдачи",
+                key: "identdoc_date",
+                value: selectedClient.identdoc_date,
+            },
+            {
+                label: "Кем выдан",
+                key: "identdoc_orgname",
+                value: selectedClient.identdoc_orgname,
+            },
+            { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
+        ]
+        : [];
+
+    // useEffect теперь вызывает handleGetDataUser только когда изменяется client_code
     useEffect(() => {
-        // Восстанавливаем состояние при монтировании компонента
+        if (selectedClient?.client_code) {
+            handleGetDataUser();
+        }
+    }, [selectedClient?.client_code, handleGetDataUser]);
+
+    // Восстановление состояния
+    useEffect(() => {
         const savedState = sessionStorage.getItem('absClientSearchState');
         if (savedState) {
             const state = JSON.parse(savedState);
@@ -327,8 +308,8 @@ export default function ABSClientSearch() {
         }
     }, []);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const saveState = () => {
+    // Сохранение состояния с useCallback
+    const saveState = useCallback(() => {
         const stateToSave = {
             phoneNumber,
             displayPhone,
@@ -342,12 +323,11 @@ export default function ABSClientSearch() {
             depositsData
         };
         sessionStorage.setItem('absClientSearchState', JSON.stringify(stateToSave));
-    };
+    }, [phoneNumber, displayPhone, clientsData, selectedClientIndex, selectTypeSearchClient, isMobile, cardsData, accountsData, creditsData, depositsData]);
 
     useEffect(() => {
         saveState();
-    }, [phoneNumber, clientsData, selectedClientIndex, cardsData, saveState]);
-
+    }, [saveState]);
 
     return (
     <>
