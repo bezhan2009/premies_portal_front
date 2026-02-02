@@ -31,6 +31,8 @@
     width: 90%;
     max-width: 400px;
     animation: slideIn 0.3s ease-out;
+    position: relative;
+    z-index: 1001;
 }
 
 @keyframes slideIn {
@@ -70,6 +72,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    position: relative;
 }
 
 .input-group label {
@@ -85,12 +88,14 @@
     font-size: 16px;
     font-family: inherit;
     transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+    z-index: 1;
 }
 
 .date-input:focus {
     outline: none;
     border-color: #f63b3b;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    box-shadow: 0 0 0 3px rgba(246, 59, 59, 0.1);
 }
 
 .date-input:hover:not(:focus) {
@@ -105,7 +110,7 @@
     border-top: 1px solid #eee;
 }
 
-.cancel-button {
+.button {
     padding: 10px 20px;
     background: transparent;
     border: 1px solid #ddd;
@@ -115,9 +120,11 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+    z-index: 1;
 }
 
-.cancel-button:hover {
+.button:hover {
     background: #f5f5f5;
     border-color: #ccc;
 }
@@ -135,7 +142,7 @@
 }
 
 .submit-button:hover:not(:disabled) {
-    background: #f63b3b;
+    background: #d63030;
 }
 
 .submit-button:disabled {
@@ -144,18 +151,9 @@
     opacity: 0.7;
 }
 
-/* Для лучшей поддержки браузеров */
+/* ИСПРАВЛЕНО: убрал абсолютное позиционирование */
 .date-input::-webkit-calendar-picker-indicator {
-    background: transparent;
-    bottom: 0;
-    color: transparent;
     cursor: pointer;
-    height: auto;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: auto;
 }
 
 .date-input::-webkit-datetime-edit-fields-wrapper {
@@ -191,7 +189,7 @@
         padding: 10px;
     }
 
-    .cancel-button,
+    .button,
     .submit-button {
         padding: 8px 16px;
         font-size: 13px;
