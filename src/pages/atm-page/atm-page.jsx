@@ -30,14 +30,6 @@ export default function AtmPage() {
         loadData();
     }, []);
 
-    if (loading) {
-        return (
-            <div className='loading-container'>
-                <div className='loading-text'>Загрузка данных...</div>
-            </div>
-        );
-    }
-
     if (error) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>

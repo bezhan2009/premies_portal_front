@@ -57,28 +57,6 @@ export default function Checkout() {
         loadTransactions();
     }, [id, fromDate, toDate]);
 
-    if (loading) {
-        return (
-            <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-                <div className="block_info_prems content-page" align="center">
-                    {/* Кнопка Назад */}
-                    <button
-                        className="back-button"
-                        onClick={handleGoBack}
-                        aria-label="Назад"
-                        title="Назад"
-                    >
-                        <FaArrowLeft />
-                    </button>
-
-                    <div className="loading-container">
-                        <div className="loading-text">Загрузка данных транзакций...</div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     if (error) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
