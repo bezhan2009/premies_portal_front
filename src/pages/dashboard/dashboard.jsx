@@ -84,6 +84,8 @@ function RedirectDashboard() {
         navigate("/frontovik/abs-search", { replace: true });
     } else if (roleIds.includes(18)) {
         navigate("/processing/limits", { replace: true });
+    } else if (roleIds.includes(19)) {
+        navigate("/atm/table", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });
