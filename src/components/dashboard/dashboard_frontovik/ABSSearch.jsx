@@ -30,47 +30,41 @@ const TYPE_SEARCH_CLIENT = [
     { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
 
-// Функция для нормализации данных клиента из разных форматов
-const normalizeClientData = (clientData, searchType) => {
+// Функция для нормализации данных клиента
+const normalizeClientData = (client, searchType) => {
+    // Если это поиск по телефону - данные уже в нужном формате
     if (searchType === TYPE_SEARCH_CLIENT[0].value) {
-        // Поиск по телефону - оставляем как есть
-        return clientData;
-    } else if (searchType === TYPE_SEARCH_CLIENT[1].value || searchType === TYPE_SEARCH_CLIENT[2].value) {
-        // Поиск по индексу или INN - преобразуем в единый формат
-        const phoneContact = clientData.ContactData?.find(contact =>
-            contact.Type?.Code === "PHN" && contact.Kind?.Code === "MOBILE"
-        );
-
-        return {
-            phone: phoneContact?.Value || "",
-            arc_flag: "", // Нет в новом формате
-            client_type_name: clientData.TypeExt?.Name || "",
-            ban_acc_open_flag: "", // Нет в новом формате
-            dep_code: clientData.Department?.Code || "",
-            client_code: clientData.Code || "",
-            surname: clientData.LastName || "",
-            name: clientData.FirstName || "",
-            patronymic: clientData.MiddleName || "",
-            ltn_surname: clientData.LatinLastName || "",
-            ltn_name: clientData.LatinFirstName || "",
-            ltn_patronymic: clientData.LatinMiddleName || "",
-            tax_code: clientData.TaxIdentificationNumber?.Code || "",
-            identdoc_name: "", // Нет в новом формате
-            identdoc_series: "", // Нет в новом формате
-            identdoc_num: "", // Нет в новом формате
-            identdoc_date: "", // Нет в новом формате
-            identdoc_orgname: "", // Нет в новом формате
-            sv_id: (clientData.ExternalSystemCodes?.ExternalCode || [])
-                .find(ext => ext.System?.Code === "SVPC")?.Code || ""
-        };
+        return client;
     }
-    return clientData;
+
+    // Для поиска по ИНН и коду клиента - преобразуем формат
+    return {
+        phone: client.ContactData?.[0]?.Value || "",
+        arc_flag: "",
+        client_type_name: client.TypeExt?.Name || "",
+        ban_acc_open_flag: "",
+        dep_code: client.Department?.Code || "",
+        client_code: client.Code || "",
+        surname: client.LastName || "",
+        name: client.FirstName || "",
+        patronymic: client.MiddleName || "",
+        ltn_surname: client.LatinLastName || "",
+        ltn_name: client.LatinFirstName || "",
+        ltn_patronymic: client.LatinMiddleName || "",
+        tax_code: client.TaxIdentificationNumber?.Code || "",
+        identdoc_name: client.IdentDocs?.[0]?.Type?.Name || "",
+        identdoc_series: client.IdentDocs?.[0]?.Series || "",
+        identdoc_num: client.IdentDocs?.[0]?.Number || "",
+        identdoc_date: client.IdentDocs?.[0]?.IssueDate || "",
+        identdoc_orgname: client.IdentDocs?.[0]?.IssueOrganization || "",
+        sv_id: client.ExternalSystemCodes?.ExternalCode?.find(c => c.System?.Code === "SVPC")?.Code || "",
+    };
 };
 
 export default function ABSClientSearch() {
     const [isMobile, setIsMobile] = useState(null);
-    const [searchValue, setSearchValue] = useState("");
-    const [displayValue, setDisplayValue] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [displayPhone, setDisplayPhone] = useState("");
     const [clientsData, setClientsData] = useState([]);
     const [selectedClientIndex, setSelectedClientIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -104,24 +98,27 @@ export default function ABSClientSearch() {
         });
     };
 
-    const handleSearchChange = (e) => {
+    const formatPhoneNumber = (value) => {
+        return value;
+    };
+
+    const handlePhoneChange = (e) => {
         const value = e.target.value;
 
-        if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-            // Для телефона - только цифры
-            const digitsOnly = value.replace(/\D/g, "");
-            setSearchValue(digitsOnly);
-            setDisplayValue(digitsOnly);
+        // Для поиска по коду клиента разрешаем точку
+        if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+            setPhoneNumber(value);
+            setDisplayPhone(value);
         } else {
-            // Для других типов - любая строка (может содержать точки)
-            setSearchValue(value);
-            setDisplayValue(value);
+            const digitsOnly = value.replace(/\D/g, "");
+            setPhoneNumber(digitsOnly);
+            setDisplayPhone(formatPhoneNumber(digitsOnly));
         }
     };
 
     const handleClear = () => {
-        setSearchValue("");
-        setDisplayValue("");
+        setPhoneNumber("");
+        setDisplayPhone("");
         setClientsData([]);
         setSelectedClientIndex(0);
         setCardsData([]);
@@ -133,28 +130,32 @@ export default function ABSClientSearch() {
     };
 
     const handleSearchClient = async () => {
-        if (!searchValue) {
-            showAlert(`Пожалуйста, введите ${TYPE_SEARCH_CLIENT.find(e => e.value === selectTypeSearchClient).inputLabel.toLowerCase()}`, "error");
+        if (!phoneNumber) {
+            showAlert("Пожалуйста, введите данные для поиска", "error");
             return;
         }
 
+        let formattedPhone = phoneNumber.trim();
+
+        // Для поиска по телефону убираем нецифровые символы
+        if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
+            formattedPhone = formattedPhone.replace(/\D/g, "");
+        }
+
         try {
-            let formattedValue = searchValue.trim();
+            let isMobile = null;
 
             if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-                // Только для телефона - цифры
-                formattedValue = formattedValue.replace(/\D/g, "");
-                const isMobileResult = await getUserInfoPhone(formattedValue);
-                setIsMobile(isMobileResult);
-            } else {
-                setIsMobile(null);
+                isMobile = await getUserInfoPhone(formattedPhone);
             }
+
+            setIsMobile(isMobile);
 
             setIsLoading(true);
             const token = localStorage.getItem("access_token");
 
             const response = await fetch(
-                `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedValue}`,
+                `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedPhone}`,
                 {
                     method: "GET",
                     headers: {
@@ -175,21 +176,21 @@ export default function ABSClientSearch() {
             }
 
             let data = await response.json();
+
+            // Нормализуем данные в зависимости от типа поиска
             let normalizedData = [];
 
-            if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-                // Поиск по телефону - оставляем как есть
-                normalizedData = data;
-            } else if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
-                // Поиск по client-index - один объект
+            if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+                // Поиск по коду клиента возвращает один объект
                 normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
             } else if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
-                // Поиск по INN - массив объектов
-                if (Array.isArray(data)) {
-                    normalizedData = data.map(item => normalizeClientData(item, selectTypeSearchClient));
-                } else {
-                    normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
-                }
+                // Поиск по ИНН возвращает массив
+                normalizedData = Array.isArray(data)
+                    ? data.map(client => normalizeClientData(client, selectTypeSearchClient))
+                    : [normalizeClientData(data, selectTypeSearchClient)];
+            } else {
+                // Поиск по телефону - данные уже в правильном формате
+                normalizedData = Array.isArray(data) ? data : [data];
             }
 
             setClientsData(normalizedData);
@@ -255,6 +256,8 @@ export default function ABSClientSearch() {
             );
         }
     };
+
+    console.log("isMobile", isMobile);
 
     const selectedClient =
         clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
@@ -347,8 +350,8 @@ export default function ABSClientSearch() {
         const savedState = sessionStorage.getItem('absClientSearchState');
         if (savedState) {
             const state = JSON.parse(savedState);
-            setSearchValue(state.searchValue || '');
-            setDisplayValue(state.displayValue || '');
+            setPhoneNumber(state.phoneNumber || '');
+            setDisplayPhone(state.displayPhone || '');
             setClientsData(state.clientsData || []);
             setSelectedClientIndex(state.selectedClientIndex || 0);
             setSelectTypeSearchClient(state.selectTypeSearchClient || TYPE_SEARCH_CLIENT[0].value);
@@ -363,8 +366,8 @@ export default function ABSClientSearch() {
     // Сохранение состояния с useCallback
     const saveState = useCallback(() => {
         const stateToSave = {
-            searchValue,
-            displayValue,
+            phoneNumber,
+            displayPhone,
             clientsData,
             selectedClientIndex,
             selectTypeSearchClient,
@@ -375,7 +378,7 @@ export default function ABSClientSearch() {
             depositsData
         };
         sessionStorage.setItem('absClientSearchState', JSON.stringify(stateToSave));
-    }, [searchValue, displayValue, clientsData, selectedClientIndex, selectTypeSearchClient, isMobile, cardsData, accountsData, creditsData, depositsData]);
+    }, [phoneNumber, displayPhone, clientsData, selectedClientIndex, selectTypeSearchClient, isMobile, cardsData, accountsData, creditsData, depositsData]);
 
     useEffect(() => {
         saveState();
@@ -402,14 +405,14 @@ export default function ABSClientSearch() {
                             </h1>
                         </div>
 
-                        {/* Поиск */}
+                        {/* Поиск по номеру телефона */}
                         <div className="processing-integration__search-card">
                             <div className="search-card">
                                 <div className="search-card__content">
                                     <div className="search-card__select-group">
                                         <div className="custom-select">
                                             <label
-                                                htmlFor="searchType"
+                                                htmlFor="phoneNumber"
                                                 className="search-card__label"
                                             >
                                                 Поиск клиента по
@@ -417,9 +420,11 @@ export default function ABSClientSearch() {
                                             <select
                                                 id="searchType"
                                                 value={selectTypeSearchClient}
-                                                onChange={(e) =>
-                                                    setSelectTypeSearchClient(e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setSelectTypeSearchClient(e.target.value);
+                                                    setPhoneNumber("");
+                                                    setDisplayPhone("");
+                                                }}
                                                 className="search-card__select"
                                                 disabled={isLoading}
                                             >
@@ -456,19 +461,19 @@ export default function ABSClientSearch() {
                                         </div>
                                     )}
                                     <div className="search-card__input-group">
-                                        <label htmlFor="searchValue" className="search-card__label">
+                                        <label htmlFor="phoneNumber" className="search-card__label">
                                             {TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel}
                                         </label>
                                         <input
                                             type="text"
-                                            id="searchValue"
-                                            value={displayValue}
-                                            onChange={handleSearchChange}
+                                            id="phoneNumber"
+                                            value={displayPhone}
+                                            onChange={handlePhoneChange}
                                             placeholder={"Введите " + TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel.toLocaleLowerCase()}
                                             className="search-card__input"
                                             maxLength={20}
                                             onKeyDown={(e) => {
-                                                if (e.key === "Enter" && searchValue) {
+                                                if (e.key === "Enter" && phoneNumber) {
                                                     handleSearchClient();
                                                 }
                                             }}
@@ -478,7 +483,7 @@ export default function ABSClientSearch() {
                                     <div className="search-card__buttons">
                                         <button
                                             onClick={handleSearchClient}
-                                            disabled={!searchValue || isLoading}
+                                            disabled={!phoneNumber || isLoading}
                                             className={`search-card__button ${
                                                 isLoading ? "search-card__button--loading" : ""
                                             }`}
@@ -601,15 +606,17 @@ export default function ABSClientSearch() {
                                             <tbody className="limits-table__body">
                                             <tr className="limits-table__row">
                                                 {tableData.map((item) => (
-                                                    <td
-                                                        key={item.key}
-                                                        className="limits-table__td limits-table__td--value"
-                                                    >
-                              <span className="current-value">
-                                {item.value ||
-                                    (item.value === 0 ? 0 : "Не указано")}
-                              </span>
-                                                    </td>
+                                                    <>
+                                                        <td
+                                                            key={item.key}
+                                                            className="limits-table__td limits-table__td--value"
+                                                        >
+                                <span className="current-value">
+                                  {item.value ||
+                                      (item.value === 0 ? 0 : "Не указано")}
+                                </span>
+                                                        </td>
+                                                    </>
                                                 ))}
                                             </tr>
                                             </tbody>
@@ -638,14 +645,13 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Карты */}
-                        {selectedClient && cardsData?.length > 0 && (
+                        {!selectedClient && !cardsData?.length ? (
+                            ""
+                        ) : (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
-                                        <h2 className="limits-table__title">
-                                            Данные карт
-                                        </h2>
+                                        <h2 className="limits-table__title">Данные карт</h2>
                                     </div>
 
                                     <div className="limits-table__wrapper">
@@ -658,11 +664,10 @@ export default function ABSClientSearch() {
                                                 <th className="limits-table__th">Срок</th>
                                                 <th className="limits-table__th">Валюта</th>
                                                 <th className="limits-table__th">Остаток</th>
-                                                <th className="limits-table__th">Действия</th>
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
-                                            {cardsData.map((card, idx) => (
+                                            {cardsData?.map((card, idx) => (
                                                 <tr key={idx} className="limits-table__row">
                                                     <td className="limits-table__td">{card.cardId}</td>
                                                     <td className="limits-table__td">{card.type}</td>
@@ -680,7 +685,7 @@ export default function ABSClientSearch() {
                                                     </td>
                                                     <td className="limits-table__td">
                                                         <button
-                                                            className="selectAll-toggle"
+                                                            className="selectAll-toggle "
                                                             onClick={() =>
                                                                 navigate(
                                                                     "/processing/transactions/" + card.cardId,
@@ -699,14 +704,13 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Счета */}
-                        {selectedClient && accountsData?.length > 0 && (
+                        {!selectedClient && !accountsData?.length ? (
+                            ""
+                        ) : (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
-                                        <h2 className="limits-table__title">
-                                            Данные счетов
-                                        </h2>
+                                        <h2 className="limits-table__title">Данные счетов</h2>
                                     </div>
 
                                     <div className="limits-table__wrapper">
@@ -747,14 +751,13 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Кредиты */}
-                        {selectedClient && creditsData?.length > 0 && (
+                        {!selectedClient && !creditsData?.length ? (
+                            ""
+                        ) : (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
-                                        <h2 className="limits-table__title">
-                                            Данные кредитов
-                                        </h2>
+                                        <h2 className="limits-table__title">Данные кредитов</h2>
                                     </div>
 
                                     <div className="limits-table__wrapper">
@@ -779,7 +782,7 @@ export default function ABSClientSearch() {
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
-                                            {creditsData.map((card, idx) => (
+                                            {creditsData?.map((card, idx) => (
                                                 <tr key={idx} className="limits-table__row">
                                                     <td className="limits-table__td">
                                                         {card.contractNumber}
@@ -819,14 +822,13 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Депозиты */}
-                        {selectedClient && depositsData?.length > 0 && (
+                        {!selectedClient && !depositsData?.length ? (
+                            ""
+                        ) : (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
-                                        <h2 className="limits-table__title">
-                                            Данные депозитов
-                                        </h2>
+                                        <h2 className="limits-table__title">Данные депозитов</h2>
                                     </div>
 
                                     <div className="limits-table__wrapper">
@@ -847,7 +849,7 @@ export default function ABSClientSearch() {
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
-                                            {depositsData.map((item, idx) => (
+                                            {depositsData?.map((item, idx) => (
                                                 <tr key={idx} className="limits-table__row">
                                                     <td className="limits-table__td">
                                                         {item.AgreementData?.Code}
@@ -900,10 +902,10 @@ export default function ABSClientSearch() {
                         )}
 
                         {/* Сообщение об отсутствии данных */}
-                        {!isLoading && clientsData.length === 0 && searchValue && (
+                        {!isLoading && clientsData.length === 0 && phoneNumber && (
                             <div className="processing-integration__no-data">
                                 <div className="no-data-message">
-                                    <p>По данному запросу клиенты не найдены</p>
+                                    <p>Данные не найдены</p>
                                 </div>
                             </div>
                         )}
