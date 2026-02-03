@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import "../../../styles/ABSSearch.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
-import AlertMessage from "../../general/AlertMessage.jsx";
-import Modal from "../../general/Modal.jsx";
+import AlertMessage from "../../../components/general/AlertMessage.jsx";
+import Modal from "../../../components/modal/Modal.jsx";
 import {
     getUserAccounts,
     getUserCards,
