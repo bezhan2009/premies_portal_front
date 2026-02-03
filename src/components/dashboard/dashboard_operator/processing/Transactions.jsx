@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo, useCallback} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
@@ -18,7 +18,7 @@ import { useParams } from "react-router-dom";
 
 export default function DashboardOperatorProcessingTransactions() {
     const { id } = useParams();
-    const [searchType, setSearchType] = useState("cardId"); // По умолчанию поиск по карте
+    const [searchType, setSearchType] = useState("cardId");
     const [displayCardId, setDisplayCardId] = useState("");
     const [cardId, setCardId] = useState("");
     const [atmId, setAtmId] = useState("");
@@ -28,7 +28,6 @@ export default function DashboardOperatorProcessingTransactions() {
     const [amountTo, setAmountTo] = useState("");
     const [reversal, setReversal] = useState("");
     const [mcc, setMcc] = useState("");
-    // Новые поля для поиска по BIN и типу
     const [cardBin, setCardBin] = useState("");
     const [searchTransactionType, setSearchTransactionType] = useState("");
     const [searchDate, setSearchDate] = useState("");
@@ -43,8 +42,8 @@ export default function DashboardOperatorProcessingTransactions() {
         message: "",
         type: "success",
     });
+    const [hasSearchedWithId, setHasSearchedWithId] = useState(false);
 
-    // Опции для выбора типа поиска
     const searchOptions = [
         { value: "cardId", label: "Поиск по идентификатору карты" },
         { value: "atmId", label: "Поиск по номеру терминала" },
@@ -53,10 +52,9 @@ export default function DashboardOperatorProcessingTransactions() {
         { value: "amount", label: "Поиск по сумме операции" },
         { value: "reversal", label: "Поищ по статусу отмены" },
         { value: "mcc", label: "Поиск по MCC коду" },
-        { value: "cardBinSearch", label: "Поиск по BIN карты и типу транзакции" }, // Новая опция
+        { value: "cardBinSearch", label: "Поиск по BIN карты и типу транзакции" },
     ];
 
-    // Функция для форматирования суммы
     const formatAmount = (amount, transactionTypeNumber) => {
         if (amount === null || amount === undefined || amount === "") return "N/A";
 
@@ -71,7 +69,6 @@ export default function DashboardOperatorProcessingTransactions() {
             formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
         }
 
-        // Добавляем минус для красных операций (transactionTypeNumber 2)
         if (transactionTypeNumber === 2) {
             return `-${formattedAmount}`;
         }
@@ -79,7 +76,6 @@ export default function DashboardOperatorProcessingTransactions() {
         return formattedAmount;
     };
 
-    // Функция для объединения суммы и валюты в одной ячейке
     const formatAmountWithCurrency = (amount, currency, transactionTypeNumber) => {
         const formattedAmount = formatAmount(amount, transactionTypeNumber);
         if (formattedAmount === "N/A") {
@@ -89,7 +85,6 @@ export default function DashboardOperatorProcessingTransactions() {
         return `${formattedAmount} ${currencyCode || ""}`.trim();
     };
 
-    // Устанавливаем даты по умолчанию (последние 30 дней)
     useEffect(() => {
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
@@ -99,11 +94,9 @@ export default function DashboardOperatorProcessingTransactions() {
 
         setFromDate(formatDate(thirtyDaysAgo));
         setToDate(formatDate(today));
-        // Устанавливаем текущую дату для поиска по BIN
         setSearchDate(formatDate(today));
     }, []);
 
-    // Получаем класс для строки в зависимости от типа транзакции
     const getRowClass = (transactionTypeNumber) => {
         switch (transactionTypeNumber) {
             case 1:
@@ -171,13 +164,11 @@ export default function DashboardOperatorProcessingTransactions() {
     };
 
     const validateSearch = () => {
-        // Проверяем корректность дат (для типов, где нужен диапазон дат)
         if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
             showAlert('Дата "С" не может быть больше даты "По"', "error");
             return false;
         }
 
-        // Проверяем корректность времени (для поиска по BIN)
         if (searchType === "cardBinSearch" && fromTime && toTime) {
             const fromTimeObj = new Date(`1970-01-01T${fromTime}:00`);
             const toTimeObj = new Date(`1970-01-01T${toTime}:00`);
@@ -187,7 +178,6 @@ export default function DashboardOperatorProcessingTransactions() {
             }
         }
 
-        // Валидация в зависимости от типа поиска
         switch (searchType) {
             case "cardId":
                 if (!cardId.trim()) {
@@ -256,9 +246,10 @@ export default function DashboardOperatorProcessingTransactions() {
         return true;
     };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const handleSearch = useCallback(async (id) => {
-        if (!id) if (!validateSearch()) return;
+    const handleSearch = async (cardIdParam) => {
+        const searchCardId = cardIdParam || cardId;
+
+        if (!cardIdParam && !validateSearch()) return;
 
         setIsLoading(true);
         try {
@@ -267,7 +258,7 @@ export default function DashboardOperatorProcessingTransactions() {
             switch (searchType) {
                 case "cardId":
                     transactionsData = await fetchTransactionsByCardId(
-                        cardId || id,
+                        searchCardId,
                         fromDate || undefined,
                         toDate || undefined,
                     );
@@ -367,7 +358,7 @@ export default function DashboardOperatorProcessingTransactions() {
         } finally {
             setIsLoading(false);
         }
-    });
+    };
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter") {
@@ -414,7 +405,6 @@ export default function DashboardOperatorProcessingTransactions() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Сбрасываем все поля в зависимости от типа поиска
         if (searchType === "cardBinSearch") {
             setSearchDate(today);
             setFromTime("");
@@ -424,7 +414,6 @@ export default function DashboardOperatorProcessingTransactions() {
             setToDate(today);
         }
 
-        // Очищаем все поля поиска в зависимости от выбранного типа
         switch (searchType) {
             case "cardId":
                 setDisplayCardId("");
@@ -457,15 +446,16 @@ export default function DashboardOperatorProcessingTransactions() {
         setTransactions([]);
     };
 
+    // Исправленный useEffect - вызывается только один раз при наличии id
     useEffect(() => {
-        if (id?.length) {
-            handleSearch(id);
+        if (id && id.length > 0 && !hasSearchedWithId) {
             setDisplayCardId(id);
             setCardId(id);
+            setHasSearchedWithId(true);
+            handleSearch(id);
         }
-    }, [handleSearch, id]);
+    }, [id]); // Убрали hasSearchedWithId и handleSearch из зависимостей
 
-    // Визуализация полей ввода в зависимости от типа поиска
     const renderSearchFields = () => {
         switch (searchType) {
             case "cardId":
@@ -703,7 +693,6 @@ export default function DashboardOperatorProcessingTransactions() {
         }
     };
 
-    // Получение заголовка для таблицы в зависимости от типа поиска
     const getTableTitle = () => {
         const baseTitle = "Найденные транзакции";
         let searchInfo = "";
@@ -741,12 +730,10 @@ export default function DashboardOperatorProcessingTransactions() {
         return `${baseTitle} ${searchInfo}`;
     };
 
-    // Проверка, нужны ли даты для текущего типа поиска
     const needsDateRange = useMemo(() => {
-        return searchType !== "utrnno"; // Для utrnno даты не нужны
+        return searchType !== "utrnno";
     }, [searchType]);
 
-    // Проверка, нужен ли блок дат для текущего типа поиска
     const needsDateBlock = useMemo(() => {
         return needsDateRange && searchType !== "cardBinSearch";
     }, [searchType, needsDateRange]);
@@ -773,11 +760,9 @@ export default function DashboardOperatorProcessingTransactions() {
                             </p>
                         </div>
 
-                        {/* Блок поиска с датами */}
                         <div className="processing-integration__search-card">
                             <div className="search-card">
                                 <div className="search-card__content">
-                                    {/* Выбор типа поиска */}
                                     <div className="search-card__input-group search-card__select-group">
                                         <label htmlFor="searchType" className="search-card__label">
                                             Тип поиска
@@ -799,10 +784,8 @@ export default function DashboardOperatorProcessingTransactions() {
                                         </div>
                                     </div>
 
-                                    {/* Поля для поиска (зависит от типа) */}
                                     {renderSearchFields()}
 
-                                    {/* Блок дат (скрываем для поиска по utrnno и cardBinSearch) */}
                                     {needsDateBlock && (
                                         <div className="search-card__date-group">
                                             <div className="date-input-group">
@@ -840,10 +823,9 @@ export default function DashboardOperatorProcessingTransactions() {
                                         </div>
                                     )}
 
-                                    {/* Кнопки */}
                                     <div className="search-card__buttons">
                                         <button
-                                            onClick={handleSearch}
+                                            onClick={() => handleSearch()}
                                             disabled={isLoading}
                                             className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
                                         >
@@ -862,7 +844,6 @@ export default function DashboardOperatorProcessingTransactions() {
                         </div>
                     </div>
 
-                    {/* Таблица транзакций */}
                     {transactions.length > 0 && (
                         <div className="processing-integration__limits-table">
                             <div className="limits-table">
