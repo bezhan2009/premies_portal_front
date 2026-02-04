@@ -2,13 +2,14 @@ import "../../styles/components/Menu.scss";
 import LogoImageComponent from "../../components/Logo";
 import LogoutButton from "../../components/general/Logout";
 import RowDown from "../../assets/row_down.png";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import ChangePasswordIcon from "../../assets/change_password.png";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
+    const navigate = useNavigate();
     const username = localStorage.getItem("username") || "Неизвестное имя";
     const [hasNewApplications, setHasNewApplications] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +24,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     });
     const [roles, setRoles] = useState([]);
     const [ws, setWs] = useState(null);
+
+    // Функция для очистки localStorage и перенаправления на логин
+    const clearStorageAndRedirect = useCallback(() => {
+        // console.log("Очищаем localStorage и перенаправляем на логин...");
+        // Очищаем весь localStorage
+        // localStorage.clear();
+        // Перенаправляем на страницу логина
+        navigate("/login");
+    }, [navigate]);
 
     // Функция для получения ролей пользователя
     const fetchUserRoles = useCallback(async () => {
@@ -45,6 +55,9 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             );
 
             if (!response.ok) {
+                if (response.status === 403) {
+                    clearStorageAndRedirect();
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -59,7 +72,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             console.error("Ошибка при получении ролей пользователя:", error);
             return [];
         }
-    }, []);
+    }, [clearStorageAndRedirect]);
 
     // Загрузка ролей пользователя при монтировании компонента
     useEffect(() => {
@@ -131,10 +144,26 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
         websocket.onerror = (error) => {
             console.error("WebSocket error:", error);
+
+            // Если ошибка связана с авторизацией (например, 403), очищаем хранилище
+            // Проверяем сообщение об ошибке на наличие признаков 403
+            const errorMessage = error?.message || '';
+            if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+                console.log("Обнаружена ошибка 403 в WebSocket, очищаем хранилище...");
+                clearStorageAndRedirect();
+            }
         };
 
         websocket.onclose = (event) => {
             console.log("WebSocket for roles closed", event.code, event.reason);
+
+            // Проверяем, является ли код закрытия 4003 (403 Forbidden)
+            // WebSocket коды закрытия 4000-4999 используются для прикладных целей
+            if (event.code === 4003 || event.reason?.includes('403') || event.reason?.includes('Forbidden')) {
+                console.log("WebSocket закрыт с кодом 403, очищаем хранилище...");
+                clearStorageAndRedirect();
+                return;
+            }
 
             // Автоматическое переподключение при аварийном закрытии
             if (event.code !== 1000 && event.code !== 1001) {
@@ -162,7 +191,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 websocket.close(1000, "Component unmounting");
             }
         };
-    }, [fetchUserRoles]);
+    }, [fetchUserRoles, clearStorageAndRedirect]);
 
     // Инициализация ролей из localStorage (резервный вариант)
     useEffect(() => {
