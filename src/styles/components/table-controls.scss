@@ -148,3 +148,47 @@ $table-text: #2b2b2b;
 .retry-button:hover {
   background-color: #b91c1c;
 }
+/* ====== таблица должна уважать width ====== */
+.table-wrapper {
+  width: 100%;
+  overflow: auto; // чтобы таблица могла расширяться
+}
+
+/* ключевое: fixed layout, иначе width у колонок игнорится */
+.sticky-table {
+  width: max-content; // чтобы могла стать шире контейнера
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* чтобы длинный текст не ломал ширину */
+.sticky-table th,
+.sticky-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* чтобы th был relative (у тебя уже в inline style, но пусть будет и тут) */
+.sticky-table th {
+  position: relative;
+}
+
+/* улучшенный хэндл — чтобы легче тянуть */
+.resize-handle {
+  position: absolute;
+  right: -3px;     // 🔥 чтобы попадать проще
+  top: 0;
+  width: 10px;     // 🔥 шире для удобства
+  height: 100%;
+  cursor: col-resize;
+  z-index: 50;
+  background: transparent;
+}
+
+.resize-handle:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+

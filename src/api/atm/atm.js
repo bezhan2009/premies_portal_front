@@ -25,3 +25,25 @@ export const fetchATMReport = async (atmId, fromDate, toDate) => {
     }
 };
 
+export const fetchHistory = async (fromDate, toDate) => {
+  try {
+    const response = await axios.get(
+      "http://10.64.20.84:5003/api/Transactions/search-transactions",
+      {
+        params: {
+          transactionType: 700,
+          fromDate,
+          toDate,
+        },
+      }
+    );
+
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching history:", error);
+    throw error;
+  }
+};
+
+
