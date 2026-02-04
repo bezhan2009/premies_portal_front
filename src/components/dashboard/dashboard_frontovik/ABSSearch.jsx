@@ -23,7 +23,7 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const TYPE_SEARCH_CLIENT = [
     { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
     {
-        label: "Поиск по Номеру индекса",
+        label: "Поиск по ID клиента АБС",
         value: "/client-index?clientIndex=",
         inputLabel: "Номер индекса",
     },
@@ -225,6 +225,21 @@ export default function ABSClientSearch() {
         sessionStorage.removeItem('absClientSearchState');
     };
 
+
+    const handleSelectTypeChange = (e) => {
+        setSelectTypeSearchClient(e.target.value);
+        setPhoneNumber("");
+        setDisplayPhone("");
+        // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПРИ СМЕНЕ ТИПА ПОИСКА
+        setClientsData([]);
+        setSelectedClientIndex(0);
+        setCardsData([]);
+        setAccountsData([]);
+        setCreditsData([]);
+        setDepositsData([]);
+        setIsMobile(null);
+    };
+
     const handleSearchClient = async () => {
         if (!phoneNumber) {
             showAlert("Пожалуйста, введите данные для поиска", "error");
@@ -246,8 +261,16 @@ export default function ABSClientSearch() {
             }
 
             setIsMobile(isMobile);
-
             setIsLoading(true);
+
+            // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПЕРЕД НОВЫМ ПОИСКОМ
+            setCardsData([]);
+            setAccountsData([]);
+            setCreditsData([]);
+            setDepositsData([]);
+            setClientsData([]);
+            setSelectedClientIndex(0);
+
             const token = localStorage.getItem("access_token");
 
             const response = await fetch(
@@ -267,7 +290,13 @@ export default function ABSClientSearch() {
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                // ПРИ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
+                setCardsData([]);
+                setAccountsData([]);
+                setCreditsData([]);
+                setDepositsData([]);
                 setClientsData([]);
+                setSelectedClientIndex(0);
                 return;
             }
 
@@ -294,13 +323,24 @@ export default function ABSClientSearch() {
 
             if (normalizedData.length === 0) {
                 showAlert("Клиенты не найдены в АБС", "error");
+                // ЕСЛИ ВЕРНУЛСЯ ПУСТОЙ МАССИВ - СБРАСЫВАЕМ ВСЕ ДАННЫЕ
+                setCardsData([]);
+                setAccountsData([]);
+                setCreditsData([]);
+                setDepositsData([]);
             } else {
                 showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
             }
         } catch (error) {
             console.error("Ошибка при поиске клиента в АБС:", error);
             showAlert("Произошла ошибка при поиске клиента в АБС", "error");
+            // ПРИ ЛЮБОЙ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
             setClientsData([]);
+            setSelectedClientIndex(0);
+            setCardsData([]);
+            setAccountsData([]);
+            setCreditsData([]);
+            setDepositsData([]);
         } finally {
             setIsLoading(false);
         }
@@ -556,11 +596,7 @@ export default function ABSClientSearch() {
                                             <select
                                                 id="searchType"
                                                 value={selectTypeSearchClient}
-                                                onChange={(e) => {
-                                                    setSelectTypeSearchClient(e.target.value);
-                                                    setPhoneNumber("");
-                                                    setDisplayPhone("");
-                                                }}
+                                                onChange={handleSelectTypeChange}
                                                 className="search-card__select"
                                                 disabled={isLoading}
                                             >

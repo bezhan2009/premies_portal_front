@@ -61,7 +61,7 @@ export default function GiftCard({ edit = false }) {
         cardName: useRef(null)
     };
 
-    // ИСПРАВЛЕННАЯ функция для проверки в списке террористов с query параметрами
+    // ИСПРАВЛЕННАЯ функция для проверки в списке террористов
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
@@ -110,7 +110,7 @@ export default function GiftCard({ edit = false }) {
         }
     }, []);
 
-    // Debounced проверка для полного имени
+    // Debounced проверка для полного имени (ФИО)
     const debouncedCheckFullName = useCallback((fullName, birthDate) => {
         if (terrorCheckTimeoutRefs.fullName.current) {
             clearTimeout(terrorCheckTimeoutRefs.fullName.current);
@@ -136,7 +136,8 @@ export default function GiftCard({ edit = false }) {
     const handleBirthDateChange = (value) => {
         setData("birth_date", value);
 
-        const fullName = `${data.surname || ''} ${data.name || ''}`.trim();
+        // Собираем полное ФИО
+        const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
         if (fullName.length >= 2) {
             debouncedCheckFullName(fullName, value);
         }
@@ -191,13 +192,17 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Обработчик для изменения имени и фамилии с проверкой террористов
+    // ИСПРАВЛЕННЫЙ обработчик для изменения имени, фамилии и отчества с проверкой террористов
     const handleNameChange = (field, value) => {
         setData(field, value);
 
+        // Получаем текущие значения всех полей ФИО
         const surname = field === 'surname' ? value : data.surname || '';
         const name = field === 'name' ? value : data.name || '';
-        const fullName = `${surname} ${name}`.trim();
+        const patronymic = field === 'patronymic' ? value : data.patronymic || '';
+
+        // Собираем полное ФИО
+        const fullName = `${surname} ${name} ${patronymic}`.trim();
 
         if (fullName.length >= 2) {
             debouncedCheckFullName(fullName, data.birth_date);
@@ -367,8 +372,8 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // ИСПРАВЛЕНО: Проверяем ФИО в списке террористов с датой рождения
-            const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""}`.trim();
+            // ИСПРАВЛЕНО: Проверяем полное ФИО (с отчеством) в списке террористов
+            const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""} ${clientDetails.middle_name || ""}`.trim();
             const birthDate = clientDetails.birth_date ? new Date(clientDetails.birth_date).toISOString().split("T")[0] : null;
 
             if (fullName.length >= 2) {
@@ -813,7 +818,7 @@ export default function GiftCard({ edit = false }) {
                     UpdatedAt: formaterDate(responseData?.UpdatedAt, "dateOnly"),
                 });
 
-                // ИСПРАВЛЕНО: Проверяем террористов с датой рождения
+                // ИСПРАВЛЕНО: Проверяем полное ФИО с датой рождения
                 const birthDate = formaterDate(responseData?.birth_date, "dateOnly");
 
                 if (responseData.is_new_client) {
@@ -821,7 +826,7 @@ export default function GiftCard({ edit = false }) {
                 }
 
                 if (responseData.name && responseData.surname) {
-                    const fullName = `${responseData.surname} ${responseData.name}`.trim();
+                    const fullName = `${responseData.surname} ${responseData.name} ${responseData.patronymic || ''}`.trim();
                     if (fullName.length >= 2) {
                         debouncedCheckFullName(fullName, birthDate);
                     }
@@ -911,7 +916,6 @@ export default function GiftCard({ edit = false }) {
                                             setData("visa_card", e);
                                             setData("mc_card", 0);
                                             setData("nc_card", 0);
-                                            // ИСПРАВЛЕНО: ищем в массиве visaCards
                                             const selectedCard = visaCards.find((item) => item.value === e);
                                             setData("product", selectedCard?.label || "");
                                         }}
@@ -926,7 +930,6 @@ export default function GiftCard({ edit = false }) {
                                             setData("mc_card", e);
                                             setData("visa_card", 0);
                                             setData("nc_card", 0);
-                                            // ИСПРАВЛЕНО: ищем в массиве mcCards
                                             const selectedCard = mcCards.find((item) => item.value === e);
                                             setData("product", selectedCard?.label || "");
                                         }}
@@ -941,7 +944,6 @@ export default function GiftCard({ edit = false }) {
                                             setData("nc_card", e);
                                             setData("visa_card", 0);
                                             setData("mc_card", 0);
-                                            // ИСПРАВЛЕНО: ищем в массиве ncCards
                                             const selectedCard = ncCards.find((item) => item.value === e);
                                             setData("product", selectedCard?.label || "");
                                         }}
@@ -960,8 +962,8 @@ export default function GiftCard({ edit = false }) {
                                             <div className="terror-match-item">
                                                 <span className="terror-match-label">По ФИО:</span>
                                                 <span className="terror-match-value">
-                          {data.surname || ''} {data.name || ''}
-                        </span>
+                                                    {data.surname || ''} {data.name || ''} {data.patronymic || ''}
+                                                </span>
                                             </div>
                                         )}
                                         {terrorCheckResults.cardName === true && (
@@ -1151,23 +1153,36 @@ export default function GiftCard({ edit = false }) {
                                     )}
                                 </div>
 
-                                <Input
-                                    className={"div3"}
-                                    placeholder={"Отчество"}
-                                    onChange={(e) => setData("patronymic", e)}
-                                    value={data?.patronymic}
-                                    error={errors}
-                                    id={"patronymic"}
-                                />
-                                <Input
-                                    type="date"
-                                    className={"div4"}
-                                    placeholder={"Дата рождения"}
-                                    onChange={handleBirthDateChange}
-                                    value={data?.birth_date}
-                                    error={errors}
-                                    id={"birth_date"}
-                                />
+                                <div className="div3 input-with-check">
+                                    <Input
+                                        placeholder={"Отчество"}
+                                        onChange={(e) => handleNameChange("patronymic", e)}
+                                        value={data?.patronymic}
+                                        error={errors}
+                                        id={"patronymic"}
+                                    />
+                                    {checkingTerror.fullName && (
+                                        <div className="terror-check-indicator checking"></div>
+                                    )}
+                                    {terrorCheckResults.fullName === true && (
+                                        <div className="terror-check-indicator match"></div>
+                                    )}
+                                    {terrorCheckResults.fullName === false && (
+                                        <div className="terror-check-indicator no-match"></div>
+                                    )}
+                                </div>
+
+                                <label className={`input div4`}>
+                                    <input
+                                        id="birth_date"
+                                        type="date"
+                                        value={data?.birth_date || ""}
+                                        placeholder="Дата рождения"
+                                        onChange={(e) => setData("birth_date", e.target.value)}
+                                    />
+                                    {errors && <p className={errors?.birth_date && "error-input"}>{errors?.birth_date}</p>}
+                                </label>
+
                                 <Input
                                     className={"div5"}
                                     placeholder={"Телефон"}
