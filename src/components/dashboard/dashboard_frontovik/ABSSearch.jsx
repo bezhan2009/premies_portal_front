@@ -23,9 +23,10 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const TYPE_SEARCH_CLIENT = [
     { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
     {
-        label: "Поиск по Номеру индекса",
+        label: "Поиск по ID клиента АБС",
         value: "/client-index?clientIndex=",
-        inputLabel: "Номер индекса",
+        inputLabel: "" +
+            "Номер индекса",
     },
     { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
@@ -61,6 +62,96 @@ const normalizeClientData = (client, searchType) => {
     };
 };
 
+// Компонент модального окна для графика платежей
+const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
+    return (
+        <div className={`graph-modal-overlay ${isOpen ? 'graph-modal-overlay--open' : ''}`}>
+            <div className="graph-modal-container">
+                <div className="graph-modal-header">
+                    <h2 className="graph-modal-title">
+                        График платежей
+                        {referenceId && <span className="graph-modal-subtitle"> (Reference ID: {referenceId})</span>}
+                    </h2>
+                    <button
+                        className="graph-modal-close"
+                        onClick={onClose}
+                    >
+                        &times;
+                    </button>
+                </div>
+
+                <div className="graph-modal-content">
+                    {isLoading ? (
+                        <div className="graph-modal-loading">
+                            <div className="graph-modal-spinner"></div>
+                            <p>Загрузка графика платежей...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="graph-data-table-container">
+                                <div className="graph-data-table-wrapper">
+                                    <table className="graph-data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Code</th>
+                                            <th>LongName</th>
+                                            <th>PaymentDate</th>
+                                            <th>Amount</th>
+                                            <th>CalculatingAmount</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>DateFrom</th>
+                                            <th>DateTo</th>
+                                            <th>CalculatingDate</th>
+                                            <th>ExpectationDate</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {graphData.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.ID}</td>
+                                                <td>{item.Code}</td>
+                                                <td>{item.LongName}</td>
+                                                <td>{item.PaymentDate}</td>
+                                                <td>{item.Amount}</td>
+                                                <td>{item.CalculatingAmount}</td>
+                                                <td>{item.Type}</td>
+                                                <td>{item.Status}</td>
+                                                <td>{item.DateFrom}</td>
+                                                <td>{item.DateTo}</td>
+                                                <td>{item.CalculatingDate}</td>
+                                                <td>{item.ExpectationDate}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="graph-modal-footer">
+                                <div className="graph-summary">
+                                    <span className="graph-summary-item">
+                                        Всего записей: <strong>{graphData.length}</strong>
+                                    </span>
+                                    <span className="graph-summary-item">
+                                        Reference ID: <strong>{referenceId}</strong>
+                                    </span>
+                                </div>
+                                <button
+                                    className="graph-modal-close-btn"
+                                    onClick={onClose}
+                                >
+                                    Закрыть
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function ABSClientSearch() {
     const [isMobile, setIsMobile] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -81,6 +172,12 @@ export default function ABSClientSearch() {
         message: "",
         type: "success",
     });
+
+    // Состояния для модального окна графика платежей
+    const [graphModalOpen, setGraphModalOpen] = useState(false);
+    const [graphData, setGraphData] = useState([]);
+    const [isGraphLoading, setIsGraphLoading] = useState(false);
+    const [selectedReferenceId, setSelectedReferenceId] = useState("");
 
     const showAlert = (message, type = "success") => {
         setAlert({
@@ -129,6 +226,21 @@ export default function ABSClientSearch() {
         sessionStorage.removeItem('absClientSearchState');
     };
 
+
+    const handleSelectTypeChange = (e) => {
+        setSelectTypeSearchClient(e.target.value);
+        setPhoneNumber("");
+        setDisplayPhone("");
+        // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПРИ СМЕНЕ ТИПА ПОИСКА
+        setClientsData([]);
+        setSelectedClientIndex(0);
+        setCardsData([]);
+        setAccountsData([]);
+        setCreditsData([]);
+        setDepositsData([]);
+        setIsMobile(null);
+    };
+
     const handleSearchClient = async () => {
         if (!phoneNumber) {
             showAlert("Пожалуйста, введите данные для поиска", "error");
@@ -150,8 +262,16 @@ export default function ABSClientSearch() {
             }
 
             setIsMobile(isMobile);
-
             setIsLoading(true);
+
+            // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПЕРЕД НОВЫМ ПОИСКОМ
+            setCardsData([]);
+            setAccountsData([]);
+            setCreditsData([]);
+            setDepositsData([]);
+            setClientsData([]);
+            setSelectedClientIndex(0);
+
             const token = localStorage.getItem("access_token");
 
             const response = await fetch(
@@ -171,7 +291,13 @@ export default function ABSClientSearch() {
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                // ПРИ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
+                setCardsData([]);
+                setAccountsData([]);
+                setCreditsData([]);
+                setDepositsData([]);
                 setClientsData([]);
+                setSelectedClientIndex(0);
                 return;
             }
 
@@ -198,13 +324,24 @@ export default function ABSClientSearch() {
 
             if (normalizedData.length === 0) {
                 showAlert("Клиенты не найдены в АБС", "error");
+                // ЕСЛИ ВЕРНУЛСЯ ПУСТОЙ МАССИВ - СБРАСЫВАЕМ ВСЕ ДАННЫЕ
+                setCardsData([]);
+                setAccountsData([]);
+                setCreditsData([]);
+                setDepositsData([]);
             } else {
                 showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
             }
         } catch (error) {
             console.error("Ошибка при поиске клиента в АБС:", error);
             showAlert("Произошла ошибка при поиске клиента в АБС", "error");
+            // ПРИ ЛЮБОЙ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
             setClientsData([]);
+            setSelectedClientIndex(0);
+            setCardsData([]);
+            setAccountsData([]);
+            setCreditsData([]);
+            setDepositsData([]);
         } finally {
             setIsLoading(false);
         }
@@ -255,6 +392,46 @@ export default function ABSClientSearch() {
                 JSON.stringify(clientsData[selectedClientIndex], null, 2),
             );
         }
+    };
+
+    // Функция для открытия графика платежей
+    const handleOpenGraph = async (referenceId) => {
+        setSelectedReferenceId(referenceId);
+        setGraphModalOpen(true);
+        setIsGraphLoading(true);
+
+        try {
+            const token = localStorage.getItem("access_token");
+            const response = await fetch(
+                `${API_BASE_URL}/credits/graphs?referenceId=${referenceId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setGraphData(data);
+        } catch (error) {
+            console.error("Ошибка при загрузке графика платежей:", error);
+            showAlert("Произошла ошибка при загрузке графика платежей", "error");
+        } finally {
+            setIsGraphLoading(false);
+        }
+    };
+
+    // Функция для закрытия модального окна
+    const handleCloseGraphModal = () => {
+        setGraphModalOpen(false);
+        setGraphData([]);
+        setSelectedReferenceId("");
     };
 
     console.log("isMobile", isMobile);
@@ -420,11 +597,7 @@ export default function ABSClientSearch() {
                                             <select
                                                 id="searchType"
                                                 value={selectTypeSearchClient}
-                                                onChange={(e) => {
-                                                    setSelectTypeSearchClient(e.target.value);
-                                                    setPhoneNumber("");
-                                                    setDisplayPhone("");
-                                                }}
+                                                onChange={handleSelectTypeChange}
                                                 className="search-card__select"
                                                 disabled={isLoading}
                                             >
@@ -664,6 +837,7 @@ export default function ABSClientSearch() {
                                                 <th className="limits-table__th">Срок</th>
                                                 <th className="limits-table__th">Валюта</th>
                                                 <th className="limits-table__th">Остаток</th>
+                                                <th className="limits-table__th">Действия</th>
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
@@ -692,7 +866,7 @@ export default function ABSClientSearch() {
                                                                 )
                                                             }
                                                         >
-                                                            Поиск
+                                                            История
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -723,6 +897,7 @@ export default function ABSClientSearch() {
                                                 <th className="limits-table__th">Статус</th>
                                                 <th className="limits-table__th">Дата открытия</th>
                                                 <th className="limits-table__th">Филиал</th>
+                                                <th className="limits-table__th">Действия</th>
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
@@ -741,6 +916,18 @@ export default function ABSClientSearch() {
                                                     </td>
                                                     <td className="limits-table__td">
                                                         {acc.Branch?.Name}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    "/frontovik/account-operations?account=" + acc.Number,
+                                                                )
+                                                            }
+                                                        >
+                                                            Выписка по счету
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -779,6 +966,7 @@ export default function ABSClientSearch() {
                                                     Название продукта
                                                 </th>
                                                 <th className="limits-table__th">Отдел</th>
+                                                <th className="limits-table__th">Действия</th>
                                             </tr>
                                             </thead>
                                             <tbody className="limits-table__body">
@@ -812,6 +1000,15 @@ export default function ABSClientSearch() {
                                                     </td>
                                                     <td className="limits-table__td">
                                                         {card.department || "-"}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            onClick={() => handleOpenGraph(card.referenceId)}
+                                                            disabled={!card.referenceId}
+                                                        >
+                                                            График
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -912,6 +1109,15 @@ export default function ABSClientSearch() {
                     </div>
                 </div>
             </div>
+
+            {/* Модальное окно для графика платежей */}
+            <GraphModal
+                isOpen={graphModalOpen}
+                onClose={handleCloseGraphModal}
+                referenceId={selectedReferenceId}
+                graphData={graphData}
+                isLoading={isGraphLoading}
+            />
         </>
     );
 }
