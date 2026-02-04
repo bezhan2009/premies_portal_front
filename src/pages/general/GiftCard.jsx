@@ -78,8 +78,7 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            // ИСПРАВЛЕНО: используем query параметры вместо path параметра
-            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list?name=${encodeURIComponent(name.trim())}`;
+            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`;
 
             if (birthDate && birthDate.trim() !== '') {
                 url += `&bday=${encodeURIComponent(birthDate.trim())}`;
