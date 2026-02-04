@@ -875,8 +875,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                                 <th className="limits-table__th">
                                                     Сумма в валюте карты (валюта)
                                                 </th>
-                                                <th className="limits-table__th">Доступный баланс</th>
-                                                <th className="limits-table__th">Баланс карты</th>
+                                                <th className="limits-table__th">Баланс после операции</th>
                                                 <th className="limits-table__th">
                                                     Номер операции в ПЦ
                                                 </th>
@@ -947,11 +946,6 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     <td className="limits-table__td limits-table__td--value">
                               <span className="amount-value">
                                 {formatAmount(transaction.acctbal)}
-                              </span>
-                                                    </td>
-                                                    <td className="limits-table__td limits-table__td--value">
-                              <span className="amount-value">
-                                {formatAmount(transaction.netbal)}
                               </span>
                                                     </td>
                                                     <td className="limits-table__td limits-table__td--value">
