@@ -22,5 +22,4 @@ tasks:
       - build-go
       - build
     desc: "Builds main back-end"
-    cmds:
-      - powershell -Command "cd D:\\ActivProjects\\DailyActiv\\go-backend; go build main.go"
+

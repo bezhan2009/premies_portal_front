@@ -6,7 +6,7 @@ import DashboardChairmanKnowledgeBase from "../../pages/dashboard/dashboard_chai
 import DashboardDirectorReports from "../../pages/dashboard/dashboard_director/DirectorReports.jsx";
 import DashboardDirectorKnowledgeBase from "../../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
 import DashboardFrontovikAbsSearch from "../../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
-import AccountOperations from "../../pages/general/AccountOperations.jsx";
+import AccountOperations from "../../pages/dashboard/dashboard_frontovik/AccountOperations.jsx";
 import DashboardOperatorProcessing from "../../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 import DashboardOperatorProcessingTransactions from "../../pages/dashboard/dashboard_operator/Transactions.jsx";
 
