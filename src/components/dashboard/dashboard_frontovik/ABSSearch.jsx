@@ -25,7 +25,8 @@ const TYPE_SEARCH_CLIENT = [
     {
         label: "Поиск по ID клиента АБС",
         value: "/client-index?clientIndex=",
-        inputLabel: "Номер индекса",
+        inputLabel: "" +
+            "Номер индекса",
     },
     { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
