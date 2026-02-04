@@ -9,7 +9,7 @@ export async function login(username, password) {
     return response.data;
   } catch (error) {
     const message =
-      error.response?.data?.message || "Неверный логин или пароль";
+      error.response?.data?.error || "Неверный логин или пароль";
     throw new Error(message);
   }
 }

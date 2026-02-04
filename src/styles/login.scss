@@ -11,6 +11,20 @@ body {
   @include flex-center;
   min-height: 100vh;
   padding: 2rem 0;
+
+  .restoring-session {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+
+    p {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #666;
+    }
+  }
 }
 
 .login-form {
