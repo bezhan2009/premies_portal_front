@@ -61,6 +61,96 @@ const normalizeClientData = (client, searchType) => {
     };
 };
 
+// Компонент модального окна для графика платежей
+const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
+    return (
+        <div className={`graph-modal-overlay ${isOpen ? 'graph-modal-overlay--open' : ''}`}>
+            <div className="graph-modal-container">
+                <div className="graph-modal-header">
+                    <h2 className="graph-modal-title">
+                        График платежей
+                        {referenceId && <span className="graph-modal-subtitle"> (Reference ID: {referenceId})</span>}
+                    </h2>
+                    <button
+                        className="graph-modal-close"
+                        onClick={onClose}
+                    >
+                        &times;
+                    </button>
+                </div>
+
+                <div className="graph-modal-content">
+                    {isLoading ? (
+                        <div className="graph-modal-loading">
+                            <div className="graph-modal-spinner"></div>
+                            <p>Загрузка графика платежей...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="graph-data-table-container">
+                                <div className="graph-data-table-wrapper">
+                                    <table className="graph-data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Code</th>
+                                            <th>LongName</th>
+                                            <th>PaymentDate</th>
+                                            <th>Amount</th>
+                                            <th>CalculatingAmount</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>DateFrom</th>
+                                            <th>DateTo</th>
+                                            <th>CalculatingDate</th>
+                                            <th>ExpectationDate</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {graphData.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.ID}</td>
+                                                <td>{item.Code}</td>
+                                                <td>{item.LongName}</td>
+                                                <td>{item.PaymentDate}</td>
+                                                <td>{item.Amount}</td>
+                                                <td>{item.CalculatingAmount}</td>
+                                                <td>{item.Type}</td>
+                                                <td>{item.Status}</td>
+                                                <td>{item.DateFrom}</td>
+                                                <td>{item.DateTo}</td>
+                                                <td>{item.CalculatingDate}</td>
+                                                <td>{item.ExpectationDate}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="graph-modal-footer">
+                                <div className="graph-summary">
+                                    <span className="graph-summary-item">
+                                        Всего записей: <strong>{graphData.length}</strong>
+                                    </span>
+                                    <span className="graph-summary-item">
+                                        Reference ID: <strong>{referenceId}</strong>
+                                    </span>
+                                </div>
+                                <button
+                                    className="graph-modal-close-btn"
+                                    onClick={onClose}
+                                >
+                                    Закрыть
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function ABSClientSearch() {
     const [isMobile, setIsMobile] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -795,7 +885,7 @@ export default function ABSClientSearch() {
                                                             className="selectAll-toggle"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    "/frontovik/account-operations?account=" + acc.Number,
+                                                                    "/frontovik/account-operations/" + acc.Number,
                                                                 )
                                                             }
                                                         >
@@ -984,69 +1074,13 @@ export default function ABSClientSearch() {
             </div>
 
             {/* Модальное окно для графика платежей */}
-            {graphModalOpen && (
-                <Modal
-                    isOpen={graphModalOpen}
-                    onClose={handleCloseGraphModal}
-                    title={`График платежей (Reference ID: ${selectedReferenceId})`}
-                    size="large"
-                    animation="slide-up"
-                >
-                    <div className="graph-modal-content">
-                        {isGraphLoading ? (
-                            <div className="loading-spinner-container">
-                                <div className="spinner"></div>
-                                <p>Загрузка графика платежей...</p>
-                            </div>
-                        ) : (
-                            <div className="graph-data-table">
-                                <div className="table-wrapper">
-                                    <table className="limits-table">
-                                        <thead className="limits-table__head">
-                                        <tr>
-                                            <th className="limits-table__th">ID</th>
-                                            <th className="limits-table__th">Code</th>
-                                            <th className="limits-table__th">LongName</th>
-                                            <th className="limits-table__th">PaymentDate</th>
-                                            <th className="limits-table__th">Amount</th>
-                                            <th className="limits-table__th">CalculatingAmount</th>
-                                            <th className="limits-table__th">Type</th>
-                                            <th className="limits-table__th">Status</th>
-                                            <th className="limits-table__th">DateFrom</th>
-                                            <th className="limits-table__th">DateTo</th>
-                                            <th className="limits-table__th">CalculatingDate</th>
-                                            <th className="limits-table__th">ExpectationDate</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="limits-table__body">
-                                        {graphData.map((item, index) => (
-                                            <tr key={index} className="limits-table__row">
-                                                <td className="limits-table__td">{item.ID}</td>
-                                                <td className="limits-table__td">{item.Code}</td>
-                                                <td className="limits-table__td">{item.LongName}</td>
-                                                <td className="limits-table__td">{item.PaymentDate}</td>
-                                                <td className="limits-table__td">{item.Amount}</td>
-                                                <td className="limits-table__td">{item.CalculatingAmount}</td>
-                                                <td className="limits-table__td">{item.Type}</td>
-                                                <td className="limits-table__td">{item.Status}</td>
-                                                <td className="limits-table__td">{item.DateFrom}</td>
-                                                <td className="limits-table__td">{item.DateTo}</td>
-                                                <td className="limits-table__td">{item.CalculatingDate}</td>
-                                                <td className="limits-table__td">{item.ExpectationDate}</td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="graph-summary">
-                                    <p>Всего записей: {graphData.length}</p>
-                                    <p>Reference ID: {selectedReferenceId}</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Modal>
-            )}
+            <GraphModal
+                isOpen={graphModalOpen}
+                onClose={handleCloseGraphModal}
+                referenceId={selectedReferenceId}
+                graphData={graphData}
+                isLoading={isGraphLoading}
+            />
         </>
     );
 }
