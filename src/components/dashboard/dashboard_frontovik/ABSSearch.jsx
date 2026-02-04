@@ -829,7 +829,7 @@ export default function ABSClientSearch() {
                                                                 )
                                                             }
                                                         >
-                                                            Поиск
+                                                            История
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -889,7 +889,7 @@ export default function ABSClientSearch() {
                                                                 )
                                                             }
                                                         >
-                                                            Поиск
+                                                            Выписка по счету
                                                         </button>
                                                     </td>
                                                 </tr>
