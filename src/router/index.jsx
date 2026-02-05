@@ -13,6 +13,7 @@ import operatorRoutes from "./routes/operator.routes";
 import workerRoutes from "./routes/worker.routes";
 import agentRoutes from "./routes/agent.routes";
 import managementRoutes from "./routes/management.routes";
+import atmRoutes from "./routes/atm.routes.jsx";
 
 export default function AppRouter() {
   return (
@@ -41,6 +42,7 @@ export default function AppRouter() {
           {workerRoutes}
           {agentRoutes}
           {managementRoutes}
+          {atmRoutes}
         </Route>
 
         <Route path="*" element={<PageNotFound />} />

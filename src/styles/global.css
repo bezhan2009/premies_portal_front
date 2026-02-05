@@ -220,11 +220,13 @@ tr:nth-child(14) {
   gap: 5px;
   animation: fadeIn 0.4s ease-out;
 }
+
 .input p {
   color: #e21a1c;
   margin: 0;
   display: none;
 }
+
 .input .error-input {
   display: flex;
 }

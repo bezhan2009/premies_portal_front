@@ -7,7 +7,7 @@ import Sidebar from '../../general/DynamicMenu.jsx';
 import ABSClientSearch from "../../../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
 
 export default function DashboardFrontovikAbsSearch() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   return (
     <>
@@ -16,11 +16,11 @@ export default function DashboardFrontovikAbsSearch() {
       </Helmet>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
           <Sidebar activeLink="abs_search" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        
+
           <div className="dashboard-container">
             <ABSClientSearch />
           </div>
-          
+
         </div>
     </>
   );

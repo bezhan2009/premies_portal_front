@@ -1514,7 +1514,7 @@ button:active {
   width: 50px;
   height: 50px;
   border: 5px solid #eee;
-  border-top: 5px solid #3498db;
+  border-top: 5px solid #de3a38;
   border-radius: 50%;
   margin: 0 auto 12px auto;
   animation: spin 1s linear infinite;
@@ -1634,4 +1634,376 @@ button:active {
       }
     }
   }
+}
+
+/* Дополнительные стили для AtmStickyTable */
+
+.search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.refresh-button-small {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.refresh-button-small:hover {
+  background-color: #e0e0e0;
+  transform: rotate(90deg);
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.refresh-button {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.refresh-button:hover {
+  background-color: #388e3c;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #f63b3b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.table-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+}
+
+.table-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.atm-id {
+  font-weight: 600;
+  color: #333;
+}
+
+.date-display {
+  background: #f5f5f5;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin: 0 5px;
+}
+
+/* ===== GENERAL BUTTON STYLES ===== */
+
+.button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  outline: none;
+  font-family: inherit;
+}
+
+.button:hover {
+  background: #C41E3A;
+  border-color: #C41E3A;
+  color: #f2f2f2;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.button:disabled:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Focus state для accessibility */
+.button:focus-visible {
+  outline: 2px solid #C41E3A;
+  outline-offset: 2px;
+}
+
+/* Primary variant - изначально красная кнопка */
+.button.primary {
+  background: #C41E3A;
+  color: #ffffff;
+  border-color: #C41E3A;
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+}
+
+.button.primary:hover {
+  background: #a01830;
+  border-color: #a01830;
+  box-shadow: 0 6px 16px rgba(196, 30, 58, 0.4);
+}
+
+/* Secondary variant - серая с красным hover */
+.button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.button.secondary:hover {
+  background: #C41E3A;
+  color: #ffffff;
+  border-color: #C41E3A;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+}
+
+/* Outline variant - прозрачная с границей */
+.button.outline {
+  background: transparent;
+  color: #C41E3A;
+  border: 2px solid #C41E3A;
+  box-shadow: none;
+}
+
+.button.outline:hover {
+  background: #C41E3A;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+}
+
+/* Ghost variant - только текст */
+.button.ghost {
+  background: transparent;
+  color: #374151;
+  border: none;
+  box-shadow: none;
+}
+
+.button.ghost:hover {
+  background: rgba(196, 30, 58, 0.1);
+  color: #C41E3A;
+  box-shadow: 0 2px 8px rgba(196, 30, 58, 0.15);
+}
+
+/* Size variants */
+.button.small {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.button.medium {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.button.large {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+/* Icon button */
+.button.icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.button.icon:hover {
+  border-radius: 50%;
+}
+
+/* Full width */
+.button.full-width {
+  width: 100%;
+}
+
+/* Danger variant - для опасных действий */
+.button.danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.button.danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Success variant */
+.button.success {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+.button.success:hover {
+  background: #059669;
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Анимация загрузки */
+.button.loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent;
+}
+
+.button.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Group buttons - когда несколько кнопок рядом */
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.button-group button {
+  flex: 1;
+  min-width: max-content;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  button.large {
+    padding: 12px 24px;
+    font-size: 15px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}
+
+
+.back-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: #e21a1c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  font-size: 18px;
+}
+
+.back-button:hover {
+  background: #c31414;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.back-button:active {
+  transform: scale(0.95);
+}
+
+.back-button:focus {
+  outline: 2px solid #e31e24;
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .back-button {
+    top: 15px;
+    left: 15px;
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+}
+
+.flex {
+  margin-right: 10px;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  margin: 10px auto;
 }

@@ -704,8 +704,6 @@ export default function ProcessingIntegrationLimits() {
           {isLoading && (
             <div className="processing-integration__loading">
               <div className="loading-spinner">
-                <div className="spinner"></div>
-                <p>Загрузка лимитов...</p>
               </div>
             </div>
           )}
