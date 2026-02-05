@@ -69,7 +69,6 @@ const ResizableTh = ({ width, onResize, className, children, colSpan, title }) =
   );
 };
 
-
 /** ====== МАППЕР СЕРВЕРА -> СТРОКА ДЛЯ ТАБЛИЦЫ ====== */
 const getDispCount = (dispenser = [], currency, denom) => {
   const item = dispenser.find((d) => d.currency === currency && d.denomination === denom);
@@ -191,6 +190,7 @@ export default function AtmStickyTable() {
     total: 170,
     turnover: 170,
     bpt: 230,
+    daysEnough: 170, // ✅ NEW
     errors: 260,
     warnings: 260,
     actions: 130,
@@ -294,6 +294,7 @@ export default function AtmStickyTable() {
   const yesterdayYYYYMMDD = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const atmIds = useMemo(() => new Set((atmData || []).map((a) => a?.TID)), [atmData]);
 
+  /** ✅ оборот вчера */
   const turnoverMap = useMemo(() => {
     const map = new Map();
     (history || []).forEach((trans) => {
@@ -311,17 +312,57 @@ export default function AtmStickyTable() {
     return map;
   }, [history, atmIds, yesterdayYYYYMMDD]);
 
+  /** ✅ NEW: средний расход в день по каждому ATM (по тем дням, что пришли в history) */
+  const avgSpentPerDayMap = useMemo(() => {
+    // Map<atmId, {sum, days:Set}>
+    const tmp = new Map();
+
+    (history || []).forEach((trans) => {
+      if (
+        atmIds.has(trans.atmId) &&
+        Number(trans.amount) > 0 &&
+        trans.reversal !== 1 &&
+        (trans.responseCode === "-1" ||
+          String(trans.responseDescription || "").includes("Успешно"))
+      ) {
+        const day = String(trans.localTransactionDate || "").slice(0, 10);
+        if (!day) return;
+
+        const sum = Number(trans.amount) / 100;
+
+        if (!tmp.has(trans.atmId)) tmp.set(trans.atmId, { sum: 0, days: new Set() });
+        const obj = tmp.get(trans.atmId);
+
+        obj.sum += sum;
+        obj.days.add(day);
+      }
+    });
+
+    // Map<atmId, avgPerDay>
+    const res = new Map();
+    for (const [atmId, obj] of tmp.entries()) {
+      const daysCount = Math.max(1, obj.days.size);
+      res.set(atmId, obj.sum / daysCount);
+    }
+
+    return res;
+  }, [history, atmIds]);
+
   const rows = useMemo(() => {
     return (atmData || []).map((atm) => {
       const base = transformAtm(atm);
       const turnover = turnoverMap.get(atm?.TID) || 0;
+
+      const avgSpentPerDay = avgSpentPerDayMap.get(atm?.TID) || 0; // ✅ NEW
+
       return {
         ...base,
         turnoverYesterday: turnover,
         balancePlusTurnover: base.balanceTjs + turnover,
+        avgSpentPerDay, // ✅ NEW
       };
     });
-  }, [atmData, turnoverMap]);
+  }, [atmData, turnoverMap, avgSpentPerDayMap]);
 
   const filteredRows = useMemo(() => {
     const q = String(idQuery || "").trim();
@@ -344,7 +385,11 @@ export default function AtmStickyTable() {
       else if (key === "turnover") cmp = (a.turnoverYesterday || 0) - (b.turnoverYesterday || 0);
       else if (key === "balancePlusTurnover")
         cmp = (a.balancePlusTurnover || 0) - (b.balancePlusTurnover || 0);
-      else if (key === "errors") cmp = (a.errors?.length ? 1 : 0) - (b.errors?.length ? 1 : 0);
+      else if (key === "daysEnough") {
+        const da = a.avgSpentPerDay > 0 ? a.balanceTjs / a.avgSpentPerDay : -1;
+        const db = b.avgSpentPerDay > 0 ? b.balanceTjs / b.avgSpentPerDay : -1;
+        cmp = da - db;
+      } else if (key === "errors") cmp = (a.errors?.length ? 1 : 0) - (b.errors?.length ? 1 : 0);
       else if (key === "warnings")
         cmp = (a.warnings?.length ? 1 : 0) - (b.warnings?.length ? 1 : 0);
 
@@ -357,24 +402,31 @@ export default function AtmStickyTable() {
   }, [filteredRows, sort]);
 
   const exportToExcel = () => {
-    const sheetRows = sortedRows.map((r) => ({
-      Локация: r.location,
-      ID: r.id,
-      Область: r.region,
-      Адрес: r.address,
+    const sheetRows = sortedRows.map((r) => {
+      const daysEnough = r.avgSpentPerDay > 0 ? r.balanceTjs / r.avgSpentPerDay : null;
 
-      "USD 100": r.usd100,
-      "TJS 200": r.tjs200,
-      "TJS 100": r.tjs100,
-      "TJS 50": r.tjs50,
-      "TJS 20": r.tjs20,
-      "TJS 10": r.tjs10,
+      return {
+        Локация: r.location,
+        ID: r.id,
+        Область: r.region,
+        Адрес: r.address,
 
-      "Всего (TJS)": calcExpenseTjs(r),
-      "Остаток (TJS)": r.balanceTjs,
-      "Оборот (вчера)": r.turnoverYesterday,
-      "Остаток+Оборот (вчера)": r.balancePlusTurnover,
-    }));
+        "USD 100": r.usd100,
+        "TJS 200": r.tjs200,
+        "TJS 100": r.tjs100,
+        "TJS 50": r.tjs50,
+        "TJS 20": r.tjs20,
+        "TJS 10": r.tjs10,
+
+        "Всего (TJS)": calcExpenseTjs(r),
+        "Остаток (TJS)": r.balanceTjs,
+        "Оборот (вчера)": r.turnoverYesterday,
+        "Остаток+Оборот (вчера)": r.balancePlusTurnover,
+
+        "Хватит (дней)": daysEnough == null ? "" : Number(daysEnough).toFixed(1), // ✅ NEW
+        "Расход/день (средний)": r.avgSpentPerDay ? Number(r.avgSpentPerDay).toFixed(0) : "", // ✅ NEW
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(sheetRows);
     const keys = Object.keys(sheetRows[0] || {});
@@ -502,6 +554,18 @@ export default function AtmStickyTable() {
                 </span>
               </ResizableTh>
 
+              {/* ✅ NEW COLUMN */}
+              <ResizableTh
+                width={colWidths.daysEnough}
+                onResize={onResize("daysEnough")}
+                className="table-header table-header-days sortable"
+                title="Сколько дней хватит остатка (остаток / средний расход в день)"
+              >
+                <span onClick={() => clickSort("daysEnough")}>
+                  Хватит (дней){sortMark("daysEnough")}
+                </span>
+              </ResizableTh>
+
               <ResizableTh
                 width={colWidths.errors}
                 onResize={onResize("errors")}
@@ -547,6 +611,7 @@ export default function AtmStickyTable() {
               <th className="table-subheader table-header-total" />
               <th className="table-subheader table-header-turnover" />
               <th className="table-subheader table-header-bpt" />
+              <th className="table-subheader table-header-days" /> {/* ✅ NEW */}
               <th className="table-subheader table-header-issues" />
               <th className="table-subheader table-header-issues" />
               <th className="table-subheader table-header-actions" />
@@ -556,7 +621,7 @@ export default function AtmStickyTable() {
           <tbody>
             {loading && (
               <tr>
-                <td className="table-cell" colSpan={30} align="center">
+                <td className="table-cell" colSpan={40} align="center">
                   Загрузка...
                 </td>
               </tr>
@@ -564,7 +629,7 @@ export default function AtmStickyTable() {
 
             {!loading && sortedRows.length === 0 && (
               <tr>
-                <td className="table-cell" colSpan={30} align="center">
+                <td className="table-cell" colSpan={40} align="center">
                   Нет данных
                 </td>
               </tr>
@@ -573,6 +638,8 @@ export default function AtmStickyTable() {
             {!loading &&
               sortedRows.map((row) => {
                 const total = calcExpenseTjs(row);
+                const daysEnough =
+                  row.avgSpentPerDay > 0 ? row.balanceTjs / row.avgSpentPerDay : null;
 
                 return (
                   <tr className="table-row" key={String(row.id)}>
@@ -605,6 +672,20 @@ export default function AtmStickyTable() {
                       <div className="bpt-sub">
                         остаток: {n(row.balanceTjs)} / оборот: {n(row.turnoverYesterday)}
                       </div>
+                    </td>
+
+                    {/* ✅ NEW CELL */}
+                    <td className="table-cell table-cell-days">
+                      {daysEnough == null ? (
+                        "—"
+                      ) : (
+                        <>
+                          {Number(daysEnough).toFixed(1)}
+                          <div className="bpt-sub">
+                            расход/день: {n(row.avgSpentPerDay)} TJS
+                          </div>
+                        </>
+                      )}
                     </td>
 
                     <td className="table-cell table-cell-issues">
