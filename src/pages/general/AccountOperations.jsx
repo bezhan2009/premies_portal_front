@@ -284,56 +284,53 @@ export default function DashboardAccountOperations() {
                       <table className="limits-table__content">
                         <thead className="limits-table__head">
                           <tr>
-                            <th className="limits-table__th">
-                              Дата операции (DOPER)
-                            </th>
-                            <th className="limits-table__th">
-                              Дата документа (DOCDOPER)
-                            </th>
-                            <th className="limits-table__th">Время (EXECDT)</th>
-                            <th className="limits-table__th">
-                              Описание (TXTDSCR)
-                            </th>
-                            <th className="limits-table__th">Дебет (MOVD)</th>
-                            <th className="limits-table__th">Кредит (MOVC)</th>
-                            <th className="limits-table__th">
-                              Баланс на конец (SumBalOut)
-                            </th>
-                            <th className="limits-table__th">
-                              Валютная дата (DVAL)
+                            <th className="limits-table__th">Дата документа</th>
+                            {/* <th className="limits-table__th">Время </th> */}
+                            <th className="limits-table__th">Назначение</th>
+                            <th className="limits-table__th">Дебет</th>
+                            <th className="limits-table__th">Кредит</th>
+
+                            {/* <th className="limits-table__th">
+                              Валютная дата
                             </th>
                             <th className="limits-table__th">
                               Референс (REFER)
-                            </th>
-                            <th className="limits-table__th">
+                            </th> */}
+                            {/* <th className="limits-table__th">
                               Номер документа (NUMDOC)
+                            </th> */}
+                            <th className="limits-table__th">
+                              Клиент корреспондент
                             </th>
                             <th className="limits-table__th">
-                              Клиент корреспондент (CLIENTCOR)
+                              Счет корреспондент
                             </th>
                             <th className="limits-table__th">
-                              Счет корреспондент (ACCCOR)
+                              Банк корреспондент
+                            </th>
+                            {/* <th className="limits-table__th">Курс (kurs)</th> */}
+                            {/* <th className="limits-table__th">PDepID</th> */}
+                            {/* <th className="limits-table__th">PID</th> */}
+                            {/* <th className="limits-table__th">KSOCODE</th> */}
+                            {/* <th className="limits-table__th">BNKKOR</th> */}
+                            {/* <th className="limits-table__th">JCODEBE</th> */}
+                            {/* <th className="limits-table__th">JRNNCR</th> */}
+                            <th className="limits-table__th">
+                              Оборот по дебету
                             </th>
                             <th className="limits-table__th">
-                              Банк корреспондент (NAMEBCR)
+                              Оборот по кредиту
                             </th>
-                            <th className="limits-table__th">Курс (kurs)</th>
-                            <th className="limits-table__th">PDepID</th>
-                            <th className="limits-table__th">PID</th>
-                            <th className="limits-table__th">KSOCODE</th>
-                            <th className="limits-table__th">BNKKOR</th>
-                            <th className="limits-table__th">JCODEBE</th>
-                            <th className="limits-table__th">JRNNCR</th>
-                            <th className="limits-table__th">MOVDN</th>
-                            <th className="limits-table__th">MOVCN</th>
-                            <th className="limits-table__th">CODEBCR</th>
-                            <th className="limits-table__th">KNP</th>
-                            <th className="limits-table__th">CODEBC</th>
-                            <th className="limits-table__th">TXT_HEAD</th>
-                            <th className="limits-table__th">TXT_BUCH</th>
-                            <th className="limits-table__th">CMSFL</th>
+                            {/* <th className="limits-table__th">CODEBCR</th> */}
+                            {/* <th className="limits-table__th">KNP</th> */}
+                            {/* <th className="limits-table__th">CODEBC</th> */}
+                            {/* <th className="limits-table__th">TXT_HEAD</th> */}
+                            {/* <th className="limits-table__th">TXT_BUCH</th> */}
+                            {/* <th className="limits-table__th">CMSFL</th>
                             <th className="limits-table__th">PARENT_REFER</th>
-                            <th className="limits-table__th">KURS_ISP</th>
+                            <th className="limits-table__th">KURS_ISP</th> */}
+
+                            <th className="limits-table__th">Дата операции</th>
                           </tr>
                         </thead>
                         <tbody className="limits-table__body">
@@ -344,19 +341,15 @@ export default function DashboardAccountOperations() {
                             >
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
-                                  {transaction.doper || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.DOCDOPER || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
+                                  {transaction.DOCDOPER || "N/A"}{" "}
                                   {transaction.EXECDT || "N/A"}
                                 </span>
                               </td>
+                              {/* <td className="limits-table__td limits-table__td--value">
+                                <span className="default-value">
+                                  {transaction.EXECDT || "N/A"}
+                                </span>
+                              </td> */}
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.TXTDSCR || "N/A"}
@@ -372,12 +365,12 @@ export default function DashboardAccountOperations() {
                                   {formatAmount(transaction.MOVC)}
                                 </span>
                               </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
                                   {formatAmount(transaction.sumBalOut)}
                                 </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              </td> */}
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.DVAL || "N/A"}
                                 </span>
@@ -386,12 +379,12 @@ export default function DashboardAccountOperations() {
                                 <span className="default-value">
                                   {transaction.REFER || "N/A"}
                                 </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              </td> */}
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.NUMDOC || "N/A"}
                                 </span>
-                              </td>
+                              </td> */}
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.CLIENTCOR || "N/A"}
@@ -407,17 +400,17 @@ export default function DashboardAccountOperations() {
                                   {transaction.NAMEBCR || "N/A"}
                                 </span>
                               </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.kurs || "N/A"}
                                 </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              </td> */}
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.PDepID || "N/A"}
                                 </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              </td> */}
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.PID || "N/A"}
                                 </span>
@@ -441,7 +434,7 @@ export default function DashboardAccountOperations() {
                                 <span className="default-value">
                                   {transaction.JRNNCR || "N/A"}
                                 </span>
-                              </td>
+                              </td> */}
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
                                   {formatAmount(transaction.MOVDN)}
@@ -452,7 +445,7 @@ export default function DashboardAccountOperations() {
                                   {formatAmount(transaction.MOVCN)}
                                 </span>
                               </td>
-                              <td className="limits-table__td limits-table__td--value">
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.CODEBCR || "N/A"}
                                 </span>
@@ -490,6 +483,11 @@ export default function DashboardAccountOperations() {
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {transaction.KURS_ISP || "N/A"}
+                                </span>
+                              </td> */}
+                              <td className="limits-table__td limits-table__td--value">
+                                <span className="default-value">
+                                  {transaction.doper || "N/A"}
                                 </span>
                               </td>
                             </tr>
