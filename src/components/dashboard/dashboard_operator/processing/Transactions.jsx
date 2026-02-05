@@ -371,29 +371,29 @@ export default function DashboardOperatorProcessingTransactions() {
       .trim();
   };
 
-  const getStatusBadge = (responseCode, reversal) => {
+  const getStatusBadge = (responseCode, reversal, message) => {
     if (reversal) {
       return (
-        <span className="status-badge status-badge--reversed">Отменена</span>
+        <span className="status-badge status-badge--reversed">{message}</span>
       );
     }
 
     switch (responseCode) {
       case "-1":
         return (
-          <span className="status-badge status-badge--success">Успешно</span>
+          <span className="status-badge status-badge--success">{message}</span>
         );
       case "01":
         return (
-          <span className="status-badge status-badge--warning">Ошибка</span>
+          <span className="status-badge status-badge--warning">{message}</span>
         );
       case "02":
         return (
-          <span className="status-badge status-badge--error">Отклонено</span>
+          <span className="status-badge status-badge--error">{message}</span>
         );
       default:
         return (
-          <span className="status-badge status-badge--warning">Ошибка</span>
+          <span className="status-badge status-badge--warning">{message}</span>
         );
     }
   };
@@ -872,7 +872,7 @@ export default function DashboardOperatorProcessingTransactions() {
                       <thead className="limits-table__head">
                         <tr>
                           <th className="limits-table__th">Дата</th>
-                          <th className="limits-table__th">Время</th>
+                          {/* <th className="limits-table__th">Время</th> */}
                           <th className="limits-table__th">Статус</th>
                           <th className="limits-table__th">Номер карты</th>
                           <th className="limits-table__th">ID карты</th>
@@ -906,21 +906,26 @@ export default function DashboardOperatorProcessingTransactions() {
                           >
                             <td className="limits-table__td limits-table__td--value">
                               <span className="default-value">
-                                {transaction.localTransactionDate || "N/A"}
+                                {transaction.localTransactionDate || "N/A"} {transaction.localTransactionTime || "N/A"}
                               </span>
                             </td>
-                            <td className="limits-table__td limits-table__td--value">
+                            {/* <td className="limits-table__td limits-table__td--value">
                               <span className="default-value">
                                 {transaction.localTransactionTime || "N/A"}
                               </span>
-                            </td>
+                            </td> */}
                             <td className="limits-table__td limits-table__td--value">
                               {getStatusBadge(
                                 transaction.responseCode,
                                 transaction.reversal,
+                                transaction.responseDescription,
                               )}
+                              {/* {transaction.responseDescription} */}
                             </td>
-                            <td className="limits-table__td limits-table__td--info">
+                            <td
+                              className="limits-table__td limits-table__td--info"
+                              style={{ minWidth: "150px" }}
+                            >
                               {transaction.cardNumber
                                 ? formatCardNumber(transaction.cardNumber)
                                 : "N/A"}
