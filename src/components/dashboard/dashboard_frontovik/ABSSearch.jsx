@@ -845,6 +845,8 @@ export default function ABSClientSearch() {
                               </button>
                               <button
                                 className="selectAll-toggle "
+
+                                style={{ background: "#374151" }}
                                 onClick={() =>
                                   (document.location.href =
                                     "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
