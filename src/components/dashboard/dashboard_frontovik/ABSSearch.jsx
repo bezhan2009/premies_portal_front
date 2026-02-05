@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import "../../../styles/ABSSearch.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
@@ -12,6 +12,7 @@ import {
   getUserInfoPhone,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
 import { useNavigate } from "react-router-dom";
+import { Select } from "antd";
 import {
   MdOutlinePhonelinkErase,
   MdOutlinePhonelinkRing,
@@ -27,137 +28,12 @@ const TYPE_SEARCH_CLIENT = [
     inputLabel: "Номер телефона",
   },
   {
-    label: "Поиск по ID клиента АБС",
+    label: "Поиск по Номеру индекса",
     value: "/client-index?clientIndex=",
-    inputLabel: "" + "Номер индекса",
+    inputLabel: "Номер индекса",
   },
   { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
 ];
-
-// Функция для нормализации данных клиента
-const normalizeClientData = (client, searchType) => {
-  // Если это поиск по телефону - данные уже в нужном формате
-  if (searchType === TYPE_SEARCH_CLIENT[0].value) {
-    return client;
-  }
-
-  // Для поиска по ИНН и коду клиента - преобразуем формат
-  return {
-    phone: client.ContactData?.[0]?.Value || "",
-    arc_flag: "",
-    client_type_name: client.TypeExt?.Name || "",
-    ban_acc_open_flag: "",
-    dep_code: client.Department?.Code || "",
-    client_code: client.Code || "",
-    surname: client.LastName || "",
-    name: client.FirstName || "",
-    patronymic: client.MiddleName || "",
-    ltn_surname: client.LatinLastName || "",
-    ltn_name: client.LatinFirstName || "",
-    ltn_patronymic: client.LatinMiddleName || "",
-    tax_code: client.TaxIdentificationNumber?.Code || "",
-    identdoc_name: client.IdentDocs?.[0]?.Type?.Name || "",
-    identdoc_series: client.IdentDocs?.[0]?.Series || "",
-    identdoc_num: client.IdentDocs?.[0]?.Number || "",
-    identdoc_date: client.IdentDocs?.[0]?.IssueDate || "",
-    identdoc_orgname: client.IdentDocs?.[0]?.IssueOrganization || "",
-    sv_id:
-      client.ExternalSystemCodes?.ExternalCode?.find(
-        (c) => c.System?.Code === "SVPC",
-      )?.Code || "",
-  };
-};
-
-// Компонент модального окна для графика платежей
-const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
-  return (
-    <div
-      className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}
-    >
-      <div className="graph-modal-container">
-        <div className="graph-modal-header">
-          <h2 className="graph-modal-title">
-            График платежей
-            {referenceId && (
-              <span className="graph-modal-subtitle">
-                {" "}
-                (Reference ID: {referenceId})
-              </span>
-            )}
-          </h2>
-          <button className="graph-modal-close" onClick={onClose}>
-            &times;
-          </button>
-        </div>
-
-        <div className="graph-modal-content">
-          {isLoading ? (
-            <div className="graph-modal-loading">
-              <div className="graph-modal-spinner"></div>
-              <p>Загрузка графика платежей...</p>
-            </div>
-          ) : (
-            <>
-              <div className="graph-data-table-container">
-                <div className="graph-data-table-wrapper">
-                  <table className="graph-data-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Code</th>
-                        <th>LongName</th>
-                        <th>PaymentDate</th>
-                        <th>Amount</th>
-                        <th>CalculatingAmount</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>DateFrom</th>
-                        <th>DateTo</th>
-                        <th>CalculatingDate</th>
-                        <th>ExpectationDate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {graphData.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.ID}</td>
-                          <td>{item.Code}</td>
-                          <td>{item.LongName}</td>
-                          <td>{item.PaymentDate}</td>
-                          <td>{item.Amount}</td>
-                          <td>{item.CalculatingAmount}</td>
-                          <td>{item.Type}</td>
-                          <td>{item.Status}</td>
-                          <td>{item.DateFrom}</td>
-                          <td>{item.DateTo}</td>
-                          <td>{item.CalculatingDate}</td>
-                          <td>{item.ExpectationDate}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="graph-modal-footer">
-                <div className="graph-summary">
-                  <span className="graph-summary-item">
-                    Всего записей: <strong>{graphData.length}</strong>
-                  </span>
-                  <span className="graph-summary-item">
-                    Reference ID: <strong>{referenceId}</strong>
-                  </span>
-                </div>
-                <button className="graph-modal-close-btn" onClick={onClose}>
-                  Закрыть
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function ABSClientSearch() {
   const [isMobile, setIsMobile] = useState(null);
@@ -174,18 +50,18 @@ export default function ABSClientSearch() {
     TYPE_SEARCH_CLIENT[0].value,
   );
   const navigate = useNavigate();
+  // const [showCardsModal, setShowCardsModal] = useState({
+  //   active: false,
+  //   data: [],
+  // });
+  //   const [showAccountsModal, setShowAccountsModal] = useState(false);
   const [alert, setAlert] = useState({
     show: false,
     message: "",
     type: "success",
   });
 
-  // Состояния для модального окна графика платежей
-  const [graphModalOpen, setGraphModalOpen] = useState(false);
-  const [graphData, setGraphData] = useState([]);
-  const [isGraphLoading, setIsGraphLoading] = useState(false);
-  const [selectedReferenceId, setSelectedReferenceId] = useState("");
-
+  // Функция для показа уведомления
   const showAlert = (message, type = "success") => {
     setAlert({
       show: true,
@@ -194,6 +70,7 @@ export default function ABSClientSearch() {
     });
   };
 
+  // Функция для скрытия уведомления
   const hideAlert = () => {
     setAlert({
       show: false,
@@ -202,24 +79,23 @@ export default function ABSClientSearch() {
     });
   };
 
+  // Функция для форматирования номера телефона
   const formatPhoneNumber = (value) => {
     return value;
   };
 
+  // Обработка изменения номера телефона
   const handlePhoneChange = (e) => {
     const value = e.target.value;
+    const digitsOnly = value.replace(/\D/g, "");
 
-    // Для поиска по коду клиента разрешаем точку
-    if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
-      setPhoneNumber(value);
-      setDisplayPhone(value);
-    } else {
-      const digitsOnly = value.replace(/\D/g, "");
-      setPhoneNumber(digitsOnly);
-      setDisplayPhone(formatPhoneNumber(digitsOnly));
-    }
+    // Сохраняем только цифры в state для отправки
+    setPhoneNumber(digitsOnly);
+    // Сохраняем форматированный номер для отображения
+    setDisplayPhone(formatPhoneNumber(digitsOnly));
   };
 
+  // Функция для очистки всех полей
   const handleClear = () => {
     setPhoneNumber("");
     setDisplayPhone("");
@@ -230,35 +106,20 @@ export default function ABSClientSearch() {
     setCreditsData([]);
     setDepositsData([]);
     setIsMobile(null);
-    sessionStorage.removeItem("absClientSearchState");
   };
 
-  const handleSelectTypeChange = (e) => {
-    setSelectTypeSearchClient(e.target.value);
-    setPhoneNumber("");
-    setDisplayPhone("");
-    // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПРИ СМЕНЕ ТИПА ПОИСКА
-    setClientsData([]);
-    setSelectedClientIndex(0);
-    setCardsData([]);
-    setAccountsData([]);
-    setCreditsData([]);
-    setDepositsData([]);
-    setIsMobile(null);
-  };
-
+  // Функция для поиска клиентов в АБС
   const handleSearchClient = async () => {
     if (!phoneNumber) {
-      showAlert("Пожалуйста, введите данные для поиска", "error");
+      showAlert("Пожалуйста, введите номер телефона", "error");
       return;
     }
 
+    // Форматируем телефонный номер
     let formattedPhone = phoneNumber.trim();
 
-    // Для поиска по телефону убираем нецифровые символы
-    if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-      formattedPhone = formattedPhone.replace(/\D/g, "");
-    }
+    // Удаляем все нецифровые символы
+    formattedPhone = formattedPhone.replace(/\D/g, "");
 
     try {
       let isMobile = null;
@@ -268,16 +129,8 @@ export default function ABSClientSearch() {
       }
 
       setIsMobile(isMobile);
+
       setIsLoading(true);
-
-      // СБРАСЫВАЕМ ВСЕ ДАННЫЕ ПЕРЕД НОВЫМ ПОИСКОМ
-      setCardsData([]);
-      setAccountsData([]);
-      setCreditsData([]);
-      setDepositsData([]);
-      setClientsData([]);
-      setSelectedClientIndex(0);
-
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
@@ -297,76 +150,42 @@ export default function ABSClientSearch() {
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        // ПРИ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
-        setCardsData([]);
-        setAccountsData([]);
-        setCreditsData([]);
-        setDepositsData([]);
         setClientsData([]);
-        setSelectedClientIndex(0);
         return;
       }
 
       let data = await response.json();
 
-      // Нормализуем данные в зависимости от типа поиска
-      let normalizedData = [];
-
       if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
-        // Поиск по коду клиента возвращает один объект
-        normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
-      } else if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
-        // Поиск по ИНН возвращает массив
-        normalizedData = Array.isArray(data)
-          ? data.map((client) =>
-              normalizeClientData(client, selectTypeSearchClient),
-            )
-          : [normalizeClientData(data, selectTypeSearchClient)];
+        // data = [data];
+        setClientsData([data]);
       } else {
-        // Поиск по телефону - данные уже в правильном формате
-        normalizedData = Array.isArray(data) ? data : [data];
+        setClientsData(data);
       }
-
-      setClientsData(normalizedData);
       setSelectedClientIndex(0);
 
-      if (normalizedData.length === 0) {
+      if (data.length === 0) {
         showAlert("Клиенты не найдены в АБС", "error");
-        // ЕСЛИ ВЕРНУЛСЯ ПУСТОЙ МАССИВ - СБРАСЫВАЕМ ВСЕ ДАННЫЕ
-        setCardsData([]);
-        setAccountsData([]);
-        setCreditsData([]);
-        setDepositsData([]);
       } else {
-        showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
+        showAlert(`Найдено клиентов: ${data.length}`, "success");
       }
     } catch (error) {
       console.error("Ошибка при поиске клиента в АБС:", error);
       showAlert("Произошла ошибка при поиске клиента в АБС", "error");
-      // ПРИ ЛЮБОЙ ОШИБКЕ СБРАСЫВАЕМ ВСЕ ДАННЫЕ
       setClientsData([]);
-      setSelectedClientIndex(0);
-      setCardsData([]);
-      setAccountsData([]);
-      setCreditsData([]);
-      setDepositsData([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Используем useCallback чтобы функция не пересоздавалась при каждом рендере
-  const handleGetDataUser = useCallback(async () => {
-    if (!clientsData?.[selectedClientIndex]?.client_code) return;
-
+  const handleGetDataUser = async () => {
+    if (!clientsData?.[0]?.client_code) return;
     try {
       const clientCode = clientsData[selectedClientIndex]?.client_code;
-      const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
-        getUserCards(clientCode),
-        getUserAccounts(clientCode),
-        getUserCredits(clientCode),
-        getUserDeposits(clientCode),
-      ]);
+      const resCards = await getUserCards(clientCode);
+      const resAcc = await getUserAccounts(clientCode);
+      const resCredits = await getUserCredits(clientCode);
+      const resDeposits = await getUserDeposits(clientCode);
 
       setCardsData(resCards || []);
       setAccountsData(resAcc || []);
@@ -376,8 +195,9 @@ export default function ABSClientSearch() {
       console.error("Error fetching user cards/accounts:", error);
       showAlert("Ошибка при получении данных карт/счетов", "error");
     }
-  }, [clientsData, selectedClientIndex]);
+  };
 
+  // Функция для копирования значения в буфер обмена
   const copyToClipboard = (text) => {
     navigator.clipboard
       .writeText(text)
@@ -390,10 +210,12 @@ export default function ABSClientSearch() {
       });
   };
 
+  // Функция для копирования всех клиентов в JSON
   const copyAllClientsToClipboard = () => {
     copyToClipboard(JSON.stringify(clientsData, null, 2));
   };
 
+  // Функция для копирования выбранного клиента в JSON
   const copySelectedClientToClipboard = () => {
     if (clientsData[selectedClientIndex]) {
       copyToClipboard(
@@ -402,55 +224,17 @@ export default function ABSClientSearch() {
     }
   };
 
-  // Функция для открытия графика платежей
-  const handleOpenGraph = async (referenceId) => {
-    setSelectedReferenceId(referenceId);
-    setGraphModalOpen(true);
-    setIsGraphLoading(true);
-
-    try {
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(
-        `${API_BASE_URL}/credits/graphs?referenceId=${referenceId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setGraphData(data);
-    } catch (error) {
-      console.error("Ошибка при загрузке графика платежей:", error);
-      showAlert("Произошла ошибка при загрузке графика платежей", "error");
-    } finally {
-      setIsGraphLoading(false);
-    }
-  };
-
-  // Функция для закрытия модального окна
-  const handleCloseGraphModal = () => {
-    setGraphModalOpen(false);
-    setGraphData([]);
-    setSelectedReferenceId("");
-  };
-
   console.log("isMobile", isMobile);
 
+  // Получение выбранного клиента
   const selectedClient =
     clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
 
+  // Подготовка данных для таблицы
   const tableData = selectedClient
     ? [
         { label: "Телефон", key: "phone", value: selectedClient.phone },
-        { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
+        // { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
         {
           label: "Тип клиента",
           key: "client_type_name",
@@ -523,64 +307,9 @@ export default function ABSClientSearch() {
       ]
     : [];
 
-  // useEffect теперь вызывает handleGetDataUser только когда изменяется client_code
   useEffect(() => {
-    if (selectedClient?.client_code) {
-      handleGetDataUser();
-    }
-  }, [selectedClient?.client_code, handleGetDataUser]);
-
-  // Восстановление состояния
-  useEffect(() => {
-    const savedState = sessionStorage.getItem("absClientSearchState");
-    if (savedState) {
-      const state = JSON.parse(savedState);
-      setPhoneNumber(state.phoneNumber || "");
-      setDisplayPhone(state.displayPhone || "");
-      setClientsData(state.clientsData || []);
-      setSelectedClientIndex(state.selectedClientIndex || 0);
-      setSelectTypeSearchClient(
-        state.selectTypeSearchClient || TYPE_SEARCH_CLIENT[0].value,
-      );
-      setIsMobile(state.isMobile || null);
-      setCardsData(state.cardsData || []);
-      setAccountsData(state.accountsData || []);
-      setCreditsData(state.creditsData || []);
-      setDepositsData(state.depositsData || []);
-    }
-  }, []);
-
-  // Сохранение состояния с useCallback
-  const saveState = useCallback(() => {
-    const stateToSave = {
-      phoneNumber,
-      displayPhone,
-      clientsData,
-      selectedClientIndex,
-      selectTypeSearchClient,
-      isMobile,
-      cardsData,
-      accountsData,
-      creditsData,
-      depositsData,
-    };
-    sessionStorage.setItem("absClientSearchState", JSON.stringify(stateToSave));
-  }, [
-    phoneNumber,
-    displayPhone,
-    clientsData,
-    selectedClientIndex,
-    selectTypeSearchClient,
-    isMobile,
-    cardsData,
-    accountsData,
-    creditsData,
-    depositsData,
-  ]);
-
-  useEffect(() => {
-    saveState();
-  }, [saveState]);
+    if (selectedClient?.client_code) handleGetDataUser();
+  }, [selectedClient?.client_code]);
 
   return (
     <>
@@ -594,12 +323,194 @@ export default function ABSClientSearch() {
           />
         )}
 
+        {/* <Modal
+          isOpen={showCardsModal?.active}
+          onClose={() => setShowCardsModal(false)}
+          title={`Элементы (Всего: ${showCardsModal?.data?.length})`}
+        >
+          <div className="limits-table__wrapper">
+            {showCardsModal?.type === "cards" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">ID Карты</th>
+                      <th className="limits-table__th">Тип</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Остаток</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((card, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">{card.cardId}</td>
+                        <td className="limits-table__td">{card.type}</td>
+                        <td className="limits-table__td">{card.statusName}</td>
+                        <td className="limits-table__td">
+                          {card.expirationDate}
+                        </td>
+                        <td className="limits-table__td">{card.currency}</td>
+                        <td className="limits-table__td">
+                          {card.accounts?.[0]?.state || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            {showCardsModal?.type === "accounts" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер счета</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Баланс</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Дата открытия</th>
+                      <th className="limits-table__th">Филиал</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {accountsData.map((acc, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">{acc.Number}</td>
+                        <td className="limits-table__td">
+                          {acc.Currency?.Code}
+                        </td>
+                        <td className="limits-table__td">{acc.Balance}</td>
+                        <td className="limits-table__td">{acc.Status?.Name}</td>
+                        <td className="limits-table__td">{acc.DateOpened}</td>
+                        <td className="limits-table__td">{acc.Branch?.Name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            {showCardsModal?.type === "credits" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер дагавора</th>
+                      <th className="limits-table__th">Идентификатор ссылки</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">СтатусИмя</th>
+                      <th className="limits-table__th">Сумма</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Дата документа</th>
+                      <th className="limits-table__th">КлиентКод</th>
+                      <th className="limits-table__th">Код продукта</th>
+                      <th className="limits-table__th">Название продукта</th>
+                      <th className="limits-table__th">Отдел</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((card, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">
+                          {card.contractNumber}
+                        </td>
+                        <td className="limits-table__td">{card.referenceId}</td>
+                        <td className="limits-table__td">{card.status}</td>
+                        <td className="limits-table__td">{card.statusName}</td>
+                        <td className="limits-table__td">{card.amount}</td>
+                        <td className="limits-table__td">{card.currency}</td>
+                        <td className="limits-table__td">
+                          {card.documentDate}
+                        </td>
+                        <td className="limits-table__td">{card.clientCode}</td>
+                        <td className="limits-table__td">{card.productCode}</td>
+                        <td className="limits-table__td">{card.productName}</td>
+                        <td className="limits-table__td">
+                          {card.department || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+            {showCardsModal?.type === "deposits" &&
+              showCardsModal?.data?.length > 0 && (
+                <table className="limits-table">
+                  <thead className="limits-table__head">
+                    <tr>
+                      <th className="limits-table__th">Номер договора</th>
+                      <th className="limits-table__th">Референс</th>
+                      <th className="limits-table__th">Статус</th>
+                      <th className="limits-table__th">Сумма</th>
+                      <th className="limits-table__th">Валюта</th>
+                      <th className="limits-table__th">Дата начала</th>
+                      <th className="limits-table__th">Дата окончания</th>
+                      <th className="limits-table__th">Продукт</th>
+                      <th className="limits-table__th">Срок</th>
+                      <th className="limits-table__th">Отдел</th>
+                      <th className="limits-table__th">Баланс</th>
+                    </tr>
+                  </thead>
+                  <tbody className="limits-table__body">
+                    {showCardsModal?.data?.map((item, idx) => (
+                      <tr key={idx} className="limits-table__row">
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Code}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.ColvirReferenceId}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Status?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Amount}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Currency}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateFrom}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DateTo}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Product?.Name}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.DepoTermTU}{" "}
+                          {item.AgreementData?.DepoTermTimeType}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.AgreementData?.Department?.Code}
+                        </td>
+                        <td className="limits-table__td">
+                          {item.BalanceAccounts?.[0]?.Balance || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+          </div>
+          <div
+            style={{
+              marginTop: "20px",
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+         
+          </div>
+        </Modal> */}
+
         <div className="processing-integration">
           <div className="processing-integration__container">
             {/* Заголовок */}
             <div className="processing-integration__header">
               <h1 className="processing-integration__title">
-                Поиск клиента в АБС
+                Поиск клиента в АБС по номеру телефона
               </h1>
             </div>
 
@@ -618,7 +529,9 @@ export default function ABSClientSearch() {
                       <select
                         id="searchType"
                         value={selectTypeSearchClient}
-                        onChange={handleSelectTypeChange}
+                        onChange={(e) =>
+                          setSelectTypeSearchClient(e.target.value)
+                        }
                         className="search-card__select"
                         disabled={isLoading}
                       >
@@ -807,6 +720,7 @@ export default function ABSClientSearch() {
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
+                        {/* <tr>{tableData}</tr> */}
                         <tr className="limits-table__row">
                           {tableData.map((item) => (
                             <>
@@ -822,6 +736,29 @@ export default function ABSClientSearch() {
                             </>
                           ))}
                         </tr>
+
+                        {/* <tr className="limits-table__row">
+                          {tableData.map((item) => (
+                            <>
+                              <td className="limits-table__td limits-table__td--actions">
+                                <div className="action-buttons">
+                                  {!item.isAction && (
+                                    <button
+                                      onClick={() =>
+                                        copyToClipboard(item.value || "")
+                                      }
+                                      className="action-buttons__btn action-buttons__btn--copy"
+                                      disabled={!item.value}
+                                      title="Скопировать значение"
+                                    >
+                                      Копировать
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </>
+                          ))}
+                        </tr> */}
                       </tbody>
                     </table>
                   </div>
@@ -854,7 +791,15 @@ export default function ABSClientSearch() {
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
-                    <h2 className="limits-table__title">Данные карт</h2>
+                    <h2 className="limits-table__title">
+                      Данные карт
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -867,7 +812,6 @@ export default function ABSClientSearch() {
                           <th className="limits-table__th">Срок</th>
                           <th className="limits-table__th">Валюта</th>
                           <th className="limits-table__th">Остаток</th>
-                          <th className="limits-table__th">Действия</th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
@@ -890,13 +834,24 @@ export default function ABSClientSearch() {
                             <td className="limits-table__td">
                               <button
                                 className="selectAll-toggle "
+                                style={{ marginRight: 10 }}
                                 onClick={() =>
                                   navigate(
                                     "/processing/transactions/" + card.cardId,
                                   )
                                 }
                               >
-                                История
+                                Поиск
+                              </button>
+                              <button
+                                className="selectAll-toggle "
+                                onClick={() =>
+                                  (document.location.href =
+                                    "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                                    card.cardId)
+                                }
+                              >
+                                Посмотреть тариф
                               </button>
                             </td>
                           </tr>
@@ -914,7 +869,15 @@ export default function ABSClientSearch() {
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
-                    <h2 className="limits-table__title">Данные счетов</h2>
+                    <h2 className="limits-table__title">
+                      Данные счетов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -922,22 +885,23 @@ export default function ABSClientSearch() {
                       <thead className="limits-table__head">
                         <tr>
                           <th className="limits-table__th">Номер счета</th>
-                          <th className="limits-table__th">Валюта</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Баланс</th>
                           <th className="limits-table__th">Статус</th>
                           <th className="limits-table__th">Дата открытия</th>
                           <th className="limits-table__th">Филиал</th>
-                          <th className="limits-table__th">Действия</th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
                         {accountsData.map((acc, idx) => (
                           <tr key={idx} className="limits-table__row">
                             <td className="limits-table__td">{acc.Number}</td>
+                            {/* <td className="limits-table__td">
+                             
+                            </td> */}
                             <td className="limits-table__td">
-                              {acc.Currency?.Code}
+                              {acc.Balance} {acc.Currency?.Code}
                             </td>
-                            <td className="limits-table__td">{acc.Balance}</td>
                             <td className="limits-table__td">
                               {acc.Status?.Name}
                             </td>
@@ -946,19 +910,6 @@ export default function ABSClientSearch() {
                             </td>
                             <td className="limits-table__td">
                               {acc.Branch?.Name}
-                            </td>
-                            <td className="limits-table__td">
-                              <button
-                                className="selectAll-toggle"
-                                onClick={() =>
-                                  navigate(
-                                    "/frontovik/account-operations?account=" +
-                                      acc.Number,
-                                  )
-                                }
-                              >
-                                Выписка по счету
-                              </button>
                             </td>
                           </tr>
                         ))}
@@ -975,21 +926,29 @@ export default function ABSClientSearch() {
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
-                    <h2 className="limits-table__title">Данные кредитов</h2>
+                    <h2 className="limits-table__title">
+                      Данные кредитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
                   </div>
 
                   <div className="limits-table__wrapper">
                     <table className="limits-table">
                       <thead className="limits-table__head">
                         <tr>
-                          <th className="limits-table__th">Номер контракта</th>
+                          <th className="limits-table__th">Номер дагавора</th>
                           <th className="limits-table__th">
                             Идентификатор ссылки
                           </th>
+                          {/* <th className="limits-table__th">Статус</th> */}
                           <th className="limits-table__th">Статус</th>
-                          <th className="limits-table__th">СтатусИмя</th>
                           <th className="limits-table__th">Сумма</th>
-                          <th className="limits-table__th">Валюта</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Дата документа</th>
                           <th className="limits-table__th">КлиентКод</th>
                           <th className="limits-table__th">Код продукта</th>
@@ -997,7 +956,6 @@ export default function ABSClientSearch() {
                             Название продукта
                           </th>
                           <th className="limits-table__th">Отдел</th>
-                          <th className="limits-table__th">Действия</th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
@@ -1009,14 +967,16 @@ export default function ABSClientSearch() {
                             <td className="limits-table__td">
                               {card.referenceId}
                             </td>
-                            <td className="limits-table__td">{card.status}</td>
+                            {/* <td className="limits-table__td">{card.status}</td> */}
                             <td className="limits-table__td">
                               {card.statusName}
                             </td>
-                            <td className="limits-table__td">{card.amount}</td>
                             <td className="limits-table__td">
-                              {card.currency}
+                              {card.amount} {card.currency}
                             </td>
+                            {/* <td className="limits-table__td">
+                              {card.currency}
+                            </td> */}
                             <td className="limits-table__td">
                               {card.documentDate}
                             </td>
@@ -1031,17 +991,6 @@ export default function ABSClientSearch() {
                             </td>
                             <td className="limits-table__td">
                               {card.department || "-"}
-                            </td>
-                            <td className="limits-table__td">
-                              <button
-                                className="selectAll-toggle"
-                                onClick={() =>
-                                  handleOpenGraph(card.referenceId)
-                                }
-                                disabled={!card.referenceId}
-                              >
-                                График
-                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1058,7 +1007,15 @@ export default function ABSClientSearch() {
               <div className="processing-integration__limits-table">
                 <div className="limits-table">
                   <div className="limits-table__header">
-                    <h2 className="limits-table__title">Данные депозитов</h2>
+                    <h2 className="limits-table__title">
+                      Данные депозитов
+                      {/* {clientsData.length > 1 && (
+                      <span className="limits-table__client-counter">
+                        (Клиент {selectedClientIndex + 1} из{" "}
+                        {clientsData.length})
+                      </span>
+                    )} */}
+                    </h2>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -1068,14 +1025,14 @@ export default function ABSClientSearch() {
                           <th className="limits-table__th">Номер договора</th>
                           <th className="limits-table__th">Референс</th>
                           <th className="limits-table__th">Статус</th>
-                          <th className="limits-table__th">Сумма</th>
-                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Остаток депозита</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Дата начала</th>
                           <th className="limits-table__th">Дата окончания</th>
                           <th className="limits-table__th">Продукт</th>
                           <th className="limits-table__th">Срок</th>
                           <th className="limits-table__th">Отдел</th>
-                          <th className="limits-table__th">Баланс</th>
+                          <th className="limits-table__th">Сумма договора</th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
@@ -1091,11 +1048,11 @@ export default function ABSClientSearch() {
                               {item.AgreementData?.Status?.Name}
                             </td>
                             <td className="limits-table__td">
-                              {item.AgreementData?.Amount}
+                              {item.BalanceAccounts?.[0]?.Balance || "-"}
                             </td>
-                            <td className="limits-table__td">
+                            {/* <td className="limits-table__td">
                               {item.AgreementData?.Currency}
-                            </td>
+                            </td> */}
                             <td className="limits-table__td">
                               {item.AgreementData?.DateFrom}
                             </td>
@@ -1113,7 +1070,8 @@ export default function ABSClientSearch() {
                               {item.AgreementData?.Department?.Code}
                             </td>
                             <td className="limits-table__td">
-                              {item.BalanceAccounts?.[0]?.Balance || "-"}
+                              {item.AgreementData?.Amount}{" "}
+                              {item.AgreementData?.Currency}
                             </td>
                           </tr>
                         ))}
@@ -1127,7 +1085,10 @@ export default function ABSClientSearch() {
             {/* Индикатор загрузки */}
             {isLoading && (
               <div className="processing-integration__loading">
-                <div className="spinner"></div>
+                <div className="loading-spinner">
+                  <div className="spinner"></div>
+                  <p>Поиск клиента в АБС...</p>
+                </div>
               </div>
             )}
 
@@ -1135,22 +1096,13 @@ export default function ABSClientSearch() {
             {!isLoading && clientsData.length === 0 && phoneNumber && (
               <div className="processing-integration__no-data">
                 <div className="no-data-message">
-                  <p>Данные не найдены</p>
+                  <p>По данному номеру телефона клиенты не найдены</p>
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Модальное окно для графика платежей */}
-      <GraphModal
-        isOpen={graphModalOpen}
-        onClose={handleCloseGraphModal}
-        referenceId={selectedReferenceId}
-        graphData={graphData}
-        isLoading={isGraphLoading}
-      />
     </>
   );
 }
