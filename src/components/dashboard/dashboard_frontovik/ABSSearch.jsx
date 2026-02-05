@@ -895,7 +895,7 @@ export default function ABSClientSearch() {
                                                             className="selectAll-toggle"
                                                             onClick={() =>
                                                                 navigate(
-                                                                    "/frontovik/account-operations?accountNumber=" + acc.Number,
+                                                                    "/frontovik/account-operations?account=" + acc.Number,
                                                                 )
                                                             }
                                                         >
