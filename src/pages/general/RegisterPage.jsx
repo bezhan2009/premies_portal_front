@@ -27,6 +27,7 @@ export default function RegisterPage() {
     const [offices, setOffices] = useState([]);
 
     const [officeTitle, setOfficeTitle] = useState('');
+    const [officeCode, setOfficeCode] = useState('');
     const [officeDesc, setOfficeDesc] = useState('');
 
     const [roles, setRoles] = useState([]);
@@ -116,6 +117,7 @@ export default function RegisterPage() {
         if (selectedRoles.includes(5)) {
             payload.office_title = officeTitle;
             payload.office_desc = officeDesc;
+            payload.office_code = officeCode;
         }
 
         try {
@@ -326,6 +328,15 @@ export default function RegisterPage() {
                                     value={officeTitle}
                                     onChange={(e) => setOfficeTitle(e.target.value)}
                                     placeholder="Название офиса"
+                                    required
+                                />
+                            </label>
+                            <label>
+                                <input
+                                    type="text"
+                                    value={officeCode}
+                                    onChange={(e) => setOfficeCode(e.target.value)}
+                                    placeholder="Код офиса"
                                     required
                                 />
                             </label>

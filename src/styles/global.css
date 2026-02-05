@@ -27,12 +27,17 @@ body {
 }
 
 /* Стили для всех скроллбаров */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e21a1c transparent;
+}
+
 ::-webkit-scrollbar {
   width: 12px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.5);
+  background-color: #e21a1c;
   border-radius: 6px;
   border: 3px solid #fff;
   -webkit-transition: background-color 0.3s ease;
@@ -40,16 +45,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(232, 48, 54, 0.8);
+  background-color: #bd1517;
 }
 
 /* Исправленный селектор (без пробела!) */
 body.scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.9);
+  background-color: #e21a1c;
 }
 
 div.scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.9);
+  background-color: #e21a1c;
 }
 
 table {

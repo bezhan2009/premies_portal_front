@@ -1,4 +1,4 @@
-@import '../mixins/general.scss';
+@import "../mixins/general.scss";
 
 .sidebar {
   position: fixed;
@@ -110,6 +110,8 @@
     flex: 1;
     padding: 1rem 0.5rem;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #e21a1c rgba(255, 255, 255, 0.1);
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -120,7 +122,7 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.3);
+      background: #e21a1c;
       border-radius: 2px;
     }
   }
@@ -259,7 +261,7 @@
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    
+
     &.collapsed {
       transform: translateX(-100%);
     }

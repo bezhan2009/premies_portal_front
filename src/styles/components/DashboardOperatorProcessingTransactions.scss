@@ -755,6 +755,9 @@ $gray-900: #111827;
 
 // Scrollbar styling
 .limits-table__wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: #e21a1c #f1f1f1;
+
   &::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -766,11 +769,11 @@ $gray-900: #111827;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: #e21a1c;
     border-radius: 4px;
 
     &:hover {
-      background: #a8a8a8;
+      background: #bd1517;
     }
   }
 }

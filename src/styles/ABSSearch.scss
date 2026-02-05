@@ -96,7 +96,7 @@
           padding-left: 45px;
 
           &:after {
-            content: '';
+            content: "";
             position: absolute;
             left: 15px;
             top: 50%;
@@ -461,8 +461,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .graph-modal-overlay {
@@ -478,7 +482,9 @@
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
 
   &.graph-modal-overlay--open {
     opacity: 1;
@@ -603,17 +609,20 @@
     height: 10px;
   }
 
+  scrollbar-width: thin;
+  scrollbar-color: #e21a1c #f1f1f1;
+
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #e21a1c;
     border-radius: 4px;
 
     &:hover {
-      background: #555;
+      background: #bd1517;
     }
   }
 }
@@ -714,6 +723,10 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
