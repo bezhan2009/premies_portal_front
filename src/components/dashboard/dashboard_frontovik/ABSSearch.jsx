@@ -22,7 +22,11 @@ import {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
 const TYPE_SEARCH_CLIENT = [
-  { label: "Поиск по Номеру телефона", value: "?phoneNumber=", inputLabel: "Номер телефона" },
+  {
+    label: "Поиск по Номеру телефона",
+    value: "?phoneNumber=",
+    inputLabel: "Номер телефона",
+  },
   {
     label: "Поиск по Номеру индекса",
     value: "/client-index?clientIndex=",
@@ -230,7 +234,7 @@ export default function ABSClientSearch() {
   const tableData = selectedClient
     ? [
         { label: "Телефон", key: "phone", value: selectedClient.phone },
-        { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
+        // { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
         {
           label: "Тип клиента",
           key: "client_type_name",
@@ -390,7 +394,7 @@ export default function ABSClientSearch() {
                 <table className="limits-table">
                   <thead className="limits-table__head">
                     <tr>
-                      <th className="limits-table__th">Номер контракта</th>
+                      <th className="limits-table__th">Номер дагавора</th>
                       <th className="limits-table__th">Идентификатор ссылки</th>
                       <th className="limits-table__th">Статус</th>
                       <th className="limits-table__th">СтатусИмя</th>
@@ -565,14 +569,23 @@ export default function ABSClientSearch() {
                   )}
                   <div className="search-card__input-group">
                     <label htmlFor="phoneNumber" className="search-card__label">
-                      {TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel}
+                      {
+                        TYPE_SEARCH_CLIENT.find(
+                          (e) => e.value === selectTypeSearchClient,
+                        ).inputLabel
+                      }
                     </label>
                     <input
                       type="text"
                       id="phoneNumber"
                       value={displayPhone}
                       onChange={handlePhoneChange}
-                      placeholder={"Введите " + TYPE_SEARCH_CLIENT.find((e) => e.value === selectTypeSearchClient).inputLabel.toLocaleLowerCase()}
+                      placeholder={
+                        "Введите " +
+                        TYPE_SEARCH_CLIENT.find(
+                          (e) => e.value === selectTypeSearchClient,
+                        ).inputLabel.toLocaleLowerCase()
+                      }
                       className="search-card__input"
                       maxLength={20}
                       onKeyDown={(e) => {
@@ -821,6 +834,7 @@ export default function ABSClientSearch() {
                             <td className="limits-table__td">
                               <button
                                 className="selectAll-toggle "
+                                style={{ marginRight: 10 }}
                                 onClick={() =>
                                   navigate(
                                     "/processing/transactions/" + card.cardId,
@@ -828,6 +842,16 @@ export default function ABSClientSearch() {
                                 }
                               >
                                 Поиск
+                              </button>
+                              <button
+                                className="selectAll-toggle "
+                                onClick={() =>
+                                  (document.location.href =
+                                    "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                                    card.cardId)
+                                }
+                              >
+                                Посмотреть тариф
                               </button>
                             </td>
                           </tr>
@@ -861,7 +885,7 @@ export default function ABSClientSearch() {
                       <thead className="limits-table__head">
                         <tr>
                           <th className="limits-table__th">Номер счета</th>
-                          <th className="limits-table__th">Валюта</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Баланс</th>
                           <th className="limits-table__th">Статус</th>
                           <th className="limits-table__th">Дата открытия</th>
@@ -872,10 +896,12 @@ export default function ABSClientSearch() {
                         {accountsData.map((acc, idx) => (
                           <tr key={idx} className="limits-table__row">
                             <td className="limits-table__td">{acc.Number}</td>
+                            {/* <td className="limits-table__td">
+                             
+                            </td> */}
                             <td className="limits-table__td">
-                              {acc.Currency?.Code}
+                              {acc.Balance} {acc.Currency?.Code}
                             </td>
-                            <td className="limits-table__td">{acc.Balance}</td>
                             <td className="limits-table__td">
                               {acc.Status?.Name}
                             </td>
@@ -915,14 +941,14 @@ export default function ABSClientSearch() {
                     <table className="limits-table">
                       <thead className="limits-table__head">
                         <tr>
-                          <th className="limits-table__th">Номер контракта</th>
+                          <th className="limits-table__th">Номер дагавора</th>
                           <th className="limits-table__th">
                             Идентификатор ссылки
                           </th>
+                          {/* <th className="limits-table__th">Статус</th> */}
                           <th className="limits-table__th">Статус</th>
-                          <th className="limits-table__th">СтатусИмя</th>
                           <th className="limits-table__th">Сумма</th>
-                          <th className="limits-table__th">Валюта</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Дата документа</th>
                           <th className="limits-table__th">КлиентКод</th>
                           <th className="limits-table__th">Код продукта</th>
@@ -941,14 +967,16 @@ export default function ABSClientSearch() {
                             <td className="limits-table__td">
                               {card.referenceId}
                             </td>
-                            <td className="limits-table__td">{card.status}</td>
+                            {/* <td className="limits-table__td">{card.status}</td> */}
                             <td className="limits-table__td">
                               {card.statusName}
                             </td>
-                            <td className="limits-table__td">{card.amount}</td>
                             <td className="limits-table__td">
-                              {card.currency}
+                              {card.amount} {card.currency}
                             </td>
+                            {/* <td className="limits-table__td">
+                              {card.currency}
+                            </td> */}
                             <td className="limits-table__td">
                               {card.documentDate}
                             </td>
@@ -997,14 +1025,14 @@ export default function ABSClientSearch() {
                           <th className="limits-table__th">Номер договора</th>
                           <th className="limits-table__th">Референс</th>
                           <th className="limits-table__th">Статус</th>
-                          <th className="limits-table__th">Сумма</th>
-                          <th className="limits-table__th">Валюта</th>
+                          <th className="limits-table__th">Остаток депозита</th>
+                          {/* <th className="limits-table__th">Валюта</th> */}
                           <th className="limits-table__th">Дата начала</th>
                           <th className="limits-table__th">Дата окончания</th>
                           <th className="limits-table__th">Продукт</th>
                           <th className="limits-table__th">Срок</th>
                           <th className="limits-table__th">Отдел</th>
-                          <th className="limits-table__th">Баланс</th>
+                          <th className="limits-table__th">Сумма договора</th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
@@ -1020,11 +1048,11 @@ export default function ABSClientSearch() {
                               {item.AgreementData?.Status?.Name}
                             </td>
                             <td className="limits-table__td">
-                              {item.AgreementData?.Amount}
+                              {item.BalanceAccounts?.[0]?.Balance || "-"}
                             </td>
-                            <td className="limits-table__td">
+                            {/* <td className="limits-table__td">
                               {item.AgreementData?.Currency}
-                            </td>
+                            </td> */}
                             <td className="limits-table__td">
                               {item.AgreementData?.DateFrom}
                             </td>
@@ -1042,7 +1070,8 @@ export default function ABSClientSearch() {
                               {item.AgreementData?.Department?.Code}
                             </td>
                             <td className="limits-table__td">
-                              {item.BalanceAccounts?.[0]?.Balance || "-"}
+                              {item.AgreementData?.Amount}{" "}
+                              {item.AgreementData?.Currency}
                             </td>
                           </tr>
                         ))}
