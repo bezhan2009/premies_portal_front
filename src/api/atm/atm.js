@@ -38,7 +38,6 @@ export const fetchHistory = async (fromDate, toDate) => {
       }
     );
 
-    console.log(response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching history:", error);

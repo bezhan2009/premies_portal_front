@@ -86,7 +86,7 @@ textarea:focus {
 }
 
 .selectAll-toggle {
-  background-color: #e21a1c !important;
+  background-color: #e21a1c ;
   padding: 1rem 2rem;
   background: #e21a1c;
   color: white;
@@ -111,29 +111,35 @@ textarea:focus {
     }
   }
 }
-/* Стили для всех скроллбаров */
+/* Стили для всех скроллбаров (Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e21a1c transparent;
+}
+
+/* Стили для всех скроллбаров (Webkit) */
 ::-webkit-scrollbar {
   width: 12px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.5);
+  background-color: #e21a1c;
   border-radius: 6px;
   border: 3px solid #fff;
   transition: background-color 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(232, 48, 54, 0.8);
+  background-color: #bd1517;
 }
 
 /* Исправленный селектор (без пробела!) */
 body.scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.9);
+  background-color: #e21a1c;
 }
 
 div.scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(232, 48, 54, 0.9);
+  background-color: #e21a1c;
 }
 
 table {
@@ -1691,8 +1697,12 @@ button:active {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .table-footer {
@@ -1738,8 +1748,8 @@ button:active {
 }
 
 .button:hover {
-  background: #C41E3A;
-  border-color: #C41E3A;
+  background: #c41e3a;
+  border-color: #c41e3a;
   color: #f2f2f2;
   box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
   transform: translateY(-1px);
@@ -1769,15 +1779,15 @@ button:active {
 
 /* Focus state для accessibility */
 .button:focus-visible {
-  outline: 2px solid #C41E3A;
+  outline: 2px solid #c41e3a;
   outline-offset: 2px;
 }
 
 /* Primary variant - изначально красная кнопка */
 .button.primary {
-  background: #C41E3A;
+  background: #c41e3a;
   color: #ffffff;
-  border-color: #C41E3A;
+  border-color: #c41e3a;
   box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
 }
 
@@ -1795,22 +1805,22 @@ button:active {
 }
 
 .button.secondary:hover {
-  background: #C41E3A;
+  background: #c41e3a;
   color: #ffffff;
-  border-color: #C41E3A;
+  border-color: #c41e3a;
   box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
 }
 
 /* Outline variant - прозрачная с границей */
 .button.outline {
   background: transparent;
-  color: #C41E3A;
-  border: 2px solid #C41E3A;
+  color: #c41e3a;
+  border: 2px solid #c41e3a;
   box-shadow: none;
 }
 
 .button.outline:hover {
-  background: #C41E3A;
+  background: #c41e3a;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
 }
@@ -1825,7 +1835,7 @@ button:active {
 
 .button.ghost:hover {
   background: rgba(196, 30, 58, 0.1);
-  color: #C41E3A;
+  color: #c41e3a;
   box-shadow: 0 2px 8px rgba(196, 30, 58, 0.15);
 }
 
@@ -1954,7 +1964,6 @@ button:active {
     width: 100%;
   }
 }
-
 
 .back-button {
   position: fixed;
