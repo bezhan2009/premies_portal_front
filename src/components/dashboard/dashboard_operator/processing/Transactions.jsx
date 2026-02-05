@@ -15,11 +15,10 @@ import {
 } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useParams } from "react-router-dom";
-import { dataTrans } from "../../../../const/defConst.js";
 
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
-  const [searchType, setSearchType] = useState("cardId");
+  const [searchType, setSearchType] = useState("cardId"); // По умолчанию поиск по карте
   const [displayCardId, setDisplayCardId] = useState("");
   const [cardId, setCardId] = useState("");
   const [atmId, setAtmId] = useState("");
@@ -29,6 +28,7 @@ export default function DashboardOperatorProcessingTransactions() {
   const [amountTo, setAmountTo] = useState("");
   const [reversal, setReversal] = useState("");
   const [mcc, setMcc] = useState("");
+  // Новые поля для поиска по BIN и типу
   const [cardBin, setCardBin] = useState("");
   const [searchTransactionType, setSearchTransactionType] = useState("");
   const [searchDate, setSearchDate] = useState("");
@@ -43,19 +43,20 @@ export default function DashboardOperatorProcessingTransactions() {
     message: "",
     type: "success",
   });
-  const [hasSearchedWithId, setHasSearchedWithId] = useState(false);
 
+  // Опции для выбора типа поиска
   const searchOptions = [
     { value: "cardId", label: "Поиск по идентификатору карты" },
     { value: "atmId", label: "Поиск по номеру терминала" },
     { value: "utrnno", label: "Поиск по номеру операции (UTRNNO)" },
     { value: "transactionType", label: "Поиск по типу транзакции" },
     { value: "amount", label: "Поиск по сумме операции" },
-    { value: "reversal", label: "Поищ по статусу отмены" },
+    { value: "reversal", label: "Поиск по статусу отмены" },
     { value: "mcc", label: "Поиск по MCC коду" },
-    { value: "cardBinSearch", label: "Поиск по BIN карты и типу транзакции" },
+    { value: "cardBinSearch", label: "Поиск по BIN карты и типу транзакции" }, // Новая опция
   ];
 
+  // Функция для форматирования суммы
   const formatAmount = (amount, transactionTypeNumber) => {
     if (amount === null || amount === undefined || amount === "") return "N/A";
 
@@ -70,6 +71,7 @@ export default function DashboardOperatorProcessingTransactions() {
       formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
     }
 
+    // Добавляем минус для красных операций (transactionTypeNumber 2)
     if (transactionTypeNumber === 2) {
       return `-${formattedAmount}`;
     }
@@ -77,19 +79,7 @@ export default function DashboardOperatorProcessingTransactions() {
     return formattedAmount;
   };
 
-  const formatAmountWithCurrency = (
-    amount,
-    currency,
-    transactionTypeNumber,
-  ) => {
-    const formattedAmount = formatAmount(amount, transactionTypeNumber);
-    if (formattedAmount === "N/A") {
-      return "N/A";
-    }
-    const currencyCode = getCurrencyCode(currency);
-    return `${formattedAmount} ${currencyCode || ""}`.trim();
-  };
-
+  // Устанавливаем даты по умолчанию (последние 30 дней)
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
@@ -99,23 +89,25 @@ export default function DashboardOperatorProcessingTransactions() {
 
     setFromDate(formatDate(thirtyDaysAgo));
     setToDate(formatDate(today));
+    // Устанавливаем текущую дату для поиска по BIN
     setSearchDate(formatDate(today));
   }, []);
 
-  // const getRowClass = (transactionTypeNumber) => {
-  //   switch (transactionTypeNumber) {
-  //     case 1:
-  //       return "transaction-row--type-1";
-  //     case 2:
-  //       return "transaction-row--type-2";
-  //     case 3:
-  //       return "transaction-row--type-3";
-  //     case 4:
-  //       return "transaction-row--type-4";
-  //     default:
-  //       return "";
-  //   }
-  // };
+  // Получаем класс для строки в зависимости от типа транзакции
+  const getRowClass = (transactionTypeNumber) => {
+    switch (transactionTypeNumber) {
+      case 1:
+        return "transaction-row--type-1";
+      case 2:
+        return "transaction-row--type-2";
+      case 3:
+        return "transaction-row--type-3";
+      case 4:
+        return "transaction-row--type-4";
+      default:
+        return "";
+    }
+  };
 
   const showAlert = (message, type = "success") => {
     setAlert({
@@ -169,11 +161,13 @@ export default function DashboardOperatorProcessingTransactions() {
   };
 
   const validateSearch = () => {
+    // Проверяем корректность дат (для типов, где нужен диапазон дат)
     if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
       showAlert('Дата "С" не может быть больше даты "По"', "error");
       return false;
     }
 
+    // Проверяем корректность времени (для поиска по BIN)
     if (searchType === "cardBinSearch" && fromTime && toTime) {
       const fromTimeObj = new Date(`1970-01-01T${fromTime}:00`);
       const toTimeObj = new Date(`1970-01-01T${toTime}:00`);
@@ -183,6 +177,7 @@ export default function DashboardOperatorProcessingTransactions() {
       }
     }
 
+    // Валидация в зависимости от типа поиска
     switch (searchType) {
       case "cardId":
         if (!cardId.trim()) {
@@ -251,10 +246,8 @@ export default function DashboardOperatorProcessingTransactions() {
     return true;
   };
 
-  const handleSearch = async (cardIdParam) => {
-    const searchCardId = cardIdParam || cardId;
-
-    if (!cardIdParam && !validateSearch()) return;
+  const handleSearch = async (id) => {
+    if (!id) if (!validateSearch()) return;
 
     setIsLoading(true);
     try {
@@ -263,7 +256,7 @@ export default function DashboardOperatorProcessingTransactions() {
       switch (searchType) {
         case "cardId":
           transactionsData = await fetchTransactionsByCardId(
-            searchCardId,
+            cardId || id,
             fromDate || undefined,
             toDate || undefined,
           );
@@ -378,29 +371,29 @@ export default function DashboardOperatorProcessingTransactions() {
       .trim();
   };
 
-  const getStatusBadge = (responseCode, reversal) => {
+  const getStatusBadge = (responseCode, reversal, message) => {
     if (reversal) {
       return (
-        <span className="status-badge status-badge--reversed">Отменена</span>
+        <span className="status-badge status-badge--reversed">{message}</span>
       );
     }
 
     switch (responseCode) {
       case "-1":
         return (
-          <span className="status-badge status-badge--success">Успешно</span>
+          <span className="status-badge status-badge--success">{message}</span>
         );
       case "01":
         return (
-          <span className="status-badge status-badge--warning">Ошибка</span>
+          <span className="status-badge status-badge--warning">{message}</span>
         );
       case "02":
         return (
-          <span className="status-badge status-badge--error">Отклонено</span>
+          <span className="status-badge status-badge--error">{message}</span>
         );
       default:
         return (
-          <span className="status-badge status-badge--warning">Ошибка</span>
+          <span className="status-badge status-badge--warning">{message}</span>
         );
     }
   };
@@ -410,6 +403,7 @@ export default function DashboardOperatorProcessingTransactions() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Сбрасываем все поля в зависимости от типа поиска
     if (searchType === "cardBinSearch") {
       setSearchDate(today);
       setFromTime("");
@@ -419,6 +413,7 @@ export default function DashboardOperatorProcessingTransactions() {
       setToDate(today);
     }
 
+    // Очищаем все поля поиска в зависимости от выбранного типа
     switch (searchType) {
       case "cardId":
         setDisplayCardId("");
@@ -451,16 +446,15 @@ export default function DashboardOperatorProcessingTransactions() {
     setTransactions([]);
   };
 
-  // Исправленный useEffect - вызывается только один раз при наличии id
   useEffect(() => {
-    if (id && id.length > 0 && !hasSearchedWithId) {
+    if (id?.length) {
+      handleSearch(id);
       setDisplayCardId(id);
       setCardId(id);
-      setHasSearchedWithId(true);
-      handleSearch(id);
     }
-  }, [id]); // Убрали hasSearchedWithId и handleSearch из зависимостей
+  }, [id]);
 
+  // Визуализация полей ввода в зависимости от типа поиска
   const renderSearchFields = () => {
     switch (searchType) {
       case "cardId":
@@ -698,6 +692,7 @@ export default function DashboardOperatorProcessingTransactions() {
     }
   };
 
+  // Получение заголовка для таблицы в зависимости от типа поиска
   const getTableTitle = () => {
     const baseTitle = "Найденные транзакции";
     let searchInfo = "";
@@ -735,10 +730,12 @@ export default function DashboardOperatorProcessingTransactions() {
     return `${baseTitle} ${searchInfo}`;
   };
 
+  // Проверка, нужны ли даты для текущего типа поиска
   const needsDateRange = useMemo(() => {
-    return searchType !== "utrnno";
+    return searchType !== "utrnno"; // Для utrnno даты не нужны
   }, [searchType]);
 
+  // Проверка, нужен ли блок дат для текущего типа поиска
   const needsDateBlock = useMemo(() => {
     return needsDateRange && searchType !== "cardBinSearch";
   }, [searchType, needsDateRange]);
@@ -753,7 +750,7 @@ export default function DashboardOperatorProcessingTransactions() {
           duration={3000}
         />
       )}
-      <div className="block_info_prems content-page" align="center">
+      <div className="block_info_prems" align="center">
         <div className="processing-integration">
           <div className="processing-integration__container">
             <div className="processing-integration__header">
@@ -765,9 +762,11 @@ export default function DashboardOperatorProcessingTransactions() {
               </p>
             </div>
 
+            {/* Блок поиска с датами */}
             <div className="processing-integration__search-card">
               <div className="search-card">
                 <div className="search-card__content">
+                  {/* Выбор типа поиска */}
                   <div className="search-card__input-group search-card__select-group">
                     <label htmlFor="searchType" className="search-card__label">
                       Тип поиска
@@ -789,8 +788,10 @@ export default function DashboardOperatorProcessingTransactions() {
                     </div>
                   </div>
 
+                  {/* Поля для поиска (зависит от типа) */}
                   {renderSearchFields()}
 
+                  {/* Блок дат (скрываем для поиска по utrnno и cardBinSearch) */}
                   {needsDateBlock && (
                     <div className="search-card__date-group">
                       <div className="date-input-group">
@@ -828,9 +829,10 @@ export default function DashboardOperatorProcessingTransactions() {
                     </div>
                   )}
 
+                  {/* Кнопки */}
                   <div className="search-card__buttons">
                     <button
-                      onClick={() => handleSearch()}
+                      onClick={handleSearch}
                       disabled={isLoading}
                       className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
                     >
@@ -849,7 +851,8 @@ export default function DashboardOperatorProcessingTransactions() {
             </div>
           </div>
 
-          {["transactions"].length > 0 && (
+          {/* Таблица транзакций */}
+          {transactions.length > 0 && (
             <div className="processing-integration__limits-table">
               <div className="limits-table">
                 <div className="limits-table__header">
@@ -869,20 +872,18 @@ export default function DashboardOperatorProcessingTransactions() {
                       <thead className="limits-table__head">
                         <tr>
                           <th className="limits-table__th">Дата</th>
-                          <th className="limits-table__th">Время</th>
+                          {/* <th className="limits-table__th">Время</th> */}
                           <th className="limits-table__th">Статус</th>
                           <th className="limits-table__th">Номер карты</th>
                           <th className="limits-table__th">ID карты</th>
                           <th className="limits-table__th">Тип операции</th>
+                          <th className="limits-table__th">Сумма операции</th>
+                          <th className="limits-table__th">Валюта</th>
                           <th className="limits-table__th">
-                            Сумма операции (валюта)
+                            Сумма в валюте карты
                           </th>
-                          <th className="limits-table__th">
-                            Сумма в валюте карты (валюта)
-                          </th>
-                          <th className="limits-table__th">
-                            Баланс после операции
-                          </th>
+                          <th className="limits-table__th">Доступный баланс</th>
+                          <th className="limits-table__th">Баланс карты</th>
                           <th className="limits-table__th">
                             Номер операции в ПЦ
                           </th>
@@ -898,65 +899,10 @@ export default function DashboardOperatorProcessingTransactions() {
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {[
-                          {
-                            id: 464666,
-                            cardNumber: "478687******7342",
-                            cardId: "100002499854",
-                            responseCode: "-1",
-                            responseDescription: "Успешно",
-                            reqamt: 1505,
-                            amount: 1505,
-                            conamt: 2045,
-                            acctbal: 1735,
-                            netbal: 185,
-                            utrnno: 360549933,
-                            currency: 156,
-                            conCurrency: 972,
-                            terminalId: 8,
-                            reversal: 0,
-                            transactionType: 680,
-                            transactionTypeName: "PINDUODUO",
-                            transactionTypeNumber: 2,
-                            atmId: "99999999",
-                            terminalAddress:
-                              "CN ,  ,  , 95017 ,  , WEIXIN*Panduo platform",
-                            localTransactionDate: "2026-01-27",
-                            localTransactionTime: "13:38:07",
-                            mcc: 5999,
-                            account: "20216972581304482386",
-                          },
-                          {
-                            id: 464519,
-                            cardNumber: "478687******7342",
-                            cardId: "100002499854",
-                            responseCode: "-1",
-                            responseDescription: "Успешно",
-                            reqamt: 451,
-                            amount: 451,
-                            conamt: 619,
-                            acctbal: 3780,
-                            netbal: 403,
-                            utrnno: 360547144,
-                            currency: 156,
-                            conCurrency: 972,
-                            terminalId: 8,
-                            reversal: 0,
-                            transactionType: 681,
-                            transactionTypeName: "PINDUODUO",
-                            transactionTypeNumber: 2,
-                            atmId: "99999999",
-                            terminalAddress:
-                              "CN ,  ,  , 95017 ,  , WEIXIN*Panduo platform",
-                            localTransactionDate: "2026-01-27",
-                            localTransactionTime: "13:12:17",
-                            mcc: 5999,
-                            account: "20216972581304482386",
-                          },
-                        ].map((transaction) => (
+                        {transactions.map((transaction) => (
                           <tr
                             key={transaction.id}
-                            className={`limits-table__row transaction-row`}
+                            className={`limits-table__row transaction-row ${getRowClass(transaction.transactionTypeNumber)}`}
                           >
                             <td className="limits-table__td limits-table__td--value">
                               <span className="default-value">
@@ -964,18 +910,23 @@ export default function DashboardOperatorProcessingTransactions() {
                                 {transaction.localTransactionTime || "N/A"}
                               </span>
                             </td>
-                            <td className="limits-table__td limits-table__td--value">
+                            {/* <td className="limits-table__td limits-table__td--value">
                               <span className="default-value">
                                 {transaction.localTransactionTime || "N/A"}
                               </span>
-                            </td>
+                            </td> */}
                             <td className="limits-table__td limits-table__td--value">
                               {getStatusBadge(
                                 transaction.responseCode,
                                 transaction.reversal,
+                                transaction.responseDescription,
                               )}
+                              {/* {transaction.responseDescription} */}
                             </td>
-                            <td className="limits-table__td limits-table__td--info">
+                            <td
+                              className="limits-table__td limits-table__td--info"
+                              style={{ minWidth: "150px" }}
+                            >
                               {transaction.cardNumber
                                 ? formatCardNumber(transaction.cardNumber)
                                 : "N/A"}
@@ -990,32 +941,33 @@ export default function DashboardOperatorProcessingTransactions() {
                             </td>
                             <td className="limits-table__td limits-table__td--value">
                               <span className="amount-value">
-                                {formatAmountWithCurrency(
+                                {formatAmount(
                                   transaction.amount,
-                                  transaction.currency,
-                                  // transaction.transactionType,
-                                  dataTrans.find(
-                                    (e) =>
-                                      e.label === transaction.transactionType,
-                                  ).value,
+                                  transaction.transactionTypeNumber,
                                 )}
                               </span>
                             </td>
                             <td className="limits-table__td limits-table__td--value">
+                              <span className="default-value">
+                                {getCurrencyCode(transaction.currency)}
+                              </span>
+                            </td>
+                            <td className="limits-table__td limits-table__td--value">
                               <span className="amount-value">
-                                {formatAmountWithCurrency(
+                                {formatAmount(
                                   transaction.conamt,
-                                  transaction.conCurrency,
-                                  dataTrans.find(
-                                    (e) =>
-                                      e.label === transaction.transactionType,
-                                  ).value,
+                                  transaction.transactionTypeNumber,
                                 )}
                               </span>
                             </td>
                             <td className="limits-table__td limits-table__td--value">
                               <span className="amount-value">
                                 {formatAmount(transaction.acctbal)}
+                              </span>
+                            </td>
+                            <td className="limits-table__td limits-table__td--value">
+                              <span className="amount-value">
+                                {formatAmount(transaction.netbal)}
                               </span>
                             </td>
                             <td className="limits-table__td limits-table__td--value">
@@ -1094,7 +1046,10 @@ export default function DashboardOperatorProcessingTransactions() {
 
           {isLoading && (
             <div className="processing-integration__loading">
-              <div className="spinner"></div>
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+                <p>Загрузка транзакций...</p>
+              </div>
             </div>
           )}
 
