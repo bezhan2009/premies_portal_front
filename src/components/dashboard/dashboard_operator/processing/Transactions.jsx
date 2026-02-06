@@ -15,6 +15,7 @@ import {
 } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useParams } from "react-router-dom";
+import { dataTrans } from "../../../../const/defConst.js";
 
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
@@ -94,20 +95,20 @@ export default function DashboardOperatorProcessingTransactions() {
   }, []);
 
   // Получаем класс для строки в зависимости от типа транзакции
-  const getRowClass = (transactionTypeNumber) => {
-    switch (transactionTypeNumber) {
-      case 1:
-        return "transaction-row--type-1";
-      case 2:
-        return "transaction-row--type-2";
-      case 3:
-        return "transaction-row--type-3";
-      case 4:
-        return "transaction-row--type-4";
-      default:
-        return "";
-    }
-  };
+  // const getRowClass = (transactionTypeNumber) => {
+  //   switch (transactionTypeNumber) {
+  //     case 1:
+  //       return "transaction-row--type-1";
+  //     case 2:
+  //       return "transaction-row--type-2";
+  //     case 3:
+  //       return "transaction-row--type-3";
+  //     case 4:
+  //       return "transaction-row--type-4";
+  //     default:
+  //       return "";
+  //   }
+  // };
 
   const showAlert = (message, type = "success") => {
     setAlert({
@@ -902,7 +903,7 @@ export default function DashboardOperatorProcessingTransactions() {
                         {transactions.map((transaction) => (
                           <tr
                             key={transaction.id}
-                            className={`limits-table__row transaction-row ${getRowClass(transaction.transactionTypeNumber)}`}
+                            className={`limits-table__row transaction-row `}
                           >
                             <td className="limits-table__td limits-table__td--value">
                               <span className="default-value">
@@ -943,7 +944,13 @@ export default function DashboardOperatorProcessingTransactions() {
                               <span className="amount-value">
                                 {formatAmount(
                                   transaction.amount,
-                                  transaction.transactionTypeNumber,
+                                  // transaction.transactionTypeNumber,
+                                  // transaction.currency,
+                                  // transaction.transactionType,
+                                  dataTrans.find(
+                                    (e) =>
+                                      e.label === transaction.transactionType,
+                                  ).value,
                                 )}
                               </span>
                             </td>
@@ -956,7 +963,11 @@ export default function DashboardOperatorProcessingTransactions() {
                               <span className="amount-value">
                                 {formatAmount(
                                   transaction.conamt,
-                                  transaction.transactionTypeNumber,
+                                  // transaction.conCurrency,
+                                  dataTrans.find(
+                                    (e) =>
+                                      e.label === transaction.transactionType,
+                                  ).value,
                                 )}
                               </span>
                             </td>
@@ -989,7 +1000,10 @@ export default function DashboardOperatorProcessingTransactions() {
                               <span className="amount-value">
                                 {formatAmount(
                                   transaction.reqamt,
-                                  transaction.transactionTypeNumber,
+                                  dataTrans.find(
+                                    (e) =>
+                                      e.label === transaction.transactionType,
+                                  ).value,
                                 )}
                               </span>
                             </td>
@@ -1047,8 +1061,8 @@ export default function DashboardOperatorProcessingTransactions() {
           {isLoading && (
             <div className="processing-integration__loading">
               <div className="loading-spinner">
-                <div className="spinner"></div>
-                <p>Загрузка транзакций...</p>
+                {/* <div className="spinner"></div> */}
+                {/* <p>Загрузка транзакций...</p> */}
               </div>
             </div>
           )}
