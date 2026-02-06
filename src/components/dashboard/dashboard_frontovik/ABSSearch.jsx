@@ -403,7 +403,7 @@ export default function ABSClientSearch() {
   const tableData = selectedClient
     ? [
         { label: "Телефон", key: "phone", value: selectedClient.phone },
-        { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
+        // { label: "Флаг ARC", key: "arc_flag", value: selectedClient.arc_flag },
         {
           label: "Тип клиента",
           key: "client_type_name",
