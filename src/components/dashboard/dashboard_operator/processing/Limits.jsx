@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 // Функция для получения человеко-читаемого названия лимита
 const getLimitDescription = (limitId) => {
@@ -301,6 +302,7 @@ export default function ProcessingIntegrationLimits() {
   const [sortOrder, setSortOrder] = useState("asc");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { exportToExcel } = useExcelExport();
   const [editModal, setEditModal] = useState({
     isOpen: false,
     limit: null,
@@ -351,19 +353,22 @@ export default function ProcessingIntegrationLimits() {
   };
 
   // Функция для извлечения числа из ID лимита
-  const extractLimitNumber = (limitName) => {
+  const extractLimitNumber = useCallback((limitName) => {
     const match = limitName.match(/\d+$/);
     return match ? parseInt(match[0]) : 0;
-  };
+  }, []);
 
   // Функция для сортировки лимитов
-  const sortLimits = (limits, order) => {
-    return [...limits].sort((a, b) => {
-      const numA = extractLimitNumber(a.name);
-      const numB = extractLimitNumber(b.name);
-      return order === "asc" ? numA - numB : numB - numA;
-    });
-  };
+  const sortLimits = useCallback(
+    (limits, order) => {
+      return [...limits].sort((a, b) => {
+        const numA = extractLimitNumber(a.name);
+        const numB = extractLimitNumber(b.name);
+        return order === "asc" ? numA - numB : numB - numA;
+      });
+    },
+    [extractLimitNumber],
+  );
 
   // Функция для фильтрации и сортировки данных
   useEffect(() => {
@@ -382,7 +387,7 @@ export default function ProcessingIntegrationLimits() {
     filtered = sortLimits(filtered, sortOrder);
 
     setFilteredLimitData(filtered);
-  }, [limitData, searchQuery, sortOrder]);
+  }, [limitData, searchQuery, sortOrder, sortLimits]);
 
   // Функция для обработки изменения лимита
   const handleLimitChange = (limitName, newValue) => {
@@ -394,7 +399,7 @@ export default function ProcessingIntegrationLimits() {
   };
 
   // Функция для поиска данных по номеру карты
-  const handleCardNumberSearch = async () => {
+  const handleCardNumberSearch = useCallback(async () => {
     if (cardNumber.trim()) {
       setIsLoading(true);
       try {
@@ -421,10 +426,10 @@ export default function ProcessingIntegrationLimits() {
         setIsLoading(false);
       }
     }
-  };
+  }, [cardNumber]);
 
   // Функция для сохранения всех изменений
-  const handleSaveAll = async () => {
+  const handleSaveAll = useCallback(async () => {
     const changes = limitData.filter(
       (item) => item.newValue !== null && item.newValue !== item.value,
     );
@@ -482,7 +487,7 @@ export default function ProcessingIntegrationLimits() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [limitData, cardNumber]);
 
   // Функция для открытия модалки редактирования
   const handleEditLimit = (limit) => {
@@ -504,6 +509,29 @@ export default function ProcessingIntegrationLimits() {
   const changesCount = limitData.filter(
     (item) => item.newValue !== null && item.newValue !== item.value,
   ).length;
+
+  const handleExport = () => {
+    const columns = [
+      { key: "name", label: "ID лимита" },
+      { key: "description", label: "Описание" },
+      {
+        key: (row) => `${row.currentValue} ${getCurrencyCode(row.currency)}`,
+        label: "Текущее значение",
+      },
+      {
+        key: (row) => `${row.value} ${getCurrencyCode(row.currency)}`,
+        label: "Значение лимита",
+      },
+      {
+        key: (row) =>
+          row.newValue !== null
+            ? `${row.newValue} ${getCurrencyCode(row.currency)}`
+            : "Не изменено",
+        label: "Новое значение",
+      },
+    ];
+    exportToExcel(filteredLimitData, columns, `Лимиты_${cardNumber}`);
+  };
 
   return (
     <div className="block_info_prems content-page" align="center">
@@ -568,6 +596,13 @@ export default function ProcessingIntegrationLimits() {
                     Текущие лимиты карты {displayCardNumber}
                   </h2>
                   <div className="limits-table__actions">
+                    <button
+                      onClick={handleExport}
+                      className="export-excel-btn"
+                      style={{ marginRight: "10px" }}
+                    >
+                      Экспорт в Excel
+                    </button>
                     <button
                       onClick={handleSaveAll}
                       className="limits-table__action-btn limits-table__action-btn--primary"
@@ -703,8 +738,7 @@ export default function ProcessingIntegrationLimits() {
           {/* Индикатор загрузки */}
           {isLoading && (
             <div className="processing-integration__loading">
-              <div className="loading-spinner">
-              </div>
+              <div className="loading-spinner"></div>
             </div>
           )}
 

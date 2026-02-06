@@ -6,6 +6,7 @@ import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { getAllUsers } from "../../../../api/users/get_user.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const RolesTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -16,7 +17,8 @@ const RolesTable = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [edit, setEdit] = useState(null);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
-  
+  const { exportToExcel } = useExcelExport();
+
   const tableContainerRef = useRef();
   // const observer = useRef();
   const lastIdRef = useRef(null);
@@ -28,7 +30,7 @@ const RolesTable = () => {
       const { users } = await getAllUsers({});
       setEmployees(users || []);
       setHasMore(users && users.length === 10);
-      
+
       // Сохраняем последний ID для пагинации
       if (users && users.length > 0) {
         lastIdRef.current = users[users.length - 1].ID;
@@ -81,17 +83,17 @@ const RolesTable = () => {
   };
 
   // Загрузка дополнительных данных
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
     try {
       const { users } = await getAllUsers({ after: lastIdRef.current });
-      
+
       if (users && users.length > 0) {
-        setEmployees(prev => [...prev, ...users]);
+        setEmployees((prev) => [...prev, ...users]);
         setHasMore(users.length === 10);
-        
+
         // Обновляем последний ID
         lastIdRef.current = users[users.length - 1].ID;
       } else {
@@ -102,7 +104,7 @@ const RolesTable = () => {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, isSearching]);
 
   // Обработчик скролла для бесконечной прокрутки
   const handleScroll = useCallback(() => {
@@ -115,14 +117,14 @@ const RolesTable = () => {
     if (isBottom && !loadingMore && hasMore && !isSearching) {
       loadMore();
     }
-  }, [loadingMore, hasMore, isSearching]);
+  }, [loadingMore, hasMore, isSearching, loadMore]);
 
   // Добавляем обработчик скролла
   useEffect(() => {
     const container = tableContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
     }
   }, [handleScroll]);
 
@@ -145,17 +147,32 @@ const RolesTable = () => {
     }
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: "full_name", label: "ФИО" },
+      { key: "username", label: "Логин" },
+      { key: "phone", label: "Номер телефона" },
+      { key: "email", label: "Email" },
+    ];
+    exportToExcel(allEmployees, columns, "Роли_сотрудников");
+  };
+
   return (
     <div className="report-table-container">
-      <SearchBar
-        allData={allEmployees}
-        onSearch={handleSearch}
-        placeholder="Поиск по ФИО или названию офиса..."
-        searchFields={[
-          (item) => item.full_name || "",
-          (item) => item.officeTitle || "",
-        ]}
-      />
+      <div className="table-header-actions">
+        <SearchBar
+          allData={allEmployees}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО или названию офиса..."
+          searchFields={[
+            (item) => item.full_name || "",
+            (item) => item.officeTitle || "",
+          ]}
+        />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
 
       {loading ? (
         <Spinner />
@@ -248,13 +265,13 @@ const RolesTable = () => {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Кнопка и индикаторы загрузки */}
               <div style={{ textAlign: "center", padding: "10px" }}>
                 {loadingMore && <Spinner size="small" />}
-                
+
                 {!loadingMore && hasMore && !isSearching && (
-                  <button 
+                  <button
                     onClick={handleLoadMoreClick}
                     className="button-edit-roles"
                     style={{ margin: "10px 0" }}
@@ -262,12 +279,14 @@ const RolesTable = () => {
                     Загрузить еще
                   </button>
                 )}
-                
+
                 {!hasMore && employees.length > 0 && !isSearching && (
-                  <div style={{ 
-                    color: "#666",
-                    fontStyle: "italic"
-                  }}>
+                  <div
+                    style={{
+                      color: "#666",
+                      fontStyle: "italic",
+                    }}
+                  >
                     Все данные загружены
                   </div>
                 )}
@@ -278,7 +297,7 @@ const RolesTable = () => {
           )}
         </>
       )}
-      
+
       {openRoles.open && (
         <ModalRoles data={openRoles.data} setOpenRoles={setOpenRoles} />
       )}

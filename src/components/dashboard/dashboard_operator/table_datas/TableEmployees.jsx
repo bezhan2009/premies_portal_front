@@ -6,12 +6,16 @@ import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
+  const { exportToExcel } = useExcelExport();
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -41,12 +45,15 @@ const EmployeesTable = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     loadData();
   }, []);
+
   const handleChange = (key, value) => {
     setEdit({ ...edit, [key]: value });
   };
+
   const saveChange = async () => {
     try {
       await fullUpdateWorkers({ ...edit, fio: edit.fio.trim() });
@@ -56,21 +63,40 @@ const EmployeesTable = () => {
       console.error(e);
     }
   };
+
   const handleSearch = (filtered) => {
     setFilteredEmployees(filtered || []);
   };
-  console.log("openRoles", openRoles);
+
+  const handleExport = () => {
+    const columns = [
+      { key: "officeTitle", label: "Название офиса" },
+      { key: "fio", label: "ФИО" },
+      { key: "login", label: "Логин" },
+      { key: "position", label: "Должность" },
+      { key: "placeWork", label: "Место работы" },
+      { key: "salary", label: "Оклад" },
+      { key: "group", label: "Группа продаж" },
+    ];
+    exportToExcel(filteredEmployees, columns, "Сотрудники");
+  };
+
   return (
     <div className="report-table-container">
-      <SearchBar
-        allData={employees}
-        onSearch={handleSearch}
-        placeholder="Поиск по ФИО или названию офиса..."
-        searchFields={[
-          (item) => item.fio || "",
-          (item) => item.officeTitle || "",
-        ]}
-      />
+      <div className="table-header-actions">
+        <SearchBar
+          allData={employees}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО или названию офиса..."
+          searchFields={[
+            (item) => item.fio || "",
+            (item) => item.officeTitle || "",
+          ]}
+        />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
       {loading ? (
         <Spinner />
       ) : (

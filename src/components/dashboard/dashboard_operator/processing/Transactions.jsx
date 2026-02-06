@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
@@ -16,9 +16,11 @@ import {
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useParams } from "react-router-dom";
 import { dataTrans } from "../../../../const/defConst.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
+  const { exportToExcel } = useExcelExport();
   const [searchType, setSearchType] = useState("cardId"); // По умолчанию поиск по карте
   const [displayCardId, setDisplayCardId] = useState("");
   const [cardId, setCardId] = useState("");
@@ -161,7 +163,7 @@ export default function DashboardOperatorProcessingTransactions() {
     }
   };
 
-  const validateSearch = () => {
+  const validateSearch = useCallback(() => {
     // Проверяем корректность дат (для типов, где нужен диапазон дат)
     if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
       showAlert('Дата "С" не может быть больше даты "По"', "error");
@@ -182,19 +184,19 @@ export default function DashboardOperatorProcessingTransactions() {
     switch (searchType) {
       case "cardId":
         if (!cardId.trim()) {
-          showAlert("Введите идентификатор карты", "warning");
+          showAlert("Введите ID карты", "warning");
           return false;
         }
         break;
       case "atmId":
         if (!atmId.trim()) {
-          showAlert("Введите номер терминала", "warning");
+          showAlert("Введите ID АТМ", "warning");
           return false;
         }
         break;
       case "utrnno":
         if (!utrnno.trim()) {
-          showAlert("Введите номер операции", "warning");
+          showAlert("Введите номер операции в ПЦ", "warning");
           return false;
         }
         break;
@@ -245,118 +247,207 @@ export default function DashboardOperatorProcessingTransactions() {
         return false;
     }
     return true;
-  };
+  }, [
+    searchType,
+    cardId,
+    atmId,
+    utrnno,
+    transactionType,
+    amountFrom,
+    amountTo,
+    reversal,
+    mcc,
+    cardBin,
+    searchTransactionType,
+    searchDate,
+    fromDate,
+    toDate,
+    fromTime,
+    toTime,
+    showAlert,
+  ]);
 
-  const handleSearch = async (id) => {
-    if (!id) if (!validateSearch()) return;
+  const handleSearch = useCallback(
+    async (id) => {
+      if (!id) if (!validateSearch()) return;
 
-    setIsLoading(true);
-    try {
-      let transactionsData = [];
+      setIsLoading(true);
+      try {
+        let transactionsData = [];
 
-      switch (searchType) {
-        case "cardId":
-          transactionsData = await fetchTransactionsByCardId(
-            cardId || id,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "atmId":
-          transactionsData = await fetchTransactionsByATM(
-            atmId,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "utrnno":
-          transactionsData = await fetchTransactionsByUTRNNO(utrnno);
-          break;
-        case "transactionType":
-          transactionsData = await fetchTransactionsByType(
-            transactionType,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "amount":
-          transactionsData = await fetchTransactionsByAmount(
-            amountFrom,
-            amountTo,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "reversal":
-          transactionsData = await fetchTransactionsByReversal(
-            reversal,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "mcc":
-          transactionsData = await fetchTransactionsByMCC(
-            mcc,
-            fromDate || undefined,
-            toDate || undefined,
-          );
-          break;
-        case "cardBinSearch":
-          transactionsData = await fetchTransactionsByCardBinAndType(
-            cardBin,
-            searchTransactionType,
-            searchDate,
-            fromTime || undefined,
-            toTime || undefined,
-          );
-          break;
-        default:
-          throw new Error("Неизвестный тип поиска");
-      }
+        switch (searchType) {
+          case "cardId":
+            transactionsData = await fetchTransactionsByCardId(
+              cardId || id,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "atmId":
+            transactionsData = await fetchTransactionsByATM(
+              atmId,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "utrnno":
+            transactionsData = await fetchTransactionsByUTRNNO(utrnno);
+            break;
+          case "transactionType":
+            transactionsData = await fetchTransactionsByType(
+              transactionType,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "amount":
+            transactionsData = await fetchTransactionsByAmount(
+              amountFrom,
+              amountTo,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "reversal":
+            transactionsData = await fetchTransactionsByReversal(
+              reversal,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "mcc":
+            transactionsData = await fetchTransactionsByMCC(
+              mcc,
+              fromDate || undefined,
+              toDate || undefined,
+            );
+            break;
+          case "cardBinSearch":
+            transactionsData = await fetchTransactionsByCardBinAndType(
+              cardBin,
+              searchTransactionType,
+              searchDate,
+              fromTime || undefined,
+              toTime || undefined,
+            );
+            break;
+          default:
+            throw new Error("Неизвестный тип поиска");
+        }
 
-      if (transactionsData && Array.isArray(transactionsData)) {
-        const formattedTransactions = transactionsData.map((transaction) => ({
-          id: transaction.id,
-          cardNumber: transaction.cardNumber,
-          cardId: transaction.cardId,
-          responseCode: transaction.responseCode,
-          responseDescription: transaction.responseDescription,
-          reqamt: transaction.reqamt,
-          amount: transaction.amount,
-          conamt: transaction.conamt,
-          acctbal: transaction.acctbal,
-          netbal: transaction.netbal,
-          utrnno: transaction.utrnno,
-          currency: transaction.currency,
-          conCurrency: transaction.conCurrency,
-          terminalId: transaction.terminalId,
-          reversal: transaction.reversal,
-          transactionType: transaction.transactionType,
-          transactionTypeName: transaction.transactionTypeName,
-          transactionTypeNumber: transaction.transactionTypeNumber,
-          atmId: transaction.atmId,
-          terminalAddress: transaction.terminalAddress,
-          localTransactionDate: transaction.localTransactionDate,
-          localTransactionTime: transaction.localTransactionTime,
-          mcc: transaction.mcc,
-          account: transaction.account,
-        }));
+        if (transactionsData && Array.isArray(transactionsData)) {
+          const formattedTransactions = transactionsData.map((transaction) => ({
+            id: transaction.id,
+            cardNumber: transaction.cardNumber,
+            cardId: transaction.cardId,
+            responseCode: transaction.responseCode,
+            responseDescription: transaction.responseDescription,
+            reqamt: transaction.reqamt,
+            amount: transaction.amount,
+            conamt: transaction.conamt,
+            acctbal: transaction.acctbal,
+            netbal: transaction.netbal,
+            utrnno: transaction.utrnno,
+            currency: transaction.currency,
+            conCurrency: transaction.conCurrency,
+            terminalId: transaction.terminalId,
+            reversal: transaction.reversal,
+            transactionType: transaction.transactionType,
+            transactionTypeName: transaction.transactionTypeName,
+            transactionTypeNumber: transaction.transactionTypeNumber,
+            atmId: transaction.atmId,
+            terminalAddress: transaction.terminalAddress,
+            localTransactionDate: transaction.localTransactionDate,
+            localTransactionTime: transaction.localTransactionTime,
+            mcc: transaction.mcc,
+            account: transaction.account,
+          }));
 
-        setTransactions(formattedTransactions);
-        showAlert(
-          `Загружено ${formattedTransactions.length} транзакций`,
-          "success",
-        );
-      } else {
+          setTransactions(formattedTransactions);
+          showAlert(
+            `Загружено ${formattedTransactions.length} транзакций`,
+            "success",
+          );
+        } else {
+          setTransactions([]);
+          showAlert("Транзакции не найдены", "warning");
+        }
+      } catch (error) {
+        showAlert("Ошибка при загрузке данных: " + error.message, "error");
         setTransactions([]);
-        showAlert("Транзакции не найдены", "warning");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      showAlert("Ошибка при загрузке данных: " + error.message, "error");
-      setTransactions([]);
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    [
+      searchType,
+      cardId,
+      fromDate,
+      toDate,
+      atmId,
+      utrnno,
+      transactionType,
+      amountFrom,
+      amountTo,
+      reversal,
+      mcc,
+      cardBin,
+      searchTransactionType,
+      searchDate,
+      fromTime,
+      toTime,
+      validateSearch,
+    ],
+  );
+
+  const handleExport = () => {
+    const columns = [
+      { key: "localTransactionDate", label: "Дата" },
+      { key: "localTransactionTime", label: "Время" },
+      { key: "responseDescription", label: "Статус" },
+      { key: "cardNumber", label: "Номер карты" },
+      { key: "cardId", label: "ID карты" },
+      { key: "transactionTypeName", label: "Тип операции" },
+      {
+        key: (row) =>
+          formatAmount(
+            row.amount,
+            dataTrans.find((e) => e.label === row.transactionType)?.value,
+          ),
+        label: "Сумма операции",
+      },
+      { key: (row) => getCurrencyCode(row.currency), label: "Валюта" },
+      {
+        key: (row) =>
+          formatAmount(
+            row.conamt,
+            dataTrans.find((e) => e.label === row.transactionType)?.value,
+          ),
+        label: "Сумма в валюте карты",
+      },
+      { key: (row) => formatAmount(row.acctbal), label: "Доступный баланс" },
+      { key: (row) => formatAmount(row.netbal), label: "Баланс карты" },
+      { key: "utrnno", label: "Номер операции в ПЦ" },
+      { key: "terminalId", label: "ID терминала" },
+      { key: "atmId", label: "ID АТМ" },
+      {
+        key: (row) =>
+          formatAmount(
+            row.reqamt,
+            dataTrans.find((e) => e.label === row.transactionType)?.value,
+          ),
+        label: "Запрошенная сумма",
+      },
+      { key: "terminalAddress", label: "Адрес терминала" },
+      { key: "mcc", label: "MCC код" },
+      { key: "account", label: "Счет" },
+      { key: "id", label: "ID транзакции" },
+    ];
+    exportToExcel(
+      transactions,
+      columns,
+      `Транзакции_${searchType}_${new Date().toISOString().split("T")[0]}`,
+    );
   };
 
   const handleKeyPress = (e) => {
@@ -453,7 +544,7 @@ export default function DashboardOperatorProcessingTransactions() {
       setDisplayCardId(id);
       setCardId(id);
     }
-  }, [id]);
+  }, [id, handleSearch]);
 
   // Визуализация полей ввода в зависимости от типа поиска
   const renderSearchFields = () => {
@@ -865,6 +956,11 @@ export default function DashboardOperatorProcessingTransactions() {
                       </span>
                     )}
                   </h2>
+                  <div className="table-header-actions">
+                    <button onClick={handleExport} className="export-excel-btn">
+                      Экспорт в Excel
+                    </button>
+                  </div>
                 </div>
 
                 <div className="limits-table__container">

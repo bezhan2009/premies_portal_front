@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import '../../../../styles/components/Table.scss';
-import Spinner from '../../../Spinner.jsx';
-import SearchBar from '../../../general/SearchBar.jsx';
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import "../../../../styles/components/Table.scss";
+import Spinner from "../../../Spinner.jsx";
+import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchReportKCAndTests } from "../../../../api/operator/reports/report_kc.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const TableReportsKc = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -12,9 +13,10 @@ const TableReportsKc = ({ month, year }) => {
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
+  const { exportToExcel } = useExcelExport();
 
   const [editId, setEditId] = useState(null);
-  const [editedScore, setEditedScore] = useState('');
+  const [editedScore, setEditedScore] = useState("");
   const [highlightedId, setHighlightedId] = useState(null);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -60,7 +62,7 @@ const TableReportsKc = ({ month, year }) => {
     load();
   }, [month, year]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
@@ -74,20 +76,23 @@ const TableReportsKc = ({ month, year }) => {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, isSearching, data, month, year]);
 
-  const lastRowRef = useCallback((node) => {
-    if (loadingMore) return;
-    if (observer.current) observer.current.disconnect();
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadMore();
-      }
-    });
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
 
-    if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, data]);
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore, loadMore],
+  );
 
   const handleSearch = async (filtered) => {
     if (!filtered) {
@@ -109,7 +114,7 @@ const TableReportsKc = ({ month, year }) => {
   };
 
   const handleDoubleClick = (row) => {
-    const value = row.ServiceQuality?.[0]?.call_center ?? '';
+    const value = row.ServiceQuality?.[0]?.call_center ?? "";
     setEditId(row.ID);
     setEditedScore(value.toString());
   };
@@ -123,40 +128,46 @@ const TableReportsKc = ({ month, year }) => {
 
       if (existingQuality?.ID) {
         // Обновляем
-        const response = await fetch(`${backendURL}/service-quality/${existingQuality.ID}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+        const response = await fetch(
+          `${backendURL}/service-quality/${existingQuality.ID}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              call_center: call_center_value,
+            }),
           },
-          body: JSON.stringify({
-            call_center: call_center_value
-          })
-        });
+        );
 
-        if (!response.ok) throw new Error('Ошибка при PATCH');
+        if (!response.ok) throw new Error("Ошибка при PATCH");
 
         setData((prev) =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      ServiceQuality: [
-                        { ...item.ServiceQuality?.[0], call_center: call_center_value }
-                      ]
-                    }
-                    : item
-            )
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  ServiceQuality: [
+                    {
+                      ...item.ServiceQuality?.[0],
+                      call_center: call_center_value,
+                    },
+                  ],
+                }
+              : item,
+          ),
         );
       } else {
         const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
 
         // Создаём новую
         const response = await fetch(`${backendURL}/service-quality`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             call_center: call_center_value,
@@ -165,118 +176,134 @@ const TableReportsKc = ({ month, year }) => {
             tests: 0,
             WorkerID: row.ID,
             CreatedAt: createdAt,
-            UpdatedAt: createdAt
-          })
+            UpdatedAt: createdAt,
+          }),
         });
 
-        if (!response.ok) throw new Error('Ошибка при POST');
+        if (!response.ok) throw new Error("Ошибка при POST");
 
         const created = await response.json();
 
         setData((prev) =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      ServiceQuality: [{ ID: created.ID, call_center: call_center_value }]
-                    }
-                    : item
-            )
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  ServiceQuality: [
+                    { ID: created.ID, call_center: call_center_value },
+                  ],
+                }
+              : item,
+          ),
         );
       }
 
       setHighlightedId(row.ID);
       setTimeout(() => setHighlightedId(null), 1500);
     } catch (e) {
-      console.error('Ошибка обновления:', e);
+      console.error("Ошибка обновления:", e);
     } finally {
       setEditId(null);
     }
   };
 
-  return (
-      <div className="report-table-container">
-        <SearchBar
-            allData={allData}
-            onSearch={handleSearch}
-            placeholder="Поиск по ФИО"
-            searchFields={[(item) => item.user?.Username || '']}
-        />
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.user?.full_name || "", label: "ФИО сотрудника" },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.call_center ?? "",
+        label: "Средняя оценка",
+      },
+    ];
+    exportToExcel(allData, columns, `Отчет_КЦ_${month}_${year}`);
+  };
 
-        <table className="table-reports">
-          <thead>
+  return (
+    <div className="report-table-container">
+      <div className="table-header-actions">
+        <SearchBar
+          allData={allData}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО"
+          searchFields={[(item) => item.user?.Username || ""]}
+        />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
+
+      <table className="table-reports">
+        <thead>
           <tr>
             <th>ФИО сотрудника</th>
             <th>Средняя оценка</th>
           </tr>
-          </thead>
-          <tbody>
-          {data.length > 0 ? (
-              data.map((row, idx) => {
+        </thead>
+        <tbody>
+          {data.length > 0
+            ? data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
-                const userName = row.user?.full_name || '';
-                const call_center = row.ServiceQuality?.[0]?.call_center ?? '';
+                const userName = row.user?.full_name || "";
+                const call_center = row.ServiceQuality?.[0]?.call_center ?? "";
 
                 return (
-                    <tr
-                        key={row.ID}
-                        ref={isLast && !isSearching ? lastRowRef : null}
-                        className={highlightedId === row.ID ? 'row-updated' : ''}
-                    >
-                      <td>{userName}</td>
-                      <td onDoubleClick={() => handleDoubleClick(row)}>
-                        {editId === row.ID ? (
-                            <input
-                                type="number"
-                                value={editedScore}
-                                onChange={(e) => setEditedScore(e.target.value)}
-                                onBlur={() => saveScore(row)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveScore(row);
-                                  else if (e.key === 'Escape') setEditId(null);
-                                }}
-                                autoFocus
-                            />
-                        ) : (
-                            call_center
-                        )}
-                      </td>
-                    </tr>
-                );
-              })
-          ) : (
-              !loading && (
-                  <tr>
-                    <td colSpan={2} style={{ textAlign: 'center' }}>
-                      Нет данных за выбранный период
+                  <tr
+                    key={row.ID}
+                    ref={isLast && !isSearching ? lastRowRef : null}
+                    className={highlightedId === row.ID ? "row-updated" : ""}
+                  >
+                    <td>{userName}</td>
+                    <td onDoubleClick={() => handleDoubleClick(row)}>
+                      {editId === row.ID ? (
+                        <input
+                          type="number"
+                          value={editedScore}
+                          onChange={(e) => setEditedScore(e.target.value)}
+                          onBlur={() => saveScore(row)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveScore(row);
+                            else if (e.key === "Escape") setEditId(null);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        call_center
+                      )}
                     </td>
                   </tr>
-              )
-          )}
-          </tbody>
-        </table>
+                );
+              })
+            : !loading && (
+                <tr>
+                  <td colSpan={2} style={{ textAlign: "center" }}>
+                    Нет данных за выбранный период
+                  </td>
+                </tr>
+              )}
+        </tbody>
+      </table>
 
-        {loading && (
-            <div
-                style={{
-                  transform: 'scale(2)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginBottom: '100px',
-                  width: 'auto',
-                }}
-            >
-              <Spinner />
-            </div>
-        )}
+      {loading && (
+        <div
+          style={{
+            transform: "scale(2)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "100px",
+            width: "auto",
+          }}
+        >
+          <Spinner />
+        </div>
+      )}
 
-        {loadingMore && (
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <Spinner />
-            </div>
-        )}
-      </div>
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Spinner />
+        </div>
+      )}
+    </div>
   );
 };
 

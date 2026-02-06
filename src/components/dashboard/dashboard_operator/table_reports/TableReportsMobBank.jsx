@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import '../../../../styles/components/Table.scss';
-import Spinner from '../../../Spinner.jsx';
-import SearchBar from '../../../general/SearchBar.jsx';
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import "../../../../styles/components/Table.scss";
+import Spinner from "../../../Spinner.jsx";
+import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchReportMobileBank } from "../../../../api/operator/reports/report_mb.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const TableReportsMb = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -12,9 +13,10 @@ const TableReportsMb = ({ month, year }) => {
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef();
+  const { exportToExcel } = useExcelExport();
 
   const [editId, setEditId] = useState(null);
-  const [editedConnects, setEditedConnects] = useState('');
+  const [editedConnects, setEditedConnects] = useState("");
   const [highlightedId, setHighlightedId] = useState(null);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -60,7 +62,7 @@ const TableReportsMb = ({ month, year }) => {
     load();
   }, [month, year]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
@@ -74,20 +76,23 @@ const TableReportsMb = ({ month, year }) => {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, isSearching, data, month, year]);
 
-  const lastRowRef = useCallback((node) => {
-    if (loadingMore) return;
-    if (observer.current) observer.current.disconnect();
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadMore();
-      }
-    });
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
 
-    if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, data]);
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore, loadMore],
+  );
 
   const handleSearch = async (filtered) => {
     if (!filtered) {
@@ -109,7 +114,7 @@ const TableReportsMb = ({ month, year }) => {
   };
 
   const handleDoubleClick = (row) => {
-    const value = row.MobileBank?.[0]?.mobile_bank_connects ?? '';
+    const value = row.MobileBank?.[0]?.mobile_bank_connects ?? "";
     setEditId(row.ID);
     setEditedConnects(value.toString());
   };
@@ -123,67 +128,71 @@ const TableReportsMb = ({ month, year }) => {
 
       if (existing?.ID) {
         const res = await fetch(`${backendURL}/mobile-bank/${existing.ID}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             mobile_bank_connects: value,
             mobile_bank_prem: value * 10,
-            worker_id: row.ID
-          })
+            worker_id: row.ID,
+          }),
         });
 
         if (!res.ok) throw new Error("Ошибка при PATCH");
 
-        setData(prev =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      MobileBank: [{
-                        ...existing,
-                        mobile_bank_connects: value
-                      }]
-                    }
-                    : item
-            )
+        setData((prev) =>
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  MobileBank: [
+                    {
+                      ...existing,
+                      mobile_bank_connects: value,
+                    },
+                  ],
+                }
+              : item,
+          ),
         );
       } else {
         const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
 
         const res = await fetch(`${backendURL}/mobile-bank`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             mobile_bank_connects: value,
             mobile_bank_prem: value * 10,
             worker_id: row.ID,
             CreatedAt: createdAt,
-            UpdatedAt: createdAt
-          })
+            UpdatedAt: createdAt,
+          }),
         });
 
         if (!res.ok) throw new Error("Ошибка при POST");
 
         const created = await res.json();
 
-        setData(prev =>
-            prev.map(item =>
-                item.ID === row.ID
-                    ? {
-                      ...item,
-                      MobileBank: [{
-                        ID: created.ID,
-                        mobile_bank_connects: value
-                      }]
-                    }
-                    : item
-            )
+        setData((prev) =>
+          prev.map((item) =>
+            item.ID === row.ID
+              ? {
+                  ...item,
+                  MobileBank: [
+                    {
+                      ID: created.ID,
+                      mobile_bank_connects: value,
+                    },
+                  ],
+                }
+              : item,
+          ),
         );
       }
 
@@ -196,90 +205,104 @@ const TableReportsMb = ({ month, year }) => {
     }
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.user?.full_name || "", label: "ФИО сотрудника" },
+      {
+        key: (row) => row.MobileBank?.[0]?.mobile_bank_connects ?? "",
+        label: "Количество подключений",
+      },
+    ];
+    exportToExcel(allData, columns, `Отчет_МБ_${month}_${year}`);
+  };
 
   return (
-      <div className="report-table-container">
+    <div className="report-table-container">
+      <div className="table-header-actions">
         <SearchBar
-            allData={allData}
-            onSearch={handleSearch}
-            placeholder="Поиск по ФИО"
-            searchFields={[(item) => item.user?.full_name || '']}
+          allData={allData}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО"
+          searchFields={[(item) => item.user?.full_name || ""]}
         />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
 
-        <table className="table-reports">
-          <thead>
+      <table className="table-reports">
+        <thead>
           <tr>
             <th>ФИО сотрудника</th>
             <th>Количество подключений</th>
           </tr>
-          </thead>
-          <tbody>
-          {data.length > 0 ? (
-              data.map((row, idx) => {
+        </thead>
+        <tbody>
+          {data.length > 0
+            ? data.map((row, idx) => {
                 const isLast = idx === data.length - 1;
-                const userName = row.user?.full_name || '';
-                const mobile_bank_connects = row.MobileBank?.[0]?.mobile_bank_connects ?? '';
+                const userName = row.user?.full_name || "";
+                const mobile_bank_connects =
+                  row.MobileBank?.[0]?.mobile_bank_connects ?? "";
 
                 return (
-                    <tr
-                        key={row.ID}
-                        ref={isLast && !isSearching ? lastRowRef : null}
-                        className={highlightedId === row.ID ? 'row-updated' : ''}
-                    >
-                      <td>{userName}</td>
-                      <td onDoubleClick={() => handleDoubleClick(row)}>
-                        {editId === row.ID ? (
-                            <input
-                                type="number"
-                                value={editedConnects}
-                                onChange={(e) => setEditedConnects(e.target.value)}
-                                onBlur={() => saveConnects(row)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveConnects(row);
-                                  else if (e.key === 'Escape') setEditId(null);
-                                }}
-                                autoFocus
-                            />
-                        ) : (
-                            mobile_bank_connects
-                        )}
-                      </td>
-                    </tr>
-                );
-              })
-          ) : (
-              !loading && (
-                  <tr>
-                    <td colSpan={2} style={{ textAlign: 'center' }}>
-                      Нет данных за выбранный период
+                  <tr
+                    key={row.ID}
+                    ref={isLast && !isSearching ? lastRowRef : null}
+                    className={highlightedId === row.ID ? "row-updated" : ""}
+                  >
+                    <td>{userName}</td>
+                    <td onDoubleClick={() => handleDoubleClick(row)}>
+                      {editId === row.ID ? (
+                        <input
+                          type="number"
+                          value={editedConnects}
+                          onChange={(e) => setEditedConnects(e.target.value)}
+                          onBlur={() => saveConnects(row)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveConnects(row);
+                            else if (e.key === "Escape") setEditId(null);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        mobile_bank_connects
+                      )}
                     </td>
                   </tr>
-              )
-          )}
-          </tbody>
-        </table>
+                );
+              })
+            : !loading && (
+                <tr>
+                  <td colSpan={2} style={{ textAlign: "center" }}>
+                    Нет данных за выбранный период
+                  </td>
+                </tr>
+              )}
+        </tbody>
+      </table>
 
-        {loading && (
-            <div
-                style={{
-                  transform: 'scale(2)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginBottom: '100px',
-                  width: 'auto',
-                }}
-            >
-              <Spinner />
-            </div>
-        )}
+      {loading && (
+        <div
+          style={{
+            transform: "scale(2)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "100px",
+            width: "auto",
+          }}
+        >
+          <Spinner />
+        </div>
+      )}
 
-        {loadingMore && (
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <Spinner />
-            </div>
-        )}
-      </div>
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Spinner />
+        </div>
+      )}
+    </div>
   );
 };
 

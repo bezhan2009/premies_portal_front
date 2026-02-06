@@ -3,6 +3,7 @@ import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchReportKCAndTests } from "../../../../api/operator/reports/report_kc.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const TableReportsTest = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -16,6 +17,7 @@ const TableReportsTest = ({ month, year }) => {
   const [highlightedId, setHighlightedId] = useState(null);
   const observer = useRef();
   const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const { exportToExcel } = useExcelExport();
 
   useEffect(() => {
     const loadAll = async () => {
@@ -58,7 +60,7 @@ const TableReportsTest = ({ month, year }) => {
     load();
   }, [month, year]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
@@ -72,7 +74,7 @@ const TableReportsTest = ({ month, year }) => {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, isSearching, data, month, year]);
 
   const lastRowRef = useCallback(
     (node) => {
@@ -87,7 +89,7 @@ const TableReportsTest = ({ month, year }) => {
 
       if (node) observer.current.observe(node);
     },
-    [loadingMore, hasMore, data]
+    [loadingMore, hasMore, loadMore],
   );
 
   const handleSearch = async (filtered) => {
@@ -135,7 +137,7 @@ const TableReportsTest = ({ month, year }) => {
               tests: value,
               WorkerID: row.ID,
             }),
-          }
+          },
         );
 
         if (!res.ok) throw new Error("Ошибка при PATCH");
@@ -147,8 +149,8 @@ const TableReportsTest = ({ month, year }) => {
                   ...item,
                   ServiceQuality: [{ ...existing, tests: value }],
                 }
-              : item
-          )
+              : item,
+          ),
         );
       } else {
         const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
@@ -184,8 +186,8 @@ const TableReportsTest = ({ month, year }) => {
                     },
                   ],
                 }
-              : item
-          )
+              : item,
+          ),
         );
       }
 
@@ -198,14 +200,30 @@ const TableReportsTest = ({ month, year }) => {
     }
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.user?.full_name || "", label: "ФИО сотрудника" },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.tests ?? "",
+        label: "Средняя оценка по тестам",
+      },
+    ];
+    exportToExcel(allData, columns, `Отчет_Тесты_${month}_${year}`);
+  };
+
   return (
     <div className="report-table-container">
-      <SearchBar
-        allData={allData}
-        onSearch={handleSearch}
-        placeholder="Поиск по ФИО"
-        searchFields={[(item) => item.user?.full_name || ""]}
-      />
+      <div className="table-header-actions">
+        <SearchBar
+          allData={allData}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО"
+          searchFields={[(item) => item.user?.full_name || ""]}
+        />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
       <div className="table-reports-div">
         <table className="table-reports">
           <thead>
@@ -258,7 +276,7 @@ const TableReportsTest = ({ month, year }) => {
                 )}
           </tbody>
         </table>
-      </div>  
+      </div>
 
       {loading && (
         <div className="spinner-container">

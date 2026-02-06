@@ -8,6 +8,7 @@ import Input from "../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
 import { useWorkers } from "../../../hooks/useWorkers";
 import DownloadModal from "./DownloadModal.jsx";
+import { useExcelExport } from "../../../hooks/useExcelExport.js";
 
 const TablePremies = ({ month, year }) => {
   const {
@@ -30,6 +31,7 @@ const TablePremies = ({ month, year }) => {
   const [downloadUser, setDownloadUser] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState("");
   const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
+  const { exportToExcel } = useExcelExport();
 
   const monthOptions = [
     { name: "Январь", value: 1 },
@@ -166,6 +168,56 @@ const TablePremies = ({ month, year }) => {
     }
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.user?.full_name || "", label: "ФИО" },
+      { key: "plan", label: "План продаж (TJS)" },
+      {
+        key: (row) => row.CardSales?.[0]?.cards_sailed ?? "",
+        label: "Продано карт (шт)",
+      },
+      {
+        key: (row) => row.CardSales?.[0]?.cards_sailed_in_general ?? "",
+        label: "Карт за всё время",
+      },
+      {
+        key: (row) => row.MobileBank?.[0]?.mobile_bank_connects ?? "",
+        label: "Моб. банк (шт)",
+      },
+      { key: "salary_project", label: "ЗП проект (шт)" },
+      {
+        key: (row) => row.CardSales?.[0]?.deb_osd ?? "",
+        label: "Оборот по дебету (TJS)",
+      },
+      {
+        key: (row) => row.CardSales?.[0]?.out_balance ?? "",
+        label: "Остатки по картам (TJS)",
+      },
+      {
+        key: (row) =>
+          row.CardTurnovers?.[0]?.active_cards_perms?.toFixed(0) ?? "",
+        label: "Активные карты (шт)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.call_center ?? "",
+        label: "Оценка КЦ (балл)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.complaint ?? "",
+        label: "Жалобы (шт)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.tests ?? "",
+        label: "Тесты (балл)",
+      },
+      {
+        key: (row) => calculateTotalPremia(row).toFixed(1),
+        label: "Итого (TJS)",
+      },
+    ];
+    exportToExcel(allWorkers, columns, `Отчет_Премии_${month}_${year}`);
+  };
+
   if (loading) {
     return (
       <div
@@ -198,7 +250,12 @@ const TablePremies = ({ month, year }) => {
 
   return (
     <div className="report-table-container">
-      <SearchBar allData={allWorkers} onSearch={handleSearch} />
+      <div className="table-header-actions">
+        <SearchBar allData={allWorkers} onSearch={handleSearch} />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
 
       <div className="table-reports-div">
         <table className="table-reports">
