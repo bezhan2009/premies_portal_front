@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../../../../styles/components/Table.scss";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/AddCardPriceForm.scss";
 import "../../../../styles/components/SearchBar.scss";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const TableCardMargents = () => {
   const [cards, setCards] = useState([]);
@@ -17,9 +18,10 @@ const TableCardMargents = () => {
   });
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const { exportToExcel } = useExcelExport();
 
   // загрузка всех карт
-  const fetchCards = async () => {
+  const fetchCards = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token");
 
@@ -49,11 +51,11 @@ const TableCardMargents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [backendURL]);
 
   useEffect(() => {
     fetchCards();
-  }, []);
+  }, [fetchCards]);
 
   // двойной клик для редактирования
   const handleDoubleClick = (card) => {
@@ -78,7 +80,7 @@ const TableCardMargents = () => {
       if (!response.ok) throw new Error("Ошибка при обновлении");
 
       setCards((prev) =>
-        prev.map((c) => (c.ID === id ? { ...editedCard } : c))
+        prev.map((c) => (c.ID === id ? { ...editedCard } : c)),
       );
       setEditId(null);
     } catch (e) {
@@ -137,9 +139,22 @@ const TableCardMargents = () => {
     }
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: "title", label: "Название" },
+      { key: "code", label: "Код" },
+    ];
+    exportToExcel(cards, columns, "Мерчанты");
+  };
+
   return (
     <div>
-      <h2>Мерчанты</h2>
+      <div className="table-header-actions" style={{ marginBottom: "10px" }}>
+        <h2>Мерчанты</h2>
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
 
       {/* Форма для добавления новой карты перемещена сюда */}
       <div className="add-card-form" style={{ marginBottom: "20px" }}>

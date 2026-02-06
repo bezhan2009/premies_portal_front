@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import { fetchReportCards } from "../../../../api/operator/reports/report_cards.js";
@@ -7,6 +7,7 @@ import Input from "../../../elements/Input.jsx";
 import { cardDetailPatch } from "../../../../api/workers/cardDetailPatch.js";
 import Select from "../../../elements/Select.jsx";
 import { mcCards, ncCards, visaCards } from "../../../../const/defConst.js";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const TableReportsCards = ({ month, year }) => {
   const [data, setData] = useState([]);
@@ -18,7 +19,7 @@ const TableReportsCards = ({ month, year }) => {
   const observer = useRef(null);
   const lastElementRef = useRef(null);
   const [edit, setEdit] = useState(null);
-
+  const { exportToExcel } = useExcelExport();
 
   /**
    * 🔥 Подзагрузка “всех” данных для поиска – ОГРАНИЧЕНА MAX_PAGES,
@@ -71,42 +72,9 @@ const TableReportsCards = ({ month, year }) => {
   }, [month, year]);
 
   /**
-   * Настраиваем IntersectionObserver один раз
-   */
-  useEffect(() => {
-    if (observer.current) observer.current.disconnect();
-
-    observer.current = new IntersectionObserver((entries) => {
-      if (
-        entries[0].isIntersecting &&
-        hasMore &&
-        !loadingMore &&
-        !isSearching
-      ) {
-        loadMore();
-      }
-    });
-
-    return () => {
-      observer.current?.disconnect();
-    };
-  }, [hasMore, loadingMore, isSearching]);
-
-  /**
-   * Наблюдаем за последним элементом таблицы
-   */
-  useEffect(() => {
-    const node = lastElementRef.current;
-    if (node) observer.current?.observe(node);
-    return () => {
-      if (node) observer.current?.unobserve(node);
-    };
-  }, [data]);
-
-  /**
    * Загрузка следующей страницы с защитой от зацикливания
    */
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
@@ -134,7 +102,40 @@ const TableReportsCards = ({ month, year }) => {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, isSearching, data, month, year]);
+
+  /**
+   * Настраиваем IntersectionObserver один раз
+   */
+  useEffect(() => {
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver((entries) => {
+      if (
+        entries[0].isIntersecting &&
+        hasMore &&
+        !loadingMore &&
+        !isSearching
+      ) {
+        loadMore();
+      }
+    });
+
+    return () => {
+      observer.current?.disconnect();
+    };
+  }, [hasMore, loadingMore, isSearching, loadMore]);
+
+  /**
+   * Наблюдаем за последним элементом таблицы
+   */
+  useEffect(() => {
+    const node = lastElementRef.current;
+    if (node) observer.current?.observe(node);
+    return () => {
+      if (node) observer.current?.unobserve(node);
+    };
+  }, [data]);
 
   /**
    * Поиск внутри загруженных allData
@@ -198,8 +199,6 @@ const TableReportsCards = ({ month, year }) => {
       return newState;
     });
   };
-  
- 
 
   const saveChange = async (edit) => {
     try {
@@ -218,26 +217,46 @@ const TableReportsCards = ({ month, year }) => {
     }
   };
 
-  console.log("data", data);
+  const handleExport = () => {
+    const columns = [
+      {
+        key: (row) => row.worker?.user?.full_name || "",
+        label: "ФИО сотрудника",
+      },
+      { key: "card_type", label: "Тип карты" },
+      { key: "code", label: "Номер счета" },
+      { key: "debt_osd", label: "Оборот по дебету" },
+      { key: "out_balance", label: "Остаток" },
+      {
+        key: "issue_date",
+        label: "Дата выдачи",
+        format: (val) => val?.split("T")[0] || "",
+      },
+    ];
+    exportToExcel(allData, columns, `Отчет_Карты_${month}_${year}`);
+  };
 
   return (
     <div className="report-table-container">
-      <SearchBar
-        allData={allData}
-        onSearch={handleSearch}
-        placeholder="Поиск по ФИО, номеру карты..."
-        searchFields={[
-          (item) => item.worker?.user?.Username || "",
-          (item) => item.code || "",
-          (item) => item.card_type || "",
-        ]}
-      />
+      <div className="table-header-actions">
+        <SearchBar
+          allData={allData}
+          onSearch={handleSearch}
+          placeholder="Поиск по ФИО, номеру карты..."
+          searchFields={[
+            (item) => item.worker?.user?.Username || "",
+            (item) => item.code || "",
+            (item) => item.card_type || "",
+          ]}
+        />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
       <div
         className="table-reports-div"
         style={{ maxHeight: "calc(100vh - 480px)" }}
       >
-       
-
         <table className="table-reports">
           <thead>
             <tr>

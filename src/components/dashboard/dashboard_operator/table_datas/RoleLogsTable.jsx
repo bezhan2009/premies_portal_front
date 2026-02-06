@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import Input from "../../../elements/Input.jsx";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
 const RolesLogsTable = () => {
   const [logs, setLogs] = useState([]);
@@ -12,27 +13,28 @@ const RolesLogsTable = () => {
   const [userFilter, setUserFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const { exportToExcel } = useExcelExport();
 
   useEffect(() => {
     const loadData = async () => {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem("access_token");
       setLoading(true);
       try {
         const [logsResponse, rolesResponse] = await Promise.all([
           fetch(`${import.meta.env.VITE_BACKEND_URL}/roles/logs`, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
           }),
           fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
-          })
+          }),
         ]);
 
         const logsData = await logsResponse.json();
@@ -49,7 +51,7 @@ const RolesLogsTable = () => {
   }, []);
 
   const getRoleName = (roleId) => {
-    const role = roles.find(r => r.ID === roleId);
+    const role = roles.find((r) => r.ID === roleId);
     return role ? role.Name : `Unknown (${roleId})`;
   };
 
@@ -62,16 +64,20 @@ const RolesLogsTable = () => {
     let filtered = logs;
     if (operatorFilter) {
       filtered = filtered.filter((log) =>
-        log.operator?.username?.toLowerCase().includes(operatorFilter.toLowerCase())
+        log.operator?.username
+          ?.toLowerCase()
+          .includes(operatorFilter.toLowerCase()),
       );
     }
     if (userFilter) {
       filtered = filtered.filter((log) =>
-        log.user?.username?.toLowerCase().includes(userFilter.toLowerCase())
+        log.user?.username?.toLowerCase().includes(userFilter.toLowerCase()),
       );
     }
     if (fromDate) {
-      filtered = filtered.filter((log) => new Date(log.CreatedAt) >= new Date(fromDate));
+      filtered = filtered.filter(
+        (log) => new Date(log.CreatedAt) >= new Date(fromDate),
+      );
     }
     if (toDate) {
       const endDate = new Date(toDate);
@@ -91,33 +97,51 @@ const RolesLogsTable = () => {
     });
   };
 
+  const handleExport = () => {
+    const columns = [
+      { key: "CreatedAt", label: "Дата", format: formatDate },
+      { key: (row) => row.operator?.username || "N/A", label: "Оператор" },
+      { key: (row) => row.user?.username || "N/A", label: "Пользователь" },
+      { key: (row) => formatRoles(row.role_ids), label: "Роли" },
+    ];
+    exportToExcel(filteredLogs, columns, "Логи_ролей");
+  };
+
   return (
     <div className="report-table-container">
-      <div className="filters" style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <Input
-          placeholder="Логин оператора"
-          type="text"
-          value={operatorFilter}
-          onChange={(value) => setOperatorFilter(value)} // Изменено здесь
-        />
-        <Input
-          placeholder="Логин пользователя"
-          type="text"
-          value={userFilter}
-          onChange={(value) => setUserFilter(value)} // Изменено здесь
-        />
-        <Input
-          placeholder="От даты"
-          type="date"
-          value={fromDate}
-          onChange={(value) => setFromDate(value)} // Изменено здесь
-        />
-        <Input
-          placeholder="До даты"
-          type="date"
-          value={toDate}
-          onChange={(value) => setToDate(value)} // Изменено здесь
-        />
+      <div className="table-header-actions" style={{ marginBottom: "20px" }}>
+        <div
+          className="filters"
+          style={{ display: "flex", gap: "10px", flex: 1 }}
+        >
+          <Input
+            placeholder="Логин оператора"
+            type="text"
+            value={operatorFilter}
+            onChange={(value) => setOperatorFilter(value)}
+          />
+          <Input
+            placeholder="Логин пользователя"
+            type="text"
+            value={userFilter}
+            onChange={(value) => setUserFilter(value)}
+          />
+          <Input
+            placeholder="От даты"
+            type="date"
+            value={fromDate}
+            onChange={(value) => setFromDate(value)}
+          />
+          <Input
+            placeholder="До даты"
+            type="date"
+            value={toDate}
+            onChange={(value) => setToDate(value)}
+          />
+        </div>
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
       </div>
       {loading ? (
         <Spinner />
@@ -159,4 +183,3 @@ const RolesLogsTable = () => {
 };
 
 export default RolesLogsTable;
-    

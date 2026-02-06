@@ -5,7 +5,6 @@ body {
   animation: fadeIn 0.5s ease-out;
   font-family: sans-serif;
 }
-
 ::selection {
   background-color: #e21a1c;
   color: white;
@@ -21,6 +20,25 @@ body {
 :focus {
   outline: 2px solid #e21a1c;
   outline-offset: 2px;
+}
+.export-excel-btn {
+  padding: 10px 20px;
+  background-color: #217346; // Excel green
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: #1a5c38;
+  }
+
+  &:active {
+    background-color: #14452a;
+  }
 }
 
 /* Удаление стандартного outline и добавление кастомного */
@@ -86,7 +104,7 @@ textarea:focus {
 }
 
 .selectAll-toggle {
-  background-color: #e21a1c ;
+  background-color: #e21a1c;
   padding: 1rem 2rem;
   background: #e21a1c;
   color: white;

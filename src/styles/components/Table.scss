@@ -79,7 +79,9 @@
       margin-left: -30px; // Center the tooltip
       opacity: 0;
       transform: translateY(10px) scale(0.95);
-      transition: opacity 0.3s, transform 0.3s;
+      transition:
+        opacity 0.3s,
+        transform 0.3s;
 
       &:after {
         content: "";
@@ -184,10 +186,9 @@
   text-align: center;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.table-reports td input:focus {
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 /* Анимация обновления */
@@ -210,4 +211,32 @@ tr.paid-row {
 
 tr.paid-row:hover {
   background-color: #d4edda !important;
+}
+
+.table-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+
+  .export-excel-btn {
+    padding: 10px 20px;
+    background-color: #217346; // Excel green
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #1a5c38;
+    }
+
+    &:active {
+      background-color: #14452a;
+    }
+  }
 }
