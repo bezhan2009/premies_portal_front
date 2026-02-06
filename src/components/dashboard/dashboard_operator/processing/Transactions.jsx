@@ -112,21 +112,21 @@ export default function DashboardOperatorProcessingTransactions() {
   //   }
   // };
 
-  const showAlert = (message, type = "success") => {
+  const showAlert = useCallback((message, type = "success") => {
     setAlert({
       show: true,
       message,
       type,
     });
-  };
+  }, []);
 
-  const hideAlert = () => {
+  const hideAlert = useCallback(() => {
     setAlert({
       show: false,
       message: "",
       type: "success",
     });
-  };
+  }, []);
 
   const handleCardIdChange = (e) => {
     const value = e.target.value;
@@ -397,6 +397,7 @@ export default function DashboardOperatorProcessingTransactions() {
       fromTime,
       toTime,
       validateSearch,
+      showAlert,
     ],
   );
 

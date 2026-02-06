@@ -18,6 +18,7 @@ import {
   MdOutlineSmartphone,
 } from "react-icons/md";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
+import { useExcelExport } from "../../../hooks/useExcelExport.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 
@@ -57,6 +58,29 @@ const normalizeClientData = (client, searchType) => {
 
 // Компонент модального окна для графика платежей
 const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
+  const { exportToExcel } = useExcelExport();
+
+  const handleExport = () => {
+    const columns = [
+      { key: "ID", label: "ID" },
+      { key: "Code", label: "Code" },
+      { key: "LongName", label: "LongName" },
+      { key: "PaymentDate", label: "PaymentDate" },
+      { key: "Amount", label: "Amount" },
+      { key: "CalculatingAmount", label: "CalculatingAmount" },
+      { key: "Type", label: "Type" },
+      { key: "Status", label: "Status" },
+      { key: "DateFrom", label: "DateFrom" },
+      { key: "DateTo", label: "DateTo" },
+      { key: "CalculatingDate", label: "CalculatingDate" },
+      { key: "ExpectationDate", label: "ExpectationDate" },
+    ];
+    exportToExcel(
+      graphData,
+      columns,
+      `График_платежей_${referenceId || "export"}`,
+    );
+  };
   return (
     <div
       className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}
@@ -72,9 +96,16 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
               </span>
             )}
           </h2>
-          <button className="graph-modal-close" onClick={onClose}>
-            &times;
-          </button>
+          <div className="graph-modal-header-actions">
+            {graphData?.length > 0 && !isLoading && (
+              <button className="export-excel-btn" onClick={handleExport}>
+                Экспорт в Excel
+              </button>
+            )}
+            <button className="graph-modal-close" onClick={onClose}>
+              &times;
+            </button>
+          </div>
         </div>
 
         <div className="graph-modal-content">
@@ -147,6 +178,7 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
 };
 
 export default function ABSClientSearch() {
+  const { exportToExcel } = useExcelExport();
   const [isMobile, setIsMobile] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [displayPhone, setDisplayPhone] = useState("");
@@ -340,6 +372,91 @@ export default function ABSClientSearch() {
         JSON.stringify(clientsData[selectedClientIndex], null, 2),
       );
     }
+  };
+
+  const handleExportClientInfo = () => {
+    // Since tableData is a list of {label, value}, we need to transform it for exportToExcel
+    // which expects a list of rows. Here we have only one row (the selected client).
+    const exportData = [
+      tableData.reduce((acc, item) => {
+        acc[item.label] = item.value || "Не указано";
+        return acc;
+      }, {}),
+    ];
+    const exportColumns = tableData.map((item) => ({
+      key: item.label,
+      label: item.label,
+    }));
+    exportToExcel(
+      exportData,
+      exportColumns,
+      `Клиент_${selectedClient?.surname}_${selectedClient?.name}`,
+    );
+  };
+
+  const handleExportCards = () => {
+    const columns = [
+      { key: "cardId", label: "ID Карты" },
+      { key: "type", label: "Тип" },
+      { key: "statusName", label: "Статус" },
+      { key: "expirationDate", label: "Срок" },
+      { key: "currency", label: "Валюта" },
+      { key: (row) => row.accounts?.[0]?.state || "-", label: "Остаток" },
+    ];
+    exportToExcel(cardsData, columns, `Карты_${selectedClient?.surname}`);
+  };
+
+  const handleExportAccounts = () => {
+    const columns = [
+      { key: "Number", label: "Номер счета" },
+      { key: (row) => `${row.Balance} ${row.Currency?.Code}`, label: "Баланс" },
+      { key: (row) => row.Status?.Name, label: "Статус" },
+      { key: "DateOpened", label: "Дата открытия" },
+      { key: (row) => row.Branch?.Name, label: "Филиал" },
+    ];
+    exportToExcel(accountsData, columns, `Счета_${selectedClient?.surname}`);
+  };
+
+  const handleExportCredits = () => {
+    const columns = [
+      { key: "contractNumber", label: "Номер договора" },
+      { key: "referenceId", label: "Идентификатор ссылки" },
+      { key: "statusName", label: "Статус" },
+      { key: (row) => `${row.amount} ${row.currency}`, label: "Сумма" },
+      { key: "documentDate", label: "Дата документа" },
+      { key: "clientCode", label: "КлиентКод" },
+      { key: "productCode", label: "Код продукта" },
+      { key: "productName", label: "Название продукта" },
+      { key: "department", label: "Отдел" },
+    ];
+    exportToExcel(creditsData, columns, `Кредиты_${selectedClient?.surname}`);
+  };
+
+  const handleExportDeposits = () => {
+    const columns = [
+      { key: (row) => row.AgreementData?.Code, label: "Номер договора" },
+      { key: (row) => row.AgreementData?.ColvirReferenceId, label: "Референс" },
+      { key: (row) => row.AgreementData?.Status?.Name, label: "Статус" },
+      {
+        key: (row) => row.BalanceAccounts?.[0]?.Balance || "-",
+        label: "Остаток депозита",
+      },
+      { key: (row) => row.AgreementData?.DateFrom, label: "Дата начала" },
+      { key: (row) => row.AgreementData?.DateTo, label: "Дата окончания" },
+      { key: (row) => row.AgreementData?.Product?.Name, label: "Продукт" },
+      {
+        key: (row) =>
+          `${row.AgreementData?.DepoTermTU} ${row.AgreementData?.DepoTermTimeType}`,
+        label: "Срок",
+      },
+      { key: (row) => row.AgreementData?.Department?.Code, label: "Отдел" },
+      {
+        key: (row) =>
+          `${row.AgreementData?.Amount} ${row.AgreementData?.Currency}`,
+        label: "Сумма договора",
+      },
+    ];
+    exportToExcel(depositsData, columns, `Депозиты_${selectedClient?.surname}`);
   };
 
   // Функция для открытия графика платежей
@@ -735,6 +852,13 @@ export default function ABSClientSearch() {
                     </h2>
                     <div className="limits-table__actions">
                       <button
+                        onClick={handleExportClientInfo}
+                        className="export-excel-btn"
+                        style={{ marginRight: 10 }}
+                      >
+                        Экспорт в Excel
+                      </button>
+                      <button
                         onClick={copySelectedClientToClipboard}
                         className="limits-table__action-btn limits-table__action-btn--secondary"
                       >
@@ -813,6 +937,16 @@ export default function ABSClientSearch() {
                 <div className="limits-table">
                   <div className="limits-table__header">
                     <h2 className="limits-table__title">Данные карт</h2>
+                    <div className="limits-table__actions">
+                      {cardsData?.length > 0 && (
+                        <button
+                          onClick={handleExportCards}
+                          className="export-excel-btn"
+                        >
+                          Экспорт в Excel
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -885,6 +1019,16 @@ export default function ABSClientSearch() {
                 <div className="limits-table">
                   <div className="limits-table__header">
                     <h2 className="limits-table__title">Данные счетов</h2>
+                    <div className="limits-table__actions">
+                      {accountsData?.length > 0 && (
+                        <button
+                          onClick={handleExportAccounts}
+                          className="export-excel-btn"
+                        >
+                          Экспорт в Excel
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -947,6 +1091,16 @@ export default function ABSClientSearch() {
                 <div className="limits-table">
                   <div className="limits-table__header">
                     <h2 className="limits-table__title">Данные кредитов</h2>
+                    <div className="limits-table__actions">
+                      {creditsData?.length > 0 && (
+                        <button
+                          onClick={handleExportCredits}
+                          className="export-excel-btn"
+                        >
+                          Экспорт в Excel
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="limits-table__wrapper">
@@ -1031,6 +1185,16 @@ export default function ABSClientSearch() {
                 <div className="limits-table">
                   <div className="limits-table__header">
                     <h2 className="limits-table__title">Данные депозитов</h2>
+                    <div className="limits-table__actions">
+                      {depositsData?.length > 0 && (
+                        <button
+                          onClick={handleExportDeposits}
+                          className="export-excel-btn"
+                        >
+                          Экспорт в Excel
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="limits-table__wrapper">
