@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import "../../styles/components/ProcessingIntegration.scss";
-import "../../styles/components/BlockInfo.scss";
-import "../../styles/components/DashboardOperatorProcessingTransactions.scss";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
-import AlertMessage from "../../components/general/AlertMessage.jsx";
+import "../../../styles/components/ProcessingIntegration.scss";
+import "../../../styles/components/BlockInfo.scss";
+import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
+import useSidebar from "../../../hooks/useSideBar.js";
+import Sidebar from "../../general/DynamicMenu.jsx";
+import AlertMessage from "../../../components/general/AlertMessage.jsx";
 
 export default function DashboardAccountOperations() {
   const [displayAccountNumber, setDisplayAccountNumber] = useState("");
