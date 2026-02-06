@@ -476,6 +476,40 @@ export const idMargent = [
   { label: "Давлатова Зарина Юсуфовна", value: 19549 },
 ];
 
+export const TYPE_SEARCH_CLIENT = [
+  {
+    label: "Поиск по Номеру телефона",
+    value: "client/info?phoneNumber=",
+    inputLabel: "Номер телефона",
+  },
+  {
+    label: "Поиск по Номеру индекса",
+    value: "client/info/client-index?clientIndex=",
+    inputLabel: "Номер индекса",
+  },
+  {
+    label: "Поиск по имени пользователя",
+    value: "/abs-search/name?lname=",
+    inputLabel: "Номер индекса",
+  },
+  { label: "Поиск по INN", value: "client/info/inn?inn=", inputLabel: "INN" },
+  {
+    label: "Поиск по id карты",
+    value: "abs-search/cardidn?cardidn=",
+    inputLabel: "id карты",
+  },
+  {
+    label: "По номеру счета",
+    value: "abs-search/account?acc=",
+    inputLabel: "Номер счета",
+  },
+  {
+    label: "Поиск по последним 4 цифрам карты",
+    value: "abs-search/last-four?last4=",
+    inputLabel: "Номер индекса",
+  },
+];
+
 export const dataTrans = [
   { label: 463, value: 2 },
   { label: 477, value: 1 },
