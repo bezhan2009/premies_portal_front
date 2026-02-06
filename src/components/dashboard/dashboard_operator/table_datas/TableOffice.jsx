@@ -6,110 +6,129 @@ import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import Input from "../../../elements/Input.jsx";
 
 const OfficeTable = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [edit, setEdit] = useState(null);
-  const inputRef = useRef(null);
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [edit, setEdit] = useState(null);
+    const [editField, setEditField] = useState(null);
+    const inputRef = useRef(null);
+    const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-  const backendURL = import.meta.env.VITE_BACKEND_URL;
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetchOffices();
+            setData(res || []);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const handleChange = (key, value) => {
+        setEdit({ ...edit, [key]: value });
+    };
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetchOffices();
-      setData(res || []);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const saveChange = async (edit) => {
+        const token = localStorage.getItem("access_token");
+        try {
+            const response = await fetch(`${backendURL}/office/${edit.ID}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(edit),
+            });
+            if (!response.ok) throw new Error("Ошибка при обновлении");
+            setEdit(null);
+            setEditField(null);
+            loadData();
+        } catch (error) {
+            console.error("Ошибка:", error);
+        } finally {
+            setEdit(null);
+            setEditField(null);
+        }
+    };
 
-  const handleChange = (key, value) => {
-    setEdit({ ...edit, [key]: value });
-  };
+    const handleCellClick = (office, field) => {
+        if (!edit) {
+            setEdit(office);
+            setEditField(field);
+        }
+    };
 
-  const saveChange = async (edit) => {
-    const token = localStorage.getItem("access_token");
-    try {
-      const response = await fetch(`${backendURL}/office/${edit.ID}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(edit),
-      });
+    console.log("edit", edit);
 
-      if (!response.ok) throw new Error("Ошибка при обновлении");
-      setEdit(null);
-      loadData();
-    } catch (error) {
-      console.error("Ошибка:", error);
-    } finally {
-      setEdit(null);
-    }
-  };
+    useEffect(() => {
+        loadData();
+    }, []);
 
-  console.log("edit", edit);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-  
-
-  return (
-    <div className="report-table-container">
-      <div
-        className="table-reports-div"
-        style={{ maxHeight: "calc(100vh - 425px)" }}
-      >
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th>Название офиса</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td style={{ textAlign: "center" }}>
-                  <Spinner />
-                </td>
-              </tr>
-            )}
-
-            {!loading && data.length > 0
-              ? data.map((office) => (
-                  <tr
-                    key={office.ID}
-                    // className={edit?.ID === office.ID ? "row-updated" : ""}
-                  >
-                    <td onClick={() => !edit && setEdit(office)}>
-                      {edit?.ID === office.ID ? (
-                        <Input
-                          defValue={edit?.title || office.title}
-                          ref={inputRef}
-                          type="text"
-                          value={edit?.title}
-                          onChange={(e) => handleChange("title", e)}
-                          onEnter={() => saveChange(edit)}
-                        />
-                      ) : (
-                        office.title || "-"
-                      )}
-                    </td>
-                  </tr>
-                ))
-              : !loading && (
-                  <tr>
-                    <td style={{ textAlign: "center" }}>Нет данных</td>
-                  </tr>
-                )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    return (
+        <div className="report-table-container">
+            <div
+                className="table-reports-div"
+                style={{ maxHeight: "calc(100vh - 425px)" }}
+            >
+                <table className="table-reports">
+                    <thead>
+                    <tr>
+                        <th>Название офиса</th>
+                        <th>Код офиса</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading && (
+                        <tr>
+                            <td colSpan="2" style={{ textAlign: "center" }}>
+                                <Spinner />
+                            </td>
+                        </tr>
+                    )}
+                    {!loading && data.length > 0
+                        ? data.map((office) => (
+                            <tr key={office.ID}>
+                                <td onClick={() => handleCellClick(office, "title")}>
+                                    {edit?.ID === office.ID && editField === "title" ? (
+                                        <Input
+                                            defValue={edit?.title || office.title}
+                                            ref={inputRef}
+                                            type="text"
+                                            value={edit?.title}
+                                            onChange={(e) => handleChange("title", e)}
+                                            onEnter={() => saveChange(edit)}
+                                        />
+                                    ) : (
+                                        office.title || "-"
+                                    )}
+                                </td>
+                                <td onClick={() => handleCellClick(office, "code")}>
+                                    {edit?.ID === office.ID && editField === "code" ? (
+                                        <Input
+                                            defValue={edit?.code || office.code}
+                                            ref={inputRef}
+                                            type="text"
+                                            value={edit?.code}
+                                            onChange={(e) => handleChange("code", e)}
+                                            onEnter={() => saveChange(edit)}
+                                        />
+                                    ) : (
+                                        office.code || "-"
+                                    )}
+                                </td>
+                            </tr>
+                        ))
+                        : !loading && (
+                        <tr>
+                            <td colSpan="2" style={{ textAlign: "center" }}>
+                                Нет данных
+                            </td>
+                        </tr>
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
 };
 
 export default OfficeTable;
