@@ -17,22 +17,9 @@ import {
   MdOutlinePhonelinkRing,
   MdOutlineSmartphone,
 } from "react-icons/md";
+import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-
-const TYPE_SEARCH_CLIENT = [
-  {
-    label: "Поиск по Номеру телефона",
-    value: "?phoneNumber=",
-    inputLabel: "Номер телефона",
-  },
-  {
-    label: "Поиск по Номеру индекса",
-    value: "/client-index?clientIndex=",
-    inputLabel: "Номер индекса",
-  },
-  { label: "Поиск по INN", value: "/inn?inn=", inputLabel: "INN" },
-];
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
@@ -251,7 +238,7 @@ export default function ABSClientSearch() {
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
-        `${API_BASE_URL}/client/info${selectTypeSearchClient}${formattedPhone}`,
+        `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`,
         {
           method: "GET",
           headers: {
