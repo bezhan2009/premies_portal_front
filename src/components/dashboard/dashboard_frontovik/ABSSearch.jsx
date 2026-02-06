@@ -233,7 +233,7 @@ export default function ABSClientSearch() {
       setPhoneNumber(value);
       setDisplayPhone(value);
     } else {
-      const digitsOnly = value.replace(/\D/g, "");
+      const digitsOnly = value;
       setPhoneNumber(digitsOnly);
       setDisplayPhone(formatPhoneNumber(digitsOnly));
     }
@@ -262,7 +262,6 @@ export default function ABSClientSearch() {
 
     // Для поиска по телефону убираем нецифровые символы
     // if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[0].value) {
-    formattedPhone = formattedPhone.replace(/\D/g, "");
     // }
 
     try {
@@ -270,7 +269,11 @@ export default function ABSClientSearch() {
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
-        `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`,
+        `${API_BASE_URL}/${selectTypeSearchClient}${
+          selectTypeSearchClient === TYPE_SEARCH_CLIENT?.[2]?.value
+            ? `${formattedPhone?.split(" ")?.[0] || ""}&fname=${formattedPhone?.split(" ")?.[1] || ""}`
+            : formattedPhone
+        }`,
         {
           method: "GET",
           headers: {
