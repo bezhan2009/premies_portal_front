@@ -17,10 +17,18 @@ import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useParams } from "react-router-dom";
 import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../../hooks/useTableSort.js";
+import SortIcon from "../../../general/SortIcon.jsx";
 
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
   const { exportToExcel } = useExcelExport();
+
+  const {
+    items: sortedTransactions,
+    requestSort,
+    sortConfig,
+  } = useTableSort(transactions);
   const [searchType, setSearchType] = useState("cardId"); // По умолчанию поиск по карте
   const [displayCardId, setDisplayCardId] = useState("");
   const [cardId, setCardId] = useState("");
@@ -445,7 +453,7 @@ export default function DashboardOperatorProcessingTransactions() {
       { key: "id", label: "ID транзакции" },
     ];
     exportToExcel(
-      transactions,
+      sortedTransactions,
       columns,
       `Транзакции_${searchType}_${new Date().toISOString().split("T")[0]}`,
     );
@@ -969,35 +977,181 @@ export default function DashboardOperatorProcessingTransactions() {
                     <table className="limits-table__content">
                       <thead className="limits-table__head">
                         <tr>
-                          <th className="limits-table__th">Дата</th>
-                          {/* <th className="limits-table__th">Время</th> */}
-                          <th className="limits-table__th">Статус</th>
-                          <th className="limits-table__th">Номер карты</th>
-                          <th className="limits-table__th">ID карты</th>
-                          <th className="limits-table__th">Тип операции</th>
-                          <th className="limits-table__th">Сумма операции</th>
-                          <th className="limits-table__th">Валюта</th>
-                          <th className="limits-table__th">
-                            Сумма в валюте карты
+                          <th
+                            onClick={() => requestSort("localTransactionDate")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Дата{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="localTransactionDate"
+                            />
                           </th>
-                          <th className="limits-table__th">Доступный баланс</th>
-                          <th className="limits-table__th">Баланс карты</th>
-                          <th className="limits-table__th">
-                            Номер операции в ПЦ
+                          <th
+                            onClick={() => requestSort("responseDescription")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Статус{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="responseDescription"
+                            />
                           </th>
-                          <th className="limits-table__th">ID терминала</th>
-                          <th className="limits-table__th">ID АТМ</th>
-                          <th className="limits-table__th">
-                            Запрошенная сумма
+                          <th
+                            onClick={() => requestSort("cardNumber")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Номер карты{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="cardNumber"
+                            />
                           </th>
-                          <th className="limits-table__th">Адрес терминала</th>
-                          <th className="limits-table__th">MCC код</th>
-                          <th className="limits-table__th">Счет</th>
-                          <th className="limits-table__th">ID транзакции</th>
+                          <th
+                            onClick={() => requestSort("cardId")}
+                            className="limits-table__th sortable-header"
+                          >
+                            ID карты{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="cardId"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("transactionTypeName")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Тип операции{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="transactionTypeName"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("amount")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Сумма операции{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="amount"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("currency")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Валюта{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="currency"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("conamt")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Сумма в валюте карты{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="conamt"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("acctbal")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Доступный баланс{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="acctbal"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("netbal")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Баланс карты{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="netbal"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("utrnno")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Номер операции в ПЦ{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="utrnno"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("terminalId")}
+                            className="limits-table__th sortable-header"
+                          >
+                            ID терминала{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="terminalId"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("atmId")}
+                            className="limits-table__th sortable-header"
+                          >
+                            ID АТМ{" "}
+                            <SortIcon sortConfig={sortConfig} sortKey="atmId" />
+                          </th>
+                          <th
+                            onClick={() => requestSort("reqamt")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Запрошенная сумма{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="reqamt"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("terminalAddress")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Адрес терминала{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="terminalAddress"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("mcc")}
+                            className="limits-table__th sortable-header"
+                          >
+                            MCC код{" "}
+                            <SortIcon sortConfig={sortConfig} sortKey="mcc" />
+                          </th>
+                          <th
+                            onClick={() => requestSort("account")}
+                            className="limits-table__th sortable-header"
+                          >
+                            Счет{" "}
+                            <SortIcon
+                              sortConfig={sortConfig}
+                              sortKey="account"
+                            />
+                          </th>
+                          <th
+                            onClick={() => requestSort("id")}
+                            className="limits-table__th sortable-header"
+                          >
+                            ID транзакции{" "}
+                            <SortIcon sortConfig={sortConfig} sortKey="id" />
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {transactions.map((transaction) => (
+                        {sortedTransactions.map((transaction) => (
                           <tr
                             key={transaction.id}
                             className={`limits-table__row transaction-row `}
@@ -1131,10 +1285,10 @@ export default function DashboardOperatorProcessingTransactions() {
                   <div className="limits-table__footer">
                     <div className="limits-table__stats">
                       <span className="limits-table__stat">
-                        Всего записей: {transactions.length}
+                        Всего записей: {sortedTransactions.length}
                       </span>
                       <span className="limits-table__stat">
-                        Показано: {transactions.length}
+                        Показано: {sortedTransactions.length}
                       </span>
                       {needsDateBlock && fromDate && toDate && (
                         <span className="limits-table__stat">

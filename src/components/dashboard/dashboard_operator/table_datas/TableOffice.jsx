@@ -5,6 +5,8 @@ import Spinner from "../../../Spinner.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import Input from "../../../elements/Input.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../../hooks/useTableSort.js";
+import SortIcon from "../../../general/SortIcon.jsx";
 
 const OfficeTable = () => {
   const [data, setData] = useState([]);
@@ -14,6 +16,8 @@ const OfficeTable = () => {
   const inputRef = useRef(null);
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
+
+  const { items: sortedData, requestSort, sortConfig } = useTableSort(data);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -70,7 +74,7 @@ const OfficeTable = () => {
       { key: "title", label: "Название офиса" },
       { key: "code", label: "Код офиса" },
     ];
-    exportToExcel(data, columns, "Офисы");
+    exportToExcel(sortedData, columns, "Офисы");
   };
 
   return (
@@ -88,8 +92,19 @@ const OfficeTable = () => {
         <table className="table-reports">
           <thead>
             <tr>
-              <th>Название офиса</th>
-              <th>Код офиса</th>
+              <th
+                onClick={() => requestSort("title")}
+                className="sortable-header"
+              >
+                Название офиса{" "}
+                <SortIcon sortConfig={sortConfig} sortKey="title" />
+              </th>
+              <th
+                onClick={() => requestSort("code")}
+                className="sortable-header"
+              >
+                Код офиса <SortIcon sortConfig={sortConfig} sortKey="code" />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -100,8 +115,8 @@ const OfficeTable = () => {
                 </td>
               </tr>
             )}
-            {!loading && data.length > 0
-              ? data.map((office) => (
+            {!loading && sortedData.length > 0
+              ? sortedData.map((office) => (
                   <tr key={office.ID}>
                     <td onClick={() => handleCellClick(office, "title")}>
                       {edit?.ID === office.ID && editField === "title" ? (

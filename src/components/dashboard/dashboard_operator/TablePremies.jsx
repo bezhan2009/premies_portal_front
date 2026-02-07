@@ -9,6 +9,8 @@ import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
 import { useWorkers } from "../../../hooks/useWorkers";
 import DownloadModal from "./DownloadModal.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../hooks/useTableSort.js";
+import SortIcon from "../../general/SortIcon.jsx";
 
 const TablePremies = ({ month, year }) => {
   const {
@@ -32,6 +34,20 @@ const TablePremies = ({ month, year }) => {
   const [downloadMonth, setDownloadMonth] = useState("");
   const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
   const { exportToExcel } = useExcelExport();
+
+  // Enhance workers with calculated values for easier sorting
+  const enhancedWorkers = React.useMemo(() => {
+    return workers.map((w) => ({
+      ...w,
+      totalPremia: calculateTotalPremia(w),
+    }));
+  }, [workers]);
+
+  const {
+    items: sortedWorkers,
+    requestSort,
+    sortConfig,
+  } = useTableSort(enhancedWorkers);
 
   const monthOptions = [
     { name: "Январь", value: 1 },
@@ -261,31 +277,140 @@ const TablePremies = ({ month, year }) => {
         <table className="table-reports">
           <thead>
             <tr>
-              <th>ФИО</th>
-              <th>План продаж (TJS)</th>
-              <th>Продано карт (шт)</th>
-              <th>Карт за всё время</th>
-              <th>Моб. банк (шт)</th>
-              <th>ЗП проект (шт)</th>
-              <th>Оборот по дебету (TJS)</th>
-              <th>Остатки по картам (TJS)</th>
-              <th>Активные карты (шт)</th>
-              <th>Оценка КЦ (балл)</th>
-              <th>Жалобы (шт)</th>
-              <th>Тесты (балл)</th>
-              <th>Итого (TJS)</th>
+              <th
+                onClick={() => requestSort("user.full_name")}
+                className="sortable-header"
+              >
+                ФИО{" "}
+                <SortIcon sortConfig={sortConfig} sortKey="user.full_name" />
+              </th>
+              <th
+                onClick={() => requestSort("plan")}
+                className="sortable-header"
+              >
+                План продаж (TJS){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="plan" />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.cards_sailed")}
+                className="sortable-header"
+              >
+                Продано карт (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.cards_sailed"
+                />
+              </th>
+              <th
+                onClick={() =>
+                  requestSort("CardSales.0.cards_sailed_in_general")
+                }
+                className="sortable-header"
+              >
+                Карт за всё время{" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.cards_sailed_in_general"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("MobileBank.0.mobile_bank_connects")}
+                className="sortable-header"
+              >
+                Моб. банк (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="MobileBank.0.mobile_bank_connects"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("salary_project")}
+                className="sortable-header"
+              >
+                ЗП проект (шт){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="salary_project" />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.deb_osd")}
+                className="sortable-header"
+              >
+                Оборот по дебету (TJS){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.deb_osd"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.out_balance")}
+                className="sortable-header"
+              >
+                Остатки по картам (TJS){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.out_balance"
+                />
+              </th>
+              <th
+                onClick={() =>
+                  requestSort("CardTurnovers.0.active_cards_perms")
+                }
+                className="sortable-header"
+              >
+                Активные карты (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardTurnovers.0.active_cards_perms"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.call_center")}
+                className="sortable-header"
+              >
+                Оценка КЦ (балл){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.call_center"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.complaint")}
+                className="sortable-header"
+              >
+                Жалобы (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.complaint"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.tests")}
+                className="sortable-header"
+              >
+                Тесты (балл){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.tests"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("totalPremia")}
+                className="sortable-header"
+              >
+                Итого (TJS){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="totalPremia" />
+              </th>
             </tr>
           </thead>
           <tbody>
-            {workers.map((w, idx) => {
+            {sortedWorkers.map((w, idx) => {
               const user = w.user || {};
               const turnover = w.CardTurnovers?.[0] || {};
               const service = w.ServiceQuality?.[0] || {};
               const card_sales = w.CardSales?.[0] || {};
               const mobile_bank = w.MobileBank?.[0] || {};
 
-              const totalPremia = calculateTotalPremia(w);
-              const isLast = idx === workers.length - 1;
+              const totalPremia = w.totalPremia;
+              const isLast = idx === sortedWorkers.length - 1;
 
               return (
                 <tr key={w.ID} ref={isLast ? lastRowRef : null}>
