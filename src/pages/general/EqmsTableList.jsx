@@ -36,62 +36,8 @@ export default function EQMSList() {
         new Date().toISOString().split("T")[0]
     );
     const accountNumber = "26202972381810638175";
-
-    // Функция проверки на "дурака" - проверяет, что платеж действительно для таможни
-    const isCustomsPayment = (transaction) => {
-        const customsKeywords = [
-            "таможн",
-            "таможен",
-            "фтс",
-            "тамож",
-            "customs",
-            "гту",
-            "ктс",
-            "таможенная",
-            "таможенный"
-        ];
-
-        const recipientName = transaction.recName ? transaction.recName.toLowerCase() : "";
-        const payerName = transaction.payerName ? transaction.payerName.toLowerCase() : "";
-
-        // Проверяем наличие ключевых слов в названии получателя или плательщика
-        const isRecipientCustoms = customsKeywords.some(keyword =>
-            recipientName.includes(keyword)
-        );
-
-        const isPayerCustoms = customsKeywords.some(keyword =>
-            payerName.includes(keyword)
-        );
-
-        // Дополнительная проверка по БИК (коды таможенных банков)
-        const customsBankCodes = [
-            "044525000", // ЦБ РФ
-            "044525187", // ГУ Банка России по ЦФО
-            "044525201", // Операционное управление Банка России
-            "049805000", // Национальный банк Республики Татарстан
-            "046577000", // Южно-Уральское ГУ Банка России
-            "047308000", // Главное управление Банка России по Пермскому краю
-            "040813000", // Дальневосточное ГУ Банка России
-        ];
-
-        const isBankCustoms = customsBankCodes.includes(transaction.recBankCode) ||
-            customsBankCodes.includes(transaction.bankCode);
-
-        // Проверка по ИНН (если известны ИНН таможенных органов)
-        const customsINNs = [
-            "770851482", // ФТС России
-            "2310021994", // Южная таможня
-            "2310042018", // Кубанская таможня
-            "7710140679", // Московская таможня
-            "7805543820", // Северо-Западная таможня
-        ];
-
-        const isINNCustoms = customsINNs.includes(transaction.recINN) ||
-            customsINNs.includes(transaction.payerINN);
-
-        // Если хотя бы одна проверка прошла - считаем платеж таможенным
-        return isRecipientCustoms || isPayerCustoms || isBankCustoms || isINNCustoms;
-    };
+    const [showSinglePayConfirmation, setShowSinglePayConfirmation] = useState(false);
+    const [singlePaymentData, setSinglePaymentData] = useState(null);
 
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
@@ -205,12 +151,7 @@ export default function EQMSList() {
     }, [filteredData]);
 
     const paySingle = async (transaction) => {
-        // Проверка на "дурака" перед отправкой
-        if (!isCustomsPayment(transaction)) {
-            throw new Error("Платеж не является таможенным. Проверьте данные получателя.");
-        }
-
-        const resp = await fetch(`${backendMain}/eqms/payyyyyyyyyy`, {
+        const resp = await fetch(`${backendMain}/eqms/payyyyy`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -265,14 +206,18 @@ export default function EQMSList() {
             return;
         }
 
-        // Проверка на "дурака" перед оплатой
-        if (!isCustomsPayment(transaction)) {
-            showAlert(
-                "Ошибка: платеж не является таможенным! Проверьте данные получателя.",
-                "error"
-            );
-            return;
-        }
+        // Показываем модальное окно подтверждения для одной таможни
+        setSinglePaymentData(transaction);
+        setShowSinglePayConfirmation(true);
+    };
+
+    // Функция для выполнения оплаты одной таможни после подтверждения
+    const performSinglePayment = async () => {
+        if (!singlePaymentData) return;
+
+        setShowSinglePayConfirmation(false);
+        const transaction = singlePaymentData;
+        setSinglePaymentData(null);
 
         setPayingIds((prev) => new Set([...prev, transaction.id]));
 
@@ -312,6 +257,11 @@ export default function EQMSList() {
         }
     };
 
+    const handleCancelSinglePayment = () => {
+        setShowSinglePayConfirmation(false);
+        setSinglePaymentData(null);
+    };
+
     const handlePayAll = async () => {
         const toPay = sortedData.filter(
             (row) =>
@@ -320,17 +270,6 @@ export default function EQMSList() {
 
         if (toPay.length === 0) {
             showAlert("Нет выбранных неоплаченных записей для оплаты", "warning");
-            return;
-        }
-
-        // Проверка всех выбранных платежей на таможенность
-        const nonCustomsPayments = toPay.filter(transaction => !isCustomsPayment(transaction));
-
-        if (nonCustomsPayments.length > 0) {
-            showAlert(
-                `Обнаружено ${nonCustomsPayments.length} не таможенных платежей! Проверьте выбранные записи.`,
-                "error"
-            );
             return;
         }
 
@@ -492,42 +431,49 @@ export default function EQMSList() {
         setSelectAll(false);
     };
 
-    // Функция для переупорядочивания заголовков таблицы
-    const getOrderedHeaders = (firstRow) => {
-        if (!firstRow) return [];
-
-        const excludedHeaders = ["payedAt", "isPayed"];
-        const allHeaders = Object.keys(firstRow).filter(
-            (header) => !excludedHeaders.includes(header)
-        );
-
-        // Перемещаем status на второе место после id
-        const orderedHeaders = [];
-
-        // Добавляем id
-        if (allHeaders.includes("id")) {
-            orderedHeaders.push("id");
-        }
-
-        // Добавляем status после id
-        if (allHeaders.includes("status")) {
-            orderedHeaders.push("status");
-        }
-
-        // Добавляем остальные заголовки в исходном порядке, исключая уже добавленные
-        allHeaders.forEach(header => {
-            if (!orderedHeaders.includes(header)) {
-                orderedHeaders.push(header);
-            }
-        });
-
-        return orderedHeaders;
+    // Маппинг колонок на русские названия
+    const columnNames = {
+        id: "ID",
+        status: "Статус платежа",
+        amount: "Сумма",
+        docId: "Номер документа",
+        transactionId: "Номер транзакций",
+        date: "Дата",
+        type_id: "Тип",
+        emailToBeNotified: "Почта",
+        meanOfPayment: "Тип платежа",
+        bankCode: "БИК",
+        payerINN: "ИНН плательщика",
+        payerName: "Имя плательщика",
+        payerBankName: "Банк плательщика",
+        payerBankCode: "БИК банка плательщика",
+        payerAcc: "Номер счета",
+        recINN: "ИНН получателя",
+        recName: "Имя получателя",
+        recBankName: "Банк получателя",
+        recBankCode: "Код банка получателя",
+        recAcc: "recAcc",
     };
 
     const tableHeaders = useMemo(() => {
         if (sortedData.length === 0) return [];
         const firstRow = sortedData[0];
-        return getOrderedHeaders(firstRow);
+        const excludedHeaders = ["payedAt", "isPayed"];
+        const allKeys = Object.keys(firstRow).filter(
+            (header) => !excludedHeaders.includes(header)
+        );
+
+        // Порядок: id, status, затем остальные
+        const orderedKeys = [];
+        if (allKeys.includes("id")) orderedKeys.push("id");
+        if (allKeys.includes("status")) orderedKeys.push("status");
+        allKeys.forEach((key) => {
+            if (key !== "id" && key !== "status") {
+                orderedKeys.push(key);
+            }
+        });
+
+        return orderedKeys;
     }, [sortedData]);
 
     const totalSelected = selectedRows.length;
@@ -901,7 +847,7 @@ export default function EQMSList() {
                                             </th>
                                             {tableHeaders.map((header) => (
                                                 <th key={header}>
-                                                    {header === "resiFlg" ? "resiFlag" : header}
+                                                    {columnNames[header] || header}
                                                 </th>
                                             ))}
                                             <th>Оплачено в</th>
@@ -1127,6 +1073,36 @@ export default function EQMSList() {
                                         Да, оплатить
                                     </button>
                                     <button className="cancel-btn" onClick={handleCancelPayment}>
+                                        Отмена
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showSinglePayConfirmation && (
+                        <div className="logout-confirmation">
+                            <div className="confirmation-box">
+                                <div>
+                                    <h1>Подтверждение оплаты</h1>
+                                    <p>
+                                        Вы точно уверены, что хотите оплатить эту таможню?
+                                        <br />
+                                        <br />
+                                        После подтверждения начнется процесс оплаты. Отменить
+                                        операцию будет невозможно.
+                                    </p>
+                                </div>
+                                <div className="confirmation-buttons">
+                                    <button
+                                        className="confirm-btn"
+                                        onClick={performSinglePayment}
+                                    >
+                                        Да, оплатить
+                                    </button>
+                                    <button
+                                        className="cancel-btn"
+                                        onClick={handleCancelSinglePayment}
+                                    >
                                         Отмена
                                     </button>
                                 </div>
