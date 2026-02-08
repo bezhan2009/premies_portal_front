@@ -371,7 +371,7 @@ export default function ABSClientSearch() {
         sessionStorage.removeItem("absClientSearchState");
     };
 
-    // Функция для поиска через ATM API (ИСПРАВЛЕНО: параметр acc для номера счета)
+    // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
         let url = "";
 
@@ -379,7 +379,7 @@ export default function ABSClientSearch() {
             case "byCardId": // По ID карты
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
                 break;
-            case "byAccount": // По номеру счета - ИСПРАВЛЕНО: используем acc
+            case "byAccount": // По номеру счета
                 url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
                 break;
             case "byName": // По фамилии и имени
@@ -440,27 +440,17 @@ export default function ABSClientSearch() {
             setIsLoading(true);
             const token = localStorage.getItem("access_token");
 
-            let response;
-            let data;
-
             // Определяем, какой API использовать
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
                 (t) => t.value === selectTypeSearchClient
             );
 
-            // Типы поиска, которые используют ATM API (индексы 3, 4, 5, 6 в массиве TYPE_SEARCH_CLIENT)
+            // Проверяем тип API по индексу (0-2: ABS, 3-6: ATM)
             if (searchTypeIndex >= 3 && searchTypeIndex <= 6) {
-                // Используем ATM API для новых типов поиска
-                const atmSearchTypes = {
-                    3: "byCardId",      // По ID карты
-                    4: "byAccount",     // По номеру счета
-                    5: "byName",        // По фамилии и имени
-                    6: "byLast4",       // По последним 4 цифрам
-                };
-
-                // Получаем массив client codes
+                // ============ ATM API ПОИСК ============
+                // Получаем массив client codes через ATM сервис
                 const clientCodes = await searchViaATMService(
-                    atmSearchTypes[searchTypeIndex],
+                    selectTypeSearchClient, // передаем напрямую value (byCardId, byAccount и т.д.)
                     formattedPhone
                 );
 
@@ -470,14 +460,17 @@ export default function ABSClientSearch() {
                     return;
                 }
 
+                // Преобразуем в массив если пришел один объект
                 const clientCodesArray = Array.isArray(clientCodes) ? clientCodes : [clientCodes];
+
+                // Получаем полные данные клиентов по их кодам через ABS API
                 const clientsPromises = clientCodesArray.map((item) =>
                     getClientByCode(item.clicode, token)
                 );
 
                 const clientsFullData = await Promise.all(clientsPromises);
 
-                // Нормализуем данные
+                // Нормализуем данные (используем формат для кода клиента)
                 const normalizedData = clientsFullData.map((client) =>
                     normalizeClientData(client, TYPE_SEARCH_CLIENT[1].value)
                 );
@@ -491,17 +484,11 @@ export default function ABSClientSearch() {
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
-                // Используем стандартный ABS API для поиска по телефону, коду клиента, ИНН
-                let apiUrl = "";
-                if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
-                    // Поиск по имени и фамилии
-                    const [lname, fname] = formattedPhone.split(" ");
-                    apiUrl = `${API_BASE_URL}${selectTypeSearchClient}${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
-                } else {
-                    apiUrl = `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`;
-                }
+                // ============ ABS API ПОИСК ============
+                // Формируем URL для стандартного ABS API
+                const apiUrl = `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`;
 
-                response = await fetch(apiUrl, {
+                const response = await fetch(apiUrl, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -519,24 +506,24 @@ export default function ABSClientSearch() {
                     return;
                 }
 
-                data = await response.json();
+                const data = await response.json();
 
                 // Нормализуем данные в зависимости от типа поиска
                 let normalizedData = [];
 
-                if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+                if (searchTypeIndex === 0) {
+                    // Поиск по телефону - данные уже в правильном формате
+                    normalizedData = Array.isArray(data) ? data : [data];
+                } else if (searchTypeIndex === 1) {
                     // Поиск по коду клиента возвращает один объект
                     normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
-                } else if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
+                } else if (searchTypeIndex === 2) {
                     // Поиск по ИНН возвращает массив
                     normalizedData = Array.isArray(data)
                         ? data.map((client) =>
                             normalizeClientData(client, selectTypeSearchClient),
                         )
                         : [normalizeClientData(data, selectTypeSearchClient)];
-                } else {
-                    // Поиск по телефону - данные уже в правильном формате
-                    normalizedData = Array.isArray(data) ? data : [data];
                 }
 
                 setClientsData(normalizedData);
@@ -549,8 +536,8 @@ export default function ABSClientSearch() {
                 }
             }
         } catch (error) {
-            console.error("Ошибка при поиске клиента в АБС:", error);
-            showAlert("Произошла ошибка при поиске клиента в АБС", "error");
+            console.error("Ошибка при поиске клиента:", error);
+            showAlert("Произошла ошибка при поиске клиента", "error");
             setClientsData([]);
         } finally {
             setIsLoading(false);
