@@ -488,20 +488,20 @@ export const TYPE_SEARCH_CLIENT = [
     inputLabel: "Номер индекса",
   },
   {
-    label: "Поиск по имени пользователя",
-    value: "/abs-search/name?lname=",
-    inputLabel: "Ведите имя и фамилию пользователя",
-  },
-  { label: "Поиск по INN", value: "client/info/inn?inn=", inputLabel: "INN" },
-  {
     label: "Поиск по id карты",
     value: "abs-search/cardidn?cardidn=",
     inputLabel: "id карты",
   },
+  { label: "Поиск по INN", value: "client/info/inn?inn=", inputLabel: "INN" },
   {
     label: "По номеру счета",
-    value: "abs-search/account?acc=",
+    value: "abs-search/cardidn?cardidn=",
     inputLabel: "Номер счета",
+  },
+  {
+    label: "Поиск по имени пользователя",
+    value: "abs-search/account?acc=",
+    inputLabel: "Ведите имя и фамилию пользователя",
   },
   {
     label: "Поиск по последним 4 цифрам карты",
