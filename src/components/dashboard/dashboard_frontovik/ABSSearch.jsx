@@ -21,10 +21,9 @@ import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
-import Spinner from "../../Spinner.jsx";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || '/api/atm';
+const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
@@ -275,67 +274,6 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
     );
 };
 
-// Компонент таблицы с сортировкой и экспортом
-const DataTable = ({
-                       title,
-                       data,
-                       sortedData,
-                       sortConfig,
-                       requestSort,
-                       columns,
-                       onExport,
-                       loading,
-                       onRowClick,
-                       children
-                   }) => {
-    return (
-        <div className="report-table-container">
-            <div className="table-header-actions" style={{ marginBottom: "10px" }}>
-                <h2>{title}</h2>
-                <button className="export-excel-btn" onClick={onExport}>
-                    Экспорт в Excel
-                </button>
-            </div>
-            <div className="table-reports-div" style={{ maxHeight: "calc(100vh - 425px)" }}>
-                <table className="table-reports">
-                    <thead>
-                    <tr>
-                        {columns.map((col) => (
-                            <th
-                                key={col.key}
-                                onClick={() => requestSort(col.sortKey || col.key)}
-                                className="sortable-header"
-                            >
-                                {col.label}
-                                <SortIcon sortConfig={sortConfig} sortKey={col.sortKey || col.key} />
-                            </th>
-                        ))}
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {loading && (
-                        <tr>
-                            <td colSpan={columns.length} style={{ textAlign: "center" }}>
-                                <Spinner />
-                            </td>
-                        </tr>
-                    )}
-                    {!loading && sortedData.length > 0 ? (
-                        children
-                    ) : !loading && (
-                        <tr>
-                            <td colSpan={columns.length} style={{ textAlign: "center" }}>
-                                Нет данных
-                            </td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
 export default function ABSClientSearch() {
     const { exportToExcel } = useExcelExport();
     const [isMobile, setIsMobile] = useState(null);
@@ -349,34 +287,24 @@ export default function ABSClientSearch() {
     const [creditsData, setCreditsData] = useState([]);
     const [depositsData, setDepositsData] = useState([]);
     const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
-        TYPE_SEARCH_CLIENT[0].value
+        TYPE_SEARCH_CLIENT[0].value,
     );
-
-    // Сортировка для всех таблиц
-    const {
-        items: sortedClients,
-        requestSort: requestSortClients,
-        sortConfig: sortClientsConfig,
-    } = useTableSort(clientsData);
 
     const {
         items: sortedCards,
         requestSort: requestSortCards,
         sortConfig: sortCardsConfig,
     } = useTableSort(cardsData);
-
     const {
         items: sortedAccounts,
         requestSort: requestSortAccounts,
         sortConfig: sortAccountsConfig,
     } = useTableSort(accountsData);
-
     const {
         items: sortedCredits,
         requestSort: requestSortCredits,
         sortConfig: sortCreditsConfig,
     } = useTableSort(creditsData);
-
     const {
         items: sortedDeposits,
         requestSort: requestSortDeposits,
@@ -412,8 +340,13 @@ export default function ABSClientSearch() {
         });
     };
 
+    const formatPhoneNumber = (value) => {
+        return value;
+    };
+
     const handlePhoneChange = (e) => {
         const value = e.target.value;
+
         // Для поиска по коду клиента разрешаем точку
         if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
             setPhoneNumber(value);
@@ -421,7 +354,7 @@ export default function ABSClientSearch() {
         } else {
             const digitsOnly = value;
             setPhoneNumber(digitsOnly);
-            setDisplayPhone(value);
+            setDisplayPhone(formatPhoneNumber(digitsOnly));
         }
     };
 
@@ -438,7 +371,7 @@ export default function ABSClientSearch() {
         sessionStorage.removeItem("absClientSearchState");
     };
 
-    // Функция для поиска через ATM API (возвращает массив client codes)
+    // Функция для поиска через ATM API (ИСПРАВЛЕНО: параметр acc для номера счета)
     const searchViaATMService = async (searchType, searchValue) => {
         let url = "";
 
@@ -446,14 +379,13 @@ export default function ABSClientSearch() {
             case "byCardId": // По ID карты
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
                 break;
-            case "byAccount": // По номеру счета
-                // ИСПРАВЛЕНО: используем параметр acc
+            case "byAccount": // По номеру счета - ИСПРАВЛЕНО: используем acc
                 url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
                 break;
             case "byName": // По фамилии и имени
-                { const [lname, fname] = searchValue.split(" ");
+                const [lname, fname] = searchValue.split(" ");
                 url = `${API_ATM_URL}/services/clientcode.php?lname=${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
-                break; }
+                break;
             case "byLast4": // По последним 4 цифрам карты
                 url = `${API_ATM_URL}/services/clientcode.php?last4=${searchValue}`;
                 break;
@@ -511,13 +443,14 @@ export default function ABSClientSearch() {
             let response;
             let data;
 
-            // Определяем индекс типа поиска
+            // Определяем, какой API использовать
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
                 (t) => t.value === selectTypeSearchClient
             );
 
-            // Типы поиска через ATM API (индексы 3, 4, 5, 6)
+            // Типы поиска, которые используют ATM API (индексы 3, 4, 5, 6 в массиве TYPE_SEARCH_CLIENT)
             if (searchTypeIndex >= 3 && searchTypeIndex <= 6) {
+                // Используем ATM API для новых типов поиска
                 const atmSearchTypes = {
                     3: "byCardId",      // По ID карты
                     4: "byAccount",     // По номеру счета
@@ -558,7 +491,7 @@ export default function ABSClientSearch() {
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
-                // Стандартный поиск через ABS API (по телефону, коду клиента, ИНН)
+                // Используем стандартный ABS API для поиска по телефону, коду клиента, ИНН
                 let apiUrl = "";
                 if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
                     // Поиск по имени и фамилии
@@ -588,18 +521,21 @@ export default function ABSClientSearch() {
 
                 data = await response.json();
 
-                // Нормализуем данные
+                // Нормализуем данные в зависимости от типа поиска
                 let normalizedData = [];
 
                 if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+                    // Поиск по коду клиента возвращает один объект
                     normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
                 } else if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
+                    // Поиск по ИНН возвращает массив
                     normalizedData = Array.isArray(data)
                         ? data.map((client) =>
                             normalizeClientData(client, selectTypeSearchClient),
                         )
                         : [normalizeClientData(data, selectTypeSearchClient)];
                 } else {
+                    // Поиск по телефону - данные уже в правильном формате
                     normalizedData = Array.isArray(data) ? data : [data];
                 }
 
@@ -656,6 +592,10 @@ export default function ABSClientSearch() {
             });
     };
 
+    const copyAllClientsToClipboard = () => {
+        copyToClipboard(JSON.stringify(clientsData, null, 2));
+    };
+
     const copySelectedClientToClipboard = () => {
         if (clientsData[selectedClientIndex]) {
             copyToClipboard(
@@ -665,17 +605,16 @@ export default function ABSClientSearch() {
     };
 
     const handleExportClientInfo = () => {
-        const exportData = [selectedClient];
-        const exportColumns = [
-            { key: "surname", label: "Фамилия" },
-            { key: "name", label: "Имя" },
-            { key: "patronymic", label: "Отчество" },
-            { key: "phone", label: "Телефон" },
-            { key: "client_code", label: "Код клиента" },
-            { key: "tax_code", label: "ИНН" },
-            { key: "client_type_name", label: "Тип клиента" },
-            { key: "dep_code", label: "Код департамента" },
+        const exportData = [
+            tableData.reduce((acc, item) => {
+                acc[item.label] = item.value || "Не указано";
+                return acc;
+            }, {}),
         ];
+        const exportColumns = tableData.map((item) => ({
+            key: item.label,
+            label: item.label,
+        }));
         exportToExcel(
             exportData,
             exportColumns,
@@ -685,56 +624,65 @@ export default function ABSClientSearch() {
 
     const handleExportCards = () => {
         const columns = [
-            { key: "cardId", label: "ID Карты", sortKey: "cardId" },
-            { key: "type", label: "Тип", sortKey: "type" },
-            { key: "statusName", label: "Статус", sortKey: "statusName" },
-            { key: "expirationDate", label: "Срок", sortKey: "expirationDate" },
-            { key: "currency", label: "Валюта", sortKey: "currency" },
-            { key: "balance", label: "Остаток", sortKey: "balance" },
+            { key: "cardId", label: "ID Карты" },
+            { key: "type", label: "Тип" },
+            { key: "statusName", label: "Статус" },
+            { key: "expirationDate", label: "Срок" },
+            { key: "currency", label: "Валюта" },
+            { key: (row) => row.accounts?.[0]?.state || "-", label: "Остаток" },
         ];
         exportToExcel(sortedCards, columns, `Карты_${selectedClient?.surname}`);
     };
 
     const handleExportAccounts = () => {
         const columns = [
-            { key: "Number", label: "Номер счета", sortKey: "Number" },
-            { key: "Balance", label: "Баланс", sortKey: "Balance" },
-            { key: "Currency", label: "Валюта", sortKey: "Currency.Code" },
-            { key: "Status", label: "Статус", sortKey: "Status.Name" },
-            { key: "DateOpened", label: "Дата открытия", sortKey: "DateOpened" },
-            { key: "Branch", label: "Филиал", sortKey: "Branch.Name" },
+            { key: "Number", label: "Номер счета" },
+            { key: (row) => `${row.Balance} ${row.Currency?.Code}`, label: "Баланс" },
+            { key: (row) => row.Status?.Name, label: "Статус" },
+            { key: "DateOpened", label: "Дата открытия" },
+            { key: (row) => row.Branch?.Name, label: "Филиал" },
         ];
         exportToExcel(sortedAccounts, columns, `Счета_${selectedClient?.surname}`);
     };
 
     const handleExportCredits = () => {
         const columns = [
-            { key: "contractNumber", label: "Номер договора", sortKey: "contractNumber" },
-            { key: "referenceId", label: "Идентификатор ссылки", sortKey: "referenceId" },
-            { key: "statusName", label: "Статус", sortKey: "statusName" },
-            { key: "amount", label: "Сумма", sortKey: "amount" },
-            { key: "currency", label: "Валюта", sortKey: "currency" },
-            { key: "documentDate", label: "Дата документа", sortKey: "documentDate" },
-            { key: "clientCode", label: "КлиентКод", sortKey: "clientCode" },
-            { key: "productCode", label: "Код продукта", sortKey: "productCode" },
-            { key: "productName", label: "Название продукта", sortKey: "productName" },
-            { key: "department", label: "Отдел", sortKey: "department" },
+            { key: "contractNumber", label: "Номер договора" },
+            { key: "referenceId", label: "Идентификатор ссылки" },
+            { key: "statusName", label: "Статус" },
+            { key: (row) => `${row.amount} ${row.currency}`, label: "Сумма" },
+            { key: "documentDate", label: "Дата документа" },
+            { key: "clientCode", label: "КлиентКод" },
+            { key: "productCode", label: "Код продукта" },
+            { key: "productName", label: "Название продукта" },
+            { key: "department", label: "Отдел" },
         ];
         exportToExcel(sortedCredits, columns, `Кредиты_${selectedClient?.surname}`);
     };
 
     const handleExportDeposits = () => {
         const columns = [
-            { key: "AgreementData.Code", label: "Номер договора", sortKey: "AgreementData.Code" },
-            { key: "AgreementData.ColvirReferenceId", label: "Референс", sortKey: "AgreementData.ColvirReferenceId" },
-            { key: "AgreementData.Status.Name", label: "Статус", sortKey: "AgreementData.Status.Name" },
-            { key: "BalanceAccounts.0.Balance", label: "Остаток депозита", sortKey: "BalanceAccounts.0.Balance" },
-            { key: "AgreementData.DateFrom", label: "Дата начала", sortKey: "AgreementData.DateFrom" },
-            { key: "AgreementData.DateTo", label: "Дата окончания", sortKey: "AgreementData.DateTo" },
-            { key: "AgreementData.Product.Name", label: "Продукт", sortKey: "AgreementData.Product.Name" },
-            { key: "AgreementData.DepoTermTU", label: "Срок", sortKey: "AgreementData.DepoTermTU" },
-            { key: "AgreementData.Department.Code", label: "Отдел", sortKey: "AgreementData.Department.Code" },
-            { key: "AgreementData.Amount", label: "Сумма договора", sortKey: "AgreementData.Amount" },
+            { key: (row) => row.AgreementData?.Code, label: "Номер договора" },
+            { key: (row) => row.AgreementData?.ColvirReferenceId, label: "Референс" },
+            { key: (row) => row.AgreementData?.Status?.Name, label: "Статус" },
+            {
+                key: (row) => row.BalanceAccounts?.[0]?.Balance || "-",
+                label: "Остаток депозита",
+            },
+            { key: (row) => row.AgreementData?.DateFrom, label: "Дата начала" },
+            { key: (row) => row.AgreementData?.DateTo, label: "Дата окончания" },
+            { key: (row) => row.AgreementData?.Product?.Name, label: "Продукт" },
+            {
+                key: (row) =>
+                    `${row.AgreementData?.DepoTermTU} ${row.AgreementData?.DepoTermTimeType}`,
+                label: "Срок",
+            },
+            { key: (row) => row.AgreementData?.Department?.Code, label: "Отдел" },
+            {
+                key: (row) =>
+                    `${row.AgreementData?.Amount} ${row.AgreementData?.Currency}`,
+                label: "Сумма договора",
+            },
         ];
         exportToExcel(
             sortedDeposits,
@@ -782,6 +730,8 @@ export default function ABSClientSearch() {
         setGraphData([]);
         setSelectedReferenceId("");
     };
+
+    console.log("isMobile", isMobile);
 
     const selectedClient =
         clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
@@ -891,7 +841,9 @@ export default function ABSClientSearch() {
     const userInfoPhone = async (phone) => {
         try {
             let isMobile = null;
+
             isMobile = await getUserInfoPhone(phone);
+
             setIsMobile(isMobile);
         } catch (e) {
             console.error(e);
@@ -1143,7 +1095,7 @@ export default function ABSClientSearch() {
                                             </button>
                                             {clientsData.length > 1 && (
                                                 <button
-                                                    onClick={() => copyToClipboard(JSON.stringify(clientsData, null, 2))}
+                                                    onClick={copyAllClientsToClipboard}
                                                     className="limits-table__action-btn limits-table__action-btn--secondary"
                                                 >
                                                     Скопировать JSON всех клиентов
@@ -1207,162 +1159,616 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Таблица карт с сортировкой и экспортом */}
-                        {sortedCards.length > 0 && (
-                            <div style={{ marginTop: "30px" }}>
-                                <DataTable
-                                    title="Карты"
-                                    data={cardsData}
-                                    sortedData={sortedCards}
-                                    sortConfig={sortCardsConfig}
-                                    requestSort={requestSortCards}
-                                    columns={[
-                                        { key: "cardId", label: "ID Карты", sortKey: "cardId" },
-                                        { key: "type", label: "Тип", sortKey: "type" },
-                                        { key: "statusName", label: "Статус", sortKey: "statusName" },
-                                        { key: "expirationDate", label: "Срок", sortKey: "expirationDate" },
-                                        { key: "currency", label: "Валюта", sortKey: "currency" },
-                                        { key: "balance", label: "Остаток", sortKey: "balance" },
-                                    ]}
-                                    onExport={handleExportCards}
-                                    loading={isLoading}
-                                >
-                                    {sortedCards.map((card, index) => (
-                                        <tr key={index}>
-                                            <td>{card.cardId}</td>
-                                            <td>{card.type}</td>
-                                            <td>{card.statusName}</td>
-                                            <td>{card.expirationDate}</td>
-                                            <td>{card.currency}</td>
-                                            <td>{card.balance}</td>
-                                        </tr>
-                                    ))}
-                                </DataTable>
-                            </div>
-                        )}
-
-                        {/* Таблица счетов с сортировкой и экспортом */}
-                        {sortedAccounts.length > 0 && (
-                            <div style={{ marginTop: "30px" }}>
-                                <DataTable
-                                    title="Счета"
-                                    data={accountsData}
-                                    sortedData={sortedAccounts}
-                                    sortConfig={sortAccountsConfig}
-                                    requestSort={requestSortAccounts}
-                                    columns={[
-                                        { key: "Number", label: "Номер счета", sortKey: "Number" },
-                                        { key: "Balance", label: "Баланс", sortKey: "Balance" },
-                                        { key: "Currency.Code", label: "Валюта", sortKey: "Currency.Code" },
-                                        { key: "Status.Name", label: "Статус", sortKey: "Status.Name" },
-                                        { key: "DateOpened", label: "Дата открытия", sortKey: "DateOpened" },
-                                        { key: "Branch.Name", label: "Филиал", sortKey: "Branch.Name" },
-                                    ]}
-                                    onExport={handleExportAccounts}
-                                    loading={isLoading}
-                                >
-                                    {sortedAccounts.map((account, index) => (
-                                        <tr key={index}>
-                                            <td>{account.Number}</td>
-                                            <td>{account.Balance}</td>
-                                            <td>{account.Currency?.Code}</td>
-                                            <td>{account.Status?.Name}</td>
-                                            <td>{account.DateOpened}</td>
-                                            <td>{account.Branch?.Name}</td>
-                                        </tr>
-                                    ))}
-                                </DataTable>
-                            </div>
-                        )}
-
-                        {/* Таблица кредитов с сортировкой и экспортом */}
-                        {sortedCredits.length > 0 && (
-                            <div style={{ marginTop: "30px" }}>
-                                <DataTable
-                                    title="Кредиты"
-                                    data={creditsData}
-                                    sortedData={sortedCredits}
-                                    sortConfig={sortCreditsConfig}
-                                    requestSort={requestSortCredits}
-                                    columns={[
-                                        { key: "contractNumber", label: "Номер договора", sortKey: "contractNumber" },
-                                        { key: "referenceId", label: "Идентификатор ссылки", sortKey: "referenceId" },
-                                        { key: "statusName", label: "Статус", sortKey: "statusName" },
-                                        { key: "amount", label: "Сумма", sortKey: "amount" },
-                                        { key: "currency", label: "Валюта", sortKey: "currency" },
-                                        { key: "documentDate", label: "Дата документа", sortKey: "documentDate" },
-                                        { key: "clientCode", label: "КлиентКод", sortKey: "clientCode" },
-                                        { key: "productCode", label: "Код продукта", sortKey: "productCode" },
-                                        { key: "productName", label: "Название продукта", sortKey: "productName" },
-                                        { key: "department", label: "Отдел", sortKey: "department" },
-                                    ]}
-                                    onExport={handleExportCredits}
-                                    loading={isLoading}
-                                >
-                                    {sortedCredits.map((credit, index) => (
-                                        <tr key={index}>
-                                            <td>{credit.contractNumber}</td>
-                                            <td>
+                        {/* Таблица карт с сортировкой и функциями */}
+                        {!selectedClient && !cardsData?.length ? (
+                            ""
+                        ) : (
+                            <div className="processing-integration__limits-table">
+                                <div className="limits-table">
+                                    <div className="limits-table__header">
+                                        <h2 className="limits-table__title">Данные карт</h2>
+                                        <div className="limits-table__actions">
+                                            {cardsData?.length > 0 && (
                                                 <button
-                                                    onClick={() => handleOpenGraph(credit.referenceId)}
-                                                    className="graph-link-btn"
+                                                    onClick={handleExportCards}
+                                                    className="export-excel-btn"
                                                 >
-                                                    {credit.referenceId}
+                                                    Экспорт в Excel
                                                 </button>
-                                            </td>
-                                            <td>{credit.statusName}</td>
-                                            <td>{credit.amount}</td>
-                                            <td>{credit.currency}</td>
-                                            <td>{credit.documentDate}</td>
-                                            <td>{credit.clientCode}</td>
-                                            <td>{credit.productCode}</td>
-                                            <td>{credit.productName}</td>
-                                            <td>{credit.department}</td>
-                                        </tr>
-                                    ))}
-                                </DataTable>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="limits-table__wrapper">
+                                        <table className="limits-table">
+                                            <thead className="limits-table__head">
+                                            <tr>
+                                                <th
+                                                    onClick={() => requestSortCards("cardId")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    ID Карты{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="cardId"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCards("type")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Тип{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="type"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCards("statusName")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Статус{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="statusName"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCards("expirationDate")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Срок{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="expirationDate"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCards("currency")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Валюта{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="currency"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCards("accounts.0.state")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Остаток{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCardsConfig}
+                                                        sortKey="accounts.0.state"
+                                                    />
+                                                </th>
+                                                <th className="limits-table__th">Действия</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="limits-table__body">
+                                            {sortedCards?.map((card, idx) => (
+                                                <tr key={idx} className="limits-table__row">
+                                                    <td className="limits-table__td">{card.cardId}</td>
+                                                    <td className="limits-table__td">{card.type}</td>
+                                                    <td className="limits-table__td">
+                                                        {card.statusName}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.expirationDate}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.currency}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.accounts?.[0]?.state || "-"}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            style={{ marginRight: 10 }}
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    "/processing/transactions/" + card.cardId,
+                                                                )
+                                                            }
+                                                        >
+                                                            История
+                                                        </button>
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            style={{ background: "#374151" }}
+                                                            onClick={() =>
+                                                                (document.location.href =
+                                                                    "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                                                                    card.cardId)
+                                                            }
+                                                        >
+                                                            Посмотреть тариф
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Таблица депозитов с сортировкой и экспортом */}
-                        {sortedDeposits.length > 0 && (
-                            <div style={{ marginTop: "30px" }}>
-                                <DataTable
-                                    title="Депозиты"
-                                    data={depositsData}
-                                    sortedData={sortedDeposits}
-                                    sortConfig={sortDepositsConfig}
-                                    requestSort={requestSortDeposits}
-                                    columns={[
-                                        { key: "AgreementData.Code", label: "Номер договора", sortKey: "AgreementData.Code" },
-                                        { key: "AgreementData.ColvirReferenceId", label: "Референс", sortKey: "AgreementData.ColvirReferenceId" },
-                                        { key: "AgreementData.Status.Name", label: "Статус", sortKey: "AgreementData.Status.Name" },
-                                        { key: "BalanceAccounts.0.Balance", label: "Остаток депозита", sortKey: "BalanceAccounts.0.Balance" },
-                                        { key: "AgreementData.DateFrom", label: "Дата начала", sortKey: "AgreementData.DateFrom" },
-                                        { key: "AgreementData.DateTo", label: "Дата окончания", sortKey: "AgreementData.DateTo" },
-                                        { key: "AgreementData.Product.Name", label: "Продукт", sortKey: "AgreementData.Product.Name" },
-                                        { key: "AgreementData.DepoTermTU", label: "Срок", sortKey: "AgreementData.DepoTermTU" },
-                                        { key: "AgreementData.Department.Code", label: "Отдел", sortKey: "AgreementData.Department.Code" },
-                                        { key: "AgreementData.Amount", label: "Сумма договора", sortKey: "AgreementData.Amount" },
-                                    ]}
-                                    onExport={handleExportDeposits}
-                                    loading={isLoading}
-                                >
-                                    {sortedDeposits.map((deposit, index) => (
-                                        <tr key={index}>
-                                            <td>{deposit.AgreementData?.Code}</td>
-                                            <td>{deposit.AgreementData?.ColvirReferenceId}</td>
-                                            <td>{deposit.AgreementData?.Status?.Name}</td>
-                                            <td>{deposit.BalanceAccounts?.[0]?.Balance || "-"}</td>
-                                            <td>{deposit.AgreementData?.DateFrom}</td>
-                                            <td>{deposit.AgreementData?.DateTo}</td>
-                                            <td>{deposit.AgreementData?.Product?.Name}</td>
-                                            <td>{deposit.AgreementData?.DepoTermTU} {deposit.AgreementData?.DepoTermTimeType}</td>
-                                            <td>{deposit.AgreementData?.Department?.Code}</td>
-                                            <td>{deposit.AgreementData?.Amount} {deposit.AgreementData?.Currency}</td>
-                                        </tr>
-                                    ))}
-                                </DataTable>
+                        {/* Таблица счетов с сортировкой и функциями */}
+                        {!selectedClient && !accountsData?.length ? (
+                            ""
+                        ) : (
+                            <div className="processing-integration__limits-table">
+                                <div className="limits-table">
+                                    <div className="limits-table__header">
+                                        <h2 className="limits-table__title">Данные счетов</h2>
+                                        <div className="limits-table__actions">
+                                            {accountsData?.length > 0 && (
+                                                <button
+                                                    onClick={handleExportAccounts}
+                                                    className="export-excel-btn"
+                                                >
+                                                    Экспорт в Excel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="limits-table__wrapper">
+                                        <table className="limits-table">
+                                            <thead className="limits-table__head">
+                                            <tr>
+                                                <th
+                                                    onClick={() => requestSortAccounts("Number")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Номер счета{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortAccountsConfig}
+                                                        sortKey="Number"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortAccounts("Balance")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Баланс{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortAccountsConfig}
+                                                        sortKey="Balance"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortAccounts("Status.Name")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Статус{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortAccountsConfig}
+                                                        sortKey="Status.Name"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortAccounts("DateOpened")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Дата открытия{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortAccountsConfig}
+                                                        sortKey="DateOpened"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortAccounts("Branch.Name")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Филиал{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortAccountsConfig}
+                                                        sortKey="Branch.Name"
+                                                    />
+                                                </th>
+                                                <th className="limits-table__th">Действия</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="limits-table__body">
+                                            {sortedAccounts.map((acc, idx) => (
+                                                <tr key={idx} className="limits-table__row">
+                                                    <td className="limits-table__td">{acc.Number}</td>
+                                                    <td className="limits-table__td">
+                                                        {acc.Balance} {acc.Currency?.Code}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {acc.Status?.Name}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {acc.DateOpened}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {acc.Branch?.Name}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    "/frontovik/account-operations?account=" +
+                                                                    acc.Number,
+                                                                )
+                                                            }
+                                                        >
+                                                            Выписки счета
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Таблица кредитов с сортировкой и функциями */}
+                        {!selectedClient && !creditsData?.length ? (
+                            ""
+                        ) : (
+                            <div className="processing-integration__limits-table">
+                                <div className="limits-table">
+                                    <div className="limits-table__header">
+                                        <h2 className="limits-table__title">Данные кредитов</h2>
+                                        <div className="limits-table__actions">
+                                            {creditsData?.length > 0 && (
+                                                <button
+                                                    onClick={handleExportCredits}
+                                                    className="export-excel-btn"
+                                                >
+                                                    Экспорт в Excel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="limits-table__wrapper">
+                                        <table className="limits-table">
+                                            <thead className="limits-table__head">
+                                            <tr>
+                                                <th
+                                                    onClick={() => requestSortCredits("contractNumber")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Номер договора{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="contractNumber"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("referenceId")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Идентификатор ссылки{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="referenceId"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("statusName")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Статус{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="statusName"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("amount")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Сумма{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="amount"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("documentDate")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Дата документа{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="documentDate"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("clientCode")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    КлиентКод{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="clientCode"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("productCode")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Код продукта{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="productCode"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("productName")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Название продукта{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="productName"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() => requestSortCredits("department")}
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Отдел{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortCreditsConfig}
+                                                        sortKey="department"
+                                                    />
+                                                </th>
+                                                <th className="limits-table__th">Действия</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="limits-table__body">
+                                            {sortedCredits?.map((card, idx) => (
+                                                <tr key={idx} className="limits-table__row">
+                                                    <td className="limits-table__td">
+                                                        {card.contractNumber}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.referenceId}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.statusName}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.amount} {card.currency}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.documentDate}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.clientCode}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.productCode}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.productName}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {card.department || "-"}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        <button
+                                                            className="selectAll-toggle"
+                                                            onClick={() =>
+                                                                handleOpenGraph(card.referenceId)
+                                                            }
+                                                            disabled={!card.referenceId}
+                                                        >
+                                                            График
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Таблица депозитов с сортировкой */}
+                        {!selectedClient && !depositsData?.length ? (
+                            ""
+                        ) : (
+                            <div className="processing-integration__limits-table">
+                                <div className="limits-table">
+                                    <div className="limits-table__header">
+                                        <h2 className="limits-table__title">Данные депозитов</h2>
+                                        <div className="limits-table__actions">
+                                            {depositsData?.length > 0 && (
+                                                <button
+                                                    onClick={handleExportDeposits}
+                                                    className="export-excel-btn"
+                                                >
+                                                    Экспорт в Excel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="limits-table__wrapper">
+                                        <table className="limits-table">
+                                            <thead className="limits-table__head">
+                                            <tr>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.Code")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Номер договора{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.Code"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits(
+                                                            "AgreementData.ColvirReferenceId",
+                                                        )
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Референс{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.ColvirReferenceId"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.Status.Name")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Статус{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.Status.Name"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("BalanceAccounts.0.Balance")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Остаток депозита{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="BalanceAccounts.0.Balance"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.DateFrom")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Дата начала{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.DateFrom"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.DateTo")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Дата окончания{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.DateTo"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.Product.Name")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Продукт{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.Product.Name"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.DepoTermTU")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Срок{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.DepoTermTU"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits(
+                                                            "AgreementData.Department.Code",
+                                                        )
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Отдел{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.Department.Code"
+                                                    />
+                                                </th>
+                                                <th
+                                                    onClick={() =>
+                                                        requestSortDeposits("AgreementData.Amount")
+                                                    }
+                                                    className="limits-table__th sortable-header"
+                                                >
+                                                    Сумма договора{" "}
+                                                    <SortIcon
+                                                        sortConfig={sortDepositsConfig}
+                                                        sortKey="AgreementData.Amount"
+                                                    />
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="limits-table__body">
+                                            {sortedDeposits?.map((item, idx) => (
+                                                <tr key={idx} className="limits-table__row">
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.Code}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.ColvirReferenceId}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.Status?.Name}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.BalanceAccounts?.[0]?.Balance || "-"}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.DateFrom}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.DateTo}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.Product?.Name}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.DepoTermTU}{" "}
+                                                        {item.AgreementData?.DepoTermTimeType}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.Department?.Code}
+                                                    </td>
+                                                    <td className="limits-table__td">
+                                                        {item.AgreementData?.Amount}{" "}
+                                                        {item.AgreementData?.Currency}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
