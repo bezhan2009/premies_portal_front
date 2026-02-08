@@ -21,41 +21,43 @@ import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
 
 export default function DashboardOperatorProcessingTransactions() {
-  const { id } = useParams();
-  const { exportToExcel } = useExcelExport();
+    const { id } = useParams();
+    const { exportToExcel } = useExcelExport();
 
-  const {
-    items: sortedTransactions,
-    requestSort,
-    sortConfig,
-  } = useTableSort(transactions);
-  const [searchType, setSearchType] = useState("cardId"); // По умолчанию поиск по карте
-  const [displayCardId, setDisplayCardId] = useState("");
-  const [cardId, setCardId] = useState("");
-  const [atmId, setAtmId] = useState("");
-  const [utrnno, setUtrnno] = useState("");
-  const [transactionType, setTransactionType] = useState("");
-  const [amountFrom, setAmountFrom] = useState("");
-  const [amountTo, setAmountTo] = useState("");
-  const [reversal, setReversal] = useState("");
-  const [mcc, setMcc] = useState("");
-  // Новые поля для поиска по BIN и типу
-  const [cardBin, setCardBin] = useState("");
-  const [searchTransactionType, setSearchTransactionType] = useState("");
-  const [searchDate, setSearchDate] = useState("");
-  const [fromTime, setFromTime] = useState("");
-  const [toTime, setToTime] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [transactions, setTransactions] = useState([]);
-  const [alert, setAlert] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+    // Перенести объявление transactions ДО useTableSort
+    const [transactions, setTransactions] = useState([]);
 
-  // Опции для выбора типа поиска
+    // Теперь useTableSort может использовать transactions
+    const {
+        items: sortedTransactions,
+        requestSort,
+        sortConfig,
+    } = useTableSort(transactions);
+
+    const [searchType, setSearchType] = useState("cardId");
+    const [displayCardId, setDisplayCardId] = useState("");
+    const [cardId, setCardId] = useState("");
+    const [atmId, setAtmId] = useState("");
+    const [utrnno, setUtrnno] = useState("");
+    const [transactionType, setTransactionType] = useState("");
+    const [amountFrom, setAmountFrom] = useState("");
+    const [amountTo, setAmountTo] = useState("");
+    const [reversal, setReversal] = useState("");
+    const [mcc, setMcc] = useState("");
+    const [cardBin, setCardBin] = useState("");
+    const [searchTransactionType, setSearchTransactionType] = useState("");
+    const [searchDate, setSearchDate] = useState("");
+    const [fromTime, setFromTime] = useState("");
+    const [toTime, setToTime] = useState("");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [alert, setAlert] = useState({
+        show: false,
+        message: "",
+        type: "success",
+    });
+
   const searchOptions = [
     { value: "cardId", label: "Поиск по идентификатору карты" },
     { value: "atmId", label: "Поиск по номеру терминала" },
