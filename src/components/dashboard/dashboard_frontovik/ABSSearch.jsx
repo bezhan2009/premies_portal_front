@@ -22,8 +22,8 @@ import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL || '/api/abs';
+const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || '/api/atm';
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
