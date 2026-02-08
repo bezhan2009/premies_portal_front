@@ -6,12 +6,20 @@ import file from "../../assets/file.jpg";
 import { useModal } from "../../hooks/useModal";
 import Modal from "../../components/modal/Modal";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
+import { useTableSort } from "../../hooks/useTableSort";
+import SortIcon from "../../components/general/SortIcon";
 
 export default function MyApplications() {
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
-  const [tableData ] = useState(tableDataDef);
+  const [initialTableData] = useState(tableDataDef);
   const { setModal } = useModal();
+
+  const {
+    items: tableData,
+    requestSort,
+    sortConfig,
+  } = useTableSort(initialTableData);
 
   console.log("selectedRows", selectedRows);
 
@@ -42,19 +50,92 @@ export default function MyApplications() {
               <thead>
                 <tr>
                   <th>Выбрать</th>
-                  <th>ID</th>
-                  <th>Статус заявки</th>
-                  <th>Коммент</th>
-                  <th>ФИО Клиента</th>
-                  <th>Телефон</th>
-                  <th>Кодовое слово</th>
-                  <th>Имя на карте</th>
-                  <th>Пол</th>
-                  <th>Резидент</th>
-                  <th>Документ</th>
-                  <th>ИНН</th>
-                  <th>Адрес</th>
-                  <th>Карта</th>
+                  <th
+                    onClick={() => requestSort("applicationId")}
+                    className="sortable-header"
+                  >
+                    ID{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="applicationId" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("status")}
+                    className="sortable-header"
+                  >
+                    Статус заявки{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="status" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("comment")}
+                    className="sortable-header"
+                  >
+                    Коммент{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="comment" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("fullName")}
+                    className="sortable-header"
+                  >
+                    ФИО Клиента{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="fullName" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("phone")}
+                    className="sortable-header"
+                  >
+                    Телефон <SortIcon sortConfig={sortConfig} sortKey="phone" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("codeWord")}
+                    className="sortable-header"
+                  >
+                    Кодовое слово{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="codeWord" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("cardName")}
+                    className="sortable-header"
+                  >
+                    Имя на карте{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="cardName" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("gender")}
+                    className="sortable-header"
+                  >
+                    Пол <SortIcon sortConfig={sortConfig} sortKey="gender" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("resident")}
+                    className="sortable-header"
+                  >
+                    Резидент{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="resident" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("document")}
+                    className="sortable-header"
+                  >
+                    Документ{" "}
+                    <SortIcon sortConfig={sortConfig} sortKey="document" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("inn")}
+                    className="sortable-header"
+                  >
+                    ИНН <SortIcon sortConfig={sortConfig} sortKey="inn" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("address")}
+                    className="sortable-header"
+                  >
+                    Адрес <SortIcon sortConfig={sortConfig} sortKey="address" />
+                  </th>
+                  <th
+                    onClick={() => requestSort("card")}
+                    className="sortable-header"
+                  >
+                    Карта <SortIcon sortConfig={sortConfig} sortKey="card" />
+                  </th>
                   <th>Сканы паспорта</th>
                   <th>Сканы подписанных доч.</th>
                   <th>Сканы по доработкам</th>
@@ -75,7 +156,7 @@ export default function MyApplications() {
                           setSelectedRows(
                             e.target.checked
                               ? [...selectedRows, row.id]
-                              : selectedRows.filter((id) => id !== row.id)
+                              : selectedRows.filter((id) => id !== row.id),
                           );
                         }}
                       />

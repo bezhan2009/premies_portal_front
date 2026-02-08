@@ -2034,3 +2034,46 @@ button:active {
   margin-bottom: 10px;
   margin: 10px auto;
 }
+
+/* Table Sorting Styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative !important;
+  transition: background-color 0.2s;
+  padding-right: 25px !important; /* Ensure space for the icon */
+
+  &:hover {
+    background-color: rgba(144, 144, 144, 0.1) !important;
+
+    .sort-icon {
+      opacity: 0.5;
+    }
+  }
+
+  .sort-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      transform 0.2s;
+    font-size: 0.9em;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    &.active {
+      opacity: 1;
+      color: #de3a38;
+    }
+
+    &.desc {
+      transform: translateY(-50%) rotate(180deg);
+    }
+  }
+}

@@ -3,6 +3,8 @@ import "../../../../styles/components/Table.scss";
 import Spinner from "../../../Spinner.jsx";
 import Input from "../../../elements/Input.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../../hooks/useTableSort.js";
+import SortIcon from "../../../general/SortIcon.jsx";
 
 const RolesLogsTable = () => {
   const [logs, setLogs] = useState([]);
@@ -14,6 +16,12 @@ const RolesLogsTable = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const { exportToExcel } = useExcelExport();
+
+  const {
+    items: sortedLogs,
+    requestSort,
+    sortConfig,
+  } = useTableSort(filteredLogs);
 
   useEffect(() => {
     const loadData = async () => {
@@ -104,7 +112,7 @@ const RolesLogsTable = () => {
       { key: (row) => row.user?.username || "N/A", label: "Пользователь" },
       { key: (row) => formatRoles(row.role_ids), label: "Роли" },
     ];
-    exportToExcel(filteredLogs, columns, "Логи_ролей");
+    exportToExcel(sortedLogs, columns, "Логи_ролей");
   };
 
   return (
@@ -155,14 +163,38 @@ const RolesLogsTable = () => {
               <table className="table-reports">
                 <thead>
                   <tr>
-                    <th>Дата</th>
-                    <th>Оператор</th>
-                    <th>Пользователь</th>
+                    <th
+                      onClick={() => requestSort("CreatedAt")}
+                      className="sortable-header"
+                    >
+                      Дата{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="CreatedAt" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("operator.username")}
+                      className="sortable-header"
+                    >
+                      Оператор{" "}
+                      <SortIcon
+                        sortConfig={sortConfig}
+                        sortKey="operator.username"
+                      />
+                    </th>
+                    <th
+                      onClick={() => requestSort("user.username")}
+                      className="sortable-header"
+                    >
+                      Пользователь{" "}
+                      <SortIcon
+                        sortConfig={sortConfig}
+                        sortKey="user.username"
+                      />
+                    </th>
                     <th>Роли</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLogs.map((row, idx) => (
+                  {sortedLogs.map((row, idx) => (
                     <tr key={idx}>
                       <td>{formatDate(row.CreatedAt)}</td>
                       <td>{row.operator?.username || "N/A"}</td>
