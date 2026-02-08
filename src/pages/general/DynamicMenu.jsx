@@ -410,11 +410,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/frontovik/abs-search",
                         key: "abs_search",
                     },
-                    {
-                        name: "Просмотр выписки со счетов",
-                        href: "/frontovik/account-operations",
-                        key: "account_operations",
-                    },
                 ],
             });
         }
@@ -452,6 +447,21 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                             href: "/atm/table",
                             key: "atm_table",
                             description: "Таблица ATM",
+                        },
+                    ],
+                });
+        }
+
+        if (roles.includes(20)) {
+            additionalLinks.push(
+                {
+                    name: "Выписки со счетов",
+                    key: "acc_operations",
+                    children: [
+                        {
+                            name: "Просмотр выписки со счетов",
+                            href: "/accounts/account-operations",
+                            key: "account_operations",
                         },
                     ],
                 });

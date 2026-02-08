@@ -54,10 +54,6 @@ const managementRoutes = (
         path="frontovik/abs-search"
         element={<DashboardFrontovikAbsSearch />}
       />
-      <Route
-        path="frontovik/account-operations"
-        element={<AccountOperations />}
-      />
     </Route>
 
     {/* Processing (Role 18) */}
@@ -81,6 +77,20 @@ const managementRoutes = (
         element={<DashboardOperatorProcessingTransactions />}
       />
     </Route>
+
+      <Route
+          element={
+              <RequireRole allowedRoles={[20]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route
+              path="accounts/account-operations"
+              element={<AccountOperations />}
+          />
+      </Route>
+
   </>
 );
 
