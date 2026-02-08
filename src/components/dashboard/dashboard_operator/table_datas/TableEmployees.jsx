@@ -7,6 +7,8 @@ import Input from "../../../elements/Input.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
 import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../../hooks/useTableSort.js";
+import SortIcon from "../../../general/SortIcon.jsx";
 
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -15,6 +17,12 @@ const EmployeesTable = () => {
   const [edit, setEdit] = useState(null);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
   const { exportToExcel } = useExcelExport();
+
+  const {
+    items: sortedEmployees,
+    requestSort,
+    sortConfig,
+  } = useTableSort(filteredEmployees);
 
   const loadData = async () => {
     setLoading(true);
@@ -78,7 +86,7 @@ const EmployeesTable = () => {
       { key: "salary", label: "Оклад" },
       { key: "group", label: "Группа продаж" },
     ];
-    exportToExcel(filteredEmployees, columns, "Сотрудники");
+    exportToExcel(sortedEmployees, columns, "Сотрудники");
   };
 
   return (
@@ -109,17 +117,57 @@ const EmployeesTable = () => {
               <table className="table-reports">
                 <thead>
                   <tr>
-                    <th>Название офиса</th>
-                    <th>ФИО</th>
-                    <th>Логин</th>
-                    <th>Должность</th>
-                    <th>Место работы</th>
-                    <th>Оклад</th>
-                    <th>Группа продаж</th>
+                    <th
+                      onClick={() => requestSort("officeTitle")}
+                      className="sortable-header"
+                    >
+                      Название офиса{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="officeTitle" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("fio")}
+                      className="sortable-header"
+                    >
+                      ФИО <SortIcon sortConfig={sortConfig} sortKey="fio" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("login")}
+                      className="sortable-header"
+                    >
+                      Логин <SortIcon sortConfig={sortConfig} sortKey="login" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("position")}
+                      className="sortable-header"
+                    >
+                      Должность{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="position" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("placeWork")}
+                      className="sortable-header"
+                    >
+                      Место работы{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="placeWork" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("salary")}
+                      className="sortable-header"
+                    >
+                      Оклад{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="salary" />
+                    </th>
+                    <th
+                      onClick={() => requestSort("group")}
+                      className="sortable-header"
+                    >
+                      Группа продаж{" "}
+                      <SortIcon sortConfig={sortConfig} sortKey="group" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((row, idx) => (
+                  {sortedEmployees.map((row, idx) => (
                     <tr key={idx}>
                       <td onClick={() => setEdit(row)}>
                         {edit?.ID === row.ID ? (

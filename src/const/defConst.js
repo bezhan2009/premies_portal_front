@@ -490,7 +490,7 @@ export const TYPE_SEARCH_CLIENT = [
   {
     label: "Поиск по имени пользователя",
     value: "/abs-search/name?lname=",
-    inputLabel: "Номер индекса",
+    inputLabel: "Ведите имя и фамилию пользователя",
   },
   { label: "Поиск по INN", value: "client/info/inn?inn=", inputLabel: "INN" },
   {
@@ -506,7 +506,7 @@ export const TYPE_SEARCH_CLIENT = [
   {
     label: "Поиск по последним 4 цифрам карты",
     value: "abs-search/last-four?last4=",
-    inputLabel: "Номер индекса",
+    inputLabel: "Ведите последним 4 цифрам карты",
   },
 ];
 

@@ -4,6 +4,8 @@ import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/AddCardPriceForm.scss";
 import "../../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../../hooks/useTableSort.js";
+import SortIcon from "../../../general/SortIcon.jsx";
 
 const TableCardMargents = () => {
   const [cards, setCards] = useState([]);
@@ -19,6 +21,8 @@ const TableCardMargents = () => {
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
+
+  const { items: sortedCards, requestSort, sortConfig } = useTableSort(cards);
 
   // загрузка всех карт
   const fetchCards = useCallback(async () => {
@@ -144,7 +148,7 @@ const TableCardMargents = () => {
       { key: "title", label: "Название" },
       { key: "code", label: "Код" },
     ];
-    exportToExcel(cards, columns, "Мерчанты");
+    exportToExcel(sortedCards, columns, "Мерчанты");
   };
 
   return (
@@ -186,14 +190,24 @@ const TableCardMargents = () => {
         <table className="table-reports">
           <thead>
             <tr>
-              <th>Название</th>
-              <th>Код</th>
+              <th
+                onClick={() => requestSort("title")}
+                className="sortable-header"
+              >
+                Название <SortIcon sortConfig={sortConfig} sortKey="title" />
+              </th>
+              <th
+                onClick={() => requestSort("code")}
+                className="sortable-header"
+              >
+                Код <SortIcon sortConfig={sortConfig} sortKey="code" />
+              </th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
-            {Array.isArray(cards) && cards.length > 0 ? (
-              cards.map((card) => (
+            {Array.isArray(sortedCards) && sortedCards.length > 0 ? (
+              sortedCards.map((card) => (
                 <tr key={card.ID}>
                   <td onDoubleClick={() => handleDoubleClick(card)}>
                     {editId === card.ID ? (
