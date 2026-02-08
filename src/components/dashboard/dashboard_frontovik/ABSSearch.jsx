@@ -21,8 +21,9 @@ import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
+import Spinner from "../../Spinner.jsx";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL || '/api/abs';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || '/api/atm';
 
 // Функция для нормализации данных клиента
@@ -274,6 +275,67 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
     );
 };
 
+// Компонент таблицы с сортировкой и экспортом
+const DataTable = ({
+                       title,
+                       data,
+                       sortedData,
+                       sortConfig,
+                       requestSort,
+                       columns,
+                       onExport,
+                       loading,
+                       onRowClick,
+                       children
+                   }) => {
+    return (
+        <div className="report-table-container">
+            <div className="table-header-actions" style={{ marginBottom: "10px" }}>
+                <h2>{title}</h2>
+                <button className="export-excel-btn" onClick={onExport}>
+                    Экспорт в Excel
+                </button>
+            </div>
+            <div className="table-reports-div" style={{ maxHeight: "calc(100vh - 425px)" }}>
+                <table className="table-reports">
+                    <thead>
+                    <tr>
+                        {columns.map((col) => (
+                            <th
+                                key={col.key}
+                                onClick={() => requestSort(col.sortKey || col.key)}
+                                className="sortable-header"
+                            >
+                                {col.label}
+                                <SortIcon sortConfig={sortConfig} sortKey={col.sortKey || col.key} />
+                            </th>
+                        ))}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading && (
+                        <tr>
+                            <td colSpan={columns.length} style={{ textAlign: "center" }}>
+                                <Spinner />
+                            </td>
+                        </tr>
+                    )}
+                    {!loading && sortedData.length > 0 ? (
+                        children
+                    ) : !loading && (
+                        <tr>
+                            <td colSpan={columns.length} style={{ textAlign: "center" }}>
+                                Нет данных
+                            </td>
+                        </tr>
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 export default function ABSClientSearch() {
     const { exportToExcel } = useExcelExport();
     const [isMobile, setIsMobile] = useState(null);
@@ -287,24 +349,34 @@ export default function ABSClientSearch() {
     const [creditsData, setCreditsData] = useState([]);
     const [depositsData, setDepositsData] = useState([]);
     const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
-        TYPE_SEARCH_CLIENT[0].value,
+        TYPE_SEARCH_CLIENT[0].value
     );
+
+    // Сортировка для всех таблиц
+    const {
+        items: sortedClients,
+        requestSort: requestSortClients,
+        sortConfig: sortClientsConfig,
+    } = useTableSort(clientsData);
 
     const {
         items: sortedCards,
         requestSort: requestSortCards,
         sortConfig: sortCardsConfig,
     } = useTableSort(cardsData);
+
     const {
         items: sortedAccounts,
         requestSort: requestSortAccounts,
         sortConfig: sortAccountsConfig,
     } = useTableSort(accountsData);
+
     const {
         items: sortedCredits,
         requestSort: requestSortCredits,
         sortConfig: sortCreditsConfig,
     } = useTableSort(creditsData);
+
     const {
         items: sortedDeposits,
         requestSort: requestSortDeposits,
@@ -340,13 +412,8 @@ export default function ABSClientSearch() {
         });
     };
 
-    const formatPhoneNumber = (value) => {
-        return value;
-    };
-
     const handlePhoneChange = (e) => {
         const value = e.target.value;
-
         // Для поиска по коду клиента разрешаем точку
         if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
             setPhoneNumber(value);
@@ -354,7 +421,7 @@ export default function ABSClientSearch() {
         } else {
             const digitsOnly = value;
             setPhoneNumber(digitsOnly);
-            setDisplayPhone(formatPhoneNumber(digitsOnly));
+            setDisplayPhone(value);
         }
     };
 
@@ -380,6 +447,7 @@ export default function ABSClientSearch() {
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
                 break;
             case "byAccount": // По номеру счета
+                // ИСПРАВЛЕНО: используем параметр acc
                 url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
                 break;
             case "byName": // По фамилии и имени
@@ -405,7 +473,6 @@ export default function ABSClientSearch() {
         }
 
         const data = await response.json();
-        // Ожидаем массив вида: [{"clicode":"6100.000354"},{"clicode":"5100.054153"}]
         return data;
     };
 
@@ -492,20 +559,22 @@ export default function ABSClientSearch() {
                 }
             } else {
                 // Стандартный поиск через ABS API (по телефону, коду клиента, ИНН)
-                response = await fetch(
-                    `${API_BASE_URL}/${selectTypeSearchClient}${
-                        selectTypeSearchClient === TYPE_SEARCH_CLIENT?.[2]?.value
-                            ? `${formattedPhone?.split(" ")?.[0] || ""}&fname=${formattedPhone?.split(" ")?.[1] || ""}`
-                            : formattedPhone
-                    }`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                let apiUrl = "";
+                if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[2].value) {
+                    // Поиск по имени и фамилии
+                    const [lname, fname] = formattedPhone.split(" ");
+                    apiUrl = `${API_BASE_URL}${selectTypeSearchClient}${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
+                } else {
+                    apiUrl = `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`;
+                }
+
+                response = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -587,10 +656,6 @@ export default function ABSClientSearch() {
             });
     };
 
-    const copyAllClientsToClipboard = () => {
-        copyToClipboard(JSON.stringify(clientsData, null, 2));
-    };
-
     const copySelectedClientToClipboard = () => {
         if (clientsData[selectedClientIndex]) {
             copyToClipboard(
@@ -600,16 +665,17 @@ export default function ABSClientSearch() {
     };
 
     const handleExportClientInfo = () => {
-        const exportData = [
-            tableData.reduce((acc, item) => {
-                acc[item.label] = item.value || "Не указано";
-                return acc;
-            }, {}),
+        const exportData = [selectedClient];
+        const exportColumns = [
+            { key: "surname", label: "Фамилия" },
+            { key: "name", label: "Имя" },
+            { key: "patronymic", label: "Отчество" },
+            { key: "phone", label: "Телефон" },
+            { key: "client_code", label: "Код клиента" },
+            { key: "tax_code", label: "ИНН" },
+            { key: "client_type_name", label: "Тип клиента" },
+            { key: "dep_code", label: "Код департамента" },
         ];
-        const exportColumns = tableData.map((item) => ({
-            key: item.label,
-            label: item.label,
-        }));
         exportToExcel(
             exportData,
             exportColumns,
@@ -619,65 +685,56 @@ export default function ABSClientSearch() {
 
     const handleExportCards = () => {
         const columns = [
-            { key: "cardId", label: "ID Карты" },
-            { key: "type", label: "Тип" },
-            { key: "statusName", label: "Статус" },
-            { key: "expirationDate", label: "Срок" },
-            { key: "currency", label: "Валюта" },
-            { key: (row) => row.accounts?.[0]?.state || "-", label: "Остаток" },
+            { key: "cardId", label: "ID Карты", sortKey: "cardId" },
+            { key: "type", label: "Тип", sortKey: "type" },
+            { key: "statusName", label: "Статус", sortKey: "statusName" },
+            { key: "expirationDate", label: "Срок", sortKey: "expirationDate" },
+            { key: "currency", label: "Валюта", sortKey: "currency" },
+            { key: "balance", label: "Остаток", sortKey: "balance" },
         ];
         exportToExcel(sortedCards, columns, `Карты_${selectedClient?.surname}`);
     };
 
     const handleExportAccounts = () => {
         const columns = [
-            { key: "Number", label: "Номер счета" },
-            { key: (row) => `${row.Balance} ${row.Currency?.Code}`, label: "Баланс" },
-            { key: (row) => row.Status?.Name, label: "Статус" },
-            { key: "DateOpened", label: "Дата открытия" },
-            { key: (row) => row.Branch?.Name, label: "Филиал" },
+            { key: "Number", label: "Номер счета", sortKey: "Number" },
+            { key: "Balance", label: "Баланс", sortKey: "Balance" },
+            { key: "Currency", label: "Валюта", sortKey: "Currency.Code" },
+            { key: "Status", label: "Статус", sortKey: "Status.Name" },
+            { key: "DateOpened", label: "Дата открытия", sortKey: "DateOpened" },
+            { key: "Branch", label: "Филиал", sortKey: "Branch.Name" },
         ];
         exportToExcel(sortedAccounts, columns, `Счета_${selectedClient?.surname}`);
     };
 
     const handleExportCredits = () => {
         const columns = [
-            { key: "contractNumber", label: "Номер договора" },
-            { key: "referenceId", label: "Идентификатор ссылки" },
-            { key: "statusName", label: "Статус" },
-            { key: (row) => `${row.amount} ${row.currency}`, label: "Сумма" },
-            { key: "documentDate", label: "Дата документа" },
-            { key: "clientCode", label: "КлиентКод" },
-            { key: "productCode", label: "Код продукта" },
-            { key: "productName", label: "Название продукта" },
-            { key: "department", label: "Отдел" },
+            { key: "contractNumber", label: "Номер договора", sortKey: "contractNumber" },
+            { key: "referenceId", label: "Идентификатор ссылки", sortKey: "referenceId" },
+            { key: "statusName", label: "Статус", sortKey: "statusName" },
+            { key: "amount", label: "Сумма", sortKey: "amount" },
+            { key: "currency", label: "Валюта", sortKey: "currency" },
+            { key: "documentDate", label: "Дата документа", sortKey: "documentDate" },
+            { key: "clientCode", label: "КлиентКод", sortKey: "clientCode" },
+            { key: "productCode", label: "Код продукта", sortKey: "productCode" },
+            { key: "productName", label: "Название продукта", sortKey: "productName" },
+            { key: "department", label: "Отдел", sortKey: "department" },
         ];
         exportToExcel(sortedCredits, columns, `Кредиты_${selectedClient?.surname}`);
     };
 
     const handleExportDeposits = () => {
         const columns = [
-            { key: (row) => row.AgreementData?.Code, label: "Номер договора" },
-            { key: (row) => row.AgreementData?.ColvirReferenceId, label: "Референс" },
-            { key: (row) => row.AgreementData?.Status?.Name, label: "Статус" },
-            {
-                key: (row) => row.BalanceAccounts?.[0]?.Balance || "-",
-                label: "Остаток депозита",
-            },
-            { key: (row) => row.AgreementData?.DateFrom, label: "Дата начала" },
-            { key: (row) => row.AgreementData?.DateTo, label: "Дата окончания" },
-            { key: (row) => row.AgreementData?.Product?.Name, label: "Продукт" },
-            {
-                key: (row) =>
-                    `${row.AgreementData?.DepoTermTU} ${row.AgreementData?.DepoTermTimeType}`,
-                label: "Срок",
-            },
-            { key: (row) => row.AgreementData?.Department?.Code, label: "Отдел" },
-            {
-                key: (row) =>
-                    `${row.AgreementData?.Amount} ${row.AgreementData?.Currency}`,
-                label: "Сумма договора",
-            },
+            { key: "AgreementData.Code", label: "Номер договора", sortKey: "AgreementData.Code" },
+            { key: "AgreementData.ColvirReferenceId", label: "Референс", sortKey: "AgreementData.ColvirReferenceId" },
+            { key: "AgreementData.Status.Name", label: "Статус", sortKey: "AgreementData.Status.Name" },
+            { key: "BalanceAccounts.0.Balance", label: "Остаток депозита", sortKey: "BalanceAccounts.0.Balance" },
+            { key: "AgreementData.DateFrom", label: "Дата начала", sortKey: "AgreementData.DateFrom" },
+            { key: "AgreementData.DateTo", label: "Дата окончания", sortKey: "AgreementData.DateTo" },
+            { key: "AgreementData.Product.Name", label: "Продукт", sortKey: "AgreementData.Product.Name" },
+            { key: "AgreementData.DepoTermTU", label: "Срок", sortKey: "AgreementData.DepoTermTU" },
+            { key: "AgreementData.Department.Code", label: "Отдел", sortKey: "AgreementData.Department.Code" },
+            { key: "AgreementData.Amount", label: "Сумма договора", sortKey: "AgreementData.Amount" },
         ];
         exportToExcel(
             sortedDeposits,
@@ -725,8 +782,6 @@ export default function ABSClientSearch() {
         setGraphData([]);
         setSelectedReferenceId("");
     };
-
-    console.log("isMobile", isMobile);
 
     const selectedClient =
         clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
@@ -836,9 +891,7 @@ export default function ABSClientSearch() {
     const userInfoPhone = async (phone) => {
         try {
             let isMobile = null;
-
             isMobile = await getUserInfoPhone(phone);
-
             setIsMobile(isMobile);
         } catch (e) {
             console.error(e);
@@ -1060,9 +1113,7 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Остальной код остается таким же... */}
-                        {/* Таблица с данными клиента, карты, счета, кредиты, депозиты */}
-
+                        {/* Таблица с данными клиента */}
                         {selectedClient && (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
@@ -1092,7 +1143,7 @@ export default function ABSClientSearch() {
                                             </button>
                                             {clientsData.length > 1 && (
                                                 <button
-                                                    onClick={copyAllClientsToClipboard}
+                                                    onClick={() => copyToClipboard(JSON.stringify(clientsData, null, 2))}
                                                     className="limits-table__action-btn limits-table__action-btn--secondary"
                                                 >
                                                     Скопировать JSON всех клиентов
@@ -1156,8 +1207,164 @@ export default function ABSClientSearch() {
                             </div>
                         )}
 
-                        {/* Таблицы карт, счетов, кредитов и депозитов остаются без изменений */}
-                        {/* ... весь остальной код из предыдущей версии ... */}
+                        {/* Таблица карт с сортировкой и экспортом */}
+                        {sortedCards.length > 0 && (
+                            <div style={{ marginTop: "30px" }}>
+                                <DataTable
+                                    title="Карты"
+                                    data={cardsData}
+                                    sortedData={sortedCards}
+                                    sortConfig={sortCardsConfig}
+                                    requestSort={requestSortCards}
+                                    columns={[
+                                        { key: "cardId", label: "ID Карты", sortKey: "cardId" },
+                                        { key: "type", label: "Тип", sortKey: "type" },
+                                        { key: "statusName", label: "Статус", sortKey: "statusName" },
+                                        { key: "expirationDate", label: "Срок", sortKey: "expirationDate" },
+                                        { key: "currency", label: "Валюта", sortKey: "currency" },
+                                        { key: "balance", label: "Остаток", sortKey: "balance" },
+                                    ]}
+                                    onExport={handleExportCards}
+                                    loading={isLoading}
+                                >
+                                    {sortedCards.map((card, index) => (
+                                        <tr key={index}>
+                                            <td>{card.cardId}</td>
+                                            <td>{card.type}</td>
+                                            <td>{card.statusName}</td>
+                                            <td>{card.expirationDate}</td>
+                                            <td>{card.currency}</td>
+                                            <td>{card.balance}</td>
+                                        </tr>
+                                    ))}
+                                </DataTable>
+                            </div>
+                        )}
+
+                        {/* Таблица счетов с сортировкой и экспортом */}
+                        {sortedAccounts.length > 0 && (
+                            <div style={{ marginTop: "30px" }}>
+                                <DataTable
+                                    title="Счета"
+                                    data={accountsData}
+                                    sortedData={sortedAccounts}
+                                    sortConfig={sortAccountsConfig}
+                                    requestSort={requestSortAccounts}
+                                    columns={[
+                                        { key: "Number", label: "Номер счета", sortKey: "Number" },
+                                        { key: "Balance", label: "Баланс", sortKey: "Balance" },
+                                        { key: "Currency.Code", label: "Валюта", sortKey: "Currency.Code" },
+                                        { key: "Status.Name", label: "Статус", sortKey: "Status.Name" },
+                                        { key: "DateOpened", label: "Дата открытия", sortKey: "DateOpened" },
+                                        { key: "Branch.Name", label: "Филиал", sortKey: "Branch.Name" },
+                                    ]}
+                                    onExport={handleExportAccounts}
+                                    loading={isLoading}
+                                >
+                                    {sortedAccounts.map((account, index) => (
+                                        <tr key={index}>
+                                            <td>{account.Number}</td>
+                                            <td>{account.Balance}</td>
+                                            <td>{account.Currency?.Code}</td>
+                                            <td>{account.Status?.Name}</td>
+                                            <td>{account.DateOpened}</td>
+                                            <td>{account.Branch?.Name}</td>
+                                        </tr>
+                                    ))}
+                                </DataTable>
+                            </div>
+                        )}
+
+                        {/* Таблица кредитов с сортировкой и экспортом */}
+                        {sortedCredits.length > 0 && (
+                            <div style={{ marginTop: "30px" }}>
+                                <DataTable
+                                    title="Кредиты"
+                                    data={creditsData}
+                                    sortedData={sortedCredits}
+                                    sortConfig={sortCreditsConfig}
+                                    requestSort={requestSortCredits}
+                                    columns={[
+                                        { key: "contractNumber", label: "Номер договора", sortKey: "contractNumber" },
+                                        { key: "referenceId", label: "Идентификатор ссылки", sortKey: "referenceId" },
+                                        { key: "statusName", label: "Статус", sortKey: "statusName" },
+                                        { key: "amount", label: "Сумма", sortKey: "amount" },
+                                        { key: "currency", label: "Валюта", sortKey: "currency" },
+                                        { key: "documentDate", label: "Дата документа", sortKey: "documentDate" },
+                                        { key: "clientCode", label: "КлиентКод", sortKey: "clientCode" },
+                                        { key: "productCode", label: "Код продукта", sortKey: "productCode" },
+                                        { key: "productName", label: "Название продукта", sortKey: "productName" },
+                                        { key: "department", label: "Отдел", sortKey: "department" },
+                                    ]}
+                                    onExport={handleExportCredits}
+                                    loading={isLoading}
+                                >
+                                    {sortedCredits.map((credit, index) => (
+                                        <tr key={index}>
+                                            <td>{credit.contractNumber}</td>
+                                            <td>
+                                                <button
+                                                    onClick={() => handleOpenGraph(credit.referenceId)}
+                                                    className="graph-link-btn"
+                                                >
+                                                    {credit.referenceId}
+                                                </button>
+                                            </td>
+                                            <td>{credit.statusName}</td>
+                                            <td>{credit.amount}</td>
+                                            <td>{credit.currency}</td>
+                                            <td>{credit.documentDate}</td>
+                                            <td>{credit.clientCode}</td>
+                                            <td>{credit.productCode}</td>
+                                            <td>{credit.productName}</td>
+                                            <td>{credit.department}</td>
+                                        </tr>
+                                    ))}
+                                </DataTable>
+                            </div>
+                        )}
+
+                        {/* Таблица депозитов с сортировкой и экспортом */}
+                        {sortedDeposits.length > 0 && (
+                            <div style={{ marginTop: "30px" }}>
+                                <DataTable
+                                    title="Депозиты"
+                                    data={depositsData}
+                                    sortedData={sortedDeposits}
+                                    sortConfig={sortDepositsConfig}
+                                    requestSort={requestSortDeposits}
+                                    columns={[
+                                        { key: "AgreementData.Code", label: "Номер договора", sortKey: "AgreementData.Code" },
+                                        { key: "AgreementData.ColvirReferenceId", label: "Референс", sortKey: "AgreementData.ColvirReferenceId" },
+                                        { key: "AgreementData.Status.Name", label: "Статус", sortKey: "AgreementData.Status.Name" },
+                                        { key: "BalanceAccounts.0.Balance", label: "Остаток депозита", sortKey: "BalanceAccounts.0.Balance" },
+                                        { key: "AgreementData.DateFrom", label: "Дата начала", sortKey: "AgreementData.DateFrom" },
+                                        { key: "AgreementData.DateTo", label: "Дата окончания", sortKey: "AgreementData.DateTo" },
+                                        { key: "AgreementData.Product.Name", label: "Продукт", sortKey: "AgreementData.Product.Name" },
+                                        { key: "AgreementData.DepoTermTU", label: "Срок", sortKey: "AgreementData.DepoTermTU" },
+                                        { key: "AgreementData.Department.Code", label: "Отдел", sortKey: "AgreementData.Department.Code" },
+                                        { key: "AgreementData.Amount", label: "Сумма договора", sortKey: "AgreementData.Amount" },
+                                    ]}
+                                    onExport={handleExportDeposits}
+                                    loading={isLoading}
+                                >
+                                    {sortedDeposits.map((deposit, index) => (
+                                        <tr key={index}>
+                                            <td>{deposit.AgreementData?.Code}</td>
+                                            <td>{deposit.AgreementData?.ColvirReferenceId}</td>
+                                            <td>{deposit.AgreementData?.Status?.Name}</td>
+                                            <td>{deposit.BalanceAccounts?.[0]?.Balance || "-"}</td>
+                                            <td>{deposit.AgreementData?.DateFrom}</td>
+                                            <td>{deposit.AgreementData?.DateTo}</td>
+                                            <td>{deposit.AgreementData?.Product?.Name}</td>
+                                            <td>{deposit.AgreementData?.DepoTermTU} {deposit.AgreementData?.DepoTermTimeType}</td>
+                                            <td>{deposit.AgreementData?.Department?.Code}</td>
+                                            <td>{deposit.AgreementData?.Amount} {deposit.AgreementData?.Currency}</td>
+                                        </tr>
+                                    ))}
+                                </DataTable>
+                            </div>
+                        )}
 
                         {/* Индикатор загрузки */}
                         {isLoading && (
