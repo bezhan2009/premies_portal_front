@@ -470,8 +470,8 @@ export default function ABSClientSearch() {
                     return;
                 }
 
-                // Получаем полную информацию для каждого client code
-                const clientsPromises = clientCodes.map((item) =>
+                const clientCodesArray = Array.isArray(clientCodes) ? clientCodes : [clientCodes];
+                const clientsPromises = clientCodesArray.map((item) =>
                     getClientByCode(item.clicode, token)
                 );
 
