@@ -400,8 +400,10 @@ export default function ABSClientSearch() {
         url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
         break;
       case "byName": // По фамилии и имени
-        const [lname, fname] = searchValue.split(" ");
-        url = `${API_ATM_URL}/services/clientcode.php?lname=${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
+        {
+          const [lname, fname] = searchValue.split(" ");
+          url = `${API_ATM_URL}/services/clientcode.php?lname=${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
+        }
         break;
       case "byLast4": // По последним 4 цифрам карты
         url = `${API_ATM_URL}/services/clientcode.php?last4=${searchValue}`;
@@ -1447,7 +1449,7 @@ export default function ABSClientSearch() {
                                 className="selectAll-toggle"
                                 onClick={() =>
                                   navigate(
-                                    "/accounts/account-operations?account=" +
+                                    "/frontovik/account-operations?account=" +
                                       acc.Number,
                                   )
                                 }

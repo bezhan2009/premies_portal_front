@@ -476,38 +476,55 @@ export const idMargent = [
   { label: "Давлатова Зарина Юсуфовна", value: 19549 },
 ];
 
+// Типы поиска клиентов
+// Индексы 0-2: ABS API (прямые запросы к бэкенду)
+// Индексы 3-6: ATM API (через сервис 10.64.1.10, возвращают clicode)
 export const TYPE_SEARCH_CLIENT = [
-  {
-    label: "Поиск по Номеру телефона",
-    value: "client/info?phoneNumber=",
-    inputLabel: "Номер телефона",
-  },
-  {
-    label: "Поиск по Номеру индекса",
-    value: "client/info/client-index?clientIndex=",
-    inputLabel: "Номер индекса",
-  },
-  {
-    label: "Поиск по имени пользователя",
-    value: "/abs-search/name?lname=",
-    inputLabel: "Ведите имя и фамилию пользователя",
-  },
-  { label: "Поиск по INN", value: "client/info/inn?inn=", inputLabel: "INN" },
-  {
-    label: "Поиск по id карты",
-    value: "abs-search/cardidn?cardidn=",
-    inputLabel: "id карты",
-  },
-  {
-    label: "По номеру счета",
-    value: "abs-search/account?acc=",
-    inputLabel: "Номер счета",
-  },
-  {
-    label: "Поиск по последним 4 цифрам карты",
-    value: "abs-search/last-four?last4=",
-    inputLabel: "Ведите последним 4 цифрам карты",
-  },
+    // ========== ABS API ПОИСКИ (индексы 0-2) ==========
+    {
+        label: "Поиск по Номеру телефона",
+        value: "client/info?phoneNumber=",
+        inputLabel: "Номер телефона",
+        apiType: "ABS"
+    },
+    {
+        label: "Поиск по Коду клиента",
+        value: "client/info/client-index?clientIndex=",
+        inputLabel: "Код клиента",
+        apiType: "ABS"
+    },
+    {
+        label: "Поиск по ИНН",
+        value: "client/info/inn?inn=",
+        inputLabel: "ИНН",
+        apiType: "ABS"
+    },
+
+    // ========== ATM API ПОИСКИ (индексы 3-6) ==========
+    {
+        label: "Поиск по ID карты",
+        value: "byCardId",
+        inputLabel: "ID карты",
+        apiType: "ATM"
+    },
+    {
+        label: "Поиск по номеру счета",
+        value: "byAccount",
+        inputLabel: "Номер счета",
+        apiType: "ATM"
+    },
+    {
+        label: "Поиск по Фамилии и Имени",
+        value: "byName",
+        inputLabel: "Фамилия и Имя (через пробел)",
+        apiType: "ATM"
+    },
+    {
+        label: "Поиск по последним 4 цифрам карты",
+        value: "byLast4",
+        inputLabel: "Последние 4 цифры карты",
+        apiType: "ATM"
+    },
 ];
 
 export const dataTrans = [
