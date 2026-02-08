@@ -563,7 +563,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={handleCardIdChange}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="Введите идентификатор карты"
               maxLength={19}
             />
@@ -582,7 +582,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={(e) => setAtmId(e.target.value)}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="Например: 00000014"
             />
           </div>
@@ -600,7 +600,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={(e) => setUtrnno(e.target.value)}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="Например: 353403802"
             />
           </div>
@@ -618,7 +618,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={(e) => setTransactionType(e.target.value)}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="Например: 774"
             />
           </div>
@@ -637,7 +637,7 @@ export default function DashboardOperatorProcessingTransactions() {
                 onChange={(e) => setAmountFrom(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="search-card__input"
-                disabled={isLoading}
+                disabled={isLoading || !!id}
                 placeholder="Например: 10"
                 min="0"
               />
@@ -653,7 +653,7 @@ export default function DashboardOperatorProcessingTransactions() {
                 onChange={(e) => setAmountTo(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="search-card__input"
-                disabled={isLoading}
+                disabled={isLoading || !!id}
                 placeholder="Например: 1000"
                 min="0"
               />
@@ -673,7 +673,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={(e) => setReversal(e.target.value)}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="0 или 1"
               maxLength="1"
             />
@@ -692,7 +692,7 @@ export default function DashboardOperatorProcessingTransactions() {
               onChange={(e) => setMcc(e.target.value)}
               onKeyPress={handleKeyPress}
               className="search-card__input"
-              disabled={isLoading}
+              disabled={isLoading || !!id}
               placeholder="Например: 6011"
             />
           </div>
@@ -711,7 +711,7 @@ export default function DashboardOperatorProcessingTransactions() {
                 onChange={(e) => setCardBin(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="search-card__input"
-                disabled={isLoading}
+                disabled={isLoading || !!id}
                 placeholder="Например: 478687"
                 maxLength="6"
               />
@@ -730,7 +730,7 @@ export default function DashboardOperatorProcessingTransactions() {
                 onChange={(e) => setSearchTransactionType(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="search-card__input"
-                disabled={isLoading}
+                disabled={isLoading || !!id}
                 placeholder="Например: 774"
               />
             </div>
@@ -744,7 +744,7 @@ export default function DashboardOperatorProcessingTransactions() {
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
                 className="search-card__input"
-                disabled={isLoading}
+                disabled={isLoading || !!id}
               />
             </div>
             <div className="search-card__time-group">
@@ -758,7 +758,7 @@ export default function DashboardOperatorProcessingTransactions() {
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
                   className="search-card__input"
-                  disabled={isLoading}
+                  disabled={isLoading || !!id}
                   placeholder="ЧЧ:ММ"
                 />
               </div>
@@ -773,7 +773,7 @@ export default function DashboardOperatorProcessingTransactions() {
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
                   className="search-card__input"
-                  disabled={isLoading}
+                  disabled={isLoading || !!id}
                   placeholder="ЧЧ:ММ"
                 />
               </div>
