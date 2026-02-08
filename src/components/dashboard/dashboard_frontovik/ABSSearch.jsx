@@ -383,9 +383,9 @@ export default function ABSClientSearch() {
                 url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
                 break;
             case "byName": // По фамилии и имени
-                const [lname, fname] = searchValue.split(" ");
+                { const [lname, fname] = searchValue.split(" ");
                 url = `${API_ATM_URL}/services/clientcode.php?lname=${encodeURIComponent(lname || "")}&fname=${encodeURIComponent(fname || "")}`;
-                break;
+                break; }
             case "byLast4": // По последним 4 цифрам карты
                 url = `${API_ATM_URL}/services/clientcode.php?last4=${searchValue}`;
                 break;
