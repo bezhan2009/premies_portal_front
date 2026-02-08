@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import useSidebar from "../../hooks/useSideBar.js";
 import { tableDataDef } from "../../const/defConst.js";
 import Sidebar from "./DynamicMenu.jsx";
+import {toLowercaseSeparator} from "antd/es/watermark/utils.js";
 
 export default function EQMSList() {
     const { data, setData } = useFormStore();
@@ -151,7 +152,7 @@ export default function EQMSList() {
     }, [filteredData]);
 
     const paySingle = async (transaction) => {
-        const resp = await fetch(`${backendMain}/eqms/payyyyy`, {
+        const resp = await fetch(`${backendMain}/eqms/pay`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -417,7 +418,7 @@ export default function EQMSList() {
 
     const selectAllUnpaid = () => {
         const ids = sortedData
-            .filter((row) => getPaymentStatus(row) === "pending")
+            .filter((row) => getPaymentStatus(row) === "pending" && toLowercaseSeparator(row.status) === "success")
             .map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
@@ -425,7 +426,7 @@ export default function EQMSList() {
 
     const selectAllPaid = () => {
         const ids = sortedData
-            .filter((row) => getPaymentStatus(row) !== "pending")
+            .filter((row) => getPaymentStatus(row) !== "pending" && toLowercaseSeparator(row.status) === "success")
             .map((r) => r.id);
         setSelectedRows(ids);
         setSelectAll(false);
