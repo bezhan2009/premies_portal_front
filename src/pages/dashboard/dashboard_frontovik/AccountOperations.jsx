@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
@@ -9,6 +10,9 @@ import AlertMessage from "../../../components/general/AlertMessage.jsx";
 export default function DashboardAccountOperations() {
   const [displayAccountNumber, setDisplayAccountNumber] = useState("");
   const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialAccount = queryParams.get("account");
   const [accountNumber, setAccountNumber] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -79,59 +83,71 @@ export default function DashboardAccountOperations() {
     return `${d}.${m}.${y}`;
   };
 
-  const handleAccountNumberSearch = async () => {
-    if (accountNumber.trim()) {
-      // Проверяем корректность дат
-      if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
-        showAlert('Дата "С" не может быть больше даты "По"', "error");
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-        const params = new URLSearchParams();
-        if (fromDate) params.append("startDate", formatToDDMMYYYY(fromDate));
-        if (toDate) params.append("endDate", formatToDDMMYYYY(toDate));
-        params.append("accountNumber", accountNumber);
-        const url = `${baseUrl}/account/operations?${params.toString()}`;
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Ошибка при загрузке данных");
+  const handleAccountNumberSearch = useCallback(
+    async (accNum) => {
+      const targetAccount = accNum || accountNumber;
+      if (targetAccount.trim()) {
+        // Проверяем корректность дат
+        if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
+          showAlert('Дата "С" не может быть больше даты "По"', "error");
+          return;
         }
-        const data = await response.json();
-        if (data && Array.isArray(data)) {
-          const formattedTransactions = data.flatMap((day) =>
-            day.Transactions.map((tx) => ({
-              ...tx,
-              doper: day.DOPER,
-              kurs: day.Kurs,
-              sumBalOut: day.SumBalOut,
-              sumMovD: day.SumMovD,
-              sumMovC: day.SumMovC,
-              sumMovDN: day.SumMovDN,
-              sumMovCN: day.SumMovCN,
-              transactionsCount: day.TransactionsCount,
-            })),
-          );
-          setTransactions(formattedTransactions);
-          showAlert(
-            `Загружено ${formattedTransactions.length} операций`,
-            "success",
-          );
-        } else {
+        setIsLoading(true);
+        try {
+          const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+          const params = new URLSearchParams();
+          if (fromDate) params.append("startDate", formatToDDMMYYYY(fromDate));
+          if (toDate) params.append("endDate", formatToDDMMYYYY(toDate));
+          params.append("accountNumber", targetAccount);
+          const url = `${baseUrl}/account/operations?${params.toString()}`;
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error("Ошибка при загрузке данных");
+          }
+          const data = await response.json();
+          if (data && Array.isArray(data)) {
+            const formattedTransactions = data.flatMap((day) =>
+              day.Transactions.map((tx) => ({
+                ...tx,
+                doper: day.DOPER,
+                kurs: day.Kurs,
+                sumBalOut: day.SumBalOut,
+                sumMovD: day.SumMovD,
+                sumMovC: day.SumMovC,
+                sumMovDN: day.SumMovDN,
+                sumMovCN: day.SumMovCN,
+                transactionsCount: day.TransactionsCount,
+              })),
+            );
+            setTransactions(formattedTransactions);
+            showAlert(
+              `Загружено ${formattedTransactions.length} операций`,
+              "success",
+            );
+          } else {
+            setTransactions([]);
+            showAlert("Операции не найдены", "warning");
+          }
+        } catch (error) {
+          showAlert("Ошибка при загрузке данных: " + error.message, "error");
           setTransactions([]);
-          showAlert("Операции не найдены", "warning");
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        showAlert("Ошибка при загрузке данных: " + error.message, "error");
-        setTransactions([]);
-      } finally {
-        setIsLoading(false);
+      } else {
+        showAlert("Введите номер счета", "warning");
       }
-    } else {
-      showAlert("Введите номер счета", "warning");
+    },
+    [accountNumber, fromDate, toDate],
+  );
+
+  useEffect(() => {
+    if (initialAccount) {
+      setAccountNumber(initialAccount);
+      setDisplayAccountNumber(initialAccount);
+      handleAccountNumberSearch(initialAccount);
     }
-  };
+  }, [initialAccount, handleAccountNumberSearch]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
@@ -204,7 +220,7 @@ export default function DashboardAccountOperations() {
                         onChange={handleAccountNumberChange}
                         onKeyPress={handleKeyPress}
                         className="search-card__input"
-                        disabled={isLoading}
+                        disabled={isLoading || !!initialAccount}
                         placeholder="Введите номер счета"
                       />
                     </div>
@@ -246,8 +262,12 @@ export default function DashboardAccountOperations() {
                     {/* Кнопки */}
                     <div className="search-card__buttons">
                       <button
-                        onClick={handleAccountNumberSearch}
-                        disabled={!accountNumber.trim() || isLoading}
+                        onClick={() => handleAccountNumberSearch()}
+                        disabled={
+                          (!accountNumber.trim() && !initialAccount) ||
+                          isLoading ||
+                          !!initialAccount
+                        }
                         className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
                       >
                         {isLoading ? "Поиск..." : "Найти"}
@@ -519,7 +539,7 @@ export default function DashboardAccountOperations() {
             )}
             {isLoading && (
               <div className="processing-integration__loading">
-                  <div className="spinner"></div>
+                <div className="spinner"></div>
               </div>
             )}
             {!isLoading &&
