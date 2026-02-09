@@ -6,6 +6,7 @@ import "../../../styles/components/DashboardOperatorProcessingTransactions.scss"
 import useSidebar from "../../../hooks/useSideBar.js";
 import Sidebar from "../../general/DynamicMenu.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
+import { canAccessAccountOperations } from "../../api/roleHelper.js";
 
 export default function DashboardAccountOperations() {
     const [displayAccountNumber, setDisplayAccountNumber] = useState("");
@@ -21,8 +22,38 @@ export default function DashboardAccountOperations() {
         type: "success",
     });
 
+    const hasAccess = canAccessAccountOperations();
+    const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+    const [allowedAccountNumber, setAllowedAccountNumber] = useState(null);
+
     const location = useLocation();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!hasAccess) {
+            // Проверяем, есть ли разрешенный номер счета в sessionStorage
+            const storedAccountNumber = sessionStorage.getItem('allowedAccountNumber');
+            const urlParams = new URLSearchParams(location.search);
+            const urlAccount = urlParams.get('account');
+
+            if (storedAccountNumber && urlAccount && storedAccountNumber === urlAccount) {
+                // Ограниченный доступ только к этому счету
+                setIsLimitedAccess(true);
+                setAllowedAccountNumber(storedAccountNumber);
+            } else if (storedAccountNumber && !urlAccount) {
+                // Если нет номера счета в URL, но есть сохраненный, редиректим
+                setIsLimitedAccess(true);
+                setAllowedAccountNumber(storedAccountNumber);
+                navigate(`/accounts/account-operations?account=${storedAccountNumber}`, { replace: true });
+            } else {
+                // Нет доступа вообще
+                showAlert("У вас нет доступа к этой странице", "error");
+                setTimeout(() => {
+                    navigate("/", { replace: true });
+                }, 2000);
+            }
+        }
+    }, [hasAccess, location.search, navigate]);
 
     // Функция для форматирования суммы
     const formatAmount = (amount) => {
@@ -129,8 +160,12 @@ export default function DashboardAccountOperations() {
     const handleAccountNumberSearch = async (externalAccountNumber = null) => {
         const accNumber = externalAccountNumber || accountNumber;
 
+        if (isLimitedAccess && accNumber !== allowedAccountNumber) {
+            showAlert("У вас есть доступ только к просмотру выписки конкретного счета", "error");
+            return;
+        }
+
         if (accNumber.trim()) {
-            // Проверяем корректность дат
             if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
                 showAlert('Дата "С" не может быть больше даты "По"', "error");
                 return;
@@ -208,6 +243,12 @@ export default function DashboardAccountOperations() {
         navigate({ search: searchParams.toString() }, { replace: true });
     };
 
+    useEffect(() => {
+        if (isLimitedAccess) {
+            showAlert("Вы можете просматривать выписки только этого счета", "info");
+        }
+    }, [isLimitedAccess]);
+
     return (
         <>
             {alert.show && (
@@ -234,9 +275,16 @@ export default function DashboardAccountOperations() {
                             <div className="processing-integration__header">
                                 <h1 className="processing-integration__title">
                                     Мониторинг операций по счету
+                                    {isLimitedAccess && (
+                                        <span style={{ color: '#ffa500', fontSize: '0.8em', marginLeft: '10px' }}>
+                (Ограниченный доступ)
+            </span>
+                                    )}
                                 </h1>
                                 <p className="processing-integration__subtitle">
-                                    Поиск операций без ограничений
+                                    {isLimitedAccess
+                                        ? "Просмотр выписки одного счета"
+                                        : "Поиск операций без ограничений"}
                                 </p>
                             </div>
                             {/* Блок поиска с датами */}
@@ -258,7 +306,7 @@ export default function DashboardAccountOperations() {
                                                 onChange={handleAccountNumberChange}
                                                 onKeyPress={handleKeyPress}
                                                 className="search-card__input"
-                                                disabled={isLoading}
+                                                disabled={isLoading || isLimitedAccess}
                                                 placeholder="Введите номер счета"
                                             />
                                         </div>

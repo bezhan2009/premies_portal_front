@@ -21,6 +21,7 @@ import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
+import { canAccessTransactions, canAccessAccountOperations } from "../../../api/roleHelper.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
@@ -289,6 +290,10 @@ export default function ABSClientSearch() {
     const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
         TYPE_SEARCH_CLIENT[0].value,
     );
+
+    // Проверка доступа к страницам
+    const hasTransactionsAccess = canAccessTransactions();
+    const hasAccountOperationsAccess = canAccessAccountOperations();
 
     const {
         items: sortedCards,
@@ -716,6 +721,28 @@ export default function ABSClientSearch() {
         setGraphModalOpen(false);
         setGraphData([]);
         setSelectedReferenceId("");
+    };
+
+    // Обработчик перехода на историю транзакций с проверкой доступа
+    const handleNavigateToTransactions = (cardId) => {
+        if (!hasTransactionsAccess) {
+            showAlert("У вас нет доступа к просмотру истории транзакций", "error");
+            return;
+        }
+        // Сохраняем cardId в sessionStorage для валидации
+        sessionStorage.setItem('allowedCardId', cardId);
+        navigate("/processing/transactions/" + cardId);
+    };
+
+    // Обработчик перехода на выписки счета с проверкой доступа
+    const handleNavigateToAccountOperations = (accountNumber) => {
+        if (!hasAccountOperationsAccess) {
+            showAlert("У вас нет доступа к просмотру выписок счетов", "error");
+            return;
+        }
+        // Сохраняем accountNumber в sessionStorage для валидации
+        sessionStorage.setItem('allowedAccountNumber', accountNumber);
+        navigate("/accounts/account-operations?account=" + accountNumber);
     };
 
     console.log("isMobile", isMobile);
@@ -1255,10 +1282,9 @@ export default function ABSClientSearch() {
                                                             className="selectAll-toggle"
                                                             style={{ marginRight: 10 }}
                                                             onClick={() =>
-                                                                navigate(
-                                                                    "/processing/transactions/" + card.cardId,
-                                                                )
+                                                                handleNavigateToTransactions(card.cardId)
                                                             }
+                                                            title={!hasTransactionsAccess ? "У вас нет доступа" : "Просмотр истории транзакций"}
                                                         >
                                                             История
                                                         </button>
@@ -1380,11 +1406,9 @@ export default function ABSClientSearch() {
                                                         <button
                                                             className="selectAll-toggle"
                                                             onClick={() =>
-                                                                navigate(
-                                                                    "/accounts/account-operations?account=" +
-                                                                    acc.Number,
-                                                                )
+                                                                handleNavigateToAccountOperations(acc.Number)
                                                             }
+                                                            title={!hasAccountOperationsAccess ? "У вас нет доступа" : "Просмотр выписки счета"}
                                                         >
                                                             Выписки счета
                                                         </button>
