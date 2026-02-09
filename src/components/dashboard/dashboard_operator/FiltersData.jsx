@@ -20,7 +20,7 @@ const FiltersDatas = ({ onSelect }) => {
       key: "prices",
     },
     {
-      text: "Роли",
+      text: "Пользователи",
       class: "reports_filter__button--yellow",
       key: "roles",
     },

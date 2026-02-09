@@ -9,12 +9,14 @@ import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
+import Select from "../../../elements/Select.jsx";
 
 const EmployeesTable = () => {
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState(null);
+  const [allOffices, setAllOffices] = useState([]);
   const [openRoles, setOpenRoles] = useState({ data: null, open: false });
   const { exportToExcel } = useExcelExport();
 
@@ -28,6 +30,7 @@ const EmployeesTable = () => {
     setLoading(true);
     try {
       const offices = await fetchOffices();
+      setAllOffices(offices || []);
       const users = [];
       offices.forEach((office) => {
         if (office.office_user && office.office_user.length > 0) {
@@ -171,11 +174,13 @@ const EmployeesTable = () => {
                     <tr key={idx}>
                       <td onClick={() => setEdit(row)}>
                         {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.officeTitle || row.officeTitle}
-                            type="text"
+                          <Select
+                            options={allOffices.map((office) => ({
+                              value: office.title,
+                              label: office.title,
+                            }))}
                             value={edit?.officeTitle}
-                            onChange={(e) => handleChange("officeTitle", e)}
+                            onChange={(val) => handleChange("officeTitle", val)}
                             onEnter={() => saveChange(edit)}
                           />
                         ) : (
@@ -223,11 +228,13 @@ const EmployeesTable = () => {
                       </td>
                       <td onClick={() => setEdit(row)}>
                         {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.placeWork || row.placeWork}
-                            type="text"
+                          <Select
+                            options={allOffices.map((office) => ({
+                              value: office.title,
+                              label: office.title,
+                            }))}
                             value={edit?.placeWork}
-                            onChange={(e) => handleChange("placeWork", e)}
+                            onChange={(val) => handleChange("placeWork", val)}
                             onEnter={() => saveChange(edit)}
                           />
                         ) : (
