@@ -47,7 +47,7 @@ const OperatorDatasBlockInfo = () => {
       case "roles":
         return (
           <>
-            <Filters modificationDesc="Роли" />
+            <Filters modificationDesc="Пользователи" />
             <RolesTable key="roles" />
           </>
         );
