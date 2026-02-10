@@ -24,13 +24,98 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     });
     const [roles, setRoles] = useState([]);
     const [ws, setWs] = useState(null);
+    const [forcePasswordChange, setForcePasswordChange] = useState(false);
+
+    // Функция для проверки необходимости смены пароля
+    const checkPasswordChangeRequired = useCallback(() => {
+        const lastPasswordChange = localStorage.getItem("last_password_change");
+
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        // Проверка смены пароля в конце месяца
+        if (lastPasswordChange) {
+            const lastChange = new Date(lastPasswordChange);
+            const lastChangeMonth = lastChange.getMonth();
+            const lastChangeYear = lastChange.getFullYear();
+
+            // Если последняя смена была в прошлом месяце или раньше
+            if (lastChangeYear < currentYear ||
+                (lastChangeYear === currentYear && lastChangeMonth < currentMonth)) {
+                return true;
+            }
+        }
+
+        return false;
+    }, []);
+
+    // Функция для проверки дефолтного пароля
+    const checkDefaultPassword = useCallback(async () => {
+        const passwordCheckDone = localStorage.getItem("password_check_done");
+
+        // Если проверка уже была выполнена, пропускаем
+        if (passwordCheckDone === "true") {
+            return false;
+        }
+
+        const currentYear = new Date().getFullYear();
+        const defaultPassword = `Activ${currentYear}`;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/sign-in`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: defaultPassword,
+                }),
+            });
+
+            if (response.ok) {
+                // Если дефолтный пароль сработал - требуем смену
+                return true;
+            } else {
+                // Если дефолтный пароль не сработал - помечаем проверку как выполненную
+                localStorage.setItem("password_check_done", "true");
+                return false;
+            }
+        } catch (error) {
+            console.error("Ошибка при проверке дефолтного пароля:", error);
+            // В случае ошибки помечаем проверку как выполненную, чтобы не блокировать работу
+            localStorage.setItem("password_check_done", "true");
+            return false;
+        }
+    }, [username]);
+
+    // Проверка при монтировании компонента
+    useEffect(() => {
+        const performPasswordChecks = async () => {
+            // Сначала проверяем месячную смену пароля
+            const monthlyChangeRequired = checkPasswordChangeRequired();
+
+            if (monthlyChangeRequired) {
+                setForcePasswordChange(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            // Затем проверяем дефолтный пароль
+            const defaultPasswordDetected = await checkDefaultPassword();
+
+            if (defaultPasswordDetected) {
+                setForcePasswordChange(true);
+                setIsModalOpen(true);
+            }
+        };
+
+        performPasswordChecks();
+    }, [checkPasswordChangeRequired, checkDefaultPassword]);
 
     // Функция для очистки localStorage и перенаправления на логин
     const clearStorageAndRedirect = useCallback(() => {
-        // console.log("Очищаем localStorage и перенаправляем на логин...");
-        // Очищаем весь localStorage
-        // localStorage.clear();
-        // Перенаправляем на страницу логина
         navigate("/login");
     }, [navigate]);
 
@@ -62,8 +147,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             }
 
             const rolesData = await response.json();
-
-            // Извлекаем ID ролей из массива объектов
             const roleIds = rolesData.map(role => role.ID);
 
             console.log("Получены роли пользователя:", roleIds);
@@ -81,9 +164,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 const roleIds = await fetchUserRoles();
 
                 if (roleIds.length > 0) {
-                    // Сохраняем роли в localStorage
                     localStorage.setItem("role_ids", JSON.stringify(roleIds));
-                    // Обновляем состояние
                     setRoles(roleIds);
                     console.log("Роли успешно загружены и сохранены:", roleIds);
                 } else {
@@ -102,7 +183,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         const token = localStorage.getItem("access_token");
         if (!token) return;
 
-        // Передаем токен в query параметре Authorization
         const wsUrl = `${
             import.meta.env.VITE_BACKEND_URL_WS
         }/listen/roles?Authorization=${encodeURIComponent(token)}`;
@@ -118,18 +198,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 const data = JSON.parse(event.data);
                 console.log("Received roles update via WebSocket:", data);
 
-                // Если пришло сообщение об обновлении ролей, загружаем свежие роли
                 if (data.type === "roles_updated" || data.role_ids) {
-                    // Загружаем актуальные роли с сервера
                     const freshRoleIds = await fetchUserRoles();
 
                     if (freshRoleIds.length > 0) {
-                        // Обновляем localStorage
                         localStorage.setItem("role_ids", JSON.stringify(freshRoleIds));
-                        // Обновляем состояние
                         setRoles(freshRoleIds);
 
-                        // Показываем уведомление об обновлении ролей
                         setAlert({
                             show: true,
                             message: "Роли пользователя были обновлены",
@@ -145,8 +220,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         websocket.onerror = (error) => {
             console.error("WebSocket error:", error);
 
-            // Если ошибка связана с авторизацией (например, 403), очищаем хранилище
-            // Проверяем сообщение об ошибке на наличие признаков 403
             const errorMessage = error?.message || '';
             if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
                 console.log("Обнаружена ошибка 403 в WebSocket, очищаем хранилище...");
@@ -157,20 +230,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         websocket.onclose = (event) => {
             console.log("WebSocket for roles closed", event.code, event.reason);
 
-            // Проверяем, является ли код закрытия 4003 (403 Forbidden)
-            // WebSocket коды закрытия 4000-4999 используются для прикладных целей
             if (event.code === 4003 || event.reason?.includes('403') || event.reason?.includes('Forbidden')) {
                 console.log("WebSocket закрыт с кодом 403, очищаем хранилище...");
                 clearStorageAndRedirect();
                 return;
             }
 
-            // Автоматическое переподключение при аварийном закрытии
             if (event.code !== 1000 && event.code !== 1001) {
                 console.log("WebSocket connection lost. Attempting to reconnect...");
                 setTimeout(() => {
                     if (localStorage.getItem("access_token")) {
-                        // Пересоздаем соединение
                         const newWebsocket = new WebSocket(
                             `${
                                 import.meta.env.VITE_BACKEND_URL_WS
@@ -195,7 +264,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
     // Инициализация ролей из localStorage (резервный вариант)
     useEffect(() => {
-        // Проверяем, есть ли уже роли в состоянии
         if (roles.length === 0) {
             let storedRoles = [];
             try {
@@ -227,9 +295,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         (newApplication) => {
             console.log("Новая заявка в хедере:", newApplication);
 
-            // Устанавливаем красную точку
             setHasNewApplications(true);
-            // Показываем всплывающее уведомление, если пользователь не на странице заявок
             if (activeLink !== "applications") {
                 setAlert({
                     show: true,
@@ -265,7 +331,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
-        // Председатель (роль 10)
         if (roles.includes(9)) {
             additionalLinks.push({
                 name: "Статистика банка",
@@ -548,7 +613,14 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     errorData?.detail || "Походу вы ввели неправильный пароль"
                 );
             }
+
+            // Обновляем дату последней смены пароля
+            localStorage.setItem("last_password_change", new Date().toISOString());
+            // Помечаем проверку дефолтного пароля как выполненную
+            localStorage.setItem("password_check_done", "true");
+
             setIsModalOpen(false);
+            setForcePasswordChange(false);
             alert("Пароль успешно изменен!");
         } catch (err) {
             setModalError(err.message);
@@ -557,7 +629,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
     };
 
-    // Сбрасываем уведомление при клике на ссылку заявок
     const handleApplicationsClick = () => {
         setHasNewApplications(false);
         if (window.innerWidth <= 768) {
@@ -571,9 +642,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
     };
 
+    // Блокируем взаимодействие с sidebar, если требуется смена пароля
+    const sidebarStyle = forcePasswordChange ? { pointerEvents: 'none', opacity: 0.5 } : {};
+
     return (
         <>
-            {/* Всплывающее уведомление о новой заявке */}
             {alert.show && (
                 <AlertMessage
                     message={alert.message}
@@ -582,7 +655,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     duration={5000}
                 />
             )}
-            <aside className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
+            <aside className={`sidebar ${isOpen ? "open" : "collapsed"}`} style={sidebarStyle}>
                 <div className="sidebar-top">
                     <Link to="/" onClick={handleLinkClick}>
                         <LogoImageComponent
@@ -692,7 +765,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             {isModalOpen && (
                 <div className="modal-overlay">
                     <div className="modal">
-                        <h3>Смена пароля</h3>
+                        <h3>
+                            {forcePasswordChange
+                                ? "Требуется смена пароля"
+                                : "Смена пароля"}
+                        </h3>
+                        {forcePasswordChange && (
+                            <p style={{ color: '#ff6b6b', marginBottom: '15px' }}>
+                                Вы должны сменить пароль, чтобы продолжить работу с системой.
+                            </p>
+                        )}
                         <form onSubmit={handleSubmit}>
                             <label>
                                 Старый пароль:
@@ -717,9 +799,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 <button type="submit" disabled={loading}>
                                     {loading ? "Сохраняю..." : "Сменить пароль"}
                                 </button>
-                                <button type="button" onClick={() => setIsModalOpen(false)}>
-                                    Отмена
-                                </button>
+                                {!forcePasswordChange && (
+                                    <button type="button" onClick={() => setIsModalOpen(false)}>
+                                        Отмена
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>

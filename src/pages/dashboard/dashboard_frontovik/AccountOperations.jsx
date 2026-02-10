@@ -96,11 +96,16 @@ export default function DashboardAccountOperations() {
         try {
           const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
           const params = new URLSearchParams();
+          const token = localStorage.getItem("access_token");
           if (fromDate) params.append("startDate", formatToDDMMYYYY(fromDate));
           if (toDate) params.append("endDate", formatToDDMMYYYY(toDate));
           params.append("accountNumber", targetAccount);
           const url = `${baseUrl}/account/operations?${params.toString()}`;
-          const response = await fetch(url);
+          const response = await fetch(url, {
+              headers: {
+                  Authorization: `Bearer ${token}`,
+              }
+          });
           if (!response.ok) {
             throw new Error("Ошибка при загрузке данных");
           }
