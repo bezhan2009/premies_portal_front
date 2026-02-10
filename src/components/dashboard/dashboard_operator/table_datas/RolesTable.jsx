@@ -150,8 +150,11 @@ const RolesTable = () => {
 
         setActionLoading(userId);
         try {
-            const response = await fetch(`/users/${userId}`, {
+            const token = localStorage.getItem("access_token");
+
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/${userId}`, {
                 method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
@@ -176,8 +179,11 @@ const RolesTable = () => {
 
         setActionLoading(userId);
         try {
-            const response = await fetch(`/users/reset/${userId}`, {
+            const token = localStorage.getItem("access_token");
+
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/reset/${userId}`, {
                 method: "PATCH",
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
