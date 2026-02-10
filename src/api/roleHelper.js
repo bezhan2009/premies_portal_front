@@ -9,10 +9,10 @@ export const hasRole = (roleId) => {
 };
 
 // Роли для доступа к транзакциям (история карт)
-export const ROLE_PROCESSING = 17;
+export const ROLE_PROCESSING = 18;
 
 // Роли для доступа к выпискам счетов
-export const ROLE_ACCOUNT_OPERATIONS = 17;
+export const ROLE_ACCOUNT_OPERATIONS = 20;
 
 // Роль Фронтовика
 export const ROLE_FRONTOVIK = 17;
