@@ -3,11 +3,40 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/NotFound.scss'
 import { Helmet } from "react-helmet";
 
+// Функция для сохранения важных ключей перед очисткой
+const preserveImportantKeys = () => {
+    const keysToPreserve = ['last_password_change', 'password_check_done'];
+    const preserved = {};
+
+    keysToPreserve.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+            preserved[key] = value;
+        }
+    });
+
+    return preserved;
+};
+
+// Функция для восстановления важных ключей после очистки
+const restoreImportantKeys = (preserved) => {
+    Object.keys(preserved).forEach(key => {
+        localStorage.setItem(key, preserved[key]);
+    });
+};
+
 export default function PageNotFound() {
     const navigate = useNavigate();
 
     const handleFix = () => {
+        // Сохраняем важные ключи перед очисткой
+        const preserved = preserveImportantKeys();
+
         localStorage.clear();
+
+        // Восстанавливаем важные ключи
+        restoreImportantKeys(preserved);
+
         navigate('/');
     };
 
@@ -47,4 +76,3 @@ export default function PageNotFound() {
         </>
     );
 }
-

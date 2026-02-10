@@ -4,6 +4,28 @@ import { useState } from "react";
 import "../../styles/components/Logout.scss";
 import Spinner from "../Spinner.jsx";
 
+// Функция для сохранения важных ключей перед очисткой
+const preserveImportantKeys = () => {
+    const keysToPreserve = ['last_password_change', 'password_check_done'];
+    const preserved = {};
+
+    keysToPreserve.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+            preserved[key] = value;
+        }
+    });
+
+    return preserved;
+};
+
+// Функция для восстановления важных ключей после очистки
+const restoreImportantKeys = (preserved) => {
+    Object.keys(preserved).forEach(key => {
+        localStorage.setItem(key, preserved[key]);
+    });
+};
+
 function LogoutButton() {
     const navigate = useNavigate();
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -14,8 +36,12 @@ function LogoutButton() {
         const token = localStorage.getItem("access_token");
 
         if (!token) {
+            // Сохраняем важные ключи перед очисткой
+            const preserved = preserveImportantKeys();
             // Если токена нет, просто очищаем локальное хранилище
             localStorage.clear();
+            // Восстанавливаем важные ключи
+            restoreImportantKeys(preserved);
             navigate("/login");
             return;
         }
@@ -33,8 +59,14 @@ function LogoutButton() {
                 },
             });
 
+            // Сохраняем важные ключи перед очисткой
+            const preserved = preserveImportantKeys();
+
             // Независимо от ответа сервера, очищаем локальное хранилище на фронтенде
             localStorage.clear();
+
+            // Восстанавливаем важные ключи
+            restoreImportantKeys(preserved);
 
             if (!response.ok) {
                 // Логируем ошибку, но все равно продолжаем выход
@@ -43,12 +75,17 @@ function LogoutButton() {
 
             // Перенаправляем на страницу логина
             navigate("/login");
-
         } catch (err) {
             // В случае ошибки сети все равно очищаем хранилище
             console.error("Error during logout:", err);
             setError("Ошибка сети при выходе, но сессия очищена локально");
+
+            // Сохраняем важные ключи перед очисткой
+            const preserved = preserveImportantKeys();
             localStorage.clear();
+            // Восстанавливаем важные ключи
+            restoreImportantKeys(preserved);
+
             navigate("/login");
         } finally {
             setIsLoading(false);
