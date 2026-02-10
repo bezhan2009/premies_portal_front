@@ -19,7 +19,7 @@ import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
-import { canAccessTransactions } from "../../../../api/roleHelper.js";
+import { canAccessTransactions } from "../../../../utils/roleHelper.js";
 
 // Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType) => {
@@ -99,11 +99,9 @@ export default function DashboardOperatorProcessingTransactions() {
                 setAllowedCardId(storedCardId);
                 navigate("/processing/transactions/" + storedCardId, { replace: true });
             } else {
-                // Нет доступа вообще
-                showAlert("У вас нет доступа к этой странице", "error");
-                setTimeout(() => {
-                    navigate("/", { replace: true });
-                }, 2000);
+                // Ограниченный доступ без разрешенной карты
+                setIsLimitedAccess(true);
+                setAllowedCardId(null);
             }
         }
     }, [hasAccess, id, navigate]);
@@ -204,7 +202,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
     const validateSearch = useCallback(() => {
         // Если ограниченный доступ, проверяем только допустимую карту
-        if (isLimitedAccess && cardId !== allowedCardId) {
+        if (isLimitedAccess && allowedCardId && cardId !== allowedCardId) {
             showAlert("У вас есть доступ только к просмотру истории конкретной карты", "error");
             return false;
         }
@@ -212,6 +210,19 @@ export default function DashboardOperatorProcessingTransactions() {
         if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
             showAlert('Дата "С" не может быть больше даты "По"', "error");
             return false;
+        }
+
+        // Проверка диапазона дат для ограниченного доступа (максимум 31 день)
+        if (isLimitedAccess && fromDate && toDate) {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            const diffTime = Math.abs(to - from);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 31) {
+                showAlert('Максимальный период для поиска: 31 день', "error");
+                return false;
+            }
         }
 
         if (searchType === "cardBinSearch" && fromTime && toTime) {
@@ -950,7 +961,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     value={fromDate}
                                                     onChange={handleDateChange}
                                                     className="search-card__date-input"
-                                                    disabled={isLoading || !!id}
+                                                    disabled={isLoading}
                                                 />
                                             </div>
                                             <div className="date-separator">—</div>
@@ -965,7 +976,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                                     value={toDate}
                                                     onChange={handleDateChange}
                                                     className="search-card__date-input"
-                                                    disabled={isLoading || !!id}
+                                                    disabled={isLoading}
                                                 />
                                             </div>
                                         </div>
@@ -974,7 +985,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                     <div className="search-card__buttons">
                                         <button
                                             onClick={() => handleSearch()}
-                                            disabled={isLoading || !!id}
+                                            disabled={isLoading}
                                             className={`search-card__button ${
                                                 isLoading ? "search-card__button--loading" : ""
                                             }`}
@@ -983,7 +994,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                         </button>
                                         <button
                                             onClick={clearFilters}
-                                            disabled={isLoading || !!id}
+                                            disabled={isLoading}
                                             className="search-card__button search-card__button--secondary"
                                         >
                                             Очистить

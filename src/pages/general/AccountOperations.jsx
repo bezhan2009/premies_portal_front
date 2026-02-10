@@ -46,11 +46,9 @@ export default function DashboardAccountOperations() {
                 setAllowedAccountNumber(storedAccountNumber);
                 navigate(`/accounts/account-operations?account=${storedAccountNumber}`, { replace: true });
             } else {
-                // Нет доступа вообще
-                showAlert("У вас нет доступа к этой странице", "error");
-                setTimeout(() => {
-                    navigate("/", { replace: true });
-                }, 2000);
+                // Ограниченный доступ без разрешенного счета
+                setIsLimitedAccess(true);
+                setAllowedAccountNumber(null);
             }
         }
     }, [hasAccess, location.search, navigate]);
@@ -170,6 +168,19 @@ export default function DashboardAccountOperations() {
                 showAlert('Дата "С" не может быть больше даты "По"', "error");
                 return;
             }
+
+            if (isLimitedAccess && fromDate && toDate) {
+                const from = new Date(fromDate);
+                const to = new Date(toDate);
+                const diffTime = Math.abs(to - from);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 31) {
+                    showAlert('Максимальный период для поиска: 31 день', "error");
+                    return;
+                }
+            }
+
             setIsLoading(true);
             try {
                 const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
@@ -245,7 +256,7 @@ export default function DashboardAccountOperations() {
 
     useEffect(() => {
         if (isLimitedAccess) {
-            showAlert("Вы можете просматривать выписки только этого счета", "info");
+            showAlert("Вы можете просматривать выписки только этого счета. Максимальный период: 31 день", "info");
         }
     }, [isLimitedAccess]);
 
@@ -283,7 +294,7 @@ export default function DashboardAccountOperations() {
                                 </h1>
                                 <p className="processing-integration__subtitle">
                                     {isLimitedAccess
-                                        ? "Просмотр выписки одного счета"
+                                        ? "Просмотр выписки одного счета (макс. 31 день)"
                                         : "Поиск операций без ограничений"}
                                 </p>
                             </div>
