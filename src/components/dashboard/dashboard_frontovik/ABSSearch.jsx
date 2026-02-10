@@ -725,22 +725,12 @@ export default function ABSClientSearch() {
 
     // Обработчик перехода на историю транзакций с проверкой доступа
     const handleNavigateToTransactions = (cardId) => {
-        if (!hasTransactionsAccess) {
-            showAlert("У вас нет доступа к просмотру истории транзакций", "error");
-            return;
-        }
-        // Сохраняем cardId в sessionStorage для валидации
         sessionStorage.setItem('allowedCardId', cardId);
         navigate("/processing/transactions/" + cardId);
     };
 
     // Обработчик перехода на выписки счета с проверкой доступа
     const handleNavigateToAccountOperations = (accountNumber) => {
-        if (!hasAccountOperationsAccess) {
-            showAlert("У вас нет доступа к просмотру выписок счетов", "error");
-            return;
-        }
-        // Сохраняем accountNumber в sessionStorage для валидации
         sessionStorage.setItem('allowedAccountNumber', accountNumber);
         navigate("/accounts/account-operations?account=" + accountNumber);
     };
