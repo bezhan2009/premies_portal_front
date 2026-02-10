@@ -19,7 +19,7 @@ import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
-import { canAccessTransactions } from "../../../../utils/roleHelper.js";
+import { canAccessTransactions } from "../../../../api/roleHelper.js";
 
 // Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType) => {
