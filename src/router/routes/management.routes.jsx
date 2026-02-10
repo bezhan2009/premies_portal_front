@@ -59,7 +59,7 @@ const managementRoutes = (
     {/* Processing (Role 18) */}
     <Route
       element={
-        <RequireRole allowedRoles={[18]}>
+        <RequireRole allowedRoles={[18, 17]}>
           <Outlet />
         </RequireRole>
       }
@@ -80,7 +80,7 @@ const managementRoutes = (
 
       <Route
           element={
-              <RequireRole allowedRoles={[20]}>
+              <RequireRole allowedRoles={[20, 17]}>
                   <Outlet />
               </RequireRole>
           }
