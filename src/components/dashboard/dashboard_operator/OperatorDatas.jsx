@@ -10,6 +10,7 @@ import CardsTable from "./table_datas/TableCardPrices.jsx";
 import TableCardMargents from "./table_datas/TableCardMargents.jsx";
 import RolesTable from "./table_datas/RolesTable.jsx";
 import RolesLogsTable from "./table_datas/RoleLogsTable.jsx";
+import JournalTable from "./table_datas/JournalLogs.jsx";
 
 const OperatorDatasBlockInfo = () => {
   const [selectedTable, setSelectedTable] = useState("office");
@@ -51,13 +52,20 @@ const OperatorDatasBlockInfo = () => {
             <RolesTable key="roles" />
           </>
         );
-      case "role_logs":
-        return (
-          <>
-            <Filters modificationDesc="Логи обновления ролей" />
-            <RolesLogsTable key="role_logs" />
-          </>
-        );
+        case "role_logs":
+            return (
+                <>
+                    <Filters modificationDesc="Логи обновления ролей" />
+                    <RolesLogsTable key="role_logs" />
+                </>
+            );
+        case "journal":
+            return (
+                <>
+                    <Filters modificationDesc="Журнал операций" />
+                    <JournalTable key="journal" />
+                </>
+            );
       default:
         return (
           <>

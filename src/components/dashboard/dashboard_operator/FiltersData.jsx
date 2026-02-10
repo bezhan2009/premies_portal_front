@@ -24,11 +24,16 @@ const FiltersDatas = ({ onSelect }) => {
       class: "reports_filter__button--yellow",
       key: "roles",
     },
-    {
-      text: "Логи обновления ролей",
-      class: "reports_filter__button--aqua",
-      key: "role_logs",
-    },
+      {
+          text: "Логи обновления ролей",
+          class: "reports_filter__button--aqua",
+          key: "role_logs",
+      },
+      {
+          text: "Журнал операций",
+          class: "reports_filter__button--purple-bright",
+          key: "journal",
+      },
     // { text: "Роли", class: "reports_filter__button--yellow", key: "roles" },
   ];
 
