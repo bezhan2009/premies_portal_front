@@ -23,7 +23,7 @@ export default function RegisterPage() {
     const [position, setPosition] = useState('');
     const [plan, setPlan] = useState('');
     const [salaryProject, setSalaryProject] = useState('');
-    const [placeWork, setPlaceWork] = useState('');
+    const [place_work, setplace_work] = useState('');
     const [offices, setOffices] = useState([]);
 
     const [officeTitle, setOfficeTitle] = useState('');
@@ -111,7 +111,7 @@ export default function RegisterPage() {
             payload.position = position;
             payload.plan = Number(plan);
             payload.salary_project = Number(salaryProject);
-            payload.place_work = placeWork;
+            payload.place_work = place_work;
         }
 
         if (selectedRoles.includes(5)) {
@@ -305,8 +305,8 @@ export default function RegisterPage() {
                             </label>
                             <label>
                                 <select
-                                    value={placeWork}
-                                    onChange={(e) => setPlaceWork(e.target.value)}
+                                    value={place_work}
+                                    onChange={(e) => setplace_work(e.target.value)}
                                     required
                                 >
                                     <option value="">Выберите место работы</option>

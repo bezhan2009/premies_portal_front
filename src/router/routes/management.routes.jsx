@@ -9,6 +9,8 @@ import DashboardFrontovikAbsSearch from "../../pages/dashboard/dashboard_frontov
 import AccountOperations from "../../pages/dashboard/dashboard_frontovik/AccountOperations.jsx";
 import DashboardOperatorProcessing from "../../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 import DashboardOperatorProcessingTransactions from "../../pages/dashboard/dashboard_operator/Transactions.jsx";
+import DashboardOperatorProcessingTransactionUniversal
+    from "../../pages/dashboard/dashboard_operator/TransactionUniversal.jsx";
 
 const managementRoutes = (
   <>
@@ -77,6 +79,19 @@ const managementRoutes = (
         element={<DashboardOperatorProcessingTransactions />}
       />
     </Route>
+
+      <Route
+          element={
+              <RequireRole allowedRoles={[21]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route
+              path="/processing-search/transactions"
+              element={<DashboardOperatorProcessingTransactionUniversal />}
+          />
+      </Route>
 
       <Route
           element={

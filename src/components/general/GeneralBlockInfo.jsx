@@ -15,6 +15,7 @@ import WorkerApplicationsCards from "../dashboard/dashboard_worker/WorkerApplica
 import DirectorReports from "../dashboard/dashboard_director/DirectorReports.jsx";
 import ProcessingIntegrationLimits from "../dashboard/dashboard_operator/processing/Limits.jsx";
 import ProcessingIntegrationTransactions from "../dashboard/dashboard_operator/processing/Transactions.jsx";
+import ProcessingIntegrationTransactionsSearch from "../dashboard/dashboard_operator/processing/TransactionUniversal.jsx";
 
 const pageMap = {
   worker_knowledge_base: GeneralKnowledgeBaseBlockInfo,
@@ -25,6 +26,7 @@ const pageMap = {
   operator_tests: OperatorTestsDashboard,
   operator_processing_limits: ProcessingIntegrationLimits,
   operator_processing_transactions: ProcessingIntegrationTransactions,
+  operator_processing_transactions_search: ProcessingIntegrationTransactionsSearch,
   worker_premi: WorkerPremiesBlockInfo,
   worker_report: RenderReports,
   worker_tests: WorkerTestsPage,
