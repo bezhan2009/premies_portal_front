@@ -501,6 +501,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 });
         }
 
+        if (roles.includes(21)) {
+            additionalLinks.push(
+                {
+                    name: "Поиск по процессингу",
+                    key: "processing_search",
+                    children: [
+                        {
+                            name: "Поиск транзакций",
+                            href: "/processing-search/transactions",
+                            key: "transactions_search",
+                            description: "Мониторинг транзакций универсальный поиск",
+                        },
+                    ],
+                });
+        }
+
         if (roles.includes(19)) {
             additionalLinks.push(
                 {
