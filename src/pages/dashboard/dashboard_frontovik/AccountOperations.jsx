@@ -243,7 +243,7 @@ export default function DashboardAccountOperations() {
                 }),
             });
 
-            if (!response.ok) {
+            if (response.data.message === false) {
                 throw new Error("Неверный код подтверждения");
             }
 
@@ -251,7 +251,6 @@ export default function DashboardAccountOperations() {
             setShowOtpModal(false);
             setOtpCode("");
 
-            // Выполняем экспорт
             handleExport();
         } catch (error) {
             showAlert("Ошибка при проверке кода: " + error.message, "error");
