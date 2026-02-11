@@ -86,6 +86,10 @@ function RedirectDashboard() {
         navigate("/processing/limits", { replace: true });
     } else if (roleIds.includes(19)) {
         navigate("/atm/table", { replace: true });
+    } else if (roleIds.includes(20)) {
+        navigate("accounts/account-operations", { replace: true });
+    } else if (roleIds.includes(21)) {
+        navigate("/processing-search/transactions", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });
