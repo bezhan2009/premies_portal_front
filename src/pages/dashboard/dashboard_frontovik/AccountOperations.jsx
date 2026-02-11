@@ -29,6 +29,7 @@ export default function DashboardAccountOperations() {
     const [showOtpModal, setShowOtpModal] = useState(false);
     const [otpCode, setOtpCode] = useState("");
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const [otpError, setOtpError] = useState("");
 
     const { exportToExcel } = useExcelExport();
     const {
@@ -215,19 +216,22 @@ export default function DashboardAccountOperations() {
             showAlert("Код отправлен на ваш номер телефона", "success");
             setShowOtpModal(true);
             setOtpCode("");
+            setOtpError("");
         } catch (error) {
             showAlert("Ошибка при отправке OTP: " + error.message, "error");
         }
     };
 
     // Функция для проверки OTP и экспорта
-    const verifyOtpAndExport = async () => {
+    const verifyOtpAndExport = async (e) => {
+        e.preventDefault();
         if (!otpCode.trim()) {
-            showAlert("Введите код подтверждения", "warning");
+            setOtpError("Введите код подтверждения");
             return;
         }
 
         setIsVerifyingOtp(true);
+        setOtpError("");
         try {
             const baseUrl = import.meta.env.VITE_BACKEND_URL;
             const token = localStorage.getItem("access_token");
@@ -243,17 +247,26 @@ export default function DashboardAccountOperations() {
                 }),
             });
 
-            if (response.data.message === false) {
+            if (!response.ok) {
+                throw new Error("Ошибка при проверке кода");
+            }
+
+            const data = await response.json();
+
+            // Проверяем поле message в ответе
+            if (data.message === false) {
                 throw new Error("Неверный код подтверждения");
             }
 
             showAlert("Код подтвержден, начинаем экспорт", "success");
             setShowOtpModal(false);
             setOtpCode("");
+            setOtpError("");
 
+            // Выполняем экспорт
             handleExport();
         } catch (error) {
-            showAlert("Ошибка при проверке кода: " + error.message, "error");
+            setOtpError(error.message || "Неверный код подтверждения");
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -297,44 +310,45 @@ export default function DashboardAccountOperations() {
                 />
             )}
 
-            {/* OTP Modal */}
+            {/* OTP Modal - стиль как в Sidebar */}
             {showOtpModal && (
-                <div className="modal-overlay" onClick={() => setShowOtpModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-overlay">
+                    <div className="modal">
                         <h3>Подтверждение экспорта</h3>
-                        <p>Введите код подтверждения из SMS</p>
-                        <input
-                            type="text"
-                            value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value)}
-                            placeholder="Введите код"
-                            className="otp-input"
-                            maxLength={6}
-                            onKeyPress={(e) => {
-                                if (e.key === "Enter") {
-                                    verifyOtpAndExport();
-                                }
-                            }}
-                        />
-                        <div className="modal-buttons">
-                            <button
-                                onClick={verifyOtpAndExport}
-                                disabled={isVerifyingOtp || !otpCode.trim()}
-                                className="btn-confirm"
-                            >
-                                {isVerifyingOtp ? "Проверка..." : "Подтвердить"}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowOtpModal(false);
-                                    setOtpCode("");
-                                }}
-                                disabled={isVerifyingOtp}
-                                className="btn-cancel"
-                            >
-                                Отмена
-                            </button>
-                        </div>
+                        <p style={{ marginBottom: '15px', color: '#666' }}>
+                            Введите код подтверждения из SMS
+                        </p>
+                        <form onSubmit={verifyOtpAndExport}>
+                            <label>
+                                Код подтверждения:
+                                <input
+                                    type="text"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value)}
+                                    placeholder="Введите код"
+                                    maxLength={6}
+                                    required
+                                    autoFocus
+                                />
+                            </label>
+                            {otpError && <div className="modal-error">{otpError}</div>}
+                            <div className="modal-buttons">
+                                <button type="submit" disabled={isVerifyingOtp}>
+                                    {isVerifyingOtp ? "Проверка..." : "Подтвердить"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowOtpModal(false);
+                                        setOtpCode("");
+                                        setOtpError("");
+                                    }}
+                                    disabled={isVerifyingOtp}
+                                >
+                                    Отмена
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -676,115 +690,23 @@ export default function DashboardAccountOperations() {
             </div>
 
             <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
+                .search-card__button--export {
+                    background-color: #2196F3;
+                }
 
-        .modal-content {
-          background: white;
-          padding: 30px;
-          border-radius: 8px;
-          min-width: 400px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+                .search-card__button--export:hover:not(:disabled) {
+                    background-color: #0b7dda;
+                }
 
-        .modal-content h3 {
-          margin-top: 0;
-          margin-bottom: 10px;
-          color: #333;
-        }
+                .sortable-header {
+                    cursor: pointer;
+                    user-select: none;
+                }
 
-        .modal-content p {
-          margin-bottom: 20px;
-          color: #666;
-        }
-
-        .otp-input {
-          width: 100%;
-          padding: 12px;
-          font-size: 18px;
-          text-align: center;
-          border: 2px solid #ddd;
-          border-radius: 4px;
-          margin-bottom: 20px;
-          letter-spacing: 4px;
-        }
-
-        .otp-input:focus {
-          outline: none;
-          border-color: #4CAF50;
-        }
-
-        .modal-buttons {
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-        }
-
-        .btn-confirm,
-        .btn-cancel {
-          padding: 10px 20px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background-color 0.3s;
-        }
-
-        .btn-confirm {
-          background-color: #4CAF50;
-          color: white;
-        }
-
-        .btn-confirm:hover:not(:disabled) {
-          background-color: #45a049;
-        }
-
-        .btn-confirm:disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-        }
-
-        .btn-cancel {
-          background-color: #f44336;
-          color: white;
-        }
-
-        .btn-cancel:hover:not(:disabled) {
-          background-color: #da190b;
-        }
-
-        .btn-cancel:disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-        }
-
-        .search-card__button--export {
-          background-color: #2196F3;
-        }
-
-        .search-card__button--export:hover:not(:disabled) {
-          background-color: #0b7dda;
-        }
-
-        .sortable-header {
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .sortable-header:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-      `}</style>
+                .sortable-header:hover {
+                    background-color: rgba(0, 0, 0, 0.05);
+                }
+            `}</style>
         </>
     );
 }
