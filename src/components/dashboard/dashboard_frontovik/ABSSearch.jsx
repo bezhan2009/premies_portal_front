@@ -748,11 +748,11 @@ export default function ABSClientSearch() {
                 key: "client_type_name",
                 value: selectedClient.client_type_name,
             },
-            {
-                label: "Флаг банковского счета",
-                key: "ban_acc_open_flag",
-                value: selectedClient.ban_acc_open_flag,
-            },
+            // {
+            //     label: "Флаг банковского счета",
+            //     key: "ban_acc_open_flag",
+            //     value: selectedClient.ban_acc_open_flag,
+            // },
             {
                 label: "Код департамента",
                 key: "dep_code",
