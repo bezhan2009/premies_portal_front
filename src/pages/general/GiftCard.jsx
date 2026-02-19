@@ -1,7 +1,7 @@
 import RadioSelect from "../../components/elements/RadioSelect";
 import {
     districtTypes,
-    docTypes,
+    docTypes, genders,
     mcCards,
     ncCards,
     reginTypes,
@@ -304,9 +304,9 @@ export default function GiftCard({ edit = false }) {
             }
 
             if (clientDetails.sex === "M") {
-                setData("gender", true);
+                setData("gender", true);  // Муж
             } else if (clientDetails.sex === "F") {
-                setData("gender", false);
+                setData("gender", false); // Жен
             }
 
             if (
@@ -709,6 +709,10 @@ export default function GiftCard({ edit = false }) {
                     key: "contract_date",
                     value: formatDateForBackend(data.contract_date),
                 },
+                { key: "citizenship", value: safeTrim(data.citizenship) },
+                { key: "nationality", value: safeTrim(data.nationality) },
+                { key: "place_of_birth", value: safeTrim(data.place_of_birth) },
+                { key: "passport_deadline", value: formatDateForBackend(data.passport_deadline) },
             ];
 
             if (
@@ -1246,7 +1250,7 @@ export default function GiftCard({ edit = false }) {
                                 <CheckBox
                                     yes={"Муж"}
                                     no={"Жен"}
-                                    className={"div9 form-check-box"}
+                                    className={"div61 form-check-box"}
                                     title={"Пол"}
                                     value={data.gender}
                                     onChange={(e) => setData("gender", e)}
@@ -1281,7 +1285,6 @@ export default function GiftCard({ edit = false }) {
                                     error={errors}
                                     id={"document_number"}
                                 />
-
                                 <Input
                                     type="date"
                                     className={"div14"}
@@ -1292,7 +1295,16 @@ export default function GiftCard({ edit = false }) {
                                     id={"passport_issued_at"}
                                 />
                                 <Input
+                                    type="date"
                                     className={"div15"}
+                                    placeholder={"Срок действия"}
+                                    onChange={(e) => setData("passport_deadline", e)}
+                                    value={data?.passport_deadline}
+                                    error={errors}
+                                    id={"passport_deadline"}
+                                />
+                                <Input
+                                    className={"div16"}
                                     placeholder={"Кем выдан"}
                                     onChange={(e) => setData("issued_by", e)}
                                     value={data?.issued_by}
@@ -1300,7 +1312,7 @@ export default function GiftCard({ edit = false }) {
                                     id={"issued_by"}
                                 />
                                 <Input
-                                    className={"div16"}
+                                    className={"div17"}
                                     placeholder={"ИНН"}
                                     onChange={(e) => setData("inn", e)}
                                     value={data?.inn}
@@ -1308,7 +1320,7 @@ export default function GiftCard({ edit = false }) {
                                     id={"inn"}
                                 />
                                 <Input
-                                    className={"div17"}
+                                    className={"div57"}
                                     placeholder={"Страна"}
                                     onChange={(e) => setData("country", e)}
                                     value={data?.country}
@@ -1362,6 +1374,30 @@ export default function GiftCard({ edit = false }) {
                                     value={data?.district}
                                     error={errors}
                                     id={"district"}
+                                />
+                                <Input
+                                    className={"div65"}
+                                    placeholder={"Гражданство"}
+                                    onChange={(e) => setData("citizenship", e)}
+                                    value={data?.citizenship}
+                                    error={errors}
+                                    id={"citizenship"}
+                                />
+                                <Input
+                                    className={"div66"}
+                                    placeholder={"Национальность"}
+                                    onChange={(e) => setData("nationality", e)}
+                                    value={data?.nationality}
+                                    error={errors}
+                                    id={"nationality"}
+                                />
+                                <Input
+                                    className={"div67"}
+                                    placeholder={"Место рождения"}
+                                    onChange={(e) => setData("place_of_birth", e)}
+                                    value={data?.place_of_birth}
+                                    error={errors}
+                                    id={"place_of_birth"}
                                 />
                                 <Select
                                     className={"div24"}
