@@ -1,5 +1,5 @@
-import { Navigate } from "react-router-dom";
-import RequireRole from "../../components/RequireRole";
+import { Route, Navigate } from "react-router-dom";
+import RequireRole from "../../middlewares/RequireRole";
 import { ProductLayout } from "../../pages/product/Layout";
 import { CardTable } from "../../pages/product/card/CardTable";
 import { CreditTable } from "../../pages/product/credit/CreditTable";
@@ -7,39 +7,20 @@ import { CurrentAccountTable } from "../../pages/product/currentAccount/CurrentA
 import { DepositTable } from "../../pages/product/deposit/DepositTable";
 import { MoneyTransferTable } from "../../pages/product/moneyTransfer/MoneyTransferTable";
 
-export const productRoutes = [
-  {
-    path: "/product",
-    element: (
+export const productRoutes = (
+  <Route
+    path="/product"
+    element={
       <RequireRole allowedRoles={[22]}>
         <ProductLayout />
       </RequireRole>
-    ),
-    children: [
-      {
-        path: "",
-        element: <Navigate to="cards" replace />,
-      },
-      {
-        path: "cards",
-        element: <CardTable />,
-      },
-      {
-        path: "credits",
-        element: <CreditTable />,
-      },
-      {
-        path: "accounts",
-        element: <CurrentAccountTable />,
-      },
-      {
-        path: "deposits",
-        element: <DepositTable />,
-      },
-      {
-        path: "transfers",
-        element: <MoneyTransferTable />,
-      },
-    ],
-  },
-];
+    }
+  >
+    <Route index element={<Navigate to="cards" replace />} />
+    <Route path="cards" element={<CardTable />} />
+    <Route path="credits" element={<CreditTable />} />
+    <Route path="accounts" element={<CurrentAccountTable />} />
+    <Route path="deposits" element={<DepositTable />} />
+    <Route path="transfers" element={<MoneyTransferTable />} />
+  </Route>
+);
