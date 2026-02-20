@@ -2077,3 +2077,68 @@ button:active {
     }
   }
 }
+
+/* Custom Date and Time Input Styling */
+input[type="date"],
+input[type="datetime-local"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #374151;
+  outline: none;
+  transition: all 0.3s ease;
+  min-height: 40px; /* Ensure touch target size */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  /* Placeholder color fix if needed */
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:hover {
+    border-color: #e21a1c;
+    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.1);
+  }
+
+  &:focus {
+    border-color: #e21a1c;
+    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.2);
+    background-color: #fff !important; /* Override .input input behavior if necessary */
+    color: #374151 !important; /* Override .input input behavior */
+  }
+
+  /* Customizing the calendar picker indicator */
+  &::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition:
+      background-color 0.2s,
+      transform 0.2s;
+    /* Optional: Filter to colorize the default icon if desired */
+    /* filter: invert(24%) sepia(93%) saturate(1756%) hue-rotate(346deg) brightness(88%) contrast(96%); */ /* Red color filter example */
+  }
+
+  &::-webkit-calendar-picker-indicator:hover {
+    background-color: rgba(226, 26, 28, 0.1);
+    transform: scale(1.1);
+  }
+}
+
+/* Ensure overrides for .input wrapper specific styles if they conflict */
+.input input[type="date"],
+.input input[type="datetime-local"] {
+  background-color: #fff; /* Reset from gray */
+  height: 40px; /* Match min-height */
+
+  &:focus {
+    background-color: #fff;
+    color: #374151;
+  }
+}
