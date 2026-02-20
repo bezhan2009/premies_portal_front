@@ -77,6 +77,7 @@ export const CardTable = () => {
               fetchCards();
             } catch (error) {
               message.error("Ошибка при удалении");
+              console.log(error);
             }
           },
           onCancel: () => {
