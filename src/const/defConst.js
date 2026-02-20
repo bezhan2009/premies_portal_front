@@ -229,6 +229,11 @@ export const docTypes = [
   { value: 69, label: "Удостоверение" },
 ];
 
+export const genders = [
+    { value: 0, label: "Муж" },
+    { value: 1, label: "Жен" }
+]
+
 export const reginTypes = [
   { value: 0, label: "Тип региона" },
   { value: 1, label: "Автономная область" },
