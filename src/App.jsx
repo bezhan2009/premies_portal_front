@@ -4,7 +4,6 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import TechnicalDayBanner from "./pages/general/TechnicalDate.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import TransactionsQR from "./pages/general/TransactionsQR.jsx";
 
 function App() {
   const isTechnicalDay = false;
