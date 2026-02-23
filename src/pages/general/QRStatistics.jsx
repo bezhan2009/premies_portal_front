@@ -12,10 +12,7 @@ import {
 import { DatePicker, Select } from "antd";
 import Spinner from "../../components/Spinner";
 import AlertMessage from "../../components/general/AlertMessage";
-import dayjs from "dayjs";
-
-
-const { RangePicker } = DatePicker;
+import { useCallback } from "react";
 
 function formatNumber(value) {
   if (value == null || isNaN(value)) return "0";
@@ -52,11 +49,10 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function QRStatistics() {
+export default function QRStatistics({ startDate, endDate }) {
   const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
   const [metric, setMetric] = useState("count");
-  const [selectedRange, setSelectedRange] = useState(null);
-  const [data, setData] = useState({});
+  // const [selectedRange, setSelectedRange] = useState(null);
   const [date, setDate] = useState([]);
   const [date2, setDate2] = useState([]);
   const [mergedData, setMergedData] = useState([]);
@@ -68,87 +64,82 @@ export default function QRStatistics() {
     setTimeout(() => setAlert(null), 3500);
   };
 
-  const fetchData = async (type = "themOnUs") => {
-    try {
-      setLoading(true);
-      const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
+  const fetchData = useCallback(
+    async (type = "themOnUs") => {
+      try {
+        setLoading(true);
+        const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
 
-      // динамическая подстановка диапазона дат
-      const startDate = data?.start_date || "2025-01-01";
-      const endDate = data?.end_date || "2025-11-11";
+        // динамическая подстановка диапазона дат
+        // const startDate = data?.start_date || "2025-01-01";
+        // const endDate = data?.end_date || "2025-11-11";
 
-      const response = await fetch(
-        `${backendUrl}${endpoint}?start_date=${startDate}&end_date=${endDate}`
-      );
-      if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
+        const response = await fetch(
+          `${backendUrl}${endpoint}?start_date=${startDate}&end_date=${endDate}`,
+        );
+        if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
 
-      const result = await response.json();
+        const result = await response.json();
 
-      const mapped = result.map((item) => {
-        const date =
-          item.created_at?.split("T")[0] ||
-          item.creation_datetime?.split("T")[0];
-        return {
-          date,
-          count: 1,
-          sum: item.amount || 0,
-        };
-      });
+        const mapped = result.map((item) => {
+          const date =
+            item.created_at?.split("T")[0] ||
+            item.creation_datetime?.split("T")[0];
+          return {
+            date,
+            count: 1,
+            sum: item.amount || 0,
+          };
+        });
 
-      const grouped = mapped.reduce((acc, curr) => {
-        if (!acc[curr.date]) acc[curr.date] = { date: curr.date, count: 0, sum: 0 };
-        acc[curr.date].count += curr.count;
-        acc[curr.date].sum += curr.sum;
-        return acc;
-      }, {});
+        const grouped = mapped.reduce((acc, curr) => {
+          if (!acc[curr.date])
+            acc[curr.date] = { date: curr.date, count: 0, sum: 0 };
+          acc[curr.date].count += curr.count;
+          acc[curr.date].sum += curr.sum;
+          return acc;
+        }, {});
 
-      const finalResult = Object.values(grouped).sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-      );
+        const finalResult = Object.values(grouped).sort(
+          (a, b) => new Date(a.date) - new Date(b.date),
+        );
 
-      if (type === "usOnThem") setDate(finalResult);
-      else setDate2(finalResult);
+        if (type === "usOnThem") setDate(finalResult);
+        else setDate2(finalResult);
 
-      showAlert(`Загружено ${result.length} записей`, "success");
-    } catch (error) {
-      console.error("Ошибка загрузки данных:", error);
-      showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // следим за изменением диапазона и обновляем data.start_date/end_date
-  useEffect(() => {
-    if (selectedRange?.[0] && selectedRange?.[1]) {
-      setData((prev) => ({
-        ...prev,
-        start_date: selectedRange[0].format("YYYY-MM-DD"),
-        end_date: selectedRange[1].format("YYYY-MM-DD"),
-      }));
-    }
-  }, [selectedRange]);
+        showAlert(`Загружено ${result.length} записей`, "success");
+      } catch (error) {
+        console.error("Ошибка загрузки данных:", error);
+        showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [startDate, endDate, backendUrl],
+  );
 
   // когда даты выбраны — обновляем данные
   useEffect(() => {
-    if (data?.start_date && data?.end_date) {
+    if (startDate && endDate) {
       fetchData("usOnThem");
       fetchData("themOnUs");
     }
-  }, [data.start_date, data.end_date]);
+  }, [fetchData]);
 
   // при первом рендере загружаем всё за дефолтный период
   useEffect(() => {
-    fetchData("usOnThem");
-    fetchData("themOnUs");
-  }, []);
+    if (startDate && endDate) {
+      fetchData("usOnThem");
+      fetchData("themOnUs");
+    }
+  }, [fetchData]);
 
   // объединяем данные для графика
   useEffect(() => {
     if (!date.length && !date2.length) return;
 
     const allDates = Array.from(
-      new Set([...date.map((d) => d.date), ...date2.map((d) => d.date)])
+      new Set([...date.map((d) => d.date), ...date2.map((d) => d.date)]),
     ).sort((a, b) => new Date(a) - new Date(b));
 
     const merged = allDates.map((d) => {
@@ -166,81 +157,81 @@ export default function QRStatistics() {
 
   return (
     <div className="p-6">
-        <div className="flex gap-4 items-center mb-4">
-          <Select
-            value={metric}
-            onChange={setMetric}
-            options={[
-              { label: "Количество", value: "count" },
-              { label: "Сумма", value: "sum" },
-            ]}
-            style={{ width: 160 }}
-          />
-          <RangePicker onChange={(dates) => setSelectedRange(dates)} />
-        </div>
-
-        {loading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "80px 0",
-              transform: "scale(1.3)",
-            }}
-          >
-            <Spinner />
-          </div>
-        ) : (
-          <div style={{ width: "100%", height: 400 }}>
-            <ResponsiveContainer>
-              <AreaChart data={mergedData}>
-                <defs>
-                  <linearGradient id="usOnThem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
-                  </linearGradient>
-                  <linearGradient id="themOnUs" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-
-                <Area
-                  type="monotone"
-                  dataKey="usOnThem"
-                  name="Наш клиент — чужой QR"
-                  stroke="#417cd5"
-                  fill="url(#usOnThem)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="themOnUs"
-                  name="Наш QR — чужой клиент"
-                  stroke="#82ca9d"
-                  fill="url(#themOnUs)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {alert && (
-          <AlertMessage
-            message={alert.message}
-            type={alert.type}
-            onClose={() => setAlert(null)}
-          />
-        )}
+      <div className="flex gap-4 items-center mb-4">
+        <Select
+          value={metric}
+          onChange={setMetric}
+          options={[
+            { label: "Количество", value: "count" },
+            { label: "Сумма", value: "sum" },
+          ]}
+          style={{ width: 160 }}
+        />
+        {/* <RangePicker onChange={(dates) => setSelectedRange(dates)} /> */}
       </div>
+
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "80px 0",
+            transform: "scale(1.3)",
+          }}
+        >
+          <Spinner />
+        </div>
+      ) : (
+        <div style={{ width: "100%", height: 400 }}>
+          <ResponsiveContainer>
+            <AreaChart data={mergedData}>
+              <defs>
+                <linearGradient id="usOnThem" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="themOnUs" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+
+              <Area
+                type="monotone"
+                dataKey="usOnThem"
+                name="Наш клиент — чужой QR"
+                stroke="#417cd5"
+                fill="url(#usOnThem)"
+                strokeWidth={2.5}
+                dot={{ r: 2 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="themOnUs"
+                name="Наш QR — чужой клиент"
+                stroke="#82ca9d"
+                fill="url(#themOnUs)"
+                strokeWidth={2.5}
+                dot={{ r: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {alert && (
+        <AlertMessage
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+        />
+      )}
+    </div>
   );
 }
