@@ -7,7 +7,7 @@ import "../../styles/checkbox.scss";
 import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();

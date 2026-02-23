@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import Sidebar from "../pages/general/DynamicMenu.jsx";
+import Sidebar from "./general/DynamicMenu.jsx";
 import useSidebar from "../hooks/useSideBar.js";
 
 const MainLayout = () => {

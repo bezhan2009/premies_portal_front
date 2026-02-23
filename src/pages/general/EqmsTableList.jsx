@@ -8,7 +8,7 @@ import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
 import useSidebar from "../../hooks/useSideBar.js";
 import { tableDataDef } from "../../const/defConst.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 import {toLowercaseSeparator} from "antd/es/watermark/utils.js";
 
 export default function EQMSList() {

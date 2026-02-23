@@ -8,7 +8,7 @@ import Modal from "../../components/modal/Modal.jsx";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 
 export default function MyApplicationsDipozit() {

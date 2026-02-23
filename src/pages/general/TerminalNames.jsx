@@ -4,7 +4,7 @@ import "../../styles/components/TransactionTypes.scss";
 import { useEffect, useState } from "react";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

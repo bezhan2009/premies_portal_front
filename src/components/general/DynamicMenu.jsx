@@ -1,12 +1,12 @@
 import "../../styles/components/Menu.scss";
-import LogoImageComponent from "../../components/Logo";
-import LogoutButton from "../../components/general/Logout";
+import LogoImageComponent from "../Logo.jsx";
+import LogoutButton from "./Logout.jsx";
 import RowDown from "../../assets/row_down.png";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import ChangePasswordIcon from "../../assets/change_password.png";
-import AlertMessage from "../../components/general/AlertMessage.jsx";
+import AlertMessage from "./AlertMessage.jsx";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
@@ -362,6 +362,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 },
             );
         }
+
         if (roles.includes(10)) {
             additionalLinks.push({
                 name: "Заявки на карты",
@@ -373,6 +374,41 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/agent/applications-list",
                         key: "applications",
                         hasNotification: hasNewApplications,
+                    },
+                ],
+            });
+        }
+
+
+        if (roles.includes(22)) {
+            additionalLinks.push({
+                name: "Продукты банка",
+                key: "products",
+                children: [
+                    {
+                        name: "Карты",
+                        href: "/product/cards",
+                        key: "product_cards",
+                    },
+                    {
+                        name: "Кредиты",
+                        href: "/product/credits",
+                        key: "product_credits",
+                    },
+                    {
+                        name: "Счета",
+                        href: "/product/accounts",
+                        key: "product_accounts",
+                    },
+                    {
+                        name: "Депозиты",
+                        href: "/product/deposits",
+                        key: "product_deposits",
+                    },
+                    {
+                        name: "Переводы",
+                        href: "/product/transfers",
+                        key: "product_transfers",
                     },
                 ],
             });

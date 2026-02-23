@@ -2,7 +2,7 @@ import { useState } from "react";
 import "../../../styles/components/BlockInfo.scss";
 import HeaderAgentSMS from "../../../components/dashboard/dashboard_agent_sms/MenuAgentSMS";
 import useSidebar from "../../../hooks/useSideBar.js";
-import Sidebar from "../../general/DynamicMenu.jsx";
+import Sidebar from "../../../components/general/DynamicMenu.jsx";
 
 export default function SendSmsForm() {
   const { isSidebarOpen, toggleSidebar } = useSidebar();

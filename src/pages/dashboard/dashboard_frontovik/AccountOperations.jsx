@@ -4,7 +4,7 @@ import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
 import useSidebar from "../../../hooks/useSideBar.js";
-import Sidebar from "../../general/DynamicMenu.jsx";
+import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";

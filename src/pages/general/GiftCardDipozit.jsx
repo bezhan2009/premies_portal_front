@@ -18,7 +18,7 @@ import Spinner from "../../components/Spinner.jsx";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function GiftCardDipozit({ edit = false }) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
