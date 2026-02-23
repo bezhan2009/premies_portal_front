@@ -31,13 +31,6 @@ export default function TransactionsQR() {
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(true);
 
-  const selectedSum = useMemo(() => {
-    return selectedRows.reduce((acc, key) => {
-      const row = sortedData.find((r) => getRowKey(r) === key);
-      return acc + (row ? Number(row.amount || 0) : 0);
-    }, 0);
-  }, [selectedRows, sortedData, getRowKey]);
-
   const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
   const backendMain = import.meta.env.VITE_BACKEND_URL;
   const token = localStorage.getItem("access_token");
@@ -184,6 +177,13 @@ export default function TransactionsQR() {
     });
     return arr;
   }, [filteredData, sortOrder]);
+
+  const selectedSum = useMemo(() => {
+    return selectedRows.reduce((acc, key) => {
+      const row = sortedData.find((r) => getRowKey(r) === key);
+      return acc + (row ? Number(row.amount || 0) : 0);
+    }, 0);
+  }, [selectedRows, sortedData, getRowKey]);
 
   useEffect(() => {
     getBanks();
