@@ -51,6 +51,13 @@ textarea:focus {
   border-color: #e21a1c;
 }
 
+.product-bank-page{
+  max-width: calc(100% - 240px);
+  overflow-x: auto !important;
+  background-color: #fff;
+  border-radius: 20px;
+  // padding: 24px;
+}
 /* Для кнопок в вашем EQMS */
 .pay-button:focus {
   box-shadow: 0 0 0 3px rgba(175, 76, 76, 0.4);
