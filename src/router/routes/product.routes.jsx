@@ -12,7 +12,7 @@ export const productRoutes = (
     path="/product"
     element={
       <RequireRole allowedRoles={[22]}>
-        {/*<ProductLayout />*/}
+        <ProductLayout />
       </RequireRole>
     }
   >
