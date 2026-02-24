@@ -3,7 +3,7 @@ import AtmMap from '../../features/atm-map/atm-map';
 import AtmStickyTable from '../../features/atm-table/atm-table';
 import { fetchATM } from '../../api/atm/atm.js';
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../general/DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function AtmPage() {
     const { isSidebarOpen, toggleSidebar } = useSidebar();

@@ -23,7 +23,7 @@ import { formaterDate } from "../../api/utils/formateDate.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { getCreditById } from "../../api/application/getCredit.js";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function GiftCardCredit({ edit = false }) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();  

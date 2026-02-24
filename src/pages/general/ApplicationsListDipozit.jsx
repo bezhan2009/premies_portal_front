@@ -13,7 +13,7 @@ import { deleteApplicationById } from "../../api/application/deleteApplicationBy
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 
 export default function ApplicationsListDipozit() {

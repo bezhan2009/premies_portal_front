@@ -34,7 +34,7 @@ import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
 export default function GiftCard({ edit = false }) {

@@ -1,133 +1,53 @@
-import { Layout as AntLayout, Menu, Button, Space } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  CreditCardOutlined,
-  BankOutlined,
-  WalletOutlined,
-  SwapOutlined,
-  IdcardOutlined,
-} from "@ant-design/icons";
-import { useState } from "react";
-import active from "../../assets/product_active.png";
+import { Layout as AntLayout } from "antd";
+import { Outlet, useLocation } from "react-router-dom";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
+import useSidebar from "../../hooks/useSideBar.js";
 
-const { Sider, Header, Content } = AntLayout;
-
-const menuItems = [
-  { key: "cards", label: "Карты", icon: <IdcardOutlined /> },
-  { key: "credits", label: "Кредиты", icon: <CreditCardOutlined /> },
-  { key: "accounts", label: "Текущий счёт", icon: <WalletOutlined /> },
-  { key: "deposits", label: "Депозит", icon: <BankOutlined /> },
-  { key: "transfers", label: "Денежный перевод", icon: <SwapOutlined /> },
-];
+const { Content } = AntLayout;
 
 export const ProductLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const location = useLocation();
 
   // Highlight the current menu item based on the URL
-  const selectedKey = location.pathname.split("/").pop();
+  const getActiveLink = (pathname) => {
+    if (pathname.includes("cards")) return "product_cards";
+    if (pathname.includes("credits")) return "product_credits";
+    if (pathname.includes("accounts")) return "product_accounts";
+    if (pathname.includes("deposits")) return "product_deposits";
+    if (pathname.includes("transfers")) return "product_transfers";
+    return "products";
+  };
+
+  const activeLink = getActiveLink(location.pathname);
 
   return (
-    <AntLayout style={{ minHeight: "100vh", background: "#f3f4f6" }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        trigger={null}
-        width={260}
-        style={{
-          background: "#ffffff",
-          padding: "16px 12px",
-          boxShadow: "4px 0 20px rgba(0,0,0,0.05)",
-        }}
-        theme="light"
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            marginBottom: 30,
-            paddingLeft: collapsed ? 0 : 10,
-            cursor: "pointer",
-          }}
-          onClick={() => navigate("/product")}
-        >
-          <img
-            src={active}
-            alt="logo"
+    <div
+      className={`dashboard-container ${
+        isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+      }`}
+    >
+      <Sidebar
+        activeLink={activeLink}
+        isOpen={isSidebarOpen}
+        toggle={toggleSidebar}
+      />
+      <div className="applications-list product-bank-page content-page">
+        <AntLayout style={{ background: "transparent", minHeight: "auto" }}>
+          <Content
             style={{
-              width: collapsed ? 38 : 46,
-              transition: "0.3s",
+              // padding: "0 24px 24px",
+              background: "#ffffff",
+              borderRadius: 20,
+              boxShadow: "0 12px 30px rgba(0,0,0,0.05)",
+              overflow: "initial",
+              // marginTop: 20,
             }}
-          />
-          {!collapsed && (
-            <span
-              style={{
-                marginLeft: 12,
-                fontSize: 18,
-                fontWeight: 700,
-                color: "#d60000",
-                letterSpacing: 0.5,
-              }}
-            >
-              ACTIV BANK
-            </span>
-          )}
-        </div>
-
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          onClick={({ key }) => navigate(key)}
-          items={menuItems}
-          style={{
-            border: "none",
-            background: "transparent",
-          }}
-          theme="light"
-        />
-      </Sider>
-
-      <AntLayout>
-        <Header
-          style={{
-            background: "#ffffff",
-            padding: "0 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
-          }}
-        >
-          <Space>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                fontSize: 18,
-                borderRadius: 8,
-              }}
-            />
-          </Space>
-        </Header>
-
-        <Content
-          style={{
-            margin: 24,
-            padding: 24,
-            background: "#ffffff",
-            borderRadius: 20,
-            boxShadow: "0 12px 30px rgba(0,0,0,0.05)",
-            overflow: "initial",
-          }}
-        >
-          <Outlet />
-        </Content>
-      </AntLayout>
-    </AntLayout>
+          >
+            <Outlet />
+          </Content>
+        </AntLayout>
+      </div>
+    </div>
   );
 };

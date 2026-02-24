@@ -3,7 +3,7 @@ import HeaderWorker from "../../../components/dashboard/dashboard_worker/MenuWor
 import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
 import { Helmet } from "react-helmet";
 import HeaderAgent from "../../../components/dashboard/dashboard_agent/MenuAgent.jsx";
-import Sidebar from "../../general/DynamicMenu.jsx";
+import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import { useState, useEffect } from "react";
 
 export default function DashboardAgentKB() {

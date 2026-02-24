@@ -14,7 +14,7 @@ import { deleteApplicationById } from "../../api/application/deleteApplicationBy
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
 import "../../styles/components/ApplicationsList.scss";
 

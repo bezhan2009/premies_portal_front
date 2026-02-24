@@ -14,7 +14,7 @@ import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function ApplicationsListCredit() {
   const { isSidebarOpen, toggleSidebar } = useSidebar();  

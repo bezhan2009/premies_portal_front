@@ -7,7 +7,7 @@ import "../../styles/checkbox.scss";
 import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
 import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "./DynamicMenu.jsx";
+import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
@@ -30,13 +30,6 @@ export default function TransactionsQR() {
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(true);
-
-  const selectedSum = useMemo(() => {
-    return selectedRows.reduce((acc, key) => {
-      const row = sortedData.find((r) => getRowKey(r) === key);
-      return acc + (row ? Number(row.amount || 0) : 0);
-    }, 0);
-  }, [selectedRows, sortedData, getRowKey]);
 
   const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
   const backendMain = import.meta.env.VITE_BACKEND_URL;
@@ -184,6 +177,13 @@ export default function TransactionsQR() {
     });
     return arr;
   }, [filteredData, sortOrder]);
+
+  const selectedSum = useMemo(() => {
+    return selectedRows.reduce((acc, key) => {
+      const row = sortedData.find((r) => getRowKey(r) === key);
+      return acc + (row ? Number(row.amount || 0) : 0);
+    }, 0);
+  }, [selectedRows, sortedData, getRowKey]);
 
   useEffect(() => {
     getBanks();
