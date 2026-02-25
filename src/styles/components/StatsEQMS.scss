@@ -87,3 +87,109 @@
     }
   }
 }
+
+/* ===== EQMS Table Styles ===== */
+.eqms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: "Inter", system-ui, sans-serif;
+  background: #fff;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  tbody tr {
+    transition: background-color 0.15s ease;
+
+    &:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    &:hover {
+      background-color: #eef2ff !important;
+    }
+  }
+
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e8edf3;
+    border-right: 1px solid #e8edf3;
+    text-align: center;
+    color: #334155;
+    font-size: 12.5px;
+    white-space: nowrap;
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+/* Ячейка хедера */
+.eqms-th {
+  padding: 11px 12px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  text-align: center;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &--checkbox {
+    width: 40px;
+    padding: 10px 8px;
+  }
+
+  /* Кликабельный хедер */
+  &--sortable {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
+      .eqms-th__icon--idle {
+        opacity: 0.9;
+      }
+    }
+  }
+
+  /* Активная колонка сортировки */
+  &--active {
+    background: linear-gradient(135deg, #1a317a 0%, #1d4ed8 100%);
+    box-shadow: inset 0 -3px 0 #60a5fa;
+    .eqms-th__icon {
+      color: #93c5fd;
+    }
+  }
+}
+
+.eqms-th__label {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.eqms-th__icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 12px;
+  vertical-align: middle;
+  color: #bfdbfe;
+  transition: color 0.15s ease;
+
+  &--idle {
+    opacity: 0.45;
+    transition: opacity 0.15s ease;
+  }
+}
