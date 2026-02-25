@@ -1,7 +1,9 @@
-
 .updating-transaction-type {
   > main {
-    font-family: "Inter", -apple-system, sans-serif;
+    font-family:
+      "Inter",
+      -apple-system,
+      sans-serif;
     background-color: #fff;
     padding: 20px;
     padding-bottom: 40px;
@@ -31,12 +33,115 @@
       width: 300px;
       height: 40px;
       border-radius: 100px;
-      font-family: "Inter", -apple-system, sans-serif;
+      font-family:
+        "Inter",
+        -apple-system,
+        sans-serif;
       font-size: 15px;
       cursor: pointer;
       border: none;
       background-color: #e21a1c;
       color: #fff;
     }
+  }
+}
+
+/* ===== Scrollable sortable table ===== */
+
+/* Обёртка с горизонтальным и вертикальным скроллом */
+.sort-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Таблица */
+.sort-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #fff;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  tbody tr {
+    transition: background-color 0.12s ease;
+
+    &:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    &:hover {
+      background-color: #eef2ff !important;
+    }
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e8edf3;
+    border-right: 1px solid #e8edf3;
+    color: #334155;
+    font-size: 13px;
+    white-space: nowrap;
+    text-align: center;
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+/* Хедер с сортировкой */
+.sort-th {
+  padding: 11px 14px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &--no-sort {
+    cursor: default;
+  }
+
+  &:not(&--no-sort):hover {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
+
+    .sort-icon--idle {
+      opacity: 0.9;
+    }
+  }
+}
+
+/* Иконка сортировки */
+.sort-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: #bfdbfe;
+  flex-shrink: 0;
+
+  &--idle {
+    opacity: 0.4;
+    transition: opacity 0.15s ease;
   }
 }
