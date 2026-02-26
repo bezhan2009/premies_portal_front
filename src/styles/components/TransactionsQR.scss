@@ -30,3 +30,30 @@
     letter-spacing: 0.3px;
   }
 }
+
+/* Бейдж суммы всех операций */
+.total-sum-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(56, 142, 60, 0.15);
+  margin-left: auto;
+
+  .total-sum-label {
+    font-size: 13px;
+    color: #388e3c;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .total-sum-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2e7d32;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+}
