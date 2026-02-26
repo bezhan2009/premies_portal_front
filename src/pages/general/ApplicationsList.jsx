@@ -458,7 +458,9 @@ export default function ApplicationsList() {
                         <th key={i}>{e}</th>
                       ))}
                       <th>Заявка создана в</th>
-                      <th>Заявка обновлена в</th>
+                        <th>Заявка обновлена в</th>
+                        <th>Последние цифры карты</th>
+                        <th>Тип карты</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -502,9 +504,12 @@ export default function ApplicationsList() {
                             <td>{row.type_of_certificate}</td>
                             <td>{row.inn}</td>
                             <td>{row.delivery_address}</td>
-                            <td>{row.card_code}</td>
+                              <td>{row.card_code}</td>
                             <td>{formatDate(row.CreatedAt)}</td>
                             <td>{formatDate(row.UpdatedAt)}</td>
+
+                              <td>{row.last_card_numbers}</td>
+                              <td>{row.card_type}</td>
                             <td className="active-table">
                               <AiFillEdit
                                 onClick={() => navigate(`/agent/card/${row.ID}`)}

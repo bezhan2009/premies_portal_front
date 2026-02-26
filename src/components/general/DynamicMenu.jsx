@@ -584,6 +584,21 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 });
         }
 
+        if (roles.includes(23)) {
+            additionalLinks.push(
+                {
+                    name: "Кэшбэк",
+                    key: "cashbacks",
+                    children: [
+                        {
+                            name: "Настройки кэшбэк-ов",
+                            href: "/cashback/settings",
+                            key: "cashbacks_settings",
+                        },
+                    ],
+                });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 

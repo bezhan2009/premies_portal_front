@@ -17,6 +17,7 @@ import {
   MdOutlinePhonelinkRing,
   MdOutlineSmartphone,
 } from "react-icons/md";
+import { FaTelegramPlane } from "react-icons/fa";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
@@ -28,6 +29,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
+const API_TELEGRAM_URL = "http://10.64.20.103:7475";
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
@@ -345,6 +347,11 @@ export default function ABSClientSearch() {
     TYPE_SEARCH_CLIENT[0].value,
   );
 
+  // Telegram states
+  const [telegramData, setTelegramData] = useState(null);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramDeleteLoading, setTelegramDeleteLoading] = useState(false);
+
   // Проверка доступа к страницам
   const hasTransactionsAccess = canAccessTransactions();
   const hasAccountOperationsAccess = canAccessAccountOperations();
@@ -427,6 +434,7 @@ export default function ABSClientSearch() {
     setCreditsData([]);
     setDepositsData([]);
     setIsMobile(null);
+    setTelegramData(null);
     sessionStorage.removeItem("absClientSearchState");
   };
 
@@ -948,8 +956,59 @@ export default function ABSClientSearch() {
   useEffect(() => {
     if (selectedClient?.phone) {
       userInfoPhone(selectedClient.phone);
+      fetchTelegramUser(selectedClient.phone);
     }
   }, [selectedClient?.phone]);
+
+  // Telegram user lookup
+  const fetchTelegramUser = async (phone) => {
+    try {
+      setTelegramLoading(true);
+      setTelegramData(null);
+      const resp = await fetch(
+        `${API_TELEGRAM_URL}/api/Users/get-users-by-phone?phone=${phone}`,
+      );
+      if (!resp.ok) {
+        setTelegramData(null);
+        return;
+      }
+      const json = await resp.json();
+      const users = json?.data;
+      if (Array.isArray(users) && users.length > 0) {
+        setTelegramData(users[0]);
+      } else {
+        setTelegramData(null);
+      }
+    } catch (e) {
+      console.error("Ошибка Telegram поиска:", e);
+      setTelegramData(null);
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  // Delete Telegram binding
+  const handleDeleteTelegram = async () => {
+    if (!selectedClient?.phone) return;
+    try {
+      setTelegramDeleteLoading(true);
+      const resp = await fetch(
+        `${API_TELEGRAM_URL}/api/Users/telegramId?phone=${selectedClient.phone}`,
+        { method: "PUT" },
+      );
+      if (resp.ok) {
+        showAlert("Telegram ID успешно удалён", "success");
+        setTelegramData(null);
+      } else {
+        showAlert("Ошибка при удалении Telegram ID", "error");
+      }
+    } catch (e) {
+      console.error("Ошибка удаления Telegram:", e);
+      showAlert("Ошибка при удалении Telegram ID", "error");
+    } finally {
+      setTelegramDeleteLoading(false);
+    }
+  };
 
   return (
     <>
@@ -1008,6 +1067,44 @@ export default function ABSClientSearch() {
                     ) : (
                       <MdOutlineSmartphone size={"30px"} />
                     )}
+                  </div>
+
+                  {/* Telegram status */}
+                  <div className="search-card__telegram-group">
+                    {telegramLoading ? (
+                      <span style={{ fontSize: "13px", color: "#999" }}>
+                        Проверка Telegram...
+                      </span>
+                    ) : telegramData?.userTelegramId ? (
+                      <>
+                        <FaTelegramPlane
+                          color="#0088cc"
+                          size={"28px"}
+                          title="Пользователь в Telegram"
+                        />
+                        <button
+                          className="search-card__button search-card__button--danger"
+                          onClick={handleDeleteTelegram}
+                          disabled={telegramDeleteLoading}
+                          style={{
+                            marginLeft: "8px",
+                            fontSize: "12px",
+                            padding: "4px 10px",
+                          }}
+                        >
+                          {telegramDeleteLoading
+                            ? "Удаление..."
+                            : "Удалить Telegram"}
+                        </button>
+                      </>
+                    ) : telegramData !== null ||
+                      (selectedClient?.phone && !telegramLoading) ? (
+                      <FaTelegramPlane
+                        color="#e21a1c"
+                        size={"28px"}
+                        title="Пользователь не найден в Telegram"
+                      />
+                    ) : null}
                   </div>
                   <div className="search-card__input-group">
                     <input
