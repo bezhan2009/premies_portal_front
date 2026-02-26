@@ -185,6 +185,10 @@ export default function TransactionsQR() {
     }, 0);
   }, [selectedRows, sortedData, getRowKey]);
 
+  const totalSum = useMemo(() => {
+    return sortedData.reduce((acc, row) => acc + Number(row.amount || 0), 0);
+  }, [sortedData]);
+
   useEffect(() => {
     getBanks();
     getMerchants();
@@ -536,6 +540,12 @@ export default function TransactionsQR() {
                   style={{ width: "200px" }}
                   id="end_date"
                 />
+              </div>
+              <div className="total-sum-badge">
+                <span className="total-sum-label">Сумма всех операций:</span>
+                <span className="total-sum-value">
+                  {totalSum.toLocaleString("ru-RU")} с.
+                </span>
               </div>
             </div>
 
