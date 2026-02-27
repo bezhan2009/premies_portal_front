@@ -313,7 +313,7 @@ export default function DashboardOperatorTransactionSearch() {
     const counts = { success: 0, error: 0, warning: 0, reversal: 0 };
 
     transactions.forEach((tx) => {
-      const val = parseFloat(tx.amount || 0);
+      const val = parseFloat(tx.conamt || 0);
       const type =
         getTransactionTypeValue(tx.transactionType) || tx.transactionTypeNumber;
 
@@ -356,12 +356,12 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "cardId", label: "ID карты" },
       { key: "transactionTypeName", label: "Тип операции" },
       {
-        key: (row) =>
+        key: (row) =>`${
           formatAmount(
             row.amount,
             getTransactionTypeValue(row.transactionType) ||
               row.transactionTypeNumber,
-          ),
+          )} ${getCurrencyCode(row.currency)}`,
         label: "Сумма операции",
       },
       { key: (row) => getCurrencyCode(row.currency), label: "Валюта" },
@@ -899,7 +899,7 @@ export default function DashboardOperatorTransactionSearch() {
                               sortKey="amount"
                             />
                           </th>
-                          <th
+                          {/*<th
                             onClick={() => requestSort("currency")}
                             className="limits-table__th sortable-header"
                           >
@@ -908,7 +908,7 @@ export default function DashboardOperatorTransactionSearch() {
                               sortConfig={sortConfig}
                               sortKey="currency"
                             />
-                          </th>
+                          </th>*/}
                           <th
                             onClick={() => requestSort("conamt")}
                             className="limits-table__th sortable-header"
@@ -1060,7 +1060,7 @@ export default function DashboardOperatorTransactionSearch() {
                                   )}
                                 </span>
                               </td>
-                             {/* <td className="limits-table__td limits-table__td--value">
+                              {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {getCurrencyCode(transaction.currency)}
                                 </span>
