@@ -1,0 +1,266 @@
+.currency-rates-page {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+
+  .currency-rates-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #e0e6ed;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .header-icon {
+        font-size: 1.5rem;
+      }
+    }
+
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #4a6cf7, #6366f1);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(74, 108, 247, 0.35);
+
+      &:hover {
+        background: linear-gradient(135deg, #3b5de7, #5457e5);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(74, 108, 247, 0.45);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .refresh-icon {
+        font-size: 1.1rem;
+        transition: transform 0.4s ease;
+      }
+
+      &.loading .refresh-icon {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+
+  .currency-rates-date {
+    font-size: 0.92rem;
+    color: #8b95a5;
+    margin-bottom: 20px;
+  }
+
+  .currency-rates-card {
+    background: linear-gradient(145deg, #1e2a3a, #243347);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .currency-rates-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    thead {
+      th {
+        padding: 16px 20px;
+        text-align: left;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #8b95a5;
+        background: rgba(0, 0, 0, 0.15);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+        &:first-child {
+          padding-left: 24px;
+        }
+
+        &:last-child {
+          padding-right: 24px;
+        }
+      }
+    }
+
+    tbody {
+      tr {
+        transition: background 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background: rgba(74, 108, 247, 0.06);
+        }
+      }
+
+      td {
+        padding: 18px 20px;
+        font-size: 1rem;
+        color: #e0e6ed;
+
+        &:first-child {
+          padding-left: 24px;
+        }
+
+        &:last-child {
+          padding-right: 24px;
+        }
+      }
+    }
+  }
+
+  .currency-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .currency-flag {
+      font-size: 1.6rem;
+    }
+
+    .currency-info {
+      .currency-code {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #e0e6ed;
+      }
+
+      .currency-label {
+        font-size: 0.82rem;
+        color: #8b95a5;
+        margin-top: 2px;
+      }
+    }
+  }
+
+  .rate-value {
+    font-weight: 700;
+    font-size: 1.15rem;
+
+    &.buy {
+      color: #34d399;
+    }
+
+    &.sell {
+      color: #f97066;
+    }
+  }
+
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #8b95a5;
+
+    .loading-spinner {
+      font-size: 2.5rem;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    .error-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .error-message {
+      color: #f97066;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    .retry-btn {
+      margin-top: 16px;
+      padding: 8px 20px;
+      border: 1px solid rgba(74, 108, 247, 0.5);
+      border-radius: 8px;
+      background: transparent;
+      color: #4a6cf7;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(74, 108, 247, 0.1);
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .currency-rates-page {
+    padding: 16px;
+
+    .currency-rates-header {
+      h1 {
+        font-size: 1.3rem;
+      }
+    }
+
+    .currency-rates-table {
+      thead th,
+      tbody td {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+
+        &:first-child {
+          padding-left: 16px;
+        }
+
+        &:last-child {
+          padding-right: 16px;
+        }
+      }
+    }
+
+    .rate-value {
+      font-size: 1rem;
+    }
+  }
+}
