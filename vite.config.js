@@ -8,4 +8,14 @@ export default defineConfig({
   optimizeDeps: {
     include: ["pdfjs-dist"],
   },
+  server: {
+    proxy: {
+      "/api/conversion": {
+        target: "http://10.64.1.55:8180",
+        changeOrigin: true,
+        rewrite: (path) =>
+          path.replace(/^\/api\/conversion/, "/cxf/conversion/v1"),
+      },
+    },
+  },
 });

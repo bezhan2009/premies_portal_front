@@ -38,6 +38,8 @@ const emptyForm = {
     idn_withdraw: "",
     full_name_withdraw: "",
     cashback_percentage: "",
+    cashback_name: "",
+    is_active: true,
 };
 
 // Описание полей: тип инпута + лейбл
@@ -70,6 +72,8 @@ const fields = [
     { key: "idn_withdraw",              label: "IDN вывода",            type: "text" },
     { key: "full_name_withdraw",        label: "ФИО вывода",            type: "text" },
     { key: "cashback_percentage",       label: "% кэшбэка",             type: "number", step: "0.01" },
+    { key: "cashback_name",             label: "Название кэшбэка",      type: "text" },
+    { key: "is_active",                 label: "Активен",               type: "checkbox" },
 ];
 
 const TableCashbackSettings = () => {
@@ -215,6 +219,7 @@ const TableCashbackSettings = () => {
     // Инпут с правильным типом для ячейки при редактировании
     // Форматирование значения для отображения в ячейке
     const formatValue = (value, fieldType) => {
+        if (fieldType === "checkbox") return value ? "✓" : "✗";
         if (value === null || value === undefined || value === "") return "-";
         if (fieldType === "date") {
             try {
@@ -232,6 +237,17 @@ const TableCashbackSettings = () => {
         let inputVal = editedItem[field.key] ?? "";
         if (field.type === "date" && inputVal) {
             try { inputVal = new Date(inputVal).toISOString().slice(0, 10); } catch {}
+        }
+        if (field.type === "checkbox") {
+            return (
+                <input
+                    type="checkbox"
+                    checked={!!editedItem[field.key]}
+                    onChange={(e) =>
+                        setEditedItem({ ...editedItem, [field.key]: e.target.checked })
+                    }
+                />
+            );
         }
         return (
             <input
@@ -279,18 +295,31 @@ const TableCashbackSettings = () => {
                                 marginBottom: "12px",
                             }}
                         >
-                            {fields.map(({ key, label, type, step }) => (
-                                <input
-                                    key={key}
-                                    type={type}
-                                    step={step}
-                                    value={newItem[key]}
-                                    onChange={(e) =>
-                                        setNewItem({ ...newItem, [key]: e.target.value })
-                                    }
-                                    placeholder={label}
-                                />
-                            ))}
+                            {fields.map(({ key, label, type, step }) =>
+                                type === "checkbox" ? (
+                                    <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={!!newItem[key]}
+                                            onChange={(e) =>
+                                                setNewItem({ ...newItem, [key]: e.target.checked })
+                                            }
+                                        />
+                                        {label}
+                                    </label>
+                                ) : (
+                                    <input
+                                        key={key}
+                                        type={type}
+                                        step={step}
+                                        value={newItem[key]}
+                                        onChange={(e) =>
+                                            setNewItem({ ...newItem, [key]: e.target.value })
+                                        }
+                                        placeholder={label}
+                                    />
+                                )
+                            )}
                         </div>
                         <div style={{ display: "flex", gap: "10px" }}>
                             <button onClick={handleAdd} className="action-buttons__btn">

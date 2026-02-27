@@ -958,7 +958,7 @@ export default function ABSClientSearch() {
       userInfoPhone(selectedClient.phone);
       fetchTelegramUser(selectedClient.phone);
     }
-  }, [selectedClient?.phone]);
+  }, [selectedClient]);
 
   // Telegram user lookup
   const fetchTelegramUser = async (phone) => {
