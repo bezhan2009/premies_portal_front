@@ -27,11 +27,7 @@ const MainLayout = () => {
   // const activeLink = getActiveLink(location.pathname);
 
   return (
-    <div
-      className={` ${
-        isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-      }`}
-    >
+    <div className={` ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
       {/* <Sidebar
         activeLink={activeLink}
         isOpen={isSidebarOpen}
