@@ -1013,7 +1013,7 @@ export default function DashboardOperatorTransactionSearch() {
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {sortedTransactions.map((transaction) => {
+                        {["sortedTransactions"].map((transaction) => {
                           const transactionTypeValue = getTransactionTypeValue(
                             transaction.transactionType,
                           );
@@ -1060,11 +1060,11 @@ export default function DashboardOperatorTransactionSearch() {
                                   )}
                                 </span>
                               </td>
-                              <td className="limits-table__td limits-table__td--value">
+                             {/* <td className="limits-table__td limits-table__td--value">
                                 <span className="default-value">
                                   {getCurrencyCode(transaction.currency)}
                                 </span>
-                              </td>
+                              </td> */}
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
                                   {formatAmount(
@@ -1072,6 +1072,7 @@ export default function DashboardOperatorTransactionSearch() {
                                     transactionTypeValue ||
                                       transaction.transactionTypeNumber,
                                   )}
+                                  {getCurrencyCode(transaction.currency)}
                                 </span>
                               </td>
                               <td className="limits-table__td limits-table__td--value">
