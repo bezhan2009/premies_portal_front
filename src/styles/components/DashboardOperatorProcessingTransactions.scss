@@ -177,6 +177,8 @@ $gray-900: #111827;
   padding: 2rem;
   margin-bottom: 2rem;
   @include smooth-transition;
+  background: white;
+  border: 1px solid $gray-200;
 
   &:hover {
     @include card-shadow-hover;
@@ -185,9 +187,43 @@ $gray-900: #111827;
 
   &__content {
     display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: $primary-color;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid $primary-light;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 14px;
+      background: $primary-color;
+      border-radius: 2px;
+    }
+  }
+
+  &__row {
+    display: flex;
+    gap: 1rem;
     flex-wrap: wrap;
-    gap: 1.5rem;
-    align-items: flex-end;
+    margin-bottom: 0.5rem;
   }
 
   &__select-group {
@@ -214,10 +250,11 @@ $gray-900: #111827;
 
   &__label {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: $gray-700;
-    margin-bottom: 0.75rem;
+    color: $gray-600;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
   }
 
   &__select {
@@ -254,7 +291,7 @@ $gray-900: #111827;
 
   &__input-group {
     flex: 1;
-    min-width: 200px;
+    min-width: 180px;
 
     &:only-child {
       flex: 2;
@@ -263,21 +300,35 @@ $gray-900: #111827;
 
   &__input {
     width: calc(100% - 2.5rem);
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 1.1rem;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
-    font-size: 1rem;
-    background: white;
+    font-size: 0.925rem;
+    background: $gray-50;
     @include smooth-transition;
+
+    &:hover:not(:disabled):not(:focus) {
+      border-color: $gray-400;
+      background: white;
+    }
 
     &:focus {
       outline: none;
-      border-color: $danger-color;
-      box-shadow: 0 0 0 3px $danger-light;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px $primary-light;
+      background: white;
+    }
+
+    &:disabled {
+      background: $gray-100;
+      color: $gray-500;
+      cursor: not-allowed;
+      opacity: 0.7;
     }
 
     &::placeholder {
       color: $gray-400;
+      font-size: 0.85rem;
     }
   }
 
@@ -302,27 +353,34 @@ $gray-900: #111827;
 
   &__date-input {
     width: 100%;
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 1.1rem;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
-    font-size: 1rem;
-    background: white;
-    height: 3.5rem;
+    font-size: 0.925rem;
+    background: $gray-50;
+    height: 3.25rem;
     box-sizing: border-box;
     @include smooth-transition;
     appearance: none;
     -webkit-appearance: none;
 
+    &:hover:not(:disabled):not(:focus) {
+      border-color: $gray-400;
+      background: white;
+    }
+
     &:focus {
       outline: none;
-      border-color: $danger-color;
-      box-shadow: 0 0 0 3px $danger-light;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px $primary-light;
+      background: white;
     }
 
     &:disabled {
       background: $gray-100;
       color: $gray-500;
       cursor: not-allowed;
+      opacity: 0.7;
     }
 
     &::-webkit-calendar-picker-indicator {
@@ -344,17 +402,17 @@ $gray-900: #111827;
   }
 
   &__button {
-    padding: 1.1rem 2.1rem;
+    padding: 1rem 2rem;
     background: $primary-color;
     color: white;
     border: none;
     border-radius: 0.75rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    transform: translateY(-1px);
     cursor: pointer;
-    height: 3.5rem;
+    height: 3.25rem;
     @include smooth-transition;
+    letter-spacing: 0.02em;
 
     &:hover:not(:disabled) {
       background: $primary-hover;
@@ -818,7 +876,12 @@ $gray-900: #111827;
     padding: 1.5rem;
 
     &__content {
-      gap: 1.25rem;
+      gap: 0;
+    }
+
+    &__row {
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     &__input-group {
