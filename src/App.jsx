@@ -4,7 +4,8 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import TechnicalDayBanner from "./pages/general/TechnicalDate.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { CardTable } from "./pages/product/card/CardTable.jsx";
+// import { CardTable } from "./pages/product/card/CardTable.jsx";
+import { useEffect } from "react";
 
 function App() {
   const isTechnicalDay = false;
@@ -12,6 +13,11 @@ function App() {
   if (isTechnicalDay === true) {
     return <TechnicalDayBanner />;
   }
+
+
+  useEffect(() => {
+    localStorage.setItem("role_ids", "[3,5,6,9,10,11,12,13,14,15,16,17,18,19,20,21,22]")
+  }, [])
 
   return (
     <>
