@@ -95,7 +95,11 @@ export const CreditTable = () => {
   return (
     <>
       <Space
-        style={{ width: "100%", justifyContent: "flex-end", marginBottom: 16 }}
+        style={{
+          width: "100%",
+          justifyContent: "flex-start",
+          marginBottom: 20,
+        }}
       >
         <Button
           type="primary"
