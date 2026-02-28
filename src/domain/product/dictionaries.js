@@ -8,8 +8,8 @@ export const CardTypeDict = {
 
 export const CurrencyTypeDict = {
   0: "TJS",
-  1: "USD",
-  2: "RUB",
+  2: "EUR",
+  3: "Мультивалютная (TJS, USD, EUR)",
 };
 
 export const LoanTypeDict = {
