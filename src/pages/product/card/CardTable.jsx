@@ -54,7 +54,7 @@ export const CardTable = () => {
   const mappedData = cards.map((c) => ({
     ...c,
     cardTypeLabel: CardTypeDict[c.cardType] || c.cardType,
-    currencyLabel: CurrencyTypeDict[c.currency] || c.currency,
+    currencyLabel: CurrencyTypeDict[c.currency] ?? "Неизвестно",
   }));
 
   const rowSelection = {
@@ -75,9 +75,8 @@ export const CardTable = () => {
               message.success("Карты успешно удалены");
               setSelectedRowKeys([]);
               fetchCards();
-            } catch (error) {
+            } catch {
               message.error("Ошибка при удалении");
-              console.log(error);
             }
           },
           onCancel: () => {
@@ -91,7 +90,11 @@ export const CardTable = () => {
   return (
     <>
       <Space
-        style={{ width: "100%", justifyContent: "flex-end", marginBottom: 16 }}
+        style={{
+          width: "100%",
+          justifyContent: "flex-start",
+          marginBottom: 20,
+        }}
       >
         <Button
           type="primary"
