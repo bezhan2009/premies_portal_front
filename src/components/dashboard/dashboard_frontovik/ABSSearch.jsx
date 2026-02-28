@@ -29,7 +29,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
-const API_TELEGRAM_URL = "http://10.64.20.103:7475";
+const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL ;
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
