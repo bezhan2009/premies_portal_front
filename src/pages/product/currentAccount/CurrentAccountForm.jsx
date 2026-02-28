@@ -10,7 +10,10 @@ import {
   Input,
   Collapse,
 } from "antd";
-import { AccountTypeDict, CurrencyTypeDict } from "../../domain/dictionaries";
+import {
+  AccountTypeDict,
+  CurrencyTypeDict,
+} from "../../../domain/product/dictionaries";
 
 export const CurrentAccountForm = ({
   open,
