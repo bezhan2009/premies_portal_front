@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
+import "../../../../styles/components/TxnFilter.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import { fetchTransactionsSearch } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
@@ -60,6 +61,12 @@ export default function DashboardOperatorTransactionSearch() {
   const [toDate, setToDate] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
+
+  // ---------- Поля исключений ----------
+  const [excludeTransactionTypes, setExcludeTransactionTypes] = useState("");
+  const [excludeAtmIds, setExcludeAtmIds] = useState("");
+  const [excludeMcc, setExcludeMcc] = useState("");
+  const [excludeAccounts, setExcludeAccounts] = useState("");
 
   // Для красивого отображения cardNumber
   const [displayCardNumber, setDisplayCardNumber] = useState("");
@@ -229,6 +236,11 @@ export default function DashboardOperatorTransactionSearch() {
       if (toDate) params.toDate = toDate;
       if (fromTime) params.fromTime = fromTime;
       if (toTime) params.toTime = toTime;
+      if (excludeTransactionTypes)
+        params.excludeTransactionTypes = excludeTransactionTypes;
+      if (excludeAtmIds) params.excludeAtmIds = excludeAtmIds;
+      if (excludeMcc) params.excludeMcc = excludeMcc;
+      if (excludeAccounts) params.excludeAccounts = excludeAccounts;
 
       const transactionsData = await fetchTransactionsSearch(params);
 
@@ -266,6 +278,10 @@ export default function DashboardOperatorTransactionSearch() {
     toDate,
     fromTime,
     toTime,
+    excludeTransactionTypes,
+    excludeAtmIds,
+    excludeMcc,
+    excludeAccounts,
     validateSearch,
     showAlert,
   ]);
@@ -304,6 +320,10 @@ export default function DashboardOperatorTransactionSearch() {
     setToDate(today.toISOString().split("T")[0]);
     setFromTime("");
     setToTime("");
+    setExcludeTransactionTypes("");
+    setExcludeAtmIds("");
+    setExcludeMcc("");
+    setExcludeAccounts("");
     setTransactions([]);
   };
 
@@ -356,8 +376,8 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "cardId", label: "ID карты" },
       { key: "transactionTypeName", label: "Тип операции" },
       {
-        key: (row) =>`${
-          formatAmount(
+        key: (row) =>
+          `${formatAmount(
             row.amount,
             getTransactionTypeValue(row.transactionType) ||
               row.transactionTypeNumber,
@@ -413,21 +433,19 @@ export default function DashboardOperatorTransactionSearch() {
       )}
       <div className="block_info_prems content-page" align="center">
         <div className="processing-integration">
-          <div className="processing-integration__container">
-            {/* ---------- Форма поиска (один блок, все поля) ---------- */}
-            <div className="processing-integration__search-card">
-              <div className="search-card">
-                <div className="search-card__content">
-                  {/* Строка 1: Основные идентификаторы */}
-                  <div className="search-card__section-title">
+          <div className="txn-filter">
+            {/* ---------- Форма поиска ---------- */}
+            <div className="txn-filter__card">
+              <div className="txn-filter__body">
+                {/* Секция: Идентификаторы */}
+                <div className="txn-filter__section">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">🔍</span>
                     Идентификаторы
                   </div>
-                  <div className="search-card__row">
-                    <div className="search-card__input-group">
-                      <label
-                        htmlFor="cardNumber"
-                        className="search-card__label"
-                      >
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label htmlFor="cardNumber" className="txn-filter__label">
                         Номер карты
                       </label>
                       <input
@@ -435,13 +453,13 @@ export default function DashboardOperatorTransactionSearch() {
                         id="cardNumber"
                         value={displayCardNumber}
                         onChange={handleCardNumberChange}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="**** **** **** ****"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="cardId" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="cardId" className="txn-filter__label">
                         ID карты
                       </label>
                       <input
@@ -449,13 +467,13 @@ export default function DashboardOperatorTransactionSearch() {
                         id="cardId"
                         value={cardId}
                         onChange={(e) => setCardId(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading || isLimitedAccess}
                         placeholder="Идентификатор карты"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="atmId" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="atmId" className="txn-filter__label">
                         ATM ID
                       </label>
                       <input
@@ -463,20 +481,23 @@ export default function DashboardOperatorTransactionSearch() {
                         id="atmId"
                         value={atmId}
                         onChange={(e) => setAtmId(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="Терминал"
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Строка 2: UTRNNO, тип транзакции, MCC, responseCode */}
-                  <div className="search-card__section-title">
+                {/* Секция: Параметры операции */}
+                <div className="txn-filter__section">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">⚙️</span>
                     Параметры операции
                   </div>
-                  <div className="search-card__row">
-                    <div className="search-card__input-group">
-                      <label htmlFor="utrnno" className="search-card__label">
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label htmlFor="utrnno" className="txn-filter__label">
                         UTRNNO
                       </label>
                       <input
@@ -484,15 +505,15 @@ export default function DashboardOperatorTransactionSearch() {
                         id="utrnno"
                         value={utrnno}
                         onChange={(e) => setUtrnno(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="Номер операции"
                       />
                     </div>
-                    <div className="search-card__input-group">
+                    <div className="txn-filter__field">
                       <label
                         htmlFor="transactionType"
-                        className="search-card__label"
+                        className="txn-filter__label"
                       >
                         Тип транзакции
                       </label>
@@ -501,13 +522,13 @@ export default function DashboardOperatorTransactionSearch() {
                         id="transactionType"
                         value={transactionType}
                         onChange={(e) => setTransactionType(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="Код (659, 760...)"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="mcc" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="mcc" className="txn-filter__label">
                         MCC
                       </label>
                       <input
@@ -515,15 +536,15 @@ export default function DashboardOperatorTransactionSearch() {
                         id="mcc"
                         value={mcc}
                         onChange={(e) => setMcc(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="MCC код"
                       />
                     </div>
-                    <div className="search-card__input-group">
+                    <div className="txn-filter__field">
                       <label
                         htmlFor="responseCode"
-                        className="search-card__label"
+                        className="txn-filter__label"
                       >
                         Response code
                       </label>
@@ -532,18 +553,23 @@ export default function DashboardOperatorTransactionSearch() {
                         id="responseCode"
                         value={responseCode}
                         onChange={(e) => setResponseCode(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="-1, 01, 02..."
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Строка 3: Суммы (reqamt, amount, conamt, acctbal, netbal) */}
-                  <div className="search-card__section-title">Суммы</div>
-                  <div className="search-card__row">
-                    <div className="search-card__input-group">
-                      <label htmlFor="reqamt" className="search-card__label">
+                {/* Секция: Суммы */}
+                <div className="txn-filter__section">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">💰</span>
+                    Суммы
+                  </div>
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label htmlFor="reqamt" className="txn-filter__label">
                         Запрош. сумма
                       </label>
                       <input
@@ -551,14 +577,14 @@ export default function DashboardOperatorTransactionSearch() {
                         id="reqamt"
                         value={reqamt}
                         onChange={(e) => setReqamt(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="reqamt"
                         min="0"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="amount" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="amount" className="txn-filter__label">
                         Сумма опер.
                       </label>
                       <input
@@ -566,14 +592,14 @@ export default function DashboardOperatorTransactionSearch() {
                         id="amount"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="amount"
                         min="0"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="conamt" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="conamt" className="txn-filter__label">
                         Сумма в валюте
                       </label>
                       <input
@@ -581,14 +607,14 @@ export default function DashboardOperatorTransactionSearch() {
                         id="conamt"
                         value={conamt}
                         onChange={(e) => setConamt(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="conamt"
                         min="0"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="acctbal" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="acctbal" className="txn-filter__label">
                         Доступ. баланс
                       </label>
                       <input
@@ -596,14 +622,14 @@ export default function DashboardOperatorTransactionSearch() {
                         id="acctbal"
                         value={acctbal}
                         onChange={(e) => setAcctbal(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="acctbal"
                         min="0"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="netbal" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="netbal" className="txn-filter__label">
                         Баланс карты
                       </label>
                       <input
@@ -611,21 +637,24 @@ export default function DashboardOperatorTransactionSearch() {
                         id="netbal"
                         value={netbal}
                         onChange={(e) => setNetbal(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="netbal"
                         min="0"
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Строка 4: Валюты, reversal, account */}
-                  <div className="search-card__section-title">
+                {/* Секция: Валюты и прочее */}
+                <div className="txn-filter__section">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">🌐</span>
                     Валюты и прочее
                   </div>
-                  <div className="search-card__row">
-                    <div className="search-card__input-group">
-                      <label htmlFor="currency" className="search-card__label">
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label htmlFor="currency" className="txn-filter__label">
                         Валюта (код)
                       </label>
                       <input
@@ -633,15 +662,15 @@ export default function DashboardOperatorTransactionSearch() {
                         id="currency"
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="972, 840..."
                       />
                     </div>
-                    <div className="search-card__input-group">
+                    <div className="txn-filter__field">
                       <label
                         htmlFor="conCurrency"
-                        className="search-card__label"
+                        className="txn-filter__label"
                       >
                         Валюта конверс.
                       </label>
@@ -650,13 +679,13 @@ export default function DashboardOperatorTransactionSearch() {
                         id="conCurrency"
                         value={conCurrency}
                         onChange={(e) => setConCurrency(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="972, 978..."
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="reversal" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="reversal" className="txn-filter__label">
                         Reversal (0/1)
                       </label>
                       <input
@@ -664,14 +693,14 @@ export default function DashboardOperatorTransactionSearch() {
                         id="reversal"
                         value={reversal}
                         onChange={(e) => setReversal(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="0 или 1"
                         maxLength="1"
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="account" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="account" className="txn-filter__label">
                         Счет
                       </label>
                       <input
@@ -679,18 +708,100 @@ export default function DashboardOperatorTransactionSearch() {
                         id="account"
                         value={account}
                         onChange={(e) => setAccount(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                         placeholder="Номер счета"
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Строка 5: Диапазон дат и времени */}
-                  <div className="search-card__section-title">Период</div>
-                  <div className="search-card__row">
-                    <div className="search-card__input-group">
-                      <label htmlFor="fromDate" className="search-card__label">
+                {/* Секция: Исключения */}
+                <div className="txn-filter__section txn-filter__section--exclude">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">🚫</span>
+                    Исключения
+                  </div>
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label
+                        htmlFor="excludeTransactionTypes"
+                        className="txn-filter__label"
+                      >
+                        Искл. типы транз.
+                      </label>
+                      <input
+                        type="text"
+                        id="excludeTransactionTypes"
+                        value={excludeTransactionTypes}
+                        onChange={(e) =>
+                          setExcludeTransactionTypes(e.target.value)
+                        }
+                        className="txn-filter__input txn-filter__input--exclude"
+                        disabled={isLoading}
+                        placeholder="659, 760..."
+                      />
+                    </div>
+                    <div className="txn-filter__field">
+                      <label
+                        htmlFor="excludeAtmIds"
+                        className="txn-filter__label"
+                      >
+                        Искл. ATM ID
+                      </label>
+                      <input
+                        type="text"
+                        id="excludeAtmIds"
+                        value={excludeAtmIds}
+                        onChange={(e) => setExcludeAtmIds(e.target.value)}
+                        className="txn-filter__input txn-filter__input--exclude"
+                        disabled={isLoading}
+                        placeholder="ATM1, ATM2..."
+                      />
+                    </div>
+                    <div className="txn-filter__field">
+                      <label htmlFor="excludeMcc" className="txn-filter__label">
+                        Искл. MCC
+                      </label>
+                      <input
+                        type="text"
+                        id="excludeMcc"
+                        value={excludeMcc}
+                        onChange={(e) => setExcludeMcc(e.target.value)}
+                        className="txn-filter__input txn-filter__input--exclude"
+                        disabled={isLoading}
+                        placeholder="6011, 5411..."
+                      />
+                    </div>
+                    <div className="txn-filter__field">
+                      <label
+                        htmlFor="excludeAccounts"
+                        className="txn-filter__label"
+                      >
+                        Искл. счета
+                      </label>
+                      <input
+                        type="text"
+                        id="excludeAccounts"
+                        value={excludeAccounts}
+                        onChange={(e) => setExcludeAccounts(e.target.value)}
+                        className="txn-filter__input txn-filter__input--exclude"
+                        disabled={isLoading}
+                        placeholder="Номера счетов"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Секция: Период */}
+                <div className="txn-filter__section">
+                  <div className="txn-filter__section-label">
+                    <span className="txn-filter__section-icon">📅</span>
+                    Период
+                  </div>
+                  <div className="txn-filter__fields">
+                    <div className="txn-filter__field">
+                      <label htmlFor="fromDate" className="txn-filter__label">
                         Дата с
                       </label>
                       <input
@@ -698,12 +809,12 @@ export default function DashboardOperatorTransactionSearch() {
                         id="fromDate"
                         value={fromDate}
                         onChange={(e) => setFromDate(e.target.value)}
-                        className="search-card__date-input"
+                        className="txn-filter__input txn-filter__input--date"
                         disabled={isLoading}
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="toDate" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="toDate" className="txn-filter__label">
                         Дата по
                       </label>
                       <input
@@ -711,12 +822,12 @@ export default function DashboardOperatorTransactionSearch() {
                         id="toDate"
                         value={toDate}
                         onChange={(e) => setToDate(e.target.value)}
-                        className="search-card__date-input"
+                        className="txn-filter__input txn-filter__input--date"
                         disabled={isLoading}
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="fromTime" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="fromTime" className="txn-filter__label">
                         Время с
                       </label>
                       <input
@@ -724,12 +835,12 @@ export default function DashboardOperatorTransactionSearch() {
                         id="fromTime"
                         value={fromTime}
                         onChange={(e) => setFromTime(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                       />
                     </div>
-                    <div className="search-card__input-group">
-                      <label htmlFor="toTime" className="search-card__label">
+                    <div className="txn-filter__field">
+                      <label htmlFor="toTime" className="txn-filter__label">
                         Время по
                       </label>
                       <input
@@ -737,76 +848,76 @@ export default function DashboardOperatorTransactionSearch() {
                         id="toTime"
                         value={toTime}
                         onChange={(e) => setToTime(e.target.value)}
-                        className="search-card__input"
+                        className="txn-filter__input"
                         disabled={isLoading}
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Кнопки */}
-                  <div className="search-card__buttons">
-                    <button
-                      onClick={handleSearch}
-                      disabled={isLoading}
-                      className={`search-card__button ${
-                        isLoading ? "search-card__button--loading" : ""
-                      }`}
-                    >
-                      {isLoading ? "Поиск..." : "Найти транзакции"}
-                    </button>
-                    <button
-                      onClick={clearFilters}
-                      disabled={isLoading}
-                      className="search-card__button search-card__button--secondary"
-                    >
-                      Очистить
-                    </button>
-                  </div>
+                {/* Действия */}
+                <div className="txn-filter__actions">
+                  <button
+                    onClick={handleSearch}
+                    disabled={isLoading}
+                    className={`txn-filter__btn txn-filter__btn--primary ${
+                      isLoading ? "txn-filter__btn--loading" : ""
+                    }`}
+                  >
+                    {isLoading ? "Поиск..." : "Найти транзакции"}
+                  </button>
+                  <button
+                    onClick={clearFilters}
+                    disabled={isLoading}
+                    className="txn-filter__btn txn-filter__btn--secondary"
+                  >
+                    Очистить
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* ---------- Статистика и График ---------- */}
             {transactions.length > 0 && (
-              <div className="processing-integration__stats-section">
-                <div className="stats-grid">
-                  <div className="stats-card stats-card--total">
-                    <div className="stats-card__label">
+              <div className="txn-stats">
+                <div className="txn-stats__grid">
+                  <div className="txn-stats__card txn-stats__card--total">
+                    <div className="txn-stats__label">
                       Общая сумма (успешно)
                     </div>
-                    <div className="stats-card__value">
+                    <div className="txn-stats__value">
                       {formatAmount(totalAmount)}
                     </div>
                   </div>
-                  <div className="stats-card stats-card--success">
-                    <div className="stats-card__label">Успешных операций</div>
-                    <div className="stats-card__value">
+                  <div className="txn-stats__card txn-stats__card--success">
+                    <div className="txn-stats__label">Успешных операций</div>
+                    <div className="txn-stats__value">
                       {totalCountByResponse.success}
                     </div>
                   </div>
-                  <div className="stats-card stats-card--warning">
-                    <div className="stats-card__label">Ожидающих/Предупр.</div>
-                    <div className="stats-card__value">
+                  <div className="txn-stats__card txn-stats__card--warning">
+                    <div className="txn-stats__label">Ожидающих/Предупр.</div>
+                    <div className="txn-stats__value">
                       {totalCountByResponse.warning}
                     </div>
                   </div>
-                  <div className="stats-card stats-card--error">
-                    <div className="stats-card__label">Ошибочных операций</div>
-                    <div className="stats-card__value">
+                  <div className="txn-stats__card txn-stats__card--error">
+                    <div className="txn-stats__label">Ошибочных операций</div>
+                    <div className="txn-stats__value">
                       {totalCountByResponse.error}
                     </div>
                   </div>
-                  <div className="stats-card stats-card--reversal">
-                    <div className="stats-card__label">
+                  <div className="txn-stats__card txn-stats__card--reversal">
+                    <div className="txn-stats__label">
                       Отмененных (Reversal)
                     </div>
-                    <div className="stats-card__value">
+                    <div className="txn-stats__value">
                       {totalCountByResponse.reversal}
                     </div>
                   </div>
                 </div>
 
-                <div className="chart-section">
+                <div className="txn-stats__chart">
                   <TransactionsChart transactions={transactions} />
                 </div>
               </div>
