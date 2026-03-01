@@ -26,6 +26,7 @@ import EQMSList from "../../pages/general/EqmsTableList.jsx";
 import TableTransactionCashbackSettings from "../../pages/dashboard/dashboard_cashback/TableCashbackSettings.jsx";
 import CardCashbackTable from "../../pages/dashboard/dashboard_cashback/CardCashbackTable.jsx";
 import PaymentsTable from "../../pages/dashboard/dashboard_payments/PaymentsTable.jsx";
+import QRCashbackTable from "../../pages/dashboard/dashboard_cashback/QRCashbackTable.jsx";
 
 const agentRoutes = (
   <>
@@ -164,6 +165,7 @@ const agentRoutes = (
         element={<TableTransactionCashbackSettings />}
       />
       <Route path="cashback/card-list" element={<CardCashbackTable />} />
+      <Route path="cashback/qr-list" element={<QRCashbackTable />} />
     </Route>
 
     {/* Agent Payments (Role 24) */}

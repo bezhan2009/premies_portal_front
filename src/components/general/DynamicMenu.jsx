@@ -695,6 +695,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             href: "/cashback/card-list",
             key: "card_cashback_list",
           },
+          {
+            name: "Кэшбэк по QR",
+            href: "/cashback/qr-list",
+            key: "qr_cashback_list",
+          },
         ],
       });
     }
