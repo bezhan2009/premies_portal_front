@@ -694,6 +694,20 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
       });
     }
 
+    if (roles.includes(24)) {
+      additionalLinks.push({
+        name: "Платежи",
+        key: "payments",
+        children: [
+          {
+            name: "Список платежей",
+            href: "/agent-payments/list",
+            key: "payments_list",
+          },
+        ],
+      });
+    }
+
     return [...baseLinks, ...additionalLinks];
   }, [roles, hasNewApplications]);
 

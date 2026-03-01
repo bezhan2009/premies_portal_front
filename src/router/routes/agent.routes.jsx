@@ -24,6 +24,7 @@ import UpdatingTransactionType from "../../pages/general/TransactionTypes.jsx";
 import TerminalNames from "../../pages/general/TerminalNames.jsx";
 import EQMSList from "../../pages/general/EqmsTableList.jsx";
 import TableTransactionCashbackSettings from "../../pages/dashboard/dashboard_cashback/TableCashbackSettings.jsx";
+import PaymentsTable from "../../pages/dashboard/dashboard_payments/PaymentsTable.jsx";
 
 const agentRoutes = (
   <>
@@ -147,18 +148,32 @@ const agentRoutes = (
     >
       <Route path="agent-custom/eqms" element={<EQMSList />} />
 
-    {/* Agent Cashback (Role 23) */}
+      {/* Agent Cashback (Role 23) */}
     </Route>
 
+    <Route
+      element={
+        <RequireRole allowedRoles={[23]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
       <Route
-          element={
-              <RequireRole allowedRoles={[23]}>
-                  <Outlet />
-              </RequireRole>
-          }
-      >
-          <Route path="cashback/settings" element={<TableTransactionCashbackSettings />} />
-      </Route>
+        path="cashback/settings"
+        element={<TableTransactionCashbackSettings />}
+      />
+    </Route>
+
+    {/* Agent Payments (Role 24) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[24]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="agent-payments/list" element={<PaymentsTable />} />
+    </Route>
   </>
 );
 
