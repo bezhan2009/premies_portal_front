@@ -24,6 +24,7 @@ import UpdatingTransactionType from "../../pages/general/TransactionTypes.jsx";
 import TerminalNames from "../../pages/general/TerminalNames.jsx";
 import EQMSList from "../../pages/general/EqmsTableList.jsx";
 import TableTransactionCashbackSettings from "../../pages/dashboard/dashboard_cashback/TableCashbackSettings.jsx";
+import CardCashbackTable from "../../pages/dashboard/dashboard_cashback/CardCashbackTable.jsx";
 import PaymentsTable from "../../pages/dashboard/dashboard_payments/PaymentsTable.jsx";
 
 const agentRoutes = (
@@ -162,6 +163,7 @@ const agentRoutes = (
         path="cashback/settings"
         element={<TableTransactionCashbackSettings />}
       />
+      <Route path="cashback/card-list" element={<CardCashbackTable />} />
     </Route>
 
     {/* Agent Payments (Role 24) */}

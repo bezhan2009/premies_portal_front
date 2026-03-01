@@ -690,6 +690,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             href: "/cashback/settings",
             key: "cashbacks_settings",
           },
+          {
+            name: "Кэшбэк по картам",
+            href: "/cashback/card-list",
+            key: "card_cashback_list",
+          },
         ],
       });
     }
