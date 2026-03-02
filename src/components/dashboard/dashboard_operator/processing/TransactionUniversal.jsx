@@ -1124,7 +1124,7 @@ export default function DashboardOperatorTransactionSearch() {
                         </tr>
                       </thead>
                       <tbody className="limits-table__body">
-                        {["sortedTransactions"].map((transaction) => {
+                        {sortedTransactions.map((transaction) => {
                           const transactionTypeValue = getTransactionTypeValue(
                             transaction.transactionType,
                           );
