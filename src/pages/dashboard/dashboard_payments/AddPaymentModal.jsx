@@ -20,7 +20,7 @@ const AddPaymentModal = ({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: "1fr 1fr",
             gap: "16px",
             marginBottom: "24px",
           }}
@@ -45,7 +45,7 @@ const AddPaymentModal = ({
           <button
             onClick={onClose}
             className="action-buttons__btn"
-            style={{ backgroundColor: "#6c757d" }}
+            style={{ backgroundColor: "#6c757d", color: "#fff" }}
           >
             Отмена
           </button>
