@@ -32,11 +32,11 @@ const fields = [
         type: "number",
         step: "0.01",
     },
-    { key: "beneficiary_idn", label: "ID Бенефициара", type: "text" },
+    { key: "beneficiary_idn", label: "ИНН Бенефициара", type: "text" },
     { key: "beneficiary_iban", label: "IBAN Бенефициара", type: "text" },
     { key: "beneficiary_name", label: "Имя Бенефициара", type: "text" },
     { key: "payment_details", label: "Детали платежа", type: "text" },
-    { key: "payer_idn", label: "ID Плательщика", type: "text" },
+    { key: "payer_idn", label: "ИНН Плательщика", type: "text" },
     { key: "payer_name", label: "Имя Плательщика", type: "text" },
     { key: "payer_iban", label: "IBAN Плательщика", type: "text" },
 ];
