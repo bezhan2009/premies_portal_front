@@ -171,8 +171,15 @@ const PaymentsTable = () => {
         }
     };
 
-    const formatValue = (value, fieldType) => {
+    // ИСПРАВЛЕНО: Функция форматирования значений
+    const formatValue = (value, fieldType, fieldKey) => {
         if (value === null || value === undefined || value === "") return "-";
+
+        // ИСПРАВЛЕНО: Для ID всегда показываем как целое число
+        if (fieldKey === "id") {
+            return Number.isInteger(value) ? value.toString() : Math.floor(value).toString();
+        }
+
         if (fieldType === "datetime") {
             try {
                 const d = new Date(value);
@@ -182,10 +189,17 @@ const PaymentsTable = () => {
                 return value;
             }
         }
-        // ИСПРАВЛЕНО: Форматирование числа с двумя знаками после запятой для денежных сумм
-        if (fieldType === "number" && typeof value === "number") {
+
+        // ИСПРАВЛЕНО: Для денежных сумм (cashback_amount) форматируем с двумя знаками
+        if (fieldKey === "cashback_amount" && typeof value === "number") {
             return value.toFixed(2);
         }
+
+        // Для всех остальных чисел показываем как есть
+        if (fieldType === "number" && typeof value === "number") {
+            return value.toString();
+        }
+
         return String(value);
     };
 
@@ -264,7 +278,7 @@ const PaymentsTable = () => {
                                     <tr key={item.id}>
                                         {fields.map((field) => (
                                             <td key={field.key}>
-                                                {formatValue(item[field.key], field.type)}
+                                                {formatValue(item[field.key], field.type, field.key)}
                                             </td>
                                         ))}
                                     </tr>
