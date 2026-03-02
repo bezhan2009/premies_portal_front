@@ -24,18 +24,17 @@ const emptyForm = {
 const fields = [
   { key: "id", label: "ID", type: "number" },
   { key: "created_at", label: "Дата создания", type: "datetime" },
-  { key: "updated_at", label: "Дата обновления", type: "datetime" },
   {
     key: "cashback_amount",
     label: "Сумма кэшбэка",
     type: "number",
     step: "0.01",
   },
-  { key: "beneficiary_id_n", label: "ID Бенефициара", type: "text" },
+  { key: "beneficiary_idn", label: "ID Бенефициара", type: "text" },
   { key: "beneficiary_iban", label: "IBAN Бенефициара", type: "text" },
   { key: "beneficiary_name", label: "Имя Бенефициара", type: "text" },
   { key: "payment_details", label: "Детали платежа", type: "text" },
-  { key: "payer_id_n", label: "ID Плательщика", type: "text" },
+  { key: "payer_idn", label: "ID Плательщика", type: "text" },
   { key: "payer_name", label: "Имя Плательщика", type: "text" },
   { key: "payer_iban", label: "IBAN Плательщика", type: "text" },
 ];
@@ -82,6 +81,23 @@ const PaymentsTable = () => {
   const handleAdd = async () => {
 
     console.log("Add new payment:", newItem);
+      try {
+          const token = localStorage.getItem("access_token");
+          const response = await fetch(`${backendURL}/payments`, {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(newItem),
+          });
+          if (!response.ok) throw new Error("Ошибка при добавлении");
+          await fetchItems();
+          setNewItem({ ...emptyForm });
+          setShowAddForm(false);
+      } catch (e) {
+          console.error("Ошибка при добавлении:", e);
+      }
     setNewItem({ ...emptyForm });
     setShowAddForm(false);
   };
@@ -122,7 +138,7 @@ const PaymentsTable = () => {
               className="action-buttons__btn"
               onClick={() => setShowAddForm((v) => !v)}
             >
-              {showAddForm ? "− Скрыть форму" : "+ Добавить платеж"}
+              {showAddForm ? "− Скрыть форму" : "+ Создать платеж"}
             </button>
             <button className="export-excel-btn" onClick={handleExport}>
               Экспорт в Excel
@@ -171,7 +187,7 @@ const PaymentsTable = () => {
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={handleAdd} className="action-buttons__btn">
-                Сохранить
+                Создать
               </button>
               <button
                 onClick={() => {

@@ -13,7 +13,6 @@ import { apiClient } from "../../../api/utils/apiClient.js";
 const fields = [
   { key: "id", label: "ID", type: "number" },
   { key: "created_at", label: "Дата создания", type: "datetime" },
-  { key: "updated_at", label: "Дата обновления", type: "datetime" },
   { key: "amount", label: "Сумма", type: "number", step: "0.01" },
   { key: "number_in_arm", label: "Номер в ARM", type: "text" },
   { key: "sender_phone", label: "Телефон отправителя", type: "text" },

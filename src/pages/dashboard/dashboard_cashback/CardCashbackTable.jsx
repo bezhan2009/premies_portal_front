@@ -11,9 +11,8 @@ import useSidebar from "../../../hooks/useSideBar.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 
 const fields = [
-  { key: "id", label: "ID", type: "number" },
+  { key: "ID", label: "ID", type: "number" },
   { key: "created_at", label: "Дата создания", type: "datetime" },
-  { key: "updated_at", label: "Дата обновления", type: "datetime" },
   { key: "amount", label: "Сумма", type: "number", step: "0.01" },
   { key: "utrno", label: "UTRNO", type: "text" },
 ];
