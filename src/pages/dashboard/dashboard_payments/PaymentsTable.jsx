@@ -18,7 +18,7 @@ const emptyForm = {
     beneficiary_iban: "",
     beneficiary_name: "",
     payment_details: "",
-    payer_id_n: "",
+    payer_idn: "",
     payer_name: "",
     payer_iban: "",
 };
@@ -135,7 +135,7 @@ const PaymentsTable = () => {
                 beneficiary_iban: newItem.beneficiary_iban,
                 beneficiary_name: newItem.beneficiary_name,
                 payment_details: newItem.payment_details,
-                payer_id_n: newItem.payer_id_n,
+                payer_idn: newItem.payer_idn,
                 payer_name: newItem.payer_name,
                 payer_iban: newItem.payer_iban,
                 cashback_amount: parseFloat(newItem.cashback_amount) // Преобразуем в число
