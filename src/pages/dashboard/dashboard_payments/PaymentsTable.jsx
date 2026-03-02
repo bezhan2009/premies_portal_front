@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/AddCardPriceForm.scss";
 import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
@@ -12,7 +11,7 @@ import { apiClient } from "../../../api/utils/apiClient.js";
 
 const emptyForm = {
   cashback_amount: "",
-  beneficiary_id_n: "",
+  beneficiary_idn: "",
   beneficiary_iban: "",
   beneficiary_name: "",
   payment_details: "",
@@ -31,7 +30,7 @@ const fields = [
     type: "number",
     step: "0.01",
   },
-  { key: "beneficiary_id_n", label: "ID Бенефициара", type: "text" },
+  { key: "beneficiary_idn", label: "ID Бенефициара", type: "text" },
   { key: "beneficiary_iban", label: "IBAN Бенефициара", type: "text" },
   { key: "beneficiary_name", label: "Имя Бенефициара", type: "text" },
   { key: "payment_details", label: "Детали платежа", type: "text" },
@@ -80,9 +79,22 @@ const PaymentsTable = () => {
   }, [fetchItems]);
 
   const handleAdd = async () => {
-
+    try {
+      setLoading(true);
+      const response = await apiClient.post(`${backendURL}/payments`);
+      const data = await response.data;
+      if (data) {
+        fetchItems();
+      }
+    } catch (e) {
+      console.error("Ошибка загрузки:", e);
+      setError("Ошибка загрузки данных");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
     console.log("Add new payment:", newItem);
-    setNewItem({ ...emptyForm });
+    // setNewItem({ ...emptyForm });
     setShowAddForm(false);
   };
 
@@ -120,9 +132,9 @@ const PaymentsTable = () => {
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <button
               className="action-buttons__btn"
-              onClick={() => setShowAddForm((v) => !v)}
+              onClick={() => setShowAddForm(true)}
             >
-              {showAddForm ? "− Скрыть форму" : "+ Добавить платеж"}
+              + Добавить платеж
             </button>
             <button className="export-excel-btn" onClick={handleExport}>
               Экспорт в Excel
@@ -130,61 +142,14 @@ const PaymentsTable = () => {
           </div>
         </div>
 
-        {showAddForm && (
-          <div className="add-card-form" style={{ margin: "0 16px 20px" }}>
-            <h3 style={{ marginBottom: "10px" }}>Новый платеж</h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: "10px",
-                marginBottom: "12px",
-              }}
-            >
-              {fields
-                .filter(
-                  (f) => !["id", "created_at", "updated_at"].includes(f.key),
-                )
-                .map(({ key, label, type, step }) => (
-                  <div
-                    key={key}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    <label style={{ fontSize: "12px", color: "#666" }}>
-                      {label}
-                    </label>
-                    <input
-                      type={type}
-                      step={step}
-                      value={newItem[key]}
-                      onChange={(e) =>
-                        setNewItem({ ...newItem, [key]: e.target.value })
-                      }
-                      placeholder={label}
-                    />
-                  </div>
-                ))}
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={handleAdd} className="action-buttons__btn">
-                Сохранить
-              </button>
-              <button
-                onClick={() => {
-                  setNewItem({ ...emptyForm });
-                  setShowAddForm(false);
-                }}
-                className="action-buttons__btn"
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        )}
+        <AddPaymentModal
+          isOpen={showAddForm}
+          onClose={() => setShowAddForm(false)}
+          newItem={newItem}
+          setNewItem={setNewItem}
+          onSave={handleAdd}
+          fields={fields}
+        />
 
         {loading ? (
           <p style={{ margin: "16px" }}>Загрузка...</p>
