@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Modal, Form, Input, InputNumber, Select, Switch, Row, Col, Collapse } from "antd";
-import { LoanTypeDict, CurrencyTypeDict } from "../../../domain/product/dictionaries";
+import { LoanTypeDict, CurrencyTypeDict } from "../../domain/dictionaries";
 
 export const CreditForm = ({ open, onClose, onSubmit, initialValues, loading = false }) => {
   const [form] = Form.useForm();

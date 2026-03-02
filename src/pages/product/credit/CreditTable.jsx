@@ -1,15 +1,11 @@
-import { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { Table, Button, Space, Tag, message, Modal } from "antd";
 import { useCreditStore } from "../../../store/product/useCredit.store";
 import { CreditForm } from "./CreditForm";
-import {
-  CurrencyTypeDict,
-  LoanTypeDict,
-} from "../../../domain/product/dictionaries";
+import { CurrencyTypeDict, LoanTypeDict } from "../../../domain/product/dictionaries";
 
 export const CreditTable = () => {
-  const { credits, fetchCredits, createCredit, updateCredit, deleteCredit } =
-    useCreditStore();
+  const { credits, fetchCredits, createCredit, updateCredit, deleteCredit } = useCreditStore();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCredit, setEditingCredit] = useState(null);
@@ -74,9 +70,7 @@ export const CreditTable = () => {
           cancelText: "Отмена",
           onOk: async () => {
             try {
-              await Promise.all(
-                selectedRows.map((row) => deleteCredit(row.id)),
-              );
+              await Promise.all(selectedRows.map((row) => deleteCredit(row.id)));
               message.success("Кредиты успешно удалены");
               setSelectedRowKeys([]);
               fetchCredits();
@@ -94,13 +88,7 @@ export const CreditTable = () => {
 
   return (
     <>
-      <Space
-        style={{
-          width: "100%",
-          justifyContent: "flex-start",
-          marginBottom: 20,
-        }}
-      >
+      <Space style={{ width: "100%", justifyContent: "flex-start", marginBottom: 20 }}>
         <Button
           type="primary"
           onClick={handleCreate}
@@ -119,9 +107,7 @@ export const CreditTable = () => {
         pagination={{ pageSize: 10 }}
         onRow={(record) => ({
           onClick: (event) => {
-            const isCheckbox = event.target.closest(
-              ".ant-table-selection-column",
-            );
+            const isCheckbox = event.target.closest(".ant-table-selection-column");
             if (!isCheckbox) handleEdit(record);
           },
         })}
@@ -141,113 +127,51 @@ export const CreditTable = () => {
           key="currencyLabel"
           render={(val) => <Tag color="green">{val}</Tag>}
         />
-        <Table.Column
-          title="Мин. сумма"
-          dataIndex="minAmount"
-          key="minAmount"
-        />
-        <Table.Column
-          title="Макс. сумма"
-          dataIndex="maxAmount"
-          key="maxAmount"
-        />
-        <Table.Column
-          title="Мин. срок"
-          dataIndex="minTermInMonths"
-          key="minTermInMonths"
-        />
-        <Table.Column
-          title="Макс. срок"
-          dataIndex="maxTermInMonths"
-          key="maxTermInMonths"
-        />
-        <Table.Column
-          title="Процент от"
-          dataIndex="interestRateFrom"
-          key="interestRateFrom"
-        />
-        <Table.Column
-          title="Процент до"
-          dataIndex="interestRateTo"
-          key="interestRateTo"
-        />
-        <Table.Column
-          title="Эфф. ставка от"
-          dataIndex="effectiveRateFrom"
-          key="effectiveRateFrom"
-        />
-        <Table.Column
-          title="Эфф. ставка до"
-          dataIndex="effectiveRateTo"
-          key="effectiveRateTo"
-        />
-        <Table.Column
-          title="Льготный период"
-          dataIndex="gracePeriodMonths"
-          key="gracePeriodMonths"
-        />
-        <Table.Column
-          title="Комиссия за досрочное погашение"
-          dataIndex="earlyRepaymentFee"
-          key="earlyRepaymentFee"
-        />
-        <Table.Column
-          title="Срок обработки заявки"
-          dataIndex="applicationProcessingTime"
-          key="applicationProcessingTime"
-        />
+        <Table.Column title="Мин. сумма" dataIndex="minAmount" key="minAmount" />
+        <Table.Column title="Макс. сумма" dataIndex="maxAmount" key="maxAmount" />
+        <Table.Column title="Мин. срок" dataIndex="minTermInMonths" key="minTermInMonths" />
+        <Table.Column title="Макс. срок" dataIndex="maxTermInMonths" key="maxTermInMonths" />
+        <Table.Column title="Процент от" dataIndex="interestRateFrom" key="interestRateFrom" />
+        <Table.Column title="Процент до" dataIndex="interestRateTo" key="interestRateTo" />
+        <Table.Column title="Эфф. ставка от" dataIndex="effectiveRateFrom" key="effectiveRateFrom" />
+        <Table.Column title="Эфф. ставка до" dataIndex="effectiveRateTo" key="effectiveRateTo" />
+        <Table.Column title="Льготный период" dataIndex="gracePeriodMonths" key="gracePeriodMonths" />
+        <Table.Column title="Комиссия за досрочное погашение" dataIndex="earlyRepaymentFee" key="earlyRepaymentFee" />
+        <Table.Column title="Срок обработки заявки" dataIndex="applicationProcessingTime" key="applicationProcessingTime" />
         <Table.Column title="Мин. возраст" dataIndex="ageMin" key="ageMin" />
         <Table.Column title="Макс. возраст" dataIndex="ageMax" key="ageMax" />
-        <Table.Column
-          title="Доход"
-          dataIndex="incomeRequirement"
-          key="incomeRequirement"
-        />
+        <Table.Column title="Доход" dataIndex="incomeRequirement" key="incomeRequirement" />
         <Table.Column
           title="Документы"
           dataIndex="documentsArray"
           key="documentsArray"
           render={(val) =>
-            val.length
-              ? val.map((d, i) => (
-                  <Tag color="cyan" key={i}>
-                    {d}
-                  </Tag>
-                ))
-              : null
+            val.length ? val.map((d, i) => <Tag color="cyan" key={i}>{d}</Tag>) : null
           }
         />
         <Table.Column
           title="Онлайн заявка"
           dataIndex="onlineApplication"
           key="onlineApplication"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
         <Table.Column
           title="Активен"
           dataIndex="isActive"
           key="isActive"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
         <Table.Column
           title="Требуется залог"
           dataIndex="collateralRequired"
           key="collateralRequired"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
         <Table.Column
           title="Требуется страховка"
           dataIndex="insuranceRequired"
           key="insuranceRequired"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
         <Table.Column
           title="Дата обновления"
@@ -259,10 +183,7 @@ export const CreditTable = () => {
 
       <CreditForm
         open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingCredit(null);
-        }}
+        onClose={() => { setModalOpen(false); setEditingCredit(null); }}
         onSubmit={handleSubmit}
         initialValues={editingCredit || undefined}
         loading={submitting}

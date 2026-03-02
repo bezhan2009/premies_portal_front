@@ -1,21 +1,11 @@
-import { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { Table, Button, Space, Tag, message, Modal } from "antd";
 import { useDepositStore } from "../../../store/product/useDeposit.store";
 import { DepositForm } from "./DepositForm";
-import {
-  DepositTypeDict,
-  CurrencyTypeDict,
-  CapitalizationTypeDict,
-} from "../../../domain/product/dictionaries";
+import { DepositTypeDict, CurrencyTypeDict, CapitalizationTypeDict } from "../../../domain/product/dictionaries";
 
 export const DepositTable = () => {
-  const {
-    deposits,
-    fetchDeposits,
-    createDeposit,
-    updateDeposit,
-    deleteDeposit,
-  } = useDepositStore();
+  const { deposits, fetchDeposits, createDeposit, updateDeposit, deleteDeposit } = useDepositStore();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDeposit, setEditingDeposit] = useState(null);
@@ -55,8 +45,7 @@ export const DepositTable = () => {
     ...d,
     depositTypeLabel: DepositTypeDict[d.depositType] || d.depositType,
     currencyLabel: CurrencyTypeDict[d.currency] || d.currency,
-    capitalizationLabel:
-      CapitalizationTypeDict[d.capitalization] || d.capitalization,
+    capitalizationLabel: CapitalizationTypeDict[d.capitalization] || d.capitalization,
   }));
 
   const rowSelection = {
@@ -73,9 +62,7 @@ export const DepositTable = () => {
           cancelText: "Отмена",
           onOk: async () => {
             try {
-              await Promise.all(
-                selectedRows.map((row) => deleteDeposit(row.id)),
-              );
+              await Promise.all(selectedRows.map((row) => deleteDeposit(row.id)));
               message.success("Депозит успешно удалены");
               setSelectedRowKeys([]);
               fetchDeposits();
@@ -91,13 +78,7 @@ export const DepositTable = () => {
 
   return (
     <>
-      <Space
-        style={{
-          width: "100%",
-          justifyContent: "flex-start",
-          marginBottom: 20,
-        }}
-      >
+      <Space style={{ width: "100%", justifyContent: "flex-start", marginBottom: 20 }}>
         <Button
           type="primary"
           onClick={() => setModalOpen(true)}
@@ -116,9 +97,7 @@ export const DepositTable = () => {
         pagination={{ pageSize: 10 }}
         onRow={(record) => ({
           onClick: (event) => {
-            const isCheckbox = event.target.closest(
-              ".ant-table-selection-column",
-            );
+            const isCheckbox = event.target.closest(".ant-table-selection-column");
             if (!isCheckbox) handleEdit(record);
           },
         })}
@@ -141,34 +120,16 @@ export const DepositTable = () => {
           render={(val) => <Tag color="green">{val}</Tag>}
         />
 
-        <Table.Column
-          title="Мин. сумма"
-          dataIndex="minAmount"
-          key="minAmount"
-        />
-        <Table.Column
-          title="Макс. сумма"
-          dataIndex="maxAmount"
-          key="maxAmount"
-        />
-        <Table.Column
-          title="Срок (мес)"
-          dataIndex="termInMonths"
-          key="termInMonths"
-        />
-        <Table.Column
-          title="Ставка %"
-          dataIndex="interestRate"
-          key="interestRate"
-        />
+        <Table.Column title="Мин. сумма" dataIndex="minAmount" key="minAmount" />
+        <Table.Column title="Макс. сумма" dataIndex="maxAmount" key="maxAmount" />
+        <Table.Column title="Срок (мес)" dataIndex="termInMonths" key="termInMonths" />
+        <Table.Column title="Ставка %" dataIndex="interestRate" key="interestRate" />
 
         <Table.Column
           title="Плавающая ставка"
           dataIndex="interestRateVariable"
           key="interestRateVariable"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
@@ -182,60 +143,44 @@ export const DepositTable = () => {
           title="Пополнение"
           dataIndex="replenishmentAllowed"
           key="replenishmentAllowed"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
           title="Частичное снятие"
           dataIndex="partialWithdrawalAllowed"
           key="partialWithdrawalAllowed"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
           title="Автопролонгация"
           dataIndex="autoProlongation"
           key="autoProlongation"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
-        <Table.Column
-          title="Штраф досрочного снятия"
-          dataIndex="earlyWithdrawalPenalty"
-          key="earlyWithdrawalPenalty"
-        />
+        <Table.Column title="Штраф досрочного снятия" dataIndex="earlyWithdrawalPenalty" key="earlyWithdrawalPenalty" />
 
         <Table.Column
           title="Страхование"
           dataIndex="insurance"
           key="insurance"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
           title="Онлайн открытие"
           dataIndex="onlineOpening"
           key="onlineOpening"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
           title="Активен"
           dataIndex="isActive"
           key="isActive"
-          render={(val) =>
-            val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>
-          }
+          render={(val) => (val ? <Tag color="green">Да</Tag> : <Tag color="red">Нет</Tag>)}
         />
 
         <Table.Column
