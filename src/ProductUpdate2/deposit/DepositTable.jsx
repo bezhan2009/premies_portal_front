@@ -1,8 +1,8 @@
 import  { useEffect, useState } from "react";
 import { Table, Button, Space, Tag, message, Modal } from "antd";
-import { useDepositStore } from "../../../store/product/useDeposit.store";
+import { useDepositStore } from "../../store/useDeposit.store";
 import { DepositForm } from "./DepositForm";
-import { DepositTypeDict, CurrencyTypeDict, CapitalizationTypeDict } from "../../../domain/product/dictionaries";
+import { DepositTypeDict, CurrencyTypeDict, CapitalizationTypeDict } from "../../domain/dictionaries";
 
 export const DepositTable = () => {
   const { deposits, fetchDeposits, createDeposit, updateDeposit, deleteDeposit } = useDepositStore();

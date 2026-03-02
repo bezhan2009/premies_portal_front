@@ -1,28 +1,8 @@
-import { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Switch,
-  Collapse,
-  Row,
-  Col,
-} from "antd";
-import {
-  DepositTypeDict,
-  CurrencyTypeDict,
-  CapitalizationTypeDict,
-} from "../../../domain/product/dictionaries";
+import  { useEffect } from "react";
+import { Modal, Form, Input, InputNumber, Select, Switch, Collapse, Row, Col } from "antd";
+import { DepositTypeDict, CurrencyTypeDict, CapitalizationTypeDict } from "../../domain/dictionaries";
 
-export const DepositForm = ({
-  open,
-  onClose,
-  onSubmit,
-  initialValues,
-  loading = false,
-}) => {
+export const DepositForm = ({ open, onClose, onSubmit, initialValues, loading = false }) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -31,14 +11,14 @@ export const DepositForm = ({
         ...initialValues,
         depositType: Number(initialValues.depositType),
         currency: Number(initialValues.currency),
-        termInMonths: Number(initialValues.termInMonths ?? 12),
-        interestRate: Number(initialValues.interestRate ?? 10),
-        capitalization: (() => {
+         termInMonths: Number(initialValues.termInMonths ?? 12),
+       interestRate: Number(initialValues.interestRate ?? 10),
+         capitalization: (() => {
           if (typeof initialValues.capitalization === "number") {
             return initialValues.capitalization;
           } else {
             const entry = Object.entries(CapitalizationTypeDict).find(
-              ([, v]) => v === String(initialValues.capitalization),
+              ([_, v]) => v === String(initialValues.capitalization)
             );
             return entry ? Number(entry[0]) : 0;
           }
@@ -114,11 +94,7 @@ export const DepositForm = ({
         <Collapse accordion defaultActiveKey={["main", "params", "logic"]}>
           <Collapse.Panel header="Основные данные" key="main">
             <Form.Item name="bankId" label="ID Банка">
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Введите ID Банка"
-                min={0}
-              />
+              <InputNumber style={{ width: "100%" }} placeholder="Введите ID Банка" min={0} />
             </Form.Item>
 
             <Form.Item name="name" label="Название депозита">
@@ -126,11 +102,7 @@ export const DepositForm = ({
             </Form.Item>
 
             <Form.Item name="depositType" label="Тип депозита">
-              <Select
-                placeholder="Выберите тип депозита"
-                style={{ width: "100%" }}
-                allowClear
-              >
+              <Select placeholder="Выберите тип депозита" style={{ width: "100%" }} allowClear>
                 {Object.entries(DepositTypeDict).map(([key, val]) => (
                   <Select.Option key={key} value={Number(key)}>
                     {val}
@@ -140,11 +112,7 @@ export const DepositForm = ({
             </Form.Item>
 
             <Form.Item name="currency" label="Валюта">
-              <Select
-                placeholder="Выберите валюту"
-                style={{ width: "100%" }}
-                allowClear
-              >
+              <Select placeholder="Выберите валюту" style={{ width: "100%" }} allowClear>
                 {Object.entries(CurrencyTypeDict).map(([key, val]) => (
                   <Select.Option key={key} value={Number(key)}>
                     {val}
@@ -158,20 +126,12 @@ export const DepositForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="minAmount" label="Мин. сумма">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите минимальную сумму"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите минимальную сумму" min={0} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="maxAmount" label="Макс. сумма">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите максимальную сумму"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите максимальную сумму" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -179,33 +139,18 @@ export const DepositForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="termInMonths" label="Срок (мес)">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите срок в месяцах"
-                    min={12}
-                    max={24}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите срок в месяцах" min={12} max={24} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="interestRate" label="Процентная ставка">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите процентную ставку"
-                    min={10}
-                    max={20}
-                    step={0.1}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите процентную ставку" min={10} max={20} step={0.1} />
                 </Form.Item>
               </Col>
             </Row>
 
             <Form.Item name="capitalization" label="Капитализация">
-              <Select
-                placeholder="Выберите капитализацию"
-                style={{ width: "100%" }}
-                allowClear
-              >
+              <Select placeholder="Выберите капитализацию" style={{ width: "100%" }} allowClear>
                 {Object.entries(CapitalizationTypeDict).map(([key, val]) => (
                   <Select.Option key={key} value={Number(key)}>
                     {val}
@@ -214,81 +159,45 @@ export const DepositForm = ({
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="earlyWithdrawalPenalty"
-              label="Штраф при досрочном снятии"
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Введите штраф"
-                min={0}
-                step={0.1}
-              />
+            <Form.Item name="earlyWithdrawalPenalty" label="Штраф при досрочном снятии">
+              <InputNumber style={{ width: "100%" }} placeholder="Введите штраф" min={0} step={0.1} />
             </Form.Item>
           </Collapse.Panel>
 
           <Collapse.Panel header="Логические поля" key="logic">
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="interestRateVariable"
-                  label="Плавающая ставка"
-                  valuePropName="checked"
-                >
+                <Form.Item name="interestRateVariable" label="Плавающая ставка" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="replenishmentAllowed"
-                  label="Пополнение"
-                  valuePropName="checked"
-                >
+                <Form.Item name="replenishmentAllowed" label="Пополнение" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="partialWithdrawalAllowed"
-                  label="Частичное снятие"
-                  valuePropName="checked"
-                >
+                <Form.Item name="partialWithdrawalAllowed" label="Частичное снятие" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="autoProlongation"
-                  label="Автопролонгация"
-                  valuePropName="checked"
-                >
+                <Form.Item name="autoProlongation" label="Автопролонгация" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="insurance"
-                  label="Страхование"
-                  valuePropName="checked"
-                >
+                <Form.Item name="insurance" label="Страхование" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="onlineOpening"
-                  label="Онлайн открытие"
-                  valuePropName="checked"
-                >
+                <Form.Item name="onlineOpening" label="Онлайн открытие" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="isActive"
-                  label="Активен"
-                  valuePropName="checked"
-                >
+                <Form.Item name="isActive" label="Активен" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>

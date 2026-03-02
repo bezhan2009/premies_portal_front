@@ -30,6 +30,7 @@ export const CardForm = ({
         ...initialValues,
         cardType: Number(initialValues.cardType),
         currency: Number(initialValues.currency),
+        // currency: initialValues.currency,
       });
     } else {
       form.resetFields();
@@ -198,6 +199,7 @@ export const CardForm = ({
                   </Select.Option>
                 ))}
               </Select>
+              {/* <Input placeholder="Введите валюту" /> */}
             </Form.Item>
           </Collapse.Panel>
 

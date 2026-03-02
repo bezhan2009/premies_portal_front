@@ -690,6 +690,30 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             href: "/cashback/settings",
             key: "cashbacks_settings",
           },
+          {
+            name: "Кэшбэк по картам",
+            href: "/cashback/card-list",
+            key: "card_cashback_list",
+          },
+          {
+            name: "Кэшбэк по QR",
+            href: "/cashback/qr-list",
+            key: "qr_cashback_list",
+          },
+        ],
+      });
+    }
+
+    if (roles.includes(24)) {
+      additionalLinks.push({
+        name: "Платежи",
+        key: "payments",
+        children: [
+          {
+            name: "Список платежей",
+            href: "/agent-payments/list",
+            key: "payments_list",
+          },
         ],
       });
     }

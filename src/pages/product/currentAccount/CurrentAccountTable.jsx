@@ -96,9 +96,8 @@ export const CurrentAccountTable = () => {
               message.success("Текущий счёт успешно удалены");
               setSelectedRowKeys([]);
               fetchAccounts();
-            } catch (error) {
+            } catch {
               message.error("Ошибка при удалении");
-              console.log(error);
             }
           },
           onCancel: () => {
@@ -112,7 +111,11 @@ export const CurrentAccountTable = () => {
   return (
     <>
       <Space
-        style={{ width: "100%", justifyContent: "flex-end", marginBottom: 16 }}
+        style={{
+          width: "100%",
+          justifyContent: "flex-start",
+          marginBottom: 20,
+        }}
       >
         <Button
           type="primary"

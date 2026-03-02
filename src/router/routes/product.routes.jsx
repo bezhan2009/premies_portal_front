@@ -1,11 +1,11 @@
 import { Route, Navigate } from "react-router-dom";
 import RequireRole from "../../middlewares/RequireRole";
 import { ProductLayout } from "../../pages/product/Layout";
-import { CardTable } from "../../pages/product/card/CardTable";
 import { CreditTable } from "../../pages/product/credit/CreditTable";
 import { CurrentAccountTable } from "../../pages/product/currentAccount/CurrentAccountTable";
 import { DepositTable } from "../../pages/product/deposit/DepositTable";
 import { MoneyTransferTable } from "../../pages/product/moneyTransfer/MoneyTransferTable";
+import { CardTable } from "../../pages/product/card/CardTable";
 
 export const productRoutes = (
   <Route
