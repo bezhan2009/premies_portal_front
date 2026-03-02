@@ -11,6 +11,7 @@ const AddPaymentModal = ({
                              fields,
                          }) => {
     const handleChange = (key, value) => {
+        // Для всех полей просто обновляем значение
         setNewItem((prev) => ({ ...prev, [key]: value }));
     };
 
@@ -31,8 +32,8 @@ const AddPaymentModal = ({
                             <Input
                                 key={key}
                                 title={label}
-                                type={type}
-                                step={step}
+                                type={key === "cashback_amount" ? "number" : type}
+                                step={key === "cashback_amount" ? "0.01" : step}
                                 value={newItem[key]}
                                 onChange={(val) => handleChange(key, val)}
                                 placeholder={label}

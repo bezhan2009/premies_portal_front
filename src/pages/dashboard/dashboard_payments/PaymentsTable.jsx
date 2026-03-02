@@ -11,8 +11,9 @@ import { apiClient } from "../../../api/utils/apiClient.js";
 import AddPaymentModal from "./AddPaymentModal.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 
+// ИСПРАВЛЕНО: cashback_amount теперь число, а не строка
 const emptyForm = {
-    cashback_amount: "",
+    cashback_amount: 0,  // Изменено с "" на 0
     beneficiary_idn: "",
     beneficiary_iban: "",
     beneficiary_name: "",
@@ -101,26 +102,51 @@ const PaymentsTable = () => {
         fetchItems();
     }, [fetchItems]);
 
+    // ИСПРАВЛЕНО: Добавлена обработка типов данных
     const handleAdd = async () => {
         // Валидация: проверяем, что все поля (кроме служебных) заполнены
         const requiredFields = fields.filter(
             (f) => !["id", "created_at", "updated_at"].includes(f.key)
         );
-        const isEmptyField = requiredFields.some(
-            (field) => !newItem[field.key] || newItem[field.key].toString().trim() === ""
-        );
+
+        // Проверка на пустые поля
+        const isEmptyField = requiredFields.some((field) => {
+            const value = newItem[field.key];
+            return value === undefined || value === null || value.toString().trim() === "";
+        });
+
         if (isEmptyField) {
             showAlert("Пожалуйста, заполните все поля", "error");
             return;
         }
 
+        // ИСПРАВЛЕНО: Дополнительная проверка для cashback_amount
+        if (isNaN(parseFloat(newItem.cashback_amount))) {
+            showAlert("Пожалуйста, введите корректную сумму перевода", "error");
+            return;
+        }
+
         try {
             setLoading(true);
+
+            // ИСПРАВЛЕНО: Подготавливаем данные с правильными типами
+            const paymentData = {
+                beneficiary_idn: newItem.beneficiary_idn,
+                beneficiary_iban: newItem.beneficiary_iban,
+                beneficiary_name: newItem.beneficiary_name,
+                payment_details: newItem.payment_details,
+                payer_id_n: newItem.payer_id_n,
+                payer_name: newItem.payer_name,
+                payer_iban: newItem.payer_iban,
+                cashback_amount: parseFloat(newItem.cashback_amount) // Преобразуем в число
+            };
+
             // Отправляем данные нового платежа
-            const response = await apiClient.post(`${backendURL}/payments`, newItem);
+            const response = await apiClient.post(`${backendURL}/payments`, paymentData);
+
             if (response.status === 200 || response.status === 201) {
                 showAlert("Платёж успешно создан", "success");
-                fetchItems(); // обновляем список
+                await fetchItems(); // обновляем список
                 setNewItem({ ...emptyForm }); // сбрасываем форму
                 setShowAddForm(false); // закрываем модалку
             } else {
@@ -155,6 +181,10 @@ const PaymentsTable = () => {
             } catch {
                 return value;
             }
+        }
+        // ИСПРАВЛЕНО: Форматирование числа с двумя знаками после запятой для денежных сумм
+        if (fieldType === "number" && typeof value === "number") {
+            return value.toFixed(2);
         }
         return String(value);
     };
@@ -196,7 +226,10 @@ const PaymentsTable = () => {
 
                 <AddPaymentModal
                     isOpen={showAddForm}
-                    onClose={() => setShowAddForm(false)}
+                    onClose={() => {
+                        setShowAddForm(false);
+                        setNewItem({ ...emptyForm }); // Сбрасываем форму при закрытии
+                    }}
                     newItem={newItem}
                     setNewItem={setNewItem}
                     onSave={handleAdd}
