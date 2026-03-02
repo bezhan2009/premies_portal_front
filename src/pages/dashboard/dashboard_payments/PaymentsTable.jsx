@@ -8,6 +8,7 @@ import SortIcon from "../../../components/general/SortIcon.jsx";
 import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import useSidebar from "../../../hooks/useSideBar.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
+import AddPaymentModal from "./AddPaymentModal.jsx";
 
 const emptyForm = {
   cashback_amount: "",
@@ -80,7 +81,7 @@ const PaymentsTable = () => {
 
   const handleAdd = async () => {
     try {
-      setLoading(true);
+      // setLoading(true);
       const response = await apiClient.post(`${backendURL}/payments`);
       const data = await response.data;
       if (data) {
@@ -88,10 +89,10 @@ const PaymentsTable = () => {
       }
     } catch (e) {
       console.error("Ошибка загрузки:", e);
-      setError("Ошибка загрузки данных");
-      setItems([]);
+      // setError("Ошибка загрузки данных");
+      // setItems([]);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
     console.log("Add new payment:", newItem);
     // setNewItem({ ...emptyForm });
