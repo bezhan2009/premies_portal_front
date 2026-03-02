@@ -1,8 +1,8 @@
 import  { useEffect, useState } from "react";
 import { Table, Button, Space, Tag, message, Modal } from "antd";
-import { useCreditStore } from "../../../store/product/useCredit.store";
+import { useCreditStore } from "../../store/useCredit.store";
 import { CreditForm } from "./CreditForm";
-import { CurrencyTypeDict, LoanTypeDict } from "../../../domain/product/dictionaries";
+import { CurrencyTypeDict, LoanTypeDict } from "../../domain/dictionaries";
 
 export const CreditTable = () => {
   const { credits, fetchCredits, createCredit, updateCredit, deleteCredit } = useCreditStore();

@@ -7,7 +7,6 @@ import Sidebar from "../../../components/general/DynamicMenu.jsx";
 
 export default function DashboardOperatorProcessingTransactionUniversal() {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
-  
 
   return (
     <>
@@ -18,7 +17,7 @@ export default function DashboardOperatorProcessingTransactionUniversal() {
         className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
       >
         <Sidebar
-          activeLink="transactions"
+          activeLink="transactions_search"
           isOpen={isSidebarOpen}
           toggle={toggleSidebar}
         />
