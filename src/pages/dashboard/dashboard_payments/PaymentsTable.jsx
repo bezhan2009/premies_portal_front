@@ -28,7 +28,7 @@ const fields = [
     { key: "updated_at", label: "Дата обновления", type: "datetime" },
     {
         key: "cashback_amount",
-        label: "Сумма кэшбэка",
+        label: "Сумма перевода",
         type: "number",
         step: "0.01",
     },
