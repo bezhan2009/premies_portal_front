@@ -5,6 +5,7 @@ body {
   animation: fadeIn 0.5s ease-out;
   font-family: sans-serif;
 }
+
 ::selection {
   background-color: #e21a1c;
   color: white;
@@ -2188,5 +2189,90 @@ input[type="datetime-local"] {
   &:focus {
     background-color: #fff;
     color: #374151;
+  }
+}
+
+/* Глобальные стили для всех чекбоксов */
+input[type="checkbox"] {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid #ccc;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  background-color: transparent;
+  appearance: none;
+  outline: none;
+}
+
+input[type="checkbox"]:hover {
+  border-color: #ff4757;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
+}
+
+input[type="checkbox"]:checked {
+  background-color: #ff4757;
+  border-color: #ff4757;
+  animation: checkFill 0.5s ease-out;
+}
+
+/* Галочка (checked) */
+input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 30%;
+  left: 30%;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform-origin: bottom left;
+  transform: translate(-50%, -60%) rotate(45deg) scale(0);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.2s ease;
+}
+
+input[type="checkbox"]:checked::before {
+  transform: translate(-50%, -60%) rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+/* Крестик (unchecked) */
+input[type="checkbox"]::after {
+  content: "✕";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  font-size: 18px;
+  line-height: 1;
+  color: #ccc;
+  opacity: 1;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.2s ease, color 0.2s;
+}
+
+input[type="checkbox"]:hover::after {
+  color: #ff4757;
+}
+
+input[type="checkbox"]:checked::after {
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+
+/* Анимация заливки фона */
+@keyframes checkFill {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+  }
+  100% {
+    transform: scale(1);
   }
 }

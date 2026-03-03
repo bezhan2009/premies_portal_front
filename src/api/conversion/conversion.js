@@ -84,14 +84,14 @@ function parseSoapResponse(xmlText) {
 export async function fetchConversionRates(date = new Date()) {
   const soapBody = buildSoapRequest(date);
 
-  const response = await fetch("/api/conversion", {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      SOAPAction: "",
-    },
-    body: soapBody,
-  });
+    const response = await fetch("/api/conversion", {
+        method: "POST",
+        headers: {
+            "Content-Type": "text/xml; charset=utf-8",
+            SOAPAction: "",
+        },
+        body: soapBody,
+    });
 
   if (!response.ok) {
     throw new Error(
