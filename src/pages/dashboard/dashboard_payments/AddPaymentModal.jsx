@@ -10,6 +10,8 @@ const AddPaymentModal = ({
   onSave,
   fields,
 }) => {
+  const [sendUrl, setSendUrl] = React.useState();
+
   const handleChange = (key, value) => {
     // Для всех полей просто обновляем значение
     setNewItem((prev) => ({ ...prev, [key]: value }));
@@ -18,6 +20,23 @@ const AddPaymentModal = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Новый платеж">
       <div className="add-payment-modal-content">
+        <div className="add-payment-modal-content-bts">
+          <span
+            className={`${sendUrl === "/payments" ? "activeL" : "activeR"}`}
+          ></span>
+          <button
+            className={`${sendUrl === "/payments" ? "active" : ""}`}
+            onClick={() => setSendUrl("/payments")}
+          >
+            Внутри банка
+          </button>
+          <button
+            className={`${sendUrl !== "/payments" ? "active" : ""}`}
+            onClick={() => setSendUrl("/payments/country")}
+          >
+            Внутри страны
+          </button>
+        </div>
         <div
           style={{
             display: "grid",
