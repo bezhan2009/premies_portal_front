@@ -13,10 +13,29 @@ const AddPaymentModal = ({
   const handleChange = (key, value) => {
     setNewItem((prev) => ({ ...prev, [key]: value }));
   };
+  const [sendUrl, setSendUrl] = React.useState("/payments");
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Новый платеж">
       <div className="add-payment-modal-content">
+        <div className="add-payment-modal-content-bts">
+          <span
+            className={`${sendUrl === "/payments" ? "activeL" : "activeR"}`}
+          ></span>
+          <button
+            className={`${sendUrl === "/payments" ? "active" : ""}`}
+            onClick={() => setSendUrl("/payments")}
+          >
+            Внутри банка
+          </button>
+          <button
+            className={`${sendUrl !== "/payments" ? "active" : ""}`}
+            onClick={() => setSendUrl("/payments/country")}
+          >
+            Внутри страны
+          </button>
+        </div>
+
         <div
           style={{
             display: "grid",
@@ -26,7 +45,15 @@ const AddPaymentModal = ({
           }}
         >
           {fields
-            .filter((f) => !["id", "created_at", "updated_at"].includes(f.key))
+            .filter(
+              (f) =>
+                ![
+                  "id",
+                  "created_at",
+                  "updated_at",
+                  sendUrl == "/payments" && "payment_details",
+                ].includes(f.key),
+            )
             .map(({ key, label, type, step }) => (
               <Input
                 key={key}
@@ -49,7 +76,10 @@ const AddPaymentModal = ({
           >
             Отмена
           </button>
-          <button onClick={onSave} className="action-buttons__btn">
+          <button
+            onClick={() => onSave(sendUrl)}
+            className="action-buttons__btn"
+          >
             Сохранить
           </button>
         </div>

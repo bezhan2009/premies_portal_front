@@ -79,10 +79,10 @@ const PaymentsTable = () => {
     fetchItems();
   }, [fetchItems]);
 
-  const handleAdd = async () => {
+  const handleAdd = async (sendUrl) => {
     try {
       // setLoading(true);
-      const response = await apiClient.post(`${backendURL}/payments`);
+      const response = await apiClient.post(`${backendURL}${sendUrl}`);
       const data = await response.data;
       if (data) {
         fetchItems();
