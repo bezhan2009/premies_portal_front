@@ -9,9 +9,9 @@ const AddPaymentModal = ({
                              setNewItem,
                              onSave,
                              fields,
+                             paymentType,
+                             setPaymentType,
                          }) => {
-    const [paymentType, setPaymentType] = React.useState("internal"); // 'internal' or 'domestic'
-
     const handleChange = (key, value) => {
         setNewItem((prev) => ({ ...prev, [key]: value }));
     };
@@ -46,28 +46,24 @@ const AddPaymentModal = ({
                 >
                     {fields
                         .filter((f) => !["id", "created_at", "updated_at"].includes(f.key))
+                        .filter((f) => {
+                            // Скрываем поле bic для внутренних платежей
+                            if (f.key === "bic" && paymentType === "internal") {
+                                return false;
+                            }
+                            return true;
+                        })
                         .map(({ key, label, type, step }) => (
                             <Input
                                 key={key}
                                 title={label}
                                 type={key === "cashback_amount" ? "number" : type}
                                 step={key === "cashback_amount" ? "0.01" : step}
-                                value={newItem[key]}
+                                value={newItem[key] || ""}
                                 onChange={(val) => handleChange(key, val)}
                                 placeholder={label}
                             />
                         ))}
-                    {/* Conditional BIC field for domestic payments */}
-                    {paymentType === "domestic" && (
-                        <Input
-                            key="bic"
-                            title="БИК банка получателя"
-                            type="text"
-                            value={newItem.bic || ""}
-                            onChange={(val) => handleChange("bic", val)}
-                            placeholder="БИК банка получателя"
-                        />
-                    )}
                 </div>
                 <div
                     style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}
