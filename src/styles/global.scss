@@ -22,6 +22,47 @@ body {
   outline: 2px solid #e21a1c;
   outline-offset: 2px;
 }
+
+.add-payment-modal-content-bts {
+  background-color: #e5e7eb;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  border-radius: 50px;
+  margin: 0 0 30px 0;
+  position: relative;
+  > span {
+    background-color: #c31414;
+    position: absolute;
+    border-radius: 50px;
+    width: 250px;
+    height: 45px;
+    z-index: 1;
+    transition: all 0.3s linear;
+  }
+  > .activeL {
+    left: 0;
+  }
+  > .activeR {
+    left: calc(100% - 250px);
+  }
+  > button {
+    height: 45px;
+    width: 250px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    position: relative;
+    z-index: 2;
+    background-color: transparent;
+  }
+  > button.active {
+    color: white;
+  }
+}
+
 .export-excel-btn {
   padding: 10px 20px;
   background-color: #217346; // Excel green
@@ -52,7 +93,7 @@ textarea:focus {
   border-color: #e21a1c;
 }
 
-.product-bank-page{
+.product-bank-page {
   max-width: calc(100% - 240px);
   overflow-x: auto !important;
   background-color: #fff;
