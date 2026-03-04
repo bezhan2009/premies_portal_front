@@ -33,7 +33,19 @@ function buildSoapRequest(date) {
         </v1:amountList>
         <v1:amountList>
            <v1:amount>1</v1:amount>
-            <v1:currencyFrom>USD</v1:currencyFrom>
+            <v1:currencyFrom>TJS</v1:currencyFrom>
+            <v1:currencyTo>USD</v1:currencyTo>
+            <v1:type>to</v1:type>
+        </v1:amountList>
+        <v1:amountList>
+           <v1:amount>1</v1:amount>
+            <v1:currencyFrom>TJS</v1:currencyFrom>
+            <v1:currencyTo>RUB</v1:currencyTo>
+            <v1:type>from</v1:type>
+        </v1:amountList>
+        <v1:amountList>
+           <v1:amount>1</v1:amount>
+            <v1:currencyFrom>RUB</v1:currencyFrom>
             <v1:currencyTo>TJS</v1:currencyTo>
             <v1:type>to</v1:type>
         </v1:amountList>
