@@ -433,8 +433,9 @@ export default function DashboardOperatorTransactionSearch() {
             )}
             <div className="block_info_prems content-page" align="center">
                 <div className="processing-integration">
+
+                    {/* ---------- Форма фильтров ---------- */}
                     <div className="txn-filter">
-                        {/* ---------- Форма поиска (без изменений) ---------- */}
                         <div className="txn-filter__card">
                             <div className="txn-filter__body">
                                 {/* Секция: Идентификаторы */}
@@ -876,55 +877,56 @@ export default function DashboardOperatorTransactionSearch() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    {/* ---------- конец txn-filter ---------- */}
 
-                        {/* ---------- Статистика и График ---------- */}
-                        {transactions.length > 0 && (
-                            <div className="txn-stats">
-                                <div className="txn-stats__grid">
-                                    <div className="txn-stats__card txn-stats__card--total">
-                                        <div className="txn-stats__label">
-                                            Общая сумма (успешно)
-                                        </div>
-                                        <div className="txn-stats__value">
-                                            {formatAmount(totalAmount)}
-                                        </div>
+                    {/* ---------- Статистика и График (вынесено на уровень таблицы) ---------- */}
+                    {transactions.length > 0 && (
+                        <div className="txn-stats">
+                            <div className="txn-stats__grid">
+                                <div className="txn-stats__card txn-stats__card--total">
+                                    <div className="txn-stats__label">
+                                        Общая сумма (успешно)
                                     </div>
-                                    <div className="txn-stats__card txn-stats__card--success">
-                                        <div className="txn-stats__label">Успешных операций</div>
-                                        <div className="txn-stats__value">
-                                            {totalCountByResponse.success}
-                                        </div>
-                                    </div>
-                                    <div className="txn-stats__card txn-stats__card--warning">
-                                        <div className="txn-stats__label">Ожидающих/Предупр.</div>
-                                        <div className="txn-stats__value">
-                                            {totalCountByResponse.warning}
-                                        </div>
-                                    </div>
-                                    <div className="txn-stats__card txn-stats__card--error">
-                                        <div className="txn-stats__label">Ошибочных операций</div>
-                                        <div className="txn-stats__value">
-                                            {totalCountByResponse.error}
-                                        </div>
-                                    </div>
-                                    <div className="txn-stats__card txn-stats__card--reversal">
-                                        <div className="txn-stats__label">
-                                            Отмененных (Reversal)
-                                        </div>
-                                        <div className="txn-stats__value">
-                                            {totalCountByResponse.reversal}
-                                        </div>
+                                    <div className="txn-stats__value">
+                                        {formatAmount(totalAmount)}
                                     </div>
                                 </div>
-
-                                <div className="txn-stats__chart">
-                                    <TransactionsChart transactions={transactions} />
+                                <div className="txn-stats__card txn-stats__card--success">
+                                    <div className="txn-stats__label">Успешных операций</div>
+                                    <div className="txn-stats__value">
+                                        {totalCountByResponse.success}
+                                    </div>
+                                </div>
+                                <div className="txn-stats__card txn-stats__card--warning">
+                                    <div className="txn-stats__label">Ожидающих/Предупр.</div>
+                                    <div className="txn-stats__value">
+                                        {totalCountByResponse.warning}
+                                    </div>
+                                </div>
+                                <div className="txn-stats__card txn-stats__card--error">
+                                    <div className="txn-stats__label">Ошибочных операций</div>
+                                    <div className="txn-stats__value">
+                                        {totalCountByResponse.error}
+                                    </div>
+                                </div>
+                                <div className="txn-stats__card txn-stats__card--reversal">
+                                    <div className="txn-stats__label">
+                                        Отмененных (Reversal)
+                                    </div>
+                                    <div className="txn-stats__value">
+                                        {totalCountByResponse.reversal}
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
 
-                    {/* ---------- Таблица результатов (изменена) ---------- */}
+                            <div className="txn-stats__chart">
+                                <TransactionsChart transactions={transactions} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ---------- Таблица результатов ---------- */}
                     {transactions.length > 0 && (
                         <div className="processing-integration__limits-table">
                             <div className="limits-table">
@@ -933,8 +935,8 @@ export default function DashboardOperatorTransactionSearch() {
                                         Найденные транзакции
                                         {fromDate && toDate && (
                                             <span className="date-range">
-                        ({fromDate} — {toDate})
-                      </span>
+                                                ({fromDate} — {toDate})
+                                            </span>
                                         )}
                                     </h2>
                                     <div className="table-header-actions">
@@ -999,7 +1001,6 @@ export default function DashboardOperatorTransactionSearch() {
                                                         sortKey="transactionTypeName"
                                                     />
                                                 </th>
-                                                {/* Объединённая колонка суммы и валюты */}
                                                 <th
                                                     onClick={() => requestSort("amount")}
                                                     className="limits-table__th sortable-header"
@@ -1010,7 +1011,6 @@ export default function DashboardOperatorTransactionSearch() {
                                                         sortKey="amount"
                                                     />
                                                 </th>
-                                                {/* Объединённая колонка conamt + conCurrency */}
                                                 <th
                                                     onClick={() => requestSort("conamt")}
                                                     className="limits-table__th sortable-header"
@@ -1031,7 +1031,6 @@ export default function DashboardOperatorTransactionSearch() {
                                                         sortKey="acctbal"
                                                     />
                                                 </th>
-                                                {/* Колонка netbal удалена */}
                                                 <th
                                                     onClick={() => requestSort("utrnno")}
                                                     className="limits-table__th sortable-header"
@@ -1116,10 +1115,10 @@ export default function DashboardOperatorTransactionSearch() {
                                                         className="limits-table__row transaction-row"
                                                     >
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.localTransactionDate || "N/A"}{" "}
-                                    {transaction.localTransactionTime || "N/A"}
-                                </span>
+                                                            <span className="default-value">
+                                                                {transaction.localTransactionDate || "N/A"}{" "}
+                                                                {transaction.localTransactionTime || "N/A"}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
                                                             {getStatusBadge(
@@ -1140,76 +1139,73 @@ export default function DashboardOperatorTransactionSearch() {
                                                             {transaction.cardId || "N/A"}
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.transactionTypeName || "N/A"}
-                                </span>
-                                                        </td>
-                                                        {/* Объединённая сумма + валюта */}
-                                                        <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                      transaction.amount,
-                                      transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
-                                    {getCurrencyCode(transaction.currency)}
-                                </span>
-                                                        </td>
-                                                        {/* Объединённая conamt + conCurrency */}
-                                                        <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                      transaction.conamt,
-                                      transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
-                                    {getCurrencyCode(transaction.conCurrency)}
-                                </span>
+                                                            <span className="default-value">
+                                                                {transaction.transactionTypeName || "N/A"}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.acctbal)}
-                                </span>
-                                                        </td>
-                                                        {/* netbal удалён */}
-                                                        <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.utrnno || "N/A"}
-                                </span>
-                                                        </td>
-                                                        <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalId || "N/A"}
-                                </span>
+                                                            <span className="amount-value">
+                                                                {formatAmount(
+                                                                    transaction.amount,
+                                                                    transactionTypeValue ||
+                                                                    transaction.transactionTypeNumber,
+                                                                )}{" "}
+                                                                {getCurrencyCode(transaction.currency)}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.atmId || "N/A"}
-                                </span>
+                                                            <span className="amount-value">
+                                                                {formatAmount(
+                                                                    transaction.conamt,
+                                                                    transactionTypeValue ||
+                                                                    transaction.transactionTypeNumber,
+                                                                )}{" "}
+                                                                {getCurrencyCode(transaction.conCurrency)}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                      transaction.reqamt,
-                                      transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}
-                                </span>
+                                                            <span className="amount-value">
+                                                                {formatAmount(transaction.acctbal)}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalAddress || "N/A"}
-                                </span>
+                                                            <span className="default-value">
+                                                                {transaction.utrnno || "N/A"}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.mcc || "N/A"}
-                                </span>
+                                                            <span className="default-value">
+                                                                {transaction.terminalId || "N/A"}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.account || "N/A"}
-                                </span>
+                                                            <span className="default-value">
+                                                                {transaction.atmId || "N/A"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="limits-table__td limits-table__td--value">
+                                                            <span className="amount-value">
+                                                                {formatAmount(
+                                                                    transaction.reqamt,
+                                                                    transactionTypeValue ||
+                                                                    transaction.transactionTypeNumber,
+                                                                )}
+                                                            </span>
+                                                        </td>
+                                                        <td className="limits-table__td limits-table__td--value">
+                                                            <span className="default-value">
+                                                                {transaction.terminalAddress || "N/A"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="limits-table__td limits-table__td--value">
+                                                            <span className="default-value">
+                                                                {transaction.mcc || "N/A"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="limits-table__td limits-table__td--value">
+                                                            <span className="default-value">
+                                                                {transaction.account || "N/A"}
+                                                            </span>
                                                         </td>
                                                         <td className="limits-table__td limits-table__td--info">
                                                             {transaction.id}
@@ -1223,16 +1219,16 @@ export default function DashboardOperatorTransactionSearch() {
 
                                     <div className="limits-table__footer">
                                         <div className="limits-table__stats">
-                      <span className="limits-table__stat">
-                        Всего записей: {sortedTransactions.length}
-                      </span>
                                             <span className="limits-table__stat">
-                        Показано: {sortedTransactions.length}
-                      </span>
+                                                Всего записей: {sortedTransactions.length}
+                                            </span>
+                                            <span className="limits-table__stat">
+                                                Показано: {sortedTransactions.length}
+                                            </span>
                                             {fromDate && toDate && (
                                                 <span className="limits-table__stat">
-                          Период: {fromDate} — {toDate}
-                        </span>
+                                                    Период: {fromDate} — {toDate}
+                                                </span>
                                             )}
                                         </div>
                                     </div>
