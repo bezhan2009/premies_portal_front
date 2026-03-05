@@ -1,6 +1,8 @@
 import React from "react";
 import Modal from "../../../components/general/Modal.jsx";
 import Input from "../../../components/elements/Input.jsx";
+import {bankOptions} from "../../../const/defConst.js";
+
 
 const AddPaymentModal = ({
                              isOpen,
@@ -45,25 +47,44 @@ const AddPaymentModal = ({
                     }}
                 >
                     {fields
-                        .filter((f) => !["id", "created_at", "updated_at"].includes(f.key))
-                        .filter((f) => {
-                            // Скрываем поле bic для внутренних платежей
-                            if (f.key === "bic" && paymentType === "internal") {
-                                return false;
-                            }
-                            return true;
-                        })
+                        .filter((f) => !["id", "created_at", "updated_at", "bic"].includes(f.key))
                         .map(({ key, label, type, step }) => (
                             <Input
                                 key={key}
                                 title={label}
                                 type={key === "cashback_amount" ? "number" : type}
                                 step={key === "cashback_amount" ? "0.01" : step}
-                                value={newItem[key] || ""}
+                                value={newItem[key]}
                                 onChange={(val) => handleChange(key, val)}
                                 placeholder={label}
                             />
                         ))}
+
+                    {/* Поле BIC отображается только для domestic */}
+                    {paymentType === "domestic" && (
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                            <label style={{ marginBottom: "4px", fontWeight: 500 }}>
+                                БИК банка получателя
+                            </label>
+                            <select
+                                value={newItem.bic || ""}
+                                onChange={(e) => handleChange("bic", e.target.value)}
+                                style={{
+                                    padding: "8px",
+                                    border: "1px solid #ced4da",
+                                    borderRadius: "4px",
+                                    fontSize: "14px",
+                                }}
+                            >
+                                <option value="" disabled>Выберите банк</option>
+                                {bankOptions.map((bank) => (
+                                    <option key={bank.bic} value={bank.bic}>
+                                        {bank.name} ({bank.bic})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
                 <div
                     style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}
