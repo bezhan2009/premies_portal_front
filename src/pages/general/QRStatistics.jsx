@@ -182,7 +182,7 @@ export default function QRStatistics({ startDate, endDate }) {
           <Spinner />
         </div>
       ) : (
-        <div style={{ width: "100%", height: 400 }}>
+        <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer>
             <AreaChart data={mergedData}>
               <defs>
