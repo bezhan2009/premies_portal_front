@@ -236,16 +236,31 @@ $txn-gray-800: #1f2937;
 
 // ─── Stats panel ──────────────────────────────────────
 .txn-stats {
-  max-width: 1300px;
-  margin: 0 auto 2rem;
-  padding: 0 1.5rem;
-  animation: txnFadeUp 0.5s ease 0.15s both;
+  width: 100%;
+  margin-bottom: 2rem;
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(5, 1fr); // 5 карточек в ряд
     gap: 1rem;
     margin-bottom: 1.5rem;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__chart {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   &__card {
