@@ -10,8 +10,9 @@ import AlertMessage from "./AlertMessage.jsx";
 import { fetchConversionRates } from "../../api/conversion/conversion.js";
 
 const CURRENCY_META = {
-  USD: { flag: "🇺🇸", label: "Доллар" },
-  EUR: { flag: "🇪🇺", label: "Евро" },
+    USD: { flag: "🇺🇸", label: "Доллар" },
+    EUR: { flag: "🇪🇺", label: "Евро" },
+    RUB: { flag: "🇷🇺", label: "Рубль" },
 };
 
 function CurrencyRatesWidget() {
