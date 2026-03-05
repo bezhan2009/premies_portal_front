@@ -42,21 +42,32 @@ function CurrencyRatesWidget() {
     };
   }, []);
 
-  const grouped = useMemo(() => {
-    const g = {};
-    rates.forEach((r) => {
-      const fc = r.currencyFrom !== "TJS" ? r.currencyFrom : r.currencyTo;
-      if (!CURRENCY_META[fc]) return;
-      if (!g[fc]) g[fc] = { buy: null, sell: null };
-      if (r.type === "from" && r.currencyFrom !== "TJS") g[fc].buy = r.amountTo;
-      else if (r.type === "to" && r.currencyTo !== "TJS") g[fc].sell = r.amount;
-    });
-    return Object.entries(g).map(([c, v]) => ({
-      currency: c,
-      ...v,
-      meta: CURRENCY_META[c],
-    }));
-  }, [rates]);
+    const grouped = useMemo(() => {
+        const g = {};
+        rates.forEach((r) => {
+            const isRubPair = r.currencyFrom === "TJS" && r.currencyTo === "RUB" ||
+                r.currencyFrom === "RUB" && r.currencyTo === "TJS";
+
+            const fc = r.currencyFrom !== "TJS" ? r.currencyFrom : r.currencyTo;
+            if (!CURRENCY_META[fc]) return;
+            if (!g[fc]) g[fc] = { buy: null, sell: null };
+
+            if (isRubPair) {
+                // Для RUB: from = "1 TJS → X RUB", значит buy = 1/amountTo
+                // to = "X RUB → 1 TJS", значит sell = 1/amount
+                if (r.type === "from") g[fc].buy = 1 / r.amountTo;
+                else if (r.type === "to") g[fc].sell = 1 / r.amount;
+            } else {
+                if (r.type === "from" && r.currencyFrom !== "TJS") g[fc].buy = r.amountTo;
+                else if (r.type === "to" && r.currencyTo !== "TJS") g[fc].sell = r.amount;
+            }
+        });
+        return Object.entries(g).map(([c, v]) => ({
+            currency: c,
+            ...v,
+            meta: CURRENCY_META[c],
+        }));
+    }, [rates]);
 
   if (loading) {
     return (

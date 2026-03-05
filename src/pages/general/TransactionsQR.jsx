@@ -361,7 +361,7 @@ export default function TransactionsQR() {
               }}
             >
               <button
-                className="Unloading"
+                className="button"
                 onClick={() => setShowChart(!showChart)}
               >
                 {showChart ? "Скрыть график" : "Показать график"}
