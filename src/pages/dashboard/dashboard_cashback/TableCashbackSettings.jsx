@@ -8,6 +8,7 @@ import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
 import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import useSidebar from "../../../hooks/useSideBar.js";
+import AddCashbackModal from "./AddCashbackModal.jsx";
 
 const emptyForm = {
     card_number: "",
@@ -22,7 +23,7 @@ const emptyForm = {
     currency: "",
     conCurrency: "",
     reversal: "",
-    transaction_type: "",
+    transaction_type: [],   // массив
     mcc: "",
     atm_id: "",
     account: "",
@@ -42,40 +43,112 @@ const emptyForm = {
     is_active: true,
 };
 
-// Описание полей: тип инпута + лейбл
 const fields = [
-    { key: "card_number",              label: "Номер карты",         type: "text" },
-    { key: "card_id",                  label: "ID карты",            type: "text" },
-    { key: "response_code",            label: "Код ответа",          type: "text" },
-    { key: "reqamt",                   label: "Сумма запроса",       type: "number", step: "0.01" },
-    { key: "amount",                   label: "Сумма",               type: "number", step: "0.01" },
-    { key: "conamt",                   label: "Конв. сумма",         type: "number", step: "0.01" },
-    { key: "acctbal",                  label: "Баланс счёта",        type: "number", step: "0.01" },
-    { key: "netbal",                   label: "Чистый баланс",       type: "number", step: "0.01" },
-    { key: "utrnno",                   label: "UTRN",                type: "number", step: "1" },
-    { key: "currency",                 label: "Валюта",              type: "number", step: "1" },
-    { key: "conCurrency",              label: "Конв. валюта",        type: "number", step: "1" },
-    { key: "reversal",                 label: "Реверсал",            type: "number", step: "1" },
-    { key: "transaction_type",         label: "Тип транзакции",      type: "number", step: "1" },
-    { key: "mcc",                      label: "MCC",                 type: "number", step: "1" },
-    { key: "atm_id",                   label: "ATM ID",              type: "text" },
-    { key: "account",                  label: "Счёт",                type: "text" },
-    { key: "from_date",                label: "Дата от",             type: "date" },
-    { key: "to_date",                  label: "Дата до",             type: "date" },
-    { key: "from_time",                label: "Время от",            type: "time" },
-    { key: "to_time",                  label: "Время до",            type: "time" },
-    { key: "exclude_transaction_types",label: "Искл. типы",          type: "text" },
-    { key: "exclude_atm_ids",          label: "Искл. ATM",           type: "text" },
-    { key: "exclude_mcc",              label: "Искл. MCC",           type: "text" },
-    { key: "exclude_accounts",         label: "Искл. счета",         type: "text" },
-    { key: "account_withdraw",          label: "Счёт вывода",          type: "text" },
-    { key: "idn_withdraw",              label: "IDN вывода",            type: "text" },
-    { key: "full_name_withdraw",        label: "ФИО вывода",            type: "text" },
-    { key: "cashback_percentage",       label: "% кэшбэка",             type: "number", step: "0.01" },
-    { key: "cashback_name",             label: "Название кэшбэка",      type: "text" },
-    { key: "is_active",                 label: "Активен",               type: "checkbox" },
+    { key: "card_number",               label: "Номер карты",         type: "text" },
+    { key: "card_id",                   label: "ID карты",            type: "text" },
+    { key: "response_code",             label: "Код ответа",          type: "text" },
+    { key: "reqamt",                    label: "Сумма запроса",       type: "number", step: "0.01" },
+    { key: "amount",                    label: "Сумма",               type: "number", step: "0.01" },
+    { key: "conamt",                    label: "Конв. сумма",         type: "number", step: "0.01" },
+    { key: "acctbal",                   label: "Баланс счёта",        type: "number", step: "0.01" },
+    { key: "netbal",                    label: "Чистый баланс",       type: "number", step: "0.01" },
+    { key: "utrnno",                    label: "UTRN",                type: "number", step: "1" },
+    { key: "currency",                  label: "Валюта",              type: "number", step: "1" },
+    { key: "conCurrency",               label: "Конв. валюта",        type: "number", step: "1" },
+    { key: "reversal",                  label: "Реверсал",            type: "number", step: "1" },
+    { key: "transaction_type",          label: "Тип транзакции",      type: "tags" },
+    { key: "mcc",                       label: "MCC",                 type: "number", step: "1" },
+    { key: "atm_id",                    label: "ATM ID",              type: "text" },
+    { key: "account",                   label: "Счёт",                type: "text" },
+    { key: "from_date",                 label: "Дата от",             type: "date" },
+    { key: "to_date",                   label: "Дата до",             type: "date" },
+    { key: "from_time",                 label: "Время от",            type: "time" },
+    { key: "to_time",                   label: "Время до",            type: "time" },
+    { key: "exclude_transaction_types", label: "Искл. типы",          type: "text" },
+    { key: "exclude_atm_ids",           label: "Искл. ATM",           type: "text" },
+    { key: "exclude_mcc",               label: "Искл. MCC",           type: "text" },
+    { key: "exclude_accounts",          label: "Искл. счета",         type: "text" },
+    { key: "account_withdraw",          label: "Счёт вывода",         type: "text" },
+    { key: "idn_withdraw",              label: "IDN вывода",          type: "text" },
+    { key: "full_name_withdraw",        label: "ФИО вывода",          type: "text" },
+    { key: "cashback_percentage",       label: "% кэшбэка",           type: "number", step: "0.01" },
+    { key: "cashback_name",             label: "Название кэшбэка",    type: "text" },
+    { key: "is_active",                 label: "Активен",             type: "checkbox" },
 ];
 
+// ── Inline TagInput (для редактирования в таблице) ────────────────────────────
+const InlineTagInput = ({ tags, onChange }) => {
+    const [inputVal, setInputVal] = useState("");
+
+    const addTags = (raw) => {
+        const newTags = raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+        if (!newTags.length) return;
+        onChange([...new Set([...tags, ...newTags])]);
+        setInputVal("");
+    };
+
+    const removeTag = (idx) => onChange(tags.filter((_, i) => i !== idx));
+
+    const handleKeyDown = (e) => {
+        if (["Enter", ","].includes(e.key)) { e.preventDefault(); addTags(inputVal); }
+        else if (e.key === "Backspace" && !inputVal && tags.length) removeTag(tags.length - 1);
+    };
+
+    return (
+        <div style={tagBoxStyle}>
+            {tags.map((tag, i) => (
+                <span key={i} style={tagStyle}>
+                    {tag}
+                    <button type="button" style={tagRemoveStyle} onClick={() => removeTag(i)}>×</button>
+                </span>
+            ))}
+            <input
+                style={tagInputStyle}
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={() => inputVal.trim() && addTags(inputVal)}
+            />
+        </div>
+    );
+};
+
+// ── Отображение тегов в режиме просмотра ─────────────────────────────────────
+const TagDisplay = ({ value }) => {
+    const tags = Array.isArray(value)
+        ? value
+        : (value ? String(value).split(",").map((s) => s.trim()).filter(Boolean) : []);
+    if (!tags.length) return <span style={{ color: "#aaa" }}>—</span>;
+    return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            {tags.map((tag, i) => (
+                <span key={i} style={tagStyle}>{tag}</span>
+            ))}
+        </div>
+    );
+};
+
+// ── Стили тегов ───────────────────────────────────────────────────────────────
+const tagBoxStyle = {
+    display: "flex", flexWrap: "wrap", gap: "4px",
+    padding: "4px 6px", border: "1px solid #ced4da", borderRadius: "4px",
+    minHeight: "32px", alignItems: "center", background: "#fff", minWidth: "160px",
+};
+const tagStyle = {
+    display: "inline-flex", alignItems: "center", gap: "3px",
+    background: "#e7f0ff", color: "#2563eb", borderRadius: "4px",
+    padding: "2px 7px", fontSize: "12px", fontWeight: 500, whiteSpace: "nowrap",
+};
+const tagRemoveStyle = {
+    background: "none", border: "none", cursor: "pointer",
+    color: "#2563eb", fontSize: "14px", lineHeight: 1, padding: "0",
+};
+const tagInputStyle = {
+    border: "none", outline: "none", fontSize: "13px",
+    flex: 1, minWidth: "80px", background: "transparent",
+};
+
+// ── TableCashbackSettings ─────────────────────────────────────────────────────
 const TableCashbackSettings = () => {
     const { isSidebarOpen, toggleSidebar } = useSidebar();
 
@@ -86,7 +159,7 @@ const TableCashbackSettings = () => {
     const [editId, setEditId] = useState(null);
     const [editedItem, setEditedItem] = useState({});
     const [newItem, setNewItem] = useState({ ...emptyForm });
-    const [showAddForm, setShowAddForm] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -103,14 +176,9 @@ const TableCashbackSettings = () => {
                 },
             });
             const data = await response.json();
-            if (Array.isArray(data)) {
-                setItems(data);
-            } else if (data && Array.isArray(data.data)) {
-                setItems(data.data);
-            } else {
-                console.error("Неправильный формат ответа:", data);
-                setItems([]);
-            }
+            if (Array.isArray(data)) setItems(data);
+            else if (data && Array.isArray(data.data)) setItems(data.data);
+            else { console.error("Неправильный формат ответа:", data); setItems([]); }
         } catch (e) {
             console.error("Ошибка загрузки:", e);
             setError("Ошибка загрузки данных");
@@ -120,13 +188,20 @@ const TableCashbackSettings = () => {
         }
     }, [backendURL]);
 
-    useEffect(() => {
-        fetchItems();
-    }, [fetchItems]);
+    useEffect(() => { fetchItems(); }, [fetchItems]);
 
     const handleDoubleClick = (item) => {
         setEditId(item.ID);
-        setEditedItem({ ...item });
+        // Нормализуем transaction_type в массив при входе в режим редактирования
+        const normalized = {
+            ...item,
+            transaction_type: Array.isArray(item.transaction_type)
+                ? item.transaction_type
+                : item.transaction_type
+                    ? String(item.transaction_type).split(",").map((s) => s.trim()).filter(Boolean)
+                    : [],
+        };
+        setEditedItem(normalized);
     };
 
     const handleSave = async () => {
@@ -134,15 +209,12 @@ const TableCashbackSettings = () => {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${backendURL}/cashback-settings/${editId}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(editedItem),
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify(buildPayload(editedItem)),
             });
             if (!response.ok) throw new Error("Ошибка при обновлении");
             setItems((prev) =>
-                prev.map((c) => (c.ID === editId ? { ...editedItem } : c))
+                prev.map((c) => (c.ID === editId ? { ...buildPayload(editedItem), ID: editId } : c))
             );
             setEditId(null);
         } catch (e) {
@@ -155,10 +227,7 @@ const TableCashbackSettings = () => {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${backendURL}/cashback-settings/${id}`, {
                 method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             });
             if (!response.ok) throw new Error("Ошибка при удалении");
             setItems((prev) => prev.filter((c) => c.ID !== id));
@@ -167,28 +236,33 @@ const TableCashbackSettings = () => {
         }
     };
 
-    // "2025-05-01" → "2025-05-01T00:00:00Z"
-    const toRFC3339Date = (val) => {
-        if (!val) return "0001-01-01T00:00:00Z";
-        return val + "T00:00:00Z";
+    const toDateOnly = (val) => {
+        if (!val) return "";
+        // Если пришло ISO — берём только дату
+        if (String(val).includes("T")) return val.slice(0, 10);
+        return val; // уже "YYYY-MM-DD"
     };
 
     const buildPayload = (raw) => ({
         ...raw,
-        reqamt:           parseFloat(raw.reqamt)           || 0,
-        amount:           parseFloat(raw.amount)           || 0,
-        conamt:           parseFloat(raw.conamt)           || 0,
-        acctbal:          parseFloat(raw.acctbal)          || 0,
-        netbal:           parseFloat(raw.netbal)           || 0,
-        utrnno:           parseInt(raw.utrnno)             || 0,
-        currency:         parseInt(raw.currency)           || 0,
-        conCurrency:      parseInt(raw.conCurrency)        || 0,
-        reversal:         parseInt(raw.reversal)           || 0,
-        transaction_type: parseInt(raw.transaction_type)   || 0,
-        mcc:              parseInt(raw.mcc)                || 0,
+        reqamt:              parseFloat(raw.reqamt)              || 0,
+        amount:              parseFloat(raw.amount)              || 0,
+        conamt:              parseFloat(raw.conamt)              || 0,
+        acctbal:             parseFloat(raw.acctbal)             || 0,
+        netbal:              parseFloat(raw.netbal)              || 0,
+        utrnno:              parseInt(raw.utrnno)                || 0,
+        currency:            parseInt(raw.currency)              || 0,
+        conCurrency:         parseInt(raw.conCurrency)           || 0,
+        reversal:            parseInt(raw.reversal)              || 0,
+        mcc:                 parseInt(raw.mcc)                   || 0,
         cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
-        from_date:        toRFC3339Date(raw.from_date),
-        to_date:          toRFC3339Date(raw.to_date),
+        from_date:           toDateOnly(raw.from_date),
+        to_date:             toDateOnly(raw.to_date),
+        transaction_type: Array.isArray(raw.transaction_type)
+            ? raw.transaction_type
+            : raw.transaction_type
+                ? String(raw.transaction_type).split(",").map((s) => s.trim()).filter(Boolean)
+                : [],
     });
 
     const handleAdd = async () => {
@@ -196,16 +270,13 @@ const TableCashbackSettings = () => {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${backendURL}/cashback-settings`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(buildPayload(newItem)),
             });
             if (!response.ok) throw new Error("Ошибка при добавлении");
             await fetchItems();
             setNewItem({ ...emptyForm });
-            setShowAddForm(false);
+            setShowAddModal(false);
         } catch (e) {
             console.error("Ошибка при добавлении:", e);
         }
@@ -216,11 +287,11 @@ const TableCashbackSettings = () => {
         exportToExcel(sortedItems, columns, "Настройки кэшбэка");
     };
 
-    // Инпут с правильным типом для ячейки при редактировании
-    // Форматирование значения для отображения в ячейке
     const formatValue = (value, fieldType) => {
         if (fieldType === "checkbox") return value ? "✓" : "✗";
+        if (fieldType === "tags") return null; // рендерится отдельно через TagDisplay
         if (value === null || value === undefined || value === "") return "-";
+        if (Array.isArray(value)) return value.join(", ") || "-";
         if (fieldType === "date") {
             try {
                 const d = new Date(value);
@@ -232,31 +303,53 @@ const TableCashbackSettings = () => {
     };
 
     const renderCell = (item, field) => {
-        if (editId !== item.ID) return formatValue(item[field.key], field.type);
-        // При редактировании date-поля: преобразуем ISO → "YYYY-MM-DD" для input[type=date]
+        const isEditing = editId === item.ID;
+
+        // ── Теги ──
+        if (field.type === "tags") {
+            if (!isEditing) return <TagDisplay value={item[field.key]} />;
+            return (
+                <InlineTagInput
+                    tags={Array.isArray(editedItem[field.key]) ? editedItem[field.key] : []}
+                    onChange={(val) => setEditedItem({ ...editedItem, [field.key]: val })}
+                />
+            );
+        }
+
+        // ── Просмотр ──
+        if (!isEditing) return formatValue(item[field.key], field.type);
+
+        // ── Редактирование ──
         let inputVal = editedItem[field.key] ?? "";
         if (field.type === "date" && inputVal) {
             try { inputVal = new Date(inputVal).toISOString().slice(0, 10); } catch {}
         }
+
         if (field.type === "checkbox") {
             return (
                 <input
                     type="checkbox"
                     checked={!!editedItem[field.key]}
-                    onChange={(e) =>
-                        setEditedItem({ ...editedItem, [field.key]: e.target.checked })
-                    }
+                    onChange={(e) => setEditedItem({ ...editedItem, [field.key]: e.target.checked })}
                 />
             );
         }
+
         return (
             <input
                 type={field.type}
                 step={field.step}
                 value={inputVal}
-                onChange={(e) =>
-                    setEditedItem({ ...editedItem, [field.key]: e.target.value })
-                }
+                style={{
+                    width: "100%",
+                    minWidth: "80px",
+                    boxSizing: "border-box",
+                    padding: "4px 6px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                }}
+                onChange={(e) => setEditedItem({ ...editedItem, [field.key]: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
             />
         );
@@ -267,15 +360,14 @@ const TableCashbackSettings = () => {
             <Sidebar activeLink="cashback_settings" isOpen={isSidebarOpen} toggle={toggleSidebar} />
             <div className="block_info_prems content-page">
 
-                {/* Шапка */}
                 <div className="table-header-actions" style={{ margin: "16px" }}>
                     <h2>Настройки кэшбэка</h2>
                     <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                         <button
                             className="action-buttons__btn"
-                            onClick={() => setShowAddForm((v) => !v)}
+                            onClick={() => setShowAddModal(true)}
                         >
-                            {showAddForm ? "− Скрыть форму" : "+ Добавить настройку"}
+                            + Добавить настройку
                         </button>
                         <button className="export-excel-btn" onClick={handleExport}>
                             Экспорт в Excel
@@ -283,69 +375,37 @@ const TableCashbackSettings = () => {
                     </div>
                 </div>
 
-                {/* Форма добавления */}
-                {showAddForm && (
-                    <div className="add-card-form" style={{ margin: "0 16px 20px" }}>
-                        <h3 style={{ marginBottom: "10px" }}>Новая настройка кэшбэка</h3>
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                                gap: "10px",
-                                marginBottom: "12px",
-                            }}
-                        >
-                            {fields.map(({ key, label, type, step }) =>
-                                type === "checkbox" ? (
-                                    <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={!!newItem[key]}
-                                            onChange={(e) =>
-                                                setNewItem({ ...newItem, [key]: e.target.checked })
-                                            }
-                                        />
-                                        {label}
-                                    </label>
-                                ) : (
-                                    <input
-                                        key={key}
-                                        type={type}
-                                        step={step}
-                                        value={newItem[key]}
-                                        onChange={(e) =>
-                                            setNewItem({ ...newItem, [key]: e.target.value })
-                                        }
-                                        placeholder={label}
-                                    />
-                                )
-                            )}
-                        </div>
-                        <div style={{ display: "flex", gap: "10px" }}>
-                            <button onClick={handleAdd} className="action-buttons__btn">
-                                Сохранить
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setNewItem({ ...emptyForm });
-                                    setShowAddForm(false);
-                                }}
-                                className="action-buttons__btn"
-                            >
-                                Отмена
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {/* Модалка добавления */}
+                <AddCashbackModal
+                    isOpen={showAddModal}
+                    onClose={() => { setShowAddModal(false); setNewItem({ ...emptyForm }); }}
+                    newItem={newItem}
+                    setNewItem={setNewItem}
+                    onSave={handleAdd}
+                />
 
                 {loading ? (
                     <p style={{ margin: "16px" }}>Загрузка...</p>
                 ) : error ? (
                     <p style={{ color: "red", margin: "16px" }}>{error}</p>
                 ) : (
-                    /* Обёртка для горизонтального скролла таблицы */
                     <div style={{ overflowX: "auto", width: "100%" }}>
-                        <table className="table-reports" style={{ minWidth: "max-content" }}>
+                        <table className="table-reports" style={{ minWidth: "max-content", tableLayout: "fixed" }}>
+                            <colgroup>
+                                {fields.map((f) => (
+                                    <col
+                                        key={f.key}
+                                        style={{
+                                            width: f.type === "tags" ? "200px"
+                                                : f.type === "date" ? "100px"
+                                                    : f.type === "time" ? "90px"
+                                                        : f.type === "checkbox" ? "70px"
+                                                            : "130px",
+                                        }}
+                                    />
+                                ))}
+                                <col style={{ width: "100px" }} />
+                            </colgroup>
                             <thead>
                             <tr>
                                 {fields.map(({ key, label }) => (
@@ -369,23 +429,18 @@ const TableCashbackSettings = () => {
                                             <td
                                                 key={field.key}
                                                 onDoubleClick={() => handleDoubleClick(item)}
+                                                style={{ verticalAlign: "middle", overflow: "hidden" }}
                                             >
                                                 {renderCell(item, field)}
                                             </td>
                                         ))}
                                         <td>
                                             {editId === item.ID ? (
-                                                <button
-                                                    onClick={handleSave}
-                                                    className="action-buttons__btn"
-                                                >
+                                                <button onClick={handleSave} className="action-buttons__btn">
                                                     Сохранить
                                                 </button>
                                             ) : (
-                                                <button
-                                                    onClick={() => handleDelete(item.ID)}
-                                                    className="action-buttons__btn"
-                                                >
+                                                <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">
                                                     Удалить
                                                 </button>
                                             )}
