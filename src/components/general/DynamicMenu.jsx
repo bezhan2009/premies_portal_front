@@ -552,19 +552,38 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
       });
     }
 
-    if (roles.includes(13)) {
-      additionalLinks.push({
-        name: "Агент по QR-ам",
-        key: "qr",
-        children: [
-          {
-            name: "Транзакции",
-            href: "/agent-qr/transactions/list",
-            key: "list_qr",
-          },
-        ],
-      });
-    }
+      if (roles.includes(13)) {
+          additionalLinks.push({
+              name: "Агент по QR-ам",
+              key: "qr",
+              children: [
+                  {
+                      name: "Транзакции",
+                      href: "/agent-qr/transactions/list",
+                      key: "list_qr",
+                  },
+              ],
+          });
+      }
+
+      if (roles.includes(25)) {
+          additionalLinks.push({
+              name: "Управления ПВН",
+              key: "pvn",
+              children: [
+                  {
+                      name: "ПВН транзакций",
+                      href: "/pvn/transactions/list",
+                      key: "pvn_transactions",
+                  },
+                  {
+                      name: "ПВН настройки",
+                      href: "/pvn/settings/list",
+                      key: "pvn_settings",
+                  },
+              ],
+          });
+      }
 
     if (roles.includes(14)) {
       additionalLinks.push({

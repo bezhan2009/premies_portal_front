@@ -27,6 +27,8 @@ import TableTransactionCashbackSettings from "../../pages/dashboard/dashboard_ca
 import CardCashbackTable from "../../pages/dashboard/dashboard_cashback/CardCashbackTable.jsx";
 import PaymentsTable from "../../pages/dashboard/dashboard_payments/PaymentsTable.jsx";
 import QRCashbackTable from "../../pages/dashboard/dashboard_cashback/QRCashbackTable.jsx";
+import PVNTransactionsList from "../../pages/dashboard_pvn/TransactionsPVN.jsx";
+import PVNSettings from "../../pages/dashboard_pvn/PvnSettings.jsx";
 
 const agentRoutes = (
   <>
@@ -168,16 +170,28 @@ const agentRoutes = (
       <Route path="cashback/qr-list" element={<QRCashbackTable />} />
     </Route>
 
-    {/* Agent Payments (Role 24) */}
-    <Route
-      element={
-        <RequireRole allowedRoles={[24]}>
-          <Outlet />
-        </RequireRole>
-      }
-    >
-      <Route path="agent-payments/list" element={<PaymentsTable />} />
-    </Route>
+      {/* Agent Payments (Role 24) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[24]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="agent-payments/list" element={<PaymentsTable />} />
+      </Route>
+
+      {/* Agent Payments (Role 25) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[25]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="pvn/transactions/list" element={<PVNTransactionsList />} />
+          <Route path="pvn/settings/list" element={<PVNSettings />} />
+      </Route>
   </>
 );
 
