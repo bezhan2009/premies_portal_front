@@ -32,23 +32,29 @@ export default function PVNTransactionsList() {
     const [singlePaymentData, setSinglePaymentData] = useState(null);
     const fetchTimeoutRef = useRef(null);
 
-    // Форматы для datetime-local (YYYY-MM-DDThh:mm)
-    const now = new Date();
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000);
-    const defaultFromDateTime = fiveMinutesAgo.toISOString().slice(0, 16);
-    const defaultToDateTime = now.toISOString().slice(0, 16);
+    // ✅ ИСПРАВЛЕНИЕ: вычисляем дефолтные значения один раз через useRef,
+    // чтобы они не пересчитывались на каждый рендер и не вызывали лишние запросы.
+    const defaultDatesRef = useRef(null);
+    if (!defaultDatesRef.current) {
+        const now = new Date();
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000);
+        defaultDatesRef.current = {
+            from: fiveMinutesAgo.toISOString().slice(0, 16),
+            to: now.toISOString().slice(0, 16),
+        };
+    }
+    const defaultFromDateTime = defaultDatesRef.current.from;
+    const defaultToDateTime = defaultDatesRef.current.to;
 
     const showAlert = (message, type = "success") => {
         setAlert({ message, type });
         setTimeout(() => setAlert(null), 3500);
     };
 
-    // Определение оплачена ли транзакция
     const isPaidTransaction = (row) => {
         return row.transaction_card_payed?.isPayed === true;
     };
 
-    // Форматирование даты для отображения
     const formatDateForDisplay = (dateString) => {
         if (!dateString) return "";
         try {
@@ -56,32 +62,30 @@ export default function PVNTransactionsList() {
             if (isNaN(d)) return dateString;
             if (dateString.includes("0001-01-01")) return "Не оплачено";
             const pad = (n) => String(n).padStart(2, "0");
-            const yyyy = d.getFullYear();
-            const MM = pad(d.getMonth() + 1);
-            const dd = pad(d.getDate());
-            const hh = pad(d.getHours());
-            const mi = pad(d.getMinutes());
-            const ss = pad(d.getSeconds());
-            return `${yyyy}-${MM}-${dd} ${hh}:${mi}:${ss}`;
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
         } catch {
             return dateString;
         }
     };
 
-    // Загрузка данных с бэка
     const fetchData = useCallback(async () => {
-        // Очищаем предыдущий таймаут, если есть
         if (fetchTimeoutRef.current) {
             clearTimeout(fetchTimeoutRef.current);
             fetchTimeoutRef.current = null;
         }
 
+        const from = data?.pvn_from_datetime || defaultFromDateTime;
+        const to = data?.pvn_to_datetime || defaultToDateTime;
+
+        // ✅ ИСПРАВЛЕНИЕ: валидация дат перед отправкой запроса
+        if (new Date(from) > new Date(to)) {
+            showAlert("Дата начала не может быть позже даты окончания", "error");
+            return;
+        }
+
         try {
             setLoading(true);
-            const from = data?.pvn_from_datetime || defaultFromDateTime;
-            const to = data?.pvn_to_datetime || defaultToDateTime;
 
-            // Преобразуем в RFC3339 (добавляем временную зону UTC)
             const fromRFC = new Date(from).toISOString();
             const toRFC = new Date(to).toISOString();
 
@@ -90,13 +94,18 @@ export default function PVNTransactionsList() {
                 method: "GET",
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
-            if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
+
+            if (!resp.ok) {
+                const errBody = await resp.json().catch(() => ({}));
+                throw new Error(errBody.error || `Ошибка HTTP ${resp.status}`);
+            }
+
             const json = await resp.json();
             setTableData(json || []);
             showAlert(`Загружено ${json.length} транзакций`, "success");
         } catch (err) {
             console.error("Ошибка загрузки данных:", err);
-            showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
+            showAlert(err.message || "Ошибка загрузки данных. Проверьте сервер.", "error");
             setTableData([]);
         } finally {
             setLoading(false);
@@ -111,7 +120,7 @@ export default function PVNTransactionsList() {
             }
             fetchTimeoutRef.current = setTimeout(() => {
                 fetchData();
-            }, 500); // 500 мс дебаунс
+            }, 500);
         }
         return () => {
             if (fetchTimeoutRef.current) {
@@ -128,9 +137,8 @@ export default function PVNTransactionsList() {
         if (!data?.pvn_to_datetime) {
             setData("pvn_to_datetime", defaultToDateTime);
         }
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Фильтрация по введённым значениям (клиентский фильтр)
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
         return tableData.filter((row) =>
@@ -147,7 +155,6 @@ export default function PVNTransactionsList() {
         );
     }, [tableData, filters]);
 
-    // Сортировка
     const handleSort = (field) => {
         if (sortField === field) {
             setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -174,7 +181,6 @@ export default function PVNTransactionsList() {
         return arr;
     }, [filteredData, sortField, sortDirection]);
 
-    // Оплата одной транзакции
     const paySingle = async (transaction) => {
         const resp = await fetch(`${backendABS}/pvn/transactions/pay`, {
             method: "POST",
@@ -231,7 +237,6 @@ export default function PVNTransactionsList() {
         setSinglePaymentData(null);
     };
 
-    // Массовая оплата выбранных
     const handlePayAll = async () => {
         const toPay = sortedData.filter(
             (row) => selectedRows.includes(row.id) && !isPaidTransaction(row)
@@ -293,7 +298,6 @@ export default function PVNTransactionsList() {
         setPaymentsToProcess([]);
     };
 
-    // Экспорт в CSV
     const handleExport = () => {
         if (selectedRows.length === 0) {
             showAlert("Нет выбранных записей для экспорта", "warning");
@@ -303,16 +307,12 @@ export default function PVNTransactionsList() {
         const selectedData = sortedData.filter((row) => selectedRows.includes(row.id));
         if (selectedData.length === 0) return;
 
-        // Определяем заголовки (все ключи, кроме вложенного объекта transaction_card_payed)
         const headers = Object.keys(selectedData[0]).filter(
             (key) => key !== "transaction_card_payed"
         );
-        // Добавляем поля из transaction_card_payed как отдельные колонки
         headers.push("payed_utrnno", "payed_isPayed", "payed_createdAt", "payed_updatedAt", "payed_deletedAt");
 
-        // Формируем CSV строку
-        const csvRows = [];
-        csvRows.push(headers.join(","));
+        const csvRows = [headers.join(",")];
 
         for (const row of selectedData) {
             const values = headers.map((header) => {
@@ -326,7 +326,6 @@ export default function PVNTransactionsList() {
                 let value = row[header];
                 if (value === null || value === undefined) value = "";
                 if (typeof value === "string") {
-                    // Экранируем кавычки и оборачиваем в кавычки, если есть запятая или кавычка
                     value = value.replace(/"/g, '""');
                     if (value.includes(",") || value.includes('"') || value.includes("\n")) {
                         value = `"${value}"`;
@@ -337,12 +336,11 @@ export default function PVNTransactionsList() {
             csvRows.push(values.join(","));
         }
 
-        const csvString = csvRows.join("\n");
-        const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `pvn_transactions_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute("download", `pvn_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -353,7 +351,6 @@ export default function PVNTransactionsList() {
         setSelectAll(false);
     };
 
-    // Обработка чекбоксов
     const handleCheckboxToggle = (id, checked) => {
         if (checked) {
             setSelectedRows((prev) => [...prev, id]);
@@ -367,25 +364,21 @@ export default function PVNTransactionsList() {
         if (selectAll) {
             setSelectedRows([]);
         } else {
-            const ids = sortedData.map((r) => r.id);
-            setSelectedRows(ids);
+            setSelectedRows(sortedData.map((r) => r.id));
         }
         setSelectAll(!selectAll);
     };
 
     const selectAllUnpaid = () => {
-        const ids = sortedData.filter((row) => !isPaidTransaction(row)).map((r) => r.id);
-        setSelectedRows(ids);
+        setSelectedRows(sortedData.filter((row) => !isPaidTransaction(row)).map((r) => r.id));
         setSelectAll(false);
     };
 
     const selectAllPaid = () => {
-        const ids = sortedData.filter((row) => isPaidTransaction(row)).map((r) => r.id);
-        setSelectedRows(ids);
+        setSelectedRows(sortedData.filter((row) => isPaidTransaction(row)).map((r) => r.id));
         setSelectAll(false);
     };
 
-    // Маппинг колонок на русские названия
     const columnNames = {
         id: "ID",
         cardNumber: "Номер карты",
@@ -399,23 +392,18 @@ export default function PVNTransactionsList() {
         transaction_card_payed: "Статус оплаты",
     };
 
-    // Определяем заголовки таблицы на основе первой записи
     const tableHeaders = useMemo(() => {
         if (sortedData.length === 0) return [];
-        const firstRow = sortedData[0];
         const excluded = [
             "cardId", "responseCode", "responseDescription", "reqamt", "conamt", "acctbal",
             "netbal", "conCurrency", "reversal", "transactionType", "transactionTypeName",
             "transactionTypeNumber", "terminalAddress", "mcc", "account", "transaction_card_payed"
         ];
-        const allKeys = Object.keys(firstRow).filter(
+        return Object.keys(sortedData[0]).filter(
             (key) => !excluded.includes(key) && !key.startsWith("_")
         );
-        // Добавляем специальные поля для статуса и даты оплаты (они будут отдельными колонками)
-        return allKeys;
     }, [sortedData]);
 
-    // Подсчёт статистики
     const totalSelected = selectedRows.length;
     const totalPaid = useMemo(
         () => sortedData.filter((row) => isPaidTransaction(row)).length,
@@ -430,21 +418,12 @@ export default function PVNTransactionsList() {
     return (
         <>
             <div
-                className={`dashboard-container ${
-                    isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-                }`}
+                className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
                 style={{ paddingBottom: 0, paddingTop: 0 }}
             >
-                <Sidebar
-                    activeLink="pvn_transactions"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
+                <Sidebar activeLink="pvn_transactions" isOpen={isSidebarOpen} toggle={toggleSidebar} />
                 <div className="page-content-wrapper content-page">
-                    <div
-                        className="applications-list"
-                        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
-                    >
+                    <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
                         <main>
                             <div className="my-applications-header">
                                 <button
@@ -505,28 +484,20 @@ export default function PVNTransactionsList() {
                                 <div className="filters animate-slideIn">
                                     <input
                                         placeholder="Номер карты"
-                                        onChange={(e) =>
-                                            setFilters((p) => ({ ...p, cardNumber: e.target.value }))
-                                        }
+                                        onChange={(e) => setFilters((p) => ({ ...p, cardNumber: e.target.value }))}
                                     />
                                     <input
                                         placeholder="ATM ID"
-                                        onChange={(e) =>
-                                            setFilters((p) => ({ ...p, atmId: e.target.value }))
-                                        }
+                                        onChange={(e) => setFilters((p) => ({ ...p, atmId: e.target.value }))}
                                     />
                                     <input
                                         placeholder="Utrnno"
-                                        onChange={(e) =>
-                                            setFilters((p) => ({ ...p, utrnno: e.target.value }))
-                                        }
+                                        onChange={(e) => setFilters((p) => ({ ...p, utrnno: e.target.value }))}
                                     />
                                     <input
                                         placeholder="Сумма"
                                         type="number"
-                                        onChange={(e) =>
-                                            setFilters((p) => ({ ...p, amount: e.target.value }))
-                                        }
+                                        onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))}
                                     />
                                 </div>
                             )}
@@ -556,9 +527,7 @@ export default function PVNTransactionsList() {
 
                             <div className="my-applications-content" style={{ position: "relative" }}>
                                 {loading ? (
-                                    <div style={{ textAlign: "center", padding: "2rem" }}>
-                                        Загрузка...
-                                    </div>
+                                    <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
                                 ) : sortedData.length === 0 ? (
                                     <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
                                         Нет данных для отображения
@@ -578,25 +547,17 @@ export default function PVNTransactionsList() {
                                             {tableHeaders.map((header) => (
                                                 <th
                                                     key={header}
-                                                    className={`eqms-th eqms-th--sortable${
-                                                        sortField === header ? " eqms-th--active" : ""
-                                                    }`}
+                                                    className={`eqms-th eqms-th--sortable${sortField === header ? " eqms-th--active" : ""}`}
                                                     onClick={() => handleSort(header)}
                                                 >
-                            <span className="eqms-th__label">
-                              {columnNames[header] || header}
-                            </span>
+                                                    <span className="eqms-th__label">{columnNames[header] || header}</span>
                                                     <span className="eqms-th__icon">
-                              {sortField === header ? (
-                                  sortDirection === "asc" ? (
-                                      <BsArrowUp />
-                                  ) : (
-                                      <BsArrowDown />
-                                  )
-                              ) : (
-                                  <BsArrowDownUp className="eqms-th__icon--idle" />
-                              )}
-                            </span>
+                                                        {sortField === header ? (
+                                                            sortDirection === "asc" ? <BsArrowUp /> : <BsArrowDown />
+                                                        ) : (
+                                                            <BsArrowDownUp className="eqms-th__icon--idle" />
+                                                        )}
+                                                    </span>
                                                 </th>
                                             ))}
                                             <th className="eqms-th">Статус оплаты</th>
@@ -619,9 +580,7 @@ export default function PVNTransactionsList() {
                                                             type="checkbox"
                                                             className="custom-checkbox"
                                                             checked={selectedRows.includes(row.id)}
-                                                            onChange={(e) =>
-                                                                handleCheckboxToggle(row.id, e.target.checked)
-                                                            }
+                                                            onChange={(e) => handleCheckboxToggle(row.id, e.target.checked)}
                                                         />
                                                     </td>
                                                     {tableHeaders.map((header) => {
@@ -635,15 +594,7 @@ export default function PVNTransactionsList() {
                                                         return <td key={header}>{value}</td>;
                                                     })}
                                                     <td>
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: "10px",
-                                                                color: paid ? "green" : "gray",
-                                                                fontWeight: paid ? "500" : "normal",
-                                                            }}
-                                                        >
+                                                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: paid ? "green" : "gray", fontWeight: paid ? "500" : "normal" }}>
                                                             {paid ? <FcOk style={{ fontSize: 22 }} /> : <FcProcess style={{ fontSize: 22 }} />}
                                                             <span>{paid ? "Оплачено" : "Не оплачено"}</span>
                                                         </div>
@@ -700,11 +651,7 @@ export default function PVNTransactionsList() {
                     </div>
 
                     {alert && (
-                        <AlertMessage
-                            message={alert.message}
-                            type={alert.type}
-                            onClose={() => setAlert(null)}
-                        />
+                        <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />
                     )}
 
                     {showPayConfirmation && (
@@ -716,19 +663,13 @@ export default function PVNTransactionsList() {
                                         Вы уверены, что хотите оплатить выбранные транзакции?
                                         <br />
                                         Количество: {paymentsToProcess.length}
-                                        <br />
-                                        <br />
-                                        После подтверждения начнется процесс оплаты. Отменить
-                                        операцию будет невозможно.
+                                        <br /><br />
+                                        После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
                                     </p>
                                 </div>
                                 <div className="confirmation-buttons">
-                                    <button className="confirm-btn" onClick={handleConfirmPayment}>
-                                        Да, оплатить
-                                    </button>
-                                    <button className="cancel-btn" onClick={handleCancelPayment}>
-                                        Отмена
-                                    </button>
+                                    <button className="confirm-btn" onClick={handleConfirmPayment}>Да, оплатить</button>
+                                    <button className="cancel-btn" onClick={handleCancelPayment}>Отмена</button>
                                 </div>
                             </div>
                         </div>
@@ -741,19 +682,13 @@ export default function PVNTransactionsList() {
                                     <h1>Подтверждение оплаты</h1>
                                     <p>
                                         Вы точно уверены, что хотите оплатить эту транзакцию?
-                                        <br />
-                                        <br />
-                                        После подтверждения начнется процесс оплаты. Отменить
-                                        операцию будет невозможно.
+                                        <br /><br />
+                                        После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
                                     </p>
                                 </div>
                                 <div className="confirmation-buttons">
-                                    <button className="confirm-btn" onClick={performSinglePayment}>
-                                        Да, оплатить
-                                    </button>
-                                    <button className="cancel-btn" onClick={handleCancelSinglePayment}>
-                                        Отмена
-                                    </button>
+                                    <button className="confirm-btn" onClick={performSinglePayment}>Да, оплатить</button>
+                                    <button className="cancel-btn" onClick={handleCancelSinglePayment}>Отмена</button>
                                 </div>
                             </div>
                         </div>
