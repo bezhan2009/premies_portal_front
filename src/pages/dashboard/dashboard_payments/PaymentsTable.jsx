@@ -35,13 +35,13 @@ const fields = [
     type: "number",
     step: "0.01",
   },
-  { key: "beneficiary_idn", label: "ИНН Бенефициара", type: "text" },
-  { key: "beneficiary_iban", label: "IBAN Бенефициара", type: "text" },
-  { key: "beneficiary_name", label: "Имя Бенефициара", type: "text" },
+  { key: "beneficiary_idn", label: "ИНН получатель", type: "text" },
+  { key: "beneficiary_iban", label: "Счёт получатель", type: "text" },
+  { key: "beneficiary_name", label: "Имя получатель", type: "text" },
   { key: "payment_details", label: "Детали платежа", type: "text" },
-  { key: "payer_idn", label: "ИНН Плательщика", type: "text" },
-  { key: "payer_name", label: "Имя Плательщика", type: "text" },
-  { key: "payer_iban", label: "IBAN Плательщика", type: "text" },
+  { key: "payer_idn", label: "ИНН Отправитель", type: "text" },
+  { key: "payer_name", label: "Имя Отправитель", type: "text" },
+  { key: "payer_iban", label: "Счёт Отправителя", type: "text" },
   { key: "bic", label: "БИК банка получателя", type: "text" }, // новое поле
 ];
 
