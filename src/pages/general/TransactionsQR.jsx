@@ -195,12 +195,23 @@ export default function TransactionsQR() {
     getActiveBankLimit();
   }, [getBanks, getMerchants, getActiveBankLimit]);
 
-  useEffect(() => {
-    // Установка дефолтных дат если их нет
-    if (!data?.start_date) setData("start_date", "2025-09-25T00:00");
-    if (!data?.end_date) setData("end_date", "2025-10-01T23:59");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    useEffect(() => {
+        // Если даты ещё не заданы, устанавливаем сегодняшний день (начало и конец)
+        if (!data?.start_date || !data?.end_date) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+
+            const start = `${year}-${month}-${day}T00:00`;
+            const end = `${year}-${month}-${day}T23:59`;
+
+            if (!data?.start_date) setData('start_date', start);
+            if (!data?.end_date) setData('end_date', end);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
 
   useEffect(() => {
     if (isUsOnThem) fetchData("usOnThem");
