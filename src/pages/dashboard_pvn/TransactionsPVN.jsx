@@ -9,6 +9,7 @@ import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
 import useSidebar from "../../hooks/useSideBar.js";
 import Sidebar from "../../components/general/DynamicMenu.jsx";
+import * as XLSX from "xlsx";
 import "../../styles/components/StatsEQMS.scss";
 
 export default function PVNTransactionsList() {
@@ -32,8 +33,6 @@ export default function PVNTransactionsList() {
     const [singlePaymentData, setSinglePaymentData] = useState(null);
     const fetchTimeoutRef = useRef(null);
 
-    // ✅ ИСПРАВЛЕНИЕ: вычисляем дефолтные значения один раз через useRef,
-    // чтобы они не пересчитывались на каждый рендер и не вызывали лишние запросы.
     const defaultDatesRef = useRef(null);
     if (!defaultDatesRef.current) {
         const now = new Date();
@@ -53,6 +52,14 @@ export default function PVNTransactionsList() {
 
     const isPaidTransaction = (row) => {
         return row.transaction_card_payed?.isPayed === true;
+    };
+
+    const formatAmount = (value) => {
+        if (typeof value !== "number") return value;
+        return (value / 100).toLocaleString("ru-RU", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     };
 
     const formatDateForDisplay = (dateString) => {
@@ -77,7 +84,6 @@ export default function PVNTransactionsList() {
         const from = data?.pvn_from_datetime || defaultFromDateTime;
         const to = data?.pvn_to_datetime || defaultToDateTime;
 
-        // ✅ ИСПРАВЛЕНИЕ: валидация дат перед отправкой запроса
         if (new Date(from) > new Date(to)) {
             showAlert("Дата начала не может быть позже даты окончания", "error");
             return;
@@ -112,7 +118,6 @@ export default function PVNTransactionsList() {
         }
     }, [data?.pvn_from_datetime, data?.pvn_to_datetime, backendABS, token, defaultFromDateTime, defaultToDateTime]);
 
-    // Дебаунс загрузки при изменении дат
     useEffect(() => {
         if (data?.pvn_from_datetime && data?.pvn_to_datetime) {
             if (fetchTimeoutRef.current) {
@@ -129,7 +134,6 @@ export default function PVNTransactionsList() {
         };
     }, [data?.pvn_from_datetime, data?.pvn_to_datetime, fetchData]);
 
-    // Инициализация дат по умолчанию
     useEffect(() => {
         if (!data?.pvn_from_datetime) {
             setData("pvn_from_datetime", defaultFromDateTime);
@@ -307,44 +311,82 @@ export default function PVNTransactionsList() {
         const selectedData = sortedData.filter((row) => selectedRows.includes(row.id));
         if (selectedData.length === 0) return;
 
-        const headers = Object.keys(selectedData[0]).filter(
-            (key) => key !== "transaction_card_payed"
+        const columnLabels = {
+            id: "ID",
+            cardNumber: "Номер карты",
+            amount: "Сумма",
+            currency: "Валюта",
+            localTransactionDate: "Дата транзакции",
+            localTransactionTime: "Время",
+            terminalId: "Терминал",
+            atmId: "ATM ID",
+            utrnno: "Utrnno",
+            payed_utrnno: "Оплата - Utrnno",
+            payed_isPayed: "Оплата - Статус",
+            payed_createdAt: "Оплата - Дата создания",
+            payed_updatedAt: "Оплата - Дата обновления",
+            payed_deletedAt: "Оплата - Дата удаления",
+        };
+
+        const excluded = [
+            "cardId", "responseCode", "responseDescription", "reqamt", "conamt", "acctbal",
+            "netbal", "conCurrency", "reversal", "transactionType", "transactionTypeName",
+            "transactionTypeNumber", "terminalAddress", "mcc", "account", "transaction_card_payed"
+        ];
+
+        const baseHeaders = Object.keys(selectedData[0]).filter(
+            (key) => !excluded.includes(key) && !key.startsWith("_")
         );
-        headers.push("payed_utrnno", "payed_isPayed", "payed_createdAt", "payed_updatedAt", "payed_deletedAt");
+        const allHeaders = [
+            ...baseHeaders,
+            "payed_utrnno",
+            "payed_isPayed",
+            "payed_createdAt",
+            "payed_updatedAt",
+            "payed_deletedAt",
+        ];
 
-        const csvRows = [headers.join(",")];
+        const getCurrencyLabel = (value) => {
+            if (typeof value !== "number") return value;
+            return value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
+        };
 
-        for (const row of selectedData) {
-            const values = headers.map((header) => {
+        const rows = selectedData.map((row) => {
+            const obj = {};
+            for (const header of allHeaders) {
+                const label = columnLabels[header] || header;
                 if (header.startsWith("payed_")) {
                     const field = header.replace("payed_", "");
-                    if (row.transaction_card_payed && row.transaction_card_payed[field] !== undefined) {
-                        return JSON.stringify(row.transaction_card_payed[field] ?? "");
-                    }
-                    return '""';
+                    const val = row.transaction_card_payed?.[field];
+                    obj[label] = val !== undefined && val !== null ? val : "";
+                } else if (header === "amount") {
+                    obj[label] = typeof row[header] === "number" ? row[header] / 100 : row[header];
+                } else if (header === "currency") {
+                    obj[label] = getCurrencyLabel(row[header]);
+                } else if (header.includes("Date") || header === "localTransactionDate") {
+                    obj[label] = formatDateForDisplay(row[header]);
+                } else {
+                    obj[label] = row[header] !== null && row[header] !== undefined ? row[header] : "";
                 }
-                let value = row[header];
-                if (value === null || value === undefined) value = "";
-                if (typeof value === "string") {
-                    value = value.replace(/"/g, '""');
-                    if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-                        value = `"${value}"`;
-                    }
-                }
-                return value;
-            });
-            csvRows.push(values.join(","));
-        }
+            }
+            return obj;
+        });
 
-        const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `pvn_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+
+        // Авто-ширина колонок
+        const colWidths = Object.keys(rows[0] || {}).map((key) => ({
+            wch: Math.max(
+                key.length,
+                ...rows.map((r) => String(r[key] ?? "").length)
+            ) + 2,
+        }));
+        worksheet["!cols"] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Транзакции");
+
+        XLSX.writeFile(workbook, `pvn_transactions_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
         showAlert(`Экспортировано ${selectedData.length} записей`, "success");
         setSelectedRows([]);
@@ -412,7 +454,7 @@ export default function PVNTransactionsList() {
     const totalAmountSelected = useMemo(() => {
         return sortedData
             .filter((row) => selectedRows.includes(row.id))
-            .reduce((sum, row) => sum + (row.amount || 0), 0);
+            .reduce((sum, row) => sum + (row.amount || 0), 0) / 100;
     }, [sortedData, selectedRows]);
 
     return (
@@ -438,7 +480,7 @@ export default function PVNTransactionsList() {
                                     onClick={handleExport}
                                     disabled={selectedRows.length === 0}
                                 >
-                                    Экспорт CSV
+                                    Выгрузка в Excel
                                 </button>
                                 <button
                                     className="save"
@@ -474,7 +516,10 @@ export default function PVNTransactionsList() {
                                     <div className="stat highlight">
                                         <span className="label">Сумма выбранных</span>
                                         <strong className="value amount">
-                                            {totalAmountSelected.toLocaleString("ru-RU")} {sortedData[0]?.currency || ""}
+                                            {totalAmountSelected.toLocaleString("ru-RU", {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })} {sortedData[0]?.currency || ""}
                                         </strong>
                                     </div>
                                 </div>
@@ -590,6 +635,9 @@ export default function PVNTransactionsList() {
                                                         }
                                                         if (header === "currency" && typeof value === "number") {
                                                             value = value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
+                                                        }
+                                                        if (header === "amount" && typeof value === "number") {
+                                                            value = formatAmount(value);
                                                         }
                                                         return <td key={header}>{value}</td>;
                                                     })}
