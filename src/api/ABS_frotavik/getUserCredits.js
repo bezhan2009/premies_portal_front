@@ -46,11 +46,19 @@ export const getUserDeposits = async (clientIndex) => {
 
 export const getUserInfoPhone = async (clientNumber) => {
   try {
-    const res = await apiClientABS_Frontovik(
-      "account/user/" + clientNumber,
-    );
+    const res = await apiClientABS_Frontovik("account/user/" + clientNumber);
     return res.data;
   } catch (err) {
     console.log(err);
+  }
+};
+
+export const repayLoanEarly = async (repayData) => {
+  try {
+    const res = await apiClientABS_Frontovik.post("/credits/repay", repayData);
+    return res.data;
+  } catch (err) {
+    console.error("Error in repayLoanEarly:", err);
+    throw err;
   }
 };
