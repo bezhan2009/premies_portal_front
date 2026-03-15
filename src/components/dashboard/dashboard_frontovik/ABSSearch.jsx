@@ -10,6 +10,7 @@ import {
   getUserCredits,
   getUserDeposits,
   getUserInfoPhone,
+  repayLoanEarly,
 } from "../../../api/ABS_frotavik/getUserCredits.js";
 import { useNavigate } from "react-router-dom";
 import {
@@ -29,7 +30,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
-const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL ;
+const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL;
 
 // Функция для нормализации данных клиента
 const normalizeClientData = (client, searchType) => {
@@ -331,6 +332,156 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
   );
 };
 
+const RepayModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  accounts,
+  isLoading,
+  creditInfo,
+}) => {
+  const [amount, setAmount] = useState("");
+  const [selectedAccountIndex, setSelectedAccountIndex] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setAmount("");
+      setSelectedAccountIndex("");
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!amount || !selectedAccountIndex) return;
+    onSubmit({
+      amount: parseFloat(amount),
+      accountIndex: parseInt(selectedAccountIndex),
+      referenceId: creditInfo.referenceId,
+      payTypeCode: "A", // Форма оплаты: Частично (Основной долг)
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}
+    >
+      <div
+        className="graph-modal-container"
+        style={{ height: "auto", maxHeight: "90vh", maxWidth: "500px" }}
+      >
+        <div className="graph-modal-header">
+          <h2 className="graph-modal-title">Погасить кредит</h2>
+          <button className="graph-modal-close" onClick={onClose}>
+            &times;
+          </button>
+        </div>
+
+        <div className="graph-modal-content" style={{ padding: "20px" }}>
+          <form onSubmit={handleSubmit} className="repay-form">
+            <div
+              className="search-card__input-group"
+              style={{ marginBottom: "15px" }}
+            >
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontSize: "14px",
+                  color: "#666",
+                }}
+              >
+                Тип погашения
+              </label>
+              <input
+                type="text"
+                value="Частично (Основной долг)"
+                className="search-card__input"
+                disabled
+              />
+            </div>
+
+            <div
+              className="search-card__input-group"
+              style={{ marginBottom: "15px" }}
+            >
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontSize: "14px",
+                  color: "#666",
+                }}
+              >
+                Сумма
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Введите сумму"
+                className="search-card__input"
+                required
+              />
+            </div>
+
+            <div
+              className="search-card__select-group"
+              style={{ marginBottom: "20px" }}
+            >
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontSize: "14px",
+                  color: "#666",
+                }}
+              >
+                Выберите счет
+              </label>
+              <div className="custom-select">
+                <select
+                  value={selectedAccountIndex}
+                  onChange={(e) => setSelectedAccountIndex(e.target.value)}
+                  className="search-card__select"
+                  required
+                >
+                  <option value="">Выберите счет</option>
+                  {accounts.map((acc, index) => (
+                    <option key={index} value={index + 1}>
+                      {acc.Number} ({acc.Balance} {acc.Currency?.Code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div
+              className="graph-modal-footer"
+              style={{
+                padding: "10px 0 0 0",
+                background: "none",
+                border: "none",
+              }}
+            >
+              <button
+                type="submit"
+                className="search-card__button"
+                disabled={isLoading || !amount || !selectedAccountIndex}
+                style={{ width: "100%" }}
+              >
+                {isLoading ? "Обработка..." : "Погасить"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ABSClientSearch() {
   const { exportToExcel } = useExcelExport();
   const [isMobile, setIsMobile] = useState(null);
@@ -389,6 +540,11 @@ export default function ABSClientSearch() {
   const [graphData, setGraphData] = useState([]);
   const [isGraphLoading, setIsGraphLoading] = useState(false);
   const [selectedReferenceId, setSelectedReferenceId] = useState("");
+
+  // Состояния для модального окна досрочного погашения
+  const [repayModalOpen, setRepayModalOpen] = useState(false);
+  const [isRepayLoading, setIsRepayLoading] = useState(false);
+  const [selectedCreditForRepay, setSelectedCreditForRepay] = useState(null);
 
   const showAlert = (message, type = "success") => {
     setAlert({
@@ -787,6 +943,33 @@ export default function ABSClientSearch() {
     setGraphModalOpen(false);
     setGraphData([]);
     setSelectedReferenceId("");
+  };
+
+  // Функции для модального окна досрочного погашения
+  const handleOpenRepayModal = (credit) => {
+    setSelectedCreditForRepay(credit);
+    setRepayModalOpen(true);
+  };
+
+  const handleCloseRepayModal = () => {
+    setRepayModalOpen(false);
+    setSelectedCreditForRepay(null);
+  };
+
+  const handleRepaySubmit = async (repayData) => {
+    try {
+      setIsRepayLoading(true);
+      await repayLoanEarly(repayData);
+      showAlert("Запрос на погашение кредита успешно отправлен", "success");
+      handleCloseRepayModal();
+      // Обновляем данные пользователя чтобы увидеть изменения (если АБС сразу обновляет)
+      handleGetDataUser();
+    } catch (error) {
+      console.error("Ошибка при погашении кредита:", error);
+      showAlert("Произошла ошибка при погашении кредита", "error");
+    } finally {
+      setIsRepayLoading(false);
+    }
   };
 
   // Обработчик перехода на историю транзакций с проверкой доступа
@@ -1710,6 +1893,16 @@ export default function ABSClientSearch() {
                               >
                                 График
                               </button>
+                              <button
+                                className="selectAll-toggle"
+                                style={{
+                                  marginLeft: 10,
+                                  background: "#27ae60",
+                                }}
+                                onClick={() => handleOpenRepayModal(card)}
+                              >
+                                Погасить
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1942,6 +2135,16 @@ export default function ABSClientSearch() {
         referenceId={selectedReferenceId}
         graphData={graphData}
         isLoading={isGraphLoading}
+      />
+
+      {/* Модальное окно для досрочного погашения */}
+      <RepayModal
+        isOpen={repayModalOpen}
+        onClose={handleCloseRepayModal}
+        onSubmit={handleRepaySubmit}
+        accounts={accountsData}
+        isLoading={isRepayLoading}
+        creditInfo={selectedCreditForRepay}
       />
     </>
   );
