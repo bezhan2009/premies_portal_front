@@ -5,13 +5,16 @@ import "../../../styles/components/ProcessingIntegration.scss";
 import AlertMessage from "../../general/AlertMessage.jsx";
 import Modal from "../../general/Modal.jsx";
 import {
-  getUserAccounts,
   getUserCards,
+  getUserAccounts,
   getUserCredits,
   getUserDeposits,
   getUserInfoPhone,
-  repayLoanEarly,
-} from "../../../api/ABS_frotavik/getUserCredits.js";
+} from "../../../api/ABS_frotavik/getUserCredits";
+import {
+  fetchLoanDetails,
+  repayLoanSoap,
+} from "../../../api/ABS_frotavik/getLoanDetails";
 import { useNavigate } from "react-router-dom";
 import {
   MdOutlinePhonelinkErase,
@@ -332,32 +335,238 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
   );
 };
 
-const RepayModal = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  accounts,
-  isLoading,
-  creditInfo,
-}) => {
+// Компонент модального окна для деталей кредита
+const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
+  const [activeTab, setActiveTab] = useState("params");
+
+  if (!isOpen) return null;
+
+  const renderParams = () => {
+    if (!data?.params) return <p className="no-data-msg">Нет данных</p>;
+    const params = [
+      { label: "Colvir Reference ID", value: data.params.referenceId },
+      { label: "Номер договора", value: data.params.contractNumber },
+      { label: "Статус", value: data.params.statusName },
+      { label: "Продукт", value: data.params.productName },
+      { label: "Цель кредита", value: data.params.creditPurpose },
+      {
+        label: "Сумма кредита",
+        value: `${data.params.amount} ${data.params.currency}`,
+      },
+      { label: "Валюта", value: data.params.currency },
+      { label: "Дата договора", value: data.params.documentDate },
+      { label: "Срок кредита", value: data.params.term },
+      { label: "Дата начала", value: data.params.startDate },
+      { label: "Дата окончания", value: data.params.endDate },
+      { label: "Подразделение", value: data.params.department },
+      { label: "Клиент (DEA)", value: data.params.clientDea },
+      { label: "Счёт баланса", value: data.params.balanceAccount },
+      { label: "Досрочное погашение", value: data.params.earlyRepayment },
+      { label: "День месяца для графика", value: data.params.paymentDay },
+      { label: "Штраф за просрочку", value: data.params.penalty },
+      { label: "Проценты по кредиту", value: data.params.interestRate },
+      { label: "Кредитные эксперты", value: data.params.creditExperts },
+    ];
+
+    return (
+      <div className="params-grid">
+        {params.map((p, i) => (
+          <div key={i} className="param-item">
+            <span className="param-label">{p.label}:</span>
+            <span className="param-value">{p.value || "-"}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderBalances = () => {
+    if (!data?.balances || !Array.isArray(data.balances))
+      return <p className="no-data-msg">Нет данных</p>;
+    return (
+      <div className="table-responsive">
+        <table className="details-table">
+          <thead>
+            <tr>
+              <th>Код</th>
+              <th>Название</th>
+              <th>Сумма (TJS)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.balances.map((b, i) => (
+              <tr key={i}>
+                <td>{b.code}</td>
+                <td>{b.name}</td>
+                <td>{b.amount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderAccounts = () => {
+    if (!data?.paymentOptions || !Array.isArray(data.paymentOptions))
+      return <p className="no-data-msg">Нет данных</p>;
+    return (
+      <div className="table-responsive">
+        <table className="details-table">
+          <thead>
+            <tr>
+              <th>Код</th>
+              <th>Название</th>
+              <th>Номер счёта</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.paymentOptions.map((a, i) => (
+              <tr key={i}>
+                <td>{a.code}</td>
+                <td>{a.name}</td>
+                <td>{a.account}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}
+    >
+      <div className="graph-modal-container details-modal-container">
+        <div className="graph-modal-header">
+          <h2 className="graph-modal-title">Детали кредита</h2>
+          <button className="graph-modal-close" onClick={onClose}>
+            &times;
+          </button>
+        </div>
+
+        <div className="tabs-header">
+          <button
+            className={`tab-btn ${activeTab === "params" ? "active" : ""}`}
+            onClick={() => setActiveTab("params")}
+          >
+            Параметры кредита
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "balances" ? "active" : ""}`}
+            onClick={() => setActiveTab("balances")}
+          >
+            Остатки кредита
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "accounts" ? "active" : ""}`}
+            onClick={() => setActiveTab("accounts")}
+          >
+            Счета кредита
+          </button>
+        </div>
+
+        <div className="graph-modal-content">
+          {isLoading ? (
+            <div className="graph-modal-loading">
+              <div className="graph-modal-spinner"></div>
+              <p>Загрузка деталей...</p>
+            </div>
+          ) : (
+            <div className="tab-content">
+              {activeTab === "params" && renderParams()}
+              {activeTab === "balances" && renderBalances()}
+              {activeTab === "accounts" && renderAccounts()}
+            </div>
+          )}
+        </div>
+        <div className="graph-modal-footer">
+          <button className="graph-modal-close-btn" onClick={onClose}>
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
   const [amount, setAmount] = useState("");
-  const [selectedAccountIndex, setSelectedAccountIndex] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [filteredAccounts, setFilteredAccounts] = useState([]);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && creditInfo?.referenceId) {
       setAmount("");
-      setSelectedAccountIndex("");
+      setSelectedAccount("");
+      setFilteredAccounts([]);
+
+      const fetchAndFilterAccounts = async () => {
+        setIsFetchingDetails(true);
+        try {
+          const details = await fetchLoanDetails(creditInfo.referenceId);
+          if (details) {
+            const list = [];
+
+            // Фильтруем счета из balanceAccount (аналитические счета)
+            if (details.balances) {
+              details.balances.forEach((b) => {
+                if (b.accCode && b.accCode.startsWith("20216")) {
+                  list.push({
+                    name: `${b.accCode} (Аналитический)`,
+                    value: b.accCode,
+                    code: b.code,
+                  });
+                }
+              });
+            }
+
+            // Фильтруем счета из paymentOptions
+            if (details.paymentOptions) {
+              details.paymentOptions.forEach((p) => {
+                if (p.account && p.account.startsWith("20216")) {
+                  list.push({
+                    name: `${p.account} (${p.name || "Счет"})`,
+                    value: p.account,
+                    code: p.code,
+                  });
+                }
+              });
+            }
+
+            // Удаляем дубликаты по номеру счета
+            const uniqueList = Array.from(
+              new Set(list.map((a) => a.value)),
+            ).map((val) => list.find((a) => a.value === val));
+
+            setFilteredAccounts(uniqueList);
+          }
+        } catch (error) {
+          console.error("Ошибка при загрузке счетов для погашения:", error);
+        } finally {
+          setIsFetchingDetails(false);
+        }
+      };
+
+      fetchAndFilterAccounts();
     }
-  }, [isOpen]);
+  }, [isOpen, creditInfo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!amount || !selectedAccountIndex) return;
+    if (!amount || !selectedAccount) return;
+
+    // Находим выбранный счет чтобы получить его code (sourceOrdNum)
+    const accountObj = filteredAccounts.find(
+      (a) => a.value === selectedAccount,
+    );
+
     onSubmit({
       amount: parseFloat(amount),
-      accountIndex: parseInt(selectedAccountIndex),
+      sourceOrdNum: accountObj?.code || "1", // Порядковый номер счета
       referenceId: creditInfo.referenceId,
-      payTypeCode: "A", // Форма оплаты: Частично (Основной долг)
     });
   };
 
@@ -379,82 +588,122 @@ const RepayModal = ({
         </div>
 
         <div className="graph-modal-content" style={{ padding: "20px" }}>
-          <form onSubmit={handleSubmit} className="repay-form">
-            <div
-              className="search-card__input-group"
-              style={{ marginBottom: "15px" }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontSize: "14px",
-                  color: "#666",
-                }}
+          <form onSubmit={handleSubmit}>
+            <div className="repay-form">
+              <div
+                className="search-card__select-group"
+                style={{ marginBottom: "20px" }}
               >
-                Тип погашения
-              </label>
-              <input
-                type="text"
-                value="Частично (Основной долг)"
-                className="search-card__input"
-                disabled
-              />
-            </div>
-
-            <div
-              className="search-card__input-group"
-              style={{ marginBottom: "15px" }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontSize: "14px",
-                  color: "#666",
-                }}
-              >
-                Сумма
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Введите сумму"
-                className="search-card__input"
-                required
-              />
-            </div>
-
-            <div
-              className="search-card__select-group"
-              style={{ marginBottom: "20px" }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontSize: "14px",
-                  color: "#666",
-                }}
-              >
-                Выберите счет
-              </label>
-              <div className="custom-select">
-                <select
-                  value={selectedAccountIndex}
-                  onChange={(e) => setSelectedAccountIndex(e.target.value)}
-                  className="search-card__select"
-                  required
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
                 >
-                  <option value="">Выберите счет</option>
-                  {accounts.map((acc, index) => (
-                    <option key={index} value={index + 1}>
-                      {acc.Number} ({acc.Balance} {acc.Currency?.Code})
-                    </option>
-                  ))}
-                </select>
+                  Счет для списания:
+                </label>
+                {isFetchingDetails ? (
+                  <p
+                    className="loading-small"
+                    style={{ fontSize: "14px", color: "#3498db" }}
+                  >
+                    Загрузка счетов...
+                  </p>
+                ) : (
+                  <select
+                    value={selectedAccount}
+                    onChange={(e) => setSelectedAccount(e.target.value)}
+                    className="search-card__select"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #ddd",
+                    }}
+                    required
+                  >
+                    <option value="">Выберите счет</option>
+                    {filteredAccounts.map((acc, idx) => (
+                      <option key={idx} value={acc.value}>
+                        {acc.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {!isFetchingDetails && filteredAccounts.length === 0 && (
+                  <p
+                    className="error-text"
+                    style={{
+                      fontSize: "12px",
+                      color: "#e74c3c",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Нет подходящих счетов (начинающихся на 20216)
+                  </p>
+                )}
+              </div>
+
+              <div
+                className="search-card__input-group"
+                style={{ marginBottom: "15px" }}
+              >
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
+                >
+                  Тип погашения
+                </label>
+                <input
+                  type="text"
+                  value="Частично (Основной долг)"
+                  className="search-card__input"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #ddd",
+                    background: "#f9f9f9",
+                  }}
+                  disabled
+                />
+              </div>
+
+              <div
+                className="search-card__input-group"
+                style={{ marginBottom: "15px" }}
+              >
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
+                >
+                  Сумма
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Введите сумму"
+                  className="search-card__input"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #ddd",
+                  }}
+                  required
+                />
               </div>
             </div>
 
@@ -469,8 +718,18 @@ const RepayModal = ({
               <button
                 type="submit"
                 className="search-card__button"
-                disabled={isLoading || !amount || !selectedAccountIndex}
-                style={{ width: "100%" }}
+                disabled={
+                  isLoading || isFetchingDetails || !amount || !selectedAccount
+                }
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#2980b9",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
               >
                 {isLoading ? "Обработка..." : "Погасить"}
               </button>
@@ -545,6 +804,11 @@ export default function ABSClientSearch() {
   const [repayModalOpen, setRepayModalOpen] = useState(false);
   const [isRepayLoading, setIsRepayLoading] = useState(false);
   const [selectedCreditForRepay, setSelectedCreditForRepay] = useState(null);
+
+  // Состояния для модального окна деталей кредита
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [detailsData, setDetailsData] = useState(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
   const showAlert = (message, type = "success") => {
     setAlert({
@@ -945,6 +1209,30 @@ export default function ABSClientSearch() {
     setSelectedReferenceId("");
   };
 
+  // Детали кредита
+  const handleOpenDetails = async (referenceId) => {
+    setDetailsModalOpen(true);
+    setIsDetailsLoading(true);
+    try {
+      const data = await fetchLoanDetails(referenceId);
+      if (data) {
+        setDetailsData(data);
+      } else {
+        showAlert("Не удалось разобрать данные ответа", "error");
+      }
+    } catch (error) {
+      console.error("Ошибка при загрузке деталей кредита:", error);
+      showAlert("Произошла ошибка при загрузке деталей кредита", "error");
+    } finally {
+      setIsDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDetailsModal = () => {
+    setDetailsModalOpen(false);
+    setDetailsData(null);
+  };
+
   // Функции для модального окна досрочного погашения
   const handleOpenRepayModal = (credit) => {
     setSelectedCreditForRepay(credit);
@@ -959,7 +1247,7 @@ export default function ABSClientSearch() {
   const handleRepaySubmit = async (repayData) => {
     try {
       setIsRepayLoading(true);
-      await repayLoanEarly(repayData);
+      await repayLoanSoap(repayData);
       showAlert("Запрос на погашение кредита успешно отправлен", "success");
       handleCloseRepayModal();
       // Обновляем данные пользователя чтобы увидеть изменения (если АБС сразу обновляет)
@@ -971,7 +1259,6 @@ export default function ABSClientSearch() {
       setIsRepayLoading(false);
     }
   };
-
   // Обработчик перехода на историю транзакций с проверкой доступа
   const handleNavigateToTransactions = (cardId) => {
     sessionStorage.setItem("allowedCardId", cardId);
@@ -1883,7 +2170,10 @@ export default function ABSClientSearch() {
                             <td className="limits-table__td">
                               {card.department || "-"}
                             </td>
-                            <td className="limits-table__td">
+                            <td
+                              className="limits-table__td"
+                              style={{ display: "flex" }}
+                            >
                               <button
                                 className="selectAll-toggle"
                                 onClick={() =>
@@ -1892,6 +2182,19 @@ export default function ABSClientSearch() {
                                 disabled={!card.referenceId}
                               >
                                 График
+                              </button>
+                              <button
+                                className="selectAll-toggle"
+                                style={{
+                                  marginLeft: 10,
+                                  background: "#2980b9",
+                                }}
+                                onClick={() =>
+                                  handleOpenDetails(card.referenceId)
+                                }
+                                disabled={!card.referenceId}
+                              >
+                                Детали
                               </button>
                               <button
                                 className="selectAll-toggle"
@@ -2142,9 +2445,16 @@ export default function ABSClientSearch() {
         isOpen={repayModalOpen}
         onClose={handleCloseRepayModal}
         onSubmit={handleRepaySubmit}
-        accounts={accountsData}
         isLoading={isRepayLoading}
         creditInfo={selectedCreditForRepay}
+      />
+
+      {/* Модальное окно для деталей кредита */}
+      <CreditDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        data={detailsData}
+        isLoading={isDetailsLoading}
       />
     </>
   );
