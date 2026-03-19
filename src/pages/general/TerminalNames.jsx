@@ -14,8 +14,6 @@ import {
   getTerminalNames,
   postTerminalNames,
   putTerminalNames,
-  putTransactions,
-  putTransactionsNumber,
 } from "../../api/transactions/api.js";
 import {
   getCurrencyCode,
@@ -28,7 +26,7 @@ const ValidData = {
   atmId: { required: true },
 };
 
-import { tableDataDef, transactionTypes } from "../../const/defConst";
+import { tableDataDef } from "../../const/defConst";
 
 // Создаем массив опций для Select компонента (только для создания)
 const currencyOptions = Object.entries(getCurrenciesCode()).map(
@@ -305,6 +303,7 @@ export default function TerminalNames() {
 
               <button
                 className="button-edit-roles"
+                disabled={loading}
                 onClick={() => {
                   if (edit?.type === "create") {
                     createItem();
@@ -372,12 +371,9 @@ export default function TerminalNames() {
                         >
                           {edit?.type === "update" && edit?.id === row.id ? (
                             <Input
-                              transactionType="text"
-                              defValue={
-                                data?.transactionType || row.transactionType
-                              }
+                              type="text"
                               onChange={(e) => setData("transactionType", e)}
-                              value={edit?.transactionType}
+                              value={data?.transactionType || ""}
                               onEnter={upDateItem}
                             />
                           ) : (
@@ -401,10 +397,9 @@ export default function TerminalNames() {
                         >
                           {edit?.type === "update" && edit?.id === row.id ? (
                             <Input
-                              transactionType="text"
-                              defValue={data?.description || row.description}
+                              type="text"
                               onChange={(e) => setData("description", e)}
-                              value={edit?.description}
+                              value={data?.description || ""}
                               onEnter={upDateItem}
                             />
                           ) : (
@@ -416,10 +411,9 @@ export default function TerminalNames() {
                         >
                           {edit?.type === "update" && edit?.id === row.id ? (
                             <Input
-                              transactionType="text"
-                              defValue={data?.atmId || row.atmId}
+                              type="text"
                               onChange={(e) => setData("atmId", e)}
-                              value={edit?.atmId}
+                              value={data?.atmId || ""}
                               onEnter={upDateItem}
                             />
                           ) : (
@@ -432,10 +426,9 @@ export default function TerminalNames() {
                           {edit?.type === "update" && edit?.id === row.id ? (
                             // Заменяем Select на Input для ручного ввода
                             <Input
-                              transactionType="text"
-                              defValue={data?.currency || row.currency || ""}
+                              type="text"
                               onChange={(e) => setData("currency", e)}
-                              value={edit?.currency}
+                              value={data?.currency || ""}
                               onEnter={upDateItem}
                               placeholder="Введите код валюты (например: 643 или RUB)"
                             />
@@ -489,6 +482,7 @@ export default function TerminalNames() {
                             </button>
                             <button
                               className="button-edit-roles small-size"
+                              disabled={loading}
                               onClick={() => deleteItem(row.id)}
                               style={{
                                 marginLeft: "5px",
