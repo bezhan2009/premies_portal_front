@@ -7,12 +7,10 @@ import { useModal } from "../../hooks/useModal.js";
 import Modal from "../../components/modal/Modal.jsx";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 
 export default function MyApplicationsDipozit() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
+    
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData ] = useState(tableDataDef);
@@ -23,7 +21,6 @@ export default function MyApplicationsDipozit() {
   return (
     <>
       <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="deposits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="my-applications content-page">
           <main>
             <div className="my-applications-header">

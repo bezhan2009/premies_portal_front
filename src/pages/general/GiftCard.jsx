@@ -33,13 +33,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
 export default function GiftCard({ edit = false }) {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
-    const [loading, setLoading] = useState(false);
+        const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [downloadingOffer, setDownloadingOffer] = useState(false);
     const [searching, setSearching] = useState(false);
@@ -872,14 +869,8 @@ export default function GiftCard({ edit = false }) {
         <>
             <div
                 className={`dashboard-container ${
-                    isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
                 }`}
             >
-                <Sidebar
-                    activeLink="gift_card"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
                 <div className="gift-card content-page">
                     {alert && (
                         <AlertMessage
@@ -1566,8 +1557,8 @@ export default function GiftCard({ edit = false }) {
                             </footer>
                         </main>
                     )}
-                </div>
-            </div>
+                
+            
         </>
     );
 }

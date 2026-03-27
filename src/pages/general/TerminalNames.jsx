@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -46,8 +44,7 @@ export default function TerminalNames() {
   const { data, setData, validate } = useFormStore();
   const [loading, setLoading] = useState(false);
   const [tableData, setTableData] = useState(tableDataDef);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [edit, setEdit] = useState(null);
+    const [edit, setEdit] = useState(null);
   const [filters, setFilters] = useState({
     transactionType: "",
     description: "",
@@ -241,15 +238,9 @@ export default function TerminalNames() {
     <>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
         style={{ paddingBottom: 0, paddingTop: 0 }}
       >
-        <Sidebar
-          activeLink="terminal_names"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
 
         <div className="my-applications content-page">
           <main>
@@ -500,8 +491,8 @@ export default function TerminalNames() {
               </div>
             </div>
           </main>
-        </div>
-      </div>
+        
+      
     </>
   );
 }

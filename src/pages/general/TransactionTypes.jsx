@@ -4,8 +4,6 @@ import "../../styles/components/TransactionTypes.scss";
 import { useEffect, useMemo, useState } from "react";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
@@ -29,8 +27,7 @@ export default function TransactionTypes() {
   const [loading, setLoading] = useState(false);
   // const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState(tableDataDef);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [edit, setEdit] = useState(null);
+    const [edit, setEdit] = useState(null);
   const [filters, setFilters] = useState({
     type: "",
     name: "",
@@ -169,16 +166,10 @@ export default function TransactionTypes() {
     <>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
         style={{ paddingBottom: 0, paddingTop: 0 }}
       >
         {/* <HeaderAgent activeLink="applications" /> */}
-        <Sidebar
-          activeLink="update_transaction"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
 
         <div className="my-applications content-page">
           <main>
@@ -331,7 +322,7 @@ export default function TransactionTypes() {
             </div>
           </main>
         </div>
-      </div>
+      
       {/* <Modal /> */}
     </>
   );

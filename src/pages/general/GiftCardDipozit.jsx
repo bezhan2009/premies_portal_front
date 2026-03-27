@@ -17,12 +17,9 @@ import Spinner from "../../components/Spinner.jsx";
 // import { formaterDate } from "../../api/utils/formateDate.js";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function GiftCardDipozit({ edit = false }) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
   const { data, errors, setData, validate, setDataMore } = useFormStore();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -104,14 +101,8 @@ export default function GiftCardDipozit({ edit = false }) {
     <>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
       >
-        <Sidebar
-          activeLink="gift_deposit"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
         <div className="gift-card content-page">
           {loading ? (
             <Spinner />
@@ -191,8 +182,8 @@ export default function GiftCardDipozit({ edit = false }) {
               </footer>
             </main>
           )}
-        </div>
-      </div>
+        
+      
     </>
   );
 }

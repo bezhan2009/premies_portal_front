@@ -6,13 +6,10 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [activeBankLimit, setActiveBankLimit] = useState(null);
+    const [activeBankLimit, setActiveBankLimit] = useState(null);
 
   const [banks, setBanks] = useState([]);
   const [merchants, setMerchants] = useState([]);
@@ -345,14 +342,8 @@ export default function TransactionsQR() {
     <>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
       >
-        <Sidebar
-          activeLink="list_qr"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
         <div
           className="applications-list content-page"
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
@@ -752,7 +743,7 @@ export default function TransactionsQR() {
               <div className="spinner" />
               <p>Выгружается {loadingCount} записей...</p>
             </div>
-          </div>
+          
         )}
 
         {alert && (
@@ -762,7 +753,7 @@ export default function TransactionsQR() {
             onClose={() => setAlert(null)}
           />
         )}
-      </div>
+      
     </>
   );
 }

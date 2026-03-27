@@ -7,17 +7,14 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
-import useSidebar from "../../hooks/useSideBar.js";
 import { tableDataDef } from "../../const/defConst.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 import { toLowercaseSeparator } from "antd/es/watermark/utils.js";
 import "../../styles/components/StatsEQMS.scss";
 
 export default function EQMSList() {
   const { data, setData } = useFormStore();
   const [tableData, setTableData] = useState(tableDataDef);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [sortField, setSortField] = useState("id");
+    const [sortField, setSortField] = useState("id");
   const [sortDirection, setSortDirection] = useState("desc");
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -595,15 +592,9 @@ export default function EQMSList() {
     <>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
         style={{ paddingBottom: 0, paddingTop: 0 }}
       >
-        <Sidebar
-          activeLink="eqms_list"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
         <div className="page-content-wrapper content-page">
           <div
             className="applications-list"
@@ -775,7 +766,7 @@ export default function EQMSList() {
                         style={{ width: "150px" }}
                         id="eqms_end_date"
                       />
-                    </div>
+                    
                   </>
                 )}
                 {showStatement && (
@@ -1218,7 +1209,7 @@ export default function EQMSList() {
             </div>
           )}
         </div>
-      </div>
+      
     </>
   );
 }
