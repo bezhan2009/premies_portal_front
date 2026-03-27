@@ -2,12 +2,9 @@ import { useEffect, useState } from 'react'
 import AtmMap from '../../features/atm-map/atm-map';
 import AtmStickyTable from '../../features/atm-table/atm-table';
 import { fetchATM } from '../../api/atm/atm.js';
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function AtmPage() {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
-
+    
     const [bankomats, setBankomats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -33,11 +30,6 @@ export default function AtmPage() {
     if (error) {
         return (
             <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-                <Sidebar
-                    activeLink="director"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
                 <div className="dashboard-container">
                     <div className="block_info_prems content-page" align="center">
                         <div className="error-container">
@@ -57,7 +49,6 @@ export default function AtmPage() {
 
     return (
         <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-            <Sidebar activeLink="atm_table" isOpen={isSidebarOpen} toggle={toggleSidebar} />
             <div className="dashboard-container">
                 <div className="block_info_prems content-page" align="center">
                     <div className='flex flex-col gap-8 w-[95%] mx-auto '>
