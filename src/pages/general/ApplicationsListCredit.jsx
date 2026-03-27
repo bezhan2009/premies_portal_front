@@ -1,9 +1,9 @@
 // ApplicationsList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Input from "../../components/elements/Input";
 import { useFormStore } from "../../hooks/useFormState";
 import { statusCredit } from "../../const/defConst";
-import fileLogo from "../../assets/file_logo.png";
+
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
@@ -13,11 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function ApplicationsListCredit() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -36,34 +33,44 @@ export default function ApplicationsListCredit() {
   });
   const navigate = useNavigate();
 
-  const fetchData = async (nextId = null, res = false) => {
-    try {
-      setLoading(true);
-      const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
-      let query = new URLSearchParams();
+  const fetchData = useCallback(
+    async (nextId = null, res = false) => {
+      try {
+        setLoading(true);
+        const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
+        let query = new URLSearchParams();
 
-      if (nextId) query.append("after", nextId);
-      if (data?.month) query.append("month", data?.month);
-      if (data?.year) query.append("year", data?.year);
-      if (!selectedRows.length && data?.status)
-        query.append("status_id", data?.status);
-      const response = await fetch(
-        `${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`
-      );
-      const result = await response.json();
-      if (res) {
-        setTableData(result);
-      } else setTableData([...tableData, ...result]);
+        if (nextId) query.append("after", nextId);
+        if (data?.month) query.append("month", data?.month);
+        if (data?.year) query.append("year", data?.year);
+        if (!selectedRows.length && data?.status)
+          query.append("status_id", data?.status);
+        const response = await fetch(
+          `${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`,
+        );
+        const result = await response.json();
+        if (res) {
+          setTableData(result);
+        } else setTableData([...tableData, ...result]);
 
-      setNextId(result?.[result?.length - 1]?.ID);
-      setFetching(false);
-    } catch (error) {
-      console.log("Ошибка загрузки заявок:", error);
-    } finally {
-      setLoading(false);
-      setFetching(false);
-    }
-  };
+        setNextId(result?.[result?.length - 1]?.ID);
+        setFetching(false);
+      } catch (error) {
+        console.log("Ошибка загрузки заявок:", error);
+      } finally {
+        setLoading(false);
+        setFetching(false);
+      }
+    },
+    [
+      archive,
+      data?.month,
+      data?.year,
+      data?.status,
+      selectedRows.length,
+      tableData,
+    ],
+  );
 
   function ImagePreviewModal({ imageUrl, onClose }) {
     if (!imageUrl) return null;
@@ -165,31 +172,6 @@ export default function ApplicationsListCredit() {
     );
   };
 
-  const headers = [
-    "Телефон",
-    "Код клиента",
-    "Тип кредита",
-    "Сумма кредита",
-    "Срок кредита (мес.)",
-    "Место работы",
-    "ИНН",
-    "Заработная плата",
-    // "Карта",
-  ];
-
-  const renderFileIcon = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
-    const fullUrl = `${backendUrl}/${path.replace(/\\/g, "/")}`;
-    return (
-      <button
-        className="file-icon-button"
-        onClick={() => setPreviewImage(fullUrl)}
-      >
-        <img src={fileLogo} alt="Файл" width={48} height={60} />
-      </button>
-    );
-  };
-
   const deleteApplication = async (id) => {
     try {
       await deleteCreditById(id);
@@ -228,11 +210,11 @@ export default function ApplicationsListCredit() {
 
   useEffect(() => {
     fetchData(null, true);
-  }, [archive]);
+  }, [archive, fetchData]);
 
   useEffect(() => {
     fetchData(null, true);
-  }, [data?.month, data?.year, data?.status]);
+  }, [data?.month, data?.year, data?.status, fetchData]);
 
   useEffect(() => {
     if (selectAll) {
@@ -240,13 +222,13 @@ export default function ApplicationsListCredit() {
     } else {
       setSelectedRows([]);
     }
-  }, [selectAll]);
+  }, [selectAll, filteredData]);
 
   useEffect(() => {
     if (fetching && nextId !== undefined) {
       fetchData(nextId);
     }
-  }, [fetching]);
+  }, [fetching, nextId, fetchData]);
 
   console.log("nextId", nextId);
 
@@ -268,244 +250,224 @@ export default function ApplicationsListCredit() {
     if (savedYear) {
       setData("year", savedYear);
     }
-  }, []);
+  }, [setData]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="credits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-        <div className="applications-list content-page">
-          <main>
-            <div className="my-applications-header">
-              <Select
-                style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
-                id={"status"}
-                value={data?.status}
-                onChange={(e) => {
-                  if (!selectedRows.length) setData("status", e);
-                  else upDateStatusApplications(e);
-                }}
-                options={statusCredit}
-                error={errors}
-              />
-              <button className="Unloading" onClick={handleExport}>
-                Выгрузка для карт
-              </button>
-              <button
-                className="filter-toggle"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                Фильтры
-              </button>
-              <button
-                className={archive && "archive-toggle"}
-                onClick={() => setArchive(!archive)}
-              >
-                Архив
-              </button>
-              <button
-                className={selectAll && "selectAll-toggle"}
-                onClick={() => {
-                  setSelectAll(!selectAll);
-                }}
-              >
-                Выбрать все
-              </button>
-            </div>
-
-            {showFilters && (
-              <div className="filters animate-slideIn">
-                <input
-                  placeholder="ФИО"
-                  onChange={(e) => handleFilterChange("fullName", e.target.value)}
-                />
-                <input
-                  placeholder="Телефон"
-                  onChange={(e) => handleFilterChange("phone", e.target.value)}
-                />
-                <select
-                  onChange={(e) => handleFilterChange("resident", e.target.value)}
-                >
-                  <option value="">Резидент</option>
-                  <option value="Да">Да</option>
-                  <option value="Нет">Нет</option>
-                </select>
-                <input
-                  placeholder="Карта"
-                  onChange={(e) => handleFilterChange("card", e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="my-applications-sub-header">
-              <div>
-                Поиск по месяцам
-                <Input
-                  type="number"
-                  placeholder={""}
-                  onChange={(e) => setData("month", e)}
-                  value={data?.month}
-                  // error={errors}
-                  id={"month"}
-                />{" "}
-              </div>
-              <div>
-                Поиск по годам
-                <Input
-                  type="number"
-                  placeholder={""}
-                  onChange={(e) => setData("year", e)}
-                  value={data?.year}
-                  // error={errors}
-                  id={"year"}
-                />{" "}
-              </div>
-              <div>
-                Поиск по имени
-                <Input
-                  type="text"
-                  placeholder={""}
-                  onChange={(e) => setData("name_filter", e)}
-                  value={data?.name_filter}
-                  // error={errors}
-                  id={"name_filter"}
-                />{" "}
-              </div>
-              <div>
-                Поиск по телефону
-                <Input
-                  type="text"
-                  placeholder={""}
-                  onChange={(e) => setData("phone_filter", e)}
-                  value={data?.phone_filter}
-                  id={"phone_filter"}
-                />
-              </div>
-              {loading ? (
-                <Spinner />
-              ) : (
-                <>
-                  <div>
-                    Показать{" "}
-                    <Input
-                      type="number"
-                      placeholder={""}
-                      onChange={(e) => setData("limit", e)}
-                      value={data?.limit}
-                      // error={errors}
-                      id={"limit"}
-                    />{" "}
-                    записей
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div
-              className="my-applications-content"
-              onScroll={scrollHandler}
-              style={{ position: "relative" }}
+      <div className="applications-list content-page">
+        <main>
+          <div className="my-applications-header">
+            <Select
+              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+              id={"status"}
+              value={data?.status}
+              onChange={(e) => {
+                if (!selectedRows.length) setData("status", e);
+                else upDateStatusApplications(e);
+              }}
+              options={statusCredit}
+              error={errors}
+            />
+            <button className="Unloading" onClick={handleExport}>
+              Выгрузка для карт
+            </button>
+            <button
+              className="filter-toggle"
+              onClick={() => setShowFilters(!showFilters)}
             >
-              {filteredData.length === 0 ? (
-                <div
-                  style={{ textAlign: "center", padding: "2rem", color: "gray" }}
-                >
-                  Нет данных для отображения
-                </div>
-              ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Выбрать</th>
-                      <th>ID</th>
-                      <th>ФИО</th>
-                      <th>Телефон</th>
-                      {/* <th>Карта</th> */}
-                      <th>Адрес</th>
-                      <th>Скан паспорта (лицевая)</th>
-                      <th>Скан паспорта (задняя)</th>
-                      <th>Скан паспорта (с лицом)</th>
-                      <th>Документ подтверждающий доход</th>
-                      {headers.map((e, i) => (
-                        <th key={i}>{e}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData &&
-                      filteredData
-                        ?.slice(0, data?.limit || filteredData?.length)
-                        ?.map((row, index) => (
-                          <tr key={index}>
-                            <td>
-                              <input
-                                type="checkbox"
-                                className="custom-checkbox"
-                                checked={selectedRows.includes(row.ID)}
-                                onChange={(e) => {
-                                  setSelectedRows(
-                                    e.target.checked
-                                      ? [...selectedRows, row.ID]
-                                      : selectedRows.filter((id) => id !== row.ID)
-                                  );
-                                }}
-                              />
-                            </td>
-                            <td>{row.ID}</td>
-                            <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                            <td>{row.phone}</td>
-                            {/* <td>{row.card_name}</td> */}
-                            <td>{row.address}</td>
-                            <td>
-                              {renderFileIcon(row.front_side_of_the_passport)}
-                            </td>
-                            <td>
-                              {renderFileIcon(row.back_side_of_the_passport)}
-                            </td>
-                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                            <td>{row.phone}</td>
-                            <td>{row.client_code}</td>
-                            <td>{row.loan_type}</td>
-                            <td>{row.salary}</td>
-                            <td>{row.loan_amount}</td>
-                            <td>{row.workplace}</td>
-                            <td>{row.inn}</td>
-                            <td>{row.salary}</td>
-                            {/* <td>{row.card_code}</td> */}
-                            <td className="active-table">
-                              <AiFillEdit
-                                onClick={() => navigate(`/credit/card/${row.ID}`)}
-                                style={{
-                                  fontSize: 35,
-                                  color: "green",
-                                  cursor: "pointer",
-                                  marginBottom: "10px",
-                                }}
-                              />
-                              <AiFillDelete
-                                onClick={() => deleteApplication(row.ID)}
-                                style={{
-                                  fontSize: 35,
-                                  color: "#c31414",
-                                  cursor: "pointer",
-                                }}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </main>
-        </div>
+              Фильтры
+            </button>
+            <button
+              className={archive ? "archive-toggle active" : "archive-toggle"}
+              onClick={() => setArchive(!archive)}
+            >
+              Архив
+            </button>
+            <button
+              className={
+                selectAll ? "selectAll-toggle active" : "selectAll-toggle"
+              }
+              onClick={() => {
+                setSelectAll(!selectAll);
+              }}
+            >
+              Выбрать все
+            </button>
+          </div>
 
-        <ImagePreviewModal
-          imageUrl={previewImage}
-          onClose={() => setPreviewImage(null)}
-        />
+          {showFilters && (
+            <div className="filters animate-slideIn">
+              <input
+                placeholder="ФИО"
+                value={filters.fullName}
+                onChange={(e) => handleFilterChange("fullName", e.target.value)}
+              />
+              <input
+                placeholder="Телефон"
+                value={filters.phone}
+                onChange={(e) => handleFilterChange("phone", e.target.value)}
+              />
+              <select
+                value={filters.resident}
+                onChange={(e) => handleFilterChange("resident", e.target.value)}
+              >
+                <option value="">Резидент</option>
+                <option value="Да">Да</option>
+                <option value="Нет">Нет</option>
+              </select>
+              <input
+                placeholder="Карта"
+                value={filters.card}
+                onChange={(e) => handleFilterChange("card", e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="my-applications-sub-header">
+            <div>
+              Поиск по месяцам
+              <Input
+                type="number"
+                placeholder={""}
+                onChange={(e) => setData("month", e)}
+                value={data?.month}
+                id={"month"}
+              />{" "}
+            </div>
+            <div>
+              Поиск по годам
+              <Input
+                type="number"
+                placeholder={""}
+                onChange={(e) => setData("year", e)}
+                value={data?.year}
+                id={"year"}
+              />{" "}
+            </div>
+            {loading ? (
+              <Spinner />
+            ) : (
+              <>
+                <div>
+                  Показать{" "}
+                  <Input
+                    type="number"
+                    placeholder={""}
+                    onChange={(e) => setData("limit", e)}
+                    value={data?.limit}
+                    id={"limit"}
+                  />{" "}
+                  записей
+                </div>
+              </>
+            )}
+          </div>
+
+          <div
+            className="my-applications-content"
+            onScroll={scrollHandler}
+            style={{ position: "relative" }}
+          >
+            {filteredData.length === 0 ? (
+              <div
+                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
+              >
+                Нет данных для отображения
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Выбрать</th>
+                    <th>ID</th>
+                    <th>ФИО</th>
+                    <th>Телефон</th>
+                    <th>Тип Карты</th>
+                    <th>Адрес</th>
+                    <th>ИНН</th>
+                    <th>Дата рождения</th>
+                    <th>Пол</th>
+                    <th>Резидент</th>
+                    <th>Документ</th>
+                    <th>Создано в</th>
+                    <th>Обновлено в</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData &&
+                    filteredData
+                      ?.slice(0, data?.limit || filteredData?.length)
+                      ?.map((row, index) => (
+                        <tr key={index}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="custom-checkbox"
+                              checked={selectedRows.includes(row.ID)}
+                              onChange={(e) => {
+                                setSelectedRows(
+                                  e.target.checked
+                                    ? [...selectedRows, row.ID]
+                                    : selectedRows.filter(
+                                        (id) => id !== row.ID,
+                                      ),
+                                );
+                              }}
+                            />
+                          </td>
+                          <td>{row.ID}</td>
+                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
+                          <td>{row.phone_number}</td>
+                          <td>{row.card_type}</td>
+                          <td>{row.delivery_address}</td>
+                          <td>{row.inn}</td>
+                          <td>{row.date_of_birth}</td>
+                          <td>{row.gender}</td>
+                          <td>{row.is_resident ? "Да" : "Нет"}</td>
+                          <td>{row.type_of_certificate}</td>
+                          <td>{formatDate(row.CreatedAt)}</td>
+                          <td>{formatDate(row.UpdatedAt)}</td>
+                          <td className="active-table">
+                            <AiFillEdit
+                              onClick={() =>
+                                navigate(`/agent/credit/${row.ID}`)
+                              }
+                              style={{
+                                fontSize: 35,
+                                color: "green",
+                                cursor: "pointer",
+                                marginBottom: "10px",
+                              }}
+                            />
+                            <AiFillDelete
+                              onClick={() => deleteApplication(row.ID)}
+                              style={{
+                                fontSize: 35,
+                                color: "#c31414",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </main>
       </div>
+
+      <ImagePreviewModal
+        imageUrl={previewImage}
+        onClose={() => setPreviewImage(null)}
+      />
     </>
   );
 }
