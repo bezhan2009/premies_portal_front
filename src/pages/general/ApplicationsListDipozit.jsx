@@ -12,12 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-
 
 export default function ApplicationsListDipozit() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -228,8 +224,6 @@ export default function ApplicationsListDipozit() {
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="deposits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="applications-list content-page">
           <main>
             <div className="my-applications-header">
@@ -387,7 +381,6 @@ export default function ApplicationsListDipozit() {
           imageUrl={previewImage}
           onClose={() => setPreviewImage(null)}
         />
-     </div>
     </>
   );
 }

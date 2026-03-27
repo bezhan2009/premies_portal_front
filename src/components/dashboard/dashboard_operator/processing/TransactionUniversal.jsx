@@ -14,6 +14,7 @@ import SortIcon from "../../../general/SortIcon.jsx";
 import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import TransactionsChart from "../../../graph/graph.jsx";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
+import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 
 const getTransactionTypeValue = (transactionType) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
@@ -917,12 +918,11 @@ export default function DashboardOperatorTransactionSearch() {
                       <label htmlFor="fromDate" className="txn-filter__label">
                         Дата с
                       </label>
-                      <input
-                        type="date"
+                      <CustomDateInput
                         id="fromDate"
+                        type="date"
                         value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        className="txn-filter__input txn-filter__input--date"
+                        onChange={setFromDate}
                         disabled={isLoading}
                       />
                     </div>
@@ -930,12 +930,11 @@ export default function DashboardOperatorTransactionSearch() {
                       <label htmlFor="toDate" className="txn-filter__label">
                         Дата по
                       </label>
-                      <input
-                        type="date"
+                      <CustomDateInput
                         id="toDate"
+                        type="date"
                         value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        className="txn-filter__input txn-filter__input--date"
+                        onChange={setToDate}
                         disabled={isLoading}
                       />
                     </div>
@@ -943,12 +942,11 @@ export default function DashboardOperatorTransactionSearch() {
                       <label htmlFor="fromTime" className="txn-filter__label">
                         Время с
                       </label>
-                      <input
-                        type="time"
+                      <CustomDateInput
                         id="fromTime"
+                        type="time"
                         value={fromTime}
-                        onChange={(e) => setFromTime(e.target.value)}
-                        className="txn-filter__input"
+                        onChange={setFromTime}
                         disabled={isLoading}
                       />
                     </div>
@@ -956,12 +954,11 @@ export default function DashboardOperatorTransactionSearch() {
                       <label htmlFor="toTime" className="txn-filter__label">
                         Время по
                       </label>
-                      <input
-                        type="time"
+                      <CustomDateInput
                         id="toTime"
+                        type="time"
                         value={toTime}
-                        onChange={(e) => setToTime(e.target.value)}
-                        className="txn-filter__input"
+                        onChange={setToTime}
                         disabled={isLoading}
                       />
                     </div>

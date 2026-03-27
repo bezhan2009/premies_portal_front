@@ -13,11 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function ApplicationsListCredit() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -272,8 +269,6 @@ export default function ApplicationsListCredit() {
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="credits" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="applications-list content-page">
           <main>
             <div className="my-applications-header">
@@ -323,13 +318,15 @@ export default function ApplicationsListCredit() {
                   placeholder="Телефон"
                   onChange={(e) => handleFilterChange("phone", e.target.value)}
                 />
-                <select
-                  onChange={(e) => handleFilterChange("resident", e.target.value)}
-                >
-                  <option value="">Резидент</option>
-                  <option value="Да">Да</option>
-                  <option value="Нет">Нет</option>
-                </select>
+                <Select
+                  value={filters.resident}
+                  onChange={(val) => handleFilterChange("resident", val)}
+                  options={[
+                    { value: "", label: "Резидент" },
+                    { value: "Да", label: "Да" },
+                    { value: "Нет", label: "Нет" },
+                  ]}
+                />
                 <input
                   placeholder="Карта"
                   onChange={(e) => handleFilterChange("card", e.target.value)}
@@ -505,7 +502,6 @@ export default function ApplicationsListCredit() {
           imageUrl={previewImage}
           onClose={() => setPreviewImage(null)}
         />
-      </div>
     </>
   );
 }

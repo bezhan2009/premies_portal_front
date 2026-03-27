@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Table, Button, Space, Tag, message, Modal } from "antd";
+import { Button, Space, Tag, message, Modal } from "antd";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { useMoneyTransferStore } from "../../../store/product/useMoneyTransfer.store";
 import { MoneyTransferForm } from "./MoneyTransferForm";
 import {

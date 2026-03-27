@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
+import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
@@ -7,16 +8,12 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
-import useSidebar from "../../hooks/useSideBar.js";
 import { tableDataDef } from "../../const/defConst.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import { toLowercaseSeparator } from "antd/es/watermark/utils.js";
 import "../../styles/components/StatsEQMS.scss";
 
 export default function EQMSList() {
+  const [tableData, setTableData] = useState([]);
   const { data, setData } = useFormStore();
-  const [tableData, setTableData] = useState(tableDataDef);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [sortField, setSortField] = useState("id");
   const [sortDirection, setSortDirection] = useState("desc");
   const [loading, setLoading] = useState(false);
@@ -446,7 +443,7 @@ export default function EQMSList() {
       .filter(
         (row) =>
           getPaymentStatus(row) === "pending" &&
-          toLowercaseSeparator(row.status) === "success",
+          (row.status || "").toLowerCase() === "success",
       )
       .map((r) => r.id);
     setSelectedRows(ids);
@@ -458,7 +455,7 @@ export default function EQMSList() {
       .filter(
         (row) =>
           getPaymentStatus(row) !== "pending" &&
-          toLowercaseSeparator(row.status) === "success",
+          (row.status || "").toLowerCase() === "success",
       )
       .map((r) => r.id);
     setSelectedRows(ids);
@@ -593,17 +590,6 @@ export default function EQMSList() {
 
   return (
     <>
-      <div
-        className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-        }`}
-        style={{ paddingBottom: 0, paddingTop: 0 }}
-      >
-        <Sidebar
-          activeLink="eqms_list"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
         <div className="page-content-wrapper content-page">
           <div
             className="applications-list"
@@ -725,25 +711,29 @@ export default function EQMSList() {
                       }))
                     }
                   />
-                  <select
-                    onChange={(e) =>
-                      setFilters((p) => ({ ...p, status: e.target.value }))
+                  <Select
+                    onChange={(val) =>
+                      setFilters((p) => ({ ...p, status: val }))
                     }
-                  >
-                    <option value="">Статус</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Success">Success</option>
-                    <option value="Failed">Failed</option>
-                  </select>
-                  <select
-                    onChange={(e) =>
-                      setFilters((p) => ({ ...p, payedAt: e.target.value }))
+                    value={filters.status}
+                    options={[
+                      { value: "", label: "Статус" },
+                      { value: "Pending", label: "Pending" },
+                      { value: "Success", label: "Success" },
+                      { value: "Failed", label: "Failed" },
+                    ]}
+                  />
+                  <Select
+                    onChange={(val) =>
+                      setFilters((p) => ({ ...p, payedAt: val }))
                     }
-                  >
-                    <option value="">Статус оплаты</option>
-                    <option value="paid">Оплачено</option>
-                    <option value="not_paid">Не оплачено</option>
-                  </select>
+                    value={filters.payedAt}
+                    options={[
+                      { value: "", label: "Статус оплаты" },
+                      { value: "paid", label: "Оплачено" },
+                      { value: "not_paid", label: "Не оплачено" },
+                    ]}
+                  />
                   <input
                     placeholder="Amount"
                     type="number"
@@ -1218,7 +1208,6 @@ export default function EQMSList() {
             </div>
           )}
         </div>
-      </div>
     </>
   );
 }

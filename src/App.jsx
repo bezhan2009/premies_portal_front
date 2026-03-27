@@ -5,7 +5,7 @@ import TechnicalDayBanner from "./pages/general/TechnicalDate.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 // import { CardTable } from "./pages/product/card/CardTable.jsx";
-import { useEffect } from "react";
+import GlobalNativeTableEnhancer from "./components/table/GlobalNativeTableEnhancer.jsx";
 
 function App() {
   const isTechnicalDay = false;
@@ -21,6 +21,7 @@ function App() {
 
   return (
     <>
+      <GlobalNativeTableEnhancer />
       <AppRouter />
       <ToastContainer
         position="top-right"

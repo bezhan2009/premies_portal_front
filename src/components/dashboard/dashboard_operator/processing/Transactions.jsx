@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Select from "../../../elements/Select";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
@@ -21,6 +22,7 @@ import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
 import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
+import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 
 // Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType) => {
@@ -183,7 +185,7 @@ export default function DashboardOperatorProcessingTransactions() {
     setCardId(value.replace(/\s/g, ""));
   };
 
-  const handleSearchTypeChange = (e) => {
+  const handleSearchTypeChange = (valueOrEvent) => {
     if (isLimitedAccess) {
       showAlert(
         "У вас ограниченный доступ. Можно просматривать только историю одной карты",
@@ -192,7 +194,10 @@ export default function DashboardOperatorProcessingTransactions() {
       return;
     }
 
-    const value = e.target.value;
+    const value =
+      typeof valueOrEvent === "string"
+        ? valueOrEvent
+        : valueOrEvent?.target?.value;
     setSearchType(value);
     setDisplayCardId("");
     setCardId("");
@@ -838,12 +843,11 @@ export default function DashboardOperatorProcessingTransactions() {
               <label htmlFor="searchDate" className="search-card__label">
                 Дата
               </label>
-              <input
-                type="date"
+              <CustomDateInput
                 id="searchDate"
+                type="date"
                 value={searchDate}
-                onChange={(e) => setSearchDate(e.target.value)}
-                className="search-card__input"
+                onChange={setSearchDate}
                 disabled={isLoading || !!id}
               />
             </div>
@@ -852,29 +856,25 @@ export default function DashboardOperatorProcessingTransactions() {
                 <label htmlFor="fromTime" className="search-card__label">
                   Время с
                 </label>
-                <input
-                  type="time"
+                <CustomDateInput
                   id="fromTime"
+                  type="time"
                   value={fromTime}
-                  onChange={(e) => setFromTime(e.target.value)}
-                  className="search-card__input"
+                  onChange={setFromTime}
                   disabled={isLoading || !!id}
-                  placeholder="ЧЧ:ММ"
                 />
               </div>
-              <div className="date-separator">—</div>
+              <div className="date-separator">-</div>
               <div className="search-card__input-group">
                 <label htmlFor="toTime" className="search-card__label">
                   Время по
                 </label>
-                <input
-                  type="time"
+                <CustomDateInput
                   id="toTime"
+                  type="time"
                   value={toTime}
-                  onChange={(e) => setToTime(e.target.value)}
-                  className="search-card__input"
+                  onChange={setToTime}
                   disabled={isLoading || !!id}
-                  placeholder="ЧЧ:ММ"
                 />
               </div>
             </div>
@@ -956,21 +956,13 @@ export default function DashboardOperatorProcessingTransactions() {
                     <label htmlFor="searchType" className="search-card__label">
                       Тип поиска
                     </label>
-                    <div className="custom-select">
-                      <select
-                        id="searchType"
-                        value={searchType}
-                        onChange={handleSearchTypeChange}
-                        className="search-card__select"
-                        disabled={isLoading || !!id || isLimitedAccess}
-                      >
-                        {searchOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      id="searchType"
+                      value={searchType}
+                      onChange={handleSearchTypeChange}
+                      options={searchOptions}
+                      disabled={isLoading || !!id || isLimitedAccess}
+                    />
                   </div>
 
                   {renderSearchFields()}
@@ -984,28 +976,32 @@ export default function DashboardOperatorProcessingTransactions() {
                         >
                           С даты
                         </label>
-                        <input
-                          type="date"
+                        <CustomDateInput
                           id="fromDate"
-                          name="fromDate"
+                          type="date"
                           value={fromDate}
-                          onChange={handleDateChange}
-                          className="search-card__date-input"
+                          onChange={(value) =>
+                            handleDateChange({
+                              target: { name: "fromDate", value },
+                            })
+                          }
                           disabled={isLoading}
                         />
                       </div>
-                      <div className="date-separator">—</div>
+                      <div className="date-separator">-</div>
                       <div className="date-input-group">
                         <label htmlFor="toDate" className="search-card__label">
                           По дату
                         </label>
-                        <input
-                          type="date"
+                        <CustomDateInput
                           id="toDate"
-                          name="toDate"
+                          type="date"
                           value={toDate}
-                          onChange={handleDateChange}
-                          className="search-card__date-input"
+                          onChange={(value) =>
+                            handleDateChange({
+                              target: { name: "toDate", value },
+                            })
+                          }
                           disabled={isLoading}
                         />
                       </div>

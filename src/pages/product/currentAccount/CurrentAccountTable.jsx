@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Table, Button, Space, Tag, message, Modal } from "antd";
+import { Button, Space, Tag, message, Modal } from "antd";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { useAccountStore } from "../../../store/product/useCurrentAccount.store";
 import { CurrentAccountForm } from "./CurrentAccountForm";

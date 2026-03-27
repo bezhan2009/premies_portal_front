@@ -14,12 +14,9 @@ import { deleteApplicationById } from "../../api/application/deleteApplicationBy
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
 import "../../styles/components/ApplicationsList.scss";
 
 export default function ApplicationsList() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -310,8 +307,6 @@ export default function ApplicationsList() {
   }, []);
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="applications" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="applications-list content-page">
           <main>
             {/* Уведомление о новой заявке */}
@@ -373,14 +368,15 @@ export default function ApplicationsList() {
                   value={filters.phone}
                   onChange={(e) => handleFilterChange("phone", e.target.value)}
                 />
-                <select
+                <Select
                   value={filters.resident}
-                  onChange={(e) => handleFilterChange("resident", e.target.value)}
-                >
-                  <option value="">Резидент</option>
-                  <option value="Да">Да</option>
-                  <option value="Нет">Нет</option>
-                </select>
+                  onChange={(val) => handleFilterChange("resident", val)}
+                  options={[
+                    { value: "", label: "Резидент" },
+                    { value: "Да", label: "Да" },
+                    { value: "Нет", label: "Нет" },
+                  ]}
+                />
                 <input
                   placeholder="Карта"
                   value={filters.card}
@@ -542,7 +538,6 @@ export default function ApplicationsList() {
           imageUrl={previewImage}
           onClose={() => setPreviewImage(null)}
         />
-      </div>
     </>
   );
 }

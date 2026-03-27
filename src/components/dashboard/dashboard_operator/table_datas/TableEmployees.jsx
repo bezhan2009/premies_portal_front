@@ -11,6 +11,22 @@ import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
 import Select from "../../../elements/Select.jsx";
 
+const formatRoles = (roles) => {
+    if (!Array.isArray(roles)) {
+        return "";
+    }
+
+    return roles
+        .map((role) => {
+            if (typeof role === "string") {
+                return role;
+            }
+            return role?.Name || role?.name || "";
+        })
+        .filter(Boolean)
+        .join(", ");
+};
+
 const EmployeesTable = () => {
     const [employees, setEmployees] = useState([]);
     const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -35,23 +51,33 @@ const EmployeesTable = () => {
             offices.forEach((office) => {
                 if (office.office_user && office.office_user.length > 0) {
                     office.office_user.forEach((u) => {
+                        const worker = u?.worker;
+                        const user = worker?.user;
+                        const userId = user?.ID ?? user?.id ?? worker?.ID ?? worker?.id;
+
+                        if (!userId) {
+                            return;
+                        }
+
                         users.push({
-                            ID: u.worker.user.ID,
+                            ID: userId,
                             officeTitle: office.title,
-                            fio: u.worker?.user?.full_name || "",
-                            login: u.worker?.user?.username || "",
-                            position: u.worker?.position || "",
-                            place_work: u.worker?.place_work || "",
-                            salary: u.worker?.Salary || "",
-                            group:
-                                u.worker?.user?.roles?.map((role) => role.Name).join(", ") ||
-                                "",
+                            fio: user?.full_name || "",
+                            login: user?.username || user?.Username || "",
+                            position: worker?.position || "",
+                            place_work: worker?.place_work || "",
+                            salary: worker?.Salary ?? worker?.salary ?? "",
+                            group: formatRoles(user?.roles),
                         });
                     });
                 }
             });
             setEmployees(users);
             setFilteredEmployees(users);
+        } catch (e) {
+            console.error(e);
+            setEmployees([]);
+            setFilteredEmployees([]);
         } finally {
             setLoading(false);
         }

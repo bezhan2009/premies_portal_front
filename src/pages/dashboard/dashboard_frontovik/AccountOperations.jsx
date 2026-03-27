@@ -3,16 +3,14 @@ import { useLocation } from "react-router-dom";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
-import useSidebar from "../../../hooks/useSideBar.js";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
+import CustomDateInput from "../../../components/elements/CustomDateInput.jsx";
 
 export default function DashboardAccountOperations() {
   const [displayAccountNumber, setDisplayAccountNumber] = useState("");
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialAccount = queryParams.get("account");
@@ -353,22 +351,7 @@ export default function DashboardAccountOperations() {
         </div>
       )}
 
-      <div
-        className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-        }`}
-        style={{
-          userSelect: "none",
-          WebkitUserSelect: "none",
-          MozUserSelect: "none",
-        }}
-      >
-        <Sidebar
-          activeLink="account_operations"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
-        <div className="block_info_prems content-page" align="center">
+        <div className="block_info_prems" align="center">
           <div className="processing-integration">
             <div className="processing-integration__container">
               {/* Блок поиска с датами */}
@@ -403,13 +386,15 @@ export default function DashboardAccountOperations() {
                         >
                           С даты
                         </label>
-                        <input
-                          type="date"
+                        <CustomDateInput
                           id="fromDate"
-                          name="fromDate"
+                          type="date"
                           value={fromDate}
-                          onChange={handleDateChange}
-                          className="search-card__date-input"
+                          onChange={(value) =>
+                            handleDateChange({
+                              target: { name: "fromDate", value },
+                            })
+                          }
                           disabled={isLoading}
                         />
                       </div>
@@ -418,13 +403,15 @@ export default function DashboardAccountOperations() {
                         <label htmlFor="toDate" className="search-card__label">
                           По дату
                         </label>
-                        <input
-                          type="date"
+                        <CustomDateInput
                           id="toDate"
-                          name="toDate"
+                          type="date"
                           value={toDate}
-                          onChange={handleDateChange}
-                          className="search-card__date-input"
+                          onChange={(value) =>
+                            handleDateChange({
+                              target: { name: "toDate", value },
+                            })
+                          }
                           disabled={isLoading}
                         />
                       </div>
@@ -689,7 +676,6 @@ export default function DashboardAccountOperations() {
               )}
           </div>
         </div>
-      </div>
 
       <style jsx>{`
         .search-card__button--export {

@@ -6,8 +6,6 @@ import "../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../hooks/useExcelExport.js";
 import { useTableSort } from "../../hooks/useTableSort.js";
 import SortIcon from "../../components/general/SortIcon.jsx";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
 import { apiClient } from "../../api/utils/apiClient.js";
 import AddPvnSettingModal from "./AddPvnModal.jsx";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
@@ -40,8 +38,6 @@ const fields = [
 ];
 
 const PVNSettings = () => {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
-
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ ...emptyForm });
@@ -161,170 +157,163 @@ const PVNSettings = () => {
             const response = await apiClient.patch(
                 `${backendABS}/pvn/${formData.ID}`,
                 payload
-            );
-            if (response.status === 200) {
-                showAlert("Настройка обновлена", "success");
-                await fetchItems();
-                setShowEditForm(false);
-                setEditingItem(null);
-            } else {
-                throw new Error("Ошибка обновления");
-            }
-        } catch (e) {
-            console.error("Ошибка обновления:", e);
-            showAlert("Ошибка при обновлении настройки", "error");
-        } finally {
-            setLoading(false);
-        }
-    };
+			);
+			if (response.status === 200) {
+				showAlert("Настройка обновлена", "success");
+				await fetchItems();
+				setShowEditForm(false);
+				setEditingItem(null);
+			} else {
+				throw new Error("Ошибка обновления");
+			}
+		} catch (e) {
+			console.error("Ошибка обновления:", e);
+			showAlert("Ошибка при обновлении настройки", "error");
+		} finally {
+			setLoading(false);
+		}
+	};
 
-    const handleRowDoubleClick = (item) => {
-        setEditingItem({ ...item });
-        setShowEditForm(true);
-    };
+	const handleRowDoubleClick = (item) => {
+		setEditingItem({ ...item });
+		setShowEditForm(true);
+	};
 
-    const handleEditClose = () => {
-        setShowEditForm(false);
-        setEditingItem(null);
-    };
+	const handleEditClose = () => {
+		setShowEditForm(false);
+		setEditingItem(null);
+	};
 
-    const handleExport = () => {
-        try {
-            const columns = fields.map(({ key, label }) => ({ key, label }));
-            exportToExcel(sortedItems, columns, "Настройки ПВН");
-            showAlert("Экспорт выполнен успешно", "success");
-        } catch (e) {
-            console.error("Ошибка экспорта:", e);
-            showAlert("Ошибка при экспорте в Excel", "error");
-        }
-    };
+	const handleExport = () => {
+		try {
+			const columns = fields.map(({ key, label }) => ({ key, label }));
+			exportToExcel(sortedItems, columns, "Настройки ПВН");
+			showAlert("Экспорт выполнен успешно", "success");
+		} catch (e) {
+			console.error("Ошибка экспорта:", e);
+			showAlert("Ошибка при экспорте в Excel", "error");
+		}
+	};
 
-    const formatValue = (value, fieldType, fieldKey) => {
-        if (value === null || value === undefined || value === "") return "-";
-        if (fieldKey === "ID") {
-            return Number.isInteger(value) ? value.toString() : Math.floor(value).toString();
-        }
-        if (fieldType === "datetime") {
-            try {
-                const d = new Date(value);
-                if (isNaN(d.getTime())) return value;
-                return d.toLocaleString("ru-RU");
-            } catch {
-                return value;
-            }
-        }
-        if (fieldKey === "currency" && typeof value === "number") {
-            const currencyMap = {
-                810: "RUB",
-                840: "USD",
-                978: "EUR",
-                398: "KZT",
-                972: "TJS",
-            };
-            return currencyMap[value] || value;
-        }
-        if (fieldType === "number" && typeof value === "number") {
-            return value.toString();
-        }
-        return String(value);
-    };
+	const formatValue = (value, fieldType, fieldKey) => {
+		if (value === null || value === undefined || value === "") return "-";
+		if (fieldKey === "ID") {
+			return Number.isInteger(value) ? value.toString() : Math.floor(value).toString();
+		}
+		if (fieldType === "datetime") {
+			try {
+				const d = new Date(value);
+				if (isNaN(d.getTime())) return value;
+				return d.toLocaleString("ru-RU");
+			} catch {
+				return value;
+			}
+		}
+		if (fieldKey === "currency" && typeof value === "number") {
+			const currencyMap = {
+				810: "RUB",
+				840: "USD",
+				978: "EUR",
+				398: "KZT",
+				972: "TJS",
+			};
+			return currencyMap[value] || value;
+		}
+		if (fieldType === "number" && typeof value === "number") {
+			return value.toString();
+		}
+		return String(value);
+	};
 
-    return (
-        <div
-            className={`dashboard-container ${
-                isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-            }`}
-        >
-            <Sidebar activeLink="pvn_settings" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-            <div className="block_info_prems content-page">
-                {alert.show && (
-                    <AlertMessage
-                        message={alert.message}
-                        type={alert.type}
-                        onClose={hideAlert}
-                        duration={3000}
-                    />
-                )}
+	return (
+		<div className="block_info_prems">
+			{alert.show && (
+				<AlertMessage
+					message={alert.message}
+					type={alert.type}
+					onClose={hideAlert}
+					duration={3000}
+				/>
+			)}
 
-                <div className="table-header-actions" style={{ margin: "16px" }}>
-                    <h2>Настройки ПВН</h2>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                        <button className="action-buttons__btn" onClick={() => setShowAddForm(true)}>
-                            + Добавить настройку
-                        </button>
-                        <button className="export-excel-btn" onClick={handleExport}>
-                            Экспорт в Excel
-                        </button>
-                    </div>
-                </div>
+			<div className="table-header-actions" style={{ margin: "16px" }}>
+				<h2>Настройки ПВН</h2>
+				<div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+					<button className="action-buttons__btn" onClick={() => setShowAddForm(true)}>
+						+ Добавить настройку
+					</button>
+					<button className="export-excel-btn" onClick={handleExport}>
+						Экспорт в Excel
+					</button>
+				</div>
+			</div>
 
-                <AddPvnSettingModal
-                    isOpen={showAddForm}
-                    onClose={() => {
-                        setShowAddForm(false);
-                        setNewItem({ ...emptyForm });
-                    }}
-                    data={newItem}
-                    onSave={handleAdd}
-                    isEdit={false}
-                />
+			<AddPvnSettingModal
+				isOpen={showAddForm}
+				onClose={() => {
+					setShowAddForm(false);
+					setNewItem({ ...emptyForm });
+				}}
+				data={newItem}
+				onSave={handleAdd}
+				isEdit={false}
+			/>
 
-                <AddPvnSettingModal
-                    isOpen={showEditForm}
-                    onClose={handleEditClose}
-                    data={editingItem}
-                    onUpdate={handleUpdate}
-                    isEdit={true}
-                />
+			<AddPvnSettingModal
+				isOpen={showEditForm}
+				onClose={handleEditClose}
+				data={editingItem}
+				onUpdate={handleUpdate}
+				isEdit={true}
+			/>
 
-                {loading ? (
-                    <p style={{ margin: "16px" }}>Загрузка...</p>
-                ) : (
-                    <div style={{ overflowX: "auto", width: "100%" }}>
-                        <table className="table-reports" style={{ minWidth: "max-content" }}>
-                            <thead>
-                            <tr>
-                                {fields.map(({ key, label }) => (
-                                    <th
-                                        key={key}
-                                        onClick={() => requestSort(key)}
-                                        className="sortable-header"
-                                    >
-                                        {label}
-                                        <SortIcon sortConfig={sortConfig} sortKey={key} />
-                                    </th>
-                                ))}
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {Array.isArray(sortedItems) && sortedItems.length > 0 ? (
-                                sortedItems.map((item) => (
-                                    <tr
-                                        key={item.ID}
-                                        onDoubleClick={() => handleRowDoubleClick(item)}
-                                        style={{ cursor: "pointer" }}
-                                    >
-                                        {fields.map((field) => (
-                                            <td key={field.key}>
-                                                {formatValue(item[field.key], field.type, field.key)}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={fields.length} style={{ textAlign: "center" }}>
-                                        Нет данных
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+			{loading ? (
+				<p style={{ margin: "16px" }}>Загрузка...</p>
+			) : (
+				<div style={{ overflowX: "auto", width: "100%" }}>
+					<table className="table-reports" style={{ minWidth: "max-content" }}>
+						<thead>
+							<tr>
+								{fields.map(({ key, label }) => (
+									<th
+										key={key}
+										onClick={() => requestSort(key)}
+										className="sortable-header"
+									>
+										{label}
+										<SortIcon sortConfig={sortConfig} sortKey={key} />
+									</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{Array.isArray(sortedItems) && sortedItems.length > 0 ? (
+								sortedItems.map((item) => (
+									<tr
+										key={item.ID}
+										onDoubleClick={() => handleRowDoubleClick(item)}
+										style={{ cursor: "pointer" }}
+									>
+										{fields.map((field) => (
+											<td key={field.key}>
+												{formatValue(item[field.key], field.type, field.key)}
+											</td>
+										))}
+									</tr>
+								))
+							) : (
+								<tr>
+									<td colSpan={fields.length} style={{ textAlign: "center" }}>
+										Нет данных
+									</td>
+								</tr>
+							)}
+						</tbody>
+					</table>
+				</div>
+			)}
+		</div>
+	);
 };
 
 export default PVNSettings;

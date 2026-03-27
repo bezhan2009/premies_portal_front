@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -43,10 +41,9 @@ currencyOptions.unshift({
 });
 
 export default function TerminalNames() {
-  const { data, setData, validate } = useFormStore();
+  const { data, errors, setData, validate } = useFormStore();
   const [loading, setLoading] = useState(false);
   const [tableData, setTableData] = useState(tableDataDef);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [edit, setEdit] = useState(null);
   const [filters, setFilters] = useState({
     transactionType: "",
@@ -239,18 +236,6 @@ export default function TerminalNames() {
 
   return (
     <>
-      <div
-        className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-        }`}
-        style={{ paddingBottom: 0, paddingTop: 0 }}
-      >
-        <Sidebar
-          activeLink="terminal_names"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
-
         <div className="my-applications content-page">
           <main>
             <div className="filters animate-slideIn">
@@ -501,7 +486,6 @@ export default function TerminalNames() {
             </div>
           </main>
         </div>
-      </div>
     </>
   );
 }

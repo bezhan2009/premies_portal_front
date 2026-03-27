@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "../../styles/components/DateRangeModal.css";
+import CustomDateInput from "../elements/CustomDateInput.jsx";
 
 export default function DateRangeModal({ open, onClose, onSubmit }) {
     const [fromDate, setFromDate] = useState("");
@@ -60,12 +61,11 @@ export default function DateRangeModal({ open, onClose, onSubmit }) {
                     <div className="date-inputs">
                         <div className="input-group">
                             <label htmlFor="fromDate">С</label>
-                            <input
+                            <CustomDateInput
                                 id="fromDate"
                                 type="date"
                                 value={fromDate}
-                                onChange={(e) => setFromDate(e.target.value)}
-                                className="date-input"
+                                onChange={setFromDate}
                                 onClick={stopPropagation}
                                 autoFocus
                             />
@@ -73,12 +73,11 @@ export default function DateRangeModal({ open, onClose, onSubmit }) {
 
                         <div className="input-group">
                             <label htmlFor="toDate">По</label>
-                            <input
+                            <CustomDateInput
                                 id="toDate"
                                 type="date"
                                 value={toDate}
-                                onChange={(e) => setToDate(e.target.value)}
-                                className="date-input"
+                                onChange={setToDate}
                                 onClick={stopPropagation}
                             />
                         </div>

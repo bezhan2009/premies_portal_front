@@ -6,8 +6,6 @@ import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 
 const fields = [
@@ -23,8 +21,6 @@ const fields = [
 ];
 
 const QRCashbackTable = () => {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,71 +74,62 @@ const QRCashbackTable = () => {
   };
 
   return (
-    <div
-      className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
-    >
-      <Sidebar
-        activeLink="qr_cashback_list"
-        isOpen={isSidebarOpen}
-        toggle={toggleSidebar}
-      />
-      <div className="block_info_prems content-page">
-        <div className="table-header-actions" style={{ margin: "16px" }}>
-          <h2>Кэшбэк по QR</h2>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button className="export-excel-btn" onClick={handleExport}>
-              Экспорт в Excel
-            </button>
-          </div>
+    <div className="block_info_prems">
+      <div className="table-header-actions" style={{ margin: "16px" }}>
+        <h2>Кэшбэк по QR</h2>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button className="export-excel-btn" onClick={handleExport}>
+            Экспорт в Excel
+          </button>
         </div>
-
-        {loading ? (
-          <p style={{ margin: "16px" }}>Загрузка...</p>
-        ) : error ? (
-          <p style={{ color: "red", margin: "16px" }}>{error}</p>
-        ) : (
-          <div style={{ overflowX: "auto", width: "100%" }}>
-            <table
-              className="table-reports"
-              style={{ minWidth: "max-content" }}
-            >
-              <thead>
-                <tr>
-                  {fields.map(({ key, label }) => (
-                    <th
-                      key={key}
-                      onClick={() => requestSort(key)}
-                      className="sortable-header"
-                    >
-                      {label}
-                      <SortIcon sortConfig={sortConfig} sortKey={key} />
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(sortedItems) && sortedItems.length > 0 ? (
-                  sortedItems.map((item) => (
-                    <tr key={item.id}>
-                      {fields.map((field) => (
-                        <td key={field.key}>
-                          {formatValue(item[field.key], field.type)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={fields.length} style={{ textAlign: "center" }}>
-                      Нет данных
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
+
+      {loading ? (
+        <p style={{ margin: "16px" }}>Загрузка...</p>
+      ) : error ? (
+        <p style={{ color: "red", margin: "16px" }}>{error}</p>
+      ) : (
+        <div style={{ overflowX: "auto", width: "100%" }}>
+          <table
+            className="table-reports"
+            style={{ minWidth: "max-content" }}
+          >
+            <thead>
+              <tr>
+                {fields.map(({ key, label }) => (
+                  <th
+                    key={key}
+                    onClick={() => requestSort(key)}
+                    className="sortable-header"
+                  >
+                    {label}
+                    <SortIcon sortConfig={sortConfig} sortKey={key} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.isArray(sortedItems) && sortedItems.length > 0 ? (
+                sortedItems.map((item) => (
+                  <tr key={item.id}>
+                    {fields.map((field) => (
+                      <td key={field.key}>
+                        {formatValue(item[field.key], field.type)}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={fields.length} style={{ textAlign: "center" }}>
+                    Нет данных
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

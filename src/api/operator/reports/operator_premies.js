@@ -1,3 +1,5 @@
+import { normalizeWorker } from "../../../utils/normalizeOperatorData.js";
+
 // operator_premies.js
 export const fetchWorkers = async (month, year, after) => {
     const token = localStorage.getItem('access_token');
@@ -22,5 +24,5 @@ export const fetchWorkers = async (month, year, after) => {
         }
     });
     const data = await res.json();
-    return data.workers || [];
+    return Array.isArray(data.workers) ? data.workers.map(normalizeWorker) : [];
 };

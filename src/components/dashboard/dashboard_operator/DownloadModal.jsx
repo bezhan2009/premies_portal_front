@@ -1,4 +1,5 @@
 import React from "react";
+import Select from "../../elements/Select";
 
 const DownloadModal = ({
   show,
@@ -19,14 +20,14 @@ const DownloadModal = ({
         <h3>Выгрузка отчёта для {user?.full_name}</h3>
 
         <div className="filters__date-selection">
-          <select value={month} onChange={(e) => onMonthChange(e.target.value)}>
-            <option value="">-- Выберите месяц --</option>
-            {monthOptions.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={month}
+            onChange={(val) => onMonthChange(val)}
+            options={[
+              { value: "", label: "-- Выберите месяц --" },
+              ...monthOptions.map((m) => ({ value: m.value, label: m.name }))
+            ]}
+          />
 
           <input
             type="number"

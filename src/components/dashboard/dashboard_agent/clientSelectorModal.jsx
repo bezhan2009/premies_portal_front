@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Select from '../../elements/Select';
 import '../../../styles/components/ClientSelectorModal.scss';
 
 const ClientSelectorModal = ({
@@ -88,18 +89,14 @@ const ClientSelectorModal = ({
                         </div>
                     </div>
 
-                    <select
+                    <Select
                         value={currentIndex}
-                        onChange={(e) => setCurrentIndex(parseInt(e.target.value))}
-                        className="client-selector-modal__select"
-                    >
-                        {clients.map((client, index) => (
-                            <option key={index} value={index}>
-                                {index + 1}. {client.surname} {client.name} {client.patronymic}
-                                {client.tax_code && ` (ИНН: ${client.tax_code})`}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={(val) => setCurrentIndex(parseInt(val))}
+                        options={clients.map((client, index) => ({
+                          value: index,
+                          label: `${index + 1}. ${client.surname} ${client.name} ${client.patronymic} ${client.tax_code ? ` (ИНН: ${client.tax_code})` : ""}`
+                        }))}
+                    />
                 </div>
 
                 <div className="client-selector-modal__footer">

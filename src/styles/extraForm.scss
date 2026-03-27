@@ -53,6 +53,7 @@
 
 .extra-form.visible {
   max-height: 500px;
+  overflow: visible;
   opacity: 1;
   transform: translateX(0);
 }

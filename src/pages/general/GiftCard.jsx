@@ -33,12 +33,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
 export default function GiftCard({ edit = false }) {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [downloadingOffer, setDownloadingOffer] = useState(false);
@@ -870,17 +867,7 @@ export default function GiftCard({ edit = false }) {
 
     return (
         <>
-            <div
-                className={`dashboard-container ${
-                    isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-                }`}
-            >
-                <Sidebar
-                    activeLink="gift_card"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
-                <div className="gift-card content-page">
+            <div className="gift-card content-page">
                     {alert && (
                         <AlertMessage
                             message={alert.message}
@@ -992,9 +979,7 @@ export default function GiftCard({ edit = false }) {
                                     onChange={(e) =>
                                         setData("front_side_of_the_passport_file", e)
                                     }
-                                    placeholderImage={withUploadsPrefix(
-                                        front_side_of_the_passport_file
-                                    )}
+                                    placeholderImage={front_side_of_the_passport_file}
                                     id={"front_side_of_the_passport_file"}
                                     value={
                                         edit
@@ -1010,9 +995,7 @@ export default function GiftCard({ edit = false }) {
                                     edit={edit}
                                     errors={errors}
                                     onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                                    placeholderImage={withUploadsPrefix(
-                                        back_side_of_the_passport_file
-                                    )}
+                                    placeholderImage={back_side_of_the_passport_file}
                                     id={"back_side_of_the_passport_file"}
                                     value={
                                         edit
@@ -1028,7 +1011,7 @@ export default function GiftCard({ edit = false }) {
                                     edit={edit}
                                     errors={errors}
                                     onChange={(e) => setData("selfie_with_passport_file", e)}
-                                    placeholderImage={withUploadsPrefix(personImg)}
+                                    placeholderImage={personImg}
                                     id={"selfie_with_passport_file"}
                                     value={
                                         edit
@@ -1176,16 +1159,14 @@ export default function GiftCard({ edit = false }) {
                                     )}
                                 </div>
 
-                                <label className={`input div4`}>
-                                    <input
-                                        id="birth_date"
-                                        type="date"
-                                        value={data?.birth_date || ""}
-                                        placeholder="Дата рождения"
-                                        onChange={(e) => setData("birth_date", e.target.value)}
-                                    />
-                                    {errors && <p className={errors?.birth_date && "error-input"}>{errors?.birth_date}</p>}
-                                </label>
+                                <Input
+                                    className={"div4"}
+                                    type="date"
+                                    onChange={handleBirthDateChange}
+                                    value={data?.birth_date}
+                                    error={errors}
+                                    id={"birth_date"}
+                                />
 
                                 <Input
                                     className={"div5"}
@@ -1567,7 +1548,6 @@ export default function GiftCard({ edit = false }) {
                         </main>
                     )}
                 </div>
-            </div>
         </>
     );
 }

@@ -3,14 +3,12 @@ import { useLocation, useNavigate } from "react-router-dom"; // Добавлен
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
-import useSidebar from "../../../hooks/useSideBar.js";
-import Sidebar from "../../general/DynamicMenu.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
+import CustomDateInput from "../../components/elements/CustomDateInput.jsx";
 import { canAccessAccountOperations } from "../../api/roleHelper.js";
 
 export default function DashboardAccountOperations() {
     const [displayAccountNumber, setDisplayAccountNumber] = useState("");
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
     const [accountNumber, setAccountNumber] = useState("");
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
@@ -276,16 +274,7 @@ export default function DashboardAccountOperations() {
                     duration={3000}
                 />
             )}
-            <div
-                className={`dashboard-container ${
-                    isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-                }`}
-            >
-                <Sidebar
-                    activeLink="account_operations"
-                    isOpen={isSidebarOpen}
-                    toggle={toggleSidebar}
-                />
+            {/* Removed duplicate JSX fragment */}
                 <div className="block_info_prems content-page" align="center">
                     <div className="processing-integration">
                         <div className="processing-integration__container">
@@ -336,13 +325,15 @@ export default function DashboardAccountOperations() {
                                                 >
                                                     С даты
                                                 </label>
-                                                <input
-                                                    type="date"
+                                                <CustomDateInput
                                                     id="fromDate"
-                                                    name="fromDate"
+                                                    type="date"
                                                     value={fromDate}
-                                                    onChange={handleDateChange}
-                                                    className="search-card__date-input"
+                                                    onChange={(value) =>
+                                                        handleDateChange({
+                                                            target: { name: "fromDate", value },
+                                                        })
+                                                    }
                                                     disabled={isLoading}
                                                 />
                                             </div>
@@ -351,13 +342,15 @@ export default function DashboardAccountOperations() {
                                                 <label htmlFor="toDate" className="search-card__label">
                                                     По дату
                                                 </label>
-                                                <input
-                                                    type="date"
+                                                <CustomDateInput
                                                     id="toDate"
-                                                    name="toDate"
+                                                    type="date"
                                                     value={toDate}
-                                                    onChange={handleDateChange}
-                                                    className="search-card__date-input"
+                                                    onChange={(value) =>
+                                                        handleDateChange({
+                                                            target: { name: "toDate", value },
+                                                        })
+                                                    }
                                                     disabled={isLoading}
                                                 />
                                             </div>
@@ -658,7 +651,6 @@ export default function DashboardAccountOperations() {
                             )}
                     </div>
                 </div>
-            </div>
         </>
     );
 }

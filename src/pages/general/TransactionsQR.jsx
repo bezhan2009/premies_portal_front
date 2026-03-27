@@ -1,17 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
+import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import "../../styles/checkbox.scss";
 import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [activeBankLimit, setActiveBankLimit] = useState(null);
 
   const [banks, setBanks] = useState([]);
@@ -344,19 +342,9 @@ export default function TransactionsQR() {
   return (
     <>
       <div
-        className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-        }`}
+        className="applications-list"
+        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
       >
-        <Sidebar
-          activeLink="list_qr"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
-        <div
-          className="applications-list content-page"
-          style={{ flexDirection: "column", gap: "20px", height: "auto" }}
-        >
           <main>
             {showChart && (
               <QRStatistics
@@ -511,16 +499,18 @@ export default function TransactionsQR() {
                   </>
                 )}
 
-                <select
-                  onChange={(e) =>
-                    setFilters((p) => ({ ...p, status: e.target.value }))
+                <Select
+                  onChange={(val) =>
+                    setFilters((p) => ({ ...p, status: val }))
                   }
-                >
-                  <option value="">Статус</option>
-                  <option value="success">Успешно</option>
-                  <option value="cancel">Неудача</option>
-                  <option value="process">Обработка</option>
-                </select>
+                  value={filters.status}
+                  options={[
+                    { value: "", label: "Статус" },
+                    { value: "success", label: "Успешно" },
+                    { value: "cancel", label: "Неудача" },
+                    { value: "process", label: "Обработка" },
+                  ]}
+                />
 
                 <input
                   placeholder="Сумма"
@@ -762,7 +752,6 @@ export default function TransactionsQR() {
             onClose={() => setAlert(null)}
           />
         )}
-      </div>
     </>
   );
 }

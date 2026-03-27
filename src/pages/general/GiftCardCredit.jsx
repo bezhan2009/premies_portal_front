@@ -22,11 +22,8 @@ import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { getCreditById } from "../../api/application/getCredit.js";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 
 export default function GiftCardCredit({ edit = false }) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();  
   const [loading, setLoading] = useState(false);
   const { data, errors, setData, validate, setDataMore } = useFormStore();
 
@@ -225,8 +222,6 @@ export default function GiftCardCredit({ edit = false }) {
 
   return (
     <>
-      <div className={`dashboard-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
-        <Sidebar activeLink="gift_credit" isOpen={isSidebarOpen} toggle={toggleSidebar} />
         <div className="gift-card-credit content-page">
           {loading ? (
             <Spinner />
@@ -602,7 +597,6 @@ export default function GiftCardCredit({ edit = false }) {
             </main>
           )}
         </div>
-      </div>
     </>
   );
 }

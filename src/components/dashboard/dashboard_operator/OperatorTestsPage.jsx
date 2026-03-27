@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Select from "../../elements/Select";
 import "../../../styles/components/TestsPage.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/KnowledgeBase.scss";
@@ -518,16 +519,16 @@ function CrudModal({ modal, onClose, onSave }) {
               {errors.time_limit && (
                 <span className="error-msg">{errors.time_limit}</span>
               )}
-              <select
-                name="type"
+              <Select
                 value={form.type || ""}
-                onChange={handleChange}
-              >
-                <option value="">Выберите тип вопроса</option>
-                <option value="single_choice">Одиночный выбор</option>
-                <option value="multiple_choice">Множественный выбор</option>
-                <option value="text">Текстовый ответ</option>
-              </select>
+                onChange={(val) => handleChange({ target: { name: "type", value: val } })}
+                options={[
+                  { value: "", label: "Выберите тип вопроса" },
+                  { value: "single_choice", label: "Одиночный выбор" },
+                  { value: "multiple_choice", label: "Множественный выбор" },
+                  { value: "text", label: "Текстовый ответ" },
+                ]}
+              />
               {errors.type && <span className="error-msg">{errors.type}</span>}
 
               <input type="hidden" name="test_id" value={form.test_id || ""} />
@@ -548,14 +549,14 @@ function CrudModal({ modal, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="Правильный текст (для text-вопросов)"
               />
-              <select
-                name="is_correct"
+              <Select
                 value={String(form.is_correct)}
-                onChange={handleChange}
-              >
-                <option value="false">Не правильный</option>
-                <option value="true">Правильный</option>
-              </select>
+                onChange={(val) => handleChange({ target: { name: "is_correct", value: val } })}
+                options={[
+                  { value: "false", label: "Не правильный" },
+                  { value: "true", label: "Правильный" },
+                ]}
+              />
               <input
                 type="hidden"
                 name="question_id"

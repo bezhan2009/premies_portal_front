@@ -5,8 +5,6 @@ import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import AddPaymentModal from "./AddPaymentModal.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
@@ -45,8 +43,8 @@ const fields = [
   { key: "bic", label: "БИК банка получателя", type: "text" }, // новое поле
 ];
 
+
 const PaymentsTable = () => {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -222,15 +220,7 @@ const PaymentsTable = () => {
   };
 
   return (
-    <div
-      className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
-    >
-      <Sidebar
-        activeLink="payments_list"
-        isOpen={isSidebarOpen}
-        toggle={toggleSidebar}
-      />
-      <div className="block_info_prems content-page">
+    <div className="block_info_prems">
         {alert.show && (
           <AlertMessage
             message={alert.message}
@@ -314,7 +304,6 @@ const PaymentsTable = () => {
             </table>
           </div>
         )}
-      </div>
     </div>
   );
 };

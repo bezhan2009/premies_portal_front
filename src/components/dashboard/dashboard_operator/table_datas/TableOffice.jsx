@@ -29,20 +29,22 @@ const OfficeTable = () => {
     }
   }, []);
 
-  const handleChange = (key, value) => {
-    setEdit({ ...edit, [key]: value });
+  const handleChange = (field, valueOrEvent) => {
+    // Поддержка как события, так и прямого значения
+    const value = valueOrEvent?.target?.value ?? valueOrEvent;
+    setEdit(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveChange = async (edit) => {
+  const saveChange = async (editedOffice) => {
     const token = localStorage.getItem("access_token");
     try {
-      const response = await fetch(`${backendURL}/office/${edit.ID}`, {
+      const response = await fetch(`${backendURL}/office/${editedOffice.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(edit),
+        body: JSON.stringify(editedOffice),
       });
       if (!response.ok) throw new Error("Ошибка при обновлении");
       setEdit(null);
@@ -62,8 +64,6 @@ const OfficeTable = () => {
       setEditField(field);
     }
   };
-
-  console.log("edit", edit);
 
   useEffect(() => {
     loadData();
@@ -117,44 +117,44 @@ const OfficeTable = () => {
             )}
             {!loading && sortedData.length > 0
               ? sortedData.map((office) => (
-                  <tr key={office.ID}>
-                    <td onClick={() => handleCellClick(office, "title")}>
-                      {edit?.ID === office.ID && editField === "title" ? (
-                        <Input
-                          defValue={edit?.title || office.title}
-                          ref={inputRef}
-                          type="text"
-                          value={edit?.title}
-                          onChange={(e) => handleChange("title", e)}
-                          onEnter={() => saveChange(edit)}
-                        />
-                      ) : (
-                        office.title || "-"
-                      )}
-                    </td>
-                    <td onClick={() => handleCellClick(office, "code")}>
-                      {edit?.ID === office.ID && editField === "code" ? (
-                        <Input
-                          defValue={edit?.code || office.code}
-                          ref={inputRef}
-                          type="text"
-                          value={edit?.code}
-                          onChange={(e) => handleChange("code", e)}
-                          onEnter={() => saveChange(edit)}
-                        />
-                      ) : (
-                        office.code || "-"
-                      )}
-                    </td>
-                  </tr>
-                ))
+                <tr key={office.id}>
+                  <td onClick={() => handleCellClick(office, "title")}>
+                    {edit?.id === office.id && editField === "title" ? (
+                      <Input
+                        defValue={edit?.title || office.title}
+                        ref={inputRef}
+                        type="text"
+                        value={edit?.title || ""}
+                        onChange={(value) => handleChange("title", value)}
+                        onEnter={() => saveChange(edit)}
+                      />
+                    ) : (
+                      office.title || "-"
+                    )}
+                  </td>
+                  <td onClick={() => handleCellClick(office, "code")}>
+                    {edit?.id === office.id && editField === "code" ? (
+                      <Input
+                        defValue={edit?.code || office.code}
+                        ref={inputRef}
+                        type="text"
+                        value={edit?.code || ""}
+                        onChange={(value) => handleChange("code", value)}
+                        onEnter={() => saveChange(edit)}
+                      />
+                    ) : (
+                      office.code || "-"
+                    )}
+                  </td>
+                </tr>
+              ))
               : !loading && (
-                  <tr>
-                    <td colSpan="2" style={{ textAlign: "center" }}>
-                      Нет данных
-                    </td>
-                  </tr>
-                )}
+                <tr>
+                  <td colSpan="2" style={{ textAlign: "center" }}>
+                    Нет данных
+                  </td>
+                </tr>
+              )}
           </tbody>
         </table>
       </div>

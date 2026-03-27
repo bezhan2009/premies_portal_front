@@ -7,15 +7,12 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import { toast } from "react-toastify";
-import useSidebar from "../../hooks/useSideBar.js";
-import Sidebar from "../../components/general/DynamicMenu.jsx";
 import * as XLSX from "xlsx";
 import "../../styles/components/StatsEQMS.scss";
 
 export default function PVNTransactionsList() {
     const { data, setData } = useFormStore();
     const [tableData, setTableData] = useState([]);
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
     const [sortField, setSortField] = useState("id");
     const [sortDirection, setSortDirection] = useState("desc");
     const [loading, setLoading] = useState(false);
@@ -459,12 +456,7 @@ export default function PVNTransactionsList() {
 
     return (
         <>
-            <div
-                className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
-                style={{ paddingBottom: 0, paddingTop: 0 }}
-            >
-                <Sidebar activeLink="pvn_transactions" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-                <div className="page-content-wrapper content-page">
+            <div className="page-content-wrapper">
                     <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
                         <main>
                             <div className="my-applications-header">
@@ -742,7 +734,6 @@ export default function PVNTransactionsList() {
                         </div>
                     )}
                 </div>
-            </div>
         </>
     );
 }

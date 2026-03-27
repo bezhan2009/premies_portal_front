@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import Select from "../elements/Select";
 import "../../styles/components/TransactionsChart.css";
 
 import {
@@ -204,14 +205,14 @@ export default function TransactionsChart({ transactions = [] }) {
         </div>
 
         <div className="chart-controls">
-          <select
+          <Select
             value={metric}
-            onChange={(e) => setMetric(e.target.value)}
-            className="metric-select"
-          >
-            <option value="count">Количество</option>
-            <option value="sum">Сумма</option>
-          </select>
+            onChange={(val) => setMetric(val)}
+            options={[
+              { value: "count", label: "Количество" },
+              { value: "sum", label: "Сумма" },
+            ]}
+          />
         </div>
 
         <div className="chart-divider"></div>

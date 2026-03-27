@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import "../../../styles/ABSSearch.scss";
+import Select from "../../elements/Select";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import AlertMessage from "../../general/AlertMessage.jsx";
@@ -612,25 +613,14 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                     Загрузка счетов...
                   </p>
                 ) : (
-                  <select
+                  <Select
                     value={selectedAccount}
-                    onChange={(e) => setSelectedAccount(e.target.value)}
-                    className="search-card__select"
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid #ddd",
-                    }}
-                    required
-                  >
-                    <option value="">Выберите счет</option>
-                    {filteredAccounts.map((acc, idx) => (
-                      <option key={idx} value={acc.value}>
-                        {acc.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedAccount(val)}
+                    options={[
+                      { value: "", label: "Выберите счет" },
+                      ...filteredAccounts.map((acc) => ({ value: acc.value, label: acc.name }))
+                    ]}
+                  />
                 )}
                 {!isFetchingDetails && filteredAccounts.length === 0 && (
                   <p
@@ -1500,23 +1490,16 @@ export default function ABSClientSearch() {
                 <div className="search-card__content">
                   <div className="search-card__select-group">
                     <div className="custom-select">
-                      <select
-                        id="searchType"
+                      <Select
                         value={selectTypeSearchClient}
-                        onChange={(e) => {
-                          setSelectTypeSearchClient(e.target.value);
+                        onChange={(val) => {
+                          setSelectTypeSearchClient(val);
                           setPhoneNumber("");
                           setDisplayPhone("");
                         }}
-                        className="search-card__select"
+                        options={TYPE_SEARCH_CLIENT}
                         disabled={isLoading}
-                      >
-                        {TYPE_SEARCH_CLIENT.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </div>
 
@@ -1628,21 +1611,14 @@ export default function ABSClientSearch() {
                     Найдено клиентов: {clientsData.length}
                   </h3>
                   <div className="client-selector__controls">
-                    <select
+                    <Select
                       value={selectedClientIndex}
-                      onChange={(e) =>
-                        setSelectedClientIndex(parseInt(e.target.value))
-                      }
-                      className="client-selector__select"
-                    >
-                      {clientsData.map((client, index) => (
-                        <option key={index} value={index}>
-                          {index + 1}. {client.surname} {client.name}{" "}
-                          {client.patronymic}
-                          {client.tax_code && ` (ИНН: ${client.tax_code})`}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedClientIndex(parseInt(val))}
+                      options={clientsData.map((client, index) => ({
+                        value: index,
+                        label: `${index + 1}. ${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}${client.tax_code ? ` (ИНН: ${client.tax_code})` : ""}`.trim()
+                      }))}
+                    />
                     <div className="client-selector__navigation">
                       <button
                         onClick={() =>

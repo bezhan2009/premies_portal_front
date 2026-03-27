@@ -1,3 +1,5 @@
+import { normalizeWorker } from "../../utils/normalizeOperatorData.js";
+
 export const getWorkerByUserId = async (userId) => {
   const token = localStorage.getItem('access_token');
   if (!token) {
@@ -17,5 +19,6 @@ export const getWorkerByUserId = async (userId) => {
     throw new Error(errorData.error || `Ошибка ${response.status}: ${response.statusText}`);
   }
 
-  return await response.json();
+  const data = await response.json();
+  return normalizeWorker(data);
 };
