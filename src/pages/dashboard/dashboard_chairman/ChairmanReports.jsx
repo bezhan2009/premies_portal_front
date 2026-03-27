@@ -2,12 +2,10 @@ import '../../../styles/dashboard.scss';
 import HeaderChairman from "../../../components/dashboard/dashboard_chairman/MenuChairman.jsx";
 import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
 import { Helmet } from 'react-helmet';
-import useSidebar from '../../../hooks/useSideBar.js';
-import Sidebar from '../../../components/general/DynamicMenu.jsx';
 
 
 export default function DashboardChairmanReports() {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();  
+      
 
     return (
         <>
@@ -15,7 +13,6 @@ export default function DashboardChairmanReports() {
                 <title>Карты</title>
             </Helmet>
             {/* <div className={` ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}> */}
-                <Sidebar activeLink="chairman" isOpen={isSidebarOpen} toggle={toggleSidebar} />
                 <div>
                     <GetBlockInfo page="chairman_reports" />
                 </div>

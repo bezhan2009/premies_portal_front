@@ -6,8 +6,6 @@ import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import AddCashbackModal from "./AddCashbackModal.jsx";
 
 const emptyForm = {
@@ -150,8 +148,7 @@ const tagInputStyle = {
 
 // ── TableCashbackSettings ─────────────────────────────────────────────────────
 const TableCashbackSettings = () => {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
-
+    
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -356,9 +353,7 @@ const TableCashbackSettings = () => {
     };
 
     return (
-        <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-            <Sidebar activeLink="cashback_settings" isOpen={isSidebarOpen} toggle={toggleSidebar} />
-            <div className="block_info_prems content-page">
+        <div className="block_info_prems content-page">
 
                 <div className="table-header-actions" style={{ margin: "16px" }}>
                     <h2>Настройки кэшбэка</h2>
@@ -373,7 +368,6 @@ const TableCashbackSettings = () => {
                             Экспорт в Excel
                         </button>
                     </div>
-                </div>
 
                 {/* Модалка добавления */}
                 <AddCashbackModal

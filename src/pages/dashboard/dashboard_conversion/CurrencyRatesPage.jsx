@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import { fetchConversionRates } from "../../../api/conversion/conversion.js";
 import "../../../styles/dashboard/CurrencyRates.scss";
 
@@ -12,8 +10,7 @@ const CURRENCY_META = {
 };
 
 export default function CurrencyRatesPage() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const [rates, setRates] = useState([]);
+    const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -73,14 +70,8 @@ export default function CurrencyRatesPage() {
       </Helmet>
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
       >
-        <Sidebar
-          activeLink="currency_rates"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
 
         <div className="dashboard-container">
           <div className="currency-rates-page">
@@ -174,8 +165,8 @@ export default function CurrencyRatesPage() {
               )}
             </div>
           </div>
-        </div>
-      </div>
+        
+      
     </>
   );
 }

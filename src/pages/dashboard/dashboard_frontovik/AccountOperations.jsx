@@ -3,8 +3,6 @@ import { useLocation } from "react-router-dom";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
-import useSidebar from "../../../hooks/useSideBar.js";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
@@ -12,8 +10,7 @@ import SortIcon from "../../../components/general/SortIcon.jsx";
 
 export default function DashboardAccountOperations() {
   const [displayAccountNumber, setDisplayAccountNumber] = useState("");
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-  const location = useLocation();
+    const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialAccount = queryParams.get("account");
   const [accountNumber, setAccountNumber] = useState("");
@@ -355,7 +352,6 @@ export default function DashboardAccountOperations() {
 
       <div
         className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
         }`}
         style={{
           userSelect: "none",
@@ -363,11 +359,6 @@ export default function DashboardAccountOperations() {
           MozUserSelect: "none",
         }}
       >
-        <Sidebar
-          activeLink="account_operations"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
         <div className="block_info_prems content-page" align="center">
           <div className="processing-integration">
             <div className="processing-integration__container">
@@ -689,7 +680,7 @@ export default function DashboardAccountOperations() {
               )}
           </div>
         </div>
-      </div>
+      
 
       <style jsx>{`
         .search-card__button--export {

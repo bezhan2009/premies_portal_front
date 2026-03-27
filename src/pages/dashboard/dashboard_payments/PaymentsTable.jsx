@@ -5,8 +5,6 @@ import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import AddPaymentModal from "./AddPaymentModal.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
@@ -46,8 +44,7 @@ const fields = [
 ];
 
 const PaymentsTable = () => {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
-
+  
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newItem, setNewItem] = useState({ ...emptyForm });
@@ -222,15 +219,7 @@ const PaymentsTable = () => {
   };
 
   return (
-    <div
-      className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
-    >
-      <Sidebar
-        activeLink="payments_list"
-        isOpen={isSidebarOpen}
-        toggle={toggleSidebar}
-      />
-      <div className="block_info_prems content-page">
+    <div className="block_info_prems content-page">
         {alert.show && (
           <AlertMessage
             message={alert.message}
@@ -253,7 +242,6 @@ const PaymentsTable = () => {
               Экспорт в Excel
             </button>
           </div>
-        </div>
 
         <AddPaymentModal
           isOpen={showAddForm}
