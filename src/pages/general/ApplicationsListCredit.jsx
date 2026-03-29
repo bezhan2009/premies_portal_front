@@ -14,6 +14,27 @@ import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
 import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
 
+function ImagePreviewModal({ imageUrl, onClose }) {
+  if (!imageUrl) return null;
+  return (
+    <div className="custom-modal-overlay" onClick={onClose}>
+      <div
+        className="custom-modal-content animate-scaleIn"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="custom-modal-close" onClick={onClose}>
+          ×
+        </button>
+        <img
+          src={imageUrl}
+          alt="Предпросмотр"
+          className="custom-modal-image"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ApplicationsListCredit() {
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
@@ -43,7 +64,7 @@ export default function ApplicationsListCredit() {
         if (nextId) query.append("after", nextId);
         if (data?.month) query.append("month", data?.month);
         if (data?.year) query.append("year", data?.year);
-        if (!selectedRows.length && data?.status)
+        if (data?.status)
           query.append("status_id", data?.status);
         const response = await fetch(
           `${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`,
@@ -51,7 +72,9 @@ export default function ApplicationsListCredit() {
         const result = await response.json();
         if (res) {
           setTableData(result);
-        } else setTableData([...tableData, ...result]);
+        } else {
+          setTableData((prev) => [...prev, ...result]);
+        }
 
         setNextId(result?.[result?.length - 1]?.ID);
         setFetching(false);
@@ -62,36 +85,10 @@ export default function ApplicationsListCredit() {
         setFetching(false);
       }
     },
-    [
-      archive,
-      data?.month,
-      data?.year,
-      data?.status,
-      selectedRows.length,
-      tableData,
-    ],
+    [archive, data?.month, data?.year, data?.status],
   );
 
-  function ImagePreviewModal({ imageUrl, onClose }) {
-    if (!imageUrl) return null;
-    return (
-      <div className="custom-modal-overlay" onClick={onClose}>
-        <div
-          className="custom-modal-content animate-scaleIn"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button className="custom-modal-close" onClick={onClose}>
-            ×
-          </button>
-          <img
-            src={imageUrl}
-            alt="Предпросмотр"
-            className="custom-modal-image"
-          />
-        </div>
-      </div>
-    );
-  }
+
 
   const handleExport = async () => {
     try {
@@ -216,13 +213,7 @@ export default function ApplicationsListCredit() {
     fetchData(null, true);
   }, [data?.month, data?.year, data?.status, fetchData]);
 
-  useEffect(() => {
-    if (selectAll) {
-      setSelectedRows(filteredData.map((e) => e.ID));
-    } else {
-      setSelectedRows([]);
-    }
-  }, [selectAll, filteredData]);
+
 
   useEffect(() => {
     if (fetching && nextId !== undefined) {
@@ -294,7 +285,13 @@ export default function ApplicationsListCredit() {
                 selectAll ? "selectAll-toggle active" : "selectAll-toggle"
               }
               onClick={() => {
-                setSelectAll(!selectAll);
+                const nextSelectAll = !selectAll;
+                setSelectAll(nextSelectAll);
+                if (nextSelectAll) {
+                  setSelectedRows(filteredData.map((e) => e.ID));
+                } else {
+                  setSelectedRows([]);
+                }
               }}
             >
               Выбрать все
