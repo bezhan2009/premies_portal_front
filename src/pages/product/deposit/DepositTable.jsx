@@ -1,5 +1,6 @@
 import  { useEffect, useState } from "react";
-import { Table, Button, Space, Tag, message, Modal } from "antd";
+import { Button, Space, Tag, message, Modal } from "antd";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { useDepositStore } from "../../../store/product/useDeposit.store";
 import { DepositForm } from "./DepositForm";
 import { DepositTypeDict, CurrencyTypeDict, CapitalizationTypeDict } from "../../../domain/product/dictionaries";

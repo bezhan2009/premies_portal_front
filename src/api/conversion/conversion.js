@@ -38,15 +38,15 @@ function buildSoapRequest(date) {
             <v1:type>to</v1:type>
         </v1:amountList>
         <v1:amountList>
-           <v1:amount>1</v1:amount>
-            <v1:currencyFrom>TJS</v1:currencyFrom>
-            <v1:currencyTo>RUB</v1:currencyTo>
+           <v1:amount>1000</v1:amount>
+            <v1:currencyFrom>RUB</v1:currencyFrom>
+            <v1:currencyTo>TJS</v1:currencyTo>
             <v1:type>from</v1:type>
         </v1:amountList>
         <v1:amountList>
-           <v1:amount>1</v1:amount>
-            <v1:currencyFrom>RUB</v1:currencyFrom>
-            <v1:currencyTo>TJS</v1:currencyTo>
+           <v1:amount>1000</v1:amount>
+            <v1:currencyFrom>TJS</v1:currencyFrom>
+            <v1:currencyTo>RUB</v1:currencyTo>
             <v1:type>to</v1:type>
         </v1:amountList>
       </v1:calculateConversionAmountElem>
@@ -96,14 +96,14 @@ function parseSoapResponse(xmlText) {
 export async function fetchConversionRates(date = new Date()) {
   const soapBody = buildSoapRequest(date);
 
-    const response = await fetch("/api/conversion", {
-        method: "POST",
-        headers: {
-            "Content-Type": "text/xml; charset=utf-8",
-            SOAPAction: "",
-        },
-        body: soapBody,
-    });
+  const response = await fetch("/api/conversion", {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/xml; charset=utf-8",
+      SOAPAction: "",
+    },
+    body: soapBody,
+  });
 
   if (!response.ok) {
     throw new Error(

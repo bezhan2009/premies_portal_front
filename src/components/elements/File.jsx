@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 
 export default function FileUpload({
   error,
+  errors,
   id,
   width = 20,
   onChange,
@@ -14,27 +15,29 @@ export default function FileUpload({
 }) {
   const [preview, setPreview] = useState(null);
   const location = useLocation();
-  const renderFileIcon = (path) => {
-    console.log("path", path);
-
-    let backendUrl = "";
-
-    if (path) {
-      if (location.pathname.split("/")[1] === "credit") {
-        backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
-      } else {
-        backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-      }
-      return `${backendUrl}/${path.replace(/\\/g, "/")}`;
-    } else {
-      return null;
-    }
-  };
-  console.log("value " + id, value);
+  const fieldErrors = error || errors;
 
   useEffect(() => {
     if (typeof value === "string") {
-      const url = renderFileIcon(value);
+      const normalizedPath = value.replace(/\\/g, "/");
+
+      if (
+        normalizedPath.startsWith("http://") ||
+        normalizedPath.startsWith("https://") ||
+        normalizedPath.startsWith("blob:") ||
+        normalizedPath.startsWith("data:") ||
+        normalizedPath.startsWith("/")
+      ) {
+        setPreview(normalizedPath);
+        return;
+      }
+
+      const backendUrl =
+        location.pathname.split("/")[1] === "credit"
+          ? import.meta.env.VITE_BACKEND_CREDIT_URL
+          : import.meta.env.VITE_BACKEND_APPLICATION_URL;
+
+      const url = `${backendUrl}/${normalizedPath.replace(/^\/+/, "")}`;
       setPreview(url);
     } else {
       if (value instanceof File) {
@@ -46,9 +49,7 @@ export default function FileUpload({
         setPreview(null);
       }
     }
-  }, [value]);
-
-  console.log(`location`);
+  }, [value, location.pathname]);
 
   return (
     <label className="file" htmlFor={edit ? "" : id}>
@@ -70,9 +71,9 @@ export default function FileUpload({
         accept="image/*"
         aria-describedby={`${id}-error`}
       />
-      {error?.[id] && (
+      {fieldErrors?.[id] && (
         <p id={`${id}-error`} className="error-input">
-          {error[id]}
+          {fieldErrors[id]}
         </p>
       )}
     </label>
@@ -81,6 +82,7 @@ export default function FileUpload({
 
 FileUpload.propTypes = {
   error: PropTypes.object,
+  errors: PropTypes.object,
   id: PropTypes.string.isRequired,
   width: PropTypes.number,
   onChange: PropTypes.func.isRequired,

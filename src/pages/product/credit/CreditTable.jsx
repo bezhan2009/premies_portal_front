@@ -1,5 +1,6 @@
 import  { useEffect, useState } from "react";
-import { Table, Button, Space, Tag, message, Modal } from "antd";
+import { Button, Space, Tag, message, Modal } from "antd";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { useCreditStore } from "../../../store/product/useCredit.store";
 import { CreditForm } from "./CreditForm";
 import { CurrencyTypeDict, LoanTypeDict } from "../../../domain/product/dictionaries";

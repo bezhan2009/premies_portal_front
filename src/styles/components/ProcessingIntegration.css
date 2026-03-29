@@ -309,6 +309,7 @@
 .limits-table__td {
   padding: 1.25rem 1.5rem;
   font-size: 0.875rem;
+  display: flex;
 }
 .limits-table__td--value {
   white-space: nowrap;

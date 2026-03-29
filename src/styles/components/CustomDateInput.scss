@@ -1,0 +1,252 @@
+.custom-date-control.ant-picker,
+.custom-date-control.ant-picker-time {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: #f15454;
+    background: #fffaf9;
+  }
+
+  &.ant-picker-focused,
+  &:focus-within {
+    border-color: #e21a1c;
+    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.12);
+    background: #fff;
+  }
+
+  &.ant-picker-disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .ant-picker-input {
+    height: 100%;
+    min-width: 0;
+    padding-right: 8px;
+  }
+
+  .ant-picker-input > input {
+    width: 100% !important;
+    min-width: 0;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    animation: none;
+    font-size: 15px;
+    font-family: inherit;
+    color: #111827;
+  }
+
+  .ant-picker-input > input:hover,
+  .ant-picker-input > input:focus {
+    background: transparent !important;
+    color: #111827 !important;
+    outline: none !important;
+  }
+
+  .ant-picker-input > input::placeholder {
+    color: #9ca3af !important;
+  }
+
+  .ant-picker-input > input:hover::placeholder,
+  .ant-picker-input > input:focus::placeholder {
+    color: #9ca3af !important;
+  }
+
+  .ant-picker-suffix,
+  .ant-picker-clear {
+    color: #e21a1c;
+    flex-shrink: 0;
+  }
+
+  .ant-picker-suffix {
+    margin-inline-start: 8px;
+  }
+}
+
+.custom-date-control--compact.ant-picker,
+.custom-date-control--compact.ant-picker-time {
+  width: 100%;
+  min-height: 35px;
+  padding: 0 10px 0 12px;
+  border: 1px solid transparent;
+  background: #f1f1f1;
+  box-shadow: none;
+
+  &:hover {
+    border-color: #e21a1c;
+    background: #f1f1f1;
+  }
+
+  &.ant-picker-focused,
+  &:focus-within {
+    border-color: #e21a1c;
+    box-shadow: 0 0 0 2px rgba(226, 26, 28, 0.14);
+    background: #fff;
+  }
+
+  .ant-picker-input > input {
+    font-size: 14px;
+  }
+}
+
+.custom-date-control--error.ant-picker,
+.custom-date-control--error.ant-picker-time {
+  border-color: #ef4444;
+
+  &.ant-picker-focused,
+  &:focus-within {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.14);
+  }
+}
+
+.site-calendar-dropdown {
+  .ant-picker-panel-container,
+  .ant-picker-time-panel-container {
+    border: 1px solid #fecaca;
+    border-radius: 18px;
+    overflow: hidden;
+    z-index: 1050 !important; 
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
+  }
+
+  .ant-picker-header {
+    padding: 14px 12px;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffffff 100%);
+    border-bottom: 1px solid #fee2e2;
+  }
+
+  .ant-picker-header-view,
+  .ant-picker-header button {
+    color: #991b1b;
+    font-weight: 600;
+  }
+
+  .ant-picker-content th {
+    color: #b91c1c;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: #e21a1c;
+    border-radius: 10px;
+  }
+
+  .ant-picker-cell .ant-picker-cell-inner {
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .ant-picker-cell:hover .ant-picker-cell-inner,
+  .ant-picker-time-panel-cell:hover .ant-picker-time-panel-cell-inner {
+    background: rgba(226, 26, 28, 0.08);
+  }
+
+  .ant-picker-cell-selected .ant-picker-cell-inner,
+  .ant-picker-cell-range-start .ant-picker-cell-inner,
+  .ant-picker-cell-range-end .ant-picker-cell-inner,
+  .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+    background: #e21a1c !important;
+    color: #fff !important;
+    font-weight: 600;
+  }
+
+  .ant-picker-cell-in-range::before {
+    background: rgba(226, 26, 28, 0.08);
+  }
+
+  .ant-picker-footer {
+    border-top: 1px solid #fee2e2;
+    padding: 10px 12px;
+  }
+
+  .ant-picker-now-btn,
+  .ant-picker-ok button {
+    color: #e21a1c;
+  }
+
+  .ant-picker-ok button {
+    background: #e21a1c;
+    border-color: #e21a1c;
+    color: #fff;
+    border-radius: 10px;
+  }
+}
+
+.custom-date-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+
+  &--compact {
+    width: auto;
+  }
+}
+
+.custom-date-icon {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+}
+
+.custom-date-control {
+  width: 100%;
+  padding: 6px 36px 6px 12px; /* место под иконку справа */
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: inherit;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none; /* убирает стрелку браузера в некоторых браузерах */
+
+  &:hover:not(:disabled) {
+    border-color: #f15454;
+  }
+
+  &:focus:not(:disabled) {
+    border-color: #e21a1c;
+    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.12);
+  }
+
+  &:disabled {
+    background: #f5f5f5;
+    color: #bfbfbf;
+    cursor: not-allowed;
+  }
+
+  &--error {
+    border-color: #e21a1c !important;
+    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.12);
+  }
+
+  /* Скрываем дефолтный значок браузера, чтобы показывать свой */
+  &::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    width: 36px;
+    height: 100%;
+    cursor: pointer;
+  }
+}

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
-import useSidebar from "../../../hooks/useSideBar.js";
 import { fetchConversionRates } from "../../../api/conversion/conversion.js";
 import "../../../styles/dashboard/CurrencyRates.scss";
 
@@ -12,7 +10,6 @@ const CURRENCY_META = {
 };
 
 export default function CurrencyRatesPage() {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,109 +68,89 @@ export default function CurrencyRatesPage() {
       <Helmet>
         <title>Курсы валют</title>
       </Helmet>
-      <div
-        className={`dashboard-container ${
-          isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"
-        }`}
-      >
-        <Sidebar
-          activeLink="currency_rates"
-          isOpen={isSidebarOpen}
-          toggle={toggleSidebar}
-        />
+      <div className="currency-rates-page">
+        <div className="currency-rates-header">
+          <h1>
+            <span className="header-icon">💱</span>
+            Курсы валют
+          </h1>
+          <button
+            className={`refresh-btn ${loading ? "loading" : ""}`}
+            onClick={loadRates}
+            disabled={loading}
+          >
+            <span className="refresh-icon">🔄</span>
+            Обновить
+          </button>
+        </div>
 
-        <div className="dashboard-container">
-          <div className="currency-rates-page">
-            <div className="currency-rates-header">
-              <h1>
-                <span className="header-icon">💱</span>
-                Курсы валют
-              </h1>
-              <button
-                className={`refresh-btn ${loading ? "loading" : ""}`}
-                onClick={loadRates}
-                disabled={loading}
-              >
-                <span className="refresh-icon">🔄</span>
-                Обновить
+        {lastUpdated && (
+          <div className="currency-rates-date">
+            Дата обновления:{" "}
+            {lastUpdated.toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}{" "}
+            в{" "}
+            {lastUpdated.toLocaleTimeString("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
+
+        <div className="currency-rates-card">
+          {loading ? (
+            <div className="loading-state">
+              <span className="loading-spinner">⏳</span>
+              <p>Загрузка курсов валют...</p>
+            </div>
+          ) : error ? (
+            <div className="error-state">
+              <span className="error-icon">⚠️</span>
+              <p>Не удалось загрузить курсы валют</p>
+              <p className="error-message">{error}</p>
+              <button className="retry-btn" onClick={loadRates}>
+                Повторить
               </button>
             </div>
-
-            {lastUpdated && (
-              <div className="currency-rates-date">
-                Дата обновления:{" "}
-                {lastUpdated.toLocaleDateString("ru-RU", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}{" "}
-                в{" "}
-                {lastUpdated.toLocaleTimeString("ru-RU", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            )}
-
-            <div className="currency-rates-card">
-              {loading ? (
-                <div className="loading-state">
-                  <span className="loading-spinner">⏳</span>
-                  <p>Загрузка курсов валют...</p>
-                </div>
-              ) : error ? (
-                <div className="error-state">
-                  <span className="error-icon">⚠️</span>
-                  <p>Не удалось загрузить курсы валют</p>
-                  <p className="error-message">{error}</p>
-                  <button className="retry-btn" onClick={loadRates}>
-                    Повторить
-                  </button>
-                </div>
-              ) : (
-                <table className="currency-rates-table">
-                  <thead>
-                    <tr>
-                      <th>Валюта</th>
-                      <th>Покупка (TJS)</th>
-                      <th>Продажа (TJS)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupedRates().map((row) => (
-                      <tr key={row.currency}>
-                        <td>
-                          <div className="currency-name">
-                            <span className="currency-flag">
-                              {row.meta.flag}
-                            </span>
-                            <div className="currency-info">
-                              <div className="currency-code">
-                                {row.currency}
-                              </div>
-                              <div className="currency-label">
-                                {row.meta.label}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="rate-value buy">
-                            {row.buy != null ? row.buy.toFixed(2) : "—"}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="rate-value sell">
-                            {row.sell != null ? row.sell.toFixed(2) : "—"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+          ) : (
+            <table className="currency-rates-table">
+              <thead>
+                <tr>
+                  <th>Валюта</th>
+                  <th>Покупка (TJS)</th>
+                  <th>Продажа (TJS)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupedRates().map((row) => (
+                  <tr key={row.currency}>
+                    <td>
+                      <div className="currency-name">
+                        <span className="currency-flag">{row.meta.flag}</span>
+                        <div className="currency-info">
+                          <div className="currency-code">{row.currency}</div>
+                          <div className="currency-label">{row.meta.label}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="rate-value buy">
+                        {row.buy != null ? row.buy.toFixed(2) : "—"}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="rate-value sell">
+                        {row.sell != null ? row.sell.toFixed(2) : "—"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>

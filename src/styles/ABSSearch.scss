@@ -750,6 +750,120 @@
   }
 }
 
+/* Стили для модального окна деталей кредита */
+.details-modal-container {
+  max-width: 800px;
+  width: 90%;
+  height: auto;
+  max-height: 90vh;
+}
+
+.tabs-header {
+  display: flex;
+  background-color: #f1f3f5;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0 20px;
+
+  .tab-btn {
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6c757d;
+    position: relative;
+    transition: all 0.2s;
+
+    &:hover {
+      color: #de3a38;
+    }
+
+    &.active {
+      color: #de3a38;
+      &:after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: #de3a38;
+      }
+    }
+  }
+}
+
+.tab-content {
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 15px;
+
+  .param-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #dee2e6;
+
+    .param-label {
+      font-weight: 600;
+      color: #495057;
+      font-size: 13px;
+    }
+
+    .param-value {
+      color: #212529;
+      font-size: 13px;
+      text-align: right;
+      padding-left: 10px;
+    }
+  }
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    padding: 12px;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+  }
+
+  tr:hover {
+    background-color: #f1f3f5;
+  }
+}
+
+.no-data-msg {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);

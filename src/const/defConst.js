@@ -291,7 +291,7 @@ export const streetTypes = [
   { value: 25, label: "Спуск" },
   { value: 26, label: "Тракт" },
   { value: 27, label: "Тупик" },
-  { value: 28, label: "HnuLa" },
+  { value: 28, label: "Улица" },
   { value: 29, label: "Участок" },
   { value: 30, label: "Шоссе" },
 ];

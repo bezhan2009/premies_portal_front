@@ -22,7 +22,6 @@ export default function AppRouter() {
       <Routes>
         {/* Публичные маршруты */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/user/knowledge-base" element={<DashboardAgentKB />} />
 
         {/* Защищённые маршруты */}
         <Route
@@ -34,6 +33,9 @@ export default function AppRouter() {
         >
           {/* Дашборд редирект */}
           <Route path="/" element={<DashboardRedirectPage />} />
+
+          {/* База знаний (теперь с Sidebar) */}
+          <Route path="/user/knowledge-base" element={<DashboardAgentKB />} />
 
           {/* Подготовленные страницы */}
           <Route path="/under/development" element={<UnderDevelopmentPage />} />

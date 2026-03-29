@@ -1,4 +1,5 @@
 import { apiClient } from "../utils/apiClient";
+import { normalizeUsersResponse } from "../../utils/normalizeOperatorData";
 
 export const fetchUserById = async (id) => {
   const token = localStorage.getItem("access_token");
@@ -13,7 +14,7 @@ export const fetchUserById = async (id) => {
 export const getAllUsers = async ({ after = null }) => {
   try {
     const res = await apiClient.get("/users", { params: { after } });
-    return res.data;
+    return normalizeUsersResponse(res.data);
   } catch (e) {
     console.error(e);
     throw e;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Select from '../../elements/Select';
 import LastModified from './LastModified';
 import '../../../styles/components/Filters.scss';
 import Spinner from "../../Spinner.jsx";
@@ -264,33 +265,24 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
                     <div className="filters__modal-content">
                         <h3>Загрузка файла</h3>
 
-                        <select
+                        <Select
                             value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value)}
-                        >
-                            <option value="">-- Выберите тип загрузки --</option>
-                            {Object.keys(uploadRoutes).map((type) => (
-                                <option key={type} value={type}>
-                                    {type}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setSelectedType(val)}
+                            options={[
+                                { value: "", label: "-- Выберите тип загрузки --" },
+                                ...Object.keys(uploadRoutes).map((type) => ({ value: type, label: type }))
+                            ]}
+                        />
 
                         <div className="filters__date-selection">
-                            <select
+                            <Select
                                 value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                            >
-                                <option value="">-- Выберите месяц --</option>
-                                {monthOptions.map((month) => (
-                                    <option
-                                        key={month.value}
-                                        value={month.value}
-                                    >
-                                        {month.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => setSelectedMonth(val)}
+                                options={[
+                                    { value: "", label: "-- Выберите месяц --" },
+                                    ...monthOptions.map((month) => ({ value: month.value, label: month.name }))
+                                ]}
+                            />
 
                             <input
                                 type="number"
@@ -324,33 +316,24 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
                     <div className="filters__modal-content">
                         <h3>Выгрузка отчёта</h3>
 
-                        <select
+                        <Select
                             value={selectedDownloadType}
-                            onChange={(e) => setSelectedDownloadType(e.target.value)}
-                        >
-                            <option value="">-- Выберите тип отчёта --</option>
-                            {Object.keys(downloadRoutes).map((type) => (
-                                <option key={type} value={type}>
-                                    {type}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setSelectedDownloadType(val)}
+                            options={[
+                                { value: "", label: "-- Выберите тип отчёта --" },
+                                ...Object.keys(downloadRoutes).map((type) => ({ value: type, label: type }))
+                            ]}
+                        />
 
                         <div className="filters__date-selection">
-                            <select
+                            <Select
                                 value={selectedDownloadMonth}
-                                onChange={(e) => setSelectedDownloadMonth(e.target.value)}
-                            >
-                                <option value="">-- Выберите месяц --</option>
-                                {monthOptions.map((month) => (
-                                    <option
-                                        key={month.value}
-                                        value={month.value}
-                                    >
-                                        {month.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => setSelectedDownloadMonth(val)}
+                                options={[
+                                    { value: "", label: "-- Выберите месяц --" },
+                                    ...monthOptions.map((month) => ({ value: month.value, label: month.name }))
+                                ]}
+                            />
 
                             <input
                                 type="number"
@@ -383,20 +366,14 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
                         </p>
 
                         <div className="filters__date-selection">
-                            <select
+                            <Select
                                 value={selectedDeleteMonth}
-                                onChange={(e) => setSelectedDeleteMonth(e.target.value)}
-                            >
-                                <option value="">-- Выберите месяц --</option>
-                                {monthOptions.map((month) => (
-                                    <option
-                                        key={month.value}
-                                        value={month.value}
-                                    >
-                                        {month.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => setSelectedDeleteMonth(val)}
+                                options={[
+                                    { value: "", label: "-- Выберите месяц --" },
+                                    ...monthOptions.map((month) => ({ value: month.value, label: month.name }))
+                                ]}
+                            />
 
                             <input
                                 type="number"

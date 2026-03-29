@@ -1,4 +1,6 @@
 
+import { normalizeOffice } from "../../utils/normalizeOperatorData.js";
+
 export const fetchOffices = async () => {
     const token = localStorage.getItem('access_token');
     const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/office`);
@@ -10,5 +12,5 @@ export const fetchOffices = async () => {
         }
     });
     const data = await res.json();
-    return data || [];
+    return Array.isArray(data) ? data.map(normalizeOffice) : [];
 };

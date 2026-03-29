@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Select from '../../elements/Select';
 import '../../../styles/components/LastModified.scss';
 
 const monthNames = [
@@ -64,15 +65,14 @@ const Filters = ({ initialDate, modificationDesc, onChange }) => {
 
           {isEditing ? (
               <div className="date-filter__inputs">
-                <select
-                    className="date-filter__select"
+                <Select
                     value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                >
-                  {monthNames.map((name, index) => (
-                      <option key={index + 1} value={index + 1}>{name}</option>
-                  ))}
-                </select>
+                    onChange={(val) => setSelectedMonth(Number(val))}
+                    options={monthNames.map((name, index) => ({
+                      value: index + 1,
+                      label: name
+                    }))}
+                />
                 <input
                     type="number"
                     className="date-filter__inputs__year-input"

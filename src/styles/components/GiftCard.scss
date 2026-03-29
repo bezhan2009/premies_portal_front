@@ -1,3 +1,146 @@
+.gift-card {
+  main {
+    h1 {
+      line-height: 1.35;
+    }
+
+    .header-passport {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center;
+      height: auto !important;
+      gap: 20px !important;
+      padding: 20px;
+
+      > img {
+        opacity: 0.45;
+      }
+
+      > div {
+        min-width: 0;
+        flex: 0 1 auto !important;
+      }
+
+      .file {
+        width: 340px;
+        height: 230px;
+        max-width: 100%;
+        border: 1px solid #d9dee7;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+
+        img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          max-width: 100%;
+          max-height: 230px;
+          object-fit: contain;
+          background: #fff;
+        }
+
+        p {
+          bottom: 12px;
+          left: 12px;
+          right: 12px;
+          margin: 0;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        }
+      }
+
+      .file[for="selfie_with_passport_file"] {
+        width: 220px;
+      }
+
+      .verification-section {
+        flex: 1 1 260px;
+        justify-content: center;
+        align-items: stretch;
+        gap: 14px;
+
+        .check-box {
+          width: 100%;
+          margin: 0;
+          padding: 16px 18px;
+          background: #fff;
+          border: 1px solid #d9dee7;
+          border-radius: 12px;
+
+          h1 {
+            margin: 0 0 12px;
+            font-size: 15px;
+          }
+        }
+      }
+    }
+
+    .content-form {
+      margin-top: 20px;
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+      grid-template-rows: none !important;
+      grid-auto-rows: minmax(72px, auto) !important;
+      gap: 16px !important;
+      align-items: start;
+
+      > * {
+        grid-area: auto !important;
+        grid-column: auto !important;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .input,
+      .custom-select-container,
+      .check-box {
+        height: 100%;
+      }
+
+      .input-with-check {
+        position: relative;
+      }
+
+      .terror-check-indicator {
+        position: absolute;
+        top: 18px;
+        right: 14px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        pointer-events: none;
+
+        &.checking {
+          background: #f59e0b;
+          box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+          animation: pulse 1.4s infinite;
+        }
+
+        &.match {
+          background: #dc2626;
+          box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.16);
+        }
+
+        &.no-match {
+          background: #10b981;
+          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.16);
+        }
+      }
+
+      .div9,
+      .div16,
+      .div36,
+      .div57,
+      .div61,
+      .div65,
+      .div66,
+      .div67 {
+        grid-column: auto !important;
+      }
+    }
+  }
+}
 
 .date-section {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -9,7 +152,6 @@
   }
 }
 
-// Стили для предупреждения о террористах
 .terror-warning {
   background-color: #fff5f5;
   border: 2px solid #dc2626;
@@ -28,22 +170,12 @@
     gap: 8px;
 
     &::before {
-      content: "⚠";
+      content: "!";
       font-size: 20px;
     }
   }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-// Стили для секции SMS
 .sms-section {
   margin: 20px 0;
   padding: 20px;
@@ -51,6 +183,7 @@
   border-radius: 12px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: fadeIn 0.3s ease-out;
 
   .sms-section-header {
     display: flex;
@@ -70,7 +203,7 @@
       gap: 8px;
 
       &::before {
-        content: "✉️";
+        content: "SMS";
         font-size: 20px;
       }
     }
@@ -224,8 +357,74 @@
   }
 }
 
-// Адаптивность для мобильных устройств
+@media (max-width: 1480px) {
+  .gift-card {
+    main {
+      .header-passport {
+        .verification-section {
+          flex-basis: 100%;
+        }
+      }
+
+      .header-passport {
+        > img {
+          display: none;
+        }
+
+        .file {
+          width: calc(50% - 10px);
+          min-width: 260px;
+        }
+
+        .file[for="selfie_with_passport_file"] {
+          width: calc(50% - 10px);
+          min-width: 260px;
+        }
+
+        .verification-section {
+          flex-basis: 100%;
+        }
+      }
+
+      .content-form {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
+  .gift-card {
+    main {
+      .header-passport {
+        padding: 16px;
+        gap: 16px;
+
+        .file {
+          width: 100%;
+          height: 200px;
+          min-width: 0;
+
+          img {
+            max-height: 200px;
+          }
+        }
+
+        .file[for="selfie_with_passport_file"] {
+          width: 100%;
+        }
+      }
+
+      .content-form {
+        grid-template-columns: 1fr !important;
+
+        > * {
+          grid-column: 1 / -1;
+        }
+      }
+    }
+  }
+
   .sms-section {
     padding: 16px;
 
@@ -247,18 +446,25 @@
   }
 }
 
-// Анимация при выборе опции
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.sms-section {
-  animation: fadeIn 0.3s ease-out;
 }

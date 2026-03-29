@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Select from '../../components/elements/Select.jsx';
 import '../../styles/login.scss';
 import '../../styles/extraForm.scss';
 import LogoImageComponent from '../../components/Logo';
@@ -304,18 +305,15 @@ export default function RegisterPage() {
                                 />
                             </label>
                             <label>
-                                <select
+                                <Select
                                     value={place_work}
-                                    onChange={(e) => setplace_work(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Выберите место работы</option>
-                                    {offices.map((title, idx) => (
-                                        <option key={idx} value={title}>
-                                            {title}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setplace_work(val)}
+                                    dropdownPosition="top"
+                                    options={[
+                                        { value: "", label: "Выберите место работы" },
+                                        ...offices.map((title) => ({ value: title, label: title }))
+                                    ]}
+                                />
                             </label>
                         </div>
                     )}

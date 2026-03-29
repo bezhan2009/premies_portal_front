@@ -3,7 +3,6 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import TransactionsChart from "../../components/graph/graph";
 import CheckoutTable from "../../components/checkout-table/checkout-table";
 import { fetchTransactionsByATM } from "../../api/atm/transactions.js";
-import useSidebar from "../../hooks/useSideBar.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import { FaArrowLeft } from 'react-icons/fa';
 
@@ -11,7 +10,6 @@ export default function Checkout() {
     const { id } = useParams();
     const [params] = useSearchParams();
     const navigate = useNavigate();
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
 
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -59,7 +57,7 @@ export default function Checkout() {
 
     if (error) {
         return (
-            <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
+            <div className="content-page">
                 <div className="block_info_prems content-page" align="center">
                     {/* Кнопка Назад */}
                     <button
@@ -85,10 +83,10 @@ export default function Checkout() {
         );
     }
 
-    return (
+        return (
         <>
-            <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-                <div className="block_info_prems content-page" align="center" style={{ position: 'relative' }}>
+            <div className="content-page">
+                <div className="block_info_prems" align="center" style={{ position: 'relative' }}>
                     {/* Кнопка Назад */}
                     <button
                         className="back-button"

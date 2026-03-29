@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../components/general/Modal.jsx";
 import Input from "../../components/elements/Input.jsx";
+import Select from "../../components/elements/Select.jsx";
 
 const currencyOptions = [
     { value: 810, label: "RUB" },
@@ -78,25 +79,15 @@ const AddPvnSettingModal = ({
                         onChange={(val) => handleChange("atm_id", val)}
                         placeholder="Например: ATM001"
                     />
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                        <label style={{ marginBottom: "4px", fontWeight: 500 }}>Валюта</label>
-                        <select
-                            value={formData.currency || 972}
-                            onChange={(e) => handleChange("currency", parseInt(e.target.value, 10))}
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #ced4da",
-                                borderRadius: "4px",
-                                fontSize: "14px",
-                            }}
-                        >
-                            {currencyOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label} ({opt.value})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <Select
+                        title="Валюта"
+                        value={formData.currency || 972}
+                        onChange={(val) => handleChange("currency", parseInt(val, 10))}
+                        options={currencyOptions.map(opt => ({
+                            value: opt.value,
+                            label: `${opt.label} (${opt.value})`
+                        }))}
+                    />
                 </div>
 
                 <div style={{ marginBottom: "20px", fontWeight: "bold", color: "#555" }}>
