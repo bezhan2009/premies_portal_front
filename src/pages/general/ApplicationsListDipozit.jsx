@@ -59,7 +59,7 @@ export default function ApplicationsListDipozit() {
                 if (afterId) query.append("after", afterId);
                 if (data?.month) query.append("month", data?.month);
                 if (data?.year) query.append("year", data?.year);
-                if (data?.status && !selectedRows.length)
+                if (data?.status)
                     query.append("status_id", data?.status);
 
                 const url = `${backendUrl}deposits${archive ? "/archive" : ""}${query.toString() ? `?${query.toString()}` : ""}`;
@@ -81,7 +81,7 @@ export default function ApplicationsListDipozit() {
                 setFetching(false);
             }
         },
-        [archive, data?.month, data?.year, data?.status, selectedRows.length]
+        [archive, data?.month, data?.year, data?.status]
     );
 
     const handleFilterChange = (key, value) => {
@@ -157,13 +157,7 @@ export default function ApplicationsListDipozit() {
         fetchData(null, true);
     }, [data?.month, data?.year, data?.status, fetchData]);
 
-    useEffect(() => {
-        if (selectAll) {
-            setSelectedRows(filteredData.map((item) => item.ID));
-        } else {
-            setSelectedRows([]);
-        }
-    }, [selectAll, filteredData]);
+
 
     useEffect(() => {
         if (fetching && nextId !== undefined && !loading) {
@@ -219,7 +213,15 @@ export default function ApplicationsListDipozit() {
                         </button>
                         <button
                             className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
-                            onClick={() => setSelectAll(!selectAll)}
+                            onClick={() => {
+                                const nextSelectAll = !selectAll;
+                                setSelectAll(nextSelectAll);
+                                if (nextSelectAll) {
+                                    setSelectedRows(filteredData.map((item) => item.ID));
+                                } else {
+                                    setSelectedRows([]);
+                                }
+                            }}
                         >
                             Выбрать все
                         </button>
