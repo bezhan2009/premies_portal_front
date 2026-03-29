@@ -7,9 +7,9 @@ export default function DashboardWorkerReports() {
   return (
     <>
       <Helmet>
-        <title>Карты</title>
+        <title>Отчеты</title>
       </Helmet>
-      <GetBlockInfo page="worker_report" />
+      <GetBlockInfo page="worker_data_reports" />
     </>
   );
 }

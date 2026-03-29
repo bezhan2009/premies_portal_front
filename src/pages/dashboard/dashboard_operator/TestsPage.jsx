@@ -7,7 +7,7 @@ export default function DashboardOperatorTests() {
   return (
     <>
       <Helmet>
-        <title>Панель управления</title>
+        <title>Тесты</title>
       </Helmet>
       <GetBlockInfo page="operator_tests" />
     </>

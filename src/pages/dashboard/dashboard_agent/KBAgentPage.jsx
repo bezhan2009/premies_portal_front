@@ -2,6 +2,7 @@ import "../../../styles/dashboard.scss";
 import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
 import { Helmet } from "react-helmet";
 
+
 export default function DashboardAgentKB() {
   return (
     <>

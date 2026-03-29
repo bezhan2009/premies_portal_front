@@ -30,7 +30,7 @@ export default function SendSmsForm() {
 
   return (
     <>
-      <div className="block_info_prems" align="center">
+      <div className="block_info_prems content-page" align="center">
         <div style={{ maxWidth: 400, margin: "50px auto" }}>
           <h2>Отправка SMS</h2>
           <form

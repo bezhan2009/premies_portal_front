@@ -868,686 +868,686 @@ export default function GiftCard({ edit = false }) {
     return (
         <>
             <div className="gift-card content-page">
-                    {alert && (
-                        <AlertMessage
-                            message={alert.message}
-                            type={alert.type}
-                            duration={alert.duration}
-                            onClose={closeAlert}
-                        />
-                    )}
+                {alert && (
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        duration={alert.duration}
+                        onClose={closeAlert}
+                    />
+                )}
 
-                    {showClientSelector && foundClients.length > 1 && (
-                        <ClientSelectorModal
-                            clients={foundClients}
-                            selectedIndex={selectedClientIndex}
-                            onSelect={handleSelectClient}
-                            onClose={() => setShowClientSelector(false)}
-                            title="Выберите клиента"
-                            description={`Найдено ${foundClients.length} клиентов с номером телефона ${data.phone_number}. Выберите нужного:`}
-                        />
-                    )}
+                {showClientSelector && foundClients.length > 1 && (
+                    <ClientSelectorModal
+                        clients={foundClients}
+                        selectedIndex={selectedClientIndex}
+                        onSelect={handleSelectClient}
+                        onClose={() => setShowClientSelector(false)}
+                        title="Выберите клиента"
+                        description={`Найдено ${foundClients.length} клиентов с номером телефона ${data.phone_number}. Выберите нужного:`}
+                    />
+                )}
 
-                    {loading ? (
-                        <Spinner />
-                    ) : (
-                        <main>
-                            <h1>
-                                Выберите карту! Нажав на{" "}
-                                <img src={file} alt="file" width={16} /> вы можете посмотреть и
-                                распечатать тарифы.
-                            </h1>
-                            <div className="header-form">
-                                <div>
-                                    <img src={visa} alt="visa" width={70} />
-                                    <RadioSelect
-                                        options={visaCards}
-                                        selectedValue={data?.visa_card}
-                                        onChange={(e) => {
-                                            setData("visa_card", e);
-                                            setData("mc_card", 0);
-                                            setData("nc_card", 0);
-                                            const selectedCard = visaCards.find((item) => item.value === e);
-                                            setData("product", selectedCard?.label || "");
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <img src={mc} alt="mc" width={70} />
-                                    <RadioSelect
-                                        options={mcCards}
-                                        selectedValue={data?.mc_card}
-                                        onChange={(e) => {
-                                            setData("mc_card", e);
-                                            setData("visa_card", 0);
-                                            setData("nc_card", 0);
-                                            const selectedCard = mcCards.find((item) => item.value === e);
-                                            setData("product", selectedCard?.label || "");
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <img src={nc} alt="nc" width={70} />
-                                    <RadioSelect
-                                        options={ncCards}
-                                        selectedValue={data?.nc_card}
-                                        onChange={(e) => {
-                                            setData("nc_card", e);
-                                            setData("visa_card", 0);
-                                            setData("mc_card", 0);
-                                            const selectedCard = ncCards.find((item) => item.value === e);
-                                            setData("product", selectedCard?.label || "");
-                                        }}
-                                    />
-                                </div>
+                {loading ? (
+                    <Spinner />
+                ) : (
+                    <main>
+                        <h1>
+                            Выберите карту! Нажав на{" "}
+                            <img src={file} alt="file" width={16} /> вы можете посмотреть и
+                            распечатать тарифы.
+                        </h1>
+                        <div className="header-form">
+                            <div>
+                                <img src={visa} alt="visa" width={70} />
+                                <RadioSelect
+                                    options={visaCards}
+                                    selectedValue={data?.visa_card}
+                                    onChange={(e) => {
+                                        setData("visa_card", e);
+                                        setData("mc_card", 0);
+                                        setData("nc_card", 0);
+                                        const selectedCard = visaCards.find((item) => item.value === e);
+                                        setData("product", selectedCard?.label || "");
+                                    }}
+                                />
                             </div>
-
-                            {hasTerrorMatch && (
-                                <div className="terror-warning">
-                                    <div className="terror-warning-header">
-                                        <span className="terror-warning-icon">⚠</span>
-                                        <strong>ВНИМАНИЕ: Совпадение в базе Excon найдено!</strong>
-                                    </div>
-                                    <div className="terror-warning-details">
-                                        {terrorCheckResults.fullName === true && (
-                                            <div className="terror-match-item">
-                                                <span className="terror-match-label">По ФИО:</span>
-                                                <span className="terror-match-value">
-                                                    {data.surname || ''} {data.name || ''} {data.patronymic || ''}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {terrorCheckResults.cardName === true && (
-                                            <div className="terror-match-item">
-                                                <span className="terror-match-label">По имени на карте:</span>
-                                                <span className="terror-match-value">{data.card_name || ''}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="terror-warning-note">
-                                        Проверьте данные клиента перед продолжением оформления
-                                    </div>
-                                </div>
-                            )}
-
-                            <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
-
-                            <div className="header-passport">
-                                <File
-                                    edit={edit}
-                                    errors={errors}
-                                    onChange={(e) =>
-                                        setData("front_side_of_the_passport_file", e)
-                                    }
-                                    placeholderImage={front_side_of_the_passport_file}
-                                    id={"front_side_of_the_passport_file"}
-                                    value={
-                                        edit
-                                            ? withUploadsPrefix(data?.front_side_of_the_passport)
-                                            : data?.front_side_of_the_passport_file
-                                    }
-                                    width={340}
+                            <div>
+                                <img src={mc} alt="mc" width={70} />
+                                <RadioSelect
+                                    options={mcCards}
+                                    selectedValue={data?.mc_card}
+                                    onChange={(e) => {
+                                        setData("mc_card", e);
+                                        setData("visa_card", 0);
+                                        setData("nc_card", 0);
+                                        const selectedCard = mcCards.find((item) => item.value === e);
+                                        setData("product", selectedCard?.label || "");
+                                    }}
                                 />
-
-                                <img src={file} alt="file" width={16} />
-
-                                <File
-                                    edit={edit}
-                                    errors={errors}
-                                    onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                                    placeholderImage={back_side_of_the_passport_file}
-                                    id={"back_side_of_the_passport_file"}
-                                    value={
-                                        edit
-                                            ? withUploadsPrefix(data?.back_side_of_the_passport)
-                                            : data?.back_side_of_the_passport_file
-                                    }
-                                    width={340}
-                                />
-
-                                <img src={file} alt="file" width={16} />
-
-                                <File
-                                    edit={edit}
-                                    errors={errors}
-                                    onChange={(e) => setData("selfie_with_passport_file", e)}
-                                    placeholderImage={personImg}
-                                    id={"selfie_with_passport_file"}
-                                    value={
-                                        edit
-                                            ? withUploadsPrefix(data?.selfie_with_passport)
-                                            : data?.selfie_with_passport_file
-                                    }
-                                    width={220}
-                                />
-
-                                <div className="verification-section">
-                                    <CheckBox
-                                        title={"Личность подтверждена?"}
-                                        value={data.identity_verified}
-                                        onChange={(e) => setData("identity_verified", e)}
-                                    />
-                                    <CheckBox
-                                        title={"Отправить СМС?"}
-                                        value={data.is_new_client}
-                                        onChange={handleSMSChange}
-                                    />
-                                </div>
                             </div>
+                            <div>
+                                <img src={nc} alt="nc" width={70} />
+                                <RadioSelect
+                                    options={ncCards}
+                                    selectedValue={data?.nc_card}
+                                    onChange={(e) => {
+                                        setData("nc_card", e);
+                                        setData("visa_card", 0);
+                                        setData("mc_card", 0);
+                                        const selectedCard = ncCards.find((item) => item.value === e);
+                                        setData("product", selectedCard?.label || "");
+                                    }}
+                                />
+                            </div>
+                        </div>
 
-                            {showSMSType && (
-                                <div className="sms-section">
-                                    <div className="sms-section-header">
-                                        <h3>Настройки SMS</h3>
-                                        <div className="sms-status-indicator">
-                                            {data.message_type ? (
-                                                <span className="sms-status-active">SMS будет отправлен</span>
-                                            ) : (
-                                                <span className="sms-status-inactive">Выберите тип SMS</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="sms-type-selector">
-                                        <label className="sms-type-label">
-                                            Выберите тип SMS для отправки клиенту:
-                                        </label>
-                                        <div className="sms-options">
-                                            {smsTypes.map((type) => (
-                                                <div
-                                                    key={type.value}
-                                                    className={`sms-option ${
-                                                        data.message_type === type.value ? 'sms-option-selected' : ''
-                                                    }`}
-                                                    onClick={() => handleSMSTypeChange(type.value)}
-                                                >
-                                                    <div className="sms-option-radio">
-                                                        {data.message_type === type.value && (
-                                                            <div className="sms-option-radio-selected"></div>
-                                                        )}
-                                                    </div>
-                                                    <div className="sms-option-content">
-                                                        <div className="sms-option-title">{type.label}</div>
-                                                        <div className="sms-option-description">
-                                                            {type.value === "accepted" && "Клиент получит SMS о принятии заявки"}
-                                                            {type.value === "rejected" && "Клиент получит SMS об отклонении заявки"}
-                                                            {type.value === "card_opened" && "Клиент получит SMS об открытии карты"}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {data.message_type === "rejected" && (
-                                        <div className="rejection-reason-section">
-                                            <label className="rejection-reason-label">
-                                                Причина отклонения заявки:
-                                                <span className="required-asterisk">*</span>
-                                            </label>
-                                            <textarea
-                                                value={data.rejection_reason || ""}
-                                                onChange={(e) =>
-                                                    setData("rejection_reason", e.target.value)
-                                                }
-                                                placeholder="Введите подробную причину отклонения заявки..."
-                                                rows={3}
-                                                className="rejection-reason-textarea"
-                                            />
-                                            <div className="rejection-reason-hint">
-                                                Эта информация будет отправлена клиенту в SMS сообщении
-                                            </div>
-                                        </div>
-                                    )}
+                        {hasTerrorMatch && (
+                            <div className="terror-warning">
+                                <div className="terror-warning-header">
+                                    <span className="terror-warning-icon">⚠</span>
+                                    <strong>ВНИМАНИЕ: Совпадение в базе Excon найдено!</strong>
                                 </div>
-                            )}
-                            <div className="content-form">
-                                <div className="div1 input-with-check">
-                                    <Input
-                                        placeholder={"Фамилия"}
-                                        onChange={(e) => handleNameChange("surname", e)}
-                                        value={data?.surname}
-                                        error={errors}
-                                        id={"surname"}
-                                    />
-                                    {checkingTerror.fullName && (
-                                        <div className="terror-check-indicator checking"></div>
-                                    )}
+                                <div className="terror-warning-details">
                                     {terrorCheckResults.fullName === true && (
-                                        <div className="terror-check-indicator match"></div>
-                                    )}
-                                    {terrorCheckResults.fullName === false && (
-                                        <div className="terror-check-indicator no-match"></div>
-                                    )}
-                                </div>
-
-                                <div className="div2 input-with-check">
-                                    <Input
-                                        placeholder={"Имя"}
-                                        onChange={(e) => handleNameChange("name", e)}
-                                        value={data?.name}
-                                        error={errors}
-                                        id={"name"}
-                                    />
-                                    {checkingTerror.fullName && (
-                                        <div className="terror-check-indicator checking"></div>
-                                    )}
-                                    {terrorCheckResults.fullName === true && (
-                                        <div className="terror-check-indicator match"></div>
-                                    )}
-                                    {terrorCheckResults.fullName === false && (
-                                        <div className="terror-check-indicator no-match"></div>
-                                    )}
-                                </div>
-
-                                <div className="div3 input-with-check">
-                                    <Input
-                                        placeholder={"Отчество"}
-                                        onChange={(e) => handleNameChange("patronymic", e)}
-                                        value={data?.patronymic}
-                                        error={errors}
-                                        id={"patronymic"}
-                                    />
-                                    {checkingTerror.fullName && (
-                                        <div className="terror-check-indicator checking"></div>
-                                    )}
-                                    {terrorCheckResults.fullName === true && (
-                                        <div className="terror-check-indicator match"></div>
-                                    )}
-                                    {terrorCheckResults.fullName === false && (
-                                        <div className="terror-check-indicator no-match"></div>
-                                    )}
-                                </div>
-
-                                <Input
-                                    className={"div4"}
-                                    type="date"
-                                    onChange={handleBirthDateChange}
-                                    value={data?.birth_date}
-                                    error={errors}
-                                    id={"birth_date"}
-                                />
-
-                                <Input
-                                    className={"div5"}
-                                    placeholder={"Телефон"}
-                                    onChange={(e) => setData("phone_number", e)}
-                                    value={data?.phone_number}
-                                    error={errors}
-                                    id={"phone_number"}
-                                />
-                                <Input
-                                    className={"div6"}
-                                    placeholder={"Кодовое"}
-                                    onChange={(e) => setData("secret_word", e)}
-                                    value={data?.secret_word}
-                                    error={errors}
-                                    id={"secret_word"}
-                                />
-                                <Input
-                                    className={"div9"}
-                                    placeholder={"Получаемый оффис"}
-                                    onChange={(e) => setData("receiving_office", e)}
-                                    value={data?.receiving_office}
-                                    error={errors}
-                                    id={"receiving_office"}
-                                />
-                                <Input
-                                    className={"div7"}
-                                    placeholder={"Почта"}
-                                    onChange={(e) => setData("email", e)}
-                                    value={data?.email}
-                                    error={errors}
-                                    id={"email"}
-                                />
-
-                                <div className="div8 input-with-check">
-                                    <Input
-                                        placeholder={"Имя на карте"}
-                                        onChange={handleCardNameChange}
-                                        value={data?.card_name}
-                                        error={errors}
-                                        id={"card_name"}
-                                    />
-                                    {checkingTerror.cardName && (
-                                        <div className="terror-check-indicator checking"></div>
+                                        <div className="terror-match-item">
+                                            <span className="terror-match-label">По ФИО:</span>
+                                            <span className="terror-match-value">
+                                                {data.surname || ''} {data.name || ''} {data.patronymic || ''}
+                                            </span>
+                                        </div>
                                     )}
                                     {terrorCheckResults.cardName === true && (
-                                        <div className="terror-check-indicator match"></div>
-                                    )}
-                                    {terrorCheckResults.cardName === false && (
-                                        <div className="terror-check-indicator no-match"></div>
+                                        <div className="terror-match-item">
+                                            <span className="terror-match-label">По имени на карте:</span>
+                                            <span className="terror-match-value">{data.card_name || ''}</span>
+                                        </div>
                                     )}
                                 </div>
+                                <div className="terror-warning-note">
+                                    Проверьте данные клиента перед продолжением оформления
+                                </div>
+                            </div>
+                        )}
 
-                                <Input
-                                    className={"div30"}
-                                    placeholder={"Код клиента в АБС"}
-                                    onChange={(e) => setData("client_code", e)}
-                                    value={data?.client_code}
-                                    error={errors}
-                                    id={"client_code"}
+                        <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
+
+                        <div className="header-passport">
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) =>
+                                    setData("front_side_of_the_passport_file", e)
+                                }
+                                placeholderImage={front_side_of_the_passport_file}
+                                id={"front_side_of_the_passport_file"}
+                                value={
+                                    edit
+                                        ? withUploadsPrefix(data?.front_side_of_the_passport)
+                                        : data?.front_side_of_the_passport_file
+                                }
+                                width={340}
+                            />
+
+                            <img src={file} alt="file" width={16} />
+
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("back_side_of_the_passport_file", e)}
+                                placeholderImage={back_side_of_the_passport_file}
+                                id={"back_side_of_the_passport_file"}
+                                value={
+                                    edit
+                                        ? withUploadsPrefix(data?.back_side_of_the_passport)
+                                        : data?.back_side_of_the_passport_file
+                                }
+                                width={340}
+                            />
+
+                            <img src={file} alt="file" width={16} />
+
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("selfie_with_passport_file", e)}
+                                placeholderImage={personImg}
+                                id={"selfie_with_passport_file"}
+                                value={
+                                    edit
+                                        ? withUploadsPrefix(data?.selfie_with_passport)
+                                        : data?.selfie_with_passport_file
+                                }
+                                width={220}
+                            />
+
+                            <div className="verification-section">
+                                <CheckBox
+                                    title={"Личность подтверждена?"}
+                                    value={data.identity_verified}
+                                    onChange={(e) => setData("identity_verified", e)}
                                 />
                                 <CheckBox
-                                    yes={"Муж"}
-                                    no={"Жен"}
-                                    className={"div61 form-check-box"}
-                                    title={"Пол"}
-                                    value={data.gender}
-                                    onChange={(e) => setData("gender", e)}
+                                    title={"Отправить СМС?"}
+                                    value={data.is_new_client}
+                                    onChange={handleSMSChange}
                                 />
-                                <CheckBox
-                                    className={"div10 form-check-box"}
-                                    title={"Резидент Тадж-на?"}
-                                    value={data.is_resident}
-                                    onChange={(e) => setData("is_resident", e)}
-                                />
-                                <Select
-                                    className={"div11"}
-                                    id={"type_of_certificate"}
-                                    value={data?.type_of_certificate}
-                                    onChange={(e) => setData("type_of_certificate", e)}
-                                    options={docTypes}
-                                    error={errors}
-                                />
-                                <Input
-                                    className={"div12"}
-                                    placeholder={"Серия"}
-                                    onChange={(e) => setData("documents_series", e)}
-                                    value={data?.documents_series}
-                                    error={errors}
-                                    id={"documents_series"}
-                                />
-                                <Input
-                                    className={"div13"}
-                                    placeholder={"Номер"}
-                                    onChange={(e) => setData("document_number", e)}
-                                    value={data?.document_number}
-                                    error={errors}
-                                    id={"document_number"}
-                                />
-                                <Input
-                                    type="date"
-                                    className={"div14"}
-                                    placeholder={"Дата выдачи"}
-                                    onChange={(e) => setData("passport_issued_at", e)}
-                                    value={data?.passport_issued_at}
-                                    error={errors}
-                                    id={"passport_issued_at"}
-                                />
-                                <Input
-                                    type="date"
-                                    className={"div15"}
-                                    placeholder={"Срок действия"}
-                                    onChange={(e) => setData("passport_deadline", e)}
-                                    value={data?.passport_deadline}
-                                    error={errors}
-                                    id={"passport_deadline"}
-                                />
-                                <Input
-                                    className={"div16"}
-                                    placeholder={"Кем выдан"}
-                                    onChange={(e) => setData("issued_by", e)}
-                                    value={data?.issued_by}
-                                    error={errors}
-                                    id={"issued_by"}
-                                />
-                                <Input
-                                    className={"div17"}
-                                    placeholder={"ИНН"}
-                                    onChange={(e) => setData("inn", e)}
-                                    value={data?.inn}
-                                    error={errors}
-                                    id={"inn"}
-                                />
-                                <Input
-                                    className={"div57"}
-                                    placeholder={"Страна"}
-                                    onChange={(e) => setData("country", e)}
-                                    value={data?.country}
-                                    error={errors}
-                                    id={"country"}
-                                />
-                                <Select
-                                    className={"div18"}
-                                    id={"regin_type"}
-                                    value={data?.regin_type}
-                                    onChange={(e) => setData("regin_type", e)}
-                                    options={reginTypes}
-                                    error={errors}
-                                />
-                                <Input
-                                    className={"div19"}
-                                    placeholder={"Регион"}
-                                    onChange={(e) => setData("region", e)}
-                                    value={data?.region}
-                                    error={errors}
-                                    id={"region"}
-                                />
-                                <Select
-                                    className={"div20"}
-                                    id={"population_type"}
-                                    value={data?.population_type}
-                                    onChange={(e) => setData("population_type", e)}
-                                    options={USTypes}
-                                    error={errors}
-                                />
-                                <Input
-                                    className={"div21"}
-                                    placeholder={"Нас пункт"}
-                                    onChange={(e) => setData("populated", e)}
-                                    value={data?.populated}
-                                    error={errors}
-                                    id={"populated"}
-                                />
-                                <Select
-                                    className={"div22"}
-                                    id={"district_type"}
-                                    value={data?.district_type}
-                                    onChange={(e) => setData("district_type", e)}
-                                    options={districtTypes}
-                                    error={errors}
-                                />
-                                <Input
-                                    className={"div23"}
-                                    placeholder={"Района"}
-                                    onChange={(e) => setData("district", e)}
-                                    value={data?.district}
-                                    error={errors}
-                                    id={"district"}
-                                />
-                                <Input
-                                    className={"div65"}
-                                    placeholder={"Гражданство"}
-                                    onChange={(e) => setData("citizenship", e)}
-                                    value={data?.citizenship}
-                                    error={errors}
-                                    id={"citizenship"}
-                                />
-                                <Input
-                                    className={"div66"}
-                                    placeholder={"Национальность"}
-                                    onChange={(e) => setData("nationality", e)}
-                                    value={data?.nationality}
-                                    error={errors}
-                                    id={"nationality"}
-                                />
-                                <Input
-                                    className={"div67"}
-                                    placeholder={"Место рождения"}
-                                    onChange={(e) => setData("place_of_birth", e)}
-                                    value={data?.place_of_birth}
-                                    error={errors}
-                                    id={"place_of_birth"}
-                                />
-                                <Select
-                                    className={"div24"}
-                                    id={"street_type"}
-                                    value={data?.street_type}
-                                    onChange={(e) => setData("street_type", e)}
-                                    options={streetTypes}
-                                    error={errors}
-                                />
-                                <Input
-                                    className={"div25"}
-                                    placeholder={"Улица"}
-                                    onChange={(e) => setData("street", e)}
-                                    value={data?.street}
-                                    error={errors}
-                                    id={"street"}
-                                />
-                                <Input
-                                    className={"div26"}
-                                    placeholder={"Дом"}
-                                    onChange={(e) => setData("house_number", e)}
-                                    value={data?.house_number}
-                                    error={errors}
-                                    id={"house_number"}
-                                />
-                                <Input
-                                    className={"div27"}
-                                    placeholder={"Корпус"}
-                                    onChange={(e) => setData("corpus", e)}
-                                    value={data?.corpus}
-                                    error={errors}
-                                    id={"corpus"}
-                                />
-                                <Input
-                                    className={"div29"}
-                                    placeholder={"Кв"}
-                                    onChange={(e) => setData("apartment_number", e)}
-                                    value={data?.apartment_number}
-                                    error={errors}
-                                    id={"apartment_number"}
-                                />
-                                <Input
-                                    className={"div28"}
-                                    placeholder={"Индекс"}
-                                    onChange={(e) => setData("client_index", e)}
-                                    value={data?.client_index}
-                                    error={errors}
-                                    id={"client_index"}
-                                />
-                                <Input
-                                    className={"div36"}
-                                    placeholder={"Продукт"}
-                                    onChange={(e) => setData("product", e)}
-                                    value={data?.product}
-                                    error={errors}
-                                    id={"product"}
-                                    required={true}
-                                />
-                                <Input
-                                    className={"div31"}
-                                    placeholder={"Счет USD*"}
-                                    onChange={(e) => setData("account_usd", e)}
-                                    value={data?.account_usd}
-                                    error={errors}
-                                    id={"account_usd"}
-                                    required={true}
-                                />
-                                <Input
-                                    className={"div32"}
-                                    placeholder={"Счет EUR*"}
-                                    onChange={(e) => setData("account_eur", e)}
-                                    value={data?.account_eur}
-                                    error={errors}
-                                    id={"account_eur"}
-                                    required={true}
-                                />
-                                <Input
-                                    className={"div33"}
-                                    placeholder={"Счет TJS*"}
-                                    onChange={(e) => setData("account_tjs", e)}
-                                    value={data?.account_tjs}
-                                    error={errors}
-                                    id={"account_tjs"}
-                                    required={true}
-                                />
-                                <Input
-                                    className={"div34"}
-                                    placeholder={"Номер договора*"}
-                                    onChange={(e) => setData("contract_number", e)}
-                                    value={data?.contract_number}
-                                    error={errors}
-                                    id={"contract_number"}
-                                    required={true}
-                                />
-                                <Input
-                                    type="date"
-                                    className={"div35"}
-                                    placeholder={"Дата договора*"}
-                                    onChange={(e) => setData("contract_date", e)}
-                                    value={data?.contract_date}
-                                    error={errors}
-                                    id={"contract_date"}
-                                    required={true}
-                                />
-                                {edit && (
-                                    <>
-                                        <Input
-                                            type="text"
-                                            className="div37"
-                                            placeholder="Создан в"
-                                            value={
-                                                data?.CreatedAt ? `Создано: ${data.CreatedAt}` : ""
-                                            }
-                                            disabled
-                                            id="CreatedAt"
-                                            style={{ width: "100%" }}
-                                        />
+                            </div>
+                        </div>
 
-                                        <Input
-                                            type="text"
-                                            className="div51"
-                                            placeholder="Обновлен в"
-                                            value={
-                                                data?.UpdatedAt ? `Обновлено: ${data.UpdatedAt}` : ""
+                        {showSMSType && (
+                            <div className="sms-section">
+                                <div className="sms-section-header">
+                                    <h3>Настройки SMS</h3>
+                                    <div className="sms-status-indicator">
+                                        {data.message_type ? (
+                                            <span className="sms-status-active">SMS будет отправлен</span>
+                                        ) : (
+                                            <span className="sms-status-inactive">Выберите тип SMS</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="sms-type-selector">
+                                    <label className="sms-type-label">
+                                        Выберите тип SMS для отправки клиенту:
+                                    </label>
+                                    <div className="sms-options">
+                                        {smsTypes.map((type) => (
+                                            <div
+                                                key={type.value}
+                                                className={`sms-option ${
+                                                    data.message_type === type.value ? 'sms-option-selected' : ''
+                                                }`}
+                                                onClick={() => handleSMSTypeChange(type.value)}
+                                            >
+                                                <div className="sms-option-radio">
+                                                    {data.message_type === type.value && (
+                                                        <div className="sms-option-radio-selected"></div>
+                                                    )}
+                                                </div>
+                                                <div className="sms-option-content">
+                                                    <div className="sms-option-title">{type.label}</div>
+                                                    <div className="sms-option-description">
+                                                        {type.value === "accepted" && "Клиент получит SMS о принятии заявки"}
+                                                        {type.value === "rejected" && "Клиент получит SMS об отклонении заявки"}
+                                                        {type.value === "card_opened" && "Клиент получит SMS об открытии карты"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {data.message_type === "rejected" && (
+                                    <div className="rejection-reason-section">
+                                        <label className="rejection-reason-label">
+                                            Причина отклонения заявки:
+                                            <span className="required-asterisk">*</span>
+                                        </label>
+                                        <textarea
+                                            value={data.rejection_reason || ""}
+                                            onChange={(e) =>
+                                                setData("rejection_reason", e.target.value)
                                             }
-                                            disabled
-                                            id="UpdatedAt"
+                                            placeholder="Введите подробную причину отклонения заявки..."
+                                            rows={3}
+                                            className="rejection-reason-textarea"
                                         />
-                                    </>
+                                        <div className="rejection-reason-hint">
+                                            Эта информация будет отправлена клиенту в SMS сообщении
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                            <footer>
-                                <button
-                                    onClick={() => onSend(false, false)}
-                                    disabled={downloading || downloadingOffer}
-                                >
-                                    <img src={save} alt="" />
-                                    <span>Сохранить</span>
-                                </button>
-                                <button
-                                    onClick={handleSaveAndDownloadOffer}
-                                    disabled={downloading || downloadingOffer}
-                                >
-                                    <img src={offer} alt="" />
-                                    <span>
+                        )}
+                        <div className="content-form">
+                            <div className="div1 input-with-check">
+                                <Input
+                                    placeholder={"Фамилия"}
+                                    onChange={(e) => handleNameChange("surname", e)}
+                                    value={data?.surname}
+                                    error={errors}
+                                    id={"surname"}
+                                />
+                                {checkingTerror.fullName && (
+                                    <div className="terror-check-indicator checking"></div>
+                                )}
+                                {terrorCheckResults.fullName === true && (
+                                    <div className="terror-check-indicator match"></div>
+                                )}
+                                {terrorCheckResults.fullName === false && (
+                                    <div className="terror-check-indicator no-match"></div>
+                                )}
+                            </div>
+
+                            <div className="div2 input-with-check">
+                                <Input
+                                    placeholder={"Имя"}
+                                    onChange={(e) => handleNameChange("name", e)}
+                                    value={data?.name}
+                                    error={errors}
+                                    id={"name"}
+                                />
+                                {checkingTerror.fullName && (
+                                    <div className="terror-check-indicator checking"></div>
+                                )}
+                                {terrorCheckResults.fullName === true && (
+                                    <div className="terror-check-indicator match"></div>
+                                )}
+                                {terrorCheckResults.fullName === false && (
+                                    <div className="terror-check-indicator no-match"></div>
+                                )}
+                            </div>
+
+                            <div className="div3 input-with-check">
+                                <Input
+                                    placeholder={"Отчество"}
+                                    onChange={(e) => handleNameChange("patronymic", e)}
+                                    value={data?.patronymic}
+                                    error={errors}
+                                    id={"patronymic"}
+                                />
+                                {checkingTerror.fullName && (
+                                    <div className="terror-check-indicator checking"></div>
+                                )}
+                                {terrorCheckResults.fullName === true && (
+                                    <div className="terror-check-indicator match"></div>
+                                )}
+                                {terrorCheckResults.fullName === false && (
+                                    <div className="terror-check-indicator no-match"></div>
+                                )}
+                            </div>
+
+                            <Input
+                                className={"div4"}
+                                type="date"
+                                onChange={handleBirthDateChange}
+                                value={data?.birth_date}
+                                error={errors}
+                                id={"birth_date"}
+                            />
+
+                            <Input
+                                className={"div5"}
+                                placeholder={"Телефон"}
+                                onChange={(e) => setData("phone_number", e)}
+                                value={data?.phone_number}
+                                error={errors}
+                                id={"phone_number"}
+                            />
+                            <Input
+                                className={"div6"}
+                                placeholder={"Кодовое"}
+                                onChange={(e) => setData("secret_word", e)}
+                                value={data?.secret_word}
+                                error={errors}
+                                id={"secret_word"}
+                            />
+                            <Input
+                                className={"div9"}
+                                placeholder={"Получаемый оффис"}
+                                onChange={(e) => setData("receiving_office", e)}
+                                value={data?.receiving_office}
+                                error={errors}
+                                id={"receiving_office"}
+                            />
+                            <Input
+                                className={"div7"}
+                                placeholder={"Почта"}
+                                onChange={(e) => setData("email", e)}
+                                value={data?.email}
+                                error={errors}
+                                id={"email"}
+                            />
+
+                            <div className="div8 input-with-check">
+                                <Input
+                                    placeholder={"Имя на карте"}
+                                    onChange={handleCardNameChange}
+                                    value={data?.card_name}
+                                    error={errors}
+                                    id={"card_name"}
+                                />
+                                {checkingTerror.cardName && (
+                                    <div className="terror-check-indicator checking"></div>
+                                )}
+                                {terrorCheckResults.cardName === true && (
+                                    <div className="terror-check-indicator match"></div>
+                                )}
+                                {terrorCheckResults.cardName === false && (
+                                    <div className="terror-check-indicator no-match"></div>
+                                )}
+                            </div>
+
+                            <Input
+                                className={"div30"}
+                                placeholder={"Код клиента в АБС"}
+                                onChange={(e) => setData("client_code", e)}
+                                value={data?.client_code}
+                                error={errors}
+                                id={"client_code"}
+                            />
+                            <CheckBox
+                                yes={"Муж"}
+                                no={"Жен"}
+                                className={"div61 form-check-box"}
+                                title={"Пол"}
+                                value={data.gender}
+                                onChange={(e) => setData("gender", e)}
+                            />
+                            <CheckBox
+                                className={"div10 form-check-box"}
+                                title={"Резидент Тадж-на?"}
+                                value={data.is_resident}
+                                onChange={(e) => setData("is_resident", e)}
+                            />
+                            <Select
+                                className={"div11"}
+                                id={"type_of_certificate"}
+                                value={data?.type_of_certificate}
+                                onChange={(e) => setData("type_of_certificate", e)}
+                                options={docTypes}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div12"}
+                                placeholder={"Серия"}
+                                onChange={(e) => setData("documents_series", e)}
+                                value={data?.documents_series}
+                                error={errors}
+                                id={"documents_series"}
+                            />
+                            <Input
+                                className={"div13"}
+                                placeholder={"Номер"}
+                                onChange={(e) => setData("document_number", e)}
+                                value={data?.document_number}
+                                error={errors}
+                                id={"document_number"}
+                            />
+                            <Input
+                                type="date"
+                                className={"div14"}
+                                placeholder={"Дата выдачи"}
+                                onChange={(e) => setData("passport_issued_at", e)}
+                                value={data?.passport_issued_at}
+                                error={errors}
+                                id={"passport_issued_at"}
+                            />
+                            <Input
+                                type="date"
+                                className={"div15"}
+                                placeholder={"Срок действия"}
+                                onChange={(e) => setData("passport_deadline", e)}
+                                value={data?.passport_deadline}
+                                error={errors}
+                                id={"passport_deadline"}
+                            />
+                            <Input
+                                className={"div16"}
+                                placeholder={"Кем выдан"}
+                                onChange={(e) => setData("issued_by", e)}
+                                value={data?.issued_by}
+                                error={errors}
+                                id={"issued_by"}
+                            />
+                            <Input
+                                className={"div17"}
+                                placeholder={"ИНН"}
+                                onChange={(e) => setData("inn", e)}
+                                value={data?.inn}
+                                error={errors}
+                                id={"inn"}
+                            />
+                            <Input
+                                className={"div57"}
+                                placeholder={"Страна"}
+                                onChange={(e) => setData("country", e)}
+                                value={data?.country}
+                                error={errors}
+                                id={"country"}
+                            />
+                            <Select
+                                className={"div18"}
+                                id={"regin_type"}
+                                value={data?.regin_type}
+                                onChange={(e) => setData("regin_type", e)}
+                                options={reginTypes}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div19"}
+                                placeholder={"Регион"}
+                                onChange={(e) => setData("region", e)}
+                                value={data?.region}
+                                error={errors}
+                                id={"region"}
+                            />
+                            <Select
+                                className={"div20"}
+                                id={"population_type"}
+                                value={data?.population_type}
+                                onChange={(e) => setData("population_type", e)}
+                                options={USTypes}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div21"}
+                                placeholder={"Нас пункт"}
+                                onChange={(e) => setData("populated", e)}
+                                value={data?.populated}
+                                error={errors}
+                                id={"populated"}
+                            />
+                            <Select
+                                className={"div22"}
+                                id={"district_type"}
+                                value={data?.district_type}
+                                onChange={(e) => setData("district_type", e)}
+                                options={districtTypes}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div23"}
+                                placeholder={"Района"}
+                                onChange={(e) => setData("district", e)}
+                                value={data?.district}
+                                error={errors}
+                                id={"district"}
+                            />
+                            <Input
+                                className={"div65"}
+                                placeholder={"Гражданство"}
+                                onChange={(e) => setData("citizenship", e)}
+                                value={data?.citizenship}
+                                error={errors}
+                                id={"citizenship"}
+                            />
+                            <Input
+                                className={"div66"}
+                                placeholder={"Национальность"}
+                                onChange={(e) => setData("nationality", e)}
+                                value={data?.nationality}
+                                error={errors}
+                                id={"nationality"}
+                            />
+                            <Input
+                                className={"div67"}
+                                placeholder={"Место рождения"}
+                                onChange={(e) => setData("place_of_birth", e)}
+                                value={data?.place_of_birth}
+                                error={errors}
+                                id={"place_of_birth"}
+                            />
+                            <Select
+                                className={"div24"}
+                                id={"street_type"}
+                                value={data?.street_type}
+                                onChange={(e) => setData("street_type", e)}
+                                options={streetTypes}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div25"}
+                                placeholder={"Улица"}
+                                onChange={(e) => setData("street", e)}
+                                value={data?.street}
+                                error={errors}
+                                id={"street"}
+                            />
+                            <Input
+                                className={"div26"}
+                                placeholder={"Дом"}
+                                onChange={(e) => setData("house_number", e)}
+                                value={data?.house_number}
+                                error={errors}
+                                id={"house_number"}
+                            />
+                            <Input
+                                className={"div27"}
+                                placeholder={"Корпус"}
+                                onChange={(e) => setData("corpus", e)}
+                                value={data?.corpus}
+                                error={errors}
+                                id={"corpus"}
+                            />
+                            <Input
+                                className={"div29"}
+                                placeholder={"Кв"}
+                                onChange={(e) => setData("apartment_number", e)}
+                                value={data?.apartment_number}
+                                error={errors}
+                                id={"apartment_number"}
+                            />
+                            <Input
+                                className={"div28"}
+                                placeholder={"Индекс"}
+                                onChange={(e) => setData("client_index", e)}
+                                value={data?.client_index}
+                                error={errors}
+                                id={"client_index"}
+                            />
+                            <Input
+                                className={"div36"}
+                                placeholder={"Продукт"}
+                                onChange={(e) => setData("product", e)}
+                                value={data?.product}
+                                error={errors}
+                                id={"product"}
+                                required={true}
+                            />
+                            <Input
+                                className={"div31"}
+                                placeholder={"Счет USD*"}
+                                onChange={(e) => setData("account_usd", e)}
+                                value={data?.account_usd}
+                                error={errors}
+                                id={"account_usd"}
+                                required={true}
+                            />
+                            <Input
+                                className={"div32"}
+                                placeholder={"Счет EUR*"}
+                                onChange={(e) => setData("account_eur", e)}
+                                value={data?.account_eur}
+                                error={errors}
+                                id={"account_eur"}
+                                required={true}
+                            />
+                            <Input
+                                className={"div33"}
+                                placeholder={"Счет TJS*"}
+                                onChange={(e) => setData("account_tjs", e)}
+                                value={data?.account_tjs}
+                                error={errors}
+                                id={"account_tjs"}
+                                required={true}
+                            />
+                            <Input
+                                className={"div34"}
+                                placeholder={"Номер договора*"}
+                                onChange={(e) => setData("contract_number", e)}
+                                value={data?.contract_number}
+                                error={errors}
+                                id={"contract_number"}
+                                required={true}
+                            />
+                            <Input
+                                type="date"
+                                className={"div35"}
+                                placeholder={"Дата договора*"}
+                                onChange={(e) => setData("contract_date", e)}
+                                value={data?.contract_date}
+                                error={errors}
+                                id={"contract_date"}
+                                required={true}
+                            />
+                            {edit && (
+                                <>
+                                    <Input
+                                        type="text"
+                                        className="div37"
+                                        placeholder="Создан в"
+                                        value={
+                                            data?.CreatedAt ? `Создано: ${data.CreatedAt}` : ""
+                                        }
+                                        disabled
+                                        id="CreatedAt"
+                                        style={{ width: "100%" }}
+                                    />
+
+                                    <Input
+                                        type="text"
+                                        className="div51"
+                                        placeholder="Обновлен в"
+                                        value={
+                                            data?.UpdatedAt ? `Обновлено: ${data.UpdatedAt}` : ""
+                                        }
+                                        disabled
+                                        id="UpdatedAt"
+                                    />
+                                </>
+                            )}
+                        </div>
+                        <footer>
+                            <button
+                                onClick={() => onSend(false, false)}
+                                disabled={downloading || downloadingOffer}
+                            >
+                                <img src={save} alt="" />
+                                <span>Сохранить</span>
+                            </button>
+                            <button
+                                onClick={handleSaveAndDownloadOffer}
+                                disabled={downloading || downloadingOffer}
+                            >
+                                <img src={offer} alt="" />
+                                <span>
                     {downloadingOffer ? "Загрузка..." : "Загрузить оферт"}
                   </span>
-                                </button>
-                                <button
-                                    onClick={handleSaveAndDownload}
-                                    disabled={downloading || downloadingOffer}
-                                >
-                                    <img src={download} alt="" />
-                                    <span>
+                            </button>
+                            <button
+                                onClick={handleSaveAndDownload}
+                                disabled={downloading || downloadingOffer}
+                            >
+                                <img src={download} alt="" />
+                                <span>
                     {downloading ? "Скачивание..." : "Скачать анкету"}
                   </span>
-                                </button>
-                                <button>
-                                    <img src={share} alt="" />
-                                    <span>Загрузить анкету</span>
-                                </button>
-                                <button onClick={handleSearchClient} disabled={searching}>
-                                    <img src={search_user} alt="" />
-                                    <span>{searching ? "Поиск..." : "Найти клиента в АБС"}</span>
-                                </button>
-                            </footer>
-                        </main>
-                    )}
-                </div>
+                            </button>
+                            <button>
+                                <img src={share} alt="" />
+                                <span>Загрузить анкету</span>
+                            </button>
+                            <button onClick={handleSearchClient} disabled={searching}>
+                                <img src={search_user} alt="" />
+                                <span>{searching ? "Поиск..." : "Найти клиента в АБС"}</span>
+                            </button>
+                        </footer>
+                    </main>
+                )}
+            </div>
         </>
     );
 }

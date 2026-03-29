@@ -342,7 +342,7 @@ export default function TransactionsQR() {
   return (
     <>
       <div
-        className="applications-list"
+        className="applications-list content-page"
         style={{ flexDirection: "column", gap: "20px", height: "auto" }}
       >
           <main>
@@ -752,6 +752,7 @@ export default function TransactionsQR() {
             onClose={() => setAlert(null)}
           />
         )}
+
     </>
   );
 }

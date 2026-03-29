@@ -38,6 +38,7 @@ const fields = [
 ];
 
 const PVNSettings = () => {
+
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ ...emptyForm });
@@ -226,7 +227,7 @@ const PVNSettings = () => {
 	};
 
 	return (
-		<div className="block_info_prems">
+		<div className="block_info_prems content-page">
 			{alert.show && (
 				<AlertMessage
 					message={alert.message}

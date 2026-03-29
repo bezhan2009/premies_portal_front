@@ -351,7 +351,7 @@ export default function DashboardAccountOperations() {
         </div>
       )}
 
-        <div className="block_info_prems" align="center">
+        <div className="block_info_prems content-page" align="center">
           <div className="processing-integration">
             <div className="processing-integration__container">
               {/* Блок поиска с датами */}
@@ -676,6 +676,7 @@ export default function DashboardAccountOperations() {
               )}
           </div>
         </div>
+
 
       <style jsx>{`
         .search-card__button--export {

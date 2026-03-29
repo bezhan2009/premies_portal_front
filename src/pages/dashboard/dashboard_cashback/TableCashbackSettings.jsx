@@ -354,7 +354,7 @@ const TableCashbackSettings = () => {
     };
 
     return (
-        <div className="block_info_prems">
+        <div className="block_info_prems content-page">
 
                 <div className="table-header-actions" style={{ margin: "16px" }}>
                     <h2>Настройки кэшбэка</h2>

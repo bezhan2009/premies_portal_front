@@ -456,7 +456,7 @@ export default function PVNTransactionsList() {
 
     return (
         <>
-            <div className="page-content-wrapper">
+            <div className="page-content-wrapper content-page">
                     <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
                         <main>
                             <div className="my-applications-header">

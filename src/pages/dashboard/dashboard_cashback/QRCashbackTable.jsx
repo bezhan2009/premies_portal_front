@@ -21,6 +21,7 @@ const fields = [
 ];
 
 const QRCashbackTable = () => {
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -74,7 +75,7 @@ const QRCashbackTable = () => {
   };
 
   return (
-    <div className="block_info_prems">
+    <div className="block_info_prems content-page">
       <div className="table-header-actions" style={{ margin: "16px" }}>
         <h2>Кэшбэк по QR</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

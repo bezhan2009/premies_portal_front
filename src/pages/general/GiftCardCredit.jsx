@@ -24,210 +24,210 @@ import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit
 import { getCreditById } from "../../api/application/getCredit.js";
 
 export default function GiftCardCredit({ edit = false }) {
-  const [loading, setLoading] = useState(false);
-  const { data, errors, setData, validate, setDataMore } = useFormStore();
+    const [loading, setLoading] = useState(false);
+    const { data, errors, setData, validate, setDataMore } = useFormStore();
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const { id } = useParams();
+    const { id } = useParams();
 
-  const ValidData = {
-    name: { required: true },
-    surname: { required: true },
-    phone: { required: true },
-    inn: { required: true },
-    client_code: { required: true },
-    loan_type: { required: true },
-    address: { required: true },
-    branch_office: { required: true },
-    // front_side_of_the_passport: { required: true },
-    // back_side_of_the_passport: { required: true },
-    // selfie_with_passport: { required: true },
-    workplace: { required: true },
-    employment_date: { required: true },
-    salary: { required: true },
-    // income_proof_document: { required: true },
-    loan_purpose: { required: true },
-    // loan_term: { required: true },
-    loan_amount: { required: true },
-    credit_status_id: { required: true },
-  };
+    const ValidData = {
+        name: { required: true },
+        surname: { required: true },
+        phone: { required: true },
+        inn: { required: true },
+        client_code: { required: true },
+        loan_type: { required: true },
+        address: { required: true },
+        branch_office: { required: true },
+        // front_side_of_the_passport: { required: true },
+        // back_side_of_the_passport: { required: true },
+        // selfie_with_passport: { required: true },
+        workplace: { required: true },
+        employment_date: { required: true },
+        salary: { required: true },
+        // income_proof_document: { required: true },
+        loan_purpose: { required: true },
+        // loan_term: { required: true },
+        loan_amount: { required: true },
+        credit_status_id: { required: true },
+    };
 
-  const formatDateForBackend = (dateStr) => {
-    if (!dateStr) return "";
-    // Преобразует "2025-08-04" в ISO формат "2025-08-04T00:00:00Z"
-    return new Date(dateStr).toISOString();
-  };
+    const formatDateForBackend = (dateStr) => {
+        if (!dateStr) return "";
+        // Преобразует "2025-08-04" в ISO формат "2025-08-04T00:00:00Z"
+        return new Date(dateStr).toISOString();
+    };
 
-  const onSend = async () => {
-    const isValid = validate(ValidData);
+    const onSend = async () => {
+        const isValid = validate(ValidData);
 
-    console.log("isValid", isValid);
-    
+        console.log("isValid", isValid);
 
-    if (!isValid) return;
-    try {
-      const formData = new FormData();
 
-      // Проверка файлов
-      if (data.front_side_of_the_passport_file) {
-        formData.append(
-          "front_side_of_the_passport_file",
-          data.front_side_of_the_passport_file
-        );
-      }
-      if (data.back_side_of_the_passport_file) {
-        formData.append(
-          "back_side_of_the_passport_file",
-          data.back_side_of_the_passport_file
-        );
-      }
-      if (data.selfie_with_passport_file) {
-        formData.append(
-          "selfie_with_passport_file",
-          data.selfie_with_passport_file
-        );
-      }
-      if (data.income_proof_document_file) {
-        formData.append(
-          "income_proof_document_file",
-          data.income_proof_document_file
-        );
-      }
+        if (!isValid) return;
+        try {
+            const formData = new FormData();
 
-      // Добавление остальных полей
-      formData.append("name", data.name.trim() || "");
-      formData.append("surname", data.surname.trim() || "");
-      formData.append("patronymic", data.middle_name.trim() || "");
-      // formData.append("gender", data.gender === true ? "Муж" : "Жен");
-      formData.append("client_code", String(data.client_code) || "");
-      // formData.append("issued_by", data.issued_by || "");
-      // formData.append(
-      //   "issued_at",
-      //   formatDateForBackend(data.passport_issued_at)
-      // );
-      formData.append(
-        "employment_date",
-        formatDateForBackend(data.employment_date + "T00:00:00Z")
-      );
-      formData.append("phone", String(data.phone) || "");
-      // formData.append("secret_word", data.secret_word || "");
-      formData.append("workplace", data.workplace || "");
-      // formData.append(
-      //   "card_code",
-      //   data.visa_card || data.mc_card || data.nc_card || ""
-      // );
-      formData.append("loan_type", data.loan_type || "");
-      // branch_office
-      formData.append("branch_office", data.branch_office || "");
-      formData.append(
-        "additional_income_source",
-        data.additional_income_source || ""
-      );
-      formData.append(
-        "additional_income_amount",
-        data.additional_income_amount || ""
-      );
-      formData.append("credit_status_id", data.credit_status_id);
-      formData.append(
-        "credit_status",
-        statusCredit.find((e) => +e.value === +data.credit_status_id)
-      );
-      formData.append("inn", String(data.inn) || "");
-      formData.append("loan_purpose", data.loan_purpose || "");
-      formData.append("salary", data.salary || "");
-      formData.append("loan_term", data.loan_term || "");
-      // formData.append("population_type", data.population_type || "");
-      formData.append("loan_amount", data.loan_amount || "");
-      // formData.append("district", data.district || "");
-      // formData.append("credit_status_id", data.credit_status_id || "");
-      // formData.append("street", data.street || "");
-      // formData.append("house_number", data.house_number || "");
-      // formData.append("corpus", data.corpus || "");
-      // formData.append("apartment_number", data.apartment_number || "");
+            // Проверка файлов
+            if (data.front_side_of_the_passport_file) {
+                formData.append(
+                    "front_side_of_the_passport_file",
+                    data.front_side_of_the_passport_file
+                );
+            }
+            if (data.back_side_of_the_passport_file) {
+                formData.append(
+                    "back_side_of_the_passport_file",
+                    data.back_side_of_the_passport_file
+                );
+            }
+            if (data.selfie_with_passport_file) {
+                formData.append(
+                    "selfie_with_passport_file",
+                    data.selfie_with_passport_file
+                );
+            }
+            if (data.income_proof_document_file) {
+                formData.append(
+                    "income_proof_document_file",
+                    data.income_proof_document_file
+                );
+            }
 
-      // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
-      // formData.append("is_resident", String(!!data.is_resident));
-      // formData.append("is_new_client", String(!!data.is_new_client));
-      // formData.append("identity_verified", String(!!data.identity_verified));
+            // Добавление остальных полей
+            formData.append("name", data.name.trim() || "");
+            formData.append("surname", data.surname.trim() || "");
+            formData.append("patronymic", data.middle_name.trim() || "");
+            // formData.append("gender", data.gender === true ? "Муж" : "Жен");
+            formData.append("client_code", String(data.client_code) || "");
+            // formData.append("issued_by", data.issued_by || "");
+            // formData.append(
+            //   "issued_at",
+            //   formatDateForBackend(data.passport_issued_at)
+            // );
+            formData.append(
+                "employment_date",
+                formatDateForBackend(data.employment_date + "T00:00:00Z")
+            );
+            formData.append("phone", String(data.phone) || "");
+            // formData.append("secret_word", data.secret_word || "");
+            formData.append("workplace", data.workplace || "");
+            // formData.append(
+            //   "card_code",
+            //   data.visa_card || data.mc_card || data.nc_card || ""
+            // );
+            formData.append("loan_type", data.loan_type || "");
+            // branch_office
+            formData.append("branch_office", data.branch_office || "");
+            formData.append(
+                "additional_income_source",
+                data.additional_income_source || ""
+            );
+            formData.append(
+                "additional_income_amount",
+                data.additional_income_amount || ""
+            );
+            formData.append("credit_status_id", data.credit_status_id);
+            formData.append(
+                "credit_status",
+                statusCredit.find((e) => +e.value === +data.credit_status_id)
+            );
+            formData.append("inn", String(data.inn) || "");
+            formData.append("loan_purpose", data.loan_purpose || "");
+            formData.append("salary", data.salary || "");
+            formData.append("loan_term", data.loan_term || "");
+            // formData.append("population_type", data.population_type || "");
+            formData.append("loan_amount", data.loan_amount || "");
+            // formData.append("district", data.district || "");
+            // formData.append("credit_status_id", data.credit_status_id || "");
+            // formData.append("street", data.street || "");
+            // formData.append("house_number", data.house_number || "");
+            // formData.append("corpus", data.corpus || "");
+            // formData.append("apartment_number", data.apartment_number || "");
 
-      formData.append("address", data.address);
+            // Убеждаемся, что булевые значения отправляются как строки "true"/"false"
+            // formData.append("is_resident", String(!!data.is_resident));
+            // formData.append("is_new_client", String(!!data.is_new_client));
+            // formData.append("identity_verified", String(!!data.identity_verified));
 
-      const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
+            formData.append("address", data.address);
 
-      if (edit) {
-        const response = await fetch(`${backendUrl}/credits/${data.ID}`, {
-          method: "PATCH",
-          body: formData,
-        });
+            const backendUrl = import.meta.env.VITE_BACKEND_CREDIT_URL;
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
+            if (edit) {
+                const response = await fetch(`${backendUrl}/credits/${data.ID}`, {
+                    method: "PATCH",
+                    body: formData,
+                });
 
-        const result = await response.json();
-        console.log("Успешно отправлено:", result);
-        // setDataClear();
-        alert("Данные успешно сохранены!");
-      } else {
-        const response = await fetch(`${backendUrl}/credits`, {
-          method: "POST",
-          body: formData,
-        });
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                console.log("Успешно отправлено:", result);
+                // setDataClear();
+                alert("Данные успешно сохранены!");
+            } else {
+                const response = await fetch(`${backendUrl}/credits`, {
+                    method: "POST",
+                    body: formData,
+                });
 
-        const result = await response.json();
-        console.log("Успешно отправлено:", result);
-        // setDataClear();
-        navigate(0);
-        alert("Данные успешно сохранены!");
-      }
-    } catch (error) {
-      console.error("Ошибка отправки:", error);
-      alert("Произошла ошибка при сохранении данных");
-    }
-  };
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
 
-  const getData = async () => {
-    if (edit) {
-      try {
-        setLoading(true);
-        console.log("edit id", id);
+                const result = await response.json();
+                console.log("Успешно отправлено:", result);
+                // setDataClear();
+                navigate(0);
+                alert("Данные успешно сохранены!");
+            }
+        } catch (error) {
+            console.error("Ошибка отправки:", error);
+            alert("Произошла ошибка при сохранении данных");
+        }
+    };
 
-        const data = await getCreditById(id);
-        setDataMore({
-          ...data,
-          // gemder: data.gender === "Муж",
-          employment_date: formaterDate(data?.employment_date, "dateOnly"),
-          // passport_issued_at: formaterDate(
-          //   data?.passport_issued_at,
-          //   "dateOnly"
-          // ),
-        });
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+    const getData = async () => {
+        if (edit) {
+            try {
+                setLoading(true);
+                console.log("edit id", id);
 
-  console.log("data", data);
-  console.log("errors", errors);
+                const data = await getCreditById(id);
+                setDataMore({
+                    ...data,
+                    // gemder: data.gender === "Муж",
+                    employment_date: formaterDate(data?.employment_date, "dateOnly"),
+                    // passport_issued_at: formaterDate(
+                    //   data?.passport_issued_at,
+                    //   "dateOnly"
+                    // ),
+                });
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
-  useEffect(() => {
-    getData();
-  }, []);
+    console.log("data", data);
+    console.log("errors", errors);
 
-  return (
-    <>
-        <div className="gift-card-credit content-page">
-          {loading ? (
-            <Spinner />
-          ) : (
-            <main>
-              {/* <h1>
+    useEffect(() => {
+        getData();
+    }, []);
+
+    return (
+        <>
+            <div className="gift-card-credit content-page">
+                {loading ? (
+                    <Spinner />
+                ) : (
+                    <main>
+                        {/* <h1>
                 Выберите карту! Нажав на <img src={file} alt="file" width={16} />{" "}
                 вы можете посмотреть и распечатать тарифы.
               </h1>
@@ -269,125 +269,125 @@ export default function GiftCardCredit({ edit = false }) {
                   />
                 </div>
               </div> */}
-              <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
+                        <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
 
-              <div className="header-passport">
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("front_side_of_the_passport_file", e)}
-                  placeholderImage={front_side_of_the_passport_file}
-                  id={"front_side_of_the_passport_file"}
-                  value={
-                    edit
-                      ? data?.front_side_of_the_passport
-                      : data?.front_side_of_the_passport_file
-                  }
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("back_side_of_the_passport_file", e)}
-                  placeholderImage={back_side_of_the_passport_file}
-                  id={"back_side_of_the_passport_file"}
-                  value={
-                    edit
-                      ? data?.back_side_of_the_passport
-                      : data?.back_side_of_the_passport_file
-                  }
-                  width={340}
-                />
-                <img src={file} alt="file" width={16} />
+                        <div className="header-passport">
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("front_side_of_the_passport_file", e)}
+                                placeholderImage={front_side_of_the_passport_file}
+                                id={"front_side_of_the_passport_file"}
+                                value={
+                                    edit
+                                        ? data?.front_side_of_the_passport
+                                        : data?.front_side_of_the_passport_file
+                                }
+                                width={340}
+                            />
+                            <img src={file} alt="file" width={16} />
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("back_side_of_the_passport_file", e)}
+                                placeholderImage={back_side_of_the_passport_file}
+                                id={"back_side_of_the_passport_file"}
+                                value={
+                                    edit
+                                        ? data?.back_side_of_the_passport
+                                        : data?.back_side_of_the_passport_file
+                                }
+                                width={340}
+                            />
+                            <img src={file} alt="file" width={16} />
 
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("selfie_with_passport_file", e)}
-                  placeholderImage={personImg}
-                  id={"selfie_with_passport_file"}
-                  value={
-                    edit
-                      ? data?.selfie_with_passport
-                      : data?.selfie_with_passport_file
-                  }
-                  width={220}
-                />
-                {/* income_proof_document_file */}
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("selfie_with_passport_file", e)}
+                                placeholderImage={personImg}
+                                id={"selfie_with_passport_file"}
+                                value={
+                                    edit
+                                        ? data?.selfie_with_passport
+                                        : data?.selfie_with_passport_file
+                                }
+                                width={220}
+                            />
+                            {/* income_proof_document_file */}
 
-                <img src={file} alt="file" width={16} />
+                            <img src={file} alt="file" width={16} />
 
-                <File
-                  edit={edit}
-                  errors={errors}
-                  onChange={(e) => setData("income_proof_document_file", e)}
-                  placeholderImage={fileIcon}
-                  id={"income_proof_document_file"}
-                  value={
-                    edit
-                      ? data?.income_proof_document
-                      : data?.income_proof_document_file
-                  }
-                  width={220}
-                />
+                            <File
+                                edit={edit}
+                                errors={errors}
+                                onChange={(e) => setData("income_proof_document_file", e)}
+                                placeholderImage={fileIcon}
+                                id={"income_proof_document_file"}
+                                value={
+                                    edit
+                                        ? data?.income_proof_document
+                                        : data?.income_proof_document_file
+                                }
+                                width={220}
+                            />
 
-                <div>
-                  <CheckBox
-                    title={"Личность подтверждена?"}
-                    value={data.identity_verified}
-                    onChange={(e) => setData("identity_verified", e)}
-                  />
-                  <CheckBox
-                    title={"Отправить СМС?"}
-                    value={data.is_new_client}
-                    onChange={(e) => setData("is_new_client", e)}
-                  />
-                </div>
-              </div>
-              <div className="content-form-credit">
-                <Input
-                  className={"div1"}
-                  placeholder={"Фамилия"}
-                  onChange={(e) => setData("surname", e)}
-                  value={data?.surname}
-                  error={errors}
-                  id={"surname"}
-                />
-                <Input
-                  className={"div2"}
-                  placeholder={"Имя"}
-                  onChange={(e) => setData("name", e)}
-                  value={data?.name}
-                  error={errors}
-                  id={"name"}
-                />
-                <Input
-                  className={"div3"}
-                  placeholder={"Отчество"}
-                  onChange={(e) => setData("middle_name", e)}
-                  value={data?.middle_name}
-                  error={errors}
-                  id={"middle_name"}
-                />
-                <Input
-                  type="date"
-                  className={"div4"}
-                  placeholder={"Дата трудоустройства"}
-                  onChange={(e) => setData("employment_date", e)}
-                  value={data?.employment_date}
-                  error={errors}
-                  id={"employment_date"}
-                />
-                <Input
-                  className={"div5"}
-                  placeholder={"Телефон"}
-                  onChange={(e) => setData("phone", e)}
-                  value={data?.phone}
-                  error={errors}
-                  id={"phone"}
-                />
-                {/* <Input
+                            <div>
+                                <CheckBox
+                                    title={"Личность подтверждена?"}
+                                    value={data.identity_verified}
+                                    onChange={(e) => setData("identity_verified", e)}
+                                />
+                                <CheckBox
+                                    title={"Отправить СМС?"}
+                                    value={data.is_new_client}
+                                    onChange={(e) => setData("is_new_client", e)}
+                                />
+                            </div>
+                        </div>
+                        <div className="content-form-credit">
+                            <Input
+                                className={"div1"}
+                                placeholder={"Фамилия"}
+                                onChange={(e) => setData("surname", e)}
+                                value={data?.surname}
+                                error={errors}
+                                id={"surname"}
+                            />
+                            <Input
+                                className={"div2"}
+                                placeholder={"Имя"}
+                                onChange={(e) => setData("name", e)}
+                                value={data?.name}
+                                error={errors}
+                                id={"name"}
+                            />
+                            <Input
+                                className={"div3"}
+                                placeholder={"Отчество"}
+                                onChange={(e) => setData("middle_name", e)}
+                                value={data?.middle_name}
+                                error={errors}
+                                id={"middle_name"}
+                            />
+                            <Input
+                                type="date"
+                                className={"div4"}
+                                placeholder={"Дата трудоустройства"}
+                                onChange={(e) => setData("employment_date", e)}
+                                value={data?.employment_date}
+                                error={errors}
+                                id={"employment_date"}
+                            />
+                            <Input
+                                className={"div5"}
+                                placeholder={"Телефон"}
+                                onChange={(e) => setData("phone", e)}
+                                value={data?.phone}
+                                error={errors}
+                                id={"phone"}
+                            />
+                            {/* <Input
                   className={"div6"}
                   placeholder={"Кодовое"}
                   onChange={(e) => setData("secret_word", e)}
@@ -395,23 +395,23 @@ export default function GiftCardCredit({ edit = false }) {
                   error={errors}
                   id={"secret_word"}
                 /> */}
-                <Input
-                  className={"div7"}
-                  placeholder={"Заработная плата"}
-                  onChange={(e) => setData("salary", e)}
-                  value={data?.salary}
-                  error={errors}
-                  id={"salary"}
-                />
-                <Input
-                  className={"div8"}
-                  placeholder={"Место работы"}
-                  onChange={(e) => setData("workplace", e)}
-                  value={data?.workplace}
-                  error={errors}
-                  id={"workplace"}
-                />
-                {/* <CheckBox
+                            <Input
+                                className={"div7"}
+                                placeholder={"Заработная плата"}
+                                onChange={(e) => setData("salary", e)}
+                                value={data?.salary}
+                                error={errors}
+                                id={"salary"}
+                            />
+                            <Input
+                                className={"div8"}
+                                placeholder={"Место работы"}
+                                onChange={(e) => setData("workplace", e)}
+                                value={data?.workplace}
+                                error={errors}
+                                id={"workplace"}
+                            />
+                            {/* <CheckBox
                   yes={"Муж"}
                   no={"Жен"}
                   className={"div9 form-check-box"}
@@ -419,46 +419,46 @@ export default function GiftCardCredit({ edit = false }) {
                   value={data.gender}
                   onChange={(e) => setData("gender", e)}
                 /> */}
-                {/* <CheckBox
+                            {/* <CheckBox
                   className={"div10 form-check-box"}
                   title={"Резидент Тадж-на?"}
                   value={data.is_resident}
                   onChange={(e) => setData("is_resident", e)}
                 /> */}
-                <Select
-                  className={"div11"}
-                  id={"loan_type"}
-                  value={data?.loan_type}
-                  onChange={(e) => setData("loan_type", e)}
-                  options={loanTypes}
-                  error={errors}
-                />
-                <Select
-                  className={"div10"}
-                  id={"branch_office"}
-                  value={data?.branch_office}
-                  onChange={(e) => setData("branch_office", e)}
-                  options={offis}
-                  error={errors}
-                />
-                <Input
-                  className={"div12"}
-                  placeholder={"Доп. источник дохода"}
-                  onChange={(e) => setData("additional_income_source", e)}
-                  value={data?.additional_income_source}
-                  error={errors}
-                  id={"additional_income_source"}
-                />
-                <Input
-                  className={"div13"}
-                  placeholder={"Сумма доп. дохода"}
-                  onChange={(e) => setData("additional_income_amount", e)}
-                  value={data?.additional_income_amount}
-                  error={errors}
-                  id={"additional_income_amount"}
-                />
+                            <Select
+                                className={"div11"}
+                                id={"loan_type"}
+                                value={data?.loan_type}
+                                onChange={(e) => setData("loan_type", e)}
+                                options={loanTypes}
+                                error={errors}
+                            />
+                            <Select
+                                className={"div10"}
+                                id={"branch_office"}
+                                value={data?.branch_office}
+                                onChange={(e) => setData("branch_office", e)}
+                                options={offis}
+                                error={errors}
+                            />
+                            <Input
+                                className={"div12"}
+                                placeholder={"Доп. источник дохода"}
+                                onChange={(e) => setData("additional_income_source", e)}
+                                value={data?.additional_income_source}
+                                error={errors}
+                                id={"additional_income_source"}
+                            />
+                            <Input
+                                className={"div13"}
+                                placeholder={"Сумма доп. дохода"}
+                                onChange={(e) => setData("additional_income_amount", e)}
+                                value={data?.additional_income_amount}
+                                error={errors}
+                                id={"additional_income_amount"}
+                            />
 
-                {/* <Input
+                            {/* <Input
                   type="date"
                   className={"div14"}
                   placeholder={"Дата выдачи"}
@@ -467,7 +467,7 @@ export default function GiftCardCredit({ edit = false }) {
                   error={errors}
                   id={"passport_issued_at"}
                 /> */}
-                {/* <Input
+                            {/* <Input
                   className={"div15"}
                   placeholder={"Кем выдан"}
                   onChange={(e) => setData("issued_by", e)}
@@ -475,23 +475,23 @@ export default function GiftCardCredit({ edit = false }) {
                   error={errors}
                   id={"issued_by"}
                 /> */}
-                <Input
-                  className={"div16"}
-                  placeholder={"ИНН"}
-                  onChange={(e) => setData("inn", e)}
-                  value={data?.inn}
-                  error={errors}
-                  id={"inn"}
-                />
-                <Input
-                  className={"div17"}
-                  placeholder={"Цель кредита"}
-                  onChange={(e) => setData("loan_purpose", e)}
-                  value={data?.loan_purpose}
-                  error={errors}
-                  id={"loan_purpose"}
-                />
-                {/* <Select
+                            <Input
+                                className={"div16"}
+                                placeholder={"ИНН"}
+                                onChange={(e) => setData("inn", e)}
+                                value={data?.inn}
+                                error={errors}
+                                id={"inn"}
+                            />
+                            <Input
+                                className={"div17"}
+                                placeholder={"Цель кредита"}
+                                onChange={(e) => setData("loan_purpose", e)}
+                                value={data?.loan_purpose}
+                                error={errors}
+                                id={"loan_purpose"}
+                            />
+                            {/* <Select
                   className={"div18"}
                   id={"regin_type"}
                   value={data?.regin_type}
@@ -499,15 +499,15 @@ export default function GiftCardCredit({ edit = false }) {
                   options={reginTypes}
                   error={errors}
                 /> */}
-                <Input
-                  className={"div19"}
-                  placeholder={"Срок кредита (мес.)"}
-                  onChange={(e) => setData("loan_term", e)}
-                  value={data?.loan_term}
-                  error={errors}
-                  id={"loan_term"}
-                />
-                {/* <Select
+                            <Input
+                                className={"div19"}
+                                placeholder={"Срок кредита (мес.)"}
+                                onChange={(e) => setData("loan_term", e)}
+                                value={data?.loan_term}
+                                error={errors}
+                                id={"loan_term"}
+                            />
+                            {/* <Select
                   className={"div20"}
                   id={"population_type"}
                   value={data?.population_type}
@@ -515,15 +515,15 @@ export default function GiftCardCredit({ edit = false }) {
                   options={USTypes}
                   error={errors}
                 /> */}
-                <Input
-                  className={"div21"}
-                  placeholder={"Сумма кредита"}
-                  onChange={(e) => setData("loan_amount", e)}
-                  value={data?.loan_amount}
-                  error={errors}
-                  id={"loan_amount"}
-                />
-                {/* <Select
+                            <Input
+                                className={"div21"}
+                                placeholder={"Сумма кредита"}
+                                onChange={(e) => setData("loan_amount", e)}
+                                value={data?.loan_amount}
+                                error={errors}
+                                id={"loan_amount"}
+                            />
+                            {/* <Select
                   className={"div22"}
                   id={"district_type"}
                   value={data?.district_type}
@@ -531,23 +531,23 @@ export default function GiftCardCredit({ edit = false }) {
                   options={districtTypes}
                   error={errors}
                 /> */}
-                <Input
-                  className={"div23"}
-                  placeholder={"Адрес"}
-                  onChange={(e) => setData("address", e)}
-                  value={data?.address}
-                  error={errors}
-                  id={"address"}
-                />
-                <Select
-                  className={"div24"}
-                  id={"credit_status_id"}
-                  value={data?.credit_status_id}
-                  onChange={(e) => setData("credit_status_id", e)}
-                  options={statusCredit}
-                  error={errors}
-                />
-                {/* <Input
+                            <Input
+                                className={"div23"}
+                                placeholder={"Адрес"}
+                                onChange={(e) => setData("address", e)}
+                                value={data?.address}
+                                error={errors}
+                                id={"address"}
+                            />
+                            <Select
+                                className={"div24"}
+                                id={"credit_status_id"}
+                                value={data?.credit_status_id}
+                                onChange={(e) => setData("credit_status_id", e)}
+                                options={statusCredit}
+                                error={errors}
+                            />
+                            {/* <Input
                   className={"div25"}
                   placeholder={"Улица"}
                   onChange={(e) => setData("street", e)}
@@ -579,24 +579,24 @@ export default function GiftCardCredit({ edit = false }) {
                   error={errors}
                   id={"apartment_number"}
                 />*/}
-                <Input
-                  className={"div28"}
-                  placeholder={"Индекс"}
-                  onChange={(e) => setData("client_code", e)}
-                  value={data?.client_code}
-                  error={errors}
-                  id={"client_code"}
-                />
-              </div>
-              <footer>
-                <button onClick={() => onSend()}>
-                  <img src={save} alt="" />
-                  <span>Сохранить</span>
-                </button>
-              </footer>
-            </main>
-          )}
-        </div>
-    </>
-  );
+                            <Input
+                                className={"div28"}
+                                placeholder={"Индекс"}
+                                onChange={(e) => setData("client_code", e)}
+                                value={data?.client_code}
+                                error={errors}
+                                id={"client_code"}
+                            />
+                        </div>
+                        <footer>
+                            <button onClick={() => onSend()}>
+                                <img src={save} alt="" />
+                                <span>Сохранить</span>
+                            </button>
+                        </footer>
+                    </main>
+                )}
+            </div>
+        </>
+    );
 }

@@ -7,7 +7,7 @@ export default function DashboardOperatorKnowledgeBase() {
   return (
     <>
       <Helmet>
-        <title>Панель управления</title>
+        <title>База знаний</title>
       </Helmet>
       <GetBlockInfo page="operator_knowledge_base" />
     </>

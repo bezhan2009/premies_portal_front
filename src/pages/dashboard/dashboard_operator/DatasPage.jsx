@@ -7,9 +7,9 @@ export default function DashboardOperatorDatas() {
   return (
     <>
       <Helmet>
-        <title>Панель управления</title>
+        <title>Выгрузка данных</title>
       </Helmet>
-      <GetBlockInfo page="operator_data" />
+      <GetBlockInfo page="operator_data_unloading" />
     </>
   );
 }

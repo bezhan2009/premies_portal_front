@@ -8,484 +8,484 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  deleteTerminalNames,
-  getTerminalNames,
-  postTerminalNames,
-  putTerminalNames,
+    deleteTerminalNames,
+    getTerminalNames,
+    postTerminalNames,
+    putTerminalNames,
 } from "../../api/transactions/api.js";
 import {
-  getCurrencyCode,
-  getCurrenciesCode,
+    getCurrencyCode,
+    getCurrenciesCode,
 } from "../../api/utils/getCurrencyCode.js";
 
 const ValidData = {
-  transactionType: { required: true },
-  description: { required: true },
-  atmId: { required: true },
+    transactionType: { required: true },
+    description: { required: true },
+    atmId: { required: true },
 };
 
 import { tableDataDef } from "../../const/defConst";
 
 // Создаем массив опций для Select компонента (только для создания)
 const currencyOptions = Object.entries(getCurrenciesCode()).map(
-  ([numericCode, alphabeticCode]) => ({
-    value: numericCode,
-    label: `${alphabeticCode} (${numericCode})`,
-  }),
+    ([numericCode, alphabeticCode]) => ({
+        value: numericCode,
+        label: `${alphabeticCode} (${numericCode})`,
+    }),
 );
 
 // Добавляем опцию для null/пустого значения
 currencyOptions.unshift({
-  value: "",
-  label: "Не указана",
+    value: "",
+    label: "Не указана",
 });
 
 export default function TerminalNames() {
-  const { data, errors, setData, validate } = useFormStore();
-  const [loading, setLoading] = useState(false);
-  const [tableData, setTableData] = useState(tableDataDef);
-  const [edit, setEdit] = useState(null);
-  const [filters, setFilters] = useState({
-    transactionType: "",
-    description: "",
-    atmId: "",
-    id: "",
-    currency: "",
-  });
-  const [sortField, setSortField] = useState("id");
-  const [sortDirection, setSortDirection] = useState("asc");
+    const { data, errors, setData, validate } = useFormStore();
+    const [loading, setLoading] = useState(false);
+    const [tableData, setTableData] = useState(tableDataDef);
+    const [edit, setEdit] = useState(null);
+    const [filters, setFilters] = useState({
+        transactionType: "",
+        description: "",
+        atmId: "",
+        id: "",
+        currency: "",
+    });
+    const [sortField, setSortField] = useState("id");
+    const [sortDirection, setSortDirection] = useState("asc");
 
-  const upDateItem = async () => {
-    const isValid = validate(ValidData);
-    if (!isValid) {
-      toast.error("Пожалуйста, заполните все обязательные поля корректно!");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Подготавливаем данные для отправки
-      const requestData = {
-        ...data,
-        // Отправляем числовой код валюты (если есть)
-        currency: data.currency || null,
-      };
-
-      const response = await putTerminalNames(requestData);
-      if (response.status === 200 || response.status === 201) {
-        toast.success("Успешно обновлён!");
-        setEdit(null);
-        getItems();
-      }
-    } catch (e) {
-      const errorMessage =
-        e?.response?.data?.message ||
-        e?.message ||
-        "Произошла ошибка при обновлении";
-      toast.error(`Ошибка: ${errorMessage}`);
-      console.error("Ошибка при обновлении:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createItem = async () => {
-    setLoading(true);
-    try {
-      // Подготавливаем данные для создания
-      const requestData = {
-        ...filters,
-        // Отправляем числовой код валюты (если есть)
-        currency: filters.currency || null,
-      };
-
-      const response = await postTerminalNames(requestData);
-      if (response.status === 200 || response.status === 201) {
-        toast.success("Успешно создан!");
-        setEdit(null);
-        setFilters({
-          transactionType: "",
-          description: "",
-          atmId: "",
-          id: "",
-          currency: "",
-        });
-        getItems();
-      }
-    } catch (e) {
-      const errorMessage =
-        e?.response?.data?.message ||
-        e?.message ||
-        "Произошла ошибка при создании";
-      toast.error(`Ошибка: ${errorMessage}`);
-      console.error("Ошибка при создании:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteItem = async (id) => {
-    setLoading(true);
-    try {
-      const response = await deleteTerminalNames(id);
-      if (response.status === 200 || response.status === 201) {
-        toast.success("Успешно удалён!");
-        setEdit(null);
-        getItems();
-      }
-    } catch (e) {
-      const errorMessage =
-        e?.response?.data?.message ||
-        e?.message ||
-        "Произошла ошибка при удалении";
-      toast.error(`Ошибка: ${errorMessage}`);
-      console.error("Ошибка при удалении:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const getItems = async () => {
-    try {
-      const response = await getTerminalNames();
-
-      setTableData(
-        response.data.map((item) => ({
-          transactionType: String(item.transactionType),
-          description: item.description,
-          atmId: String(item.atmId),
-          id: String(item.id),
-          currency: item.currency ? String(item.currency) : null, // Добавляем валюту
-        })),
-      );
-    } catch (e) {
-      console.error("Ошибка при загрузке данных:", e);
-    }
-  };
-
-  const applyFilters = (data, currentFilters) => {
-    if (!Array.isArray(data)) return [];
-
-    return data.filter((row) => {
-      // Для валюты делаем отдельную проверку, так как она может быть null
-      const currencyFilter = currentFilters.currency;
-      let currencyMatch = true;
-
-      if (currencyFilter) {
-        if (row.currency) {
-          currencyMatch =
-            row.currency.includes(currencyFilter) ||
-            getCurrencyCode(row.currency).includes(currencyFilter);
-        } else {
-          currencyMatch = false; // Если фильтр задан, а валюта null - не показываем
+    const upDateItem = async () => {
+        const isValid = validate(ValidData);
+        if (!isValid) {
+            toast.error("Пожалуйста, заполните все обязательные поля корректно!");
+            return;
         }
-      }
 
-      return (
-        row?.transactionType?.includes(currentFilters?.transactionType || "") &&
-        row?.description?.includes(currentFilters?.description || "") &&
-        row?.atmId?.includes(currentFilters?.atmId || "") &&
-        row?.id?.includes(currentFilters?.id || "") &&
-        currencyMatch
-      );
-    });
-  };
+        setLoading(true);
+        try {
+            // Подготавливаем данные для отправки
+            const requestData = {
+                ...data,
+                // Отправляем числовой код валюты (если есть)
+                currency: data.currency || null,
+            };
 
-  const filteredData = applyFilters(tableData, filters);
+            const response = await putTerminalNames(requestData);
+            if (response.status === 200 || response.status === 201) {
+                toast.success("Успешно обновлён!");
+                setEdit(null);
+                getItems();
+            }
+        } catch (e) {
+            const errorMessage =
+                e?.response?.data?.message ||
+                e?.message ||
+                "Произошла ошибка при обновлении";
+            toast.error(`Ошибка: ${errorMessage}`);
+            console.error("Ошибка при обновлении:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
+    const createItem = async () => {
+        setLoading(true);
+        try {
+            // Подготавливаем данные для создания
+            const requestData = {
+                ...filters,
+                // Отправляем числовой код валюты (если есть)
+                currency: filters.currency || null,
+            };
 
-  const sortedData = useMemo(() => {
-    const arr = [...filteredData];
-    arr.sort((a, b) => {
-      const aVal = a[sortField];
-      const bVal = b[sortField];
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return 1;
-      if (bVal == null) return -1;
-      const cmp = String(aVal).localeCompare(String(bVal), "ru", {
-        numeric: true,
-      });
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
-    return arr;
-  }, [filteredData, sortField, sortDirection]);
+            const response = await postTerminalNames(requestData);
+            if (response.status === 200 || response.status === 201) {
+                toast.success("Успешно создан!");
+                setEdit(null);
+                setFilters({
+                    transactionType: "",
+                    description: "",
+                    atmId: "",
+                    id: "",
+                    currency: "",
+                });
+                getItems();
+            }
+        } catch (e) {
+            const errorMessage =
+                e?.response?.data?.message ||
+                e?.message ||
+                "Произошла ошибка при создании";
+            toast.error(`Ошибка: ${errorMessage}`);
+            console.error("Ошибка при создании:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  useEffect(() => {
-    getItems();
-  }, []);
+    const deleteItem = async (id) => {
+        setLoading(true);
+        try {
+            const response = await deleteTerminalNames(id);
+            if (response.status === 200 || response.status === 201) {
+                toast.success("Успешно удалён!");
+                setEdit(null);
+                getItems();
+            }
+        } catch (e) {
+            const errorMessage =
+                e?.response?.data?.message ||
+                e?.message ||
+                "Произошла ошибка при удалении";
+            toast.error(`Ошибка: ${errorMessage}`);
+            console.error("Ошибка при удалении:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  // Функция для форматированного отображения валюты
-  const formatCurrencyDisplay = (currencyCode) => {
-    if (!currencyCode) return "Не указана";
+    const handleFilterChange = (key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+    };
 
-    const alphabeticCode = getCurrencyCode(currencyCode);
-    return `${alphabeticCode} (${currencyCode})`;
-  };
+    const getItems = async () => {
+        try {
+            const response = await getTerminalNames();
 
-  return (
-    <>
-        <div className="my-applications content-page">
-          <main>
-            <div className="filters animate-slideIn">
-              <input
-                style={{
-                  backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                }}
-                placeholder="Тип транзакции"
-                value={filters.transactionType}
-                onChange={(e) =>
-                  handleFilterChange("transactionType", e.target.value)
+            setTableData(
+                response.data.map((item) => ({
+                    transactionType: String(item.transactionType),
+                    description: item.description,
+                    atmId: String(item.atmId),
+                    id: String(item.id),
+                    currency: item.currency ? String(item.currency) : null, // Добавляем валюту
+                })),
+            );
+        } catch (e) {
+            console.error("Ошибка при загрузке данных:", e);
+        }
+    };
+
+    const applyFilters = (data, currentFilters) => {
+        if (!Array.isArray(data)) return [];
+
+        return data.filter((row) => {
+            // Для валюты делаем отдельную проверку, так как она может быть null
+            const currencyFilter = currentFilters.currency;
+            let currencyMatch = true;
+
+            if (currencyFilter) {
+                if (row.currency) {
+                    currencyMatch =
+                        row.currency.includes(currencyFilter) ||
+                        getCurrencyCode(row.currency).includes(currencyFilter);
+                } else {
+                    currencyMatch = false; // Если фильтр задан, а валюта null - не показываем
                 }
-              />
-              <input
-                style={{
-                  backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                }}
-                placeholder="Описание"
-                value={filters.description}
-                onChange={(e) =>
-                  handleFilterChange("description", e.target.value)
-                }
-              />
-              <input
-                style={{
-                  backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                }}
-                placeholder="ATM ID"
-                value={filters.atmId}
-                onChange={(e) => handleFilterChange("atmId", e.target.value)}
-              />
+            }
 
-              {/* Фильтр по валюте */}
-              <input
-                style={{
-                  backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                }}
-                placeholder="Валюта (код или номер)"
-                value={filters.currency}
-                onChange={(e) => handleFilterChange("currency", e.target.value)}
-              />
+            return (
+                row?.transactionType?.includes(currentFilters?.transactionType || "") &&
+                row?.description?.includes(currentFilters?.description || "") &&
+                row?.atmId?.includes(currentFilters?.atmId || "") &&
+                row?.id?.includes(currentFilters?.id || "") &&
+                currencyMatch
+            );
+        });
+    };
 
-              {edit?.type !== "create" && (
-                <input
-                  placeholder="id"
-                  value={filters.id}
-                  onChange={(e) => handleFilterChange("id", e.target.value)}
-                />
-              )}
+    const filteredData = applyFilters(tableData, filters);
 
-              <button
-                className="button-edit-roles"
-                disabled={loading}
-                onClick={() => {
-                  if (edit?.type === "create") {
-                    createItem();
-                  } else {
-                    setEdit({
-                      type: "create",
-                      id: null,
-                    });
-                  }
-                }}
-              >
-                {edit?.type === "create" ? "Сохранить" : "Создать"}
-              </button>
-            </div>
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortField(field);
+            setSortDirection("asc");
+        }
+    };
 
-            <div className="my-applications-content">
-              <div className="sort-table-scroll">
-                <table className="sort-table">
-                  <thead>
-                    <tr>
-                      {[
-                        { key: "transactionType", label: "Тип транзакции" },
-                        { key: "description", label: "Описание" },
-                        { key: "atmId", label: "ATM ID" },
-                        { key: "currency", label: "Валюта" },
-                        { key: "id", label: "id" },
-                        { key: "actions", label: "Действия", noSort: true },
-                      ].map((col) => (
-                        <th
-                          key={col.key}
-                          className={
-                            col.noSort ? "sort-th sort-th--no-sort" : "sort-th"
-                          }
-                          onClick={() => !col.noSort && handleSort(col.key)}
-                        >
-                          <span>{col.label}</span>
-                          {!col.noSort && (
-                            <span className="sort-icon">
-                              {sortField === col.key ? (
-                                sortDirection === "asc" ? (
-                                  <BsArrowUp />
-                                ) : (
-                                  <BsArrowDown />
-                                )
-                              ) : (
-                                <BsArrowDownUp className="sort-icon--idle" />
-                              )}
-                            </span>
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedData.map((row, rowIndex) => (
-                      <tr
-                        key={rowIndex}
-                        style={{
-                          backgroundColor:
-                            rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                        }}
-                      >
-                        <td
-                          style={{ border: "1px solid #ddd", padding: "8px" }}
-                        >
-                          {edit?.type === "update" && edit?.id === row.id ? (
-                            <Input
-                              type="text"
-                              onChange={(e) => setData("transactionType", e)}
-                              value={data?.transactionType || ""}
-                              onEnter={upDateItem}
+    const sortedData = useMemo(() => {
+        const arr = [...filteredData];
+        arr.sort((a, b) => {
+            const aVal = a[sortField];
+            const bVal = b[sortField];
+            if (aVal == null && bVal == null) return 0;
+            if (aVal == null) return 1;
+            if (bVal == null) return -1;
+            const cmp = String(aVal).localeCompare(String(bVal), "ru", {
+                numeric: true,
+            });
+            return sortDirection === "asc" ? cmp : -cmp;
+        });
+        return arr;
+    }, [filteredData, sortField, sortDirection]);
+
+    useEffect(() => {
+        getItems();
+    }, []);
+
+    // Функция для форматированного отображения валюты
+    const formatCurrencyDisplay = (currencyCode) => {
+        if (!currencyCode) return "Не указана";
+
+        const alphabeticCode = getCurrencyCode(currencyCode);
+        return `${alphabeticCode} (${currencyCode})`;
+    };
+
+    return (
+        <>
+            <div className="my-applications content-page">
+                <main>
+                    <div className="filters animate-slideIn">
+                        <input
+                            style={{
+                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
+                            }}
+                            placeholder="Тип транзакции"
+                            value={filters.transactionType}
+                            onChange={(e) =>
+                                handleFilterChange("transactionType", e.target.value)
+                            }
+                        />
+                        <input
+                            style={{
+                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
+                            }}
+                            placeholder="Описание"
+                            value={filters.description}
+                            onChange={(e) =>
+                                handleFilterChange("description", e.target.value)
+                            }
+                        />
+                        <input
+                            style={{
+                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
+                            }}
+                            placeholder="ATM ID"
+                            value={filters.atmId}
+                            onChange={(e) => handleFilterChange("atmId", e.target.value)}
+                        />
+
+                        {/* Фильтр по валюте */}
+                        <input
+                            style={{
+                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
+                            }}
+                            placeholder="Валюта (код или номер)"
+                            value={filters.currency}
+                            onChange={(e) => handleFilterChange("currency", e.target.value)}
+                        />
+
+                        {edit?.type !== "create" && (
+                            <input
+                                placeholder="id"
+                                value={filters.id}
+                                onChange={(e) => handleFilterChange("id", e.target.value)}
                             />
-                          ) : (
-                            row.transactionType
-                          )}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #ddd", padding: "8px" }}
-                          onClick={() => {
-                            setEdit({
-                              type: "update",
-                              id: row.id,
-                            });
-
-                            setData("transactionType", row.transactionType);
-                            setData("description", row.description);
-                            setData("atmId", row.atmId);
-                            setData("id", row.id);
-                            setData("currency", row.currency || "");
-                          }}
-                        >
-                          {edit?.type === "update" && edit?.id === row.id ? (
-                            <Input
-                              type="text"
-                              onChange={(e) => setData("description", e)}
-                              value={data?.description || ""}
-                              onEnter={upDateItem}
-                            />
-                          ) : (
-                            row.description
-                          )}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #ddd", padding: "8px" }}
-                        >
-                          {edit?.type === "update" && edit?.id === row.id ? (
-                            <Input
-                              type="text"
-                              onChange={(e) => setData("atmId", e)}
-                              value={data?.atmId || ""}
-                              onEnter={upDateItem}
-                            />
-                          ) : (
-                            row.atmId
-                          )}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #ddd", padding: "8px" }}
-                        >
-                          {edit?.type === "update" && edit?.id === row.id ? (
-                            // Заменяем Select на Input для ручного ввода
-                            <Input
-                              type="text"
-                              onChange={(e) => setData("currency", e)}
-                              value={data?.currency || ""}
-                              onEnter={upDateItem}
-                              placeholder="Введите код валюты (например: 643 или RUB)"
-                            />
-                          ) : (
-                            formatCurrencyDisplay(row.currency)
-                          )}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #ddd", padding: "8px" }}
-                        >
-                          {row.id}
-                        </td>
-                        {edit?.type === "update" && edit?.id === row.id ? (
-                          <td>
-                            <button
-                              className="button-edit-roles small-size"
-                              onClick={() => {
-                                upDateItem();
-                              }}
-                            >
-                              Сохранить
-                            </button>
-                            <button
-                              className="button-edit-roles small-size"
-                              onClick={() => setEdit(null)}
-                              style={{
-                                marginLeft: "5px",
-                                backgroundColor: "#6c757d",
-                              }}
-                            >
-                              Отмена
-                            </button>
-                          </td>
-                        ) : (
-                          <td>
-                            <button
-                              className="button-edit-roles small-size"
-                              onClick={() => {
-                                setEdit({
-                                  type: "update",
-                                  id: row.id,
-                                });
-                                setData("transactionType", row.transactionType);
-                                setData("description", row.description);
-                                setData("atmId", row.atmId);
-                                setData("id", row.id);
-                                setData("currency", row.currency || "");
-                              }}
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              className="button-edit-roles small-size"
-                              disabled={loading}
-                              onClick={() => deleteItem(row.id)}
-                              style={{
-                                marginLeft: "5px",
-                                backgroundColor: "#dc3545",
-                              }}
-                            >
-                              Удалить
-                            </button>
-                          </td>
                         )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
+                        <button
+                            className="button-edit-roles"
+                            disabled={loading}
+                            onClick={() => {
+                                if (edit?.type === "create") {
+                                    createItem();
+                                } else {
+                                    setEdit({
+                                        type: "create",
+                                        id: null,
+                                    });
+                                }
+                            }}
+                        >
+                            {edit?.type === "create" ? "Сохранить" : "Создать"}
+                        </button>
+                    </div>
+
+                    <div className="my-applications-content">
+                        <div className="sort-table-scroll">
+                            <table className="sort-table">
+                                <thead>
+                                <tr>
+                                    {[
+                                        { key: "transactionType", label: "Тип транзакции" },
+                                        { key: "description", label: "Описание" },
+                                        { key: "atmId", label: "ATM ID" },
+                                        { key: "currency", label: "Валюта" },
+                                        { key: "id", label: "id" },
+                                        { key: "actions", label: "Действия", noSort: true },
+                                    ].map((col) => (
+                                        <th
+                                            key={col.key}
+                                            className={
+                                                col.noSort ? "sort-th sort-th--no-sort" : "sort-th"
+                                            }
+                                            onClick={() => !col.noSort && handleSort(col.key)}
+                                        >
+                                            <span>{col.label}</span>
+                                            {!col.noSort && (
+                                                <span className="sort-icon">
+                            {sortField === col.key ? (
+                                sortDirection === "asc" ? (
+                                    <BsArrowUp />
+                                ) : (
+                                    <BsArrowDown />
+                                )
+                            ) : (
+                                <BsArrowDownUp className="sort-icon--idle" />
+                            )}
+                          </span>
+                                            )}
+                                        </th>
+                                    ))}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {sortedData.map((row, rowIndex) => (
+                                    <tr
+                                        key={rowIndex}
+                                        style={{
+                                            backgroundColor:
+                                                rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
+                                        }}
+                                    >
+                                        <td
+                                            style={{ border: "1px solid #ddd", padding: "8px" }}
+                                        >
+                                            {edit?.type === "update" && edit?.id === row.id ? (
+                                                <Input
+                                                    type="text"
+                                                    onChange={(e) => setData("transactionType", e)}
+                                                    value={data?.transactionType || ""}
+                                                    onEnter={upDateItem}
+                                                />
+                                            ) : (
+                                                row.transactionType
+                                            )}
+                                        </td>
+                                        <td
+                                            style={{ border: "1px solid #ddd", padding: "8px" }}
+                                            onClick={() => {
+                                                setEdit({
+                                                    type: "update",
+                                                    id: row.id,
+                                                });
+
+                                                setData("transactionType", row.transactionType);
+                                                setData("description", row.description);
+                                                setData("atmId", row.atmId);
+                                                setData("id", row.id);
+                                                setData("currency", row.currency || "");
+                                            }}
+                                        >
+                                            {edit?.type === "update" && edit?.id === row.id ? (
+                                                <Input
+                                                    type="text"
+                                                    onChange={(e) => setData("description", e)}
+                                                    value={data?.description || ""}
+                                                    onEnter={upDateItem}
+                                                />
+                                            ) : (
+                                                row.description
+                                            )}
+                                        </td>
+                                        <td
+                                            style={{ border: "1px solid #ddd", padding: "8px" }}
+                                        >
+                                            {edit?.type === "update" && edit?.id === row.id ? (
+                                                <Input
+                                                    type="text"
+                                                    onChange={(e) => setData("atmId", e)}
+                                                    value={data?.atmId || ""}
+                                                    onEnter={upDateItem}
+                                                />
+                                            ) : (
+                                                row.atmId
+                                            )}
+                                        </td>
+                                        <td
+                                            style={{ border: "1px solid #ddd", padding: "8px" }}
+                                        >
+                                            {edit?.type === "update" && edit?.id === row.id ? (
+                                                // Заменяем Select на Input для ручного ввода
+                                                <Input
+                                                    type="text"
+                                                    onChange={(e) => setData("currency", e)}
+                                                    value={data?.currency || ""}
+                                                    onEnter={upDateItem}
+                                                    placeholder="Введите код валюты (например: 643 или RUB)"
+                                                />
+                                            ) : (
+                                                formatCurrencyDisplay(row.currency)
+                                            )}
+                                        </td>
+                                        <td
+                                            style={{ border: "1px solid #ddd", padding: "8px" }}
+                                        >
+                                            {row.id}
+                                        </td>
+                                        {edit?.type === "update" && edit?.id === row.id ? (
+                                            <td>
+                                                <button
+                                                    className="button-edit-roles small-size"
+                                                    onClick={() => {
+                                                        upDateItem();
+                                                    }}
+                                                >
+                                                    Сохранить
+                                                </button>
+                                                <button
+                                                    className="button-edit-roles small-size"
+                                                    onClick={() => setEdit(null)}
+                                                    style={{
+                                                        marginLeft: "5px",
+                                                        backgroundColor: "#6c757d",
+                                                    }}
+                                                >
+                                                    Отмена
+                                                </button>
+                                            </td>
+                                        ) : (
+                                            <td>
+                                                <button
+                                                    className="button-edit-roles small-size"
+                                                    onClick={() => {
+                                                        setEdit({
+                                                            type: "update",
+                                                            id: row.id,
+                                                        });
+                                                        setData("transactionType", row.transactionType);
+                                                        setData("description", row.description);
+                                                        setData("atmId", row.atmId);
+                                                        setData("id", row.id);
+                                                        setData("currency", row.currency || "");
+                                                    }}
+                                                >
+                                                    Редактировать
+                                                </button>
+                                                <button
+                                                    className="button-edit-roles small-size"
+                                                    disabled={loading}
+                                                    onClick={() => deleteItem(row.id)}
+                                                    style={{
+                                                        marginLeft: "5px",
+                                                        backgroundColor: "#dc3545",
+                                                    }}
+                                                >
+                                                    Удалить
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </main>
             </div>
-          </main>
-        </div>
-    </>
-  );
+        </>
+    );
 }

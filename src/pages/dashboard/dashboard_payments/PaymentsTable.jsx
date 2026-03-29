@@ -220,7 +220,7 @@ const PaymentsTable = () => {
   };
 
   return (
-    <div className="block_info_prems">
+    <div className="block_info_prems content-page">
         {alert.show && (
           <AlertMessage
             message={alert.message}
