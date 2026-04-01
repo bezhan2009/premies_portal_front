@@ -562,6 +562,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                       href: "/agent-qr/transactions/list",
                       key: "list_qr",
                   },
+                  {
+                      name: "QR другого банка выписки",
+                      href: "/accounts-qr/operations",
+                      key: "qr_another_bank_transactions",
+                  },
+                  {
+                      name: "QR другого банка настройки",
+                      href: "/accounts-qr/settings",
+                      key: "qr_another_bank_settings",
+                  },
               ],
           });
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import "../../../../styles/components/Table.scss";
 import Filters from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
@@ -30,7 +30,6 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   });
   const [selectedRow, setSelectedRow] = useState(null);
 
-  // Если workerId передан → сразу формируем URL и ничего не рендерим
   useEffect(() => {
     if (workerId) {
       const url = `${workerId}/${dateFilter.year}`;
@@ -40,9 +39,9 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
 
   useEffect(() => {
     if (workerId) {
-      // Не загружаем данные, если workerId уже есть
       return;
     }
+
     const loadAll = async () => {
       setLoading(true);
       let all = [];
@@ -57,7 +56,7 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
           if (!chunk || chunk.length === 0) break;
 
           all = [...all, ...chunk];
-          after = chunk[chunk.length - 1]?.ID;
+          after = chunk[chunk.length - 1]?.ID ?? chunk[chunk.length - 1]?.id;
           if (chunk.length < ITEMS_PER_PAGE) break;
         }
       } catch (err) {
@@ -83,13 +82,18 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   };
 
   const handleRowClick = (worker) => {
-    const idToUse = workerId || worker.ID;
-    setSelectedRow(worker.ID);
+    const resolvedWorkerId = worker?.ID ?? worker?.id ?? null;
+    const idToUse = workerId || resolvedWorkerId;
+
+    if (!idToUse) {
+      return;
+    }
+
+    setSelectedRow(resolvedWorkerId);
     onSelect(`${idToUse}/${dateFilter.year}`);
   };
 
   if (workerId) {
-    // Если workerId есть → ничего не рендерим (страница пустая)
     return null;
   }
 
@@ -165,37 +169,41 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.map((worker) => (
-                  <tr
-                    key={worker.ID}
-                    onClick={() => handleRowClick(worker)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>
-                      <div
-                        className={`choose-td ${selectedRow === worker.ID ? "active" : ""}`}
-                      ></div>
-                    </td>
-                    <td>{worker.user?.full_name || ""}</td>
-                    <td>{worker.place_work || ""}</td>
-                    <td>
-                      {formatNumber(
-                        worker.CardSales?.[0]?.cards_sailed_in_general || 0,
-                      )}
-                    </td>
-                    <td>
-                      {formatNumber(worker.CardSales?.[0]?.cards_sailed || 0)}
-                    </td>
-                    <td>
-                      {formatNumber(
-                        worker.CardTurnovers?.[0]?.activated_cards || 0,
-                      )}
-                    </td>
-                    <td>{formatNumber(worker.CardSales?.[0]?.deb_osd || 0)}</td>
-                    <td>{formatNumber(worker.CardSales?.[0]?.deb_osk || 0)}</td>
-                    <td>{formatNumber(calculateTotalPremia(worker))}</td>
-                  </tr>
-                ))}
+                {paginatedData.map((worker) => {
+                  const workerRowId = worker?.ID ?? worker?.id;
+
+                  return (
+                    <tr
+                      key={workerRowId}
+                      onClick={() => handleRowClick(worker)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>
+                        <div
+                          className={`choose-td ${selectedRow === workerRowId ? "active" : ""}`}
+                        ></div>
+                      </td>
+                      <td>{worker.user?.full_name || ""}</td>
+                      <td>{worker.place_work || ""}</td>
+                      <td>
+                        {formatNumber(
+                          worker.CardSales?.[0]?.cards_sailed_in_general || 0,
+                        )}
+                      </td>
+                      <td>
+                        {formatNumber(worker.CardSales?.[0]?.cards_sailed || 0)}
+                      </td>
+                      <td>
+                        {formatNumber(
+                          worker.CardTurnovers?.[0]?.activated_cards || 0,
+                        )}
+                      </td>
+                      <td>{formatNumber(worker.CardSales?.[0]?.deb_osd || 0)}</td>
+                      <td>{formatNumber(worker.CardSales?.[0]?.deb_osk || 0)}</td>
+                      <td>{formatNumber(calculateTotalPremia(worker))}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 

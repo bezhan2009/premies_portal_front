@@ -5,10 +5,8 @@ import "../../../styles/components/AddCardPriceForm.scss";
 import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
-import useSidebar from "../../../hooks/useSideBar.js";
 import SortIcon from "../../../components/general/SortIcon.jsx";
 import { apiClient } from "../../../api/utils/apiClient.js";
-import Sidebar from "../../../components/general/DynamicMenu.jsx";
 
 const fields = [
     { key: "ID", label: "ID", type: "number" },
@@ -18,8 +16,6 @@ const fields = [
 ];
 
 const CardCashbackTable = () => {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
-
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -73,14 +69,6 @@ const CardCashbackTable = () => {
     };
 
     return (
-        <div
-            className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}
-        >
-            <Sidebar
-                activeLink="card_cashback_list"
-                isOpen={isSidebarOpen}
-                toggle={toggleSidebar}
-            />
             <div className="block_info_prems content-page">
                 <div className="table-header-actions" style={{ margin: "16px" }}>
                     <h2>Кэшбэк по картам</h2>
@@ -134,7 +122,6 @@ const CardCashbackTable = () => {
                         </table>
                     </div>
                 )}
-            </div>
         </div>
     );
 };

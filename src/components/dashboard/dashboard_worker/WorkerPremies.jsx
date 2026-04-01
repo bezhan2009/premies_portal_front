@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import Header from './WorkerPremiesHeader.jsx';
 import { fetchWorkerData } from '../../../api/workers/reports/worker_premies.js';
 import '../../../styles/components/WorkerPremies.scss';
@@ -47,8 +47,9 @@ export default function Dashboard() {
                 setData(null);
             } else {
                 setData(worker);
-                if (worker.ID) {
-                    setWorkerId(worker.ID);
+                const resolvedWorkerId = worker.ID ?? worker.id;
+                if (resolvedWorkerId) {
+                    setWorkerId(resolvedWorkerId);
                 }
             }
         } catch (e) {
@@ -142,7 +143,7 @@ export default function Dashboard() {
 
     return (
         <>
-            <div className="dashboard">
+            <div className="dashboard content-page">
                 <Header
                     month={month}
                     year={year}
@@ -229,9 +230,6 @@ export default function Dashboard() {
                 </RenderPage>
                 <ReportButton navigateTo='/worker/reports' descButton='Отчет' />
             </div>
-
-            {/* <div className="dashboard__report">
-            </div> */}
         </>
     );
 }

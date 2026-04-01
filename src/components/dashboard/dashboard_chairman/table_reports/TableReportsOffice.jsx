@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import "../../../../styles/components/Table.scss";
 import LastModified from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
@@ -54,8 +54,14 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
   }, [dateFilter]);
 
   const handleRowClick = (office) => {
-    setSelectedRow(office.ID);
-    onSelect(`${office.ID}/${dateFilter.year}/office`);
+    const officeId = office?.ID ?? office?.id ?? null;
+
+    if (!officeId) {
+      return;
+    }
+
+    setSelectedRow(officeId);
+    onSelect(`${officeId}/${dateFilter.year}/office`);
   };
 
   const paginatedData = filteredData.slice(
@@ -119,22 +125,26 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.map((office) => (
-                  <tr
-                    key={office.ID}
-                    onClick={() => handleRowClick(office)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>
-                      <div
-                        className={`choose-td ${selectedRow === office.ID ? "active" : ""}`}
-                      ></div>
-                    </td>
-                    <td>{directorNames[office.director_id] || "—"}</td>
-                    <td>{office.title || ""}</td>
-                    <td>{office.office_user?.length || 0}</td>
-                  </tr>
-                ))}
+                {paginatedData.map((office) => {
+                  const officeRowId = office?.ID ?? office?.id;
+
+                  return (
+                    <tr
+                      key={officeRowId}
+                      onClick={() => handleRowClick(office)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>
+                        <div
+                          className={`choose-td ${selectedRow === officeRowId ? "active" : ""}`}
+                        ></div>
+                      </td>
+                      <td>{directorNames[office.director_id] || "—"}</td>
+                      <td>{office.title || ""}</td>
+                      <td>{office.office_user?.length || 0}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
