@@ -21,18 +21,22 @@ const formatRoles = (roles) => {
         .join(", ");
 };
 
-const mapWorker = (w) => ({
-    ID: w.id,
-    fio: w.user?.full_name || "",
-    login: w.user?.username || w.user?.Username || "",
-    position: w.position || "",
-    place_work: w.place_work || "",
-    salary: w.salary ?? "",
-    group: formatRoles(w.user?.roles),
-    plan: w.plan ?? "",
-    salary_project: w.salary_project ?? "",
-    user_id: w.user_id,
-});
+const mapWorker = (w) => {
+    if (!w) return null;
+
+    return {
+        ID:         w.ID ?? w.id,
+        fio:        w.user?.full_name || "",
+        login:      w.user?.username || "",
+        position:   w.position || "",
+        place_work: w.place_work || "",
+        salary:     w.salary ?? "",
+        group:      formatRoles(w.user?.roles),
+        plan:       w.plan ?? "",
+        salary_project: w.salary_project ?? "",
+        user_id:    w.user_id,
+    };
+};
 
 const EmployeesTable = () => {
     const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -46,7 +50,6 @@ const EmployeesTable = () => {
     const { exportToExcel } = useExcelExport();
     const { items: sortedEmployees, requestSort, sortConfig } = useTableSort(filteredEmployees);
 
-    // ── fetch ────────────────────────────────────────────────────────────────
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
@@ -54,7 +57,10 @@ const EmployeesTable = () => {
             const response = await apiClient(url);
 
             const raw = response?.data?.workers ?? response?.data ?? [];
-            const rows = Array.isArray(raw) ? raw.map(mapWorker) : [];
+
+            const rows = Array.isArray(raw)
+                ? raw.map(mapWorker).filter(Boolean) // 🔥 убрали null
+                : [];
 
             setEmployees(rows);
             setFilteredEmployees(rows);
@@ -69,7 +75,6 @@ const EmployeesTable = () => {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    // ── edit helpers ─────────────────────────────────────────────────────────
     const handleChange = (key, value) =>
         setEdit((prev) => ({ ...prev, [key]: value }));
 
@@ -84,11 +89,11 @@ const EmployeesTable = () => {
     };
 
     const handleCellClick = (row, e) => {
+        if (!row) return;
         if (edit?.ID === row.ID) { e.stopPropagation(); return; }
         setEdit(row);
     };
 
-    // ── export ───────────────────────────────────────────────────────────────
     const handleExport = () => {
         const columns = [
             { key: "fio", label: "ФИО" },
@@ -106,17 +111,16 @@ const EmployeesTable = () => {
     return (
         <div className="report-table-container">
 
-            {/* Header */}
             <div className="table-header-actions" style={{ flexWrap: "wrap", gap: 10 }}>
                 <SearchBar
                     allData={employees}
                     onSearch={(filtered) => setFilteredEmployees(filtered || [])}
                     placeholder="Поиск по ФИО, логину, должности..."
                     searchFields={[
-                        (item) => item.fio || "",
-                        (item) => item.login || "",
-                        (item) => item.position || "",
-                        (item) => item.place_work || "",
+                        (item) => item?.fio || "",
+                        (item) => item?.login || "",
+                        (item) => item?.position || "",
+                        (item) => item?.place_work || "",
                     ]}
                 />
 
@@ -125,121 +129,110 @@ const EmployeesTable = () => {
                 </button>
             </div>
 
-            {/* Table */}
             {loading ? (
                 <Spinner />
             ) : sortedEmployees.length > 0 ? (
                 <div className="table-reports-div" style={{ maxHeight: "calc(100vh - 480px)" }}>
                     <table className="table-reports">
                         <thead>
-                            <tr>
-                                {[
-                                    ["fio", "ФИО"],
-                                    ["login", "Логин"],
-                                    ["position", "Должность"],
-                                    ["place_work", "Место работы"],
-                                    ["salary", "Оклад"],
-                                    ["plan", "План"],
-                                    ["salary_project", "Зарплатный проект"],
-                                    ["group", "Группа продаж"],
-                                ].map(([key, label]) => (
-                                    <th
-                                        key={key}
-                                        onClick={() => requestSort(key)}
-                                        className="sortable-header"
-                                    >
-                                        {label} <SortIcon sortConfig={sortConfig} sortKey={key} />
-                                    </th>
-                                ))}
-                            </tr>
+                        <tr>
+                            {[
+                                ["fio", "ФИО"],
+                                ["login", "Логин"],
+                                ["position", "Должность"],
+                                ["place_work", "Место работы"],
+                                ["salary", "Оклад"],
+                                ["plan", "План"],
+                                ["salary_project", "Зарплатный проект"],
+                                ["group", "Группа продаж"],
+                            ].map(([key, label]) => (
+                                <th
+                                    key={key}
+                                    onClick={() => requestSort(key)}
+                                    className="sortable-header"
+                                >
+                                    {label} <SortIcon sortConfig={sortConfig} sortKey={key} />
+                                </th>
+                            ))}
+                        </tr>
                         </thead>
+
                         <tbody>
-                            {sortedEmployees.map((row, idx) => {
-                                const isEditing = edit?.ID === row.ID;
-                                return (
-                                    <tr key={idx}>
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="text" value={edit.fio}
-                                                        onChange={(v) => handleChange("fio", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.fio || "—"}
-                                        </td>
+                        {sortedEmployees.map((row, idx) => {
+                            if (!row) return null; // 🔥 защита
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="text" value={edit.login}
-                                                        onChange={(v) => handleChange("login", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.login || "—"}
-                                        </td>
+                            const isEditing = edit?.ID === row.ID;
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="text" value={edit.position}
-                                                        onChange={(v) => handleChange("position", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.position || "—"}
-                                        </td>
+                            return (
+                                <tr key={idx}>
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Input type="text" value={edit.fio}
+                                                       onChange={(v) => handleChange("fio", v)}
+                                                       onEnter={saveChange} />
+                                            </div>
+                                        ) : row.fio || "—"}
+                                    </td>
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="text" value={edit.place_work}
-                                                        onChange={(v) => handleChange("place_work", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.place_work || "—"}
-                                        </td>
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="text" value={edit.login}
+                                                   onChange={(v) => handleChange("login", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.login || "—"}
+                                    </td>
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="number" value={edit.salary}
-                                                        onChange={(v) => handleChange("salary", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.salary !== "" ? row.salary : "—"}
-                                        </td>
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="text" value={edit.position}
+                                                   onChange={(v) => handleChange("position", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.position || "—"}
+                                    </td>
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="number" value={edit.plan}
-                                                        onChange={(v) => handleChange("plan", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.plan || "—"}
-                                        </td>
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="text" value={edit.place_work}
+                                                   onChange={(v) => handleChange("place_work", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.place_work || "—"}
+                                    </td>
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="number" value={edit.salary_project}
-                                                        onChange={(v) => handleChange("salary_project", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.salary_project || "—"}
-                                        </td>
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="number" value={edit.salary}
+                                                   onChange={(v) => handleChange("salary", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.salary !== "" ? row.salary : "—"}
+                                    </td>
 
-                                        <td onClick={(e) => handleCellClick(row, e)}>
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Input type="text" value={edit.group}
-                                                        onChange={(v) => handleChange("group", v)}
-                                                        onEnter={saveChange} />
-                                                </div>
-                                            ) : row.group || "—"}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="number" value={edit.plan}
+                                                   onChange={(v) => handleChange("plan", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.plan || "—"}
+                                    </td>
+
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="number" value={edit.salary_project}
+                                                   onChange={(v) => handleChange("salary_project", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.salary_project || "—"}
+                                    </td>
+
+                                    <td onClick={(e) => handleCellClick(row, e)}>
+                                        {isEditing ? (
+                                            <Input type="text" value={edit.group}
+                                                   onChange={(v) => handleChange("group", v)}
+                                                   onEnter={saveChange} />
+                                        ) : row.group || "—"}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                         </tbody>
                     </table>
                 </div>
