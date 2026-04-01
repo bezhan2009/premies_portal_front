@@ -168,6 +168,30 @@ class NativeTableController {
     );
   }
 
+  isLockedColumn(cellOrIndex) {
+    const cell =
+      typeof cellOrIndex === "number"
+        ? this.headerCells[cellOrIndex]
+        : cellOrIndex;
+
+    if (!cell) {
+      return false;
+    }
+
+    const normalizedLabel = cell.textContent
+      ?.replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    return (
+      cell.dataset.flexLocked === "true" ||
+      cell.classList.contains("eqms-th--checkbox") ||
+      cell.classList.contains("active-table") ||
+      normalizedLabel === "действия" ||
+      normalizedLabel === "actions"
+    );
+  }
+
   // Drag активен — applyLayout заблокирован
   get isDragging() {
     return this.draggedColumnIndex !== null;
@@ -228,17 +252,29 @@ class NativeTableController {
 
   bindHeaders() {
     this.headerCells.forEach((cell, index) => {
+      const isLockedColumn = this.isLockedColumn(cell);
+
       if (cell.dataset.flexBound === "true") {
         cell.dataset.flexColumnIndex = String(index);
+        cell.dataset.flexLocked = String(isLockedColumn);
+        cell.draggable = !isLockedColumn;
+        cell.classList.toggle("native-flex-table__th--locked", isLockedColumn);
         return;
       }
 
       cell.dataset.flexBound = "true";
       cell.dataset.flexColumnIndex = String(index);
-      cell.draggable = true;
+      cell.dataset.flexLocked = String(isLockedColumn);
+      cell.draggable = !isLockedColumn;
       cell.classList.add("native-flex-table__th");
+      cell.classList.toggle("native-flex-table__th--locked", isLockedColumn);
 
       cell.addEventListener("dragstart", (event) => {
+        if (isLockedColumn) {
+          event.preventDefault();
+          return;
+        }
+
         this.dragSourceIndex = index;
         this.draggedColumnIndex = index;
         this.dropTargetIndex = null;
@@ -253,11 +289,19 @@ class NativeTableController {
       });
 
       cell.addEventListener("dragover", (event) => {
+        if (isLockedColumn) {
+          return;
+        }
+
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
       });
 
       cell.addEventListener("dragenter", (event) => {
+        if (isLockedColumn) {
+          return;
+        }
+
         event.preventDefault();
 
         if (this.dragSourceIndex === null || this.dragSourceIndex === index) {
@@ -272,6 +316,11 @@ class NativeTableController {
       });
 
       cell.addEventListener("drop", (event) => {
+        if (isLockedColumn) {
+          this.clearDragState();
+          return;
+        }
+
         event.preventDefault();
         const sourceIndex = Number(
           event.dataTransfer.getData("text/plain") ?? this.dragSourceIndex,
@@ -289,6 +338,10 @@ class NativeTableController {
       });
 
       cell.addEventListener("dragend", () => {
+        if (isLockedColumn) {
+          return;
+        }
+
         this.clearDragState();
       });
 
@@ -307,7 +360,7 @@ class NativeTableController {
       }
 
       let resizeHandle = cell.querySelector(".native-flex-table__resize-handle");
-      if (!resizeHandle) {
+      if (!resizeHandle && !isLockedColumn) {
         resizeHandle = document.createElement("span");
         resizeHandle.className = "native-flex-table__resize-handle";
         resizeHandle.addEventListener("mousedown", (event) => {
@@ -367,6 +420,8 @@ class NativeTableController {
     if (
       Number.isNaN(sourceIndex) ||
       Number.isNaN(targetIndex) ||
+      this.isLockedColumn(sourceIndex) ||
+      this.isLockedColumn(targetIndex) ||
       sourceIndex === targetIndex
     ) {
       return;

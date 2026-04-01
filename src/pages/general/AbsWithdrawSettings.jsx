@@ -9,6 +9,7 @@ import SortIcon from "../../components/general/SortIcon.jsx";
 import Modal from "../../components/general/Modal.jsx";
 import Select from "../../components/elements/Select.jsx";
 import Input from "../../components/elements/Input.jsx";
+import Spinner from "../../components/Spinner.jsx";
 
 export const bankOptions = [
   { bic: "350101101", name: "Национальный банк Таджикистана (НБТ)" },
@@ -201,12 +202,12 @@ const AbsWithdrawSettings = () => {
   const token = localStorage.getItem("access_token");
 
   const { exportToExcel } = useExcelExport();
-  const { items: sortedItems, requestSort, sortConfig } = useTableSort([]);
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const { items: sortedItems, requestSort, sortConfig } = useTableSort(items);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -407,7 +408,9 @@ const AbsWithdrawSettings = () => {
           </div>
 
           {loading ? (
-            <p style={{ margin: 16 }}>Загрузка...</p>
+            <div style={{ padding: 16 }}>
+              <Spinner center label="Загружаем настройки списаний" />
+            </div>
           ) : error ? (
             <p style={{ color: "red", margin: 16 }}>{error}</p>
           ) : (

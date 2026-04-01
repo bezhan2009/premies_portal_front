@@ -80,6 +80,16 @@
   table-layout: fixed;
 }
 
+.native-flex-table > thead {
+  position: static;
+  top: auto;
+}
+
+.native-flex-table tr {
+  opacity: 1;
+  animation: none;
+}
+
 .native-flex-table__head,
 .native-flex-table__body {
   width: max-content;
@@ -107,6 +117,14 @@
   cursor: grab;
   user-select: none;
   padding-right: 16px;
+}
+
+.native-flex-table__th--locked {
+  cursor: default;
+}
+
+.native-flex-table__th--locked .native-flex-table__resize-handle {
+  display: none;
 }
 
 .native-flex-table__th--sortable {

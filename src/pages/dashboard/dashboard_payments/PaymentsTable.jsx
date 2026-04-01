@@ -8,6 +8,7 @@ import SortIcon from "../../../components/general/SortIcon.jsx";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import AddPaymentModal from "./AddPaymentModal.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
+import Spinner from "../../../components/Spinner.jsx";
 
 // Добавлено поле bic
 const emptyForm = {
@@ -261,7 +262,9 @@ const PaymentsTable = () => {
         />
 
         {loading ? (
-          <p style={{ margin: "16px" }}>Загрузка...</p>
+          <div style={{ padding: "16px" }}>
+            <Spinner center label="Загружаем список платежей" />
+          </div>
         ) : (
           <div style={{ overflowX: "auto", width: "100%" }}>
             <table

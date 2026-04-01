@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DateRangeModal from "../../components/dialog/dialog";
+import Spinner from "../../components/Spinner.jsx";
 import { fetchATM } from "../../api/atm";
 import { ATM_ERRORS_RU, ATM_WARNINGS_RU } from "../../shared/atm-errors/atm-errors";
 
@@ -152,6 +153,7 @@ export default function AtmStickyTable() {
 
     return (
         <div style={{ padding: 12 }}>
+            {loading && <Spinner center label="Загружаем банкоматы" />}
             {loading && <div>Загрузка…</div>}
 
             {!loading && (

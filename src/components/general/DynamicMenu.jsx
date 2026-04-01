@@ -7,7 +7,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import ChangePasswordIcon from "../../assets/change_password.png";
 import AlertMessage from "./AlertMessage.jsx";
+import Spinner from "../Spinner.jsx";
 import { fetchConversionRates } from "../../api/conversion/conversion.js";
+import {
+  buildCurrencyRateRows,
+  getCurrencyDisplayLabel,
+} from "../../api/utils/getCurrencyCode.js";
 
 const CURRENCY_META = {
     USD: { flag: "🇺🇸", label: "Доллар" },
@@ -42,7 +47,7 @@ function CurrencyRatesWidget() {
     };
   }, []);
 
-    const grouped = useMemo(() => {
+    const groupedLegacy = useMemo(() => {
         const g = {};
         rates.forEach((r) => {
             const isRubPair = r.currencyFrom === "TJS" && r.currencyTo === "RUB" ||
@@ -69,9 +74,21 @@ function CurrencyRatesWidget() {
         }));
     }, [rates]);
 
+    const grouped = useMemo(
+      () =>
+        buildCurrencyRateRows(rates).map((row) => ({
+          ...row,
+          meta: CURRENCY_META[row.currency],
+        })),
+      [rates],
+    );
+
+    void groupedLegacy;
+
   if (loading) {
     return (
       <div className="currency-widget">
+        <Spinner size="small" label="Загружаем курсы валют" />
         <div className="currency-widget-title">💱 Курсы валют</div>
         <div className="currency-widget-loading">Загрузка...</div>
       </div>
@@ -99,7 +116,7 @@ function CurrencyRatesWidget() {
         {grouped.map((row) => (
           <div key={row.currency} className="currency-widget-row">
             <span className="currency-widget-name">
-              {row.meta.flag} {row.currency}
+              {row.meta.flag} {getCurrencyDisplayLabel(row.currency, row.unit)}
             </span>
             <span className="currency-widget-buy">
               {row.buy != null ? row.buy.toFixed(2) : "—"}

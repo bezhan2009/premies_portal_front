@@ -99,7 +99,7 @@ const MainLayout = () => {
         isOpen={isSidebarOpen}
         toggle={toggleSidebar}
       />
-      <div className="main-content-wrapper content-page">
+      <div className="main-content-wrapper">
         <Outlet />
       </div>
     </div>

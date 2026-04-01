@@ -5,6 +5,7 @@ import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
+import Spinner from "../../components/Spinner.jsx";
 import "../../styles/components/StatsEQMS.scss";
 
 const ACCOUNT_NUMBER = "26202972381810638175";
@@ -390,6 +391,7 @@ export default function AbsWithdrawsList() {
                 Конец&nbsp;
                 <Input type="date" value={endDate} onChange={(value) => setEndDate(value)} style={{ width: 150 }} />
               </div>
+              {loading && <Spinner size="small" />}
               {loading && <span style={{ color: "#666" }}>Загрузка…</span>}
             </div>
 
@@ -400,7 +402,12 @@ export default function AbsWithdrawsList() {
                 </div>
               )}
 
-              {loading && <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка…</div>}
+              {loading && (
+                <div style={{ textAlign: "center", padding: "2rem" }}>
+                  <Spinner center label="Загружаем выписку" />
+                  Загрузка…
+                </div>
+              )}
 
               {fetched && !loading && sortedRows.length === 0 && (
                 <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>

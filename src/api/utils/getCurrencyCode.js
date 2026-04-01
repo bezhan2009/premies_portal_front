@@ -229,3 +229,70 @@ export const getCurrencyInfo = (currencyIdentifier) => {
 
     return null;
 };
+
+export const CURRENCY_RATE_UNITS = {
+    USD: 1,
+    EUR: 1,
+    RUB: 1000,
+};
+
+const normalizeCurrencyRateNumber = (value) => {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+export const buildCurrencyRateRows = (rates = []) => {
+    const groupedRates = Object.entries(CURRENCY_RATE_UNITS).reduce(
+        (accumulator, [currency, unit]) => {
+            accumulator[currency] = {
+                currency,
+                unit,
+                buy: null,
+                sell: null,
+            };
+            return accumulator;
+        },
+        {},
+    );
+
+    rates.forEach((rate) => {
+        const foreignCurrency =
+            rate?.currencyFrom !== "TJS" ? rate?.currencyFrom : rate?.currencyTo;
+        const unit = CURRENCY_RATE_UNITS[foreignCurrency];
+
+        if (!unit) {
+            return;
+        }
+
+        if (
+            rate?.type === "from" &&
+            rate?.currencyFrom === foreignCurrency &&
+            rate?.currencyTo === "TJS"
+        ) {
+            groupedRates[foreignCurrency].buy = normalizeCurrencyRateNumber(rate?.amountTo);
+            return;
+        }
+
+        if (
+            rate?.type === "to" &&
+            rate?.currencyFrom === "TJS" &&
+            rate?.currencyTo === foreignCurrency
+        ) {
+            const amount = normalizeCurrencyRateNumber(rate?.amount);
+            const amountTo = normalizeCurrencyRateNumber(rate?.amountTo);
+
+            if (!amount || !amountTo) {
+                return;
+            }
+
+            groupedRates[foreignCurrency].sell = (amount / amountTo) * unit;
+        }
+    });
+
+    return Object.values(groupedRates).filter(
+        (row) => row.buy !== null || row.sell !== null,
+    );
+};
+
+export const getCurrencyDisplayLabel = (currency, unit = 1) =>
+    unit > 1 ? `${unit} ${currency}` : currency;
