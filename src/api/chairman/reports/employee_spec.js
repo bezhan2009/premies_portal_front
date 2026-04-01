@@ -1,5 +1,9 @@
-import { apiClient } from "../../utils/apiClient.js";
+﻿import { apiClient } from "../../utils/apiClient.js";
 import { isNumber } from "../../utils/utils.js";
+import {
+  normalizeOffice,
+  normalizeWorker,
+} from "../../../utils/normalizeOperatorData.js";
 
 export const fetchEmployee = async (month, employeeURL) => {
   const parts = employeeURL.split("/");
@@ -17,9 +21,11 @@ export const fetchEmployee = async (month, employeeURL) => {
   });
 
   const aggregateOfficeUsers = (office) => {
+    const officeId = office?.ID ?? office?.id ?? null;
+
     const agg = {
-      ID: office.ID,
-      Username: office.title,
+      ID: officeId,
+      Username: office?.title ?? office?.Title ?? "",
       CardTurnovers: [],
       CardSales: [],
     };
@@ -32,7 +38,7 @@ export const fetchEmployee = async (month, employeeURL) => {
             ...ct,
             activated_cards: 0,
             card_turnovers_prem: 0,
-            WorkerID: office.ID,
+            WorkerID: officeId,
           };
           agg.CardTurnovers.push(exist);
         }
@@ -53,7 +59,7 @@ export const fetchEmployee = async (month, employeeURL) => {
             cards_sailed_in_general: 0,
             cards_for_month: 0,
             cards_prem: 0,
-            WorkerID: office.ID,
+            WorkerID: officeId,
           };
           agg.CardSales.push(exist);
         }
@@ -71,7 +77,6 @@ export const fetchEmployee = async (month, employeeURL) => {
     return agg;
   };
 
-  // ==== 1. Аггрегированная статистика банка ====
   if (parts[0] === "*" && parts[parts.length - 1] === "stats") {
     const yearParam = parts[1] || "";
     const monthParam = parts.length === 3 ? month : Number(parts[2]) || month;
@@ -115,7 +120,6 @@ export const fetchEmployee = async (month, employeeURL) => {
     return [transformed];
   }
 
-  // ==== 2. Все офисы (аггрегировано) ====
   if (parts[0] === "*") {
     if (parts[2] === "office" || parts.length === 2) {
       const url = `${import.meta.env.VITE_BACKEND_URL}/office?${commonParams}`;
@@ -123,7 +127,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const offices = await res.json();
+      const offices = (await res.json()).map(normalizeOffice);
       const officeAggs = offices.map(aggregateOfficeUsers);
 
       const combined = {
@@ -136,7 +140,7 @@ export const fetchEmployee = async (month, employeeURL) => {
       officeAggs.forEach((agg) => {
         agg.CardTurnovers.forEach((ct) => {
           const exist = combined.CardTurnovers.find(
-            (x) => x.WorkerID === ct.WorkerID
+            (x) => x.WorkerID === ct.WorkerID,
           );
           if (!exist) combined.CardTurnovers.push({ ...ct });
           else {
@@ -146,9 +150,7 @@ export const fetchEmployee = async (month, employeeURL) => {
         });
 
         agg.CardSales.forEach((cs) => {
-          const exist = combined.CardSales.find(
-            (x) => x.WorkerID === cs.WorkerID
-          );
+          const exist = combined.CardSales.find((x) => x.WorkerID === cs.WorkerID);
           if (!exist) combined.CardSales.push({ ...cs });
           else {
             exist.deb_osd += cs.deb_osd ?? 0;
@@ -166,7 +168,6 @@ export const fetchEmployee = async (month, employeeURL) => {
       return [combined];
     }
 
-    // Все работники постранично
     const all = [];
     let after = null;
     while (true) {
@@ -179,13 +180,14 @@ export const fetchEmployee = async (month, employeeURL) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const chunk = await res.json();
       if (!chunk.length) break;
-      all.push(...chunk);
-      after = chunk[chunk.length - 1].ID;
+
+      const normalizedChunk = chunk.map(normalizeWorker);
+      all.push(...normalizedChunk);
+      after = normalizedChunk[normalizedChunk.length - 1].ID;
     }
     return all;
   }
 
-  // ==== 3. Конкретный офис ====
   if (
     !(isNumber(parts[0]) && parts[1] === "director") &&
     parts[2] === "office"
@@ -198,11 +200,10 @@ export const fetchEmployee = async (month, employeeURL) => {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const office = await res.json();
+    const office = normalizeOffice(await res.json());
     return [aggregateOfficeUsers(office)];
   }
 
-  // ==== 4. Офис директора (по токену) ====
   if (isNumber(parts[0]) && parts[1] === "director" && parts[2] === "office") {
     const yearParam = parts[0];
     const params = new URLSearchParams(commonParams);
@@ -213,11 +214,10 @@ export const fetchEmployee = async (month, employeeURL) => {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const office = await res.json();
+    const office = normalizeOffice(await res.json());
     return [aggregateOfficeUsers(office)];
   }
 
-  // ==== 5. Один сотрудник ====
   const urlW = `${import.meta.env.VITE_BACKEND_URL}/workers/${
     parts[0]
   }?${commonParams}`;
@@ -229,7 +229,7 @@ export const fetchEmployee = async (month, employeeURL) => {
   });
   if (!resW.ok) throw new Error(`HTTP ${resW.status}`);
   const data = await resW.json();
-  return data.worker ? [data.worker] : [];
+  return data.worker ? [normalizeWorker(data.worker)] : [];
 };
 
 export const getAllOffices = async () => {

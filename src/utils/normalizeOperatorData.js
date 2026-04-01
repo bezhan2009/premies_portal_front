@@ -1,4 +1,4 @@
-const normalizeRole = (role) => {
+﻿const normalizeRole = (role) => {
   if (!role) {
     return role;
   }
@@ -66,8 +66,11 @@ export const normalizeOffice = (office) => {
     return office;
   }
 
+  const id = office.ID ?? office.id ?? null;
+
   return {
     ...office,
+    ...(id !== null ? { ID: id, id } : {}),
     office_user: Array.isArray(office.office_user)
       ? office.office_user.map((item) => ({
           ...item,

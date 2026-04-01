@@ -29,6 +29,8 @@ import PaymentsTable from "../../pages/dashboard/dashboard_payments/PaymentsTabl
 import QRCashbackTable from "../../pages/dashboard/dashboard_cashback/QRCashbackTable.jsx";
 import PVNTransactionsList from "../../pages/dashboard_pvn/TransactionsPVN.jsx";
 import PVNSettings from "../../pages/dashboard_pvn/PvnSettings.jsx";
+import AbsWithdrawsList from "../../pages/general/AccountWithdrawOperationsList.jsx";
+import AbsWithdrawSettings from "../../pages/general/AbsWithdrawSettings.jsx";
 
 const agentRoutes = (
   <>
@@ -107,6 +109,9 @@ const agentRoutes = (
         path="agent-qr/knowledge-base"
         element={<DashboardQRKnowledgeBase />}
       />
+        <Route path="accounts-qr/operations" element={<AbsWithdrawsList />} />
+        <Route path="accounts-qr/settings" element={<AbsWithdrawSettings />} />
+
     </Route>
 
     {/* Agent SMS (Role 14) */}
@@ -170,28 +175,40 @@ const agentRoutes = (
       <Route path="cashback/qr-list" element={<QRCashbackTable />} />
     </Route>
 
-      {/* Agent Payments (Role 24) */}
-      <Route
-          element={
-              <RequireRole allowedRoles={[24]}>
-                  <Outlet />
-              </RequireRole>
-          }
-      >
-          <Route path="agent-payments/list" element={<PaymentsTable />} />
-      </Route>
+    {/* Agent Payments (Role 24) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[24]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="agent-payments/list" element={<PaymentsTable />} />
+    </Route>
 
-      {/* Agent Payments (Role 25) */}
-      <Route
-          element={
-              <RequireRole allowedRoles={[25]}>
-                  <Outlet />
-              </RequireRole>
-          }
-      >
-          <Route path="pvn/transactions/list" element={<PVNTransactionsList />} />
-          <Route path="pvn/settings/list" element={<PVNSettings />} />
-      </Route>
+    {/* Agent Payments (Role 25) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[25]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="pvn/transactions/list" element={<PVNTransactionsList />} />
+      <Route path="pvn/settings/list" element={<PVNSettings />} />
+    </Route>
+
+    {/* Agent Payments (Role 26) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[26]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="accounts-qr/operations" element={<AbsWithdrawsList />} />
+      <Route path="accounts-qr/settings" element={<AbsWithdrawSettings />} />
+    </Route>
   </>
 );
 

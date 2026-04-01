@@ -19,7 +19,6 @@ export const ProductLayout = () => {
   const activeLink = getActiveLink(location.pathname);
 
   return (
-    <div className="dashboard-container">
       <div className="applications-list product-bank-page content-page">
         <AntLayout style={{ background: "transparent", minHeight: "auto" }}>
           <Content
@@ -35,6 +34,5 @@ export const ProductLayout = () => {
           </Content>
         </AntLayout>
       </div>
-    </div>
   );
 };

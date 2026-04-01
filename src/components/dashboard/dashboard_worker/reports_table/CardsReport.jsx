@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+﻿import React, { useEffect, useState, useCallback, useRef } from "react";
 import "../../../../styles/components/WorkersDataReports.scss";
 import ReportsContent from "./ReportContent.jsx";
 import { fetchReportCards } from "../../../../api/workers/reports/report_cards.js";
@@ -8,11 +8,35 @@ import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 const CardsReport = ({ month, year }) => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [after, setAfter] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const { exportToExcel } = useExcelExport();
 
-  const observer = useRef();
+  const observer = useRef(null);
+  const afterRef = useRef(null);
+  const loadingRef = useRef(false);
+
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current) return;
+
+    loadingRef.current = true;
+    setLoading(true);
+    try {
+      const newCards = await fetchReportCards(month, year, afterRef.current);
+      setCards((prev) => [...prev, ...newCards]);
+
+      if (newCards.length > 0) {
+        afterRef.current =
+          newCards[newCards.length - 1].ID ?? newCards[newCards.length - 1].id;
+      } else {
+        setHasMore(false);
+      }
+    } catch (e) {
+      console.error("Ошибка при загрузке карт:", e);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+    }
+  }, [month, year]);
 
   const lastCardRef = useCallback(
     (node) => {
@@ -30,33 +54,15 @@ const CardsReport = ({ month, year }) => {
     [loading, hasMore, loadMore],
   );
 
-  const loadMore = useCallback(async () => {
-    setLoading(true);
-    try {
-      const newCards = await fetchReportCards(month, year, after);
-      setCards((prev) => [...prev, ...newCards]);
-
-      if (newCards.length > 0) {
-        // для пагинации берем ID последнего объекта
-        const lastId = newCards[newCards.length - 1].ID;
-        setAfter(lastId);
-      } else {
-        setHasMore(false);
-      }
-    } catch (e) {
-      console.error("Ошибка при загрузке карт:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [month, year, after]);
-
   useEffect(() => {
-    // при смене месяца/года обнуляем всё
     setCards([]);
-    setAfter(null);
     setHasMore(true);
+    afterRef.current = null;
+    loadingRef.current = false;
     loadMore();
   }, [month, year, loadMore]);
+
+  useEffect(() => () => observer.current?.disconnect(), []);
 
   const handleExport = () => {
     const columns = [
@@ -91,7 +97,7 @@ const CardsReport = ({ month, year }) => {
           {cards.map((card, index) => {
             const isLast = index === cards.length - 1;
             return (
-              <tr key={card.ID} ref={isLast ? lastCardRef : null}>
+              <tr key={card.ID ?? card.id} ref={isLast ? lastCardRef : null}>
                 <td>{card.issue_date?.split("T")[0] || ""}</td>
                 <td>{card.code || ""}</td>
                 <td>{card.coast || ""}</td>

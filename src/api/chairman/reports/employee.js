@@ -1,25 +1,27 @@
+﻿import { normalizeWorker } from "../../../utils/normalizeOperatorData.js";
+
 export const fetchEmployees = async (month, year, after) => {
-    const token = localStorage.getItem('access_token');
-    const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/workers`);
-    url.searchParams.append("month", month);
-    url.searchParams.append("year", year);
-    if (after !== undefined && after !== null) {
-        url.searchParams.append("after", after);
-    }
+  const token = localStorage.getItem("access_token");
+  const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/workers`);
+  url.searchParams.append("month", month);
+  url.searchParams.append("year", year);
+  if (after !== undefined && after !== null) {
+    url.searchParams.append("after", after);
+  }
 
-    url.searchParams.append("loadCardTurnovers", "true");
-    url.searchParams.append("loadCardSales", "true");
-    url.searchParams.append("loadCardDetails", "false");
-    url.searchParams.append("loadUser", "true");
-    url.searchParams.append("loadServiceQuality", "false");
-    url.searchParams.append("loadMobileBank", "false");
+  url.searchParams.append("loadCardTurnovers", "true");
+  url.searchParams.append("loadCardSales", "true");
+  url.searchParams.append("loadCardDetails", "false");
+  url.searchParams.append("loadUser", "true");
+  url.searchParams.append("loadServiceQuality", "false");
+  url.searchParams.append("loadMobileBank", "false");
 
-    const res = await fetch(url.toString(), {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
-    const data = await res.json();
-    return data.workers || [];
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const data = await res.json();
+  return Array.isArray(data.workers) ? data.workers.map(normalizeWorker) : [];
 };

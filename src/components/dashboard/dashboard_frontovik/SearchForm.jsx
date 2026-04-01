@@ -6,6 +6,7 @@ import {
 } from "react-icons/md";
 import { FaTelegramPlane } from "react-icons/fa";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
+import Select from "../../elements/Select";
 
 const SearchForm = ({
   selectTypeSearchClient,
@@ -27,23 +28,15 @@ const SearchForm = ({
       <div className="search-card">
         <div className="search-card__content">
           <div className="search-card__select-group">
-            <div className="custom-select">
-              <select
+            <Select
                 id="searchType"
+                options={TYPE_SEARCH_CLIENT}
                 value={selectTypeSearchClient}
                 onChange={(e) => {
-                  setSelectTypeSearchClient(e.target.value);
+                  setSelectTypeSearchClient(e);
                 }}
-                className="search-card__select"
                 disabled={isLoading}
-              >
-                {TYPE_SEARCH_CLIENT.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            />
           </div>
 
           <div className="search-card__mobile-group">

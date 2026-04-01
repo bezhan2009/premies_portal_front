@@ -7,6 +7,8 @@ import UnderDevelopmentPage from "../pages/general/UnderDevelopmentPage";
 import RequireAuth from "../middlewares/RequireAuth";
 import PageNotFound from "../pages/general/NotFound.jsx";
 import MainLayout from "../components/MainLayout.jsx";
+import RegisterPage from "../pages/general/RegisterPage.jsx";
+import RequireRole from "../middlewares/RequireRole.jsx";
 
 // Modularized routes
 import operatorRoutes from "./routes/operator.routes";
@@ -22,6 +24,15 @@ export default function AppRouter() {
       <Routes>
         {/* Публичные маршруты */}
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Защищенные маршруты (без Layout меню) */}
+        <Route path="/auth/register" element={
+            <RequireAuth>
+                <RequireRole allowedRoles={[3]}>
+                    <RegisterPage />
+                </RequireRole>
+            </RequireAuth>
+        } />
 
         {/* Защищённые маршруты */}
         <Route

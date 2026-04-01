@@ -6,7 +6,6 @@ import DashboardOperatorReports from "../../pages/dashboard/dashboard_operator/R
 import DashboardOperatorDatas from "../../pages/dashboard/dashboard_operator/DatasPage";
 import DashboardOperatorKnowledgeBase from "../../pages/dashboard/dashboard_operator/KnowledgeBase";
 import DashboardOperatorTests from "../../pages/dashboard/dashboard_operator/TestsPage.jsx";
-import RegisterPage from "../../pages/general/RegisterPage.jsx";
 
 const operatorRoutes = (
   <Route
@@ -27,7 +26,7 @@ const operatorRoutes = (
       element={<DashboardOperatorKnowledgeBase />}
     />
     <Route path="/operator/tests" element={<DashboardOperatorTests />} />
-    <Route path="/auth/register" element={<RegisterPage />} />
+
   </Route>
 );
 
