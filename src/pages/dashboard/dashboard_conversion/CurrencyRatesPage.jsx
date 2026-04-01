@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { fetchConversionRates } from "../../../api/conversion/conversion.js";
+import {
+  buildCurrencyRateRows,
+  getCurrencyDisplayLabel,
+} from "../../../api/utils/getCurrencyCode.js";
+import Spinner from "../../../components/Spinner.jsx";
 import "../../../styles/dashboard/CurrencyRates.scss";
 
 const CURRENCY_META = {
   USD: { flag: "🇺🇸", label: "Доллар США" },
   EUR: { flag: "🇪🇺", label: "Евро" },
-  TJS: { flag: "🇹🇯", label: "Сомони" },
+  RUB: { flag: "🇷🇺", label: "Рубль" },
 };
 
 export default function CurrencyRatesPage() {
@@ -18,6 +23,7 @@ export default function CurrencyRatesPage() {
   const loadRates = async () => {
     setLoading(true);
     setError(null);
+
     try {
       const data = await fetchConversionRates(new Date());
       setRates(data);
@@ -34,40 +40,17 @@ export default function CurrencyRatesPage() {
     loadRates();
   }, []);
 
-  // Группировка: для каждой пары валют показываем покупку и продажу
-  const groupedRates = () => {
-    const groups = {};
-
-    rates.forEach((rate) => {
-      // Определяем иностранную валюту (не TJS)
-      const foreignCurrency =
-        rate.currencyFrom !== "TJS" ? rate.currencyFrom : rate.currencyTo;
-
-      if (!groups[foreignCurrency]) {
-        groups[foreignCurrency] = { buy: null, sell: null };
-      }
-
-      if (rate.type === "from" && rate.currencyFrom !== "TJS") {
-        // Покупка: банк покупает иностранную валюту (клиент продаёт)
-        groups[foreignCurrency].buy = rate.amountTo;
-      } else if (rate.type === "to" && rate.currencyTo !== "TJS") {
-        // Продажа: банк продаёт иностранную валюту (клиент покупает)
-        groups[foreignCurrency].sell = rate.amount;
-      }
-    });
-
-    return Object.entries(groups).map(([currency, values]) => ({
-      currency,
-      ...values,
-      meta: CURRENCY_META[currency] || { flag: "💱", label: currency },
-    }));
-  };
+  const groupedRates = buildCurrencyRateRows(rates).map((row) => ({
+    ...row,
+    meta: CURRENCY_META[row.currency] || { flag: "💱", label: row.currency },
+  }));
 
   return (
     <>
       <Helmet>
         <title>Курсы валют</title>
       </Helmet>
+
       <div className="currency-rates-page">
         <div className="currency-rates-header">
           <h1>
@@ -103,8 +86,7 @@ export default function CurrencyRatesPage() {
         <div className="currency-rates-card">
           {loading ? (
             <div className="loading-state">
-              <span className="loading-spinner">⏳</span>
-              <p>Загрузка курсов валют...</p>
+              <Spinner center label="Загружаем курсы валют" />
             </div>
           ) : error ? (
             <div className="error-state">
@@ -125,13 +107,15 @@ export default function CurrencyRatesPage() {
                 </tr>
               </thead>
               <tbody>
-                {groupedRates().map((row) => (
+                {groupedRates.map((row) => (
                   <tr key={row.currency}>
                     <td>
                       <div className="currency-name">
                         <span className="currency-flag">{row.meta.flag}</span>
                         <div className="currency-info">
-                          <div className="currency-code">{row.currency}</div>
+                          <div className="currency-code">
+                            {getCurrencyDisplayLabel(row.currency, row.unit)}
+                          </div>
                           <div className="currency-label">{row.meta.label}</div>
                         </div>
                       </div>

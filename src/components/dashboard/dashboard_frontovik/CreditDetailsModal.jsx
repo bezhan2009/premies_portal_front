@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Spinner from "../../Spinner.jsx";
 
 // Компонент модального окна для деталей кредита
 const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
@@ -135,7 +136,7 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
         <div className="graph-modal-content">
           {isLoading ? (
             <div className="graph-modal-loading">
-              <div className="graph-modal-spinner"></div>
+              <Spinner center />
               <p>Загрузка деталей...</p>
             </div>
           ) : (

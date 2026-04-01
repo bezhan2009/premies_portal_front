@@ -6,6 +6,7 @@ import "../../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../../hooks/useTableSort.js";
 import SortIcon from "../../../general/SortIcon.jsx";
+import Spinner from "../../../Spinner.jsx";
 
 const TableCardMargents = () => {
   const [cards, setCards] = useState([]);
@@ -184,7 +185,12 @@ const TableCardMargents = () => {
       </div>
 
       {loading ? (
+        <>
+          <div style={{ padding: "1.5rem 0" }}>
+            <Spinner center />
+          </div>
         <p>Загрузка...</p>
+        </>
       ) : error ? (
         <p style={{ color: "red" }}>{error}</p>
       ) : (

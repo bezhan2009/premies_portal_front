@@ -174,6 +174,7 @@ export default function CustomDateInput({
     },
     // Ключевое исправление: рендерим popup в body, чтобы избежать overflow: hidden
     getPopupContainer: (triggerNode) => document.body,
+    needConfirm: false,
   };
 
   return (
@@ -225,4 +226,3 @@ CustomDateInput.propTypes = {
   ]),
   variant: PropTypes.oneOf(["default", "compact"]),
 };
-

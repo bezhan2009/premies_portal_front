@@ -1,5 +1,33 @@
 @import '../variables/spinner';
 
+.spinner-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 245, 245, 0.98) 100%);
+  border: 1px solid rgba(226, 26, 28, 0.08);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+  &--center {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.spinner-state__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.01em;
+  animation: spinner-label-pulse 1.6s ease-in-out infinite;
+}
+
 .dot-spinner {
   --uib-size: #{$size};
   --uib-speed: #{$speed};
@@ -10,6 +38,18 @@
   justify-content: flex-start;
   height: var(--uib-size);
   width: var(--uib-size);
+}
+
+.dot-spinner--sm {
+  --uib-size: 1.2rem;
+}
+
+.dot-spinner--md {
+  --uib-size: #{$size};
+}
+
+.dot-spinner--lg {
+  --uib-size: 2.25rem;
 }
 
 .dot-spinner__dot {
@@ -32,6 +72,17 @@
     opacity: 0.5;
     animation: pulse0112 calc(var(--uib-speed) * 1.111) ease-in-out infinite;
     box-shadow: 0 0 20px rgba(24, 49, 83, 0.3); // цвет по аналогии, можно вместо этого использовать переменную
+  }
+}
+
+@keyframes spinner-label-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 

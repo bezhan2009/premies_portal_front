@@ -4,6 +4,7 @@ import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
+import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
@@ -556,6 +557,7 @@ export default function TransactionsQR() {
             >
               {loading ? (
                 <div style={{ textAlign: "center", padding: "2rem" }}>
+                  <Spinner center label="Загружаем QR-транзакции" />
                   Загрузка...
                 </div>
               ) : sortedData.length === 0 ? (

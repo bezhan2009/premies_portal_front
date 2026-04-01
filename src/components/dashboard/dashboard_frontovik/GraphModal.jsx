@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
+import Spinner from "../../Spinner.jsx";
 
 // Компонент модального окна для графика платежей
 const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
@@ -91,7 +92,7 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
         <div className="graph-modal-content">
           {isLoading ? (
             <div className="graph-modal-loading">
-              <div className="graph-modal-spinner"></div>
+              <Spinner center />
               <p>Загрузка графика платежей...</p>
             </div>
           ) : (

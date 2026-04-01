@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchLoanDetails } from "../../../api/ABS_frotavik/getLoanDetails";
+import Spinner from "../../Spinner.jsx";
 
 const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
   const [amount, setAmount] = useState("");
@@ -115,12 +116,15 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                   Счет для списания:
                 </label>
                 {isFetchingDetails ? (
+                  <>
+                  <Spinner size="small" />
                   <p
                     className="loading-small"
                     style={{ fontSize: "14px", color: "#3498db" }}
                   >
                     Загрузка счетов...
                   </p>
+                  </>
                 ) : (
                   <select
                     value={selectedAccount}

@@ -9,6 +9,7 @@ import SortIcon from "../../components/general/SortIcon.jsx";
 import { apiClient } from "../../api/utils/apiClient.js";
 import AddPvnSettingModal from "./AddPvnModal.jsx";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
+import Spinner from "../../components/Spinner.jsx";
 
 // Пустая форма для новой настройки
 const emptyForm = {
@@ -269,7 +270,9 @@ const PVNSettings = () => {
 			/>
 
 			{loading ? (
-				<p style={{ margin: "16px" }}>Загрузка...</p>
+				<div style={{ padding: "16px" }}>
+					<Spinner center label="Загружаем настройки ПВН" />
+				</div>
 			) : (
 				<div style={{ overflowX: "auto", width: "100%" }}>
 					<table className="table-reports" style={{ minWidth: "max-content" }}>

@@ -6,6 +6,7 @@ import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
+import Spinner from "../../components/Spinner.jsx";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import "../../styles/components/StatsEQMS.scss";
@@ -564,7 +565,9 @@ export default function PVNTransactionsList() {
 
                             <div className="my-applications-content" style={{ position: "relative" }}>
                                 {loading ? (
-                                    <div style={{ textAlign: "center", padding: "2rem" }}>Загрузка...</div>
+                                    <div style={{ padding: "2rem" }}>
+                                        <Spinner center label="Загружаем транзакции ПВН" />
+                                    </div>
                                 ) : sortedData.length === 0 ? (
                                     <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
                                         Нет данных для отображения

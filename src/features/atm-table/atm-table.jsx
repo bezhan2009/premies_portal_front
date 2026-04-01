@@ -15,6 +15,7 @@ import {
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import SortIcon from "../../components/general/SortIcon.jsx";
+import Spinner from "../../components/Spinner.jsx";
 // import "../../styles/components/table-sorting.scss"; // If needed, but global.scss should have it
 
 /** ====== ПЕРЕВОДЫ ====== */
@@ -695,6 +696,7 @@ export default function AtmStickyTable() {
             {loading && (
               <tr>
                 <td className="table-cell" colSpan={40} align="center">
+                  <Spinner center label="Загружаем банкоматы" />
                   Загрузка...
                 </td>
               </tr>

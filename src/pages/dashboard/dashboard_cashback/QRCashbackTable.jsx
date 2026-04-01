@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/AddCardPriceForm.scss";
 import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../hooks/useTableSort.js";
-import SortIcon from "../../../components/general/SortIcon.jsx";
 import { apiClient } from "../../../api/utils/apiClient.js";
+import Spinner from "../../../components/Spinner.jsx";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 
 const fields = [
   { key: "id", label: "ID", type: "number" },
@@ -21,14 +21,12 @@ const fields = [
 ];
 
 const QRCashbackTable = () => {
-
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
-  const { items: sortedItems, requestSort, sortConfig } = useTableSort(items);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -57,7 +55,7 @@ const QRCashbackTable = () => {
 
   const handleExport = () => {
     const columns = fields.map(({ key, label }) => ({ key, label }));
-    exportToExcel(sortedItems, columns, "Кэшбэк по QR");
+    exportToExcel(items, columns, "Кэшбэк по QR");
   };
 
   const formatValue = (value, fieldType) => {
@@ -65,7 +63,7 @@ const QRCashbackTable = () => {
     if (fieldType === "datetime") {
       try {
         const d = new Date(value);
-        if (isNaN(d.getTime())) return value;
+        if (Number.isNaN(d.getTime())) return value;
         return d.toLocaleString("ru-RU");
       } catch {
         return value;
@@ -73,6 +71,17 @@ const QRCashbackTable = () => {
     }
     return String(value);
   };
+
+  const columns = useMemo(
+    () =>
+      fields.map(({ key, label, type }) => ({
+        title: label,
+        dataIndex: key,
+        key,
+        render: (value) => formatValue(value, type),
+      })),
+    [],
+  );
 
   return (
     <div className="block_info_prems content-page">
@@ -85,51 +94,23 @@ const QRCashbackTable = () => {
         </div>
       </div>
 
-      {loading ? (
-        <p style={{ margin: "16px" }}>Загрузка...</p>
-      ) : error ? (
+      {error ? (
         <p style={{ color: "red", margin: "16px" }}>{error}</p>
       ) : (
-        <div style={{ overflowX: "auto", width: "100%" }}>
-          <table
-            className="table-reports"
-            style={{ minWidth: "max-content" }}
-          >
-            <thead>
-              <tr>
-                {fields.map(({ key, label }) => (
-                  <th
-                    key={key}
-                    onClick={() => requestSort(key)}
-                    className="sortable-header"
-                  >
-                    {label}
-                    <SortIcon sortConfig={sortConfig} sortKey={key} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(sortedItems) && sortedItems.length > 0 ? (
-                sortedItems.map((item) => (
-                  <tr key={item.id}>
-                    {fields.map((field) => (
-                      <td key={field.key}>
-                        {formatValue(item[field.key], field.type)}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={fields.length} style={{ textAlign: "center" }}>
-                    Нет данных
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          tableId="cashback-qr-list"
+          columns={columns}
+          dataSource={items}
+          rowKey={(record) => record?.id ?? record?.payment_id}
+          loading={{
+            spinning: loading,
+            indicator: <Spinner size="small" />,
+          }}
+          pagination={false}
+          bordered
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: "Нет данных" }}
+        />
       )}
     </div>
   );

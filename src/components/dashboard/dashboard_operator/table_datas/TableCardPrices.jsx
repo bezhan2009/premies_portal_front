@@ -4,6 +4,7 @@ import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/AddCardPriceForm.scss";
 import "../../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import Spinner from "../../../Spinner.jsx";
 
 const TableCardPrices = () => {
   const [cards, setCards] = useState([]);
@@ -205,7 +206,12 @@ const TableCardPrices = () => {
       </div>
 
       {loading ? (
+        <>
+          <div style={{ padding: "1.5rem 0" }}>
+            <Spinner center />
+          </div>
         <p>Загрузка...</p>
+        </>
       ) : error ? (
         <p style={{ color: "red" }}>{error}</p>
       ) : (

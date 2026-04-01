@@ -248,7 +248,10 @@ export default function RegisterPage() {
                     <div className="roles-selection">
                         <p>Роли:</p>
                         {loadingRoles ? (
+                            <>
+                                <Spinner size="small" label="Загружаем роли" />
                             <p>Загрузка ролей...</p>
+                            </>
                         ) : (
                             roles.map(role => (
                                 <div key={role.ID}>
