@@ -1,7 +1,5 @@
-import '../../../styles/dashboard.scss';
-import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
-import { Helmet } from 'react-helmet';
-import HeaderDirector from "../../../components/dashboard/dashboard_director/MenuDirector.jsx";
+import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
+import { Helmet } from "react-helmet";
 
 export default function DashboardDirectorKnowledgeBase() {
   return (
@@ -9,12 +7,7 @@ export default function DashboardDirectorKnowledgeBase() {
       <Helmet>
         <title>База знаний</title>
       </Helmet>
-      <div className="dashboard-container">
-        <header className="dashboard-header">
-          <HeaderDirector activeLink="knowledge" />
-        </header>
-        <GetBlockInfo page="worker_knowledge_base" />
-      </div>
+      <GetBlockInfo page="worker_knowledge_base" />
     </>
   );
 }

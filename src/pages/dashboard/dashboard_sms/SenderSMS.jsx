@@ -1,6 +1,5 @@
 import { useState } from "react";
 import "../../../styles/components/BlockInfo.scss";
-import HeaderAgentSMS from "../../../components/dashboard/dashboard_agent_sms/MenuAgentSMS";
 
 export default function SendSmsForm() {
   const [phoneNumber, setPhoneNumber] = useState("");

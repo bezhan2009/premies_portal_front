@@ -1,4 +1,3 @@
-import "../../../styles/dashboard.scss";
 import { Helmet } from "react-helmet";
 import ABSClientSearch from "../../../components/dashboard/dashboard_frontovik/ABSSearch.jsx";
 
