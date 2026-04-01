@@ -1,7 +1,5 @@
-import '../../../styles/dashboard.scss';
-import HeaderAgentSMS from '../../../components/dashboard/dashboard_agent_sms/MenuAgentSMS.jsx';
-import GetBlockInfo from '../../../components/general/GeneralBlockInfo.jsx';
-import { Helmet } from 'react-helmet';
+import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
+import { Helmet } from "react-helmet";
 
 export default function DashboardAgentSMSKnowledgeBase() {
   return (
@@ -9,12 +7,7 @@ export default function DashboardAgentSMSKnowledgeBase() {
       <Helmet>
         <title>База знаний</title>
       </Helmet>
-      <div className="dashboard-container">
-        <header className="dashboard-header">
-          <HeaderAgentSMS activeLink="knowledge" />
-        </header>
-        <GetBlockInfo page="worker_knowledge_base" />
-      </div>
+      <GetBlockInfo page="worker_knowledge_base" />
     </>
   );
 }
