@@ -47,6 +47,8 @@ const MainLayout = () => {
 
     // QR Agent
     if (pathname.includes("agent-qr/transactions")) return "list_qr";
+    if (pathname.includes("accounts-qr/operations")) return "qr_another_bank_transactions";
+    if (pathname.includes("accounts-qr/settings")) return "qr_another_bank_settings";
 
     // SMS Agent
     if (pathname.includes("agent-sms/sms-sender")) return "sms_send";

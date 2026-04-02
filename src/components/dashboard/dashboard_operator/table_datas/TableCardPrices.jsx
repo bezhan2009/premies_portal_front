@@ -1,16 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/AddCardPriceForm.scss";
 import "../../../../styles/components/SearchBar.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
-import Spinner from "../../../Spinner.jsx";
 
 const TableCardPrices = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [editId, setEditId] = useState(null);
   const [editedCard, setEditedCard] = useState({});
   const [newCard, setNewCard] = useState({
@@ -23,7 +22,6 @@ const TableCardPrices = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
 
-  // загрузка всех карт
   const fetchCards = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -37,8 +35,6 @@ const TableCardPrices = () => {
       });
       const data = await response.json();
 
-      console.log("API data:", data);
-
       if (Array.isArray(data)) {
         setCards(data);
       } else if (data && Array.isArray(data.data)) {
@@ -47,8 +43,8 @@ const TableCardPrices = () => {
         console.error("Неправильный формат ответа:", data);
         setCards([]);
       }
-    } catch (e) {
-      console.error("Ошибка загрузки:", e);
+    } catch (error) {
+      console.error("Ошибка загрузки:", error);
       setError("Ошибка загрузки данных");
       setCards([]);
     } finally {
@@ -60,13 +56,11 @@ const TableCardPrices = () => {
     fetchCards();
   }, [fetchCards]);
 
-  // двойной клик для редактирования
   const handleDoubleClick = (card) => {
     setEditId(card.id);
     setEditedCard({ ...card });
   };
 
-  // сохранение изменений (PATCH)
   const handleSave = async (id) => {
     try {
       const token = localStorage.getItem("access_token");
@@ -80,18 +74,19 @@ const TableCardPrices = () => {
         body: JSON.stringify(editedCard),
       });
 
-      if (!response.ok) throw new Error("Ошибка при обновлении");
+      if (!response.ok) {
+        throw new Error("Ошибка при обновлении");
+      }
 
-      setCards((prev) =>
-        prev.map((c) => (c.id === id ? { ...editedCard } : c)),
+      setCards((previous) =>
+        previous.map((card) => (card.id === id ? { ...editedCard } : card)),
       );
       setEditId(null);
-    } catch (e) {
-      console.error("Ошибка при сохранении:", e);
+    } catch (error) {
+      console.error("Ошибка при сохранении:", error);
     }
   };
 
-  // удаление (DELETE)
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("access_token");
@@ -104,15 +99,16 @@ const TableCardPrices = () => {
         },
       });
 
-      if (!response.ok) throw new Error("Ошибка при удалении");
+      if (!response.ok) {
+        throw new Error("Ошибка при удалении");
+      }
 
-      setCards((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) {
-      console.error("Ошибка при удалении:", e);
+      setCards((previous) => previous.filter((card) => card.id !== id));
+    } catch (error) {
+      console.error("Ошибка при удалении:", error);
     }
   };
 
-  // добавление новой карты (POST)
   const handleAdd = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -126,23 +122,19 @@ const TableCardPrices = () => {
         body: JSON.stringify(newCard),
       });
 
-      if (!response.ok) throw new Error("Ошибка при добавлении");
+      if (!response.ok) {
+        throw new Error("Ошибка при добавлении");
+      }
 
-      // Опционально: можно обновлять локально
-      // const created = await response.json();
-      // setCards((prev) => [...prev, created]);
-
-      // Небольшой подход: заново загрузить данные через GET
       await fetchCards();
-
       setNewCard({
         dcl_name: "",
         coast_cards: "",
         coast_credits: "",
         category: "",
       });
-    } catch (e) {
-      console.error("Ошибка при добавлении:", e);
+    } catch (error) {
+      console.error("Ошибка при добавлении:", error);
     }
   };
 
@@ -153,7 +145,45 @@ const TableCardPrices = () => {
       { key: "coast_credits", label: "Цена кредитов" },
       { key: "category", label: "Категория" },
     ];
+
     exportToExcel(cards, columns, "Цены_карт");
+  };
+
+  const renderEditableCell = (card, field, type = "text") => {
+    const isEditing = editId === card.id;
+
+    if (isEditing) {
+      return (
+        <input
+          type={type}
+          value={editedCard[field] ?? ""}
+          onChange={(event) =>
+            setEditedCard((previous) => ({
+              ...previous,
+              [field]:
+                type === "number"
+                  ? Number(event.target.value)
+                  : event.target.value,
+            }))
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              handleSave(card.id);
+            }
+          }}
+          autoFocus={field === "dcl_name"}
+        />
+      );
+    }
+
+    return (
+      <div
+        onDoubleClick={() => handleDoubleClick(card)}
+        style={{ cursor: "pointer" }}
+      >
+        {card[field]}
+      </div>
+    );
   };
 
   return (
@@ -165,37 +195,48 @@ const TableCardPrices = () => {
         </button>
       </div>
 
-      {/* Форма для добавления новой карты перемещена сюда */}
       <div className="add-card-form" style={{ marginBottom: "20px" }}>
         <h3>Добавить новую карту</h3>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
           <input
             value={newCard.dcl_name}
-            onChange={(e) =>
-              setNewCard({ ...newCard, dcl_name: e.target.value })
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                dcl_name: event.target.value,
+              }))
             }
             placeholder="Название"
           />
           <input
             type="number"
             value={newCard.coast_cards}
-            onChange={(e) =>
-              setNewCard({ ...newCard, coast_cards: Number(e.target.value) })
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                coast_cards: Number(event.target.value),
+              }))
             }
             placeholder="Цена карт"
           />
           <input
             type="number"
             value={newCard.coast_credits}
-            onChange={(e) =>
-              setNewCard({ ...newCard, coast_credits: Number(e.target.value) })
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                coast_credits: Number(event.target.value),
+              }))
             }
             placeholder="Цена кредитов"
           />
           <input
             value={newCard.category}
-            onChange={(e) =>
-              setNewCard({ ...newCard, category: e.target.value })
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                category: event.target.value,
+              }))
             }
             placeholder="Категория"
           />
@@ -205,133 +246,68 @@ const TableCardPrices = () => {
         </div>
       </div>
 
-      {loading ? (
-        <>
-          <div style={{ padding: "1.5rem 0" }}>
-            <Spinner center />
-          </div>
-        <p>Загрузка...</p>
-        </>
-      ) : error ? (
+      {error ? (
         <p style={{ color: "red" }}>{error}</p>
       ) : (
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th>Название</th>
-              <th>Цена карт</th>
-              <th>Цена кредитов</th>
-              <th>Категория</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.isArray(cards) && cards.length > 0 ? (
-              cards.map((card) => (
-                <tr key={card.id}>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.id ? (
-                      <input
-                        value={editedCard.dcl_name}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            dcl_name: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.id)
-                        }
-                        autoFocus
-                      />
-                    ) : (
-                      card.dcl_name
-                    )}
-                  </td>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.id ? (
-                      <input
-                        type="number"
-                        value={editedCard.coast_cards}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            coast_cards: Number(e.target.value),
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.id)
-                        }
-                      />
-                    ) : (
-                      card.coast_cards
-                    )}
-                  </td>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.id ? (
-                      <input
-                        type="number"
-                        value={editedCard.coast_credits}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            coast_credits: Number(e.target.value),
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.id)
-                        }
-                      />
-                    ) : (
-                      card.coast_credits
-                    )}
-                  </td>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.id ? (
-                      <input
-                        value={editedCard.category}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            category: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.id)
-                        }
-                      />
-                    ) : (
-                      card.category
-                    )}
-                  </td>
-                  <td>
-                    {editId === card.id ? (
-                      <button
-                        onClick={() => handleSave(card.id)}
-                        className="action-buttons__btn"
-                      >
-                        Сохранить
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleDelete(card.id)}
-                        className="action-buttons__btn"
-                      >
-                        Удалить
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" style={{ textAlign: "center" }}>
-                  Нет данных
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <Table
+          tableId="operator-card-prices-table"
+          dataSource={cards}
+          rowKey={(record) => record.id}
+          loading={loading}
+          bordered
+          pagination={{ pageSize: 10, showSizeChanger: false }}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: "Нет данных" }}
+        >
+          <Table.Column
+            title="Название"
+            dataIndex="dcl_name"
+            key="dcl_name"
+            render={(_, record) => renderEditableCell(record, "dcl_name")}
+          />
+          <Table.Column
+            title="Цена карт"
+            dataIndex="coast_cards"
+            key="coast_cards"
+            render={(_, record) => renderEditableCell(record, "coast_cards", "number")}
+          />
+          <Table.Column
+            title="Цена кредитов"
+            dataIndex="coast_credits"
+            key="coast_credits"
+            render={(_, record) =>
+              renderEditableCell(record, "coast_credits", "number")
+            }
+          />
+          <Table.Column
+            title="Категория"
+            dataIndex="category"
+            key="category"
+            render={(_, record) => renderEditableCell(record, "category")}
+          />
+          <Table.Column
+            title="Действия"
+            key="actions"
+            sortable={false}
+            render={(_, record) =>
+              editId === record.id ? (
+                <button
+                  onClick={() => handleSave(record.id)}
+                  className="action-buttons__btn"
+                >
+                  Сохранить
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleDelete(record.id)}
+                  className="action-buttons__btn"
+                >
+                  Удалить
+                </button>
+              )
+            }
+          />
+        </Table>
       )}
     </div>
   );

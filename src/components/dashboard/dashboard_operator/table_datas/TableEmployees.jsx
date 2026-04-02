@@ -1,252 +1,232 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
-import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import Input from "../../../elements/Input.jsx";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js";
-import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../../hooks/useTableSort.js";
-import SortIcon from "../../../../components/general/SortIcon.jsx";
 import { apiClient } from "../../../../api/utils/apiClient.js";
 
 const formatRoles = (roles) => {
-    if (!Array.isArray(roles)) return "";
-    return roles
-        .map((role) => {
-            if (typeof role === "string") return role;
-            return role?.Name || role?.name || "";
-        })
-        .filter(Boolean)
-        .join(", ");
+  if (!Array.isArray(roles)) {
+    return "";
+  }
+
+  return roles
+    .map((role) => {
+      if (typeof role === "string") {
+        return role;
+      }
+
+      return role?.Name || role?.name || "";
+    })
+    .filter(Boolean)
+    .join(", ");
 };
 
-const mapWorker = (w) => {
-    if (!w) return null;
+const mapWorker = (worker) => {
+  if (!worker) {
+    return null;
+  }
 
-    return {
-        ID:         w.ID ?? w.id,
-        fio:        w.user?.full_name || "",
-        login:      w.user?.username || "",
-        position:   w.position || "",
-        place_work: w.place_work || "",
-        salary:     w.salary ?? "",
-        group:      formatRoles(w.user?.roles),
-        plan:       w.plan ?? "",
-        salary_project: w.salary_project ?? "",
-        user_id:    w.user_id,
-    };
+  return {
+    ID: worker.ID ?? worker.id,
+    fio: worker.user?.full_name || "",
+    login: worker.user?.username || "",
+    position: worker.position || "",
+    place_work: worker.place_work || "",
+    salary: worker.salary ?? "",
+    group: formatRoles(worker.user?.roles),
+    plan: worker.plan ?? "",
+    salary_project: worker.salary_project ?? "",
+    user_id: worker.user_id,
+  };
 };
 
 const EmployeesTable = () => {
-    const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-    const [employees, setEmployees] = useState([]);
-    const [filteredEmployees, setFilteredEmployees] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [edit, setEdit] = useState(null);
-    const [openRoles, setOpenRoles] = useState({ data: null, open: false });
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [edit, setEdit] = useState(null);
 
-    const { exportToExcel } = useExcelExport();
-    const { items: sortedEmployees, requestSort, sortConfig } = useTableSort(filteredEmployees);
+  const { exportToExcel } = useExcelExport();
 
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const url = `${backendURL}/workers`;
-            const response = await apiClient(url);
+  const loadData = useCallback(async () => {
+    setLoading(true);
 
-            const raw = response?.data?.workers ?? response?.data ?? [];
+    try {
+      const url = `${backendURL}/workers`;
+      const response = await apiClient(url);
+      const rawWorkers = response?.data?.workers ?? response?.data ?? [];
+      const rows = Array.isArray(rawWorkers)
+        ? rawWorkers.map(mapWorker).filter(Boolean)
+        : [];
 
-            const rows = Array.isArray(raw)
-                ? raw.map(mapWorker).filter(Boolean) // 🔥 убрали null
-                : [];
+      setEmployees(rows);
+      setFilteredEmployees(rows);
+    } catch (error) {
+      console.error("Ошибка загрузки сотрудников:", error);
+      setEmployees([]);
+      setFilteredEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [backendURL]);
 
-            setEmployees(rows);
-            setFilteredEmployees(rows);
-        } catch (e) {
-            console.error("Ошибка загрузки сотрудников:", e);
-            setEmployees([]);
-            setFilteredEmployees([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [backendURL]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-    useEffect(() => { loadData(); }, [loadData]);
+  const handleChange = (key, value) => {
+    setEdit((previous) => ({ ...previous, [key]: value }));
+  };
 
-    const handleChange = (key, value) =>
-        setEdit((prev) => ({ ...prev, [key]: value }));
+  const saveChange = async () => {
+    try {
+      await fullUpdateWorkers({ ...edit, fio: edit.fio.trim() });
+      await loadData();
+      setEdit(null);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    const saveChange = async () => {
-        try {
-            await fullUpdateWorkers({ ...edit, fio: edit.fio.trim() });
-            await loadData();
-            setEdit(null);
-        } catch (e) {
-            console.error(e);
-        }
-    };
+  const handleCellClick = (row) => {
+    if (!row || edit?.ID === row.ID) {
+      return;
+    }
 
-    const handleCellClick = (row, e) => {
-        if (!row) return;
-        if (edit?.ID === row.ID) { e.stopPropagation(); return; }
-        setEdit(row);
-    };
+    setEdit(row);
+  };
 
-    const handleExport = () => {
-        const columns = [
-            { key: "fio", label: "ФИО" },
-            { key: "login", label: "Логин" },
-            { key: "position", label: "Должность" },
-            { key: "place_work", label: "Место работы" },
-            { key: "salary", label: "Оклад" },
-            { key: "plan", label: "План" },
-            { key: "salary_project", label: "Зарплатный проект" },
-            { key: "group", label: "Группа продаж" },
-        ];
-        exportToExcel(sortedEmployees, columns, "Сотрудники");
-    };
+  const handleExport = () => {
+    const columns = [
+      { key: "fio", label: "ФИО" },
+      { key: "login", label: "Логин" },
+      { key: "position", label: "Должность" },
+      { key: "place_work", label: "Место работы" },
+      { key: "salary", label: "Оклад" },
+      { key: "plan", label: "План" },
+      { key: "salary_project", label: "Зарплатный проект" },
+      { key: "group", label: "Группа продаж" },
+    ];
+
+    exportToExcel(filteredEmployees, columns, "Сотрудники");
+  };
+
+  const renderEditableCell = (record, field, type = "text") => {
+    const isEditing = edit?.ID === record.ID;
+
+    if (isEditing) {
+      return (
+        <div onClick={(event) => event.stopPropagation()}>
+          <Input
+            type={type}
+            value={edit?.[field] ?? ""}
+            onChange={(value) => handleChange(field, value)}
+            onEnter={saveChange}
+          />
+        </div>
+      );
+    }
 
     return (
-        <div className="report-table-container">
-
-            <div className="table-header-actions" style={{ flexWrap: "wrap", gap: 10 }}>
-                <SearchBar
-                    allData={employees}
-                    onSearch={(filtered) => setFilteredEmployees(filtered || [])}
-                    placeholder="Поиск по ФИО, логину, должности..."
-                    searchFields={[
-                        (item) => item?.fio || "",
-                        (item) => item?.login || "",
-                        (item) => item?.position || "",
-                        (item) => item?.place_work || "",
-                    ]}
-                />
-
-                <button className="export-excel-btn" onClick={handleExport}>
-                    Экспорт в Excel
-                </button>
-            </div>
-
-            {loading ? (
-                <Spinner />
-            ) : sortedEmployees.length > 0 ? (
-                <div className="table-reports-div" style={{ maxHeight: "calc(100vh - 480px)" }}>
-                    <table className="table-reports">
-                        <thead>
-                        <tr>
-                            {[
-                                ["fio", "ФИО"],
-                                ["login", "Логин"],
-                                ["position", "Должность"],
-                                ["place_work", "Место работы"],
-                                ["salary", "Оклад"],
-                                ["plan", "План"],
-                                ["salary_project", "Зарплатный проект"],
-                                ["group", "Группа продаж"],
-                            ].map(([key, label]) => (
-                                <th
-                                    key={key}
-                                    onClick={() => requestSort(key)}
-                                    className="sortable-header"
-                                >
-                                    {label} <SortIcon sortConfig={sortConfig} sortKey={key} />
-                                </th>
-                            ))}
-                        </tr>
-                        </thead>
-
-                        <tbody>
-                        {sortedEmployees.map((row, idx) => {
-                            if (!row) return null; // 🔥 защита
-
-                            const isEditing = edit?.ID === row.ID;
-
-                            return (
-                                <tr key={idx}>
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <Input type="text" value={edit.fio}
-                                                       onChange={(v) => handleChange("fio", v)}
-                                                       onEnter={saveChange} />
-                                            </div>
-                                        ) : row.fio || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="text" value={edit.login}
-                                                   onChange={(v) => handleChange("login", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.login || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="text" value={edit.position}
-                                                   onChange={(v) => handleChange("position", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.position || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="text" value={edit.place_work}
-                                                   onChange={(v) => handleChange("place_work", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.place_work || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="number" value={edit.salary}
-                                                   onChange={(v) => handleChange("salary", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.salary !== "" ? row.salary : "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="number" value={edit.plan}
-                                                   onChange={(v) => handleChange("plan", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.plan || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="number" value={edit.salary_project}
-                                                   onChange={(v) => handleChange("salary_project", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.salary_project || "—"}
-                                    </td>
-
-                                    <td onClick={(e) => handleCellClick(row, e)}>
-                                        {isEditing ? (
-                                            <Input type="text" value={edit.group}
-                                                   onChange={(v) => handleChange("group", v)}
-                                                   onEnter={saveChange} />
-                                        ) : row.group || "—"}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <h2>Нет данных</h2>
-            )}
-
-            <ModalRoles
-                open={openRoles.open}
-                data={openRoles.data}
-                setOpenRoles={setOpenRoles}
-            />
-        </div>
+      <div
+        onClick={() => handleCellClick(record)}
+        style={{ cursor: "pointer" }}
+      >
+        {record[field] !== "" && record[field] !== null && record[field] !== undefined
+          ? record[field]
+          : "—"}
+      </div>
     );
+  };
+
+  return (
+    <div className="report-table-container">
+      <div className="table-header-actions" style={{ flexWrap: "wrap", gap: 10 }}>
+        <SearchBar
+          allData={employees}
+          onSearch={(filtered) => setFilteredEmployees(filtered || [])}
+          placeholder="Поиск по ФИО, логину, должности..."
+          searchFields={[
+            (item) => item?.fio || "",
+            (item) => item?.login || "",
+            (item) => item?.position || "",
+            (item) => item?.place_work || "",
+          ]}
+        />
+
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
+
+      <Table
+        tableId="operator-employees-table"
+        dataSource={filteredEmployees}
+        rowKey={(record) => record.ID}
+        loading={loading}
+        bordered
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: "Нет данных" }}
+      >
+        <Table.Column
+          title="ФИО"
+          dataIndex="fio"
+          key="fio"
+          render={(_, record) => renderEditableCell(record, "fio")}
+        />
+        <Table.Column
+          title="Логин"
+          dataIndex="login"
+          key="login"
+          render={(_, record) => renderEditableCell(record, "login")}
+        />
+        <Table.Column
+          title="Должность"
+          dataIndex="position"
+          key="position"
+          render={(_, record) => renderEditableCell(record, "position")}
+        />
+        <Table.Column
+          title="Место работы"
+          dataIndex="place_work"
+          key="place_work"
+          render={(_, record) => renderEditableCell(record, "place_work")}
+        />
+        <Table.Column
+          title="Оклад"
+          dataIndex="salary"
+          key="salary"
+          render={(_, record) => renderEditableCell(record, "salary", "number")}
+        />
+        <Table.Column
+          title="План"
+          dataIndex="plan"
+          key="plan"
+          render={(_, record) => renderEditableCell(record, "plan", "number")}
+        />
+        <Table.Column
+          title="Зарплатный проект"
+          dataIndex="salary_project"
+          key="salary_project"
+          render={(_, record) =>
+            renderEditableCell(record, "salary_project", "number")
+          }
+        />
+        <Table.Column
+          title="Группа продаж"
+          dataIndex="group"
+          key="group"
+          render={(_, record) => renderEditableCell(record, "group")}
+        />
+      </Table>
+    </div>
+  );
 };
 
 export default EmployeesTable;
