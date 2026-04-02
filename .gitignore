@@ -33,3 +33,7 @@ uploads/uploaded
 
 *.xlsx
 *.docx
+
+# site notes
+Site.md
+
