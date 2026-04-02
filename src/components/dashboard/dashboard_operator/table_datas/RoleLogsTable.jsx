@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
-import Spinner from "../../../Spinner.jsx";
 import Input from "../../../elements/Input.jsx";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../../hooks/useTableSort.js";
-import SortIcon from "../../../general/SortIcon.jsx";
 
 const RolesLogsTable = () => {
   const [logs, setLogs] = useState([]);
@@ -15,18 +13,14 @@ const RolesLogsTable = () => {
   const [userFilter, setUserFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const { exportToExcel } = useExcelExport();
 
-  const {
-    items: sortedLogs,
-    requestSort,
-    sortConfig,
-  } = useTableSort(filteredLogs);
+  const { exportToExcel } = useExcelExport();
 
   useEffect(() => {
     const loadData = async () => {
       const token = localStorage.getItem("access_token");
       setLoading(true);
+
       try {
         const [logsResponse, rolesResponse] = await Promise.all([
           fetch(`${import.meta.env.VITE_BACKEND_URL}/roles/logs`, {
@@ -55,21 +49,26 @@ const RolesLogsTable = () => {
         setLoading(false);
       }
     };
+
     loadData();
   }, []);
 
   const getRoleName = (roleId) => {
-    const role = roles.find((r) => r.ID === roleId);
+    const role = roles.find((item) => item.ID === roleId);
     return role ? role.Name : `Unknown (${roleId})`;
   };
 
   const formatRoles = (roleIds) => {
-    if (!roleIds || !Array.isArray(roleIds)) return "No roles";
+    if (!roleIds || !Array.isArray(roleIds)) {
+      return "No roles";
+    }
+
     return roleIds.map(getRoleName).join(", ");
   };
 
   useEffect(() => {
     let filtered = logs;
+
     if (operatorFilter) {
       filtered = filtered.filter((log) =>
         log.operator?.username
@@ -77,33 +76,36 @@ const RolesLogsTable = () => {
           .includes(operatorFilter.toLowerCase()),
       );
     }
+
     if (userFilter) {
       filtered = filtered.filter((log) =>
         log.user?.username?.toLowerCase().includes(userFilter.toLowerCase()),
       );
     }
+
     if (fromDate) {
       filtered = filtered.filter(
         (log) => new Date(log.CreatedAt) >= new Date(fromDate),
       );
     }
+
     if (toDate) {
       const endDate = new Date(toDate);
       endDate.setHours(23, 59, 59, 999);
       filtered = filtered.filter((log) => new Date(log.CreatedAt) <= endDate);
     }
+
     setFilteredLogs(filtered);
   }, [operatorFilter, userFilter, fromDate, toDate, logs]);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString("ru-RU", {
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleString("ru-RU", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
   const handleExport = () => {
     const columns = [
@@ -112,16 +114,14 @@ const RolesLogsTable = () => {
       { key: (row) => row.user?.username || "N/A", label: "Пользователь" },
       { key: (row) => formatRoles(row.role_ids), label: "Роли" },
     ];
-    exportToExcel(sortedLogs, columns, "Логи_ролей");
+
+    exportToExcel(filteredLogs, columns, "Логи_ролей");
   };
 
   return (
     <div className="report-table-container">
       <div className="table-header-actions" style={{ marginBottom: "20px" }}>
-        <div
-          className="filters"
-          style={{ display: "flex", gap: "10px", flex: 1 }}
-        >
+        <div className="filters" style={{ display: "flex", gap: "10px", flex: 1, flexWrap: "wrap" }}>
           <Input
             placeholder="Логин оператора"
             type="text"
@@ -147,69 +147,47 @@ const RolesLogsTable = () => {
             onChange={(value) => setToDate(value)}
           />
         </div>
+
         <button className="export-excel-btn" onClick={handleExport}>
           Экспорт в Excel
         </button>
       </div>
-      {loading ? (
-        <Spinner />
-      ) : (
-        <>
-          {filteredLogs && filteredLogs.length > 0 ? (
-            <div
-              className="table-reports-div"
-              style={{ maxHeight: "calc(100vh - 480px)" }}
-            >
-              <table className="table-reports">
-                <thead>
-                  <tr>
-                    <th
-                      onClick={() => requestSort("CreatedAt")}
-                      className="sortable-header"
-                    >
-                      Дата{" "}
-                      <SortIcon sortConfig={sortConfig} sortKey="CreatedAt" />
-                    </th>
-                    <th
-                      onClick={() => requestSort("operator.username")}
-                      className="sortable-header"
-                    >
-                      Оператор{" "}
-                      <SortIcon
-                        sortConfig={sortConfig}
-                        sortKey="operator.username"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSort("user.username")}
-                      className="sortable-header"
-                    >
-                      Пользователь{" "}
-                      <SortIcon
-                        sortConfig={sortConfig}
-                        sortKey="user.username"
-                      />
-                    </th>
-                    <th>Роли</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedLogs.map((row, idx) => (
-                    <tr key={idx}>
-                      <td>{formatDate(row.CreatedAt)}</td>
-                      <td>{row.operator?.username || "N/A"}</td>
-                      <td>{row.user?.username || "N/A"}</td>
-                      <td>{formatRoles(row.role_ids)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <h2>Нет данных</h2>
-          )}
-        </>
-      )}
+
+      <Table
+        tableId="operator-role-logs-table"
+        dataSource={filteredLogs}
+        rowKey={(record, index) => record.ID ?? `${record.CreatedAt}-${index}`}
+        loading={loading}
+        bordered
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: "Нет данных" }}
+      >
+        <Table.Column
+          title="Дата"
+          dataIndex="CreatedAt"
+          key="CreatedAt"
+          render={(value) => formatDate(value)}
+        />
+        <Table.Column
+          title="Оператор"
+          dataIndex={["operator", "username"]}
+          key="operator.username"
+          render={(value) => value || "N/A"}
+        />
+        <Table.Column
+          title="Пользователь"
+          dataIndex={["user", "username"]}
+          key="user.username"
+          render={(value) => value || "N/A"}
+        />
+        <Table.Column
+          title="Роли"
+          key="role_ids"
+          sortValue={(record) => formatRoles(record.role_ids)}
+          render={(_, record) => formatRoles(record.role_ids)}
+        />
+      </Table>
     </div>
   );
 };

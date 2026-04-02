@@ -1,18 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "../../../../styles/components/Table.scss";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/AddCardPriceForm.scss";
 import "../../../../styles/components/SearchBar.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../../hooks/useTableSort.js";
-import SortIcon from "../../../general/SortIcon.jsx";
-import Spinner from "../../../Spinner.jsx";
 
 const TableCardMargents = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [editId, setEditId] = useState(null);
   const [editedCard, setEditedCard] = useState({});
   const [newCard, setNewCard] = useState({
@@ -23,9 +20,6 @@ const TableCardMargents = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
 
-  const { items: sortedCards, requestSort, sortConfig } = useTableSort(cards);
-
-  // загрузка всех карт
   const fetchCards = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -39,8 +33,6 @@ const TableCardMargents = () => {
       });
       const data = await response.json();
 
-      console.log("API data:", data);
-
       if (Array.isArray(data)) {
         setCards(data);
       } else if (data && Array.isArray(data.data)) {
@@ -49,8 +41,8 @@ const TableCardMargents = () => {
         console.error("Неправильный формат ответа:", data);
         setCards([]);
       }
-    } catch (e) {
-      console.error("Ошибка загрузки:", e);
+    } catch (error) {
+      console.error("Ошибка загрузки:", error);
       setError("Ошибка загрузки данных");
       setCards([]);
     } finally {
@@ -62,13 +54,11 @@ const TableCardMargents = () => {
     fetchCards();
   }, [fetchCards]);
 
-  // двойной клик для редактирования
   const handleDoubleClick = (card) => {
     setEditId(card.ID);
     setEditedCard({ ...card });
   };
 
-  // сохранение изменений (PATCH)
   const handleSave = async (id) => {
     try {
       const token = localStorage.getItem("access_token");
@@ -82,14 +72,16 @@ const TableCardMargents = () => {
         body: JSON.stringify(editedCard),
       });
 
-      if (!response.ok) throw new Error("Ошибка при обновлении");
+      if (!response.ok) {
+        throw new Error("Ошибка при обновлении");
+      }
 
-      setCards((prev) =>
-        prev.map((c) => (c.ID === id ? { ...editedCard } : c)),
+      setCards((previous) =>
+        previous.map((card) => (card.ID === id ? { ...editedCard } : card)),
       );
       setEditId(null);
-    } catch (e) {
-      console.error("Ошибка при сохранении:", e);
+    } catch (error) {
+      console.error("Ошибка при сохранении:", error);
     }
   };
 
@@ -105,15 +97,16 @@ const TableCardMargents = () => {
         },
       });
 
-      if (!response.ok) throw new Error("Ошибка при удалении");
+      if (!response.ok) {
+        throw new Error("Ошибка при удалении");
+      }
 
-      setCards((prev) => prev.filter((c) => c.ID !== id));
-    } catch (e) {
-      console.error("Ошибка при удалении:", e);
+      setCards((previous) => previous.filter((card) => card.ID !== id));
+    } catch (error) {
+      console.error("Ошибка при удалении:", error);
     }
   };
 
-  // добавление новой карты (POST)
   const handleAdd = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -127,21 +120,17 @@ const TableCardMargents = () => {
         body: JSON.stringify(newCard),
       });
 
-      if (!response.ok) throw new Error("Ошибка при добавлении");
+      if (!response.ok) {
+        throw new Error("Ошибка при добавлении");
+      }
 
-      // Опционально: можно обновлять локально
-      // const created = await response.json();
-      // setCards((prev) => [...prev, created]);
-
-      // Небольшой подход: заново загрузить данные через GET
       await fetchCards();
-
       setNewCard({
         title: "",
         code: "",
       });
-    } catch (e) {
-      console.error("Ошибка при добавлении:", e);
+    } catch (error) {
+      console.error("Ошибка при добавлении:", error);
     }
   };
 
@@ -150,7 +139,44 @@ const TableCardMargents = () => {
       { key: "title", label: "Название" },
       { key: "code", label: "Код" },
     ];
-    exportToExcel(sortedCards, columns, "Мерчанты");
+
+    exportToExcel(cards, columns, "Мерчанты");
+  };
+
+  const renderEditableCell = (card, field) => {
+    const isEditing = editId === card.ID;
+
+    if (isEditing) {
+      return (
+        <input
+          value={editedCard[field] ?? ""}
+          onChange={(event) =>
+            setEditedCard((previous) => ({
+              ...previous,
+              [field]:
+                field === "code"
+                  ? String(event.target.value)
+                  : event.target.value,
+            }))
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              handleSave(card.ID);
+            }
+          }}
+          autoFocus={field === "title"}
+        />
+      );
+    }
+
+    return (
+      <div
+        onDoubleClick={() => handleDoubleClick(card)}
+        style={{ cursor: "pointer" }}
+      >
+        {card[field]}
+      </div>
+    );
   };
 
   return (
@@ -162,19 +188,26 @@ const TableCardMargents = () => {
         </button>
       </div>
 
-      {/* Форма для добавления новой карты перемещена сюда */}
       <div className="add-card-form" style={{ marginBottom: "20px" }}>
         <h3>Добавить нового мерчанта</h3>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
           <input
             value={newCard.title}
-            onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                title: event.target.value,
+              }))
+            }
             placeholder="Название"
           />
           <input
             value={newCard.code}
-            onChange={(e) =>
-              setNewCard({ ...newCard, code: String(e.target.value) })
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                code: String(event.target.value),
+              }))
             }
             placeholder="Код"
           />
@@ -184,103 +217,54 @@ const TableCardMargents = () => {
         </div>
       </div>
 
-      {loading ? (
-        <>
-          <div style={{ padding: "1.5rem 0" }}>
-            <Spinner center />
-          </div>
-        <p>Загрузка...</p>
-        </>
-      ) : error ? (
+      {error ? (
         <p style={{ color: "red" }}>{error}</p>
       ) : (
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th
-                onClick={() => requestSort("title")}
-                className="sortable-header"
-              >
-                Название <SortIcon sortConfig={sortConfig} sortKey="title" />
-              </th>
-              <th
-                onClick={() => requestSort("code")}
-                className="sortable-header"
-              >
-                Код <SortIcon sortConfig={sortConfig} sortKey="code" />
-              </th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.isArray(sortedCards) && sortedCards.length > 0 ? (
-              sortedCards.map((card) => (
-                <tr key={card.ID}>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.ID ? (
-                      <input
-                        value={editedCard.title}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            title: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.ID)
-                        }
-                        autoFocus
-                      />
-                    ) : (
-                      card.title
-                    )}
-                  </td>
-                  <td onDoubleClick={() => handleDoubleClick(card)}>
-                    {editId === card.ID ? (
-                      <input
-                        value={editedCard.code}
-                        onChange={(e) =>
-                          setEditedCard({
-                            ...editedCard,
-                            code: String(e.target.value),
-                          })
-                        }
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleSave(card.ID)
-                        }
-                      />
-                    ) : (
-                      card.code
-                    )}
-                  </td>
-                  <td>
-                    {editId === card.ID ? (
-                      <button
-                        onClick={() => handleSave(card.ID)}
-                        className="action-buttons__btn"
-                      >
-                        Сохранить
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleDelete(card.ID)}
-                        className="action-buttons__btn"
-                      >
-                        Удалить
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" style={{ textAlign: "center" }}>
-                  Нет данных
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <Table
+          tableId="operator-merchants-table"
+          dataSource={cards}
+          rowKey={(record) => record.ID}
+          loading={loading}
+          bordered
+          pagination={{ pageSize: 10, showSizeChanger: false }}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: "Нет данных" }}
+        >
+          <Table.Column
+            title="Название"
+            dataIndex="title"
+            key="title"
+            render={(_, record) => renderEditableCell(record, "title")}
+          />
+          <Table.Column
+            title="Код"
+            dataIndex="code"
+            key="code"
+            render={(_, record) => renderEditableCell(record, "code")}
+          />
+          <Table.Column
+            title="Действия"
+            key="actions"
+            sortable={false}
+            render={(_, record) =>
+              editId === record.ID ? (
+                <button
+                  onClick={() => handleSave(record.ID)}
+                  className="action-buttons__btn"
+                >
+                  Сохранить
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleDelete(record.ID)}
+                  className="action-buttons__btn"
+                >
+                  Удалить
+                </button>
+              )
+            }
+          />
+        </Table>
       )}
     </div>
   );

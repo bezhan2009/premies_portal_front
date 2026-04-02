@@ -1,13 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import "../../styles/components/CustomSelect.scss";
+
+const DROPDOWN_MAX_HEIGHT = 260;
+const VIEWPORT_OFFSET = 8;
 
 const CustomSelect = ({
   options = [],
   value,
   onChange,
-  placeholder = "Выберите...",
+  placeholder = "Р’С‹Р±РµСЂРёС‚Рµ...",
   error,
   title,
   className = "",
@@ -17,7 +21,10 @@ const CustomSelect = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
+  const dropdownRef = useRef(null);
+
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
 
   useEffect(() => {
@@ -35,23 +42,30 @@ const CustomSelect = ({
     }
   }, [disabled, onChange, options, selectedOption, value]);
 
-  // Close on click outside
   useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
     const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      const clickedInsideContainer = containerRef.current?.contains(event.target);
+      const clickedInsideDropdown = dropdownRef.current?.contains(event.target);
+
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setIsOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !containerRef.current) {
-      return;
+      return undefined;
     }
 
-    const updateDropdownDirection = () => {
+    const updateDropdownPosition = () => {
       if (!containerRef.current) {
         return;
       }
@@ -62,24 +76,47 @@ const CustomSelect = ({
       const shouldOpenUpward =
         dropdownPosition === "top" ||
         (dropdownPosition === "auto" &&
-          spaceBelow < 260 &&
+          spaceBelow < DROPDOWN_MAX_HEIGHT &&
           spaceAbove > spaceBelow);
 
+      const width = Math.min(rect.width, window.innerWidth - VIEWPORT_OFFSET * 2);
+      const left = Math.min(
+        Math.max(rect.left, VIEWPORT_OFFSET),
+        Math.max(VIEWPORT_OFFSET, window.innerWidth - width - VIEWPORT_OFFSET),
+      );
+
       setOpenUpward(shouldOpenUpward);
+      setDropdownStyle({
+        left,
+        width,
+        zIndex: 3000,
+        ...(shouldOpenUpward
+          ? {
+              bottom: Math.max(
+                window.innerHeight - rect.top + 4,
+                VIEWPORT_OFFSET,
+              ),
+            }
+          : {
+              top: Math.min(rect.bottom + 4, window.innerHeight - VIEWPORT_OFFSET),
+            }),
+      });
     };
 
-    updateDropdownDirection();
-    window.addEventListener("resize", updateDropdownDirection);
-    window.addEventListener("scroll", updateDropdownDirection, true);
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
 
     return () => {
-      window.removeEventListener("resize", updateDropdownDirection);
-      window.removeEventListener("scroll", updateDropdownDirection, true);
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
     };
   }, [dropdownPosition, isOpen]);
 
   const handleToggle = () => {
-    if (!disabled) setIsOpen(!isOpen);
+    if (!disabled) {
+      setIsOpen((previous) => !previous);
+    }
   };
 
   const handleSelect = (optionValue) => {
@@ -87,69 +124,81 @@ const CustomSelect = ({
     setIsOpen(false);
   };
 
-  return (
-    <div
-      className={`custom-select-container ${className} ${error ? "has-error" : ""} ${disabled ? "disabled" : ""}`}
-      ref={containerRef}
-      style={style}
-    >
-      {title && <label className="custom-select-label">{title}</label>}
-      
-      <div
-        className={`custom-select-trigger ${isOpen ? "open" : ""}`}
-        onClick={handleToggle}
-        tabIndex={disabled ? -1 : 0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleToggle();
-          }
-        }}
-      >
-        <span className={`selected-value ${!selectedOption ? "placeholder" : ""}`}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="select-icon"
+  const dropdown = (
+    <AnimatePresence>
+      {isOpen && (
+        <Motion.div
+          ref={dropdownRef}
+          initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.98 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className={`custom-select-dropdown ${openUpward ? "top" : "bottom"}`}
+          style={dropdownStyle}
         >
-          <ChevronDown size={18} />
-        </motion.div>
+          <div className="options-list">
+            {options.length > 0 ? (
+              options.map((option, index) => (
+                <Motion.div
+                  key={option.value || index}
+                  className={`option-item ${String(option.value) === String(value) ? "selected" : ""}`}
+                  onClick={() => handleSelect(option.value)}
+                  whileHover={{ backgroundColor: "rgba(226, 26, 28, 0.08)" }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {option.label}
+                </Motion.div>
+              ))
+            ) : (
+              <div className="no-options">РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РІР°СЂРёР°РЅС‚РѕРІ</div>
+            )}
+          </div>
+        </Motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <>
+      <div
+        className={`custom-select-container ${className} ${error ? "has-error" : ""} ${disabled ? "disabled" : ""}`}
+        ref={containerRef}
+        style={style}
+      >
+        {title && <label className="custom-select-label">{title}</label>}
+
+        <div
+          className={`custom-select-trigger ${isOpen ? "open" : ""}`}
+          onClick={handleToggle}
+          tabIndex={disabled ? -1 : 0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleToggle();
+            }
+
+            if (event.key === "Escape") {
+              setIsOpen(false);
+            }
+          }}
+        >
+          <span className={`selected-value ${!selectedOption ? "placeholder" : ""}`}>
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+          <Motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="select-icon"
+          >
+            <ChevronDown size={18} />
+          </Motion.div>
+        </div>
+
+        {error && <p className="custom-select-error">{error}</p>}
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: openUpward ? -5 : 5, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className={`custom-select-dropdown ${openUpward ? "top" : "bottom"}`}
-          >
-            <div className="options-list">
-              {options.length > 0 ? (
-                options.map((option, index) => (
-                  <motion.div
-                    key={option.value || index}
-                    className={`option-item ${String(option.value) === String(value) ? "selected" : ""}`}
-                    onClick={() => handleSelect(option.value)}
-                    whileHover={{ backgroundColor: "rgba(226, 26, 28, 0.08)" }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {option.label}
-                  </motion.div>
-                ))
-              ) : (
-                <div className="no-options">Нет доступных вариантов</div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {error && <p className="custom-select-error">{error}</p>}
-    </div>
+      {typeof document !== "undefined" ? createPortal(dropdown, document.body) : null}
+    </>
   );
 };
 
