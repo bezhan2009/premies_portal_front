@@ -848,8 +848,6 @@ export default function ABSClientSearch() {
               sortDepositsConfig={sortDepositsConfig}
               handleExportDeposits={handleExportDeposits}
             />
-
-
           </div>
         </div>
       </div>
