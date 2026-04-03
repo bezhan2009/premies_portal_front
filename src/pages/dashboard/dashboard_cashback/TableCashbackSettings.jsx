@@ -74,6 +74,77 @@ const fields = [
   { key: "is_active", label: "Активен", type: "checkbox" },
 ];
 
+// ─── Ключевое исправление ────────────────────────────────────────────────────
+// Рекурсивно разворачивает вложенные JSON-строки и фигурные-скобочные литералы
+// до тех пор, пока не получится чистый массив строк без слешей.
+const parseTransactionType = (value) => {
+  if (Array.isArray(value)) {
+    // Если массив — разворачиваем каждый элемент рекурсивно
+    return value.flatMap((v) => parseTransactionType(v));
+  }
+
+  if (value === null || value === undefined || value === "") return [];
+
+  let str = String(value).trim();
+
+  // Пока строка выглядит как JSON или обёрнута в лишние кавычки — разворачиваем
+  let prev = null;
+  while (str !== prev) {
+    prev = str;
+
+    // Снимаем обрамляющие двойные кавычки (экранированный JSON)
+    if (str.startsWith('"') && str.endsWith('"')) {
+      try {
+        const parsed = JSON.parse(str);
+        if (typeof parsed === "string") {
+          str = parsed.trim();
+          continue;
+        }
+        if (Array.isArray(parsed)) {
+          return parsed.flatMap((v) => parseTransactionType(v));
+        }
+      } catch {
+        // не JSON — идём дальше
+      }
+    }
+
+    // Пробуем разобрать как JSON-массив или JSON-строку
+    if (str.startsWith("[") || str.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) {
+          return parsed.flatMap((v) => parseTransactionType(v));
+        }
+        if (typeof parsed === "string") {
+          str = parsed.trim();
+          continue;
+        }
+      } catch {
+        // не валидный JSON
+      }
+    }
+
+    // PostgreSQL / Go-массив вида {680,774,678}
+    if (str.startsWith("{") && str.endsWith("}")) {
+      const inner = str.slice(1, -1).trim();
+      if (inner) {
+        return inner
+          .split(",")
+          .map((v) => v.trim().replace(/^"+|"+$/g, ""))
+          .filter(Boolean);
+      }
+      return [];
+    }
+  }
+
+  // Если осталась обычная строка с запятыми — разбиваем
+  return str
+    .split(",")
+    .map((v) => v.trim().replace(/^"+|"+$/g, ""))
+    .filter(Boolean);
+};
+// ────────────────────────────────────────────────────────────────────────────
+
 const tagBoxStyle = {
   display: "flex",
   flexWrap: "wrap",
@@ -125,18 +196,14 @@ const InlineTagInput = ({ tags, onChange }) => {
   const addTags = (raw) => {
     const newTags = raw
       .split(/[,\s]+/)
-      .map((value) => value.trim())
+      .map((v) => v.trim())
       .filter(Boolean);
-
-    if (!newTags.length) {
-      return;
-    }
-
+    if (!newTags.length) return;
     onChange([...new Set([...tags, ...newTags])]);
     setInputVal("");
   };
 
-  const removeTag = (idx) => onChange(tags.filter((_, index) => index !== idx));
+  const removeTag = (idx) => onChange(tags.filter((_, i) => i !== idx));
 
   const handleKeyDown = (event) => {
     if (["Enter", ","].includes(event.key)) {
@@ -144,7 +211,6 @@ const InlineTagInput = ({ tags, onChange }) => {
       addTags(inputVal);
       return;
     }
-
     if (event.key === "Backspace" && !inputVal && tags.length) {
       removeTag(tags.length - 1);
     }
@@ -163,7 +229,7 @@ const InlineTagInput = ({ tags, onChange }) => {
       <input
         style={tagInputStyle}
         value={inputVal}
-        onChange={(event) => setInputVal(event.target.value)}
+        onChange={(e) => setInputVal(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => inputVal.trim() && addTags(inputVal)}
       />
@@ -172,18 +238,9 @@ const InlineTagInput = ({ tags, onChange }) => {
 };
 
 const TagDisplay = ({ value }) => {
-  const tags = Array.isArray(value)
-    ? value
-    : value
-      ? String(value)
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-      : [];
+  const tags = parseTransactionType(value); // ← используем новый парсер
 
-  if (!tags.length) {
-    return <span style={{ color: "#aaa" }}>-</span>;
-  }
+  if (!tags.length) return <span style={{ color: "#aaa" }}>-</span>;
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
@@ -247,14 +304,8 @@ const TableCashbackSettings = () => {
     setEditId(item.ID);
     setEditedItem({
       ...item,
-      transaction_type: Array.isArray(item.transaction_type)
-        ? item.transaction_type
-        : item.transaction_type
-          ? String(item.transaction_type)
-              .split(",")
-              .map((value) => value.trim())
-              .filter(Boolean)
-          : [],
+      // parseTransactionType гарантирует чистый массив строк
+      transaction_type: parseTransactionType(item.transaction_type),
     });
   }, []);
 
@@ -263,30 +314,27 @@ const TableCashbackSettings = () => {
     return String(value).includes("T") ? String(value).slice(0, 10) : value;
   };
 
-  const buildPayload = useCallback((raw) => ({
-    ...raw,
-    reqamt: parseFloat(raw.reqamt) || 0,
-    amount: parseFloat(raw.amount) || 0,
-    conamt: parseFloat(raw.conamt) || 0,
-    acctbal: parseFloat(raw.acctbal) || 0,
-    netbal: parseFloat(raw.netbal) || 0,
-    utrnno: parseInt(raw.utrnno, 10) || 0,
-    currency: parseInt(raw.currency, 10) || 0,
-    conCurrency: parseInt(raw.conCurrency, 10) || 0,
-    reversal: parseInt(raw.reversal, 10) || 0,
-    mcc: parseInt(raw.mcc, 10) || 0,
-    cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
-    from_date: toDateOnly(raw.from_date),
-    to_date: toDateOnly(raw.to_date),
-    transaction_type: Array.isArray(raw.transaction_type)
-      ? raw.transaction_type
-      : raw.transaction_type
-        ? String(raw.transaction_type)
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean)
-        : [],
-  }), []);
+  const buildPayload = useCallback(
+    (raw) => ({
+      ...raw,
+      reqamt: parseFloat(raw.reqamt) || 0,
+      amount: parseFloat(raw.amount) || 0,
+      conamt: parseFloat(raw.conamt) || 0,
+      acctbal: parseFloat(raw.acctbal) || 0,
+      netbal: parseFloat(raw.netbal) || 0,
+      utrnno: parseInt(raw.utrnno, 10) || 0,
+      currency: parseInt(raw.currency, 10) || 0,
+      conCurrency: parseInt(raw.conCurrency, 10) || 0,
+      reversal: parseInt(raw.reversal, 10) || 0,
+      mcc: parseInt(raw.mcc, 10) || 0,
+      cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
+      from_date: toDateOnly(raw.from_date),
+      to_date: toDateOnly(raw.to_date),
+      // Отправляем ТОЛЬКО чистый массив строк — никакого JSON.stringify
+      transaction_type: parseTransactionType(raw.transaction_type),
+    }),
+    [],
+  );
 
   const handleSave = async () => {
     try {
@@ -301,9 +349,7 @@ const TableCashbackSettings = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        throw new Error("Ошибка при обновлении");
-      }
+      if (!response.ok) throw new Error("Ошибка при обновлении");
 
       setItems((prev) =>
         prev.map((item) => (item.ID === editId ? { ...payload, ID: editId } : item)),
@@ -326,9 +372,7 @@ const TableCashbackSettings = () => {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Ошибка при удалении");
-      }
+      if (!response.ok) throw new Error("Ошибка при удалении");
 
       setItems((prev) => prev.filter((item) => item.ID !== id));
     } catch (e) {
@@ -348,9 +392,7 @@ const TableCashbackSettings = () => {
         body: JSON.stringify(buildPayload(newItem)),
       });
 
-      if (!response.ok) {
-        throw new Error("Ошибка при добавлении");
-      }
+      if (!response.ok) throw new Error("Ошибка при добавлении");
 
       await fetchItems();
       setNewItem({ ...emptyForm });
@@ -373,9 +415,7 @@ const TableCashbackSettings = () => {
     if (fieldType === "date") {
       try {
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-          return value;
-        }
+        if (Number.isNaN(date.getTime())) return value;
         return date.toLocaleDateString("ru-RU");
       } catch {
         return value;
@@ -384,68 +424,71 @@ const TableCashbackSettings = () => {
     return String(value);
   };
 
-  const renderCell = useCallback((item, field) => {
-    const isEditing = editId === item.ID;
+  const renderCell = useCallback(
+    (item, field) => {
+      const isEditing = editId === item.ID;
 
-    if (field.type === "tags") {
-      if (!isEditing) {
-        return <TagDisplay value={item[field.key]} />;
+      if (field.type === "tags") {
+        if (!isEditing) return <TagDisplay value={item[field.key]} />;
+
+        return (
+          <InlineTagInput
+            tags={
+              Array.isArray(editedItem[field.key])
+                ? editedItem[field.key]
+                : parseTransactionType(editedItem[field.key])
+            }
+            onChange={(value) => setEditedItem({ ...editedItem, [field.key]: value })}
+          />
+        );
       }
 
-      return (
-        <InlineTagInput
-          tags={Array.isArray(editedItem[field.key]) ? editedItem[field.key] : []}
-          onChange={(value) => setEditedItem({ ...editedItem, [field.key]: value })}
-        />
-      );
-    }
+      if (!isEditing) return formatValue(item[field.key], field.type);
 
-    if (!isEditing) {
-      return formatValue(item[field.key], field.type);
-    }
-
-    let inputVal = editedItem[field.key] ?? "";
-    if (field.type === "date" && inputVal) {
-      try {
-        inputVal = new Date(inputVal).toISOString().slice(0, 10);
-      } catch {
-        inputVal = editedItem[field.key] ?? "";
+      let inputVal = editedItem[field.key] ?? "";
+      if (field.type === "date" && inputVal) {
+        try {
+          inputVal = new Date(inputVal).toISOString().slice(0, 10);
+        } catch {
+          inputVal = editedItem[field.key] ?? "";
+        }
       }
-    }
 
-    if (field.type === "checkbox") {
+      if (field.type === "checkbox") {
+        return (
+          <input
+            type="checkbox"
+            checked={!!editedItem[field.key]}
+            onChange={(e) =>
+              setEditedItem({ ...editedItem, [field.key]: e.target.checked })
+            }
+          />
+        );
+      }
+
       return (
         <input
-          type="checkbox"
-          checked={!!editedItem[field.key]}
-          onChange={(event) =>
-            setEditedItem({ ...editedItem, [field.key]: event.target.checked })
+          type={field.type}
+          step={field.step}
+          value={inputVal}
+          style={{
+            width: "100%",
+            minWidth: "80px",
+            boxSizing: "border-box",
+            padding: "4px 6px",
+            border: "1px solid #ced4da",
+            borderRadius: "4px",
+            fontSize: "13px",
+          }}
+          onChange={(e) =>
+            setEditedItem({ ...editedItem, [field.key]: e.target.value })
           }
+          onKeyDown={(e) => e.key === "Enter" && handleSave()}
         />
       );
-    }
-
-    return (
-      <input
-        type={field.type}
-        step={field.step}
-        value={inputVal}
-        style={{
-          width: "100%",
-          minWidth: "80px",
-          boxSizing: "border-box",
-          padding: "4px 6px",
-          border: "1px solid #ced4da",
-          borderRadius: "4px",
-          fontSize: "13px",
-        }}
-        onChange={(event) =>
-          setEditedItem({ ...editedItem, [field.key]: event.target.value })
-        }
-        onKeyDown={(event) => event.key === "Enter" && handleSave()}
-      />
-    );
-  }, [editId, editedItem, handleSave]);
+    },
+    [editId, editedItem, handleSave],
+  );
 
   const columns = useMemo(
     () => [
@@ -454,7 +497,9 @@ const TableCashbackSettings = () => {
         dataIndex: field.key,
         key: field.key,
         render: (_, item) => (
-          <div onDoubleClick={() => handleDoubleClick(item)}>{renderCell(item, field)}</div>
+          <div onDoubleClick={() => handleDoubleClick(item)}>
+            {renderCell(item, field)}
+          </div>
         ),
       })),
       {
@@ -485,10 +530,7 @@ const TableCashbackSettings = () => {
       <div className="table-header-actions" style={{ margin: "16px" }}>
         <h2>Настройки кэшбэка</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <button
-            className="action-buttons__btn"
-            onClick={() => setShowAddModal(true)}
-          >
+          <button className="action-buttons__btn" onClick={() => setShowAddModal(true)}>
             + Добавить настройку
           </button>
           <button className="export-excel-btn" onClick={handleExport}>
