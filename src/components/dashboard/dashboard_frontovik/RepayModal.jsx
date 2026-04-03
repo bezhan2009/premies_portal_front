@@ -18,41 +18,22 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
         setIsFetchingDetails(true);
         try {
           const details = await fetchLoanDetails(creditInfo.referenceId);
-          if (details) {
-            const list = [];
-
-            // Фильтруем счета из balanceAccount (аналитические счета)
-            if (details.balances) {
-              details.balances.forEach((b) => {
-                if (b.accCode && b.accCode.startsWith("20216")) {
-                  list.push({
-                    name: `${b.accCode} (Аналитический)`,
-                    value: b.accCode,
-                    code: b.code,
-                  });
-                }
+          if (details && details.paymentOptions) {
+            // Фильтруем счета из paymentOptions, которые начинаются на 202
+            // И присваиваем им порядковый номер (sourceOrdNum) на основе их позиции в отфильтрованном списке
+            let currentOrdNum = 0;
+            const list = details.paymentOptions
+              .filter((p) => p.account && p.account.startsWith("202"))
+              .map((p) => {
+                currentOrdNum++;
+                return {
+                  name: `${p.account} (${p.name || "Счет"})`,
+                  value: p.account,
+                  sourceOrdNum: currentOrdNum,
+                };
               });
-            }
 
-            // Фильтруем счета из paymentOptions
-            if (details.paymentOptions) {
-              details.paymentOptions.forEach((p) => {
-                if (p.account && p.account.startsWith("20216")) {
-                  list.push({
-                    name: `${p.account} (${p.name || "Счет"})`,
-                    value: p.account,
-                    code: p.code,
-                  });
-                }
-              });
-            }
-
-            // Удаляем дубликаты по номеру счета
-            const uniqueList = Array.from(
-              new Set(list.map((a) => a.value)),
-            ).map((val) => list.find((a) => a.value === val));
-
-            setFilteredAccounts(uniqueList);
+            setFilteredAccounts(list);
           }
         } catch (error) {
           console.error("Ошибка при загрузке счетов для погашения:", error);
@@ -69,14 +50,14 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
     e.preventDefault();
     if (!amount || !selectedAccount) return;
 
-    // Находим выбранный счет чтобы получить его code (sourceOrdNum)
+    // Находим выбранный счет чтобы получить его sourceOrdNum
     const accountObj = filteredAccounts.find(
       (a) => a.value === selectedAccount,
     );
 
     onSubmit({
       amount: parseFloat(amount),
-      sourceOrdNum: accountObj?.code || "1", // Порядковый номер счета
+      sourceOrdNum: accountObj?.sourceOrdNum || 1,
       referenceId: creditInfo.referenceId,
     });
   };
@@ -116,15 +97,15 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                   Счет для списания:
                 </label>
                 {isFetchingDetails ? (
-                  <>
-                  <Spinner size="small" />
-                  <p
-                    className="loading-small"
-                    style={{ fontSize: "14px", color: "#3498db" }}
-                  >
-                    Загрузка счетов...
-                  </p>
-                  </>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Spinner size="small" />
+                    <p
+                      className="loading-small"
+                      style={{ fontSize: "14px", color: "#3498db", margin: 0 }}
+                    >
+                      Загрузка счетов...
+                    </p>
+                  </div>
                 ) : (
                   <select
                     value={selectedAccount}
@@ -155,7 +136,7 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                       marginTop: "5px",
                     }}
                   >
-                    Нет подходящих счетов (начинающихся на 20216)
+                    Нет подходящих счетов (начинающихся на 202)
                   </p>
                 )}
               </div>

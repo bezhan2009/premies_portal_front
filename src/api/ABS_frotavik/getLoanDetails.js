@@ -31,97 +31,114 @@ function parseLoanDetailsSoapResponse(xmlText) {
   const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
   const getElementValue = (parent, tagName) => {
-    // Try with namespace first
-    let el = parent.getElementsByTagNameNS(LOANS_NS, tagName);
-    if (el.length > 0) return el[0].textContent;
-
-    // Fallback to local name (some SOAP responses might not properly namespace all child nodes)
-    el = parent.getElementsByTagName(tagName);
-    if (el.length > 0) return el[0].textContent;
-
-    // Fallback searching with prefix if any
-    const all = parent.getElementsByTagName("*");
-    for (let i = 0; i < all.length; i++) {
-      const node = all[i];
-      if (node.localName === tagName) return node.textContent;
+    if (!parent) return "";
+    // Try finding by local name in any namespace
+    const elements = parent.getElementsByTagName("*");
+    for (let i = 0; i < elements.length; i++) {
+      if (elements[i].localName === tagName) return elements[i].textContent;
     }
-
     return "";
   };
 
-  // Helper to find first matching element regardless of namespace if needed,
-  // but Colvir usually respects namespaces.
-
-  const findRoot = () => {
-    const rootNames = [
-      "loadLoanDetailsResponse",
-      "loadLoanDetailsResponseElem",
-    ];
-    for (const name of rootNames) {
-      let r = xmlDoc.getElementsByTagNameNS("*", name)[0];
-      if (r) return r;
-      r = xmlDoc.getElementsByTagName(name)[0];
-      if (r) return r;
-    }
-
-    // Fallback: finding any element that ends with loadLoanDetailsResponse
-    const all = xmlDoc.getElementsByTagName("*");
-    for (let i = 0; i < all.length; i++) {
-      if (all[i].localName.includes("loadLoanDetailsResponse")) return all[i];
+  const findElement = (parent, tagName) => {
+    if (!parent) return null;
+    const elements = parent.getElementsByTagName("*");
+    for (let i = 0; i < elements.length; i++) {
+      if (elements[i].localName === tagName) return elements[i];
     }
     return null;
   };
 
-  const root = findRoot();
-  if (!root) return null;
+  // Find the root response element
+  const responseElem = xmlDoc.getElementsByTagNameNS("*", "loadLoanDetailsResponse")[0];
+  if (!responseElem) return null;
 
-  // Extract Params
+  // Find the loan element
+  const loanElem = findElement(responseElem, "loan");
+  if (!loanElem) return null;
+
+  // Find agreementData
+  const agreementDataElem = findElement(loanElem, "agreementData");
+  
+  // Extract Params from agreementData
   const params = {
-    referenceId:
-      getElementValue(root, "referenceId") ||
-      getElementValue(root, "colvirReferenceId"),
-    contractNumber: getElementValue(root, "contractNumber"),
-    statusName: getElementValue(root, "statusName"),
-    productName: getElementValue(root, "productName"),
-    creditPurpose: getElementValue(root, "creditPurpose"),
-    amount: getElementValue(root, "amount"),
-    currency: getElementValue(root, "currency"),
-    documentDate: getElementValue(root, "documentDate"),
-    term: getElementValue(root, "term"),
-    startDate: getElementValue(root, "startDate"),
-    endDate: getElementValue(root, "endDate"),
-    department: getElementValue(root, "department"),
-    clientDea: getElementValue(root, "clientDea"),
-    balanceAccount: getElementValue(root, "balanceAccount"),
-    earlyRepayment: getElementValue(root, "earlyRepayment"),
-    paymentDay: getElementValue(root, "paymentDay"),
-    penalty: getElementValue(root, "penalty"),
-    interestRate: getElementValue(root, "interestRate"),
-    creditExperts: getElementValue(root, "creditExperts"),
+    referenceId: getElementValue(agreementDataElem, "colvirReferenceId"),
+    contractNumber: getElementValue(agreementDataElem, "code"),
+    statusName: getElementValue(findElement(agreementDataElem, "status"), "name"),
+    productName: getElementValue(findElement(agreementDataElem, "product"), "name"),
+    creditPurpose: getElementValue(findElement(agreementDataElem, "purpose"), "name"),
+    amount: getElementValue(agreementDataElem, "amount"),
+    currency: getElementValue(agreementDataElem, "currency"),
+    documentDate: getElementValue(agreementDataElem, "documentDate"),
+    term: getElementValue(agreementDataElem, "termTU"),
+    startDate: getElementValue(agreementDataElem, "dateFrom"),
+    endDate: getElementValue(agreementDataElem, "dateTo"),
+    department: getElementValue(findElement(agreementDataElem, "department"), "code"),
+    clientDea: getElementValue(findElement(agreementDataElem, "deaClient"), "code"),
+    // Add other fields if needed, but these are most important
   };
 
-  // Extract Balances (Analytical accounts)
-  const balanceNodes = xmlDoc.getElementsByTagNameNS("*", "balanceAccount");
-  const balances = Array.from(balanceNodes).map((node) => ({
-    code: getElementValue(node, "code") || getElementValue(node, "nps"), // Fallback to nps if code is missing
-    nps: getElementValue(node, "nps"),
-    accCode: getElementValue(node, "accCode"),
-    balance: getElementValue(node, "balance"),
-    currCode: getElementValue(node, "currCode"),
-    activeFl: getElementValue(node, "activeFl"),
-    colvirReferenceId: getElementValue(node, "colvirReferenceId"),
-  }));
+  // Extract Balances (Balance accounts)
+  const balanceAccountsRoot = findElement(loanElem, "balanceAccounts");
+  const balanceNodes = balanceAccountsRoot ? balanceAccountsRoot.getElementsByTagName("*") : [];
+  const balances = [];
+  
+  for (let i = 0; i < balanceNodes.length; i++) {
+    const node = balanceNodes[i];
+    if (node.localName === "balanceAccount") {
+      const balance = getElementValue(node, "balance");
+      const curr = getElementValue(node, "currCode");
+      balances.push({
+        code: getElementValue(node, "nps"),
+        name: getElementValue(node, "accCode"),
+        amount: `${balance} ${curr}`,
+        nps: getElementValue(node, "nps"),
+        accCode: getElementValue(node, "accCode"),
+        balance: balance,
+        currCode: curr,
+        activeFl: getElementValue(node, "activeFl"),
+        colvirReferenceId: getElementValue(node, "colvirReferenceId"),
+      });
+    }
+  }
+
+  // Extract Analytical Accounts (Move them to balances if needed or keep separate)
+  // For now, let's keep them in the same list if the UI only has one "Balances" tab
+  // Or we can add an 'analyticalAccounts' field to the return object
+  const analyticalAccountsRoot = findElement(loanElem, "analyticalAccounts");
+  const analyticalNodes = analyticalAccountsRoot ? analyticalAccountsRoot.getElementsByTagName("*") : [];
+  const analyticalAccounts = [];
+  
+  for (let i = 0; i < analyticalNodes.length; i++) {
+    const node = analyticalNodes[i];
+    if (node.localName === "analyticalAccount") {
+      analyticalAccounts.push({
+        code: getElementValue(node, "anCode"),
+        name: getElementValue(node, "anCode"), // Usually specific codes like CR_AMT
+        amount: `${getElementValue(node, "amount")} ${getElementValue(node, "currencyCode")}`,
+        sign: getElementValue(node, "sign"),
+      });
+    }
+  }
 
   // Extract Payment Options
-  const accountNodes = xmlDoc.getElementsByTagNameNS("*", "paymentOption");
-  const paymentOptions = Array.from(accountNodes).map((node) => ({
-    code: getElementValue(node, "code"),
-    name: getElementValue(node, "name"),
-    account: getElementValue(node, "account"),
-    colvirReferenceId: getElementValue(node, "colvirReferenceId"),
-  }));
+  const paymentOptionsRoot = findElement(loanElem, "paymentOptions");
+  const paymentNodes = paymentOptionsRoot ? paymentOptionsRoot.getElementsByTagName("*") : [];
+  const paymentOptions = [];
+  
+  for (let i = 0; i < paymentNodes.length; i++) {
+    const node = paymentNodes[i];
+    if (node.localName === "paymentOption") {
+      paymentOptions.push({
+        code: getElementValue(node, "code"),
+        name: getElementValue(node, "name"),
+        account: getElementValue(node, "account"),
+        colvirReferenceId: getElementValue(node, "colvirReferenceId"),
+      });
+    }
+  }
 
-  return { params, balances, paymentOptions };
+  return { params, balances, analyticalAccounts, paymentOptions };
 }
 
 export async function fetchLoanDetails(referenceId) {
@@ -131,7 +148,7 @@ export async function fetchLoanDetails(referenceId) {
       method: "POST",
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
-        SOAPAction: "loadLoanDetails",
+        SOAPAction: "",
       },
       body: soapRequest,
     });
@@ -207,7 +224,7 @@ export async function repayLoanSoap(repayData) {
       method: "POST",
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
-        SOAPAction: "repayLoanEarly",
+        SOAPAction: "",
       },
       body: soapRequest,
     });
@@ -218,10 +235,10 @@ export async function repayLoanSoap(repayData) {
 
     const xmlText = await response.text();
     console.log("Response from repayLoanSoap:", xmlText);
-    // For now returning true if OK, as the user didn't specify parsing for response
     return true;
   } catch (error) {
     console.error("Error in repayLoanSoap:", error);
     throw error;
   }
 }
+
