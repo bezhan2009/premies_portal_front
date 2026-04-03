@@ -138,15 +138,23 @@ export default function ABSClientSearch() {
     return formatPhoneNumberUtil(value);
   };
 
+  const TYPES_ALLOW_LETTERS = [
+    TYPE_SEARCH_CLIENT[1]?.value,  // код клиента
+    "byName"                       // поиск по имени (ATM)
+  ];
+
+
   const handlePhoneChange = (e) => {
     const value = e.target.value;
+    const isLetterType = TYPES_ALLOW_LETTERS.includes(selectTypeSearchClient);
 
-    // Для поиска по коду клиента разрешаем точку
-    if (selectTypeSearchClient === TYPE_SEARCH_CLIENT[1].value) {
+    if (isLetterType) {
+      // Для кода клиента и имени – сохраняем как есть, без форматирования
       setPhoneNumber(value);
       setDisplayPhone(value);
     } else {
-      const digitsOnly = value;
+      // Для числовых полей – оставляем только цифры
+      const digitsOnly = value.replace(/\D/g, '');
       setPhoneNumber(digitsOnly);
       setDisplayPhone(formatPhoneNumber(digitsOnly));
     }
@@ -320,8 +328,8 @@ export default function ABSClientSearch() {
           // Поиск по ИНН возвращает массив
           normalizedData = Array.isArray(data)
             ? data.map((client) =>
-                normalizeClientData(client, selectTypeSearchClient),
-              )
+              normalizeClientData(client, selectTypeSearchClient),
+            )
             : [normalizeClientData(data, selectTypeSearchClient)];
         }
 
@@ -575,77 +583,77 @@ export default function ABSClientSearch() {
 
   const tableData = selectedClient
     ? [
-        { label: "Телефон", key: "phone", value: selectedClient.phone },
-        {
-          label: "Тип клиента",
-          key: "client_type_name",
-          value: selectedClient.client_type_name,
-        },
-        // {
-        //     label: "Флаг банковского счета",
-        //     key: "ban_acc_open_flag",
-        //     value: selectedClient.ban_acc_open_flag,
-        // },
-        {
-          label: "Код департамента",
-          key: "dep_code",
-          value: selectedClient.dep_code,
-        },
-        {
-          label: "Код клиента в АБС",
-          key: "client_code",
-          value: selectedClient.client_code,
-        },
-        { label: "Фамилия", key: "surname", value: selectedClient.surname },
-        { label: "Имя", key: "name", value: selectedClient.name },
-        {
-          label: "Отчество",
-          key: "patronymic",
-          value: selectedClient.patronymic,
-        },
-        {
-          label: "Фамилия (латиница)",
-          key: "ltn_surname",
-          value: selectedClient.ltn_surname,
-        },
-        {
-          label: "Имя (латиница)",
-          key: "ltn_name",
-          value: selectedClient.ltn_name,
-        },
-        {
-          label: "Отчество (латиница)",
-          key: "ltn_patronymic",
-          value: selectedClient.ltn_patronymic,
-        },
-        { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
-        {
-          label: "Тип документа",
-          key: "identdoc_name",
-          value: selectedClient.identdoc_name,
-        },
-        {
-          label: "Серия документа",
-          key: "identdoc_series",
-          value: selectedClient.identdoc_series,
-        },
-        {
-          label: "Номер документа",
-          key: "identdoc_num",
-          value: selectedClient.identdoc_num,
-        },
-        {
-          label: "Дата выдачи",
-          key: "identdoc_date",
-          value: selectedClient.identdoc_date,
-        },
-        {
-          label: "Кем выдан",
-          key: "identdoc_orgname",
-          value: selectedClient.identdoc_orgname,
-        },
-        { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
-      ]
+      { label: "Телефон", key: "phone", value: selectedClient.phone },
+      {
+        label: "Тип клиента",
+        key: "client_type_name",
+        value: selectedClient.client_type_name,
+      },
+      // {
+      //     label: "Флаг банковского счета",
+      //     key: "ban_acc_open_flag",
+      //     value: selectedClient.ban_acc_open_flag,
+      // },
+      {
+        label: "Код департамента",
+        key: "dep_code",
+        value: selectedClient.dep_code,
+      },
+      {
+        label: "Код клиента в АБС",
+        key: "client_code",
+        value: selectedClient.client_code,
+      },
+      { label: "Фамилия", key: "surname", value: selectedClient.surname },
+      { label: "Имя", key: "name", value: selectedClient.name },
+      {
+        label: "Отчество",
+        key: "patronymic",
+        value: selectedClient.patronymic,
+      },
+      {
+        label: "Фамилия (латиница)",
+        key: "ltn_surname",
+        value: selectedClient.ltn_surname,
+      },
+      {
+        label: "Имя (латиница)",
+        key: "ltn_name",
+        value: selectedClient.ltn_name,
+      },
+      {
+        label: "Отчество (латиница)",
+        key: "ltn_patronymic",
+        value: selectedClient.ltn_patronymic,
+      },
+      { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
+      {
+        label: "Тип документа",
+        key: "identdoc_name",
+        value: selectedClient.identdoc_name,
+      },
+      {
+        label: "Серия документа",
+        key: "identdoc_series",
+        value: selectedClient.identdoc_series,
+      },
+      {
+        label: "Номер документа",
+        key: "identdoc_num",
+        value: selectedClient.identdoc_num,
+      },
+      {
+        label: "Дата выдачи",
+        key: "identdoc_date",
+        value: selectedClient.identdoc_date,
+      },
+      {
+        label: "Кем выдан",
+        key: "identdoc_orgname",
+        value: selectedClient.identdoc_orgname,
+      },
+      { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
+    ]
     : [];
 
   // useEffect теперь вызывает handleGetDataUser только когда изменяется client_code
