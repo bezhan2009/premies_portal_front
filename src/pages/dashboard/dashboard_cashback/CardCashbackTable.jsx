@@ -7,7 +7,7 @@ import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
-import { getCurrencyCode } from "../../../utils/currencies.js"; // подправь путь под свой проект
+import { getCurrenciesCode } from "../../../api/utils/getCurrencyCode.js";
 
 const fields = [
   { key: "ID", label: "ID", type: "number" },
