@@ -7,23 +7,24 @@ import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { getCurrencyCode } from "../../../utils/currencies.js"; // подправь путь под свой проект
 
 const fields = [
   { key: "ID", label: "ID", type: "number" },
   { key: "created_at", label: "Дата создания", type: "datetime" },
-  { key: "amount", label: "Сумма", type: "number", step: "0.01" },
+  { key: "amount", label: "Сумма кэшбэка", type: "amount_currency" },
   { key: "utrno", label: "UTRNO", type: "text" },
+  { key: "cashback_name", label: "Название кэшбэка", type: "text" },
+  { key: "card_number", label: "Номер карты", type: "text" },
+  { key: "card_id", label: "ID карты", type: "text" },
+  { key: "account_number", label: "Номер счёта", type: "text" },
+  { key: "atm_id", label: "ID банкомата", type: "text" },
+  { key: "terminal_address", label: "Адрес терминала", type: "text" },
 ];
 
 const getFieldValue = (item, key) => {
-  if (item?.[key] !== undefined) {
-    return item[key];
-  }
-
-  if (key === "ID") {
-    return item?.id;
-  }
-
+  if (item?.[key] !== undefined) return item[key];
+  if (key === "ID") return item?.id;
   return item?.[key];
 };
 
@@ -65,8 +66,9 @@ const CardCashbackTable = () => {
     exportToExcel(items, columns, "Кэшбэк по картам");
   };
 
-  const formatValue = (value, fieldType) => {
+  const formatValue = (value, fieldType, item) => {
     if (value === null || value === undefined || value === "") return "-";
+
     if (fieldType === "datetime") {
       try {
         const d = new Date(value);
@@ -76,6 +78,12 @@ const CardCashbackTable = () => {
         return value;
       }
     }
+
+    if (fieldType === "amount_currency") {
+      const currencyCode = getCurrencyCode(String(item?.currency ?? ""));
+      return `${value} ${currencyCode}`;
+    }
+
     return String(value);
   };
 
@@ -85,7 +93,7 @@ const CardCashbackTable = () => {
         title: label,
         dataIndex: key,
         key,
-        render: (_, item) => formatValue(getFieldValue(item, key), type),
+        render: (_, item) => formatValue(getFieldValue(item, key), type, item),
       })),
     [],
   );
