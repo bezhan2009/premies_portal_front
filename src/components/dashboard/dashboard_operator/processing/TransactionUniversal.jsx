@@ -195,9 +195,10 @@ export default function DashboardOperatorTransactionSearch() {
     setCardNumber(raw.replace(/\s/g, ""));
   };
 
-  const formatAmount = (amount, transactionTypeValue) => {
+  const formatAmount = (amount) => {
     if (amount === null || amount === undefined || amount === "") return "N/A";
-    const amountStr = amount.toString();
+    const absAmount = Math.abs(Number(amount));
+    const amountStr = absAmount.toString();
     let formattedAmount;
     if (amountStr.length <= 2) {
       formattedAmount = `0,${amountStr.padStart(2, "0")}`;
@@ -206,7 +207,6 @@ export default function DashboardOperatorTransactionSearch() {
       const decimalPart = amountStr.slice(-2);
       formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
     }
-    if (transactionTypeValue === 2) return `-${formattedAmount}`;
     return formattedAmount;
   };
 
@@ -475,22 +475,14 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "transactionTypeName", label: "Тип операции" },
       {
         key: (row) => {
-          const amountFormatted = formatAmount(
-            row.amount,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
+          const amountFormatted = formatAmount(row.amount);
           return `${amountFormatted} ${getCurrencyCode(row.currency)}`;
         },
         label: "Сумма (валюта)",
       },
       {
         key: (row) => {
-          const conamtFormatted = formatAmount(
-            row.conamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
+          const conamtFormatted = formatAmount(row.conamt);
           return `${conamtFormatted} ${getCurrencyCode(row.conCurrency)}`;
         },
         label: "Сумма в валюте карты (валюта)",
@@ -500,12 +492,7 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "terminalId", label: "ID терминала" },
       { key: "atmId", label: "ID АТМ" },
       {
-        key: (row) =>
-          formatAmount(
-            row.reqamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          ),
+        key: (row) => formatAmount(row.reqamt),
         label: "Запрошенная сумма",
       },
       { key: "terminalAddress", label: "Адрес терминала" },
@@ -520,11 +507,7 @@ export default function DashboardOperatorTransactionSearch() {
                 ? exchangeRates.EUR
                 : 1;
           const amountTJS = Math.round((row.conamt || 0) * rate);
-          return formatAmount(
-            amountTJS,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
+          return formatAmount(amountTJS);
         },
         label: "Сумма в нац. валюте (TJS)",
       },
@@ -1085,9 +1068,6 @@ export default function DashboardOperatorTransactionSearch() {
                       </thead>
                       <tbody className="limits-table__body">
                         {sortedTransactions.map((transaction) => {
-                          const transactionTypeValue = getTransactionTypeValue(
-                            transaction.transactionType,
-                          );
                           return (
                             <tr
                               key={transaction.id}
@@ -1124,21 +1104,13 @@ export default function DashboardOperatorTransactionSearch() {
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.amount,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
+                                  {formatAmount(transaction.amount)}{" "}
                                   {getCurrencyCode(transaction.currency)}
                                 </span>
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.conamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
+                                  {formatAmount(transaction.conamt)}{" "}
                                   {getCurrencyCode(transaction.conCurrency)}
                                 </span>
                               </td>
@@ -1164,11 +1136,7 @@ export default function DashboardOperatorTransactionSearch() {
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.reqamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}
+                                  {formatAmount(transaction.reqamt)}
                                 </span>
                               </td>
                               <td className="limits-table__td limits-table__td--value">
@@ -1201,11 +1169,7 @@ export default function DashboardOperatorTransactionSearch() {
                                     const amountTJS = Math.round(
                                       (transaction.conamt || 0) * rate,
                                     );
-                                    return formatAmount(
-                                      amountTJS,
-                                      transactionTypeValue ||
-                                        transaction.transactionTypeNumber,
-                                    );
+                                    return formatAmount(amountTJS);
                                   })()}
                                 </span>
                               </td>
