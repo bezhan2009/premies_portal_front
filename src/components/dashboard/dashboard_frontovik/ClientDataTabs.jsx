@@ -9,6 +9,7 @@ const ClientDataTabs = ({
   sortCardsConfig,
   handleExportCards,
   handleNavigateToTransactions,
+  handleNavigateToAllCardsTransactions,
   hasTransactionsAccess,
   accountsData,
   sortedAccounts,
@@ -42,6 +43,16 @@ const ClientDataTabs = ({
             <div className="limits-table__header">
               <h2 className="limits-table__title">Данные карт</h2>
               <div className="limits-table__actions">
+                <button
+                  onClick={() =>
+                    handleNavigateToAllCardsTransactions(sortedCards)
+                  }
+                  className="export-excel-btn"
+                  style={{ marginRight: 10, background: "#2ecc71" }}
+                  disabled={!hasTransactionsAccess}
+                >
+                  Посмотреть историю
+                </button>
                 <button
                   onClick={handleExportCards}
                   className="export-excel-btn"
