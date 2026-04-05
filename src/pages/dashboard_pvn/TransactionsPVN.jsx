@@ -7,9 +7,9 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import Spinner from "../../components/Spinner.jsx";
-import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import "../../styles/components/StatsEQMS.scss";
+import {getCurrencyNumber} from "../../api/utils/getCurrencyCode.js";
 
 export default function PVNTransactionsList() {
     const { data, setData } = useFormStore();
@@ -278,6 +278,7 @@ export default function PVNTransactionsList() {
             showAlert(message, fails.length === 0 ? "success" : "warning");
             if (fails.length > 0) console.error("Ошибки оплаты:", fails);
             setTimeout(() => fetchData(), 1000);
+            // eslint-disable-next-line no-unused-vars
         } catch (err) {
             showAlert("Критическая ошибка во время массовой оплаты", "error");
         } finally {
@@ -512,7 +513,7 @@ export default function PVNTransactionsList() {
                                             {totalAmountSelected.toLocaleString("ru-RU", {
                                                 minimumFractionDigits: 2,
                                                 maximumFractionDigits: 2,
-                                            })} {sortedData[0]?.currency || ""}
+                                            })} {getCurrencyNumber(sortedData[0]?.currency) || ""}
                                         </strong>
                                     </div>
                                 </div>
@@ -629,7 +630,7 @@ export default function PVNTransactionsList() {
                                                             value = formatDateForDisplay(value);
                                                         }
                                                         if (header === "currency" && typeof value === "number") {
-                                                            value = value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
+                                                            value = value === 972 ? "TJS" : value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
                                                         }
                                                         if (header === "amount" && typeof value === "number") {
                                                             value = formatAmount(value);

@@ -74,7 +74,7 @@ export default function AbsWithdrawsList() {
       try {
         const sd = formatDateForQuery(startDate);
         const ed = formatDateForQuery(endDate);
-        const url = `${backendABS}/abs-withdraw/operations?startDate=${sd}&endDate=${ed}&accountNumber=${ACCOUNT_NUMBER}`;
+        const url = `${backendABS}/abs-withdraw/operations?start_date=${sd}&end_date=${ed}&accountNumber=${ACCOUNT_NUMBER}`;
         const resp = await fetch(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
