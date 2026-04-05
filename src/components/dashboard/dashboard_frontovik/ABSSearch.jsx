@@ -66,27 +66,6 @@ export default function ABSClientSearch() {
   const hasTransactionsAccess = canAccessTransactions();
   const hasAccountOperationsAccess = canAccessAccountOperations();
 
-  const {
-    items: sortedCards,
-    requestSort: requestSortCards,
-    sortConfig: sortCardsConfig,
-  } = useTableSort(cardsData);
-  const {
-    items: sortedAccounts,
-    requestSort: requestSortAccounts,
-    sortConfig: sortAccountsConfig,
-  } = useTableSort(accountsData);
-  const {
-    items: sortedCredits,
-    requestSort: requestSortCredits,
-    sortConfig: sortCreditsConfig,
-  } = useTableSort(creditsData);
-  const {
-    items: sortedDeposits,
-    requestSort: requestSortDeposits,
-    sortConfig: sortDepositsConfig,
-  } = useTableSort(depositsData);
-
   const navigate = useNavigate();
   const [alert, setAlert] = useState({
     show: false,
@@ -414,7 +393,7 @@ export default function ABSClientSearch() {
       { key: "currency", label: "Валюта" },
       { key: (row) => row.accounts?.[0]?.state || "-", label: "Остаток" },
     ];
-    exportToExcel(sortedCards, columns, `Карты_${selectedClient?.surname}`);
+    exportToExcel(cardsData, columns, `Карты_${selectedClient?.surname}`);
   };
 
   const handleExportAccounts = () => {
@@ -425,7 +404,7 @@ export default function ABSClientSearch() {
       { key: "DateOpened", label: "Дата открытия" },
       { key: (row) => row.Branch?.Name, label: "Филиал" },
     ];
-    exportToExcel(sortedAccounts, columns, `Счета_${selectedClient?.surname}`);
+    exportToExcel(accountsData, columns, `Счета_${selectedClient?.surname}`);
   };
 
   const handleExportCredits = () => {
@@ -440,7 +419,7 @@ export default function ABSClientSearch() {
       { key: "productName", label: "Название продукта" },
       { key: "department", label: "Отдел" },
     ];
-    exportToExcel(sortedCredits, columns, `Кредиты_${selectedClient?.surname}`);
+    exportToExcel(creditsData, columns, `Кредиты_${selectedClient?.surname}`);
   };
 
   const handleExportDeposits = () => {
@@ -468,7 +447,7 @@ export default function ABSClientSearch() {
       },
     ];
     exportToExcel(
-      sortedDeposits,
+      depositsData,
       columns,
       `Депозиты_${selectedClient?.surname}`,
     );
@@ -829,31 +808,19 @@ export default function ABSClientSearch() {
             <ClientDataTabs
               selectedClient={selectedClient}
               cardsData={cardsData}
-              sortedCards={sortedCards}
-              requestSortCards={requestSortCards}
-              sortCardsConfig={sortCardsConfig}
               handleExportCards={handleExportCards}
               handleNavigateToTransactions={handleNavigateToTransactions}
               hasTransactionsAccess={hasTransactionsAccess}
               accountsData={accountsData}
-              sortedAccounts={sortedAccounts}
-              requestSortAccounts={requestSortAccounts}
-              sortAccountsConfig={sortAccountsConfig}
               handleExportAccounts={handleExportAccounts}
               handleNavigateToAccountOperations={handleNavigateToAccountOperations}
               hasAccountOperationsAccess={hasAccountOperationsAccess}
               creditsData={creditsData}
-              sortedCredits={sortedCredits}
-              requestSortCredits={requestSortCredits}
-              sortCreditsConfig={sortCreditsConfig}
               handleExportCredits={handleExportCredits}
               handleOpenGraph={handleOpenGraph}
               handleOpenDetails={handleOpenDetails}
               handleOpenRepayModal={handleOpenRepayModal}
               depositsData={depositsData}
-              sortedDeposits={sortedDeposits}
-              requestSortDeposits={requestSortDeposits}
-              sortDepositsConfig={sortDepositsConfig}
               handleExportDeposits={handleExportDeposits}
             />
           </div>

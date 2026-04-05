@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import LastModified from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
 import Spinner from "../../../Spinner.jsx";
@@ -25,7 +25,6 @@ const ReportTableCardsChairman = ({ onSelect }) => {
         const sales = statObj.CardSales[0] || {};
         const turns = statObj.CardTurnovers[0] || {};
 
-        // Если cards_for_month равен 0, обнуляем все показатели
         let cardsForMonth = sales.cards_for_month ?? 0;
         let activatedCards = turns.activated_cards ?? 0;
         let debtOsd = sales.deb_osd ?? 0;
@@ -43,6 +42,7 @@ const ReportTableCardsChairman = ({ onSelect }) => {
         }
 
         setRow({
+          id: 1,
           concreteCards: cardsForMonth.toLocaleString(),
           concreteCardsGeneral: cardsInGeneral.toLocaleString(),
           concreteActiveCards: activatedCards.toLocaleString(),
@@ -90,28 +90,19 @@ const ReportTableCardsChairman = ({ onSelect }) => {
             <Spinner />
           </div>
         ) : (
-          <table className="table-reports">
-            <thead>
-              <tr>
-                <th>Всего карт до текущего периода</th>
-                <th>Выдано карт в текущем периоде</th>
-                <th>Активных карт за текущий период</th>
-                <th>Оборот по дебету</th>
-                <th>Оборот по кредиту</th>
-                <th>Остатки на картах</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{row?.concreteCardsGeneral ?? "0"}</td>
-                <td>{row?.concreteCards ?? "0"}</td>
-                <td>{row?.concreteActiveCards ?? "0"}</td>
-                <td>{row?.overdraftDebt ?? "0.00"}</td>
-                <td>{row?.overdraftCredit ?? "0.00"}</td>
-                <td>{row?.balanceCards ?? "0"}</td>
-              </tr>
-            </tbody>
-          </table>
+          <Table
+            dataSource={row ? [row] : []}
+            rowKey="id"
+            pagination={false}
+            bordered
+          >
+            <Table.Column title="Всего карт до текущего периода" dataIndex="concreteCardsGeneral" key="concreteCardsGeneral" />
+            <Table.Column title="Выдано карт в текущем периоде" dataIndex="concreteCards" key="concreteCards" />
+            <Table.Column title="Активных карт за текущий период" dataIndex="concreteActiveCards" key="concreteActiveCards" />
+            <Table.Column title="Оборот по дебету" dataIndex="overdraftDebt" key="overdraftDebt" />
+            <Table.Column title="Оборот по кредиту" dataIndex="overdraftCredit" key="overdraftCredit" />
+            <Table.Column title="Остатки на картах" dataIndex="balanceCards" key="balanceCards" />
+          </Table>
         )}
       </div>
     </div>

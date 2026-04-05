@@ -3,12 +3,11 @@ import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../hooks/useTableSort.js";
-import SortIcon from "../../../components/general/SortIcon.jsx";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import AddPaymentModal from "./AddPaymentModal.jsx";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import Spinner from "../../../components/Spinner.jsx";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 
 // Добавлено поле bic
 const emptyForm = {
@@ -63,29 +62,21 @@ const PaymentsTable = () => {
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
-  const { items: sortedItems, requestSort, sortConfig } = useTableSort(items);
 
   const showAlert = (message, type = "success") => {
-    setAlert({
-      show: true,
-      message,
-      type,
-    });
+    setAlert({ show: true, message, type });
+    setTimeout(hideAlert, 3000);
   };
 
   const hideAlert = () => {
-    setAlert({
-      show: false,
-      message: "",
-      type: "success",
-    });
+    setAlert({ show: false, message: "", type: "success" });
   };
 
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient(`${backendURL}/payments`);
-      const data = await response.data;
+      const data = response.data;
       if (Array.isArray(data)) {
         setItems(data);
       } else if (data && Array.isArray(data.data)) {
@@ -153,12 +144,6 @@ const PaymentsTable = () => {
         paymentData.bic = newItem.bic;
       }
 
-      // Выбор эндпоинта в зависимости от типа
-      // const endpoint =
-      //     paymentType === "internal"
-      //         ? `${backendURL}/payments/internal`
-      //         : `${backendURL}/payments/domestic`;
-
       const response = await apiClient.post("/payments", paymentData);
 
       if (response.status === 200 || response.status === 201) {
@@ -182,7 +167,7 @@ const PaymentsTable = () => {
   const handleExport = () => {
     try {
       const columns = fields.map(({ key, label }) => ({ key, label }));
-      exportToExcel(sortedItems, columns, "Платежи");
+      exportToExcel(items, columns, "Платежи");
       showAlert("Экспорт выполнен успешно", "success");
     } catch (e) {
       console.error("Ошибка экспорта:", e);
@@ -192,13 +177,9 @@ const PaymentsTable = () => {
 
   const formatValue = (value, fieldType, fieldKey) => {
     if (value === null || value === undefined || value === "") return "-";
-
     if (fieldKey === "id") {
-      return Number.isInteger(value)
-        ? value.toString()
-        : Math.floor(value).toString();
+      return Number.isInteger(value) ? value.toString() : Math.floor(value).toString();
     }
-
     if (fieldType === "datetime") {
       try {
         const d = new Date(value);
@@ -208,41 +189,21 @@ const PaymentsTable = () => {
         return value;
       }
     }
-
     if (fieldKey === "cashback_amount" && typeof value === "number") {
       return value.toFixed(2);
     }
-
-    if (fieldType === "number" && typeof value === "number") {
-      return value.toString();
-    }
-
     return String(value);
   };
 
   return (
     <div className="block_info_prems content-page">
-        {alert.show && (
-          <AlertMessage
-            message={alert.message}
-            type={alert.type}
-            onClose={hideAlert}
-            duration={3000}
-          />
-        )}
+        {alert.show && <AlertMessage message={alert.message} type={alert.type} onClose={hideAlert} duration={3000} />}
 
         <div className="table-header-actions" style={{ margin: "16px" }}>
           <h2>Список платежей</h2>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button
-              className="action-buttons__btn"
-              onClick={() => setShowAddForm(true)}
-            >
-              + Добавить платеж
-            </button>
-            <button className="export-excel-btn" onClick={handleExport}>
-              Экспорт в Excel
-            </button>
+            <button className="action-buttons__btn" onClick={() => setShowAddForm(true)}>+ Добавить платеж</button>
+            <button className="export-excel-btn" onClick={handleExport}>Экспорт Excel</button>
           </div>
         </div>
 
@@ -251,7 +212,7 @@ const PaymentsTable = () => {
           onClose={() => {
             setShowAddForm(false);
             setNewItem({ ...emptyForm });
-            setPaymentType("internal"); // сброс типа при закрытии
+            setPaymentType("internal");
           }}
           newItem={newItem}
           setNewItem={setNewItem}
@@ -262,50 +223,19 @@ const PaymentsTable = () => {
         />
 
         {loading ? (
-          <div style={{ padding: "16px" }}>
-            <Spinner center label="Загружаем список платежей" />
-          </div>
+          <div style={{ padding: "16px" }}><Spinner center label="Загружаем список платежей" /></div>
         ) : (
-          <div style={{ overflowX: "auto", width: "100%" }}>
-            <table
-              className="table-reports"
-              style={{ minWidth: "max-content" }}
-            >
-              <thead>
-                <tr>
-                  {fields.map(({ key, label }) => (
-                    <th
-                      key={key}
-                      onClick={() => requestSort(key)}
-                      className="sortable-header"
-                    >
-                      {label}
-                      <SortIcon sortConfig={sortConfig} sortKey={key} />
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(sortedItems) && sortedItems.length > 0 ? (
-                  sortedItems.map((item) => (
-                    <tr key={item.id}>
-                      {fields.map((field) => (
-                        <td key={field.key}>
-                          {formatValue(item[field.key], field.type, field.key)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={fields.length} style={{ textAlign: "center" }}>
-                      Нет данных
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table dataSource={items} rowKey="id" bordered loading={loading} pagination={{ pageSize: 15 }}>
+            {fields.map((field) => (
+              <Table.Column
+                key={field.key}
+                dataIndex={field.key}
+                title={field.label}
+                sortable
+                render={(val) => formatValue(val, field.type, field.key)}
+              />
+            ))}
+          </Table>
         )}
     </div>
   );

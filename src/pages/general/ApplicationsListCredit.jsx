@@ -1,58 +1,29 @@
-// ApplicationsList.jsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Input from "../../components/elements/Input";
 import { useFormStore } from "../../hooks/useFormState";
 import { statusCredit } from "../../const/defConst";
-
 import Select from "../../components/elements/Select";
-import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { apiClientCredit } from "../../api/utils/apiClientCredit.js";
-import HeaderCredit from "../../components/dashboard/dashboard_credit/MenuCredit.jsx";
 import { deleteCreditById } from "../../api/application/deleteCreditById.js";
-
-function ImagePreviewModal({ imageUrl, onClose }) {
-  if (!imageUrl) return null;
-  return (
-    <div className="custom-modal-overlay" onClick={onClose}>
-      <div
-        className="custom-modal-content animate-scaleIn"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button className="custom-modal-close" onClick={onClose}>
-          ×
-        </button>
-        <img
-          src={imageUrl}
-          alt="Предпросмотр"
-          className="custom-modal-image"
-        />
-      </div>
-    </div>
-  );
-}
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export default function ApplicationsListCredit() {
   const { data, errors, setData } = useFormStore();
   const [selectedRows, setSelectedRows] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [archive, setArchive] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [nextId, setNextId] = useState(null);
   const [fetching, setFetching] = useState(true);
-  const [filters, setFilters] = useState({
-    fullName: "",
-    phone: "",
-    resident: "",
-    card: "",
-  });
+  const [filters, setFilters] = useState({ fullName: "", phone: "", resident: "", card: "" });
   const navigate = useNavigate();
+  const lastRowRef = useRef(null);
 
   const fetchData = useCallback(
     async (nextId = null, res = false) => {
@@ -64,16 +35,19 @@ export default function ApplicationsListCredit() {
         if (nextId) query.append("after", nextId);
         if (data?.month) query.append("month", data?.month);
         if (data?.year) query.append("year", data?.year);
-        if (data?.status)
-          query.append("status_id", data?.status);
-        const response = await fetch(
-          `${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`,
-        );
+        if (data?.status) query.append("status_id", data?.status);
+
+        const response = await fetch(`${backendUrl}/credits${archive ? "/archive" : `?${query.toString()}`}`);
         const result = await response.json();
+
         if (res) {
-          setTableData(result);
+          setTableData(result || []);
         } else {
-          setTableData((prev) => [...prev, ...result]);
+          setTableData((prev) => {
+            const existingIds = new Set(prev.map((item) => item.ID));
+            const newItems = (result || []).filter((item) => !existingIds.has(item.ID));
+            return [...prev, ...newItems];
+          });
         }
 
         setNextId(result?.[result?.length - 1]?.ID);
@@ -88,18 +62,13 @@ export default function ApplicationsListCredit() {
     [archive, data?.month, data?.year, data?.status],
   );
 
-
-
   const handleExport = async () => {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
       const response = await fetch(`${backendUrl}/automation/credit`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ credit_ids: selectedRows }),
       });
       if (!response.ok) throw new Error("Ошибка при получении файла");
@@ -117,78 +86,43 @@ export default function ApplicationsListCredit() {
     }
   };
 
-  const scrollHandler = (e) => {
-    const target = e.target;
-    console.table({
-      name: "target",
-      scrollHeight: target.scrollHeight,
-      scrollTop: target.scrollTop,
-      clientHeight: target.clientHeight,
-    });
-
-    if (!fetching) {
-      if (target.scrollHeight - (target.scrollTop + target.clientHeight) < 1) {
-        setFetching(true);
-      }
-    }
-  };
-
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
   const applyFilters = (rows) => {
-    return (
-      Array.isArray(rows) &&
-      rows
-        ?.filter((row) => {
-          const fullName =
-            `${row?.surname} ${row?.name} ${row?.patronymic}`?.toLowerCase();
-          return (
-            fullName?.includes(filters?.fullName?.toLowerCase()) &&
-            row?.phone?.includes(filters?.phone) &&
-            (!filters?.card ||
-              row?.card_name
-                ?.toLowerCase()
-                ?.includes(filters?.card?.toLowerCase()))
-          );
-        })
-        .filter((row) => {
-          if (data?.name_filter) {
-            const fullName =
-              `${row?.surname} ${row?.name} ${row?.patronymic}`.toLowerCase();
-            if (!fullName.includes(data.name_filter.toLowerCase()))
-              return false;
-          }
+    if (!Array.isArray(rows)) return [];
+    return rows.filter((row) => {
+      const fullName = `${row?.surname || ""} ${row?.name || ""} ${row?.patronymic || ""}`.toLowerCase();
+      if (!fullName.includes(filters.fullName.toLowerCase())) return false;
+      if (filters.phone && !row?.phone_number?.includes(filters.phone)) return false;
+      if (filters.card && !row?.card_name?.toLowerCase().includes(filters.card.toLowerCase())) return false;
 
-          if (data?.phone_filter) {
-            if (!row?.phone?.includes(data.phone_filter)) return false;
-          }
+      // Additional form filters
+      if (data?.name_filter && !fullName.includes(data.name_filter.toLowerCase())) return false;
+      if (data?.phone_filter && !row?.phone_number?.includes(data.phone_filter)) return false;
 
-          return true;
-        })
-    );
+      return true;
+    });
   };
 
   const deleteApplication = async (id) => {
     try {
       await deleteCreditById(id);
-      // if (res) {
       setTimeout(() => fetchData(null, true), 200);
-      // }
     } catch (e) {
       console.error(e);
     }
   };
 
   const filteredData = applyFilters(tableData);
+  const dataToShow = filteredData.slice(0, data?.limit || filteredData?.length);
 
   const upDateStatusApplications = async (status) => {
     try {
-      await selectedRows.map(async (e) => {
-        await apiClientCredit.patch(`/credits/${e}`, {
-          credit_status_id: +status,
-        });
-      });
+      await Promise.all(selectedRows.map((e) =>
+        apiClientCredit.patch(`/credits/${e}`, { credit_status_id: +status })
+      ));
 
       setData("status", "");
       fetchData(null, true);
@@ -197,12 +131,6 @@ export default function ApplicationsListCredit() {
     } catch (e) {
       console.error(e);
     }
-    // if (selectedRows.length) {
-    //   setData("status", "");
-    //   fetchData(null, true);
-    //   setSelectedRows([]);
-    //   setSelectAll(false);
-    // }
   };
 
   useEffect(() => {
@@ -213,34 +141,34 @@ export default function ApplicationsListCredit() {
     fetchData(null, true);
   }, [data?.month, data?.year, data?.status, fetchData]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !fetching && nextId !== undefined) {
+          setFetching(true);
+          fetchData(nextId);
+        }
+      },
+      { threshold: 1.0 }
+    );
 
+    if (lastRowRef.current) {
+      observer.observe(lastRowRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetching, nextId, fetchData, dataToShow]);
 
   useEffect(() => {
-    if (fetching && nextId !== undefined) {
-      fetchData(nextId);
-    }
-  }, [fetching, nextId, fetchData]);
-
-  console.log("nextId", nextId);
-
-  useEffect(() => {
-    if (data.month || data.month === "") {
-      localStorage.setItem("month", data.month);
-    }
-    if (data.year || data.year === "") {
-      localStorage.setItem("year", data.year);
-    }
+    if (data.month || data.month === "") localStorage.setItem("month", data.month);
+    if (data.year || data.year === "") localStorage.setItem("year", data.year);
   }, [data]);
 
   useEffect(() => {
     const savedMonth = localStorage.getItem("month");
     const savedYear = localStorage.getItem("year");
-    if (savedMonth) {
-      setData("month", savedMonth);
-    }
-    if (savedYear) {
-      setData("year", savedYear);
-    }
+    if (savedMonth) setData("month", savedMonth);
+    if (savedYear) setData("year", savedYear);
   }, [setData]);
 
   const formatDate = (dateString) => {
@@ -249,13 +177,21 @@ export default function ApplicationsListCredit() {
     return date.toLocaleString();
   };
 
+  const rowSelection = {
+    selectedRowKeys: selectedRows,
+    onChange: (keys) => {
+      setSelectedRows(keys);
+      setSelectAll(keys.length === filteredData.length && filteredData.length > 0);
+    },
+  };
+
   return (
     <>
       <div className="applications-list content-page">
         <main>
           <div className="my-applications-header">
             <Select
-              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+              style={{ border: selectedRows.length > 0 ? "4px solid #ff1a1a" : "none" }}
               id={"status"}
               value={data?.status}
               onChange={(e) => {
@@ -265,33 +201,16 @@ export default function ApplicationsListCredit() {
               options={statusCredit}
               error={errors}
             />
-            <button className="Unloading" onClick={handleExport}>
-              Выгрузка для карт
-            </button>
+            <button className="Unloading" onClick={handleExport}>Выгрузка для карт</button>
+            <button className="filter-toggle" onClick={() => setShowFilters(!showFilters)}>Фильтры</button>
+            <button className={archive ? "archive-toggle active" : "archive-toggle"} onClick={() => setArchive(!archive)}>Архив</button>
             <button
-              className="filter-toggle"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            <button
-              className={archive ? "archive-toggle active" : "archive-toggle"}
-              onClick={() => setArchive(!archive)}
-            >
-              Архив
-            </button>
-            <button
-              className={
-                selectAll ? "selectAll-toggle active" : "selectAll-toggle"
-              }
+              className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
               onClick={() => {
                 const nextSelectAll = !selectAll;
                 setSelectAll(nextSelectAll);
-                if (nextSelectAll) {
-                  setSelectedRows(filteredData.map((e) => e.ID));
-                } else {
-                  setSelectedRows([]);
-                }
+                if (nextSelectAll) setSelectedRows(filteredData.map((e) => e.ID));
+                else setSelectedRows([]);
               }}
             >
               Выбрать все
@@ -300,172 +219,68 @@ export default function ApplicationsListCredit() {
 
           {showFilters && (
             <div className="filters animate-slideIn">
-              <input
-                placeholder="ФИО"
-                value={filters.fullName}
-                onChange={(e) => handleFilterChange("fullName", e.target.value)}
-              />
-              <input
-                placeholder="Телефон"
-                value={filters.phone}
-                onChange={(e) => handleFilterChange("phone", e.target.value)}
-              />
+              <input placeholder="ФИО" value={filters.fullName} onChange={(e) => handleFilterChange("fullName", e.target.value)} />
+              <input placeholder="Телефон" value={filters.phone} onChange={(e) => handleFilterChange("phone", e.target.value)} />
               <Select
                 value={filters.resident}
                 onChange={(val) => handleFilterChange("resident", val)}
-                options={[
-                  { value: "", label: "Резидент" },
-                  { value: "Да", label: "Да" },
-                  { value: "Нет", label: "Нет" },
-                ]}
+                options={[{ value: "", label: "Резидент" }, { value: "Да", label: "Да" }, { value: "Нет", label: "Нет" }]}
               />
-              <input
-                placeholder="Карта"
-                value={filters.card}
-                onChange={(e) => handleFilterChange("card", e.target.value)}
-              />
+              <input placeholder="Карта" value={filters.card} onChange={(e) => handleFilterChange("card", e.target.value)} />
             </div>
           )}
 
           <div className="my-applications-sub-header">
-            <div>
-              Поиск по месяцам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("month", e)}
-                value={data?.month}
-                id={"month"}
-              />{" "}
-            </div>
-            <div>
-              Поиск по годам
-              <Input
-                type="number"
-                placeholder={""}
-                onChange={(e) => setData("year", e)}
-                value={data?.year}
-                id={"year"}
-              />{" "}
-            </div>
-            {loading ? (
-              <Spinner />
-            ) : (
-              <>
-                <div>
-                  Показать{" "}
-                  <Input
-                    type="number"
-                    placeholder={""}
-                    onChange={(e) => setData("limit", e)}
-                    value={data?.limit}
-                    id={"limit"}
-                  />{" "}
-                  записей
-                </div>
-              </>
+            <div>Поиск по месяцам <Input type="number" placeholder={""} onChange={(e) => setData("month", e)} value={data?.month} id={"month"} /></div>
+            <div>Поиск по годам <Input type="number" placeholder={""} onChange={(e) => setData("year", e)} value={data?.year} id={"year"} /></div>
+            {loading ? <Spinner /> : (
+              <div>Показать <Input type="number" placeholder={""} onChange={(e) => setData("limit", e)} value={data?.limit} id={"limit"} /> записей</div>
             )}
           </div>
 
-          <div
-            className="my-applications-content"
-            onScroll={scrollHandler}
-            style={{ position: "relative" }}
-          >
-            {filteredData.length === 0 ? (
-              <div
-                style={{ textAlign: "center", padding: "2rem", color: "gray" }}
-              >
-                Нет данных для отображения
-              </div>
+          <div className="my-applications-content" style={{ position: "relative" }}>
+            {dataToShow.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>Нет данных для отображения</div>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Выбрать</th>
-                    <th>ID</th>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    <th>Тип Карты</th>
-                    <th>Адрес</th>
-                    <th>ИНН</th>
-                    <th>Дата рождения</th>
-                    <th>Пол</th>
-                    <th>Резидент</th>
-                    <th>Документ</th>
-                    <th>Создано в</th>
-                    <th>Обновлено в</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData &&
-                    filteredData
-                      ?.slice(0, data?.limit || filteredData?.length)
-                      ?.map((row, index) => (
-                        <tr key={index}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              className="custom-checkbox"
-                              checked={selectedRows.includes(row.ID)}
-                              onChange={(e) => {
-                                setSelectedRows(
-                                  e.target.checked
-                                    ? [...selectedRows, row.ID]
-                                    : selectedRows.filter(
-                                        (id) => id !== row.ID,
-                                      ),
-                                );
-                              }}
-                            />
-                          </td>
-                          <td>{row.ID}</td>
-                          <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                          <td>{row.phone_number}</td>
-                          <td>{row.card_type}</td>
-                          <td>{row.delivery_address}</td>
-                          <td>{row.inn}</td>
-                          <td>{row.date_of_birth}</td>
-                          <td>{row.gender}</td>
-                          <td>{row.is_resident ? "Да" : "Нет"}</td>
-                          <td>{row.type_of_certificate}</td>
-                          <td>{formatDate(row.CreatedAt)}</td>
-                          <td>{formatDate(row.UpdatedAt)}</td>
-                          <td className="active-table">
-                            <AiFillEdit
-                              onClick={() =>
-                                navigate(`/agent/credit/${row.ID}`)
-                              }
-                              style={{
-                                fontSize: 35,
-                                color: "green",
-                                cursor: "pointer",
-                                marginBottom: "10px",
-                              }}
-                            />
-                            <AiFillDelete
-                              onClick={() => deleteApplication(row.ID)}
-                              style={{
-                                fontSize: 35,
-                                color: "#c31414",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
+              <Table
+                dataSource={dataToShow}
+                rowKey="ID"
+                rowSelection={rowSelection}
+                pagination={false}
+                bordered
+                scroll={{ x: "max-content" }}
+                onRow={(record, index) => ({
+                  ref: index === dataToShow.length - 1 ? lastRowRef : null,
+                })}
+              >
+                <Table.Column title="ID" dataIndex="ID" key="ID" sortable />
+                <Table.Column title="ФИО" key="fullName" render={(_, row) => `${row.surname || ""} ${row.name || ""} ${row.patronymic || ""}`} sortable />
+                <Table.Column title="Телефон" dataIndex="phone_number" key="phone_number" sortable />
+                <Table.Column title="Тип Карты" dataIndex="card_type" key="card_type" sortable />
+                <Table.Column title="Адрес" dataIndex="delivery_address" key="delivery_address" sortable />
+                <Table.Column title="ИНН" dataIndex="inn" key="inn" sortable />
+                <Table.Column title="Дата рождения" dataIndex="date_of_birth" key="date_of_birth" sortable />
+                <Table.Column title="Пол" dataIndex="gender" key="gender" />
+                <Table.Column title="Резидент" key="is_resident" render={(_, row) => (row.is_resident ? "Да" : "Нет")} />
+                <Table.Column title="Документ" dataIndex="type_of_certificate" key="type_of_certificate" />
+                <Table.Column title="Создано в" key="CreatedAt" render={(_, row) => formatDate(row.CreatedAt)} sortable />
+                <Table.Column title="Обновлено в" key="UpdatedAt" render={(_, row) => formatDate(row.UpdatedAt)} sortable />
+                <Table.Column
+                  title="Действия"
+                  key="actions"
+                  fixed="right"
+                  render={(_, row) => (
+                    <div className="active-table">
+                      <AiFillEdit onClick={() => navigate(`/agent/credit/${row.ID}`)} style={{ fontSize: 35, color: "green", cursor: "pointer", marginBottom: "10px" }} />
+                      <AiFillDelete onClick={() => deleteApplication(row.ID)} style={{ fontSize: 35, color: "#c31414", cursor: "pointer" }} />
+                    </div>
+                  )}
+                />
+              </Table>
             )}
           </div>
         </main>
       </div>
-
-      <ImagePreviewModal
-        imageUrl={previewImage}
-        onClose={() => setPreviewImage(null)}
-      />
     </>
   );
 }

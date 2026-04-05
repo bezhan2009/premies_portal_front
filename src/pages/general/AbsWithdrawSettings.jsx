@@ -1,15 +1,14 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../../styles/components/Table.scss";
 import "../../styles/components/ProcessingIntegration.scss";
 import "../../styles/components/AddCardPriceForm.scss";
 import "../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../hooks/useExcelExport.js";
-import { useTableSort } from "../../hooks/useTableSort.js";
-import SortIcon from "../../components/general/SortIcon.jsx";
 import Modal from "../../components/general/Modal.jsx";
 import Select from "../../components/elements/Select.jsx";
 import Input from "../../components/elements/Input.jsx";
 import Spinner from "../../components/Spinner.jsx";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export const bankOptions = [
   { bic: "350101101", name: "Национальный банк Таджикистана (НБТ)" },
@@ -207,7 +206,6 @@ const AbsWithdrawSettings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-  const { items: sortedItems, requestSort, sortConfig } = useTableSort(items);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -264,8 +262,7 @@ const AbsWithdrawSettings = () => {
     fetchItems();
   }, [fetchItems]);
 
-  const baseItems = sortedItems.length ? sortedItems : items;
-  const displayItems = baseItems.filter((item) => {
+  const displayItems = items.filter((item) => {
     if (!search.trim()) return true;
     const query = search.toLowerCase();
     return [
@@ -358,14 +355,6 @@ const AbsWithdrawSettings = () => {
     );
   };
 
-  const formatCell = (key, value) => {
-    if (value === null || value === undefined || value === "") return "—";
-    if (key === "is_active") return value ? "✅ Да" : "❌ Нет";
-    if (key === "CreatedAt") return fmtDateTime(value);
-    if (key === "bic") return bicLabel(value);
-    return String(value);
-  };
-
   return (
     <div className="page-content-wrapper content-page">
       <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
@@ -407,62 +396,57 @@ const AbsWithdrawSettings = () => {
             </div>
           </div>
 
-          {loading ? (
+          {loading && items.length === 0 ? (
             <div style={{ padding: 16 }}>
               <Spinner center label="Загружаем настройки списаний" />
             </div>
           ) : error ? (
             <p style={{ color: "red", margin: 16 }}>{error}</p>
           ) : (
-            <div className="my-applications-content" style={{ overflowX: "auto", width: "100%" }}>
-              <table className="table-reports" style={{ minWidth: "max-content" }}>
-                <thead>
-                  <tr>
-                    {TABLE_COLUMNS.map(({ key, label }) => (
-                      <th key={key} onClick={() => requestSort(key)} className="sortable-header">
-                        {label}
-                        <SortIcon sortConfig={sortConfig} sortKey={key} />
-                      </th>
-                    ))}
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayItems.length > 0 ? (
-                    displayItems.map((item) => (
-                      <tr key={item.ID}>
-                        {TABLE_COLUMNS.map(({ key }) => (
-                          <td key={key}>{formatCell(key, item[key])}</td>
-                        ))}
-                        <td>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button
-                              className="action-buttons__btn"
-                              style={{ padding: "4px 12px", fontSize: 13 }}
-                              onClick={() => openEdit(item)}
-                            >
-                              Изменить
-                            </button>
-                            <button
-                              className="action-buttons__btn"
-                              style={{ padding: "4px 12px", fontSize: 13, backgroundColor: "#dc3545", color: "#fff" }}
-                              onClick={() => openDelete(item)}
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={TABLE_COLUMNS.length + 1} style={{ textAlign: "center" }}>
-                        Нет данных
-                      </td>
-                    </tr>
+            <div className="my-applications-content" style={{ width: "100%" }}>
+              <Table
+                dataSource={displayItems}
+                rowKey="ID"
+                bordered
+                scroll={{ x: "max-content" }}
+                pagination={{ pageSize: 15 }}
+                loading={loading}
+              >
+                <Table.Column title="ID" dataIndex="ID" key="ID" sortable />
+                <Table.Column title="IBAN плательщика" dataIndex="payer_iban" key="payer_iban" sortable />
+                <Table.Column title="Имя плательщика" dataIndex="payer_name" key="payer_name" sortable />
+                <Table.Column title="ИНН плательщика" dataIndex="payer_idn" key="payer_idn" sortable />
+                <Table.Column title="IBAN получателя" dataIndex="beneficiary_iban" key="beneficiary_iban" sortable />
+                <Table.Column title="Имя получателя" dataIndex="beneficiary_name" key="beneficiary_name" sortable />
+                <Table.Column title="ИНН получателя" dataIndex="beneficiary_idn" key="beneficiary_idn" sortable />
+                <Table.Column title="Детали платежа" dataIndex="payment_details" key="payment_details" width={300} />
+                <Table.Column title="БИК" key="bic" render={(_, row) => bicLabel(row.bic)} sortable />
+                <Table.Column title="Активен" key="is_active" render={(_, row) => (row.is_active ? "✅ Да" : "❌ Нет")} sortable />
+                <Table.Column title="Дата создания" key="CreatedAt" render={(_, row) => fmtDateTime(row.CreatedAt)} sortable />
+                <Table.Column
+                  title="Действия"
+                  key="actions"
+                  fixed="right"
+                  render={(_, row) => (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="action-buttons__btn"
+                        style={{ padding: "4px 12px", fontSize: 13 }}
+                        onClick={() => openEdit(row)}
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        className="action-buttons__btn"
+                        style={{ padding: "4px 12px", fontSize: 13, backgroundColor: "#dc3545", color: "#fff" }}
+                        onClick={() => openDelete(row)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   )}
-                </tbody>
-              </table>
+                />
+              </Table>
             </div>
           )}
         </main>

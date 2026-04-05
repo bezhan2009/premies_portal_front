@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
-// Функция для получения человеко-читаемого названия лимита
 const getLimitDescription = (limitId) => {
   const descriptions = {
     LMTTZ285: "Чужой ВПН в месяц(сумма)",
@@ -47,102 +47,39 @@ const getLimitDescription = (limitId) => {
     LMTTZ295: "Чужой ЕПОС в день(сумма)",
     LMTTZ277: "Наш ПОС в месяц(сумма)",
   };
-
   return descriptions[limitId] || `Лимит ${limitId}`;
 };
 
-// API функции
 const API_BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL;
-
 const api = {
   getLimits: async (cardNumber) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/Transactions/limits/${cardNumber}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Ошибка получения лимитов:", error);
-      throw error;
-    }
+    const response = await fetch(`${API_BASE_URL}/api/Transactions/limits/${cardNumber}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   },
-
   updateLimit: async (cardNumber, limitName, limitValue) => {
-    try {
-      // Используем query параметры для GET запроса
-      const url = `${API_BASE_URL}/api/Transactions/${cardNumber}?limitName=${encodeURIComponent(limitName)}&limitValue=${encodeURIComponent(limitValue)}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Ошибка обновления лимита:", error);
-      throw error;
-    }
+    const url = `${API_BASE_URL}/api/Transactions/${cardNumber}?limitName=${encodeURIComponent(limitName)}&limitValue=${encodeURIComponent(limitValue)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   },
 };
 
-// Компонент кастомного селекта
 const CustomSelect = ({ value, onChange, options }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState("");
-
-  useEffect(() => {
-    const selected = options.find((opt) => opt.value === value);
-    setSelectedLabel(selected ? selected.label : "");
-  }, [value, options]);
-
-  const handleSelect = (optionValue) => {
-    onChange(optionValue);
-    setIsOpen(false);
-  };
-
+  const selected = options.find((opt) => opt.value === value);
   return (
     <div className="custom-select">
-      <div
-        className={`custom-select__trigger ${isOpen ? "custom-select__trigger--open" : ""}`}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="custom-select__value">{selectedLabel}</span>
-        <span
-          className={`custom-select__arrow ${isOpen ? "custom-select__arrow--open" : ""}`}
-        >
-          ▼
-        </span>
+      <div className={`custom-select__trigger ${isOpen ? "custom-select__trigger--open" : ""}`} onClick={() => setIsOpen(!isOpen)}>
+        <span className="custom-select__value">{selected ? selected.label : ""}</span>
+        <span className={`custom-select__arrow ${isOpen ? "custom-select__arrow--open" : ""}`}>▼</span>
       </div>
       {isOpen && (
         <>
-          <div
-            className="custom-select__backdrop"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="custom-select__backdrop" onClick={() => setIsOpen(false)} />
           <div className="custom-select__dropdown">
             {options.map((option) => (
-              <div
-                key={option.value}
-                className={`custom-select__option ${value === option.value ? "custom-select__option--selected" : ""}`}
-                onClick={() => handleSelect(option.value)}
-              >
+              <div key={option.value} className={`custom-select__option ${value === option.value ? "custom-select__option--selected" : ""}`} onClick={() => { onChange(option.value); setIsOpen(false); }}>
                 {option.label}
               </div>
             ))}
@@ -153,140 +90,36 @@ const CustomSelect = ({ value, onChange, options }) => {
   );
 };
 
-// Компонент модалки для изменения лимита
 const LimitEditModal = ({ isOpen, onClose, limit, onSave }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
-  const [isClosing, setIsClosing] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && limit) {
-      setValue((limit.newValue || limit.value).toString());
-      setError("");
-    }
-  }, [isOpen, limit]);
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 300);
-  };
-
+  useEffect(() => { if (isOpen && limit) { setValue((limit.newValue || limit.value).toString()); setError(""); } }, [isOpen, limit]);
   const handleSave = () => {
     const numValue = parseFloat(value.replace(/\s/g, ""));
-
-    if (!value.trim()) {
-      setError("Значение не может быть пустым");
-      return;
-    }
-
-    if (isNaN(numValue) || numValue < 0) {
-      setError("Введите корректное числовое значение");
-      return;
-    }
-
-    if (numValue > 999999999999) {
-      setError("Значение не может превышать 999,999,999,999");
-      return;
-    }
-
+    if (!value.trim()) { setError("Значение не может быть пустым"); return; }
+    if (isNaN(numValue) || numValue < 0) { setError("Введите корректное числовое значение"); return; }
     onSave(limit.name, numValue);
-    handleClose();
+    onClose();
   };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleSave();
-    }
-    if (e.key === "Escape") {
-      handleClose();
-    }
-  };
-
-  const formatNumberWithSpaces = (val) => {
-    // Удаляем всё кроме цифр
-    const digitsOnly = val.replace(/\D/g, "");
-    // Добавляем пробелы каждые 3 цифры справа
-    return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  };
-
   if (!isOpen) return null;
-
   return (
-    <div
-      className={`modal-overlay-processing ${isClosing ? "modal-overlay-processing--closing" : ""}`}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
-    >
-      <div
-        className={`modal-processing ${isClosing ? "modal-processing--closing" : ""}`}
-      >
-        <button
-          className="modal-processing__close"
-          onClick={handleClose}
-          aria-label="Закрыть"
-        >
-          ×
-        </button>
-
+    <div className="modal-overlay-processing" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-processing">
+        <button className="modal-processing__close" onClick={onClose}>×</button>
         <div className="modal-processing__header">
           <h3 className="modal-processing__title">Изменение лимита</h3>
-          <p className="modal-processing__subtitle">
-            {getLimitDescription(limit?.name)}
-          </p>
+          <p className="modal-processing__subtitle">{getLimitDescription(limit?.name)}</p>
           <p className="modal-processing__info">ID: {limit?.name}</p>
         </div>
-
         <div className="modal-processing__body">
-          <label className="modal-processing__label" htmlFor="limitValue">
-            Новое значение лимита
-          </label>
-          <input
-            id="limitValue"
-            type="text"
-            className={`modal-processing__input ${error ? "modal-processing__input--error" : ""}`}
-            value={formatNumberWithSpaces(value)}
-            onChange={(e) => {
-              setValue(e.target.value.replace(/\s/g, ""));
-              if (error) setError("");
-            }}
-            onKeyPress={handleKeyPress}
-            placeholder="Введите новое значение"
-            autoFocus
-          />
+          <label className="modal-processing__label">Новое значение лимита</label>
+          <input type="text" className={`modal-processing__input ${error ? "modal-processing__input--error" : ""}`} value={value.replace(/\B(?=(\d{3})+(?!\d))/g, " ")} onChange={(e) => setValue(e.target.value.replace(/\s/g, ""))} onKeyPress={(e) => e.key === "Enter" && handleSave()} autoFocus />
           {error && <div className="modal-processing__error">{error}</div>}
-
-          <div className="modal-processing__info">
-            Текущее значение:{" "}
-            <strong>
-              {limit?.currentValue?.toLocaleString("ru-RU")}{" "}
-              {limit?.currency ? getCurrencyCode(limit.currency) : ""}
-            </strong>
-          </div>
-          <div className="modal-processing__info">
-            Значение лимита:{" "}
-            <strong>
-              {limit?.value?.toLocaleString("ru-RU")}{" "}
-              {limit?.currency ? getCurrencyCode(limit.currency) : ""}
-            </strong>
-          </div>
+          <div className="modal-processing__info">Текущее: <strong>{limit?.currentValue.toLocaleString()} {getCurrencyCode(limit?.currency)}</strong></div>
         </div>
-
         <div className="modal-processing__footer">
-          <button
-            className="modal-processing__btn modal-processing__btn--secondary"
-            onClick={handleClose}
-          >
-            Отмена
-          </button>
-          <button
-            className="modal-processing__btn modal-processing__btn--primary"
-            onClick={handleSave}
-            disabled={!value.trim()}
-          >
-            Сохранить
-          </button>
+          <button className="modal-processing__btn--secondary" onClick={onClose}>Отмена</button>
+          <button className="modal-processing__btn--primary" onClick={handleSave}>Сохранить</button>
         </div>
       </div>
     </div>
@@ -303,467 +136,108 @@ export default function ProcessingIntegrationLimits() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { exportToExcel } = useExcelExport();
-  const [editModal, setEditModal] = useState({
-    isOpen: false,
-    limit: null,
-  });
-  const [alert, setAlert] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+  const [editModal, setEditModal] = useState({ isOpen: false, limit: null });
+  const [alert, setAlert] = useState({ show: false, message: "", type: "success" });
 
-  const sortOptions = [
-    { value: "asc", label: "По возрастанию (по ID)" },
-    { value: "desc", label: "По убыванию (по ID)" },
-  ];
+  const showAlert = (message, type = "success") => setAlert({ show: true, message, type });
+  const hideAlert = () => setAlert({ show: false, message: "", type: "success" });
 
-  // Функция для показа уведомления
-  const showAlert = (message, type = "success") => {
-    setAlert({
-      show: true,
-      message,
-      type,
-    });
-  };
-
-  // Функция для скрытия уведомления
-  const hideAlert = () => {
-    setAlert({
-      show: false,
-      message: "",
-      type: "success",
-    });
-  };
-
-  // Функция для форматирования номера карты
-  const formatCardNumber = (value) => {
-    const digitsOnly = value.replace(/\D/g, "");
-    const formatted = digitsOnly.replace(/(\d{4})(?=\d)/g, "$1 ");
-    return formatted;
-  };
-
-  // Обработка изменения номера карты
   const handleCardNumberChange = (e) => {
-    const value = e.target.value;
-    const digitsOnly = value.replace(/\D/g, "").slice(0, 16);
-
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 16);
     setCardNumber(digitsOnly);
-    setDisplayCardNumber(formatCardNumber(digitsOnly));
+    setDisplayCardNumber(digitsOnly.replace(/(\d{4})(?=\d)/g, "$1 "));
   };
 
-  // Функция для извлечения числа из ID лимита
-  const extractLimitNumber = useCallback((limitName) => {
-    const match = limitName.match(/\d+$/);
-    return match ? parseInt(match[0]) : 0;
-  }, []);
-
-  // Функция для сортировки лимитов
-  const sortLimits = useCallback(
-    (limits, order) => {
-      return [...limits].sort((a, b) => {
-        const numA = extractLimitNumber(a.name);
-        const numB = extractLimitNumber(b.name);
-        return order === "asc" ? numA - numB : numB - numA;
-      });
-    },
-    [extractLimitNumber],
-  );
-
-  // Функция для фильтрации и сортировки данных
-  useEffect(() => {
-    let filtered = limitData;
-
-    // Фильтрация по поисковому запросу
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(
-        (limit) =>
-          limit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          limit.description.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    // Сортировка
-    filtered = sortLimits(filtered, sortOrder);
-
-    setFilteredLimitData(filtered);
-  }, [limitData, searchQuery, sortOrder, sortLimits]);
-
-  // Функция для обработки изменения лимита
-  const handleLimitChange = (limitName, newValue) => {
-    setLimitData((prevData) =>
-      prevData.map((item) =>
-        item.name === limitName ? { ...item, newValue } : item,
-      ),
-    );
-  };
-
-  // Функция для поиска данных по номеру карты
-  const handleCardNumberSearch = useCallback(async () => {
-    if (cardNumber.trim()) {
+  const handleCardNumberSearch = async () => {
+    if (cardNumber.length === 16) {
       setIsLoading(true);
       try {
         const limits = await api.getLimits(cardNumber);
-
-        // Преобразуем данные API в нужный формат
-        const formattedLimits = limits.map((limit) => ({
-          name: limit.name,
-          description: getLimitDescription(limit.name),
-          currentValue: parseInt(limit.currentValue) || 0,
-          value: parseInt(limit.value) || 0,
-          newValue: null,
-          cycleType: limit.cycleType,
-          cycleLength: limit.cycleLength,
-          currency: limit.currency,
-        }));
-
-        setLimitData(formattedLimits);
-        showAlert(`Загружено ${formattedLimits.length} лимитов`, "success");
-      } catch (error) {
-        showAlert("Ошибка при загрузке данных: " + error.message, "error");
-        setLimitData([]);
-      } finally {
-        setIsLoading(false);
-      }
+        setLimitData(limits.map(l => ({ ...l, description: getLimitDescription(l.name), newValue: null })));
+        showAlert(`Загружено ${limits.length} лимитов`);
+      } catch (e) { showAlert(e.message, "error"); }
+      finally { setIsLoading(false); }
     }
-  }, [cardNumber]);
+  };
 
-  // Функция для сохранения всех изменений
-  const handleSaveAll = useCallback(async () => {
-    const changes = limitData.filter(
-      (item) => item.newValue !== null && item.newValue !== item.value,
-    );
+  useEffect(() => {
+    let filtered = limitData.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase()) || l.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    filtered.sort((a, b) => {
+      const numA = parseInt(a.name.match(/\d+$/)?.[0] || 0);
+      const numB = parseInt(b.name.match(/\d+$/)?.[0] || 0);
+      return sortOrder === "asc" ? numA - numB : numB - numA;
+    });
+    setFilteredLimitData(filtered);
+  }, [limitData, searchQuery, sortOrder]);
 
-    if (changes.length === 0) {
-      showAlert("Нет изменений для сохранения", "info");
-      return;
-    }
-
+  const handleSaveAll = async () => {
+    const changes = limitData.filter(l => l.newValue !== null && l.newValue !== l.value);
+    if (!changes.length) return showAlert("Нет изменений", "info");
     setIsSaving(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    try {
-      // Выполняем все запросы последовательно
-      for (const change of changes) {
-        try {
-          await api.updateLimit(
-            cardNumber,
-            change.name,
-            change.newValue.toString(),
-          );
-          successCount++;
-        } catch (error) {
-          console.error(`Ошибка обновления лимита ${change.name}:`, error);
-          errorCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        // Обновляем состояние для успешно сохраненных лимитов
-        setLimitData((prevData) =>
-          prevData.map((item) => {
-            if (item.newValue !== null && item.newValue !== item.value) {
-              return {
-                ...item,
-                value: item.newValue,
-                newValue: null,
-              };
-            }
-            return item;
-          }),
-        );
-
-        showAlert(
-          `Успешно сохранено ${successCount} лимитов` +
-            (errorCount > 0 ? `, ошибок: ${errorCount}` : ""),
-          errorCount > 0 ? "warning" : "success",
-        );
-      } else {
-        showAlert("Не удалось сохранить изменения", "error");
-      }
-    } catch (error) {
-      showAlert("Критическая ошибка при сохранении: " + error.message, "error");
-    } finally {
-      setIsSaving(false);
+    let success = 0;
+    for (const c of changes) {
+      try { await api.updateLimit(cardNumber, c.name, c.newValue.toString()); success++; }
+      catch (e) { console.error(e); }
     }
-  }, [limitData, cardNumber]);
-
-  // Функция для открытия модалки редактирования
-  const handleEditLimit = (limit) => {
-    setEditModal({
-      isOpen: true,
-      limit: limit,
-    });
+    if (success) {
+      setLimitData(prev => prev.map(l => l.newValue !== null ? { ...l, value: l.newValue, newValue: null } : l));
+      showAlert(`Сохранено ${success} лимитов`);
+    } else showAlert("Ошибка сохранения", "error");
+    setIsSaving(false);
   };
-
-  // Функция для закрытия модалки
-  const handleCloseModal = () => {
-    setEditModal({
-      isOpen: false,
-      limit: null,
-    });
-  };
-
-  // Получаем количество изменений
-  const changesCount = limitData.filter(
-    (item) => item.newValue !== null && item.newValue !== item.value,
-  ).length;
 
   const handleExport = () => {
     const columns = [
-      { key: "name", label: "ID лимита" },
+      { key: "name", label: "ID" },
       { key: "description", label: "Описание" },
-      {
-        key: (row) => `${row.currentValue} ${getCurrencyCode(row.currency)}`,
-        label: "Текущее значение",
-      },
-      {
-        key: (row) => `${row.value} ${getCurrencyCode(row.currency)}`,
-        label: "Значение лимита",
-      },
-      {
-        key: (row) =>
-          row.newValue !== null
-            ? `${row.newValue} ${getCurrencyCode(row.currency)}`
-            : "Не изменено",
-        label: "Новое значение",
-      },
+      { key: (row) => `${row.currentValue} ${getCurrencyCode(row.currency)}`, label: "Текущее" },
+      { key: (row) => `${row.value} ${getCurrencyCode(row.currency)}`, label: "Лимит" },
     ];
     exportToExcel(filteredLimitData, columns, `Лимиты_${cardNumber}`);
   };
 
   return (
     <div className="block_info_prems content-page" align="center">
-      {/* Компонент AlertMessage */}
-      {alert.show && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={hideAlert}
-          duration={3000}
-        />
-      )}
-
+      {alert.show && <AlertMessage message={alert.message} type={alert.type} onClose={hideAlert} duration={3000} />}
       <div className="processing-integration">
         <div className="processing-integration__container">
-          {/* Заголовок */}
           <div className="processing-integration__header">
-            <h1 className="processing-integration__title">
-              Управление лимитами карт
-            </h1>
-            <p className="processing-integration__subtitle">
-              Поиск и изменение лимитов по номеру банковской карты
-            </p>
+            <h1 className="processing-integration__title">Управление лимитами</h1>
           </div>
-
-          {/* Поиск по номеру карты */}
           <div className="processing-integration__search-card">
-            <div className="search-card">
-              <div className="search-card__content">
-                <div className="search-card__input-group">
-                  <label htmlFor="cardNumber" className="search-card__label">
-                    Номер банковской карты
-                  </label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    value={displayCardNumber}
-                    onChange={handleCardNumberChange}
-                    placeholder="0000 0000 0000 0000"
-                    className="search-card__input"
-                    maxLength={19}
-                    disabled={isLoading || isSaving}
-                  />
-                </div>
-                <button
-                  onClick={handleCardNumberSearch}
-                  disabled={cardNumber.length !== 16 || isLoading || isSaving}
-                  className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
-                >
-                  {isLoading ? "Поиск..." : "Найти"}
-                </button>
-              </div>
+            <div className="search-card__content">
+              <input type="text" value={displayCardNumber} onChange={handleCardNumberChange} placeholder="0000 0000 0000 0000" className="search-card__input" maxLength={19} disabled={isLoading || isSaving} />
+              <button onClick={handleCardNumberSearch} disabled={cardNumber.length !== 16 || isLoading || isSaving} className="search-card__button">{isLoading ? "..." : "Найти"}</button>
             </div>
           </div>
-
-          {/* Таблица лимитов */}
           {limitData.length > 0 && (
             <div className="processing-integration__limits-table">
               <div className="limits-table">
                 <div className="limits-table__header">
-                  <h2 className="limits-table__title">
-                    Текущие лимиты карты {displayCardNumber}
-                  </h2>
+                  <h2 className="limits-table__title">Лимиты карты {displayCardNumber}</h2>
                   <div className="limits-table__actions">
-                    <button
-                      onClick={handleExport}
-                      className="export-excel-btn"
-                      style={{ marginRight: "10px" }}
-                    >
-                      Экспорт в Excel
-                    </button>
-                    <button
-                      onClick={handleSaveAll}
-                      className="limits-table__action-btn limits-table__action-btn--primary"
-                      disabled={changesCount === 0 || isSaving}
-                    >
-                      {isSaving ? "Сохранение..." : "Сохранить все"}
-                    </button>
+                    <button onClick={handleExport} className="export-excel-btn">Excel</button>
+                    <button onClick={handleSaveAll} className="limits-table__action-btn--primary" disabled={isSaving}>Сохранить изменения</button>
                   </div>
                 </div>
-
-                {/* Фильтры */}
                 <div className="limits-table__filters">
-                  <div className="filters-group">
-                    <div className="filter-item">
-                      <label className="filter-item__label">
-                        Поиск по лимитам
-                      </label>
-                      <input
-                        type="text"
-                        className="filter-item__input"
-                        placeholder="Введите ID или название..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                    <div className="filter-item">
-                      <label className="filter-item__label">Сортировка</label>
-                      <CustomSelect
-                        value={sortOrder}
-                        onChange={setSortOrder}
-                        options={sortOptions}
-                      />
-                    </div>
-                  </div>
+                  <input type="text" placeholder="Поиск..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  <CustomSelect value={sortOrder} onChange={setSortOrder} options={[{ value: "asc", label: "По возрастанию" }, { value: "desc", label: "По убыванию" }]} />
                 </div>
-
-                <div className="limits-table__wrapper">
-                  <table className="limits-table">
-                    <thead className="limits-table__head">
-                      <tr>
-                        <th className="limits-table__th limits-table__th--id">
-                          ID и Наименование лимита
-                        </th>
-                        <th className="limits-table__th limits-table__th--current">
-                          Текущее значение
-                        </th>
-                        <th className="limits-table__th limits-table__th--default">
-                          Значение лимита
-                        </th>
-                        <th className="limits-table__th limits-table__th--new">
-                          Новое значение
-                        </th>
-                        <th className="limits-table__th limits-table__th--actions">
-                          Действия
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="limits-table__body">
-                      {filteredLimitData.map((limit) => (
-                        <tr key={limit.name} className="limits-table__row">
-                          <td className="limits-table__td limits-table__td--info">
-                            <div className="limit-info">
-                              <div className="limit-info__name">
-                                {limit.description}
-                              </div>
-                              <div className="limit-info__id">
-                                ID: {limit.name}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="limits-table__td limits-table__td--value">
-                            <span className="current-value">
-                              {limit.currentValue.toLocaleString("ru-RU")}{" "}
-                              {getCurrencyCode(limit.currency)}
-                            </span>
-                          </td>
-                          <td className="limits-table__td limits-table__td--value">
-                            <span className="default-value">
-                              {limit.value.toLocaleString("ru-RU")}{" "}
-                              {getCurrencyCode(limit.currency)}
-                            </span>
-                          </td>
-                          <td className="limits-table__td limits-table__td--value">
-                            {limit.newValue !== null ? (
-                              <span className="new-value new-value--changed">
-                                {limit.newValue.toLocaleString("ru-RU")}{" "}
-                                {getCurrencyCode(limit.currency)}
-                              </span>
-                            ) : (
-                              <span className="new-value new-value--empty">
-                                Не изменено
-                              </span>
-                            )}
-                          </td>
-                          <td className="limits-table__td limits-table__td--actions">
-                            <div className="action-buttons">
-                              <button
-                                onClick={() => handleEditLimit(limit)}
-                                className="action-buttons__btn action-buttons__btn--edit"
-                                disabled={isSaving}
-                              >
-                                Изменить
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Статистика */}
-                <div className="limits-table__footer">
-                  <div className="limits-table__stats">
-                    <span className="limits-table__stat">
-                      Всего записей: {limitData.length}
-                    </span>
-                    <span className="limits-table__stat">
-                      Показано: {filteredLimitData.length}
-                    </span>
-                    <span className="limits-table__stat">
-                      Изменено: {changesCount}
-                    </span>
-                    <span className="limits-table__stat">
-                      Карта: {displayCardNumber}
-                    </span>
-                  </div>
-                </div>
+                <Table dataSource={filteredLimitData} rowKey="name" pagination={{ pageSize: 15 }} bordered>
+                  <Table.Column title="Лимит" key="info" render={(_, row) => <div><div>{row.description}</div><small>ID: {row.name}</small></div>} />
+                  <Table.Column title="Текущее" key="curr" render={(_, row) => `${row.currentValue.toLocaleString()} ${getCurrencyCode(row.currency)}`} />
+                  <Table.Column title="Лимит" key="limit" render={(_, row) => `${row.value.toLocaleString()} ${getCurrencyCode(row.currency)}`} />
+                  <Table.Column title="Новое" key="new" render={(_, row) => row.newValue !== null ? <span className="new-value--changed">{row.newValue.toLocaleString()} {getCurrencyCode(row.currency)}</span> : "—"} />
+                  <Table.Column title="Действие" key="act" render={(_, row) => <button onClick={() => setEditModal({ isOpen: true, limit: row })} disabled={isSaving}>Изменить</button>} />
+                </Table>
               </div>
             </div>
           )}
-
-          {/* Индикатор загрузки */}
-          {isLoading && (
-            <div className="processing-integration__loading">
-              <div className="loading-spinner"></div>
-            </div>
-          )}
-
-          {/* Сообщение об отсутствии данных */}
-          {!isLoading && limitData.length === 0 && cardNumber.length === 16 && (
-            <div className="processing-integration__no-data">
-              <div className="no-data">
-                <h3>Данные не найдены</h3>
-                <p>
-                  Для карты {displayCardNumber} не найдено лимитов или произошла
-                  ошибка загрузки.
-                </p>
-              </div>
-            </div>
-          )}
+          {isLoading && <div className="spinner"></div>}
         </div>
       </div>
-
-      {/* Модалка для изменения лимита */}
-      <LimitEditModal
-        isOpen={editModal.isOpen}
-        onClose={handleCloseModal}
-        limit={editModal.limit}
-        onSave={handleLimitChange}
-      />
+      <LimitEditModal isOpen={editModal.isOpen} onClose={() => setEditModal({ isOpen: false, limit: null })} limit={editModal.limit} onSave={(name, val) => setLimitData(prev => prev.map(l => l.name === name ? { ...l, newValue: val } : l))} />
     </div>
   );
 }

@@ -19,9 +19,8 @@ import {
 } from "../../api/ABS_frotavik/getLoanDetails";
 import { getUserCredits } from "../../api/ABS_frotavik/getUserCredits";
 import { TYPE_SEARCH_CLIENT } from "../../const/defConst.js";
-import { useTableSort } from "../../hooks/useTableSort.js";
-import SortIcon from "../../components/general/SortIcon.jsx";
 import { normalizeClientData } from "../../components/dashboard/dashboard_frontovik/absSearchUtils.js";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
@@ -44,12 +43,6 @@ export default function TransactionsQR() {
   );
   const [creditsData, setCreditsData] = useState([]);
   const [isLoanSearching, setIsLoanSearching] = useState(false);
-
-  const {
-    items: sortedCredits,
-    requestSort: requestSortCredits,
-    sortConfig: sortCreditsConfig,
-  } = useTableSort(creditsData);
 
   // Modal states
   const [repayModalOpen, setRepayModalOpen] = useState(false);
@@ -231,7 +224,6 @@ export default function TransactionsQR() {
   }, [getBanks, getMerchants, getActiveBankLimit]);
 
   useEffect(() => {
-    // Если даты ещё не заданы, устанавливаем сегодняшний день (начало и конец)
     if (!data?.start_date || !data?.end_date) {
       const today = new Date();
       const year = today.getFullYear();
@@ -417,21 +409,13 @@ export default function TransactionsQR() {
         ? "/automation/qr/us-on-them"
         : "/automation/qr/them-on-us";
 
-      // Подготавливаем данные с правильным форматом времени
       const dataToSend = selectedTransactions.map((transaction) => {
         const formattedTransaction = { ...transaction };
-
-        // Форматируем время для backend
         if (isUsOnThem && transaction.created_at) {
-          formattedTransaction.created_at = formatTimeForBackend(
-            transaction.created_at,
-          );
+          formattedTransaction.created_at = formatTimeForBackend(transaction.created_at);
         } else if (isThemOnUs && transaction.creation_datetime) {
-          formattedTransaction.creation_datetime = formatTimeForBackend(
-            transaction.creation_datetime,
-          );
+          formattedTransaction.creation_datetime = formatTimeForBackend(transaction.creation_datetime);
         }
-
         return formattedTransaction;
       });
 
@@ -446,50 +430,30 @@ export default function TransactionsQR() {
 
       if (!resp.ok) {
         const errorText = await resp.text();
-        console.error("Ошибка сервера:", errorText);
         throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
       }
 
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-
-      const allSelected =
-        selectedRows.length === sortedData.length && sortedData.length > 0;
+      const allSelected = selectedRows.length === sortedData.length && sortedData.length > 0;
       const typeName = isUsOnThem ? "Us-on-Them" : "Them-on-Us";
       const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      a.download =
-        allSelected && data?.start_date && data?.end_date
+      a.download = allSelected && data?.start_date && data?.end_date
           ? `${typeName}_${data.start_date}_to_${data.end_date}.xlsx`
           : `${typeName}_Report_${timestamp}.xlsx`;
 
       a.href = url;
-      document.body.appendChild(a);
       a.click();
-      a.remove();
       window.URL.revokeObjectURL(url);
-
-      showAlert(
-        `Файл успешно выгружен (${selectedTransactions.length} записей)`,
-        "success",
-      );
+      showAlert(`Файл выгружен (${selectedTransactions.length} записей)`, "success");
       setSelectedRows([]);
       setSelectAll(false);
     } catch (err) {
-      console.error("Ошибка выгрузки QR:", err);
-      showAlert(`Ошибка выгрузки QR: ${err.message}`, "error");
+      showAlert(`Ошибка выгрузки: ${err.message}`, "error");
     } finally {
       setIsLoading(false);
       setLoadingCount(0);
-    }
-  };
-
-  const handleCheckboxToggle = (key, checked) => {
-    if (checked) {
-      setSelectedRows((prev) => [...prev, key]);
-    } else {
-      setSelectedRows((prev) => prev.filter((p) => p !== key));
-      setSelectAll(false);
     }
   };
 
@@ -501,6 +465,14 @@ export default function TransactionsQR() {
       setSelectedRows(keys);
     }
     setSelectAll(!selectAll);
+  };
+
+  const rowSelection = {
+    selectedRowKeys: selectedRows,
+    onChange: (keys) => {
+      setSelectedRows(keys);
+      setSelectAll(keys.length === sortedData.length && sortedData.length > 0);
+    },
   };
 
   return (
@@ -516,13 +488,7 @@ export default function TransactionsQR() {
               endDate={data?.end_date}
             />
           )}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              padding: "10px",
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px" }}>
             <button className="button" onClick={() => setShowChart(!showChart)}>
               {showChart ? "Скрыть график" : "Показать график"}
             </button>
@@ -530,98 +496,21 @@ export default function TransactionsQR() {
         </main>
         <main>
           <div className="my-applications-header header-with-balance">
-            <button
-              className={!showFilters ? "filter-toggle" : "Unloading"}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Фильтры
-            </button>
-            {/* <div style={{ display: "flex", gap: "50px" }}> */}
-            <button
-              className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
-              onClick={() => {
-                setIsUsOnThem(true);
-                setIsThemOnUs(false);
-                setSelectedRows([]);
-                setSelectAll(false);
-              }}
-            >
-              Наш клиент — чужой QR (Us on Them)
-            </button>
-
-            <button
-              className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
-              onClick={() => {
-                setIsThemOnUs(true);
-                setIsUsOnThem(false);
-                setIsLoans(false);
-                setSelectedRows([]);
-                setSelectAll(false);
-              }}
-            >
-              Наш QR — чужой клиент (Them on Us)
-            </button>
-            {/* </div> */}
-
-            <button
-              className={`archive-toggle ${isLoans ? "active" : ""}`}
-              onClick={() => {
-                setIsLoans(true);
-                setIsUsOnThem(false);
-                setIsThemOnUs(false);
-                setSelectedRows([]);
-                setSelectAll(false);
-              }}
-            >
-              Кредиты
-            </button>
-
-            <button
-              className="Unloading"
-              onClick={handleExport}
-              disabled={selectedRows.length === 0 || isLoading}
-            >
-              {isLoading ? `Выгрузка... (${loadingCount})` : "Выгрузка QR"}
-            </button>
-
-            <button
-              className={selectAll ? "selectAll-toggle" : ""}
-              onClick={toggleSelectAll}
-            >
-              {selectAll ? "Снять выделение" : "Выбрать все"}
-            </button>
-
-            <div
-              className="activebank-balance"
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <span className="label">Баланс Активбанк:</span>
-                <span className="value">
-                  {activeBankLimit !== null
-                    ? `${activeBankLimit.toLocaleString("ru-RU")} с.`
-                    : "—"}
-                </span>
+            <button className={!showFilters ? "filter-toggle" : "Unloading"} onClick={() => setShowFilters(!showFilters)}>Фильтры</button>
+            <button className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`} onClick={() => { setIsUsOnThem(true); setIsThemOnUs(false); setIsLoans(false); setSelectedRows([]); setSelectAll(false); }}>Us on Them</button>
+            <button className={`archive-toggle ${isThemOnUs ? "active" : ""}`} onClick={() => { setIsThemOnUs(true); setIsUsOnThem(false); setIsLoans(false); setSelectedRows([]); setSelectAll(false); }}>Them on Us</button>
+            <button className={`archive-toggle ${isLoans ? "active" : ""}`} onClick={() => { setIsLoans(true); setIsUsOnThem(false); setIsThemOnUs(false); setSelectedRows([]); setSelectAll(false); }}>Кредиты</button>
+            <button className="Unloading" onClick={handleExport} disabled={selectedRows.length === 0 || isLoading}>{isLoading ? `... (${loadingCount})` : "Выгрузка QR"}</button>
+            <button className={selectAll ? "selectAll-toggle" : ""} onClick={toggleSelectAll}>{selectAll ? "Снять выделение" : "Выбрать все"}</button>
+            <div className="activebank-balance" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                <span className="label">Баланс:</span>
+                <span className="value">{activeBankLimit !== null ? `${activeBankLimit.toLocaleString("ru-RU")} с.` : "—"}</span>
               </div>
               {selectedRows.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    width: "100%",
-                    color: "#417cd5",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", width: "100%", color: "#417cd5" }}>
                   <span className="label">Выбрано:</span>
-                  <span className="value">
-                    {selectedSum.toLocaleString("ru-RU")} с.
-                  </span>
+                  <span className="value">{selectedSum.toLocaleString("ru-RU")} с.</span>
                 </div>
               )}
             </div>
@@ -631,506 +520,110 @@ export default function TransactionsQR() {
             <div className="filters animate-slideIn">
               {isUsOnThem && (
                 <>
-                  <input
-                    placeholder="ФИО"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        sender_name: e.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    placeholder="Телефон"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        sender_phone: e.target.value,
-                      }))
-                    }
-                  />
+                  <input placeholder="ФИО" onChange={(e) => setFilters((p) => ({ ...p, sender_name: e.target.value }))} />
+                  <input placeholder="Телефон" onChange={(e) => setFilters((p) => ({ ...p, sender_phone: e.target.value }))} />
                 </>
               )}
               {isThemOnUs && (
                 <>
-                  <input
-                    placeholder="Код мерчанта"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        merchant_code: e.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    placeholder="Код терминала"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        terminal_code: e.target.value,
-                      }))
-                    }
-                  />
+                  <input placeholder="Код мерчанта" onChange={(e) => setFilters((p) => ({ ...p, merchant_code: e.target.value }))} />
+                  <input placeholder="Код терминала" onChange={(e) => setFilters((p) => ({ ...p, terminal_code: e.target.value }))} />
                 </>
               )}
               {isLoans && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    width: "100%",
-                    alignItems: "center",
-                  }}
-                >
+                <div style={{ display: "flex", gap: "10px", width: "100%", alignItems: "center" }}>
                   <div style={{ width: "250px" }}>
-                    <Select
-                      value={selectTypeSearchLoan}
-                      onChange={(val) => setSelectTypeSearchLoan(val)}
-                      options={(TYPE_SEARCH_CLIENT || [])
-                        .filter((t) => t.apiType === "ABS")
-                        .map((t) => ({
-                          value: t.value,
-                          label: t.label,
-                        }))}
-                    />
+                    <Select value={selectTypeSearchLoan} onChange={(val) => setSelectTypeSearchLoan(val)} options={(TYPE_SEARCH_CLIENT || []).filter((t) => t.apiType === "ABS").map((t) => ({ value: t.value, label: t.label }))} />
                   </div>
-                  <input
-                    placeholder="Введите данные для поиска"
-                    value={loanSearchValue}
-                    onChange={(e) => setLoanSearchValue(e.target.value)}
-                    style={{ flex: 1 }}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearchLoans()}
-                  />
-                  <button
-                    className="button"
-                    onClick={handleSearchLoans}
-                    disabled={isLoanSearching}
-                    style={{ height: "45px", padding: "0 20px" }}
-                  >
-                    {isLoanSearching ? "Поиск..." : "Найти"}
-                  </button>
+                  <input placeholder="Поиск..." value={loanSearchValue} onChange={(e) => setLoanSearchValue(e.target.value)} style={{ flex: 1 }} onKeyPress={(e) => e.key === "Enter" && handleSearchLoans()} />
+                  <button className="button" onClick={handleSearchLoans} disabled={isLoanSearching}>{isLoanSearching ? "..." : "Найти"}</button>
                 </div>
               )}
-
-              <Select
-                onChange={(val) => setFilters((p) => ({ ...p, status: val }))}
-                value={filters.status}
-                options={[
-                  { value: "", label: "Статус" },
-                  { value: "success", label: "Успешно" },
-                  { value: "cancel", label: "Неудача" },
-                  { value: "process", label: "Обработка" },
-                ]}
-              />
-
-              <input
-                placeholder="Сумма"
-                onChange={(e) =>
-                  setFilters((p) => ({ ...p, amount: e.target.value }))
-                }
-              />
+              <Select onChange={(val) => setFilters((p) => ({ ...p, status: val }))} value={filters.status} options={[{ value: "", label: "Статус" }, { value: "success", label: "Успешно" }, { value: "cancel", label: "Неудача" }, { value: "process", label: "Обработка" }]} />
+              <input placeholder="Сумма" onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))} />
             </div>
           )}
 
           <div className="my-applications-sub-header">
-            <div>
-              от{" "}
-              <Input
-                type="datetime-local"
-                onChange={(e) => setData("start_date", e)}
-                value={data?.start_date}
-                style={{ width: "200px" }}
-                id="start_date"
-              />
-            </div>
-            <div>
-              до{" "}
-              <Input
-                type="datetime-local"
-                onChange={(e) => setData("end_date", e)}
-                value={data?.end_date}
-                style={{ width: "200px" }}
-                id="end_date"
-              />
-            </div>
-            <div className="total-sum-badge">
-              <span className="total-sum-label">Сумма всех операций:</span>
-              <span className="total-sum-value">
-                {totalSum.toLocaleString("ru-RU")} с.
-              </span>
-            </div>
+            <div>от <Input type="datetime-local" onChange={(e) => setData("start_date", e)} value={data?.start_date} style={{ width: "200px" }} /></div>
+            <div>до <Input type="datetime-local" onChange={(e) => setData("end_date", e)} value={data?.end_date} style={{ width: "200px" }} /></div>
+            <div className="total-sum-badge">Сумма всех: <strong>{totalSum.toLocaleString("ru-RU")} с.</strong></div>
           </div>
 
-          <div
-            className="my-applications-content"
-            style={{ position: "relative" }}
-          >
-            {loading || isLoanSearching ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>
-                <Spinner center label="Загружаем информацию" />
-                Загрузка...
-              </div>
-            ) : isLoans ? (
-              sortedCredits.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "2rem",
-                    color: "gray",
-                  }}
-                >
-                  Кредиты не найдены. Воспользуйтесь поиском в фильтрах.
-                </div>
-              ) : (
-                <div
-                  className="limits-table__wrapper"
-                  style={{ overflowX: "auto" }}
-                >
-                  <table className="limits-table">
-                    <thead className="limits-table__head">
-                      <tr>
-                        <th
-                          onClick={() => requestSortCredits("contractNumber")}
-                          className="sortable-header"
-                        >
-                          Номер договора{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="contractNumber"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("referenceId")}
-                          className="sortable-header"
-                        >
-                          Идентификатор ссылки{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="referenceId"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("statusName")}
-                          className="sortable-header"
-                        >
-                          Статус{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="statusName"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("amount")}
-                          className="sortable-header"
-                        >
-                          Сумма{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="amount"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("documentDate")}
-                          className="sortable-header"
-                        >
-                          Дата документа{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="documentDate"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("clientCode")}
-                          className="sortable-header"
-                        >
-                          КлиентКод{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="clientCode"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("productCode")}
-                          className="sortable-header"
-                        >
-                          Код продукта{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="productCode"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("productName")}
-                          className="sortable-header"
-                        >
-                          Название продукта{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="productName"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSortCredits("department")}
-                          className="sortable-header"
-                        >
-                          Отдел{" "}
-                          <SortIcon
-                            sortConfig={sortCreditsConfig}
-                            sortKey="department"
-                          />
-                        </th>
-                        <th className="limits-table__th">Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody className="limits-table__body">
-                      {sortedCredits.map((credit, idx) => (
-                        <tr key={idx} className="limits-table__row">
-                          <td className="limits-table__td">
-                            {credit.contractNumber}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.referenceId}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.statusName}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.amount} {credit.currency}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.documentDate}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.clientCode}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.productCode}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.productName}
-                          </td>
-                          <td className="limits-table__td">
-                            {credit.department || "-"}
-                          </td>
-                          <td
-                            className="limits-table__td"
-                            style={{ display: "flex", gap: "8px" }}
-                          >
-                            <button
-                              className="selectAll-toggle"
-                              style={{ padding: "5px 10px", fontSize: "12px" }}
-                              onClick={() =>
-                                handleOpenGraph(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              График
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#2980b9",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() =>
-                                handleOpenDetails(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              Детали
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#27ae60",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() => handleOpenRepayModal(credit)}
-                            >
-                              Погасить
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            ) : sortedData.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "2rem",
-                  color: "gray",
-                }}
-              >
-                Нет данных для отображения
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>
-                      <input
-                        type="checkbox"
-                        className="custom-checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    <th
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
-                      }
-                    >
-                      ID {sortOrder === "asc" ? "▲" : "▼"}
-                    </th>
-                    {isUsOnThem ? (
-                      <>
-                        <th>ФИО</th>
-                        <th>Телефон</th>
-                      </>
-                    ) : null}
-                    {isThemOnUs ? (
-                      <>
-                        <th>Мерчант</th>
-                        <th>Код терминала</th>
-                        {/* <th>partner_trn_id</th> */}
-                      </>
-                    ) : (
-                      <>
-                        <th>Номер в АРМ</th>
-                        <th>qrId</th>
-                      </>
+          <div className="my-applications-content" style={{ position: "relative" }}>
+            {isLoans ? (
+              <Table dataSource={creditsData} rowKey="referenceId" bordered loading={isLoanSearching} scroll={{ x: "max-content" }} pagination={{ pageSize: 15 }}>
+                  <Table.Column title="Номер договора" dataIndex="contractNumber" sortable />
+                  <Table.Column title="ID ссылки" dataIndex="referenceId" sortable />
+                  <Table.Column title="Статус" dataIndex="statusName" sortable />
+                  <Table.Column title="Сумма" key="amount" sortable render={(_, row) => `${row.amount} ${row.currency}`} />
+                  <Table.Column title="Дата документа" dataIndex="documentDate" sortable />
+                  <Table.Column title="КлиентКод" dataIndex="clientCode" sortable />
+                  <Table.Column title="Код продукта" dataIndex="productCode" sortable />
+                  <Table.Column title="Название продукта" dataIndex="productName" sortable />
+                  <Table.Column title="Отдел" dataIndex="department" />
+                  <Table.Column
+                    title="Действия"
+                    key="actions"
+                    fixed="right"
+                    render={(_, row) => (
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button className="selectAll-toggle" style={{ padding: "5px 10px", fontSize: "12px" }} onClick={() => handleOpenGraph(row.referenceId)} disabled={!row.referenceId}>График</button>
+                        <button className="selectAll-toggle" style={{ background: "#2980b9", padding: "5px 10px", fontSize: "12px" }} onClick={() => handleOpenDetails(row.referenceId)} disabled={!row.referenceId}>Детали</button>
+                        <button className="selectAll-toggle" style={{ background: "#27ae60", padding: "5px 10px", fontSize: "12px" }} onClick={() => handleOpenRepayModal(row)}>Погасить</button>
+                      </div>
                     )}
-                    <th>Статус</th>
-                    <th>Банк отправителя</th>
-                    <th>Банк получателя</th>
-                    <th>Сумма</th>
-                    <th>Дата создания</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((row) => {
-                    const key = getRowKey(row);
-                    const merchantTitle =
-                      merchants.find((m) => m.code === row.merchant_code)
-                        ?.title ??
-                      row.merchant_code ??
-                      "-";
-                    return (
-                      <tr key={key}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="custom-checkbox"
-                            checked={selectedRows.includes(key)}
-                            onChange={(e) =>
-                              handleCheckboxToggle(key, e.target.checked)
-                            }
-                          />
-                        </td>
-
-                        <td>{key}</td>
-
-                        {isUsOnThem && (
-                          <>
-                            <td>{row.sender_name || "-"}</td>
-                            <td>{row.sender_phone || "-"}</td>
-                          </>
-                        )}
-
-                        {isThemOnUs ? (
-                          <>
-                            <td>{merchantTitle}</td>
-                            <td>{row.terminal_code || "-"}</td>
-                            {/* <td>{row.partner_trn_id || "-"}</td> */}
-                          </>
-                        ) : (
-                          <>
-                            <td>{row.trnId || "-"}</td>
-                            <td>{row.qrId || "-"}</td>
-                          </>
-                        )}
-
-                        <td>
-                          {row.status === "success" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcOk style={{ fontSize: 22 }} />
-                              <span style={{ color: "green" }}>Успешно</span>
-                            </div>
-                          ) : row.status === "process" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcProcess style={{ fontSize: 22 }} />
-                              <span style={{ color: "orange" }}>
-                                В процессе
-                              </span>
-                            </div>
-                          ) : row.status === "cancel" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcCancel style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>Отменено</span>
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcHighPriority style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>
-                                Высокий приоритет
-                              </span>
-                            </div>
-                          )}
-                        </td>
-
-                        <td>
-                          {banks.find(
-                            (b) =>
-                              b.id === row?.sender_bank ||
-                              b.bankId === row?.sender,
-                          )?.bankName || "-"}
-                        </td>
-                        <td>
-                          {banks.find((b) => b.id === row?.receiver)
-                            ?.bankName || "-"}
-                        </td>
-
-                        <td>{row.amount} с.</td>
-                        <td>
-                          {isUsOnThem
-                            ? formatDateForDisplay(row.created_at)
-                            : formatDateForDisplay(row.creation_datetime)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  />
+              </Table>
+            ) : (
+              <Table dataSource={sortedData} rowKey={getRowKey} rowSelection={rowSelection} bordered loading={loading} scroll={{ x: "max-content" }} pagination={{ pageSize: 15 }}>
+                  <Table.Column title="ID" key="id" render={(_, row) => getRowKey(row)} sortable />
+                  {isUsOnThem && (
+                    <>
+                      <Table.Column title="ФИО" dataIndex="sender_name" sortable />
+                      <Table.Column title="Телефон" dataIndex="sender_phone" sortable />
+                    </>
+                  )}
+                  {isThemOnUs ? (
+                    <>
+                      <Table.Column title="Мерчант" key="merchant" render={(_, row) => merchants.find((m) => m.code === row.merchant_code)?.title ?? row.merchant_code ?? "-"} sortable />
+                      <Table.Column title="Код терминала" dataIndex="terminal_code" sortable />
+                    </>
+                  ) : (
+                    <>
+                      <Table.Column title="Номер в АРМ" dataIndex="trnId" sortable />
+                      <Table.Column title="qrId" dataIndex="qrId" sortable />
+                    </>
+                  )}
+                  <Table.Column
+                    title="Статус"
+                    key="status"
+                    sortable
+                    render={(_, row) => {
+                      if (row.status === "success") return <><FcOk /> Успешно</>;
+                      if (row.status === "process") return <><FcProcess /> В процессе</>;
+                      if (row.status === "cancel") return <><FcCancel /> Отменено</>;
+                      return <><FcHighPriority /> Ошибка</>;
+                    }}
+                  />
+                  <Table.Column
+                    title="Банк отпр."
+                    key="senderBank"
+                    render={(_, row) => banks.find((b) => b.id === row?.sender_bank || b.bankId === row?.sender)?.bankName || "-"}
+                  />
+                  <Table.Column
+                    title="Банк пол."
+                    key="receiverBank"
+                    render={(_, row) => banks.find((b) => b.id === row?.receiver)?.bankName || "-"}
+                  />
+                  <Table.Column title="Сумма" key="amount" sortable render={(_, row) => `${row.amount} с.`} />
+                  <Table.Column
+                    title="Дата создания"
+                    key="date"
+                    sortable
+                    render={(_, row) => formatDateForDisplay(isUsOnThem ? row.created_at : row.creation_datetime)}
+                  />
+              </Table>
             )}
           </div>
         </main>
@@ -1145,41 +638,11 @@ export default function TransactionsQR() {
         </div>
       )}
 
-      {alert && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={() => setAlert(null)}
-        />
-      )}
+      {alert && <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
 
-      {/* Loan Modals */}
-      <RepayModal
-        isOpen={repayModalOpen}
-        onClose={() => setRepayModalOpen(false)}
-        onSubmit={handleRepaySubmit}
-        isLoading={isRepayLoading}
-        creditInfo={selectedCreditForRepay}
-      />
-
-      <CreditDetailsModal
-        isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-        data={detailsData}
-        isLoading={isDetailsLoading}
-      />
-
-      <GraphModal
-        isOpen={graphModalOpen}
-        onClose={() => {
-          setGraphModalOpen(false);
-          setGraphData([]);
-          setSelectedReferenceId("");
-        }}
-        graphData={graphData}
-        isLoading={isGraphLoading}
-        referenceId={selectedReferenceId}
-      />
+      <RepayModal isOpen={repayModalOpen} onClose={() => setRepayModalOpen(false)} onSubmit={handleRepaySubmit} isLoading={isRepayLoading} creditInfo={selectedCreditForRepay} />
+      <CreditDetailsModal isOpen={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} data={detailsData} isLoading={isDetailsLoading} />
+      <GraphModal isOpen={graphModalOpen} onClose={() => { setGraphModalOpen(false); setGraphData([]); setSelectedReferenceId(""); }} graphData={graphData} isLoading={isGraphLoading} referenceId={selectedReferenceId} />
     </>
   );
 }

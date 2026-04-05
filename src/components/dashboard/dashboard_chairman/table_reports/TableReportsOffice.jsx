@@ -1,19 +1,14 @@
-﻿import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
+import React, { useState, useEffect } from "react";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import LastModified from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
-import "../../../../styles/pagination.scss";
 import Spinner from "../../../Spinner.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import { fetchUserById } from "../../../../api/users/get_user.js";
 
-const ITEMS_PER_PAGE = 10;
-
 const ReportTableOfficesChairman = ({ onSelect }) => {
   const [allData, setAllData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [directorNames, setDirectorNames] = useState({});
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
@@ -27,7 +22,6 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
       try {
         const res = await fetchOffices();
         setAllData(res);
-        setFilteredData(res);
 
         const directorMap = {};
         await Promise.all(
@@ -46,7 +40,6 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
       } catch (e) {
         console.error(e);
       }
-      setCurrentPage(1);
       setLoading(false);
     };
 
@@ -55,39 +48,9 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
 
   const handleRowClick = (office) => {
     const officeId = office?.ID ?? office?.id ?? null;
-
-    if (!officeId) {
-      return;
-    }
-
+    if (!officeId) return;
     setSelectedRow(officeId);
     onSelect(`${officeId}/${dateFilter.year}/office`);
-  };
-
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const buttons = [];
-    for (let i = 1; i <= totalPages; i++) {
-      buttons.push(
-        <button
-          key={i}
-          className={`pagination-button ${currentPage === i ? "active" : ""}`}
-          onClick={() => setCurrentPage(i)}
-        >
-          {i}
-        </button>,
-      );
-    }
-
-    return <div className="pagination-container">{buttons}</div>;
   };
 
   return (
@@ -111,45 +74,40 @@ const ReportTableOfficesChairman = ({ onSelect }) => {
           >
             <Spinner />
           </div>
-        ) : paginatedData.length === 0 ? (
+        ) : allData.length === 0 ? (
           <h1>Нет данных</h1>
         ) : (
-          <>
-            <table className="table-reports">
-              <thead>
-                <tr>
-                  <th>Выберите</th>
-                  <th>Директор</th>
-                  <th>Организация</th>
-                  <th>Количество сотрудников</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((office) => {
-                  const officeRowId = office?.ID ?? office?.id;
-
-                  return (
-                    <tr
-                      key={officeRowId}
-                      onClick={() => handleRowClick(office)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td>
-                        <div
-                          className={`choose-td ${selectedRow === officeRowId ? "active" : ""}`}
-                        ></div>
-                      </td>
-                      <td>{directorNames[office.director_id] || "—"}</td>
-                      <td>{office.title || ""}</td>
-                      <td>{office.office_user?.length || 0}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {renderPagination()}
-          </>
+          <Table
+            dataSource={allData}
+            rowKey={(record) => record.ID ?? record.id}
+            pagination={{ pageSize: 10 }}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+            })}
+            bordered
+          >
+            <Table.Column
+              title="Выберите"
+              key="select"
+              render={(_, record) => (
+                <div
+                  className={`choose-td ${selectedRow === (record.ID ?? record.id) ? "active" : ""}`}
+                ></div>
+              )}
+              width={100}
+            />
+            <Table.Column
+              title="Директор"
+              key="director"
+              render={(_, record) => directorNames[record.director_id] || "—"}
+            />
+            <Table.Column title="Организация" dataIndex="title" key="title" />
+            <Table.Column
+              title="Количество сотрудников"
+              key="employees"
+              render={(_, record) => record.office_user?.length || 0}
+            />
+          </Table>
         )}
       </div>
     </div>

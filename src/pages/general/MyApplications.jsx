@@ -6,8 +6,7 @@ import file from "../../assets/file.jpg";
 import { useModal } from "../../hooks/useModal";
 import Modal from "../../components/modal/Modal";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
-import { useTableSort } from "../../hooks/useTableSort";
-import SortIcon from "../../components/general/SortIcon";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export default function MyApplications() {
   const { data, errors, setData } = useFormStore();
@@ -15,13 +14,12 @@ export default function MyApplications() {
   const [initialTableData] = useState(tableDataDef);
   const { setModal } = useModal();
 
-  const {
-    items: tableData,
-    requestSort,
-    sortConfig,
-  } = useTableSort(initialTableData);
-
-  console.log("selectedRows", selectedRows);
+  const rowSelection = {
+    selectedRowKeys: selectedRows,
+    onChange: (selectedRowKeys) => {
+      setSelectedRows(selectedRowKeys);
+    },
+  };
 
   return (
     <>
@@ -46,188 +44,44 @@ export default function MyApplications() {
             записей
           </div>
           <div className="my-applications-content">
-            <table>
-              <thead>
-                <tr>
-                  <th>Выбрать</th>
-                  <th
-                    onClick={() => requestSort("applicationId")}
-                    className="sortable-header"
-                  >
-                    ID{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="applicationId" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("status")}
-                    className="sortable-header"
-                  >
-                    Статус заявки{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="status" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("comment")}
-                    className="sortable-header"
-                  >
-                    Коммент{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="comment" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("fullName")}
-                    className="sortable-header"
-                  >
-                    ФИО Клиента{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="fullName" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("phone")}
-                    className="sortable-header"
-                  >
-                    Телефон <SortIcon sortConfig={sortConfig} sortKey="phone" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("codeWord")}
-                    className="sortable-header"
-                  >
-                    Кодовое слово{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="codeWord" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("cardName")}
-                    className="sortable-header"
-                  >
-                    Имя на карте{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="cardName" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("gender")}
-                    className="sortable-header"
-                  >
-                    Пол <SortIcon sortConfig={sortConfig} sortKey="gender" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("resident")}
-                    className="sortable-header"
-                  >
-                    Резидент{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="resident" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("document")}
-                    className="sortable-header"
-                  >
-                    Документ{" "}
-                    <SortIcon sortConfig={sortConfig} sortKey="document" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("inn")}
-                    className="sortable-header"
-                  >
-                    ИНН <SortIcon sortConfig={sortConfig} sortKey="inn" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("address")}
-                    className="sortable-header"
-                  >
-                    Адрес <SortIcon sortConfig={sortConfig} sortKey="address" />
-                  </th>
-                  <th
-                    onClick={() => requestSort("card")}
-                    className="sortable-header"
-                  >
-                    Карта <SortIcon sortConfig={sortConfig} sortKey="card" />
-                  </th>
-                  <th>Сканы паспорта</th>
-                  <th>Сканы подписанных доч.</th>
-                  <th>Сканы по доработкам</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    style={{
-                      backgroundColor: rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                    }}
-                  >
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      <input
-                        type="checkbox"
-                        onChange={(e) => {
-                          setSelectedRows(
-                            e.target.checked
-                              ? [...selectedRows, row.id]
-                              : selectedRows.filter((id) => id !== row.id),
-                          );
-                        }}
-                      />
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.applicationId}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.status}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.comment}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.fullName}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.phone}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.codeWord}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.cardName}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.gender}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.resident}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.document}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.inn}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.address}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.card}
-                    </td>
-                    <td
-                      style={{
-                        border: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {/* {row.passportScans} */}
-                      <img
-                        src={file}
-                        onClick={() =>
-                          setModal({ open: true, url: row.passportScans })
-                        }
-                        alt="file"
-                        width={50}
-                      />
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.signedDocsScans}
-                    </td>
-                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                      {row.revisionScans}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              dataSource={initialTableData}
+              rowKey="id"
+              rowSelection={rowSelection}
+              bordered
+              scroll={{ x: "max-content" }}
+              pagination={{ pageSize: 10 }}
+            >
+              <Table.Column title="ID" dataIndex="applicationId" key="applicationId" sortable />
+              <Table.Column title="Статус заявки" dataIndex="status" key="status" sortable />
+              <Table.Column title="Коммент" dataIndex="comment" key="comment" sortable />
+              <Table.Column title="ФИО Клиента" dataIndex="fullName" key="fullName" sortable />
+              <Table.Column title="Телефон" dataIndex="phone" key="phone" sortable />
+              <Table.Column title="Кодовое слово" dataIndex="codeWord" key="codeWord" sortable />
+              <Table.Column title="Имя на карте" dataIndex="cardName" key="cardName" sortable />
+              <Table.Column title="Пол" dataIndex="gender" key="gender" sortable />
+              <Table.Column title="Резидент" dataIndex="resident" key="resident" sortable />
+              <Table.Column title="Документ" dataIndex="document" key="document" sortable />
+              <Table.Column title="ИНН" dataIndex="inn" key="inn" sortable />
+              <Table.Column title="Адрес" dataIndex="address" key="address" sortable />
+              <Table.Column title="Карта" dataIndex="card" key="card" sortable />
+              <Table.Column
+                title="Сканы паспорта"
+                key="passportScans"
+                align="center"
+                render={(_, row) => (
+                  <img
+                    src={file}
+                    onClick={() => setModal({ open: true, url: row.passportScans })}
+                    alt="file"
+                    width={50}
+                    style={{ cursor: "pointer" }}
+                  />
+                )}
+              />
+              <Table.Column title="Сканы подписанных доч." dataIndex="signedDocsScans" key="signedDocsScans" />
+              <Table.Column title="Сканы по доработкам" dataIndex="revisionScans" key="revisionScans" />
+            </Table>
           </div>
         </main>
       </div>

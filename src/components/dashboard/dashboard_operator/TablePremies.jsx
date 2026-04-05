@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
+import { Table } from "../../table/FlexibleAntTable.jsx";
 import Spinner from "../../Spinner.jsx";
-import "../../../styles/components/Table.scss";
 import SearchBar from "../../general/SearchBar.jsx";
 import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
 import { DownloadCloud } from "lucide-react";
@@ -9,8 +9,6 @@ import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
 import { useWorkers } from "../../../hooks/useWorkers";
 import DownloadModal from "./DownloadModal.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../hooks/useTableSort.js";
-import SortIcon from "../../general/SortIcon.jsx";
 
 const TablePremies = ({ month, year }) => {
   const {
@@ -28,26 +26,18 @@ const TablePremies = ({ month, year }) => {
   const [edit, setEdit] = useState({ ID: null });
   const observer = useRef();
 
-  // State for modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadUser, setDownloadUser] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState("");
   const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
   const { exportToExcel } = useExcelExport();
 
-  // Enhance workers with calculated values for easier sorting
   const enhancedWorkers = React.useMemo(() => {
     return workers.map((w) => ({
       ...w,
       totalPremia: calculateTotalPremia(w),
     }));
   }, [workers]);
-
-  const {
-    items: sortedWorkers,
-    requestSort,
-    sortConfig,
-  } = useTableSort(enhancedWorkers);
 
   const monthOptions = [
     { name: "Январь", value: 1 },
@@ -89,10 +79,10 @@ const TablePremies = ({ month, year }) => {
       console.error(e);
     }
   };
+
   const onChangeEdit = (key, value) => {
     setEdit((prev) => {
       const keys = key.split(".");
-
       let newState = { ...prev };
       let current = newState;
 
@@ -101,16 +91,9 @@ const TablePremies = ({ month, year }) => {
         if (arrayMatch) {
           const [, arrKey, indexStr] = arrayMatch;
           const index = Number(indexStr);
-
-          if (!Array.isArray(current[arrKey])) {
-            current[arrKey] = [];
-          }
-
+          if (!Array.isArray(current[arrKey])) current[arrKey] = [];
           current[arrKey] = [...current[arrKey]];
-          if (!current[arrKey][index]) {
-            current[arrKey][index] = {};
-          }
-
+          if (!current[arrKey][index]) current[arrKey][index] = {};
           if (i === keys.length - 1) {
             current[arrKey][index] = value;
           } else {
@@ -126,12 +109,10 @@ const TablePremies = ({ month, year }) => {
           }
         }
       });
-
       return newState;
     });
   };
 
-  // NEW: open modal for choosing month/year
   const openDownloadModal = (user) => {
     setDownloadUser(user);
     setShowDownloadModal(true);
@@ -139,31 +120,24 @@ const TablePremies = ({ month, year }) => {
     setDownloadYear(new Date().getFullYear());
   };
 
-  // NEW: execute download
   const executeDownload = async () => {
     if (!downloadMonth || !downloadYear) {
       alert("Выберите месяц и год");
       return;
     }
-
     try {
       const token = localStorage.getItem("access_token");
       const url = `${import.meta.env.VITE_BACKEND_URL}/automation/reports/${
         downloadUser.ID
       }?month=${downloadMonth}&year=${downloadYear}`;
-
       const res = await fetch(url, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Ошибка скачивания отчета.");
       }
-
       const blob = await res.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -173,11 +147,7 @@ const TablePremies = ({ month, year }) => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(urlBlob);
-
       setShowDownloadModal(false);
-      setDownloadUser(null);
-      setDownloadMonth("");
-      setDownloadYear(new Date().getFullYear());
     } catch (e) {
       console.error(e);
       alert(`Не удалось скачать отчет: ${e.message}`);
@@ -188,64 +158,24 @@ const TablePremies = ({ month, year }) => {
     const columns = [
       { key: (row) => row.user?.full_name || "", label: "ФИО" },
       { key: "plan", label: "План продаж (TJS)" },
-      {
-        key: (row) => row.CardSales?.[0]?.cards_sailed ?? "",
-        label: "Продано карт (шт)",
-      },
-      {
-        key: (row) => row.CardSales?.[0]?.cards_sailed_in_general ?? "",
-        label: "Карт за всё время",
-      },
-      {
-        key: (row) => row.MobileBank?.[0]?.mobile_bank_connects ?? "",
-        label: "Моб. банк (шт)",
-      },
+      { key: (row) => row.CardSales?.[0]?.cards_sailed ?? "", label: "Продано карт (шт)" },
+      { key: (row) => row.CardSales?.[0]?.cards_sailed_in_general ?? "", label: "Карт за всё время" },
+      { key: (row) => row.MobileBank?.[0]?.mobile_bank_connects ?? "", label: "Моб. банк (шт)" },
       { key: "salary_project", label: "ЗП проект (шт)" },
-      {
-        key: (row) => row.CardSales?.[0]?.deb_osd ?? "",
-        label: "Оборот по дебету (TJS)",
-      },
-      {
-        key: (row) => row.CardSales?.[0]?.out_balance ?? "",
-        label: "Остатки по картам (TJS)",
-      },
-      {
-        key: (row) =>
-          row.CardTurnovers?.[0]?.active_cards_perms?.toFixed(0) ?? "",
-        label: "Активные карты (шт)",
-      },
-      {
-        key: (row) => row.ServiceQuality?.[0]?.call_center ?? "",
-        label: "Оценка КЦ (балл)",
-      },
-      {
-        key: (row) => row.ServiceQuality?.[0]?.complaint ?? "",
-        label: "Жалобы (шт)",
-      },
-      {
-        key: (row) => row.ServiceQuality?.[0]?.tests ?? "",
-        label: "Тесты (балл)",
-      },
-      {
-        key: (row) => calculateTotalPremia(row).toFixed(1),
-        label: "Итого (TJS)",
-      },
+      { key: (row) => row.CardSales?.[0]?.deb_osd ?? "", label: "Оборот по дебету (TJS)" },
+      { key: (row) => row.CardSales?.[0]?.out_balance ?? "", label: "Остатки по картам (TJS)" },
+      { key: (row) => row.CardTurnovers?.[0]?.active_cards_perms?.toFixed(0) ?? "", label: "Активные карты (шт)" },
+      { key: (row) => row.ServiceQuality?.[0]?.call_center ?? "", label: "Оценка КЦ (балл)" },
+      { key: (row) => row.ServiceQuality?.[0]?.complaint ?? "", label: "Жалобы (шт)" },
+      { key: (row) => row.ServiceQuality?.[0]?.tests ?? "", label: "Тесты (балл)" },
+      { key: (row) => calculateTotalPremia(row).toFixed(1), label: "Итого (TJS)" },
     ];
     exportToExcel(allWorkers, columns, `Отчет_Премии_${month}_${year}`);
   };
 
   if (loading) {
     return (
-      <div
-        style={{
-          transform: "scale(2)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: "100px",
-          width: "auto",
-        }}
-      >
+      <div style={{ transform: "scale(2)", display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "100px", width: "auto" }}>
         <Spinner />
       </div>
     );
@@ -253,16 +183,29 @@ const TablePremies = ({ month, year }) => {
 
   if (error) {
     return (
-      <div
-        className="report-table-container"
-        style={{ textAlign: "center", padding: "1rem", color: "red" }}
-      >
+      <div className="report-table-container" style={{ textAlign: "center", padding: "1rem", color: "red" }}>
         <p>{error}</p>
       </div>
     );
   }
 
-  console.log("edit", edit);
+  const renderEditableCell = (record, dataIndex, value, defValue) => {
+    const user = record.user || {};
+    const isEditing = edit?.user?.ID === user.ID;
+
+    if (isEditing) {
+      return (
+        <Input
+          type="text"
+          defValue={defValue}
+          onChange={(val) => onChangeEdit(dataIndex, val)}
+          value={value}
+          onEnter={upDateUserWorkers}
+        />
+      );
+    }
+    return defValue;
+  };
 
   return (
     <div className="report-table-container">
@@ -273,377 +216,113 @@ const TablePremies = ({ month, year }) => {
         </button>
       </div>
 
-      <div className="table-reports-div">
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th
-                onClick={() => requestSort("user.full_name")}
-                className="sortable-header"
-              >
-                ФИО{" "}
-                <SortIcon sortConfig={sortConfig} sortKey="user.full_name" />
-              </th>
-              <th
-                onClick={() => requestSort("plan")}
-                className="sortable-header"
-              >
-                План продаж (TJS){" "}
-                <SortIcon sortConfig={sortConfig} sortKey="plan" />
-              </th>
-              <th
-                onClick={() => requestSort("CardSales.0.cards_sailed")}
-                className="sortable-header"
-              >
-                Продано карт (шт){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="CardSales.0.cards_sailed"
-                />
-              </th>
-              <th
-                onClick={() =>
-                  requestSort("CardSales.0.cards_sailed_in_general")
-                }
-                className="sortable-header"
-              >
-                Карт за всё время{" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="CardSales.0.cards_sailed_in_general"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("MobileBank.0.mobile_bank_connects")}
-                className="sortable-header"
-              >
-                Моб. банк (шт){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="MobileBank.0.mobile_bank_connects"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("salary_project")}
-                className="sortable-header"
-              >
-                ЗП проект (шт){" "}
-                <SortIcon sortConfig={sortConfig} sortKey="salary_project" />
-              </th>
-              <th
-                onClick={() => requestSort("CardSales.0.deb_osd")}
-                className="sortable-header"
-              >
-                Оборот по дебету (TJS){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="CardSales.0.deb_osd"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("CardSales.0.out_balance")}
-                className="sortable-header"
-              >
-                Остатки по картам (TJS){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="CardSales.0.out_balance"
-                />
-              </th>
-              <th
-                onClick={() =>
-                  requestSort("CardTurnovers.0.active_cards_perms")
-                }
-                className="sortable-header"
-              >
-                Активные карты (шт){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="CardTurnovers.0.active_cards_perms"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("ServiceQuality.0.call_center")}
-                className="sortable-header"
-              >
-                Оценка КЦ (балл){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="ServiceQuality.0.call_center"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("ServiceQuality.0.complaint")}
-                className="sortable-header"
-              >
-                Жалобы (шт){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="ServiceQuality.0.complaint"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("ServiceQuality.0.tests")}
-                className="sortable-header"
-              >
-                Тесты (балл){" "}
-                <SortIcon
-                  sortConfig={sortConfig}
-                  sortKey="ServiceQuality.0.tests"
-                />
-              </th>
-              <th
-                onClick={() => requestSort("totalPremia")}
-                className="sortable-header"
-              >
-                Итого (TJS){" "}
-                <SortIcon sortConfig={sortConfig} sortKey="totalPremia" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedWorkers.map((w, idx) => {
-              const user = w.user || {};
-              const turnover = w.CardTurnovers?.[0] || {};
-              const service = w.ServiceQuality?.[0] || {};
-              const card_sales = w.CardSales?.[0] || {};
-              const mobile_bank = w.MobileBank?.[0] || {};
-
-              const totalPremia = w.totalPremia;
-              const isLast = idx === sortedWorkers.length - 1;
-
+      <Table
+        dataSource={enhancedWorkers}
+        rowKey="ID"
+        pagination={false}
+        bordered
+        onRow={(record, index) => ({
+          ref: index === enhancedWorkers.length - 1 ? lastRowRef : null,
+          onClick: () => !edit?.user?.ID && setEdit(record),
+        })}
+        scroll={{ x: "max-content" }}
+      >
+        <Table.Column
+          title="ФИО"
+          key="user.full_name"
+          render={(_, record) => {
+            const user = record.user || {};
+            const isEditing = edit?.user?.ID === user.ID;
+            if (isEditing) {
               return (
-                <tr key={w.ID} ref={isLast ? lastRowRef : null}>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={edit?.user?.full_name || user.full_name}
-                        onChange={(e) => onChangeEdit("user.full_name", e)}
-                        value={edit?.user?.full_name}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      <div className="fio-cell">
-                        <span className="fio-text">{user.full_name}</span>
-                        <button
-                          className="download-report-btn"
-                          title="Скачать отчет рабочего"
-                          onClick={() => openDownloadModal(user)}
-                        >
-                          <DownloadCloud size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={edit?.plan || w.plan}
-                        onChange={(e) => onChangeEdit("plan", e)}
-                        value={edit?.plan}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      w.plan
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.CardSales?.[0]?.cards_sailed ||
-                          card_sales.cards_sailed
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("CardSales[0].cards_sailed", e)
-                        }
-                        value={edit?.CardSales?.[0]?.cards_sailed || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      card_sales.cards_sailed
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.CardSales?.[0]?.cards_sailed_in_general ||
-                          card_sales.cards_sailed_in_general
-                        }
-                        onChange={(e) =>
-                          onChangeEdit(
-                            "CardSales[0].cards_sailed_in_general",
-                            e,
-                          )
-                        }
-                        value={
-                          edit?.CardSales?.[0]?.cards_sailed_in_general || ""
-                        }
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      card_sales.cards_sailed_in_general
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.MobileBank?.[0]?.mobile_bank_connects ||
-                          mobile_bank.mobile_bank_connects
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("MobileBank[0].mobile_bank_connects", e)
-                        }
-                        value={edit?.MobileBank?.[0]?.mobile_bank_connects}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      mobile_bank.mobile_bank_connects
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={edit?.salary_project || w.salary_project}
-                        onChange={(e) => onChangeEdit("salary_project", e)}
-                        value={edit?.salary_project || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      w.salary_project
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.CardSales?.[0]?.deb_osd || card_sales.deb_osd
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("CardSales[0].deb_osd", e)
-                        }
-                        value={edit?.CardSales?.[0]?.deb_osd || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      card_sales.deb_osd
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.CardSales?.[0]?.out_balance ||
-                          card_sales.out_balance
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("CardSales[0].out_balance", e)
-                        }
-                        value={edit?.CardSales?.[0]?.out_balance || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      card_sales.out_balance
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.CardTurnovers?.[0]?.active_cards_perms ||
-                          turnover.active_cards_perms?.toFixed(0)
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("CardTurnovers[0].active_cards_perms", e)
-                        }
-                        value={
-                          edit?.CardTurnovers?.[0]?.active_cards_perms || ""
-                        }
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      turnover.active_cards_perms?.toFixed(0)
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.ServiceQuality?.[0]?.call_center ||
-                          service.call_center
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("ServiceQuality[0].call_center", e)
-                        }
-                        value={edit?.ServiceQuality?.[0]?.call_center || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      service.call_center
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.ServiceQuality?.[0]?.complaint ||
-                          service.complaint
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("ServiceQuality[0].complaint", e)
-                        }
-                        value={edit?.ServiceQuality?.[0]?.complaint || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      service.complaint
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {edit?.user?.ID === user.ID ? (
-                      <Input
-                        type="text"
-                        defValue={
-                          edit?.ServiceQuality?.[0]?.tests || service.tests
-                        }
-                        onChange={(e) =>
-                          onChangeEdit("ServiceQuality[0].tests", e)
-                        }
-                        value={edit?.ServiceQuality?.[0]?.tests || ""}
-                        onEnter={upDateUserWorkers}
-                      />
-                    ) : (
-                      service.tests
-                    )}
-                  </td>
-                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
-                    {totalPremia.toFixed(1)}
-                  </td>
-                </tr>
+                <Input
+                  type="text"
+                  defValue={edit?.user?.full_name || user.full_name}
+                  onChange={(val) => onChangeEdit("user.full_name", val)}
+                  value={edit?.user?.full_name}
+                  onEnter={upDateUserWorkers}
+                />
               );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {!loading && workers.length === 0 && (
-        <div style={{ textAlign: "center", padding: "1rem" }}>
-          <p>Ничего не найдено</p>
-        </div>
-      )}
+            }
+            return (
+              <div className="fio-cell">
+                <span className="fio-text">{user.full_name}</span>
+                <button
+                  className="download-report-btn"
+                  title="Скачать отчет рабочего"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDownloadModal(user);
+                  }}
+                >
+                  <DownloadCloud size={18} />
+                </button>
+              </div>
+            );
+          }}
+          fixed="left"
+        />
+        <Table.Column
+          title="План продаж (TJS)"
+          key="plan"
+          render={(_, record) => renderEditableCell(record, "plan", edit?.plan, record.plan)}
+        />
+        <Table.Column
+          title="Продано карт (шт)"
+          key="CardSales.0.cards_sailed"
+          render={(_, record) => renderEditableCell(record, "CardSales[0].cards_sailed", edit?.CardSales?.[0]?.cards_sailed, record.CardSales?.[0]?.cards_sailed)}
+        />
+        <Table.Column
+          title="Карт за всё время"
+          key="CardSales.0.cards_sailed_in_general"
+          render={(_, record) => renderEditableCell(record, "CardSales[0].cards_sailed_in_general", edit?.CardSales?.[0]?.cards_sailed_in_general, record.CardSales?.[0]?.cards_sailed_in_general)}
+        />
+        <Table.Column
+          title="Моб. банк (шт)"
+          key="MobileBank.0.mobile_bank_connects"
+          render={(_, record) => renderEditableCell(record, "MobileBank[0].mobile_bank_connects", edit?.MobileBank?.[0]?.mobile_bank_connects, record.MobileBank?.[0]?.mobile_bank_connects)}
+        />
+        <Table.Column
+          title="ЗП проект (шт)"
+          key="salary_project"
+          render={(_, record) => renderEditableCell(record, "salary_project", edit?.salary_project, record.salary_project)}
+        />
+        <Table.Column
+          title="Оборот по дебету (TJS)"
+          key="CardSales.0.deb_osd"
+          render={(_, record) => renderEditableCell(record, "CardSales[0].deb_osd", edit?.CardSales?.[0]?.deb_osd, record.CardSales?.[0]?.deb_osd)}
+        />
+        <Table.Column
+          title="Остатки по картам (TJS)"
+          key="CardSales.0.out_balance"
+          render={(_, record) => renderEditableCell(record, "CardSales[0].out_balance", edit?.CardSales?.[0]?.out_balance, record.CardSales?.[0]?.out_balance)}
+        />
+        <Table.Column
+          title="Активные карты (шт)"
+          key="CardTurnovers.0.active_cards_perms"
+          render={(_, record) => renderEditableCell(record, "CardTurnovers[0].active_cards_perms", edit?.CardTurnovers?.[0]?.active_cards_perms, record.CardTurnovers?.[0]?.active_cards_perms?.toFixed(0))}
+        />
+        <Table.Column
+          title="Оценка КЦ (балл)"
+          key="ServiceQuality.0.call_center"
+          render={(_, record) => renderEditableCell(record, "ServiceQuality[0].call_center", edit?.ServiceQuality?.[0]?.call_center, record.ServiceQuality?.[0]?.call_center)}
+        />
+        <Table.Column
+          title="Жалобы (шт)"
+          key="ServiceQuality.0.complaint"
+          render={(_, record) => renderEditableCell(record, "ServiceQuality[0].complaint", edit?.ServiceQuality?.[0]?.complaint, record.ServiceQuality?.[0]?.complaint)}
+        />
+        <Table.Column
+          title="Тесты (балл)"
+          key="ServiceQuality.0.tests"
+          render={(_, record) => renderEditableCell(record, "ServiceQuality[0].tests", edit?.ServiceQuality?.[0]?.tests, record.ServiceQuality?.[0]?.tests)}
+        />
+        <Table.Column
+          title="Итого (TJS)"
+          key="totalPremia"
+          render={(_, record) => record.totalPremia.toFixed(1)}
+        />
+      </Table>
 
       {loadingMore && (
         <div style={{ textAlign: "center", padding: "1rem" }}>
