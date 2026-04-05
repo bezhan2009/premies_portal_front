@@ -425,7 +425,7 @@ export default function AbsWithdrawsList() {
                                             return (
                                                 <div className="active-table">
                                                     <button
-                                                        className={`button pay-button ${isPaid ? "paid" : ""}`}
+                                                        className={`button ${isPaid ? "paid" : ""}`}
                                                         onClick={() => handlePayClick(row)}
                                                         disabled={isPaying || isPaid}
                                                     >
