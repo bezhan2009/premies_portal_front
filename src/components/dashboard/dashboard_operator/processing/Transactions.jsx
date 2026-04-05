@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Select from "../../../elements/Select";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import "../../../../styles/components/ProcessingIntegration.scss";
 import "../../../../styles/components/BlockInfo.scss";
 import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
@@ -18,13 +19,10 @@ import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useParams, useNavigate } from "react-router-dom";
 import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../../hooks/useTableSort.js";
-import SortIcon from "../../../general/SortIcon.jsx";
 import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 
-// Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
   const found = dataTrans.find((e) => e.label === transactionType);
@@ -36,18 +34,10 @@ export default function DashboardOperatorProcessingTransactions() {
   const navigate = useNavigate();
   const { exportToExcel } = useExcelExport();
 
-  // Проверка доступа
   const hasAccess = canAccessTransactions();
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
   const [allowedCardId, setAllowedCardId] = useState(null);
-
   const [transactions, setTransactions] = useState([]);
-
-  const {
-    items: sortedTransactions,
-    requestSort,
-    sortConfig,
-  } = useTableSort(transactions);
 
   const [searchType, setSearchType] = useState("cardId");
   const [displayCardId, setDisplayCardId] = useState("");
@@ -68,11 +58,7 @@ export default function DashboardOperatorProcessingTransactions() {
   const [toDate, setToDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, EUR: 1 });
-  const [alert, setAlert] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+  const [alert, setAlert] = useState({ show: false, message: "", type: "success" });
 
   const searchOptions = [
     { value: "cardId", label: "Поиск по идентификатору карты" },
@@ -85,11 +71,9 @@ export default function DashboardOperatorProcessingTransactions() {
     { value: "cardBinSearch", label: "Поиск по BIN карты и типу транзакции" },
   ];
 
-  // Проверка доступа при монтировании компонента
   useEffect(() => {
     if (!hasAccess) {
       const storedCardId = sessionStorage.getItem("allowedCardId");
-
       if (storedCardId && id && storedCardId === id) {
         setIsLimitedAccess(true);
         setAllowedCardId(storedCardId);
@@ -104,13 +88,10 @@ export default function DashboardOperatorProcessingTransactions() {
     }
   }, [hasAccess, id, navigate]);
 
-  // Функция для форматирования суммы
   const formatAmount = (amount, transactionTypeValue) => {
     if (amount === null || amount === undefined || amount === "") return "N/A";
-
     const amountStr = amount.toString();
     let formattedAmount;
-
     if (amountStr.length <= 2) {
       formattedAmount = `0,${amountStr.padStart(2, "0")}`;
     } else {
@@ -118,43 +99,23 @@ export default function DashboardOperatorProcessingTransactions() {
       const decimalPart = amountStr.slice(-2);
       formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
     }
-
-    if (transactionTypeValue === 2) {
-      return `-${formattedAmount}`;
-    }
-
+    if (transactionTypeValue === 2) return `-${formattedAmount}`;
     return formattedAmount;
   };
 
-  // Устанавливаем даты по умолчанию (последние 30 дней)
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-
     const formatDate = (date) => date.toISOString().split("T")[0];
-
     setFromDate(formatDate(thirtyDaysAgo));
     setToDate(formatDate(today));
     setSearchDate(formatDate(today));
-
     const loadRates = async () => {
       try {
         const rates = await fetchConversionRates();
-        const usdRate =
-          rates.find(
-            (r) =>
-              r.currencyFrom === "USD" &&
-              r.currencyTo === "TJS" &&
-              r.type === "from",
-          )?.amountTo || 1;
-        const eurRate =
-          rates.find(
-            (r) =>
-              r.currencyFrom === "EUR" &&
-              r.currencyTo === "TJS" &&
-              r.type === "from",
-          )?.amountTo || 1;
+        const usdRate = rates.find(r => r.currencyFrom === "USD" && r.currencyTo === "TJS" && r.type === "from")?.amountTo || 1;
+        const eurRate = rates.find(r => r.currencyFrom === "EUR" && r.currencyTo === "TJS" && r.type === "from")?.amountTo || 1;
         setExchangeRates({ USD: usdRate, EUR: eurRate });
       } catch (err) {
         console.error("Ошибка при загрузке курсов:", err);
@@ -164,19 +125,11 @@ export default function DashboardOperatorProcessingTransactions() {
   }, []);
 
   const showAlert = useCallback((message, type = "success") => {
-    setAlert({
-      show: true,
-      message,
-      type,
-    });
+    setAlert({ show: true, message, type });
   }, []);
 
   const hideAlert = useCallback(() => {
-    setAlert({
-      show: false,
-      message: "",
-      type: "success",
-    });
+    setAlert({ show: false, message: "", type: "success" });
   }, []);
 
   const handleCardIdChange = (e) => {
@@ -187,300 +140,127 @@ export default function DashboardOperatorProcessingTransactions() {
 
   const handleSearchTypeChange = (valueOrEvent) => {
     if (isLimitedAccess) {
-      showAlert(
-        "У вас ограниченный доступ. Можно просматривать только историю одной карты",
-        "warning",
-      );
+      showAlert("У вас ограниченный доступ.", "warning");
       return;
     }
-
-    const value =
-      typeof valueOrEvent === "string"
-        ? valueOrEvent
-        : valueOrEvent?.target?.value;
+    const value = typeof valueOrEvent === "string" ? valueOrEvent : valueOrEvent?.target?.value;
     setSearchType(value);
-    setDisplayCardId("");
-    setCardId("");
-    setAtmId("");
-    setUtrnno("");
-    setTransactionType("");
-    setAmountFrom("");
-    setAmountTo("");
-    setReversal("");
-    setMcc("");
-    setCardBin("");
-    setSearchTransactionType("");
-    setSearchDate("");
-    setFromTime("");
-    setToTime("");
+    setDisplayCardId(""); setCardId(""); setAtmId(""); setUtrnno(""); setTransactionType("");
+    setAmountFrom(""); setAmountTo(""); setReversal(""); setMcc(""); setCardBin("");
+    setSearchTransactionType(""); setSearchDate(""); setFromTime(""); setToTime("");
     setTransactions([]);
   };
 
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    if (name === "fromDate") {
-      setFromDate(value);
-    } else {
-      setToDate(value);
-    }
+    if (name === "fromDate") setFromDate(value);
+    else setToDate(value);
   };
 
   const validateSearch = useCallback(() => {
     if (isLimitedAccess && allowedCardId && cardId !== allowedCardId) {
-      showAlert(
-        "У вас есть доступ только к просмотру истории конкретной карты",
-        "error",
-      );
+      showAlert("У вас есть доступ только к просмотру истории конкретной карты", "error");
       return false;
     }
-
     if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
       showAlert('Дата "С" не может быть больше даты "По"', "error");
       return false;
     }
-
     if (isLimitedAccess && fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      const diffTime = Math.abs(to - from);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+      const diffDays = Math.ceil(Math.abs(new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24));
       if (diffDays > 31) {
         showAlert("Максимальный период для поиска: 31 день", "error");
         return false;
       }
     }
-
-    if (searchType === "cardBinSearch" && fromTime && toTime) {
-      const fromTimeObj = new Date(`1970-01-01T${fromTime}:00`);
-      const toTimeObj = new Date(`1970-01-01T${toTime}:00`);
-      if (fromTimeObj > toTimeObj) {
-        showAlert('Время "С" не может быть больше времени "По"', "error");
-        return false;
-      }
+    // Дополнительные проверки для разных типов поиска
+    if (searchType === "cardId" && !cardId) {
+      showAlert("Введите идентификатор карты", "error");
+      return false;
     }
-
-    switch (searchType) {
-      case "cardId":
-        if (!cardId.trim()) {
-          showAlert("Введите ID карты", "warning");
-          return false;
-        }
-        break;
-      case "atmId":
-        if (!atmId.trim()) {
-          showAlert("Введите ID АТМ", "warning");
-          return false;
-        }
-        break;
-      case "utrnno":
-        if (!utrnno.trim()) {
-          showAlert("Введите номер операции в ПЦ", "warning");
-          return false;
-        }
-        break;
-      case "transactionType":
-        if (!transactionType.trim()) {
-          showAlert("Введите тип транзакции", "warning");
-          return false;
-        }
-        break;
-      case "amount":
-        if (!amountFrom.trim() || !amountTo.trim()) {
-          showAlert("Введите диапазон сумм", "warning");
-          return false;
-        }
-        break;
-      case "reversal":
-        if (!reversal.trim()) {
-          showAlert("Введите статус отмены (0 или 1)", "warning");
-          return false;
-        }
-        break;
-      case "mcc":
-        if (!mcc.trim()) {
-          showAlert("Введите MCC код", "warning");
-          return false;
-        }
-        break;
-      case "cardBinSearch":
-        if (!cardBin.trim()) {
-          showAlert("Введите BIN карты (первые 6 цифр)", "warning");
-          return false;
-        }
-        if (cardBin.length !== 6) {
-          showAlert("BIN карты должен содержать 6 цифр", "warning");
-          return false;
-        }
-        if (!searchTransactionType.trim()) {
-          showAlert("Введите тип транзакции", "warning");
-          return false;
-        }
-        if (!searchDate.trim()) {
-          showAlert("Выберите дату", "warning");
-          return false;
-        }
-        break;
-      default:
-        showAlert("Выберите тип поиска", "warning");
-        return false;
+    if (searchType === "atmId" && !atmId) {
+      showAlert("Введите номер терминала", "error");
+      return false;
+    }
+    if (searchType === "utrnno" && !utrnno) {
+      showAlert("Введите UTRNNO", "error");
+      return false;
+    }
+    if (searchType === "transactionType" && !transactionType) {
+      showAlert("Введите тип транзакции", "error");
+      return false;
+    }
+    if (searchType === "amount" && (!amountFrom && !amountTo)) {
+      showAlert("Введите хотя бы одну границу суммы", "error");
+      return false;
+    }
+    if (searchType === "reversal" && reversal !== "0" && reversal !== "1") {
+      showAlert("Введите 0 или 1", "error");
+      return false;
+    }
+    if (searchType === "mcc" && !mcc) {
+      showAlert("Введите MCC код", "error");
+      return false;
+    }
+    if (searchType === "cardBinSearch" && (!cardBin || !searchTransactionType || !searchDate)) {
+      showAlert("Заполните BIN, тип транзакции и дату", "error");
+      return false;
     }
     return true;
-  }, [
-    searchType,
-    cardId,
-    atmId,
-    utrnno,
-    transactionType,
-    amountFrom,
-    amountTo,
-    reversal,
-    mcc,
-    cardBin,
-    searchTransactionType,
-    searchDate,
-    fromDate,
-    toDate,
-    fromTime,
-    toTime,
-    isLimitedAccess,
-    allowedCardId,
-    showAlert,
-  ]);
+  }, [searchType, cardId, atmId, utrnno, transactionType, amountFrom, amountTo, reversal, mcc, cardBin, searchTransactionType, searchDate, fromDate, toDate, isLimitedAccess, allowedCardId, showAlert]);
 
-  const handleSearch = useCallback(
-    async (id) => {
-      if (!id) if (!validateSearch()) return;
+  const handleSearch = useCallback(async (forcedCardId = null) => {
+    const searchCardId = forcedCardId || cardId;
+    if (!searchCardId && !validateSearch()) return;
+    setIsLoading(true);
+    try {
+      let transactionsData = [];
+      const fDate = fromDate || undefined;
+      const tDate = toDate || undefined;
 
-      setIsLoading(true);
-      try {
-        let transactionsData = [];
-
-        switch (searchType) {
-          case "cardId":
-            transactionsData = await fetchTransactionsByCardId(
-              cardId || id,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "atmId":
-            transactionsData = await fetchTransactionsByATM(
-              atmId,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "utrnno":
-            transactionsData = await fetchTransactionsByUTRNNO(utrnno);
-            break;
-          case "transactionType":
-            transactionsData = await fetchTransactionsByType(
-              transactionType,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "amount":
-            transactionsData = await fetchTransactionsByAmount(
-              amountFrom,
-              amountTo,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "reversal":
-            transactionsData = await fetchTransactionsByReversal(
-              reversal,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "mcc":
-            transactionsData = await fetchTransactionsByMCC(
-              mcc,
-              fromDate || undefined,
-              toDate || undefined,
-            );
-            break;
-          case "cardBinSearch":
-            transactionsData = await fetchTransactionsByCardBinAndType(
-              cardBin,
-              searchTransactionType,
-              searchDate,
-              fromTime || undefined,
-              toTime || undefined,
-            );
-            break;
-          default:
-            throw new Error("Неизвестный тип поиска");
-        }
-
-        if (transactionsData && Array.isArray(transactionsData)) {
-          const formattedTransactions = transactionsData.map((transaction) => ({
-            id: transaction.id,
-            cardNumber: transaction.cardNumber,
-            cardId: transaction.cardId,
-            responseCode: transaction.responseCode,
-            responseDescription: transaction.responseDescription,
-            reqamt: transaction.reqamt,
-            amount: transaction.amount,
-            conamt: transaction.conamt,
-            acctbal: transaction.acctbal,
-            netbal: transaction.netbal,
-            utrnno: transaction.utrnno,
-            currency: transaction.currency,
-            conCurrency: transaction.conCurrency,
-            terminalId: transaction.terminalId,
-            reversal: transaction.reversal,
-            transactionType: transaction.transactionType,
-            transactionTypeName: transaction.transactionTypeName,
-            transactionTypeNumber: transaction.transactionTypeNumber,
-            atmId: transaction.atmId,
-            terminalAddress: transaction.terminalAddress,
-            localTransactionDate: transaction.localTransactionDate,
-            localTransactionTime: transaction.localTransactionTime,
-            mcc: transaction.mcc,
-            account: transaction.account,
-          }));
-
-          setTransactions(formattedTransactions);
-          showAlert(
-            `Загружено ${formattedTransactions.length} транзакций`,
-            "success",
-          );
-        } else {
-          setTransactions([]);
-          showAlert("Транзакции не найдены", "warning");
-        }
-      } catch (error) {
-        showAlert("Ошибка при загрузке данных: " + error.message, "error");
-        setTransactions([]);
-      } finally {
-        setIsLoading(false);
+      switch (searchType) {
+        case "cardId":
+          transactionsData = await fetchTransactionsByCardId(searchCardId, fDate, tDate);
+          break;
+        case "atmId":
+          transactionsData = await fetchTransactionsByATM(atmId, fDate, tDate);
+          break;
+        case "utrnno":
+          transactionsData = await fetchTransactionsByUTRNNO(utrnno);
+          break;
+        case "transactionType":
+          transactionsData = await fetchTransactionsByType(transactionType, fDate, tDate);
+          break;
+        case "amount":
+          transactionsData = await fetchTransactionsByAmount(amountFrom, amountTo, fDate, tDate);
+          break;
+        case "reversal":
+          transactionsData = await fetchTransactionsByReversal(reversal, fDate, tDate);
+          break;
+        case "mcc":
+          transactionsData = await fetchTransactionsByMCC(mcc, fDate, tDate);
+          break;
+        case "cardBinSearch":
+          transactionsData = await fetchTransactionsByCardBinAndType(cardBin, searchTransactionType, searchDate, fromTime || undefined, toTime || undefined);
+          break;
+        default:
+          throw new Error("Неизвестный тип поиска");
       }
-    },
-    [
-      searchType,
-      cardId,
-      fromDate,
-      toDate,
-      atmId,
-      utrnno,
-      transactionType,
-      amountFrom,
-      amountTo,
-      reversal,
-      mcc,
-      cardBin,
-      searchTransactionType,
-      searchDate,
-      fromTime,
-      toTime,
-      validateSearch,
-      showAlert,
-    ],
-  );
+
+      if (transactionsData && Array.isArray(transactionsData)) {
+        setTransactions(transactionsData);
+        showAlert(`Загружено ${transactionsData.length} транзакций`, "success");
+      } else {
+        setTransactions([]);
+        showAlert("Транзакции не найдены", "warning");
+      }
+    } catch (error) {
+      showAlert("Ошибка при загрузке данных: " + error.message, "error");
+      setTransactions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchType, cardId, atmId, utrnno, transactionType, amountFrom, amountTo, reversal, mcc, cardBin, searchTransactionType, searchDate, fromTime, toTime, fromDate, toDate, validateSearch, showAlert]);
 
   const handleExport = () => {
     const columns = [
@@ -490,109 +270,36 @@ export default function DashboardOperatorProcessingTransactions() {
       { key: "cardNumber", label: "Номер карты" },
       { key: "cardId", label: "ID карты" },
       { key: "transactionTypeName", label: "Тип операции" },
-      {
-        key: (row) => {
-          const amountFormatted = formatAmount(
-            row.amount,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
-          const currencyCode = getCurrencyCode(row.currency);
-          return `${amountFormatted} ${currencyCode}`;
-        },
-        label: "Сумма (валюта)",
-      },
-      {
-        key: (row) => {
-          const conamtFormatted = formatAmount(
-            row.conamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
-          const conCurrencyCode = getCurrencyCode(row.conCurrency);
-          return `${conamtFormatted} ${conCurrencyCode}`;
-        },
-        label: "Сумма в валюте карты (валюта)",
-      },
+      { key: (row) => `${formatAmount(row.amount, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.currency)}`, label: "Сумма (валюта)" },
+      { key: (row) => `${formatAmount(row.conamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.conCurrency)}`, label: "Сумма в валюте карты (валюта)" },
       { key: (row) => formatAmount(row.acctbal), label: "Доступный баланс" },
       { key: "utrnno", label: "Номер операции в ПЦ" },
       { key: "terminalId", label: "ID терминала" },
       { key: "atmId", label: "ID АТМ" },
-      {
-        key: (row) =>
-          formatAmount(
-            row.reqamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          ),
-        label: "Запрошенная сумма",
-      },
+      { key: (row) => formatAmount(row.reqamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber), label: "Запрошенная сумма" },
       { key: "terminalAddress", label: "Адрес терминала" },
       { key: "mcc", label: "MCC код" },
       { key: "account", label: "Счет" },
       {
         key: (row) => {
-          const rate =
-            row.conCurrency === 840
-              ? exchangeRates.USD
-              : row.conCurrency === 978
-                ? exchangeRates.EUR
-                : 1;
-          const amountTJS = Math.round((row.conamt || 0) * rate);
-          return formatAmount(
-            amountTJS,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
-        },
-        label: "Сумма в нац. валюте (TJS)",
+          const rate = row.conCurrency === 840 ? exchangeRates.USD : row.conCurrency === 978 ? exchangeRates.EUR : 1;
+          return formatAmount(Math.round((row.conamt || 0) * rate), getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber);
+        }, label: "Сумма в нац. валюте (TJS)"
       },
       { key: "id", label: "ID транзакции" },
     ];
-    exportToExcel(
-      sortedTransactions,
-      columns,
-      `Транзакции_${searchType}_${new Date().toISOString().split("T")[0]}`,
-    );
+    exportToExcel(transactions, columns, `Транзакции_${searchType}_${new Date().toISOString().split("T")[0]}`);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const formatCardNumber = (value) => {
-    return value
-      .replace(/\s/g, "")
-      .replace(/(\d{4})/g, "$1 ")
-      .trim();
-  };
+  const formatCardNumber = (value) => value.replace(/\s/g, "").replace(/(\d{4})/g, "$1 ").trim();
 
   const getStatusBadge = (responseCode, reversal, message) => {
-    if (reversal) {
-      return (
-        <span className="status-badge status-badge--reversed">Возврат</span>
-      );
-    }
-
+    if (reversal) return <span className="status-badge status-badge--reversed">Возврат</span>;
     switch (responseCode) {
-      case "-1":
-        return (
-          <span className="status-badge status-badge--success">{message}</span>
-        );
-      case "01":
-        return (
-          <span className="status-badge status-badge--warning">{message}</span>
-        );
-      case "02":
-        return (
-          <span className="status-badge status-badge--error">{message}</span>
-        );
-      default:
-        return (
-          <span className="status-badge status-badge--warning">{message}</span>
-        );
+      case "-1": return <span className="status-badge status-badge--success">{message}</span>;
+      case "01": return <span className="status-badge status-badge--warning">{message}</span>;
+      case "02": return <span className="status-badge status-badge--error">{message}</span>;
+      default: return <span className="status-badge status-badge--warning">{message}</span>;
     }
   };
 
@@ -600,7 +307,6 @@ export default function DashboardOperatorProcessingTransactions() {
     const today = new Date().toISOString().split("T")[0];
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     if (searchType === "cardBinSearch") {
       setSearchDate(today);
       setFromTime("");
@@ -609,40 +315,10 @@ export default function DashboardOperatorProcessingTransactions() {
       setFromDate(thirtyDaysAgo.toISOString().split("T")[0]);
       setToDate(today);
     }
-
-    switch (searchType) {
-      case "cardId":
-        if (!isLimitedAccess) {
-          setDisplayCardId("");
-          setCardId("");
-        }
-        break;
-      case "atmId":
-        setAtmId("");
-        break;
-      case "utrnno":
-        setUtrnno("");
-        break;
-      case "transactionType":
-        setTransactionType("");
-        break;
-      case "amount":
-        setAmountFrom("");
-        setAmountTo("");
-        break;
-      case "reversal":
-        setReversal("");
-        break;
-      case "mcc":
-        setMcc("");
-        break;
-      case "cardBinSearch":
-        setCardBin("");
-        setSearchTransactionType("");
-        break;
-    }
     setTransactions([]);
   };
+
+  const needsDateBlock = searchType !== "utrnno" && searchType !== "cardBinSearch";
 
   useEffect(() => {
     if (id?.length) {
@@ -653,20 +329,19 @@ export default function DashboardOperatorProcessingTransactions() {
   }, [id, handleSearch]);
 
   const renderSearchFields = () => {
-    // ... (unchanged, same as original)
     switch (searchType) {
       case "cardId":
         return (
           <div className="search-card__input-group">
             <label htmlFor="cardNumber" className="search-card__label">
-              Идентификатор карты
+              {cardId.includes(",") ? "Идентификаторы карт" : "Идентификатор карты"}
             </label>
             <input
               type="text"
               id="cardNumber"
               value={displayCardId}
               onChange={handleCardIdChange}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id || isLimitedAccess}
               placeholder="Введите идентификатор карты"
@@ -677,15 +352,13 @@ export default function DashboardOperatorProcessingTransactions() {
       case "atmId":
         return (
           <div className="search-card__input-group">
-            <label htmlFor="atmId" className="search-card__label">
-              Номер терминала (ATM ID)
-            </label>
+            <label htmlFor="atmId" className="search-card__label">Номер терминала (ATM ID)</label>
             <input
               type="text"
               id="atmId"
               value={atmId}
               onChange={(e) => setAtmId(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id}
               placeholder="Например: 00000014"
@@ -695,15 +368,13 @@ export default function DashboardOperatorProcessingTransactions() {
       case "utrnno":
         return (
           <div className="search-card__input-group">
-            <label htmlFor="utrnno" className="search-card__label">
-              Номер операции (UTRNNO)
-            </label>
+            <label htmlFor="utrnno" className="search-card__label">Номер операции (UTRNNO)</label>
             <input
               type="text"
               id="utrnno"
               value={utrnno}
               onChange={(e) => setUtrnno(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id}
               placeholder="Например: 353403802"
@@ -713,15 +384,13 @@ export default function DashboardOperatorProcessingTransactions() {
       case "transactionType":
         return (
           <div className="search-card__input-group">
-            <label htmlFor="transactionType" className="search-card__label">
-              Код типа транзакции
-            </label>
+            <label htmlFor="transactionType" className="search-card__label">Код типа транзакции</label>
             <input
               type="text"
               id="transactionType"
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id}
               placeholder="Например: 774"
@@ -732,15 +401,13 @@ export default function DashboardOperatorProcessingTransactions() {
         return (
           <>
             <div className="search-card__input-group">
-              <label htmlFor="amountFrom" className="search-card__label">
-                Сумма от
-              </label>
+              <label htmlFor="amountFrom" className="search-card__label">Сумма от</label>
               <input
                 type="number"
                 id="amountFrom"
                 value={amountFrom}
                 onChange={(e) => setAmountFrom(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 className="search-card__input"
                 disabled={isLoading || !!id}
                 placeholder="Например: 10"
@@ -748,15 +415,13 @@ export default function DashboardOperatorProcessingTransactions() {
               />
             </div>
             <div className="search-card__input-group">
-              <label htmlFor="amountTo" className="search-card__label">
-                Сумма до
-              </label>
+              <label htmlFor="amountTo" className="search-card__label">Сумма до</label>
               <input
                 type="number"
                 id="amountTo"
                 value={amountTo}
                 onChange={(e) => setAmountTo(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 className="search-card__input"
                 disabled={isLoading || !!id}
                 placeholder="Например: 1000"
@@ -768,15 +433,13 @@ export default function DashboardOperatorProcessingTransactions() {
       case "reversal":
         return (
           <div className="search-card__input-group">
-            <label htmlFor="reversal" className="search-card__label">
-              Статус отмены (0 - нет, 1 - да)
-            </label>
+            <label htmlFor="reversal" className="search-card__label">Статус отмены (0 - нет, 1 - да)</label>
             <input
               type="text"
               id="reversal"
               value={reversal}
               onChange={(e) => setReversal(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id}
               placeholder="0 или 1"
@@ -787,15 +450,13 @@ export default function DashboardOperatorProcessingTransactions() {
       case "mcc":
         return (
           <div className="search-card__input-group">
-            <label htmlFor="mcc" className="search-card__label">
-              MCC код
-            </label>
+            <label htmlFor="mcc" className="search-card__label">MCC код</label>
             <input
               type="text"
               id="mcc"
               value={mcc}
               onChange={(e) => setMcc(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="search-card__input"
               disabled={isLoading || !!id}
               placeholder="Например: 6011"
@@ -806,15 +467,13 @@ export default function DashboardOperatorProcessingTransactions() {
         return (
           <>
             <div className="search-card__input-group">
-              <label htmlFor="cardBin" className="search-card__label">
-                BIN карты (первые 6 цифр)
-              </label>
+              <label htmlFor="cardBin" className="search-card__label">BIN карты (первые 6 цифр)</label>
               <input
                 type="text"
                 id="cardBin"
                 value={cardBin}
                 onChange={(e) => setCardBin(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 className="search-card__input"
                 disabled={isLoading || !!id}
                 placeholder="Например: 478687"
@@ -822,27 +481,20 @@ export default function DashboardOperatorProcessingTransactions() {
               />
             </div>
             <div className="search-card__input-group">
-              <label
-                htmlFor="searchTransactionType"
-                className="search-card__label"
-              >
-                Тип транзакции
-              </label>
+              <label htmlFor="searchTransactionType" className="search-card__label">Тип транзакции</label>
               <input
                 type="text"
                 id="searchTransactionType"
                 value={searchTransactionType}
                 onChange={(e) => setSearchTransactionType(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 className="search-card__input"
                 disabled={isLoading || !!id}
                 placeholder="Например: 774"
               />
             </div>
             <div className="search-card__input-group">
-              <label htmlFor="searchDate" className="search-card__label">
-                Дата
-              </label>
+              <label htmlFor="searchDate" className="search-card__label">Дата</label>
               <CustomDateInput
                 id="searchDate"
                 type="date"
@@ -853,9 +505,7 @@ export default function DashboardOperatorProcessingTransactions() {
             </div>
             <div className="search-card__time-group">
               <div className="search-card__input-group">
-                <label htmlFor="fromTime" className="search-card__label">
-                  Время с
-                </label>
+                <label htmlFor="fromTime" className="search-card__label">Время с</label>
                 <CustomDateInput
                   id="fromTime"
                   type="time"
@@ -866,9 +516,7 @@ export default function DashboardOperatorProcessingTransactions() {
               </div>
               <div className="date-separator">-</div>
               <div className="search-card__input-group">
-                <label htmlFor="toTime" className="search-card__label">
-                  Время по
-                </label>
+                <label htmlFor="toTime" className="search-card__label">Время по</label>
                 <CustomDateInput
                   id="toTime"
                   type="time"
@@ -888,10 +536,11 @@ export default function DashboardOperatorProcessingTransactions() {
   const getTableTitle = () => {
     const baseTitle = "Найденные транзакции";
     let searchInfo = "";
-
     switch (searchType) {
       case "cardId":
-        searchInfo = `по карте с id ${displayCardId}`;
+        searchInfo = displayCardId.includes(",")
+          ? `по картам с id ${displayCardId}`
+          : `по карте с id ${displayCardId}`;
         break;
       case "atmId":
         searchInfo = `по терминалу ${atmId}`;
@@ -918,34 +567,12 @@ export default function DashboardOperatorProcessingTransactions() {
         }
         break;
     }
-
     return `${baseTitle} ${searchInfo}`;
   };
 
-  const needsDateRange = useMemo(() => {
-    return searchType !== "utrnno";
-  }, [searchType]);
-
-  const needsDateBlock = useMemo(() => {
-    return needsDateRange && searchType !== "cardBinSearch";
-  }, [searchType, needsDateRange]);
-
-  useEffect(() => {
-    if (isLimitedAccess) {
-      showAlert("Вы можете просматривать историю только этой карты", "info");
-    }
-  }, [isLimitedAccess, showAlert]);
-
   return (
     <>
-      {alert.show && (
-        <AlertMessage
-          message={alert.message}
-          type={alert.type}
-          onClose={hideAlert}
-          duration={3000}
-        />
-      )}
+      {alert.show && <AlertMessage message={alert.message} type={alert.type} onClose={hideAlert} duration={3000} />}
       <div className="block_info_prems content-page" align="center">
         <div className="processing-integration">
           <div className="processing-integration__container">
@@ -953,78 +580,28 @@ export default function DashboardOperatorProcessingTransactions() {
               <div className="search-card">
                 <div className="search-card__content">
                   <div className="search-card__input-group search-card__select-group">
-                    <label htmlFor="searchType" className="search-card__label">
-                      Тип поиска
-                    </label>
-                    <Select
-                      id="searchType"
-                      value={searchType}
-                      onChange={handleSearchTypeChange}
-                      options={searchOptions}
-                      disabled={isLoading || !!id || isLimitedAccess}
-                    />
+                    <label htmlFor="searchType" className="search-card__label">Тип поиска</label>
+                    <Select id="searchType" value={searchType} onChange={handleSearchTypeChange} options={searchOptions} disabled={isLoading || !!id || isLimitedAccess} />
                   </div>
-
                   {renderSearchFields()}
-
                   {needsDateBlock && (
                     <div className="search-card__date-group">
                       <div className="date-input-group">
-                        <label
-                          htmlFor="fromDate"
-                          className="search-card__label"
-                        >
-                          С даты
-                        </label>
-                        <CustomDateInput
-                          id="fromDate"
-                          type="date"
-                          value={fromDate}
-                          onChange={(value) =>
-                            handleDateChange({
-                              target: { name: "fromDate", value },
-                            })
-                          }
-                          disabled={isLoading}
-                        />
+                        <label htmlFor="fromDate" className="search-card__label">С даты</label>
+                        <CustomDateInput id="fromDate" type="date" value={fromDate} onChange={(value) => handleDateChange({ target: { name: "fromDate", value } })} disabled={isLoading} />
                       </div>
                       <div className="date-separator">-</div>
                       <div className="date-input-group">
-                        <label htmlFor="toDate" className="search-card__label">
-                          По дату
-                        </label>
-                        <CustomDateInput
-                          id="toDate"
-                          type="date"
-                          value={toDate}
-                          onChange={(value) =>
-                            handleDateChange({
-                              target: { name: "toDate", value },
-                            })
-                          }
-                          disabled={isLoading}
-                        />
+                        <label htmlFor="toDate" className="search-card__label">По дату</label>
+                        <CustomDateInput id="toDate" type="date" value={toDate} onChange={(value) => handleDateChange({ target: { name: "toDate", value } })} disabled={isLoading} />
                       </div>
                     </div>
                   )}
-
                   <div className="search-card__buttons">
-                    <button
-                      onClick={() => handleSearch()}
-                      disabled={isLoading}
-                      className={`search-card__button ${
-                        isLoading ? "search-card__button--loading" : ""
-                      }`}
-                    >
+                    <button onClick={() => handleSearch()} disabled={isLoading} className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}>
                       {isLoading ? "Поиск..." : "Найти транзакции"}
                     </button>
-                    <button
-                      onClick={clearFilters}
-                      disabled={isLoading}
-                      className="search-card__button search-card__button--secondary"
-                    >
-                      Очистить
-                    </button>
+                    <button onClick={clearFilters} disabled={isLoading} className="search-card__button search-card__button--secondary">Очистить</button>
                   </div>
                 </div>
               </div>
@@ -1037,353 +614,45 @@ export default function DashboardOperatorProcessingTransactions() {
                 <div className="limits-table__header">
                   <h2 className="limits-table__title">
                     {getTableTitle()}
-                    {needsDateBlock && fromDate && toDate && (
-                      <span className="date-range">
-                        ({fromDate} — {toDate})
-                      </span>
-                    )}
+                    {needsDateBlock && fromDate && toDate && <span className="date-range">({fromDate} — {toDate})</span>}
                   </h2>
                   <div className="table-header-actions">
-                    <button onClick={handleExport} className="export-excel-btn">
-                      Экспорт в Excel
-                    </button>
+                    <button onClick={handleExport} className="export-excel-btn">Экспорт в Excel</button>
                   </div>
                 </div>
-
-                <div className="limits-table__container">
-                  <div className="limits-table__wrapper">
-                    <table className="limits-table__content">
-                      <thead className="limits-table__head">
-                        <tr>
-                          <th
-                            onClick={() => requestSort("localTransactionDate")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Дата{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="localTransactionDate"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("responseDescription")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Статус{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="responseDescription"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("cardNumber")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Номер карты{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="cardNumber"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("cardId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID карты{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="cardId"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("transactionTypeName")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Тип операции{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="transactionTypeName"
-                            />
-                          </th>
-                          {/* Combined Amount + Currency column */}
-                          <th
-                            onClick={() => requestSort("amount")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Сумма (валюта){" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="amount"
-                            />
-                          </th>
-                          {/* Combined Converted Amount + Currency column */}
-                          <th
-                            onClick={() => requestSort("conamt")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Сумма в валюте карты (валюта){" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="conamt"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("acctbal")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Доступный баланс{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="acctbal"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("utrnno")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Номер операции в ПЦ{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="utrnno"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("terminalId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID терминала{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="terminalId"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("atmId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID АТМ{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="atmId" />
-                          </th>
-                          <th
-                            onClick={() => requestSort("reqamt")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Запрошенная сумма{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="reqamt"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("terminalAddress")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Адрес терминала{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="terminalAddress"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("mcc")}
-                            className="limits-table__th sortable-header"
-                          >
-                            MCC код{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="mcc" />
-                          </th>
-                          <th
-                            onClick={() => requestSort("account")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Счет{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="account"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("id")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID транзакции{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="id" />
-                          </th>
-                          <th className="limits-table__th">
-                            Сумма в нац. валуте
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="limits-table__body">
-                        {sortedTransactions.map((transaction) => {
-                          const transactionTypeValue = getTransactionTypeValue(
-                            transaction.transactionType,
-                          );
-                          return (
-                            <tr
-                              key={transaction.id}
-                              className="limits-table__row transaction-row"
-                            >
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.localTransactionDate || "N/A"}{" "}
-                                  {transaction.localTransactionTime || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                {getStatusBadge(
-                                  transaction.responseCode,
-                                  transaction.reversal,
-                                  transaction.responseDescription,
-                                )}
-                              </td>
-                              <td
-                                className="limits-table__td limits-table__td--info"
-                                style={{ minWidth: "150px" }}
-                              >
-                                {transaction.cardNumber
-                                  ? formatCardNumber(transaction.cardNumber)
-                                  : "N/A"}
-                              </td>
-                              <td className="limits-table__td limits-table__td--info">
-                                {transaction.cardId || "N/A"}
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.transactionTypeName || "N/A"}
-                                </span>
-                              </td>
-                              {/* Combined amount + currency */}
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.amount,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
-                                  {getCurrencyCode(transaction.currency)}
-                                </span>
-                              </td>
-                              {/* Combined conamt + conCurrency */}
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.conamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}{" "}
-                                  {getCurrencyCode(transaction.conCurrency)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.acctbal)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.utrnno || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalId || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.atmId || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.reqamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
-                                  )}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalAddress || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.mcc || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.account || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--info">
-                                {transaction.id}
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span
-                                  className="amount-value"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {(() => {
-                                    const rate =
-                                      transaction.conCurrency === 840
-                                        ? exchangeRates.USD
-                                        : transaction.conCurrency === 978
-                                          ? exchangeRates.EUR
-                                          : 1;
-                                    const amountTJS = Math.round(
-                                      (transaction.conamt || 0) * rate,
-                                    );
-                                    return formatAmount(
-                                      amountTJS,
-                                      transactionTypeValue ||
-                                        transaction.transactionTypeNumber,
-                                    );
-                                  })()}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="limits-table__footer">
-                    <div className="limits-table__stats">
-                      <span className="limits-table__stat">
-                        Всего записей: {sortedTransactions.length}
-                      </span>
-                      <span className="limits-table__stat">
-                        Показано: {sortedTransactions.length}
-                      </span>
-                      {needsDateBlock && fromDate && toDate && (
-                        <span className="limits-table__stat">
-                          Период: {fromDate} — {toDate}
-                        </span>
-                      )}
-                      <span className="limits-table__stat">
-                        Тип поиска:{" "}
-                        {
-                          searchOptions.find((opt) => opt.value === searchType)
-                            ?.label
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <Table
+                  dataSource={transactions}
+                  rowKey="id"
+                  pagination={{ pageSize: 15 }}
+                  bordered
+                  scroll={{ x: "max-content" }}
+                >
+                  <Table.Column title="Дата и время" key="dateTime" render={(_, row) => `${row.localTransactionDate || "N/A"} ${row.localTransactionTime || "N/A"}`} sortable />
+                  <Table.Column title="Статус" key="status" render={(_, row) => getStatusBadge(row.responseCode, row.reversal, row.responseDescription)} />
+                  <Table.Column title="Номер карты" key="cardNumber" render={(_, row) => row.cardNumber ? formatCardNumber(row.cardNumber) : "N/A"} sortable />
+                  <Table.Column title="ID карты" dataIndex="cardId" key="cardId" sortable />
+                  <Table.Column title="Тип операции" dataIndex="transactionTypeName" key="transactionTypeName" sortable />
+                  <Table.Column title="Сумма (валюта)" key="amount" render={(_, row) => `${formatAmount(row.amount, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.currency)}`} sortable />
+                  <Table.Column title="Сумма в валюте карты" key="conamt" render={(_, row) => `${formatAmount(row.conamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.conCurrency)}`} sortable />
+                  <Table.Column title="Доступный баланс" key="acctbal" render={(_, row) => formatAmount(row.acctbal)} sortable />
+                  <Table.Column title="UTRNNO" dataIndex="utrnno" key="utrnno" sortable />
+                  <Table.Column title="ID терминала" dataIndex="terminalId" key="terminalId" sortable />
+                  <Table.Column title="ID АТМ" dataIndex="atmId" key="atmId" sortable />
+                  <Table.Column title="Запрошенная сумма" key="reqamt" render={(_, row) => formatAmount(row.reqamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} sortable />
+                  <Table.Column title="Адрес терминала" dataIndex="terminalAddress" key="terminalAddress" />
+                  <Table.Column title="MCC" dataIndex="mcc" key="mcc" />
+                  <Table.Column title="Счет" dataIndex="account" key="account" />
+                  <Table.Column title="ID транзакции" dataIndex="id" key="id" />
+                  <Table.Column title="Сумма (TJS)" key="amountTjs" render={(_, row) => {
+                    const rate = row.conCurrency === 840 ? exchangeRates.USD : row.conCurrency === 978 ? exchangeRates.EUR : 1;
+                    return formatAmount(Math.round((row.conamt || 0) * rate), getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber);
+                  }} />
+                </Table>
               </div>
             </div>
           )}
 
-          {isLoading && (
-            <div className="processing-integration__loading">
-              <div className="spinner"></div>
-            </div>
-          )}
-
+          {isLoading && <div className="processing-integration__loading"><div className="spinner"></div></div>}
           {!isLoading && transactions.length === 0 && (
             <div className="processing-integration__no-data">
               <div className="no-data">

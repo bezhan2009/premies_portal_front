@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Input from "../../components/elements/Input.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
-import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
@@ -10,12 +9,11 @@ import Spinner from "../../components/Spinner.jsx";
 import * as XLSX from "xlsx";
 import "../../styles/components/StatsEQMS.scss";
 import {getCurrencyNumber} from "../../api/utils/getCurrencyCode.js";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export default function PVNTransactionsList() {
     const { data, setData } = useFormStore();
     const [tableData, setTableData] = useState([]);
-    const [sortField, setSortField] = useState("id");
-    const [sortDirection, setSortDirection] = useState("desc");
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [filters, setFilters] = useState({});
@@ -139,7 +137,7 @@ export default function PVNTransactionsList() {
         if (!data?.pvn_to_datetime) {
             setData("pvn_to_datetime", defaultToDateTime);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
@@ -156,32 +154,6 @@ export default function PVNTransactionsList() {
             })
         );
     }, [tableData, filters]);
-
-    const handleSort = (field) => {
-        if (sortField === field) {
-            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-        } else {
-            setSortField(field);
-            setSortDirection("asc");
-        }
-    };
-
-    const sortedData = useMemo(() => {
-        const arr = [...filteredData];
-        arr.sort((a, b) => {
-            const aVal = a[sortField];
-            const bVal = b[sortField];
-            if (aVal == null && bVal == null) return 0;
-            if (aVal == null) return 1;
-            if (bVal == null) return -1;
-            const cmp =
-                typeof aVal === "number" && typeof bVal === "number"
-                    ? aVal - bVal
-                    : String(aVal).localeCompare(String(bVal), "ru", { numeric: true });
-            return sortDirection === "asc" ? cmp : -cmp;
-        });
-        return arr;
-    }, [filteredData, sortField, sortDirection]);
 
     const paySingle = async (transaction) => {
         const resp = await fetch(`${backendABS}/pvn/transactions/pay`, {
@@ -240,7 +212,7 @@ export default function PVNTransactionsList() {
     };
 
     const handlePayAll = async () => {
-        const toPay = sortedData.filter(
+        const toPay = filteredData.filter(
             (row) => selectedRows.includes(row.id) && !isPaidTransaction(row)
         );
         if (toPay.length === 0) {
@@ -276,9 +248,7 @@ export default function PVNTransactionsList() {
             }
             const message = `Успешно оплачено: ${successes}. Ошибок: ${fails.length}.`;
             showAlert(message, fails.length === 0 ? "success" : "warning");
-            if (fails.length > 0) console.error("Ошибки оплаты:", fails);
             setTimeout(() => fetchData(), 1000);
-            // eslint-disable-next-line no-unused-vars
         } catch (err) {
             showAlert("Критическая ошибка во время массовой оплаты", "error");
         } finally {
@@ -307,7 +277,7 @@ export default function PVNTransactionsList() {
             return;
         }
 
-        const selectedData = sortedData.filter((row) => selectedRows.includes(row.id));
+        const selectedData = filteredData.filter((row) => selectedRows.includes(row.id));
         if (selectedData.length === 0) return;
 
         const columnLabels = {
@@ -345,11 +315,6 @@ export default function PVNTransactionsList() {
             "payed_deletedAt",
         ];
 
-        const getCurrencyLabel = (value) => {
-            if (typeof value !== "number") return value;
-            return value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
-        };
-
         const rows = selectedData.map((row) => {
             const obj = {};
             for (const header of allHeaders) {
@@ -361,9 +326,8 @@ export default function PVNTransactionsList() {
                 } else if (header === "amount") {
                     obj[label] = typeof row[header] === "number" ? row[header] / 100 : row[header];
                 } else if (header === "currency") {
-                    obj[label] = getCurrencyLabel(row[header]);
-                } else if (header.includes("Date") || header === "localTransactionDate") {
-                    obj[label] = formatDateForDisplay(row[header]);
+                    const v = row[header];
+                    obj[label] = v === 810 ? "RUB" : v === 840 ? "USD" : v === 978 ? "EUR" : v;
                 } else {
                     obj[label] = row[header] !== null && row[header] !== undefined ? row[header] : "";
                 }
@@ -372,51 +336,30 @@ export default function PVNTransactionsList() {
         });
 
         const worksheet = XLSX.utils.json_to_sheet(rows);
-
-        // Авто-ширина колонок
-        const colWidths = Object.keys(rows[0] || {}).map((key) => ({
-            wch: Math.max(
-                key.length,
-                ...rows.map((r) => String(r[key] ?? "").length)
-            ) + 2,
-        }));
-        worksheet["!cols"] = colWidths;
-
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Транзакции");
-
         XLSX.writeFile(workbook, `pvn_transactions_${new Date().toISOString().slice(0, 10)}.xlsx`);
-
         showAlert(`Экспортировано ${selectedData.length} записей`, "success");
         setSelectedRows([]);
         setSelectAll(false);
-    };
-
-    const handleCheckboxToggle = (id, checked) => {
-        if (checked) {
-            setSelectedRows((prev) => [...prev, id]);
-        } else {
-            setSelectedRows((prev) => prev.filter((p) => p !== id));
-            setSelectAll(false);
-        }
     };
 
     const toggleSelectAll = () => {
         if (selectAll) {
             setSelectedRows([]);
         } else {
-            setSelectedRows(sortedData.map((r) => r.id));
+            setSelectedRows(filteredData.map((r) => r.id));
         }
         setSelectAll(!selectAll);
     };
 
     const selectAllUnpaid = () => {
-        setSelectedRows(sortedData.filter((row) => !isPaidTransaction(row)).map((r) => r.id));
+        setSelectedRows(filteredData.filter((row) => !isPaidTransaction(row)).map((r) => r.id));
         setSelectAll(false);
     };
 
     const selectAllPaid = () => {
-        setSelectedRows(sortedData.filter((row) => isPaidTransaction(row)).map((r) => r.id));
+        setSelectedRows(filteredData.filter((row) => isPaidTransaction(row)).map((r) => r.id));
         setSelectAll(false);
     };
 
@@ -430,314 +373,140 @@ export default function PVNTransactionsList() {
         terminalId: "Терминал",
         atmId: "ATM ID",
         utrnno: "Utrnno",
-        transaction_card_payed: "Статус оплаты",
     };
 
     const tableHeaders = useMemo(() => {
-        if (sortedData.length === 0) return [];
+        if (filteredData.length === 0) return [];
         const excluded = [
             "cardId", "responseCode", "responseDescription", "reqamt", "conamt", "acctbal",
             "netbal", "conCurrency", "reversal", "transactionType", "transactionTypeName",
             "transactionTypeNumber", "terminalAddress", "mcc", "account", "transaction_card_payed"
         ];
-        return Object.keys(sortedData[0]).filter(
+        return Object.keys(filteredData[0]).filter(
             (key) => !excluded.includes(key) && !key.startsWith("_")
         );
-    }, [sortedData]);
+    }, [filteredData]);
 
-    const totalSelected = selectedRows.length;
-    const totalPaid = useMemo(
-        () => sortedData.filter((row) => isPaidTransaction(row)).length,
-        [sortedData]
-    );
-    const totalAmountSelected = useMemo(() => {
-        return sortedData
-            .filter((row) => selectedRows.includes(row.id))
-            .reduce((sum, row) => sum + (row.amount || 0), 0) / 100;
-    }, [sortedData, selectedRows]);
+    const rowSelection = {
+        selectedRowKeys: selectedRows,
+        onChange: (keys) => {
+            setSelectedRows(keys);
+            setSelectAll(keys.length === filteredData.length && filteredData.length > 0);
+        },
+    };
 
     return (
         <>
             <div className="page-content-wrapper content-page">
-                    <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
-                        <main>
-                            <div className="my-applications-header">
-                                <button
-                                    className={!showFilters ? "filter-toggle" : "Unloading"}
-                                    onClick={() => setShowFilters(!showFilters)}
-                                >
-                                    Фильтры
-                                </button>
-                                <pre> </pre>
-                                <button
-                                    className="Unloading"
-                                    onClick={handleExport}
-                                    disabled={selectedRows.length === 0}
-                                >
-                                    Выгрузка в Excel
-                                </button>
-                                <button
-                                    className="save"
-                                    onClick={handlePayAll}
-                                    disabled={selectedRows.length === 0 || payingIds.size > 0}
-                                >
-                                    Оплатить выбранные
-                                </button>
-                                <button
-                                    className={selectAll ? "selectAll-toggle" : ""}
-                                    onClick={toggleSelectAll}
-                                >
-                                    {selectAll ? "Снять выделение" : "Выбрать все"}
-                                </button>
-                                <button className="edit" onClick={selectAllUnpaid}>
-                                    Выбрать неоплаченные
-                                </button>
-                                <button className="save" onClick={selectAllPaid}>
-                                    Выбрать оплаченные
-                                </button>
+                <div className="applications-list" style={{ flexDirection: "column", gap: "20px", height: "auto" }}>
+                    <main>
+                        <div className="my-applications-header">
+                            <button className={!showFilters ? "filter-toggle" : "Unloading"} onClick={() => setShowFilters(!showFilters)}>Фильтры</button>
+                            <pre> </pre>
+                            <button className="Unloading" onClick={handleExport} disabled={selectedRows.length === 0}>Экспорт Excel</button>
+                            <button className="save" onClick={handlePayAll} disabled={selectedRows.length === 0 || payingIds.size > 0}>Оплатить выбранные</button>
+                            <button className={selectAll ? "selectAll-toggle" : ""} onClick={toggleSelectAll}>{selectAll ? "Снять выделение" : "Выбрать все"}</button>
+                            <button className="edit" onClick={selectAllUnpaid}>Все неоплаченные</button>
+                            <button className="save" onClick={selectAllPaid}>Все оплаченные</button>
 
-                                <div className="selection-stats-card">
-                                    <div className="stat">
-                                        <span className="label">Выбрано</span>
-                                        <strong className="value">{totalSelected}</strong>
-                                    </div>
-                                    <div className="divider" />
-                                    <div className="stat">
-                                        <span className="label">Оплачено всего</span>
-                                        <strong className="value paid">{totalPaid}</strong>
-                                    </div>
-                                    <div className="divider" />
-                                    <div className="stat highlight">
-                                        <span className="label">Сумма выбранных</span>
-                                        <strong className="value amount">
-                                            {totalAmountSelected.toLocaleString("ru-RU", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })} {getCurrencyNumber(sortedData[0]?.currency) || ""}
-                                        </strong>
-                                    </div>
-                                </div>
+                            <div className="selection-stats-card">
+                                <div className="stat"><span className="label">Выбрано</span><strong className="value">{selectedRows.length}</strong></div>
+                                <div className="divider" />
+                                <div className="stat highlight"><span className="label">Сумма выбраных</span><strong className="value amount">{(filteredData.filter(r => selectedRows.includes(r.id)).reduce((s, r) => s + (r.amount || 0), 0) / 100).toLocaleString("ru-RU")} {getCurrencyNumber(filteredData[0]?.currency) || ""}</strong></div>
                             </div>
+                        </div>
 
-                            {showFilters && (
-                                <div className="filters animate-slideIn">
-                                    <input
-                                        placeholder="Номер карты"
-                                        onChange={(e) => setFilters((p) => ({ ...p, cardNumber: e.target.value }))}
-                                    />
-                                    <input
-                                        placeholder="ATM ID"
-                                        onChange={(e) => setFilters((p) => ({ ...p, atmId: e.target.value }))}
-                                    />
-                                    <input
-                                        placeholder="Utrnno"
-                                        onChange={(e) => setFilters((p) => ({ ...p, utrnno: e.target.value }))}
-                                    />
-                                    <input
-                                        placeholder="Сумма"
-                                        type="number"
-                                        onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))}
-                                    />
-                                </div>
-                            )}
-
-                            <div className="my-applications-sub-header">
-                                <div>
-                                    С{" "}
-                                    <Input
-                                        type="datetime-local"
-                                        onChange={(e) => setData("pvn_from_datetime", e)}
-                                        value={data?.pvn_from_datetime || defaultFromDateTime}
-                                        style={{ width: "200px" }}
-                                        id="pvn_from_datetime"
-                                    />
-                                </div>
-                                <div>
-                                    По{" "}
-                                    <Input
-                                        type="datetime-local"
-                                        onChange={(e) => setData("pvn_to_datetime", e)}
-                                        value={data?.pvn_to_datetime || defaultToDateTime}
-                                        style={{ width: "200px" }}
-                                        id="pvn_to_datetime"
-                                    />
-                                </div>
+                        {showFilters && (
+                            <div className="filters animate-slideIn">
+                                <input placeholder="Номер карты" onChange={(e) => setFilters((p) => ({ ...p, cardNumber: e.target.value }))} />
+                                <input placeholder="ATM ID" onChange={(e) => setFilters((p) => ({ ...p, atmId: e.target.value }))} />
+                                <input placeholder="Utrnno" onChange={(e) => setFilters((p) => ({ ...p, utrnno: e.target.value }))} />
+                                <input placeholder="Сумма" type="number" onChange={(e) => setFilters((p) => ({ ...p, amount: e.target.value }))} />
                             </div>
+                        )}
 
-                            <div className="my-applications-content" style={{ position: "relative" }}>
-                                {loading ? (
-                                    <div style={{ padding: "2rem" }}>
-                                        <Spinner center label="Загружаем транзакции ПВН" />
-                                    </div>
-                                ) : sortedData.length === 0 ? (
-                                    <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
-                                        Нет данных для отображения
-                                    </div>
-                                ) : (
-                                    <table className="eqms-table">
-                                        <thead>
-                                        <tr>
-                                            <th className="eqms-th eqms-th--checkbox">
-                                                <input
-                                                    type="checkbox"
-                                                    className="custom-checkbox"
-                                                    checked={selectAll}
-                                                    onChange={toggleSelectAll}
-                                                />
-                                            </th>
-                                            {tableHeaders.map((header) => (
-                                                <th
-                                                    key={header}
-                                                    className={`eqms-th eqms-th--sortable${sortField === header ? " eqms-th--active" : ""}`}
-                                                    onClick={() => handleSort(header)}
-                                                >
-                                                    <span className="eqms-th__label">{columnNames[header] || header}</span>
-                                                    <span className="eqms-th__icon">
-                                                        {sortField === header ? (
-                                                            sortDirection === "asc" ? <BsArrowUp /> : <BsArrowDown />
-                                                        ) : (
-                                                            <BsArrowDownUp className="eqms-th__icon--idle" />
-                                                        )}
-                                                    </span>
-                                                </th>
-                                            ))}
-                                            <th className="eqms-th">Статус оплаты</th>
-                                            <th className="eqms-th">Дата оплаты</th>
-                                            <th className="eqms-th active-table">Действия</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {sortedData.map((row) => {
+                        <div className="my-applications-sub-header">
+                            <div>С <Input type="datetime-local" onChange={(e) => setData("pvn_from_datetime", e)} value={data?.pvn_from_datetime || defaultFromDateTime} style={{ width: "200px" }} /></div>
+                            <div>По <Input type="datetime-local" onChange={(e) => setData("pvn_to_datetime", e)} value={data?.pvn_to_datetime || defaultToDateTime} style={{ width: "200px" }} /></div>
+                        </div>
+
+                        <div className="my-applications-content" style={{ position: "relative" }}>
+                            {loading ? (
+                                <div style={{ padding: "2rem" }}><Spinner center label="Загружаем транзакции ПВН" /></div>
+                            ) : filteredData.length === 0 ? (
+                                <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>Нет данных</div>
+                            ) : (
+                                <Table dataSource={filteredData} rowKey="id" rowSelection={rowSelection} bordered loading={loading} scroll={{ x: "max-content" }} pagination={{ pageSize: 15 }} onRow={(r) => ({ style: { backgroundColor: isPaidTransaction(r) ? "#e6ffe6" : "transparent" } })}>
+                                    {tableHeaders.map((h) => (
+                                        <Table.Column
+                                            key={h}
+                                            title={columnNames[h] || h}
+                                            sortable
+                                            render={(_, row) => {
+                                                let v = row[h];
+                                                if (h.includes("Date") || h === "localTransactionDate") return formatDateForDisplay(v);
+                                                if (h === "currency" && typeof v === "number") return v === 972 ? "TJS" : v === 810 ? "RUB" : v === 840 ? "USD" : v === 978 ? "EUR" : v;
+                                                if (h === "amount" && typeof v === "number") return formatAmount(v);
+                                                return v;
+                                            }}
+                                        />
+                                    ))}
+                                    <Table.Column
+                                        title="Статус оплаты"
+                                        key="pvn_status"
+                                        render={(_, row) => {
+                                            const paid = isPaidTransaction(row);
+                                            return (
+                                                <div style={{ display: "flex", alignItems: "center", gap: "10px", color: paid ? "green" : "gray" }}>
+                                                    {paid ? <FcOk style={{ fontSize: 22 }} /> : <FcProcess style={{ fontSize: 22 }} />}
+                                                    <span>{paid ? "Оплачено" : "Не оплачено"}</span>
+                                                </div>
+                                            );
+                                        }}
+                                    />
+                                    <Table.Column title="Дата оплаты" key="pvn_pay_date" render={(_, row) => row.transaction_card_payed?.createdAt ? formatDateForDisplay(row.transaction_card_payed.createdAt) : ""} />
+                                    <Table.Column
+                                        title="Действия"
+                                        key="actions"
+                                        fixed="right"
+                                        render={(_, row) => {
                                             const paid = isPaidTransaction(row);
                                             const isPaying = payingIds.has(row.utrnno);
-
                                             return (
-                                                <tr
-                                                    key={row.id}
-                                                    style={{ backgroundColor: paid ? "#e6ffe6" : "transparent" }}
-                                                >
-                                                    <td>
-                                                        <input
-                                                            type="checkbox"
-                                                            className="custom-checkbox"
-                                                            checked={selectedRows.includes(row.id)}
-                                                            onChange={(e) => handleCheckboxToggle(row.id, e.target.checked)}
-                                                        />
-                                                    </td>
-                                                    {tableHeaders.map((header) => {
-                                                        let value = row[header];
-                                                        if (header.includes("Date") || header === "localTransactionDate") {
-                                                            value = formatDateForDisplay(value);
-                                                        }
-                                                        if (header === "currency" && typeof value === "number") {
-                                                            value = value === 972 ? "TJS" : value === 810 ? "RUB" : value === 840 ? "USD" : value === 978 ? "EUR" : value;
-                                                        }
-                                                        if (header === "amount" && typeof value === "number") {
-                                                            value = formatAmount(value);
-                                                        }
-                                                        return <td key={header}>{value}</td>;
-                                                    })}
-                                                    <td>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: paid ? "green" : "gray", fontWeight: paid ? "500" : "normal" }}>
-                                                            {paid ? <FcOk style={{ fontSize: 22 }} /> : <FcProcess style={{ fontSize: 22 }} />}
-                                                            <span>{paid ? "Оплачено" : "Не оплачено"}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        {row.transaction_card_payed?.createdAt
-                                                            ? formatDateForDisplay(row.transaction_card_payed.createdAt)
-                                                            : ""}
-                                                    </td>
-                                                    <td className="active-table">
-                                                        <button
-                                                            className={`pay-button ${paid ? "paid" : ""}`}
-                                                            onClick={() => handlePay(row)}
-                                                            disabled={isPaying || paid}
-                                                            style={{
-                                                                padding: "8px 12px",
-                                                                borderRadius: "6px",
-                                                                border: "none",
-                                                                cursor: paid || isPaying ? "not-allowed" : "pointer",
-                                                                opacity: paid || isPaying ? 0.6 : 1,
-                                                                color: "#333",
-                                                                fontWeight: "500",
-                                                                transition: "all 0.2s",
-                                                                minWidth: "120px",
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                justifyContent: "center",
-                                                                gap: "8px",
-                                                            }}
-                                                        >
-                                                            {isPaying ? (
-                                                                <>Оплачивается...</>
-                                                            ) : paid ? (
-                                                                <>
-                                                                    <img src={PayedIcon} width="24" height="24" alt="Оплачено" />
-                                                                    Оплачено
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <img src={PayIcon} width="24" height="24" alt="Оплатить" />
-                                                                    Оплатить
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </td>
-                                                </tr>
+                                                <div className="active-table">
+                                                    <button className={`pay-button ${paid ? "paid" : ""}`} onClick={() => handlePay(row)} disabled={isPaying || paid} style={{ opacity: paid || isPaying ? 0.6 : 1, minWidth: "120px" }}>
+                                                        {isPaying ? "..." : paid ? <><img src={PayedIcon} width="24" /> Оплачено</> : <><img src={PayIcon} width="24" /> Оплатить</>}
+                                                    </button>
+                                                </div>
                                             );
-                                        })}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-                        </main>
-                    </div>
-
-                    {alert && (
-                        <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />
-                    )}
-
-                    {showPayConfirmation && (
-                        <div className="logout-confirmation">
-                            <div className="confirmation-box">
-                                <div>
-                                    <h1>Подтверждение оплаты</h1>
-                                    <p>
-                                        Вы уверены, что хотите оплатить выбранные транзакции?
-                                        <br />
-                                        Количество: {paymentsToProcess.length}
-                                        <br /><br />
-                                        После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
-                                    </p>
-                                </div>
-                                <div className="confirmation-buttons">
-                                    <button className="confirm-btn" onClick={handleConfirmPayment}>Да, оплатить</button>
-                                    <button className="cancel-btn" onClick={handleCancelPayment}>Отмена</button>
-                                </div>
-                            </div>
+                                        }}
+                                    />
+                                </Table>
+                            )}
                         </div>
-                    )}
-
-                    {showSinglePayConfirmation && (
-                        <div className="logout-confirmation">
-                            <div className="confirmation-box">
-                                <div>
-                                    <h1>Подтверждение оплаты</h1>
-                                    <p>
-                                        Вы точно уверены, что хотите оплатить эту транзакцию?
-                                        <br /><br />
-                                        После подтверждения начнется процесс оплаты. Отменить операцию будет невозможно.
-                                    </p>
-                                </div>
-                                <div className="confirmation-buttons">
-                                    <button className="confirm-btn" onClick={performSinglePayment}>Да, оплатить</button>
-                                    <button className="cancel-btn" onClick={handleCancelSinglePayment}>Отмена</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    </main>
                 </div>
+            </div>
+
+            {alert && <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
+            {showPayConfirmation && (
+                <div className="logout-confirmation">
+                    <div className="confirmation-box">
+                        <h1>Оплата</h1>
+                        <p>Оплатить выбранные ({paymentsToProcess.length})?</p>
+                        <div className="confirmation-buttons"><button className="confirm-btn" onClick={handleConfirmPayment}>Да</button><button className="cancel-btn" onClick={handleCancelPayment}>Отмена</button></div>
+                    </div>
+                </div>
+            )}
+            {showSinglePayConfirmation && (
+                <div className="logout-confirmation">
+                    <div className="confirmation-box">
+                        <h1>Оплата</h1>
+                        <p>Оплатить эту транзакцию?</p>
+                        <div className="confirmation-buttons"><button className="confirm-btn" onClick={performSinglePayment}>Да</button><button className="cancel-btn" onClick={handleCancelSinglePayment}>Отмена</button></div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

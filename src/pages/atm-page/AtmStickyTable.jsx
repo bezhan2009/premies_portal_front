@@ -4,6 +4,7 @@ import DateRangeModal from "../../components/dialog/dialog";
 import Spinner from "../../components/Spinner.jsx";
 import { fetchATM } from "../../api/atm";
 import { ATM_ERRORS_RU, ATM_WARNINGS_RU } from "../../shared/atm-errors/atm-errors";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 /* ===== helpers ===== */
 
@@ -27,18 +28,12 @@ const translateIssue = (x, kind = "error") => {
 };
 
 const getDispCount = (disp = [], currency, denom) =>
-    disp.find(
-        (d) => d.currency === currency && d.denomination === denom
-    )?.currentBanknotes ?? 0;
+    disp.find((d) => d.currency === currency && d.denomination === denom)?.currentBanknotes ?? 0;
 
 const sumBalance = (disp = [], currency) =>
     disp
         .filter((d) => d.currency === currency)
-        .reduce(
-            (acc, d) =>
-                acc + (d.currentBanknotes ?? 0) * (d.denomination ?? 0),
-            0
-        );
+        .reduce((acc, d) => acc + (d.currentBanknotes ?? 0) * (d.denomination ?? 0), 0);
 
 const transformAtm = (atm) => {
     const disp = atm?.Dispenser ?? [];
@@ -47,21 +42,17 @@ const transformAtm = (atm) => {
     return {
         id: atm?.TID ?? "—",
         atmState: atm?.ATMState ?? "—",
-
         location: info?.name ?? "—",
         region: info?.region ?? "—",
         address: info?.address ?? "—",
-
         usd100: getDispCount(disp, "USD", 100),
         tjs200: getDispCount(disp, "TJS", 200),
         tjs100: getDispCount(disp, "TJS", 100),
         tjs50: getDispCount(disp, "TJS", 50),
         tjs20: getDispCount(disp, "TJS", 20),
         tjs10: getDispCount(disp, "TJS", 10),
-
         balanceUsd: sumBalance(disp, "USD"),
         balanceTjs: sumBalance(disp, "TJS"),
-
         errors: Array.isArray(atm?.Errors) ? atm.Errors : [],
         warnings: Array.isArray(atm?.Warnings)
             ? atm.Warnings
@@ -87,8 +78,8 @@ const ListChips = ({ items = [], kind }) => {
                         fontSize: 12,
                     }}
                 >
-          {translateIssue(it, kind)}
-        </span>
+                    {translateIssue(it, kind)}
+                </span>
             ))}
         </div>
     );
@@ -113,7 +104,6 @@ export default function AtmStickyTable() {
                 const atmList = await fetchATM();
                 setData(Array.isArray(atmList) ? atmList : []);
                 setError(null);
-                // eslint-disable-next-line no-unused-vars
             } catch (e) {
                 setError("Не удалось загрузить банкоматы");
             } finally {
@@ -124,13 +114,7 @@ export default function AtmStickyTable() {
         load();
     }, []);
 
-    const rows = useMemo(
-        () =>
-            Array.isArray(data)
-                ? data.map(transformAtm)
-                : [],
-        [data]
-    );
+    const rows = useMemo(() => (Array.isArray(data) ? data.map(transformAtm) : []), [data]);
 
     const calcTotal = (r) =>
         r.tjs200 * 200 +
@@ -144,9 +128,7 @@ export default function AtmStickyTable() {
             <div style={{ padding: 20 }}>
                 <b>{error}</b>
                 <br />
-                <button onClick={() => window.location.reload()}>
-                    Перезагрузить
-                </button>
+                <button onClick={() => window.location.reload()}>Перезагрузить</button>
             </div>
         );
     }
@@ -154,56 +136,48 @@ export default function AtmStickyTable() {
     return (
         <div style={{ padding: 12 }}>
             {loading && <Spinner center label="Загружаем банкоматы" />}
-            {loading && <div>Загрузка…</div>}
-
-            {!loading && (
-                <table border="1" cellPadding="6" width="100%">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Локация</th>
-                        <th>TJS всего</th>
-                        <th>Ошибки</th>
-                        <th>Предупреждения</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {rows.map((r) => (
-                        <tr key={r.id}>
-                            <td>{r.id}</td>
-                            <td>{r.location}</td>
-                            <td>{calcTotal(r).toLocaleString()} TJS</td>
-                            <td>
-                                <ListChips items={r.errors} kind="error" />
-                            </td>
-                            <td>
-                                <ListChips items={r.warnings} kind="warning" />
-                            </td>
-                            <td>
-                                <button
-                                    className="button"
-                                    onClick={() => {
-                                        setSelectedAtm(r.id);
-                                        setOpenModal(true);
-                                    }}
-                                >
-                                    выписка
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            )}
+            
+            <Table dataSource={rows} rowKey="id" bordered loading={loading} pagination={{ pageSize: 15 }}>
+                <Table.Column title="ID" dataIndex="id" sortable />
+                <Table.Column title="Локация" dataIndex="location" sortable />
+                <Table.Column
+                    title="TJS всего"
+                    key="total"
+                    sortable
+                    render={(_, r) => `${calcTotal(r).toLocaleString()} TJS`}
+                />
+                <Table.Column
+                    title="Ошибки"
+                    key="errors"
+                    render={(_, r) => <ListChips items={r.errors} kind="error" />}
+                />
+                <Table.Column
+                    title="Предупреждения"
+                    key="warnings"
+                    render={(_, r) => <ListChips items={r.warnings} kind="warning" />}
+                />
+                <Table.Column
+                    title="Действия"
+                    key="actions"
+                    render={(_, r) => (
+                        <button
+                            className="button"
+                            onClick={() => {
+                                setSelectedAtm(r.id);
+                                setOpenModal(true);
+                            }}
+                        >
+                            выписка
+                        </button>
+                    )}
+                />
+            </Table>
 
             <DateRangeModal
                 open={openModal}
                 onClose={() => setOpenModal(false)}
                 onSubmit={({ fromDate, toDate }) => {
-                    navigate(
-                        `/atm/${selectedAtm}/report?from=${fromDate}&to=${toDate}`
-                    );
+                    navigate(`/atm/${selectedAtm}/report?from=${fromDate}&to=${toDate}`);
                     setOpenModal(false);
                 }}
             />

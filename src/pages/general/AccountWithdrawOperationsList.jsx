@@ -1,12 +1,12 @@
-﻿import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { FcOk, FcProcess } from "react-icons/fc";
-import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import Spinner from "../../components/Spinner.jsx";
 import "../../styles/components/StatsEQMS.scss";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 const ACCOUNT_NUMBER = "26202972381810638175";
 
@@ -29,8 +29,6 @@ export default function AbsWithdrawsList() {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
 
-  const [sortField, setSortField] = useState("doper");
-  const [sortDirection, setSortDirection] = useState("desc");
   const [filterText, setFilterText] = useState("");
   const [filterPaid, setFilterPaid] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -133,47 +131,18 @@ export default function AbsWithdrawsList() {
     return rows;
   }, [flatRows, filterPaid, filterText]);
 
-  const sortedRows = useMemo(() => {
-    const rows = [...filteredRows];
-    rows.sort((a, b) => {
-      const av = a[sortField] ?? "";
-      const bv = b[sortField] ?? "";
-      const cmp = String(av).localeCompare(String(bv), "ru", { numeric: true });
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
-    return rows;
-  }, [filteredRows, sortField, sortDirection]);
-
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const toggleRow = (key, checked) => {
-    if (checked) {
-      setSelectedKeys((prev) => [...prev, key]);
-      return;
-    }
-    setSelectedKeys((prev) => prev.filter((item) => item !== key));
-    setSelectAll(false);
-  };
-
   const toggleAll = () => {
     if (selectAll) {
       setSelectedKeys([]);
       setSelectAll(false);
       return;
     }
-    setSelectedKeys(sortedRows.map((row) => row._key));
+    setSelectedKeys(filteredRows.map((row) => row._key));
     setSelectAll(true);
   };
 
   const selectUnpaid = () => {
-    setSelectedKeys(sortedRows.filter((row) => !row.IsPayed).map((row) => row._key));
+    setSelectedKeys(filteredRows.filter((row) => !row.IsPayed).map((row) => row._key));
     setSelectAll(false);
   };
 
@@ -234,7 +203,7 @@ export default function AbsWithdrawsList() {
   };
 
   const handlePayAll = () => {
-    const toPay = sortedRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed);
+    const toPay = filteredRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed);
     if (toPay.length === 0) {
       showAlert("Нет выбранных неоплаченных транзакций", "warning");
       return;
@@ -244,7 +213,7 @@ export default function AbsWithdrawsList() {
 
   const performBulkPayment = async () => {
     setShowBulkConfirm(false);
-    const toPay = sortedRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed);
+    const toPay = filteredRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed);
     setPayingKeys((prev) => new Set([...prev, ...toPay.map((row) => row._key)]));
 
     let ok = 0;
@@ -283,27 +252,13 @@ export default function AbsWithdrawsList() {
     setTimeout(silentRefresh, 800);
   };
 
-  const SortIcon = ({ field }) => {
-    if (sortField !== field) return <BsArrowDownUp className="eqms-th__icon--idle" />;
-    return sortDirection === "asc" ? <BsArrowUp /> : <BsArrowDown />;
+  const rowSelection = {
+    selectedRowKeys: selectedKeys,
+    onChange: (keys) => {
+      setSelectedKeys(keys);
+      setSelectAll(keys.length === filteredRows.length && filteredRows.length > 0);
+    },
   };
-
-  const columns = [
-    { key: "doper", label: "Дата операции" },
-    { key: "DOCDOPER", label: "Дата документа" },
-    { key: "EXECDT", label: "Время" },
-    { key: "NUMDOC", label: "Номер документа" },
-    { key: "TXTDSCR", label: "Описание" },
-    { key: "CLIENTCOR", label: "Клиент-корреспондент" },
-    { key: "ACCCOR", label: "Счёт-корреспондент" },
-    { key: "NAMEBCR", label: "Банк-корреспондент" },
-    { key: "MOVD", label: "Дебет" },
-    { key: "MOVC", label: "Кредит" },
-    { key: "sumBalOut", label: "Баланс (конец)" },
-    { key: "REFER", label: "Референс" },
-    { key: "DVAL", label: "Валютная дата" },
-    { key: "kurs", label: "Курс" },
-  ];
 
   return (
     <>
@@ -409,111 +364,104 @@ export default function AbsWithdrawsList() {
                 </div>
               )}
 
-              {fetched && !loading && sortedRows.length === 0 && (
+              {fetched && !loading && filteredRows.length === 0 && (
                 <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
                   Нет транзакций за выбранный период
                 </div>
               )}
 
-              {fetched && !loading && sortedRows.length > 0 && (
-                <table className="eqms-table">
-                  <thead>
-                    <tr>
-                      <th className="eqms-th eqms-th--checkbox">
-                        <input type="checkbox" className="custom-checkbox" checked={selectAll} onChange={toggleAll} />
-                      </th>
-
-                      {columns.map(({ key, label }) => (
-                        <th
-                          key={key}
-                          className={`eqms-th eqms-th--sortable${sortField === key ? " eqms-th--active" : ""}`}
-                          onClick={() => handleSort(key)}
-                        >
-                          <span className="eqms-th__label">{label}</span>
-                          <span className="eqms-th__icon"><SortIcon field={key} /></span>
-                        </th>
-                      ))}
-
-                      <th className="eqms-th">Статус оплаты</th>
-                      <th className="eqms-th active-table">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedRows.map((row) => {
+              {fetched && !loading && filteredRows.length > 0 && (
+                <Table
+                  dataSource={filteredRows}
+                  rowKey="_key"
+                  rowSelection={rowSelection}
+                  bordered
+                  scroll={{ x: 2500 }}
+                  pagination={{ pageSize: 15 }}
+                  onRow={(record) => ({
+                    style: { backgroundColor: record.IsPayed ? "#e6ffe6" : "transparent" },
+                  })}
+                >
+                  <Table.Column title="Дата операции" dataIndex="doper" key="doper" sortable />
+                  <Table.Column title="Дата документа" dataIndex="DOCDOPER" key="DOCDOPER" sortable />
+                  <Table.Column title="Время" dataIndex="EXECDT" key="EXECDT" sortable />
+                  <Table.Column title="Номер документа" dataIndex="NUMDOC" key="NUMDOC" sortable />
+                  <Table.Column title="Описание" dataIndex="TXTDSCR" key="TXTDSCR" width={300} />
+                  <Table.Column title="Клиент-корреспондент" dataIndex="CLIENTCOR" key="CLIENTCOR" width={250} />
+                  <Table.Column title="Счёт-корреспондент" dataIndex="ACCCOR" key="ACCCOR" />
+                  <Table.Column title="Банк-корреспондент" dataIndex="NAMEBCR" key="NAMEBCR" width={250} />
+                  <Table.Column title="Дебет" dataIndex="MOVD" key="MOVD" sortable align="right" />
+                  <Table.Column title="Кредит" dataIndex="MOVC" key="MOVC" sortable align="right" />
+                  <Table.Column title="Баланс (конец)" dataIndex="sumBalOut" key="sumBalOut" sortable align="right" />
+                  <Table.Column title="Референс" dataIndex="REFER" key="REFER" sortable />
+                  <Table.Column title="Валютная дата" dataIndex="DVAL" key="DVAL" />
+                  <Table.Column title="Курс" dataIndex="kurs" key="kurs" />
+                  <Table.Column
+                    title="Статус оплаты"
+                    key="status"
+                    render={(_, row) => (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {row.IsPayed ? (
+                          <>
+                            <FcOk style={{ fontSize: 20 }} />
+                            <span style={{ color: "green", fontWeight: 500 }}>Оплачено</span>
+                          </>
+                        ) : (
+                          <>
+                            <FcProcess style={{ fontSize: 20 }} />
+                            <span style={{ color: "#999" }}>Ожидает</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  />
+                  <Table.Column
+                    title="Действия"
+                    key="actions"
+                    fixed="right"
+                    render={(_, row) => {
                       const isPaying = payingKeys.has(row._key);
                       const isPaid = Boolean(row.IsPayed);
-
                       return (
-                        <tr key={row._key} style={{ backgroundColor: isPaid ? "#e6ffe6" : "transparent" }}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              className="custom-checkbox"
-                              checked={selectedKeys.includes(row._key)}
-                              onChange={(e) => toggleRow(row._key, e.target.checked)}
-                            />
-                          </td>
-
-                          {columns.map(({ key }) => (
-                            <td key={key}>{row[key] ?? "—"}</td>
-                          ))}
-
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {isPaid ? (
-                                <>
-                                  <FcOk style={{ fontSize: 20 }} />
-                                  <span style={{ color: "green", fontWeight: 500 }}>Оплачено</span>
-                                </>
-                              ) : (
-                                <>
-                                  <FcProcess style={{ fontSize: 20 }} />
-                                  <span style={{ color: "#999" }}>Ожидает</span>
-                                </>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="active-table">
-                            <button
-                              className={`pay-button ${isPaid ? "paid" : ""}`}
-                              onClick={() => handlePayClick(row)}
-                              disabled={isPaying || isPaid}
-                              style={{
-                                padding: "8px 12px",
-                                borderRadius: 6,
-                                border: "none",
-                                cursor: isPaid || isPaying ? "not-allowed" : "pointer",
-                                opacity: isPaid || isPaying ? 0.6 : 1,
-                                fontWeight: 500,
-                                transition: "all 0.2s",
-                                minWidth: 120,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 8,
-                              }}
-                            >
-                              {isPaying ? (
-                                <>Оплачивается…</>
-                              ) : isPaid ? (
-                                <>
-                                  <img src={PayedIcon} width={24} height={24} alt="Оплачено" />
-                                  Оплачено
-                                </>
-                              ) : (
-                                <>
-                                  <img src={PayIcon} width={24} height={24} alt="Оплатить" />
-                                  Оплатить
-                                </>
-                              )}
-                            </button>
-                          </td>
-                        </tr>
+                        <div className="active-table">
+                          <button
+                            className={`pay-button ${isPaid ? "paid" : ""}`}
+                            onClick={() => handlePayClick(row)}
+                            disabled={isPaying || isPaid}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: 6,
+                              border: "none",
+                              cursor: isPaid || isPaying ? "not-allowed" : "pointer",
+                              opacity: isPaid || isPaying ? 0.6 : 1,
+                              fontWeight: 500,
+                              transition: "all 0.2s",
+                              minWidth: 140,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 8,
+                            }}
+                          >
+                            {isPaying ? (
+                              <>Оплачивается…</>
+                            ) : isPaid ? (
+                              <>
+                                <img src={PayedIcon} width={24} height={24} alt="Оплачено" />
+                                Оплачено
+                              </>
+                            ) : (
+                              <>
+                                <img src={PayIcon} width={24} height={24} alt="Оплатить" />
+                                Оплатить
+                              </>
+                            )}
+                          </button>
+                        </div>
                       );
-                    })}
-                  </tbody>
-                </table>
+                    }}
+                  />
+                </Table>
               )}
             </div>
           </main>
@@ -529,7 +477,7 @@ export default function AbsWithdrawsList() {
                 <p>
                   Вы уверены, что хотите оплатить все выбранные неоплаченные транзакции?
                   <br />
-                  Количество: <strong>{sortedRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed).length}</strong>
+                  Количество: <strong>{filteredRows.filter((row) => selectedKeys.includes(row._key) && !row.IsPayed).length}</strong>
                   <br />
                   <br />
                   После подтверждения отменить операцию будет невозможно.

@@ -1,34 +1,23 @@
 import React from "react";
-import SortIcon from "../../general/SortIcon.jsx";
+import { Table } from "../../table/FlexibleAntTable.jsx";
 
 const ClientDataTabs = ({
   selectedClient,
   cardsData,
-  sortedCards,
-  requestSortCards,
-  sortCardsConfig,
   handleExportCards,
   handleNavigateToTransactions,
+  handleNavigateToAllCardsTransactions,
   hasTransactionsAccess,
   accountsData,
-  sortedAccounts,
-  requestSortAccounts,
-  sortAccountsConfig,
   handleExportAccounts,
   handleNavigateToAccountOperations,
   hasAccountOperationsAccess,
   creditsData,
-  sortedCredits,
-  requestSortCredits,
-  sortCreditsConfig,
   handleExportCredits,
   handleOpenGraph,
   handleOpenDetails,
   handleOpenRepayModal,
   depositsData,
-  sortedDeposits,
-  requestSortDeposits,
-  sortDepositsConfig,
   handleExportDeposits,
 }) => {
   if (!selectedClient) return null;
@@ -43,120 +32,87 @@ const ClientDataTabs = ({
               <h2 className="limits-table__title">Данные карт</h2>
               <div className="limits-table__actions">
                 <button
-                  onClick={handleExportCards}
+                  onClick={() => handleNavigateToAllCardsTransactions?.(cardsData)}
                   className="export-excel-btn"
+                  style={{ marginRight: 10, background: "#2ecc71" }}
+                  disabled={!hasTransactionsAccess}
                 >
+                  Посмотреть историю
+                </button>
+                <button onClick={handleExportCards} className="export-excel-btn">
                   Экспорт в Excel
                 </button>
               </div>
             </div>
-
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortCards("cardId")}
-                      className="limits-table__ th sortable-header"
+            <Table
+              dataSource={cardsData}
+              rowKey={(row, idx) => `card-${idx}`}
+              pagination={false}
+              bordered
+              scroll={{ x: "max-content" }}
+            >
+              <Table.Column
+                title="ID Карты"
+                dataIndex="cardId"
+                key="cardId"
+                sortable
+              />
+              <Table.Column title="Тип" dataIndex="type" key="type" sortable />
+              <Table.Column
+                title="Статус"
+                dataIndex="statusName"
+                key="statusName"
+                sortable
+              />
+              <Table.Column
+                title="Срок"
+                dataIndex="expirationDate"
+                key="expirationDate"
+                sortable
+              />
+              <Table.Column
+                title="Валюта"
+                dataIndex="currency"
+                key="currency"
+                sortable
+              />
+              <Table.Column
+                title="Остаток"
+                key="state"
+                render={(_, row) => row.accounts?.[0]?.state || "-"}
+                sortable
+              />
+              <Table.Column
+                title="Действия"
+                key="actions"
+                render={(_, row) => (
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      className="selectAll-toggle"
+                      onClick={() => handleNavigateToTransactions(row.cardId)}
+                      title={
+                        !hasTransactionsAccess
+                          ? "У вас нет доступа"
+                          : "Просмотр истории транзакций"
+                      }
                     >
-                      ID Карты{" "}
-                      <SortIcon sortConfig={sortCardsConfig} sortKey="cardId" />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("type")}
-                      className="limits-table__th sortable-header"
+                      История
+                    </button>
+                    <button
+                      className="selectAll-toggle"
+                      style={{ background: "#374151" }}
+                      onClick={() =>
+                      (window.location.href =
+                        "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                        row.cardId)
+                      }
                     >
-                      Тип{" "}
-                      <SortIcon sortConfig={sortCardsConfig} sortKey="type" />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("statusName")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="statusName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("expirationDate")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Срок{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="expirationDate"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("currency")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Валюта{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="currency"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("accounts.0.state")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Остаток{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="accounts.0.state"
-                      />
-                    </th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedCards?.map((card, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">{card.cardId}</td>
-                      <td className="limits-table__td">{card.type}</td>
-                      <td className="limits-table__td">{card.statusName}</td>
-                      <td className="limits-table__td">
-                        {card.expirationDate}
-                      </td>
-                      <td className="limits-table__td">{card.currency}</td>
-                      <td className="limits-table__td">
-                        {card.accounts?.[0]?.state || "-"}
-                      </td>
-                      <td className="limits-table__td">
-                        <button
-                          className="selectAll-toggle"
-                          style={{ marginRight: 10 }}
-                          onClick={() =>
-                            handleNavigateToTransactions(card.cardId)
-                          }
-                          title={
-                            !hasTransactionsAccess
-                              ? "У вас нет доступа"
-                              : "Просмотр истории транзакций"
-                          }
-                        >
-                          История
-                        </button>
-                        <button
-                          className="selectAll-toggle"
-                          style={{ background: "#374151" }}
-                          onClick={() =>
-                            (window.location.href =
-                              "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                              card.cardId)
-                          }
-                        >
-                          Посмотреть тариф
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      Посмотреть тариф
+                    </button>
+                  </div>
+                )}
+              />
+            </Table>
           </div>
         </div>
       )}
@@ -176,94 +132,61 @@ const ClientDataTabs = ({
                 </button>
               </div>
             </div>
-
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortAccounts("Number")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Номер счета{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Number"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Balance")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Баланс{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Balance"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Status.Name")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Status.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("DateOpened")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата открытия{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="DateOpened"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Branch.Name")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Филиал{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Branch.Name"
-                      />
-                    </th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedAccounts?.map((acc, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">{acc.Number}</td>
-                      <td className="limits-table__td">
-                        {acc.Balance} {acc.Currency?.Code}
-                      </td>
-                      <td className="limits-table__td">{acc.Status?.Name}</td>
-                      <td className="limits-table__td">{acc.DateOpened}</td>
-                      <td className="limits-table__td">{acc.Branch?.Name}</td>
-                      <td className="limits-table__td">
-                        <button
-                          className="selectAll-toggle"
-                          onClick={() =>
-                            handleNavigateToAccountOperations(acc.Number)
-                          }
-                          title={
-                            !hasAccountOperationsAccess
-                              ? "У вас нет доступа"
-                              : "Просмотр выписки счета"
-                          }
-                        >
-                          Выписки счета
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table
+              dataSource={accountsData}
+              rowKey={(row, idx) => `acc-${idx}`}
+              pagination={false}
+              bordered
+              scroll={{ x: "max-content" }}
+            >
+              <Table.Column
+                title="Номер счета"
+                dataIndex="Number"
+                key="Number"
+                sortable
+              />
+              <Table.Column
+                title="Баланс"
+                key="Balance"
+                render={(_, row) => `${row.Balance} ${row.Currency?.Code}`}
+                sortable
+              />
+              <Table.Column
+                title="Статус"
+                key="Status"
+                render={(_, row) => row.Status?.Name}
+                sortable
+              />
+              <Table.Column
+                title="Дата открытия"
+                dataIndex="DateOpened"
+                key="DateOpened"
+                sortable
+              />
+              <Table.Column
+                title="Филиал"
+                key="Branch"
+                render={(_, row) => row.Branch?.Name}
+                sortable
+              />
+              <Table.Column
+                title="Действия"
+                key="actions"
+                render={(_, row) => (
+                  <button
+                    className="selectAll-toggle"
+                    onClick={() => handleNavigateToAccountOperations(row.Number)}
+                    title={
+                      !hasAccountOperationsAccess
+                        ? "У вас нет доступа"
+                        : "Просмотр выписки счета"
+                    }
+                  >
+                    Выписки счета
+                  </button>
+                )}
+              />
+            </Table>
           </div>
         </div>
       )}
@@ -283,160 +206,99 @@ const ClientDataTabs = ({
                 </button>
               </div>
             </div>
-
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortCredits("contractNumber")}
-                      className="limits-table__th sortable-header"
+            <Table
+              dataSource={creditsData}
+              rowKey={(row, idx) => `credit-${idx}`}
+              pagination={false}
+              bordered
+              scroll={{ x: "max-content" }}
+            >
+              <Table.Column
+                title="Номер договора"
+                dataIndex="contractNumber"
+                key="contractNumber"
+                sortable
+              />
+              <Table.Column
+                title="Идентификатор ссылки"
+                dataIndex="referenceId"
+                key="referenceId"
+                sortable
+              />
+              <Table.Column
+                title="Статус"
+                dataIndex="statusName"
+                key="statusName"
+                sortable
+              />
+              <Table.Column
+                title="Сумма"
+                key="amount"
+                render={(_, row) => `${row.amount} ${row.currency}`}
+                sortable
+              />
+              <Table.Column
+                title="Дата документа"
+                dataIndex="documentDate"
+                key="documentDate"
+                sortable
+              />
+              <Table.Column
+                title="КлиентКод"
+                dataIndex="clientCode"
+                key="clientCode"
+                sortable
+              />
+              <Table.Column
+                title="Код продукта"
+                dataIndex="productCode"
+                key="productCode"
+                sortable
+              />
+              <Table.Column
+                title="Название продукта"
+                dataIndex="productName"
+                key="productName"
+                sortable
+              />
+              <Table.Column
+                title="Отдел"
+                dataIndex="department"
+                key="department"
+                render={(val) => val || "-"}
+                sortable
+              />
+              <Table.Column
+                title="Действия"
+                key="actions"
+                render={(_, row) => (
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      className="selectAll-toggle"
+                      onClick={() => handleOpenGraph(row.referenceId)}
+                      disabled={!row.referenceId}
                     >
-                      Номер договора{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="contractNumber"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("referenceId")}
-                      className="limits-table__th sortable-header"
+                      График
+                    </button>
+                    <button
+                      className="selectAll-toggle"
+                      style={{ background: "#2980b9" }}
+                      onClick={() => handleOpenDetails(row.referenceId)}
+                      disabled={!row.referenceId}
                     >
-                      Идентификатор ссылки{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="referenceId"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("statusName")}
-                      className="limits-table__th sortable-header"
+                      Детали
+                    </button>
+                    <button
+                      className="selectAll-toggle"
+                      style={{ background: "#27ae60" }}
+                      onClick={() => handleOpenRepayModal(row)}
                     >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="statusName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("amount")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Сумма{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="amount"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("documentDate")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата документа{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="documentDate"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("clientCode")}
-                      className="limits-table__th sortable-header"
-                    >
-                      КлиентКод{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="clientCode"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("productCode")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Код продукта{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="productCode"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("productName")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Название продукта{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="productName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("department")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Отдел{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="department"
-                      />
-                    </th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedCredits?.map((card, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">
-                        {card.contractNumber}
-                      </td>
-                      <td className="limits-table__td">{card.referenceId}</td>
-                      <td className="limits-table__td">{card.statusName}</td>
-                      <td className="limits-table__td">
-                        {card.amount} {card.currency}
-                      </td>
-                      <td className="limits-table__td">{card.documentDate}</td>
-                      <td className="limits-table__td">{card.clientCode}</td>
-                      <td className="limits-table__td">{card.productCode}</td>
-                      <td className="limits-table__td">{card.productName}</td>
-                      <td className="limits-table__td">
-                        {card.department || "-"}
-                      </td>
-                      <td
-                        className="limits-table__td"
-                        style={{ display: "flex" }}
-                      >
-                        <button
-                          className="selectAll-toggle"
-                          onClick={() => handleOpenGraph(card.referenceId)}
-                          disabled={!card.referenceId}
-                        >
-                          График
-                        </button>
-                        <button
-                          className="selectAll-toggle"
-                          style={{
-                            marginLeft: 10,
-                            background: "#2980b9",
-                          }}
-                          onClick={() => handleOpenDetails(card.referenceId)}
-                          disabled={!card.referenceId}
-                        >
-                          Детали
-                        </button>
-                        <button
-                          className="selectAll-toggle"
-                          style={{
-                            marginLeft: 10,
-                            background: "#27ae60",
-                          }}
-                          onClick={() => handleOpenRepayModal(card)}
-                        >
-                          Погасить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      Погасить
+                    </button>
+                  </div>
+                )}
+              />
+            </Table>
           </div>
         </div>
       )}
@@ -456,171 +318,78 @@ const ClientDataTabs = ({
                 </button>
               </div>
             </div>
-
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortDeposits("AgreementData.Code")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Номер договора{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Code"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.ColvirReferenceId")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Референс{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.ColvirReferenceId"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Status.Name")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Status.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("BalanceAccounts.0.Balance")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Остаток депозита{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="BalanceAccounts.0.Balance"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DateFrom")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата начала{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DateFrom"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DateTo")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата окончания{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DateTo"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Product.Name")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Продукт{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Product.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DepoTermTU")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Срок{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DepoTermTU"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Department.Code")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Отдел{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Department.Code"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Amount")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Сумма договора{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Amount"
-                      />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedDeposits?.map((item, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Code}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.ColvirReferenceId}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Status?.Name}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.BalanceAccounts?.[0]?.Balance || "-"}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DateFrom}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DateTo}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Product?.Name}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DepoTermTU}{" "}
-                        {item.AgreementData?.DepoTermTimeType}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Department?.Code}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Amount}{" "}
-                        {item.AgreementData?.Currency}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table
+              dataSource={depositsData}
+              rowKey={(row, idx) => `depo-${idx}`}
+              pagination={false}
+              bordered
+              scroll={{ x: "max-content" }}
+            >
+              <Table.Column
+                title="Номер договора"
+                key="code"
+                render={(_, row) => row.AgreementData?.Code}
+                sortable
+              />
+              <Table.Column
+                title="Референс"
+                key="ref"
+                render={(_, row) => row.AgreementData?.ColvirReferenceId}
+                sortable
+              />
+              <Table.Column
+                title="Статус"
+                key="status"
+                render={(_, row) => row.AgreementData?.Status?.Name}
+                sortable
+              />
+              <Table.Column
+                title="Остаток депозита"
+                key="balance"
+                render={(_, row) => row.BalanceAccounts?.[0]?.Balance || "-"}
+                sortable
+              />
+              <Table.Column
+                title="Дата начала"
+                key="dateFrom"
+                render={(_, row) => row.AgreementData?.DateFrom}
+                sortable
+              />
+              <Table.Column
+                title="Дата окончания"
+                key="dateTo"
+                render={(_, row) => row.AgreementData?.DateTo}
+                sortable
+              />
+              <Table.Column
+                title="Продукт"
+                key="product"
+                render={(_, row) => row.AgreementData?.Product?.Name}
+                sortable
+              />
+              <Table.Column
+                title="Срок"
+                key="term"
+                render={(_, row) =>
+                  `${row.AgreementData?.DepoTermTU} ${row.AgreementData?.DepoTermTimeType}`
+                }
+                sortable
+              />
+              <Table.Column
+                title="Отдел"
+                key="dept"
+                render={(_, row) => row.AgreementData?.Department?.Code}
+                sortable
+              />
+              <Table.Column
+                title="Сумма договора"
+                key="amount"
+                render={(_, row) =>
+                  `${row.AgreementData?.Amount} ${row.AgreementData?.Currency}`
+                }
+                sortable
+              />
+            </Table>
           </div>
         </div>
       )}

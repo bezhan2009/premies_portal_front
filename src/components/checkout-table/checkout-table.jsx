@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
 import "../../styles/components/CheckoutTable.css";
 import "../../styles/checkbox.scss";
-
 import { BIN_BANKS } from "../../shared/bin-banks/bin-banks";
+import { Table } from "../table/FlexibleAntTable.jsx";
 
 /** ✅ BIN: берем ПЕРВЫЕ 6 ЦИФР из исходной строки, игнорируя '*' */
 function getBin6(cardNumber) {
     const s = String(cardNumber || "").trim();
     if (!s) return "";
-
-    // идем слева направо и собираем цифры, пока не наберем 6
     let bin = "";
     for (let i = 0; i < s.length; i++) {
         const ch = s[i];
@@ -24,23 +22,15 @@ function getBin6(cardNumber) {
 function getBankByCardNumber(cardNumber) {
     const bin6 = getBin6(cardNumber);
     if (!bin6) return "—";
-
-    // Ищем самый длинный BIN в BIN_BANKS, который начинается с bin6
     let bestMatch = null;
     let maxLength = 0;
-
     for (const bin in BIN_BANKS) {
         if (bin.startsWith(bin6) && bin.length > maxLength) {
             bestMatch = bin;
             maxLength = bin.length;
         }
     }
-
-    if (bestMatch) {
-        return BIN_BANKS[bestMatch];
-    }
-
-    // Если не нашли, возвращаем BIN с первыми 6 цифрами
+    if (bestMatch) return BIN_BANKS[bestMatch];
     return `BIN ${bin6}`;
 }
 
@@ -54,14 +44,9 @@ function formatDateTime(dateStr, timeStr) {
 
 function formatWithDots(num, maxFractionDigits = 2) {
     if (!Number.isFinite(num)) return "—";
-
-    // округляем до maxFractionDigits и убираем лишние нули
     const fixed = num.toFixed(maxFractionDigits);
     const [intPart, fracPart] = fixed.split(".");
-
     const intWithDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-    // убираем хвостовые нули в дробной части
     const fracTrimmed = (fracPart || "").replace(/0+$/, "");
     return fracTrimmed ? `${intWithDots}.${fracTrimmed}` : intWithDots;
 }
@@ -69,30 +54,9 @@ function formatWithDots(num, maxFractionDigits = 2) {
 function formatMoneySmart(amount, currency) {
     const v = Number(amount);
     if (!Number.isFinite(v)) return "—";
-
-    // твоя логика: иногда сумма приходит в "копейках/дирамах"
     const normalized = v >= 1000 && v % 100 === 0 ? v / 100 : v;
-
     const suffix = currency === 972 ? "с." : "";
     return `${formatWithDots(normalized, 2)} ${suffix}`.trim();
-}
-
-function cycleSort(prev) {
-    if (prev === null) return "asc";
-    if (prev === "asc") return "desc";
-    return null;
-}
-
-function compareAny(a, b) {
-    const na = Number(a);
-    const nb = Number(b);
-    const fa = Number.isFinite(na);
-    const fb = Number.isFinite(nb);
-    if (fa && fb) return na - nb;
-    return String(a ?? "").localeCompare(String(b ?? ""), "ru", {
-        numeric: true,
-        sensitivity: "base",
-    });
 }
 
 /** ===== status chip - КАК В QR ===== */
@@ -101,14 +65,14 @@ function getStatusMeta(tx) {
     const code = String(tx.responseCode ?? "");
     const reversal = Number(tx.reversal) === 1;
 
-    if (reversal) return { label: "Отменено", color: "error", icon: "cancel" };
+    if (reversal) return { label: "Отменено", color: "red", icon: "cancel" };
     if (desc.includes("успеш") || code === "0" || code === "-1")
-        return { label: "Успешно", color: "success", icon: "check" };
+        return { label: "Успешно", color: "green", icon: "check" };
 
     if (desc.includes("приоритет") || desc.includes("высок"))
-        return { label: "Высокий приоритет", color: "error", icon: "priority" };
+        return { label: "Высокий приоритет", color: "red", icon: "priority" };
 
-    return { label: tx.responseDescription || "Ошибка", color: "error", icon: "cancel" };
+    return { label: tx.responseDescription || "Ошибка", color: "red", icon: "cancel" };
 }
 
 // Простые SVG иконки - КАК В QR
@@ -140,8 +104,7 @@ const getStatusIcon = (iconName) => {
 };
 
 export default function CheckoutTable({ transactions = [] }) {
-    const [selectedIds, setSelectedIds] = useState(() => new Set());
-    const [sort, setSort] = useState({ key: "id", dir: "asc" });
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [query, setQuery] = useState("");
 
     const rows = useMemo(() => {
@@ -149,125 +112,47 @@ export default function CheckoutTable({ transactions = [] }) {
             const dt = formatDateTime(t.localTransactionDate, t.localTransactionTime);
             const status = getStatusMeta(t);
             const rowId = String(t.id ?? `${t.utrnno ?? ""}-${t.terminalId ?? ""}`);
-
-            const bin6 = getBin6(t.cardNumber);
             const bankName = getBankByCardNumber(t.cardNumber);
+            const bin6 = getBin6(t.cardNumber);
 
             return {
-                raw: t,
                 rowId,
-
                 id: t.id,
-
                 bankName,
                 bin6,
-
                 terminalId: t.terminalId,
                 atmId: t.atmId,
                 utrnno: t.utrnno,
-
                 statusLabel: status.label,
                 statusColor: status.color,
                 statusIcon: status.icon,
-
                 amount: t.amount,
                 currency: t.currency,
-
                 typeName: t.transactionTypeName,
                 terminalAddress: t.terminalAddress,
-
                 date: dt.date,
                 time: dt.time,
             };
         });
     }, [transactions]);
 
-    const filteredSorted = useMemo(() => {
+    const filteredData = useMemo(() => {
         const q = String(query || "").trim().toLowerCase();
-
-        let arr = rows;
-        if (q) {
-            arr = arr.filter((r) => {
-                const hay = [
-                    r.id,
-                    r.bankName,
-                    r.bin6,
-                    r.atmId,
-                    r.terminalId,
-                    r.utrnno,
-                    r.statusLabel,
-                    r.typeName,
-                    r.terminalAddress,
-                    r.date,
-                    r.time,
-                    r.amount,
-                ]
-                    .map((x) => String(x ?? "").toLowerCase())
-                    .join(" | ");
-                return hay.includes(q);
-            });
-        }
-
-        const { key, dir } = sort;
-        if (!dir) return arr;
-
-        const mul = dir === "asc" ? 1 : -1;
-
-        return [...arr].sort((a, b) => {
-            let cmp = 0;
-
-            if (key === "id") cmp = compareAny(a.id, b.id);
-            else if (key === "bank") cmp = compareAny(a.bankName, b.bankName);
-            else if (key === "terminal")
-                cmp = compareAny(a.terminalId ?? a.atmId, b.terminalId ?? b.atmId);
-            else if (key === "utrnno") cmp = compareAny(a.utrnno, b.utrnno);
-            else if (key === "status") cmp = compareAny(a.statusLabel, b.statusLabel);
-            else if (key === "amount") cmp = compareAny(a.amount, b.amount);
-            else if (key === "date")
-                cmp = compareAny(`${a.date} ${a.time}`, `${b.date} ${b.time}`);
-
-            if (cmp === 0) cmp = compareAny(a.id, b.id);
-            return cmp * mul;
+        if (!q) return rows;
+        return rows.filter((r) => {
+            const hay = [
+                r.id, r.bankName, r.bin6, r.atmId, r.terminalId, r.utrnno,
+                r.statusLabel, r.typeName, r.terminalAddress, r.date, r.time, r.amount,
+            ]
+                .map((x) => String(x ?? "").toLowerCase())
+                .join(" | ");
+            return hay.includes(q);
         });
-    }, [rows, query, sort]);
+    }, [rows, query]);
 
-    const allChecked =
-        filteredSorted.length > 0 && filteredSorted.every((r) => selectedIds.has(r.rowId));
-    const someChecked =
-        filteredSorted.some((r) => selectedIds.has(r.rowId)) && !allChecked;
-
-    const toggleAll = (checked) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (checked) filteredSorted.forEach((r) => next.add(r.rowId));
-            else filteredSorted.forEach((r) => next.delete(r.rowId));
-            return next;
-        });
-    };
-
-    const toggleOne = (rowId, checked) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (checked) next.add(rowId);
-            else next.delete(rowId);
-            return next;
-        });
-    };
-
-    const onSort = (key) => {
-        setSort((prev) => {
-            if (prev.key !== key) return { key, dir: "asc" };
-            return { key, dir: cycleSort(prev.dir) };
-        });
-    };
-
-    const sortDirFor = (key) => (sort.key === key ? sort.dir : null);
-
-    const getSortArrow = (key) => {
-        const dir = sortDirFor(key);
-        if (dir === "asc") return " ↑";
-        if (dir === "desc") return " ↓";
-        return "";
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (keys) => setSelectedRowKeys(keys),
     };
 
     return (
@@ -284,173 +169,68 @@ export default function CheckoutTable({ transactions = [] }) {
             </div>
 
             <div className="table-wrapper">
-                <table className="data-table">
-                    <thead>
-                    <tr className="table-header-row">
-                        <th className="checkbox-header">
-                            <input
-                                type="checkbox"
-                                className="custom-checkbox"
-                                checked={allChecked}
-                                onChange={(e) => toggleAll(e.target.checked)}
-                                ref={(el) => {
-                                    if (el) el.indeterminate = someChecked;
-                                }}
-                            />
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("id")}
-                        >
-                            ID{getSortArrow("id")}
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("bank")}
-                        >
-                            Банк{getSortArrow("bank")}
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("terminal")}
-                        >
-                            Код терминала{getSortArrow("terminal")}
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("utrnno")}
-                        >
-                            utrnno{getSortArrow("utrnno")}
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("status")}
-                        >
-                            Статус{getSortArrow("status")}
-                        </th>
-
-                        <th>Тип</th>
-
-                        <th
-                            className="sortable-header text-right"
-                            onClick={() => onSort("amount")}
-                        >
-                            Сумма{getSortArrow("amount")}
-                        </th>
-
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("date")}
-                        >
-                            Дата создания{getSortArrow("date")}
-                        </th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {filteredSorted.map((r) => {
-                        const checked = selectedIds.has(r.rowId);
-                        const money = formatMoneySmart(r.amount, r.currency);
-                        const rowClass = checked ? "row-selected" : "";
-
-                        return (
-                            <tr key={r.rowId} className={`data-row ${rowClass}`}>
-                                <td className="checkbox-cell">
-                                    <input
-                                        type="checkbox"
-                                        className="custom-checkbox"
-                                        checked={checked}
-                                        onChange={(e) => toggleOne(r.rowId, e.target.checked)}
-                                    />
-                                </td>
-
-                                <td>
-                                    <div className="cell-id">{r.id ?? "—"}</div>
-                                </td>
-
-                                <td>
-                                    <div className="bank-info">
-                                        <div className="bank-name">{r.bankName || "—"}</div>
-                                        <div className="bin-info">
-                                            BIN: {r.bin6 || "—"}
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div className="terminal-info">
-                                        ATM: {r.atmId || "—"}
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div className="utrnno-cell">
-                                        {r.utrnno ?? "—"}
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "8px"
-                                        }}
-                                    >
-                                        <span style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            color: r.statusColor === "success" ? "green" :
-                                                r.statusColor === "error" ? "red" : "orange"
-                                        }}>
-                                            {getStatusIcon(r.statusIcon)}
-                                        </span>
-                                        <span style={{
-                                            color: r.statusColor === "success" ? "green" :
-                                                r.statusColor === "error" ? "red" : "orange"
-                                        }}>
-                                            {r.statusLabel}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div
-                                        className="type-cell"
-                                        title={r.terminalAddress || ""}
-                                    >
-                                        {r.typeName || "—"}
-                                    </div>
-                                </td>
-
-                                <td className="text-right">
-                                    <div className="amount-cell">{money}</div>
-                                </td>
-
-                                <td>
-                                    <div className="date-time-cell">
-                                        <div className="date-cell">{r.date}</div>
-                                        <div className="time-cell">{r.time}</div>
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-
-                    {filteredSorted.length === 0 && (
-                        <tr>
-                            <td colSpan={9} className="no-data-cell">
-                                Нет данных
-                            </td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
+                <Table
+                    dataSource={filteredData}
+                    rowKey="rowId"
+                    rowSelection={rowSelection}
+                    bordered
+                    scroll={{ x: 'max-content' }}
+                    pagination={{ pageSize: 15 }}
+                >
+                    <Table.Column title="ID" dataIndex="id" sortable />
+                    <Table.Column
+                        title="Банк"
+                        key="bank"
+                        sortable
+                        render={(_, r) => (
+                            <div className="bank-info">
+                                <div className="bank-name">{r.bankName || "—"}</div>
+                                <div className="bin-info">BIN: {r.bin6 || "—"}</div>
+                            </div>
+                        )}
+                    />
+                    <Table.Column
+                        title="Код терминала"
+                        key="terminal"
+                        sortable
+                        render={(_, r) => (
+                            <div className="terminal-info">ATM: {r.atmId || "—"}</div>
+                        )}
+                    />
+                    <Table.Column title="utrnno" dataIndex="utrnno" sortable />
+                    <Table.Column
+                        title="Статус"
+                        key="status"
+                        sortable
+                        render={(_, r) => (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ display: "flex", alignItems: "center", color: r.statusColor }}>
+                                    {getStatusIcon(r.statusIcon)}
+                                </span>
+                                <span style={{ color: r.statusColor }}>{r.statusLabel}</span>
+                            </div>
+                        )}
+                    />
+                    <Table.Column title="Тип" dataIndex="typeName" />
+                    <Table.Column
+                        title="Сумма"
+                        key="amount"
+                        align="right"
+                        sortable
+                        render={(_, r) => formatMoneySmart(r.amount, r.currency)}
+                    />
+                    <Table.Column
+                        title="Дата создания"
+                        key="date"
+                        sortable
+                        render={(_, r) => (
+                            <div className="date-time-cell">
+                                <div className="date-cell">{r.date}</div>
+                                <div className="time-cell">{r.time}</div>
+                            </div>
+                        )}
+                    />
+                </Table>
             </div>
         </div>
     );

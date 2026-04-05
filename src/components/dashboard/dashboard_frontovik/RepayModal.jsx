@@ -2,11 +2,27 @@ import React, { useEffect, useState } from "react";
 import { fetchLoanDetails } from "../../../api/ABS_frotavik/getLoanDetails";
 import Spinner from "../../Spinner.jsx";
 
-const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
+const RepayModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  creditInfo,
+  accountsData,
+}) => {
   const [amount, setAmount] = useState("");
   const [selectedAccount, setSelectedAccount] = useState("");
   const [filteredAccounts, setFilteredAccounts] = useState([]);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+
+  const getAccountBalance = (accountNumber) => {
+    if (!accountsData || !accountNumber) return null;
+    const found = accountsData.find((a) => a.Number === accountNumber);
+    if (found) {
+      return `${found.Balance} ${found.Currency?.Code || ""}`;
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (isOpen && creditInfo?.referenceId) {
@@ -97,7 +113,13 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                   Счет для списания:
                 </label>
                 {isFetchingDetails ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
                     <Spinner size="small" />
                     <p
                       className="loading-small"
@@ -126,6 +148,20 @@ const RepayModal = ({ isOpen, onClose, onSubmit, isLoading, creditInfo }) => {
                       </option>
                     ))}
                   </select>
+                )}
+                {selectedAccount && (
+                  <div style={{ marginTop: "10px" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#27ae60",
+                      }}
+                    >
+                      Доступный баланс: {getAccountBalance(selectedAccount)}
+                    </p>
+                  </div>
                 )}
                 {!isFetchingDetails && filteredAccounts.length === 0 && (
                   <p

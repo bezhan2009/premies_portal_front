@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import "../../../../styles/components/Table.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import Spinner from "../../../Spinner.jsx";
 import { fetchReportCards } from "../../../../api/operator/reports/report_cards.js";
 import SearchBar from "../../../general/SearchBar.jsx";
@@ -17,41 +17,28 @@ const TableReportsCards = ({ month, year }) => {
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const observer = useRef(null);
-  const lastElementRef = useRef(null);
   const [edit, setEdit] = useState(null);
   const { exportToExcel } = useExcelExport();
 
-  /**
-   * 🔥 Подзагрузка “всех” данных для поиска – ОГРАНИЧЕНА MAX_PAGES,
-   * чтобы не ходить в бек вечность при очень большом объёме
-   */
   useEffect(() => {
     const loadAllData = async () => {
-      const MAX_PAGES = 10; // <-- грузим не больше 10 страниц
+      const MAX_PAGES = 10;
       let all = [];
       let after = null;
       let page = 0;
-
       while (page < MAX_PAGES) {
         const chunk = await fetchReportCards(month, year, after);
         if (!chunk || chunk.length === 0) break;
-
         all = [...all, ...chunk];
         after = chunk[chunk.length - 1]?.ID;
         page++;
-
-        if (chunk.length < 10) break; // меньше страницы — нормально выходим
+        if (chunk.length < 10) break;
       }
-
       setAllData(all);
     };
-
     loadAllData();
   }, [month, year]);
 
-  /**
-   * Загрузка первой страницы
-   */
   useEffect(() => {
     const loadInitial = async () => {
       setLoading(true);
@@ -71,75 +58,40 @@ const TableReportsCards = ({ month, year }) => {
     loadInitial();
   }, [month, year]);
 
-  /**
-   * Загрузка следующей страницы с защитой от зацикливания
-   */
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
-
     setLoadingMore(true);
     try {
       const lastId = data[data.length - 1]?.ID;
       const chunk = await fetchReportCards(month, year, lastId);
-
       if (!chunk || chunk.length === 0) {
         setHasMore(false);
         return;
       }
-
-      const newLastId = chunk[chunk.length - 1]?.ID;
-      if (newLastId === lastId) {
-        console.warn("Получены дубли — остановка пагинации");
-        setHasMore(false);
-        return;
-      }
-
       setData((prev) => [...prev, ...chunk]);
       if (chunk.length < 10) setHasMore(false);
     } catch (e) {
-      console.error("Ошибка при догрузке:", e);
+      console.error("Ошибка при догрузки:", e);
       setHasMore(false);
     } finally {
       setLoadingMore(false);
     }
   }, [loadingMore, hasMore, isSearching, data, month, year]);
 
-  /**
-   * Настраиваем IntersectionObserver один раз
-   */
-  useEffect(() => {
-    if (observer.current) observer.current.disconnect();
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !isSearching) {
+          loadMore();
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore, isSearching, loadMore],
+  );
 
-    observer.current = new IntersectionObserver((entries) => {
-      if (
-        entries[0].isIntersecting &&
-        hasMore &&
-        !loadingMore &&
-        !isSearching
-      ) {
-        loadMore();
-      }
-    });
-
-    return () => {
-      observer.current?.disconnect();
-    };
-  }, [hasMore, loadingMore, isSearching, loadMore]);
-
-  /**
-   * Наблюдаем за последним элементом таблицы
-   */
-  useEffect(() => {
-    const node = lastElementRef.current;
-    if (node) observer.current?.observe(node);
-    return () => {
-      if (node) observer.current?.unobserve(node);
-    };
-  }, [data]);
-
-  /**
-   * Поиск внутри загруженных allData
-   */
   const handleSearch = async (filtered) => {
     if (!filtered) {
       setIsSearching(false);
@@ -161,57 +113,45 @@ const TableReportsCards = ({ month, year }) => {
   const handleChange = (key, value) => {
     setEdit((prev) => {
       const keys = key.split(".");
-
       let newState = { ...prev };
       let current = newState;
-
       keys.forEach((k, i) => {
         const arrayMatch = k.match(/(\w+)\[(\d+)\]/);
         if (arrayMatch) {
           const [, arrKey, indexStr] = arrayMatch;
           const index = Number(indexStr);
-
-          if (!Array.isArray(current[arrKey])) {
-            current[arrKey] = [];
-          }
-
+          if (!Array.isArray(current[arrKey])) current[arrKey] = [];
           current[arrKey] = [...current[arrKey]];
-          if (!current[arrKey][index]) {
-            current[arrKey][index] = {};
-          }
-
-          if (i === keys.length - 1) {
-            current[arrKey][index] = value;
-          } else {
+          if (!current[arrKey][index]) current[arrKey][index] = {};
+          if (i === keys.length - 1) current[arrKey][index] = value;
+          else {
             current[arrKey][index] = { ...current[arrKey][index] };
             current = current[arrKey][index];
           }
         } else {
-          if (i === keys.length - 1) {
-            current[k] = value;
-          } else {
+          if (i === keys.length - 1) current[k] = value;
+          else {
             current[k] = { ...current[k] };
             current = current[k];
           }
         }
       });
-
       return newState;
     });
   };
 
-  const saveChange = async (edit) => {
+  const saveChange = async (editData) => {
     try {
       await cardDetailPatch({
-        ...edit,
-        issue_date: edit.issue_date?.split("T")?.[1]
-          ? edit.issue_date
-          : edit.issue_date + "T00:00:00Z" || null,
+        ...editData,
+        issue_date: editData.issue_date?.split("T")?.[1]
+          ? editData.issue_date
+          : editData.issue_date + "T00:00:00Z" || null,
       });
       setEdit(null);
-      const data = await fetchReportCards(month, year, null);
-      setData(data);
-      setHasMore(data.length === 10);
+      const updatedData = await fetchReportCards(month, year, null);
+      setData(updatedData);
+      setHasMore(updatedData.length === 10);
     } catch (e) {
       console.error(e);
     }
@@ -219,21 +159,47 @@ const TableReportsCards = ({ month, year }) => {
 
   const handleExport = () => {
     const columns = [
-      {
-        key: (row) => row.worker?.user?.full_name || "",
-        label: "ФИО сотрудника",
-      },
+      { key: (row) => row.worker?.user?.full_name || "", label: "ФИО сотрудника" },
       { key: "card_type", label: "Тип карты" },
       { key: "code", label: "Номер счета" },
       { key: "debt_osd", label: "Оборот по дебету" },
       { key: "out_balance", label: "Остаток" },
-      {
-        key: "issue_date",
-        label: "Дата выдачи",
-        format: (val) => val?.split("T")[0] || "",
-      },
+      { key: "issue_date", label: "Дата выдачи", format: (val) => val?.split("T")[0] || "" },
     ];
     exportToExcel(allData, columns, `Отчет_Карты_${month}_${year}`);
+  };
+
+  const cardOptions = [
+    ...visaCards.map((c) => ({ label: c.name, value: c.name })),
+    ...ncCards.map((c) => ({ label: c.name, value: c.name })),
+    ...mcCards.map((c) => ({ label: c.name, value: c.name })),
+  ];
+
+  const renderEditableCell = (record, dataIndex, value, type = "text", options = null) => {
+    const isEditing = edit?.ID === record.ID;
+    if (isEditing) {
+      if (type === "select") {
+        return (
+          <Select
+            onChange={(val) => handleChange(dataIndex, val)}
+            value={value || record[dataIndex]}
+            onEnter={() => saveChange(edit)}
+            options={options}
+          />
+        );
+      }
+      return (
+        <Input
+          defValue={record[dataIndex]}
+          type={type}
+          value={value}
+          onChange={(val) => handleChange(dataIndex, val)}
+          onEnter={() => saveChange(edit)}
+        />
+      );
+    }
+    if (type === "date") return record[dataIndex]?.split("T")[0] || "";
+    return record[dataIndex] || "";
   };
 
   return (
@@ -249,163 +215,68 @@ const TableReportsCards = ({ month, year }) => {
             (item) => item.card_type || "",
           ]}
         />
-        <button className="export-excel-btn" onClick={handleExport}>
-          Экспорт в Excel
-        </button>
+        <button className="export-excel-btn" onClick={handleExport}>Экспорт в Excel</button>
       </div>
-      <div
-        className="table-reports-div"
-        style={{ maxHeight: "calc(100vh - 480px)" }}
+
+      <Table
+        dataSource={data}
+        rowKey="ID"
+        pagination={false}
+        bordered
+        onRow={(record, index) => ({
+          ref: index === data.length - 1 && !isSearching ? lastRowRef : null,
+          onClick: () => !edit && setEdit(record),
+        })}
+        scroll={{ y: "calc(100vh - 480px)" }}
       >
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th>ФИО сотрудника</th>
-              <th>Тип карты</th>
-              <th>Номер счета</th>
-              <th>Оборот по дебету</th>
-              <th>Остаток</th>
-              <th>Дата выдачи</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length > 0
-              ? data.map((row, idx) => {
-                  const isLast = idx === data.length - 1;
-                  return (
-                    <tr
-                      key={row.ID}
-                      ref={isLast && !isSearching ? lastElementRef : null}
-                    >
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={
-                              edit?.worker?.user?.full_name ||
-                              row.worker?.user?.full_name
-                            }
-                            type="text"
-                            value={edit?.worker?.user?.full_name}
-                            onChange={(e) =>
-                              handleChange("worker.user.full_name", e)
-                            }
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.worker?.user?.full_name || ""
-                        )}
-                      </td>
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Select
-                            onChange={(e) => handleChange("card_type", e)}
-                            value={edit?.card_type || row.card_type}
-                            onEnter={() => saveChange(edit)}
-                            options={[
-                              ...visaCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                              ...ncCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                              ...mcCards.map((c) => ({
-                                label: c.name,
-                                value: c.name,
-                              })),
-                            ]}
-                          />
-                        ) : (
-                          row.card_type || ""
-                        )}
-                      </td>
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.code || row.code}
-                            type="text"
-                            value={edit?.code}
-                            onChange={(e) => handleChange("code", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.code || ""
-                        )}
-                      </td>
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.debt_osd || row.debt_osd}
-                            type="text"
-                            value={edit?.debt_osd}
-                            onChange={(e) => handleChange("debt_osd", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.debt_osd || ""
-                        )}
-                      </td>
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.out_balance || row.out_balance}
-                            type="text"
-                            value={edit?.out_balance}
-                            onChange={(e) => handleChange("out_balance", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.out_balance || ""
-                        )}
-                      </td>
-                      <td onClick={() => !edit && setEdit(row)}>
-                        {edit?.ID === row.ID ? (
-                          <Input
-                            defValue={edit?.issue_date || row.issue_date}
-                            value={edit?.issue_date}
-                            type="date"
-                            onChange={(e) => handleChange("issue_date", e)}
-                            onEnter={() => saveChange(edit)}
-                          />
-                        ) : (
-                          row.issue_date?.split("T")[0] || ""
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              : !loading && (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: "center" }}>
-                      <h1>Нет данных за выбранный период</h1>
-                    </td>
-                  </tr>
-                )}
-          </tbody>
-        </table>
-      </div>
-
-      {loading && (
-        <div
-          style={{
-            transform: "scale(2)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "100px",
-            width: "auto",
+        <Table.Column
+          title="ФИО сотрудника"
+          key="worker.user.full_name"
+          render={(_, record) => {
+            const isEditing = edit?.ID === record.ID;
+            if (isEditing) {
+              return (
+                <Input
+                  defValue={record.worker?.user?.full_name}
+                  type="text"
+                  value={edit.worker?.user?.full_name}
+                  onChange={(val) => handleChange("worker.user.full_name", val)}
+                  onEnter={() => saveChange(edit)}
+                />
+              );
+            }
+            return record.worker?.user?.full_name || "";
           }}
-        >
-          <Spinner />
-        </div>
-      )}
+        />
+        <Table.Column
+          title="Тип карты"
+          key="card_type"
+          render={(_, record) => renderEditableCell(record, "card_type", edit?.card_type, "select", cardOptions)}
+        />
+        <Table.Column
+          title="Номер счета"
+          key="code"
+          render={(_, record) => renderEditableCell(record, "code", edit?.code)}
+        />
+        <Table.Column
+          title="Оборот по дебету"
+          key="debt_osd"
+          render={(_, record) => renderEditableCell(record, "debt_osd", edit?.debt_osd)}
+        />
+        <Table.Column
+          title="Остаток"
+          key="out_balance"
+          render={(_, record) => renderEditableCell(record, "out_balance", edit?.out_balance)}
+        />
+        <Table.Column
+          title="Дата выдачи"
+          key="issue_date"
+          render={(_, record) => renderEditableCell(record, "issue_date", edit?.issue_date, "date")}
+        />
+      </Table>
 
-      {loadingMore && (
-        <div style={{ textAlign: "center", padding: "1rem" }}>
-          <Spinner />
-        </div>
-      )}
+      {loading && allData.length === 0 && <div className="spinner-container"><Spinner /></div>}
+      {loadingMore && <div style={{ textAlign: "center", padding: "1rem" }}><Spinner /></div>}
     </div>
   );
 };

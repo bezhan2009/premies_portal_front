@@ -5,148 +5,84 @@ import { tableDataDef } from "../../const/defConst.js";
 import file from "../../assets/file.jpg";
 import { useModal } from "../../hooks/useModal.js";
 import Modal from "../../components/modal/Modal.jsx";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 export default function MyApplicationsDipozit() {
-    const { data, errors, setData } = useFormStore();
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [tableData] = useState(tableDataDef);
-    const { setModal } = useModal();
+  const { data, errors, setData } = useFormStore();
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [tableData] = useState(tableDataDef);
+  const { setModal } = useModal();
 
-    console.log("selectedRows", selectedRows);
+  const rowSelection = {
+    selectedRowKeys: selectedRows,
+    onChange: (selectedRowKeys) => {
+      setSelectedRows(selectedRowKeys);
+    },
+  };
 
-    return (
-        <>
-            <div className="my-applications content-page">
-                <main>
-                    <div className="my-applications-header">
-                        <button>Фильтр</button>
-                        <button>Редактировать</button>
-                    </div>
-                    <div className="my-applications-sub-header">
-                        Показать{" "}
-                        <Input
-                            type="number"
-                            placeholder={""}
-                            onChange={(e) => setData("limit", e)}
-                            value={data?.limit}
-                            error={errors}
-                            id={"limit"}
-                        />
-                        записей
-                    </div>
-                    <div className="my-applications-content">
-                        <table>
-                            <thead>
-                            <tr>
-                                <th>Выбрать</th>
-                                <th>ID</th>
-                                <th>Статус заявки</th>
-                                <th>Коммент</th>
-                                <th>ФИО Клиента</th>
-                                <th>Телефон</th>
-                                <th>Кодовое слово</th>
-                                <th>Имя на карте</th>
-                                <th>Пол</th>
-                                <th>Резидент</th>
-                                <th>Документ</th>
-                                <th>ИНН</th>
-                                <th>Адрес</th>
-                                <th>Карта</th>
-                                <th>Сканы паспорта</th>
-                                <th>Сканы подписанных доч.</th>
-                                <th>Сканы по доработкам</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {tableData.map((row, rowIndex) => (
-                                <tr
-                                    key={rowIndex}
-                                    style={{
-                                        backgroundColor: rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                                    }}
-                                >
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        <input
-                                            type="checkbox"
-                                            onChange={(e) => {
-                                                setSelectedRows(
-                                                    e.target.checked
-                                                        ? [...selectedRows, row.id]
-                                                        : selectedRows.filter((id) => id !== row.id)
-                                                );
-                                            }}
-                                        />
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.applicationId}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.status}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.comment}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.fullName}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.phone}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.codeWord}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.cardName}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.gender}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.resident}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.document}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.inn}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.address}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.card}
-                                    </td>
-                                    <td
-                                        style={{
-                                            border: "1px solid #ddd",
-                                            padding: "8px",
-                                            textAlign: "center",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <img
-                                            src={file}
-                                            onClick={() =>
-                                                setModal({ open: true, url: row.passportScans })
-                                            }
-                                            alt="file"
-                                            width={50}
-                                        />
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.signedDocsScans}
-                                    </td>
-                                    <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                        {row.revisionScans}
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </main>
-            </div>
-            <Modal />
-        </>
-    );
+  return (
+    <>
+      <div className="my-applications content-page">
+        <main>
+          <div className="my-applications-header">
+            <button>Фильтр</button>
+            <button>Редактировать</button>
+          </div>
+          <div className="my-applications-sub-header">
+            Показать{" "}
+            <Input
+              type="number"
+              placeholder={""}
+              onChange={(e) => setData("limit", e)}
+              value={data?.limit}
+              error={errors}
+              id={"limit"}
+            />
+            записей
+          </div>
+          <div className="my-applications-content">
+            <Table
+              dataSource={tableData}
+              rowKey="id"
+              rowSelection={rowSelection}
+              bordered
+              scroll={{ x: "max-content" }}
+              pagination={{ pageSize: 10 }}
+            >
+              <Table.Column title="ID" dataIndex="applicationId" key="applicationId" sortable />
+              <Table.Column title="Статус заявки" dataIndex="status" key="status" sortable />
+              <Table.Column title="Коммент" dataIndex="comment" key="comment" sortable />
+              <Table.Column title="ФИО Клиента" dataIndex="fullName" key="fullName" sortable />
+              <Table.Column title="Телефон" dataIndex="phone" key="phone" sortable />
+              <Table.Column title="Кодовое слово" dataIndex="codeWord" key="codeWord" sortable />
+              <Table.Column title="Имя на карте" dataIndex="cardName" key="cardName" sortable />
+              <Table.Column title="Пол" dataIndex="gender" key="gender" sortable />
+              <Table.Column title="Резидент" dataIndex="resident" key="resident" sortable />
+              <Table.Column title="Документ" dataIndex="document" key="document" sortable />
+              <Table.Column title="ИНН" dataIndex="inn" key="inn" sortable />
+              <Table.Column title="Адрес" dataIndex="address" key="address" sortable />
+              <Table.Column title="Карта" dataIndex="card" key="card" sortable />
+              <Table.Column
+                title="Сканы паспорта"
+                key="passportScans"
+                align="center"
+                render={(_, row) => (
+                  <img
+                    src={file}
+                    onClick={() => setModal({ open: true, url: row.passportScans })}
+                    alt="file"
+                    width={50}
+                    style={{ cursor: "pointer" }}
+                  />
+                )}
+              />
+              <Table.Column title="Сканы подписанных доч." dataIndex="signedDocsScans" key="signedDocsScans" />
+              <Table.Column title="Сканы по доработкам" dataIndex="revisionScans" key="revisionScans" />
+            </Table>
+          </div>
+        </main>
+      </div>
+      <Modal />
+    </>
+  );
 }
