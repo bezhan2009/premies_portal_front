@@ -447,19 +447,21 @@ tr:nth-child(14) {
     }
   }
 
-  > span {
-    width: auto;
-    position: absolute;
-    height: 31px;
-    padding: 10px 10px;
-    background-color: #f1f1f1;
-    border-radius: 12px;
-    border: none;
-    display: flex;
-    align-items: center;
-    animation: fadeIn 0.5s ease-out;
+    > span {
+      width: auto;
+      /* position: absolute; ← удали или замени на relative */
+      height: 31px;
+      padding: 0; /* убери лишний padding */
+      background-color: transparent; /* фон не нужен для лейбла */
+      border-radius: 12px;
+      border: none;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+      color: #555;
+      animation: fadeIn 0.5s ease-out;
+    }
   }
-}
 
 .div4 {
   input {

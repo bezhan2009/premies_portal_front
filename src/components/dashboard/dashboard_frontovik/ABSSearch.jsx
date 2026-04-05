@@ -34,12 +34,15 @@ import ClientPersonalInfo from "./ClientPersonalInfo.jsx";
 import ClientDataTabs from "./ClientDataTabs.jsx";
 
 // Utilities
-import { normalizeClientData, formatPhoneNumber as formatPhoneNumberUtil, copyToClipboard as copyToClipboardUtil } from "./absSearchUtils.js";
+import {
+  normalizeClientData,
+  formatPhoneNumber as formatPhoneNumberUtil,
+  copyToClipboard as copyToClipboardUtil,
+} from "./absSearchUtils.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
 const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL;
-
 
 export default function ABSClientSearch() {
   const { exportToExcel } = useExcelExport();
@@ -118,10 +121,9 @@ export default function ABSClientSearch() {
   };
 
   const TYPES_ALLOW_LETTERS = [
-    TYPE_SEARCH_CLIENT[1]?.value,  // код клиента
-    "byName"                       // поиск по имени (ATM)
+    TYPE_SEARCH_CLIENT[1]?.value, // код клиента
+    "byName", // поиск по имени (ATM)
   ];
-
 
   const handlePhoneChange = (e) => {
     const value = e.target.value;
@@ -133,7 +135,7 @@ export default function ABSClientSearch() {
       setDisplayPhone(value);
     } else {
       // Для числовых полей – оставляем только цифры
-      const digitsOnly = value.replace(/\D/g, '');
+      const digitsOnly = value.replace(/\D/g, "");
       setPhoneNumber(digitsOnly);
       setDisplayPhone(formatPhoneNumber(digitsOnly));
     }
@@ -307,8 +309,8 @@ export default function ABSClientSearch() {
           // Поиск по ИНН возвращает массив
           normalizedData = Array.isArray(data)
             ? data.map((client) =>
-              normalizeClientData(client, selectTypeSearchClient),
-            )
+                normalizeClientData(client, selectTypeSearchClient),
+              )
             : [normalizeClientData(data, selectTypeSearchClient)];
         }
 
@@ -352,7 +354,6 @@ export default function ABSClientSearch() {
       showAlert("Ошибка при получении данных карт/счетов", "error");
     }
   }, [clientsData, selectedClientIndex]);
-
 
   const copyAllClientsToClipboard = () => {
     copyToClipboard(JSON.stringify(clientsData, null, 2));
@@ -549,6 +550,12 @@ export default function ABSClientSearch() {
     navigate("/processing/transactions/" + cardId);
   };
 
+  const handleNavigateToAllCardsTransactions = (cards) => {
+    if (!cards || cards.length === 0) return;
+    const cardIds = cards.map((c) => c.cardId).join(",") + ",";
+    navigate("/processing/transactions/" + cardIds);
+  };
+
   // Обработчик перехода на выписки счета с проверкой доступа
   const handleNavigateToAccountOperations = (accountNumber) => {
     sessionStorage.setItem("allowedAccountNumber", accountNumber);
@@ -562,77 +569,77 @@ export default function ABSClientSearch() {
 
   const tableData = selectedClient
     ? [
-      { label: "Телефон", key: "phone", value: selectedClient.phone },
-      {
-        label: "Тип клиента",
-        key: "client_type_name",
-        value: selectedClient.client_type_name,
-      },
-      // {
-      //     label: "Флаг банковского счета",
-      //     key: "ban_acc_open_flag",
-      //     value: selectedClient.ban_acc_open_flag,
-      // },
-      {
-        label: "Код департамента",
-        key: "dep_code",
-        value: selectedClient.dep_code,
-      },
-      {
-        label: "Код клиента в АБС",
-        key: "client_code",
-        value: selectedClient.client_code,
-      },
-      { label: "Фамилия", key: "surname", value: selectedClient.surname },
-      { label: "Имя", key: "name", value: selectedClient.name },
-      {
-        label: "Отчество",
-        key: "patronymic",
-        value: selectedClient.patronymic,
-      },
-      {
-        label: "Фамилия (латиница)",
-        key: "ltn_surname",
-        value: selectedClient.ltn_surname,
-      },
-      {
-        label: "Имя (латиница)",
-        key: "ltn_name",
-        value: selectedClient.ltn_name,
-      },
-      {
-        label: "Отчество (латиница)",
-        key: "ltn_patronymic",
-        value: selectedClient.ltn_patronymic,
-      },
-      { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
-      {
-        label: "Тип документа",
-        key: "identdoc_name",
-        value: selectedClient.identdoc_name,
-      },
-      {
-        label: "Серия документа",
-        key: "identdoc_series",
-        value: selectedClient.identdoc_series,
-      },
-      {
-        label: "Номер документа",
-        key: "identdoc_num",
-        value: selectedClient.identdoc_num,
-      },
-      {
-        label: "Дата выдачи",
-        key: "identdoc_date",
-        value: selectedClient.identdoc_date,
-      },
-      {
-        label: "Кем выдан",
-        key: "identdoc_orgname",
-        value: selectedClient.identdoc_orgname,
-      },
-      { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
-    ]
+        { label: "Телефон", key: "phone", value: selectedClient.phone },
+        {
+          label: "Тип клиента",
+          key: "client_type_name",
+          value: selectedClient.client_type_name,
+        },
+        // {
+        //     label: "Флаг банковского счета",
+        //     key: "ban_acc_open_flag",
+        //     value: selectedClient.ban_acc_open_flag,
+        // },
+        {
+          label: "Код департамента",
+          key: "dep_code",
+          value: selectedClient.dep_code,
+        },
+        {
+          label: "Код клиента в АБС",
+          key: "client_code",
+          value: selectedClient.client_code,
+        },
+        { label: "Фамилия", key: "surname", value: selectedClient.surname },
+        { label: "Имя", key: "name", value: selectedClient.name },
+        {
+          label: "Отчество",
+          key: "patronymic",
+          value: selectedClient.patronymic,
+        },
+        {
+          label: "Фамилия (латиница)",
+          key: "ltn_surname",
+          value: selectedClient.ltn_surname,
+        },
+        {
+          label: "Имя (латиница)",
+          key: "ltn_name",
+          value: selectedClient.ltn_name,
+        },
+        {
+          label: "Отчество (латиница)",
+          key: "ltn_patronymic",
+          value: selectedClient.ltn_patronymic,
+        },
+        { label: "ИНН", key: "tax_code", value: selectedClient.tax_code },
+        {
+          label: "Тип документа",
+          key: "identdoc_name",
+          value: selectedClient.identdoc_name,
+        },
+        {
+          label: "Серия документа",
+          key: "identdoc_series",
+          value: selectedClient.identdoc_series,
+        },
+        {
+          label: "Номер документа",
+          key: "identdoc_num",
+          value: selectedClient.identdoc_num,
+        },
+        {
+          label: "Дата выдачи",
+          key: "identdoc_date",
+          value: selectedClient.identdoc_date,
+        },
+        {
+          label: "Кем выдан",
+          key: "identdoc_orgname",
+          value: selectedClient.identdoc_orgname,
+        },
+        { label: "SV ID", key: "sv_id", value: selectedClient.sv_id },
+      ]
     : [];
 
   // useEffect теперь вызывает handleGetDataUser только когда изменяется client_code
@@ -810,10 +817,15 @@ export default function ABSClientSearch() {
               cardsData={cardsData}
               handleExportCards={handleExportCards}
               handleNavigateToTransactions={handleNavigateToTransactions}
+              handleNavigateToAllCardsTransactions={
+                handleNavigateToAllCardsTransactions
+              }
               hasTransactionsAccess={hasTransactionsAccess}
               accountsData={accountsData}
               handleExportAccounts={handleExportAccounts}
-              handleNavigateToAccountOperations={handleNavigateToAccountOperations}
+              handleNavigateToAccountOperations={
+                handleNavigateToAccountOperations
+              }
               hasAccountOperationsAccess={hasAccountOperationsAccess}
               creditsData={creditsData}
               handleExportCredits={handleExportCredits}
@@ -843,6 +855,7 @@ export default function ABSClientSearch() {
         onSubmit={handleRepaySubmit}
         isLoading={isRepayLoading}
         creditInfo={selectedCreditForRepay}
+        accountsData={accountsData}
       />
 
       {/* Модальное окно для деталей кредита */}
