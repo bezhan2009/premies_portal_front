@@ -659,7 +659,9 @@ export default function DashboardOperatorProcessingTransactions() {
         return (
           <div className="search-card__input-group">
             <label htmlFor="cardNumber" className="search-card__label">
-              Идентификатор карты
+              {cardId.includes(",")
+                ? "Идентификаторы карт"
+                : "Идентификатор карты"}
             </label>
             <input
               type="text"
@@ -891,7 +893,9 @@ export default function DashboardOperatorProcessingTransactions() {
 
     switch (searchType) {
       case "cardId":
-        searchInfo = `по карте с id ${displayCardId}`;
+        searchInfo = displayCardId.includes(",")
+          ? `по картам с id ${displayCardId}`
+          : `по карте с id ${displayCardId}`;
         break;
       case "atmId":
         searchInfo = `по терминалу ${atmId}`;
