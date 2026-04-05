@@ -331,20 +331,27 @@ export const Table = ({
   useEffect(() => {
     try {
       const persistedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      if (Array.isArray(persistedState.columnOrder)) {
+      if (Array.isArray(persistedState.columnOrder) && persistedState.columnOrder.length > 0) {
         setColumnOrder(persistedState.columnOrder);
+      } else {
+        setColumnOrder([]);
       }
       if (persistedState.columnWidths && typeof persistedState.columnWidths === "object") {
         setColumnWidths(persistedState.columnWidths);
+      } else {
+        setColumnWidths({});
       }
     } catch (error) {
       console.error("Не удалось прочитать настройки таблицы:", error);
+      setColumnOrder([]);
+      setColumnWidths({});
     }
   }, [storageKey]);
 
   useEffect(() => {
     const availableKeys = normalizedColumns.map((column) => column.key);
     setColumnOrder((previousOrder) => {
+      if (previousOrder.length === 0) return availableKeys;
       const filteredKeys = previousOrder.filter((key) => availableKeys.includes(key));
       const missingKeys = availableKeys.filter((key) => !filteredKeys.includes(key));
       return [...filteredKeys, ...missingKeys];
