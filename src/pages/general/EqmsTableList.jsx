@@ -423,58 +423,209 @@ export default function EQMSList() {
                                         </Table>
                                     )}
                                 </>
+                            ) : loading ? (
+                                <div style={{ textAlign: "center", padding: "2rem" }}>
+                                    Загрузка...
+                                </div>
+                            ) : sortedData.length === 0 ? (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        padding: "2rem",
+                                        color: "gray",
+                                    }}
+                                >
+                                    Нет данных для отображения
+                                </div>
                             ) : (
-                                <Table dataSource={sortedData} rowKey="id" rowSelection={rowSelection} bordered loading={loading} scroll={{ x: "max-content" }} pagination={{ pageSize: 15 }} onRow={(r) => ({ style: { backgroundColor: (getPaymentStatus(r) !== "pending") ? "#e6ffe6" : "transparent" } })}>
-                                    {tableHeaders.map((h) => (
-                                        <Table.Column
-                                            key={h}
-                                            title={columnNames[h] || h}
-                                            sortable
-                                            render={(val, row) => {
-                                                const v = row[h];
-                                                if (h.toLowerCase().includes("date") || h === "docDate" || h === "dateVal" || h === "dataOpr") return formatDateForDisplay(v);
-                                                if (h === "resiFlg") return v ? "Да" : "Нет";
-                                                if (h === "status") {
-                                                    const s = row.status?.toLowerCase();
-                                                    if (s === "pending") return <><FcProcess /> Orange</>;
-                                                    if (s === "success") return <><FcOk /> Success</>;
-                                                    if (s === "failed") return <><FcCancel /> Failed</>;
-                                                    return <><FcHighPriority /> {row.status}</>;
-                                                }
-                                                return v;
-                                            }}
-                                        />
-                                    ))}
-                                    <Table.Column
-                                        title="Оплачено в"
-                                        key="payedAt"
-                                        render={(_, row) => {
-                                            const paid = getPaymentStatus(row) !== "pending";
-                                            return (
-                                                <div style={{ color: paid ? "green" : "gray" }}>
-                                                    {paid && <FcOk />} <br />
-                                                    <small>{formatDateForDisplay(row.payedAt)}</small>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                    <Table.Column
-                                        title="Действия"
-                                        key="actions"
-                                        fixed="right"
-                                        render={(_, row) => {
-                                            const paid = getPaymentStatus(row) !== "pending";
-                                            const paying = payingIds.has(row.id);
-                                            return (
-                                                <div className="active-table">
-                                                    <button className={`pay-button ${paid ? "paid" : ""}`} onClick={() => row.status === "Success" ? handlePay(row) : toast.error("Ошибка!")} disabled={paying || paid} style={{ opacity: (row.status === "Success" && !paid && !paying) ? 1 : 0.6 }}>
-                                                        {paying ? "..." : paid ? <><img src={PayedIcon} width="24" /> Оплачено</> : <><img src={PayIcon} width="24" /> Оплатить</>}
+                                <table className="eqms-table">
+                                    <thead>
+                                    <tr>
+                                        <th className="eqms-th eqms-th--checkbox">
+                                            <input
+                                                type="checkbox"
+                                                className="custom-checkbox"
+                                                checked={selectAll}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
+                                        {tableHeaders.map((header) => (
+                                            <th
+                                                key={header}
+                                                className={`eqms-th eqms-th--sortable${sortField === header ? " eqms-th--active" : ""}`}
+                                                onClick={() => handleSort(header)}
+                                            >
+                                                <span className="eqms-th__label">
+                                                    {columnNames[header] || header}
+                                                </span>
+                                                <span className="eqms-th__icon">
+                                                    {sortField === header ? (
+                                                        sortDirection === "asc" ? (
+                                                            <BsArrowUp />
+                                                        ) : (
+                                                            <BsArrowDown />
+                                                        )
+                                                    ) : (
+                                                        <BsArrowDownUp className="eqms-th__icon--idle" />
+                                                    )}
+                                                </span>
+                                            </th>
+                                        ))}
+                                        <th className="eqms-th">Оплачено в</th>
+                                        <th className="eqms-th active-table">Действия</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {sortedData.map((row) => {
+                                        const paymentStatus = getPaymentStatus(row);
+                                        const isPaid =
+                                            paymentStatus === "already_paid" ||
+                                            paymentStatus === "paid";
+                                        const isPaying = payingIds.has(row.id);
+                                        return (
+                                            <tr
+                                                key={row.id}
+                                                style={{
+                                                    backgroundColor: isPaid ? "#e6ffe6" : "transparent",
+                                                }}
+                                            >
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="custom-checkbox"
+                                                        checked={selectedRows.includes(row.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedRows((prev) => [...prev, row.id]);
+                                                            } else {
+                                                                setSelectedRows((prev) => prev.filter((p) => p !== row.id));
+                                                                setSelectAll(false);
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+                                                {tableHeaders.map((header) => {
+                                                    let value = row[header];
+                                                    if (
+                                                        header.includes("date") ||
+                                                        header.includes("Date") ||
+                                                        header === "date" ||
+                                                        header === "docDate" ||
+                                                        header === "dateVal" ||
+                                                        header === "dataOpr"
+                                                    ) {
+                                                        value = formatDateForDisplay(value);
+                                                    } else if (header === "resiFlg") {
+                                                        value = value ? "Да" : "Нет";
+                                                    } else if (header === "status") {
+                                                        return (
+                                                            <td key={header}>
+                                                                {row.status?.toLowerCase() === "pending" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcProcess style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "orange" }}>Pending</span>
+                                                                    </div>
+                                                                ) : row.status?.toLowerCase() === "success" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcOk style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "green" }}>Success</span>
+                                                                    </div>
+                                                                ) : row.status?.toLowerCase() === "failed" ? (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcCancel style={{ fontSize: 22 }} />
+                                                                        <span style={{ color: "red" }}>Failed</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                                        <FcHighPriority style={{ fontSize: 22 }} />
+                                                                        <span>{row.status}</span>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    }
+                                                    return <td key={header}>{value}</td>;
+                                                })}
+                                                <td>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "10px",
+                                                            color: isPaid ? "green" : "gray",
+                                                            fontWeight: isPaid ? "500" : "normal",
+                                                        }}
+                                                    >
+                                                        {isPaid && <FcOk style={{ fontSize: 22 }} />}
+                                                        <br />
+                                                        <small style={{ opacity: 0.7 }}>
+                                                            {formatDateForDisplay(row.payedAt)}
+                                                        </small>
+                                                    </div>
+                                                </td>
+                                                <td className="active-table">
+                                                    <button
+                                                        className={`pay-button ${isPaid ? "paid" : ""}`}
+                                                        onClick={() =>
+                                                            row.status?.toLowerCase() === "success"
+                                                                ? handlePay(row)
+                                                                : toast.error("Таможня не оплачена")
+                                                        }
+                                                        disabled={isPaying || isPaid}
+                                                        style={{
+                                                            padding: "8px 12px",
+                                                            borderRadius: "6px",
+                                                            border: "none",
+                                                            cursor:
+                                                                row.status?.toLowerCase() !== "success"
+                                                                    ? "not-allowed"
+                                                                    : isPaid || isPaying
+                                                                        ? "not-allowed"
+                                                                        : "pointer",
+                                                            opacity:
+                                                                row.status?.toLowerCase() === "success" && !isPaid && !isPaying
+                                                                    ? 1
+                                                                    : 0.6,
+                                                            color: isPaid || isPaying ? "#333" : "#333",
+                                                            fontWeight: "500",
+                                                            transition: "all 0.2s",
+                                                            minWidth: "120px",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            gap: "8px",
+                                                        }}
+                                                    >
+                                                        {isPaying ? (
+                                                            <>Оплачивается...</>
+                                                        ) : isPaid ? (
+                                                            <>
+                                                                <img
+                                                                    src={PayedIcon}
+                                                                    width="24"
+                                                                    height="24"
+                                                                    alt="Оплачено"
+                                                                />
+                                                                Оплачено
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <img
+                                                                    src={PayIcon}
+                                                                    width="24"
+                                                                    height="24"
+                                                                    alt="Оплатить"
+                                                                />
+                                                                Оплатить
+                                                            </>
+                                                        )}
                                                     </button>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                </Table>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
                             )}
                         </div>
                     </main>
