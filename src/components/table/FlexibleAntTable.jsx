@@ -7,8 +7,27 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Table as AntTable } from "antd";
+import { Table as AntTable, ConfigProvider } from "antd";
+import ruRU from "antd/locale/ru_RU";
 import "../../styles/components/FlexibleTable.scss";
+
+const CUSTOM_THEME = {
+  token: {
+    colorPrimary: "#e21a1c",
+    borderRadius: 12,
+    fontFamily: "inherit",
+  },
+  components: {
+    Pagination: {
+      itemActiveBg: "#e21a1c",
+      activeBorderColor: "#e21a1c",
+    },
+    Select: {
+      activeBorderColor: "#e21a1c",
+      hoverBorderColor: "#f15454",
+    },
+  },
+};
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
 
@@ -58,7 +77,9 @@ const compareValues = (left, right) => {
   const leftNumber = Number(leftValue);
   const rightNumber = Number(rightValue);
   const leftIsNumber =
-    leftValue !== "" && !Number.isNaN(leftNumber) && Number.isFinite(leftNumber);
+    leftValue !== "" &&
+    !Number.isNaN(leftNumber) &&
+    Number.isFinite(leftNumber);
   const rightIsNumber =
     rightValue !== "" &&
     !Number.isNaN(rightNumber) &&
@@ -99,7 +120,10 @@ const extractText = (node) => {
   }
 
   if (Array.isArray(node)) {
-    return node.map((item) => extractText(item)).join(" ").trim();
+    return node
+      .map((item) => extractText(item))
+      .join(" ")
+      .trim();
   }
 
   if (isValidElement(node)) {
@@ -259,8 +283,9 @@ const ResizableHeaderCell = ({
       onDragEnter={handleDragEnter}
       onDragEnd={onFinishColumnDrag}
       onDrop={handleDrop}
-      className={`${restProps.className || ""} flexible-ant-table__th ${draggedColumnKey === columnKey ? "is-dragging" : ""
-        } ${dropTargetKey === columnKey ? "is-drop-target" : ""}`.trim()}
+      className={`${restProps.className || ""} flexible-ant-table__th ${
+        draggedColumnKey === columnKey ? "is-dragging" : ""
+      } ${dropTargetKey === columnKey ? "is-drop-target" : ""}`.trim()}
     >
       <div className="flexible-ant-table__th-inner">{children}</div>
       <span
@@ -292,7 +317,10 @@ export const Table = ({
         : columnsFromChildren(children);
 
     const baseId = sourceColumns
-      .map((column) => column?.dataIndex ?? column?.key ?? extractText(column?.title))
+      .map(
+        (column) =>
+          column?.dataIndex ?? column?.key ?? extractText(column?.title),
+      )
       .filter(Boolean)
       .join("-");
 
@@ -301,6 +329,10 @@ export const Table = ({
   const [columnOrder, setColumnOrder] = useState([]);
   const [columnWidths, setColumnWidths] = useState({});
   const [sortState, setSortState] = useState({ columnKey: null, order: null });
+  const [paginationState, setPaginationState] = useState({
+    current: 1,
+    pageSize: restProps.pagination?.pageSize ?? 15,
+  });
   const [containerWidth, setContainerWidth] = useState(0);
   const [draggedColumnKey, setDraggedColumnKey] = useState(null);
   const [dropTargetKey, setDropTargetKey] = useState(null);
@@ -330,11 +362,16 @@ export const Table = ({
 
   useEffect(() => {
     try {
-      const persistedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      const persistedState = JSON.parse(
+        localStorage.getItem(storageKey) || "{}",
+      );
       if (Array.isArray(persistedState.columnOrder)) {
         setColumnOrder(persistedState.columnOrder);
       }
-      if (persistedState.columnWidths && typeof persistedState.columnWidths === "object") {
+      if (
+        persistedState.columnWidths &&
+        typeof persistedState.columnWidths === "object"
+      ) {
         setColumnWidths(persistedState.columnWidths);
       }
     } catch (error) {
@@ -345,8 +382,12 @@ export const Table = ({
   useEffect(() => {
     const availableKeys = normalizedColumns.map((column) => column.key);
     setColumnOrder((previousOrder) => {
-      const filteredKeys = previousOrder.filter((key) => availableKeys.includes(key));
-      const missingKeys = availableKeys.filter((key) => !filteredKeys.includes(key));
+      const filteredKeys = previousOrder.filter((key) =>
+        availableKeys.includes(key),
+      );
+      const missingKeys = availableKeys.filter(
+        (key) => !filteredKeys.includes(key),
+      );
       return [...filteredKeys, ...missingKeys];
     });
   }, [normalizedColumns]);
@@ -399,9 +440,7 @@ export const Table = ({
       return normalizedColumns;
     }
 
-    return columnOrder
-      .map((key) => columnMap.get(key))
-      .filter(Boolean);
+    return columnOrder.map((key) => columnMap.get(key)).filter(Boolean);
   }, [columnMap, columnOrder, normalizedColumns]);
 
   const { widths: responsiveWidths, totalWidth } = useMemo(
@@ -427,17 +466,23 @@ export const Table = ({
       typeof sortColumn.sorterCompare === "function"
         ? sortColumn.sorterCompare
         : (leftRecord, rightRecord) => {
-          const leftValue =
-            typeof sortColumn.sortValue === "function"
-              ? sortColumn.sortValue(leftRecord)
-              : getValueByPath(leftRecord, sortColumn.dataIndex ?? sortColumn.key);
-          const rightValue =
-            typeof sortColumn.sortValue === "function"
-              ? sortColumn.sortValue(rightRecord)
-              : getValueByPath(rightRecord, sortColumn.dataIndex ?? sortColumn.key);
+            const leftValue =
+              typeof sortColumn.sortValue === "function"
+                ? sortColumn.sortValue(leftRecord)
+                : getValueByPath(
+                    leftRecord,
+                    sortColumn.dataIndex ?? sortColumn.key,
+                  );
+            const rightValue =
+              typeof sortColumn.sortValue === "function"
+                ? sortColumn.sortValue(rightRecord)
+                : getValueByPath(
+                    rightRecord,
+                    sortColumn.dataIndex ?? sortColumn.key,
+                  );
 
-          return compareValues(leftValue, rightValue);
-        };
+            return compareValues(leftValue, rightValue);
+          };
 
     return [...dataSource].sort((leftRecord, rightRecord) => {
       const result = comparator(leftRecord, rightRecord);
@@ -558,29 +603,46 @@ export const Table = ({
         order: normalizedSorter?.order ?? null,
       });
 
+      setPaginationState({
+        current: pagination.current,
+        pageSize: pagination.pageSize,
+      });
+
       onChange?.(pagination, filters, sorter, extra);
     },
     [onChange],
   );
 
   return (
-    <div className="flexible-ant-table" ref={wrapperRef}>
-      <AntTable
-        {...restProps}
-        components={{
-          header: {
-            cell: ResizableHeaderCell,
-          },
-        }}
-        columns={enhancedColumns}
-        dataSource={sortedDataSource}
-        onChange={handleTableChange}
-        scroll={{
-          ...restProps.scroll,
-          x: Math.max(totalWidth, containerWidth || 0),
-        }}
-      />
-    </div>
+    <ConfigProvider locale={ruRU} theme={CUSTOM_THEME}>
+      <div className="flexible-ant-table" ref={wrapperRef}>
+        <AntTable
+          {...restProps}
+          components={{
+            header: {
+              cell: ResizableHeaderCell,
+            },
+          }}
+          columns={enhancedColumns}
+          dataSource={sortedDataSource}
+          onChange={handleTableChange}
+          pagination={
+            restProps.pagination !== false
+              ? {
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "15", "20", "50", "100"],
+                  ...restProps.pagination,
+                  ...paginationState,
+                }
+              : false
+          }
+          scroll={{
+            ...restProps.scroll,
+            x: Math.max(totalWidth, containerWidth || 0),
+          }}
+        />
+      </div>
+    </ConfigProvider>
   );
 };
 
