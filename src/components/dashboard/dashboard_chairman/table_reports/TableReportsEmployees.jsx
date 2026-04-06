@@ -1,8 +1,7 @@
-﻿import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
+import React, { useState, useEffect } from "react";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import Filters from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
-import "../../../../styles/pagination.scss";
 import SearchBar from "../../../general/SearchBar.jsx";
 import Spinner from "../../../Spinner.jsx";
 import { calculateTotalPremia } from "../../../../api/utils/calculate_premia.js";
@@ -10,20 +9,16 @@ import { fetchEmployees } from "../../../../api/chairman/reports/employee.js";
 
 function formatNumber(value) {
   if (value == null || isNaN(value)) return "0,00";
-
   return Number(value)
     .toFixed(0)
     .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
     .replace(".", ",");
 }
 
-const ITEMS_PER_PAGE = 10;
-
 const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -57,14 +52,14 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
 
           all = [...all, ...chunk];
           after = chunk[chunk.length - 1]?.ID ?? chunk[chunk.length - 1]?.id;
-          if (chunk.length < ITEMS_PER_PAGE) break;
+          // Используем 10 как размер чанка для логики остановки, если API так работает
+          if (chunk.length < 10) break;
         }
       } catch (err) {
         console.error(err);
       }
       setAllData(all);
       setFilteredData(all);
-      setCurrentPage(1);
       setLoading(false);
     };
 
@@ -74,21 +69,15 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   const handleSearch = (filtered) => {
     if (!filtered || filtered.length === 0) {
       setFilteredData(allData);
-      setCurrentPage(1);
     } else {
       setFilteredData(filtered);
-      setCurrentPage(1);
     }
   };
 
   const handleRowClick = (worker) => {
     const resolvedWorkerId = worker?.ID ?? worker?.id ?? null;
     const idToUse = workerId || resolvedWorkerId;
-
-    if (!idToUse) {
-      return;
-    }
-
+    if (!idToUse) return;
     setSelectedRow(resolvedWorkerId);
     onSelect(`${idToUse}/${dateFilter.year}`);
   };
@@ -96,32 +85,6 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
   if (workerId) {
     return null;
   }
-
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const buttons = [];
-    for (let i = 1; i <= totalPages; i++) {
-      buttons.push(
-        <button
-          key={i}
-          className={`pagination-button ${currentPage === i ? "active" : ""}`}
-          onClick={() => setCurrentPage(i)}
-        >
-          {i}
-        </button>,
-      );
-    }
-
-    return <div className="pagination-container">{buttons}</div>;
-  };
 
   return (
     <div className="block_info_prems content-page" align="center">
@@ -150,65 +113,65 @@ const ReportTableEmployeesChairman = ({ onSelect, workerId = null }) => {
           >
             <Spinner />
           </div>
-        ) : paginatedData.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <h1>Нет данных</h1>
         ) : (
-          <>
-            <table className="table-reports">
-              <thead>
-                <tr>
-                  <th>Выберите</th>
-                  <th>ФИО</th>
-                  <th>Место работы</th>
-                  <th>Всего карт до текущего периода</th>
-                  <th>Выдано карт в текущем периоде</th>
-                  <th>Активных карт за текущий период</th>
-                  <th>Обороты по дебету</th>
-                  <th>Обороты по кредиту</th>
-                  <th>Премия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((worker) => {
-                  const workerRowId = worker?.ID ?? worker?.id;
-
-                  return (
-                    <tr
-                      key={workerRowId}
-                      onClick={() => handleRowClick(worker)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td>
-                        <div
-                          className={`choose-td ${selectedRow === workerRowId ? "active" : ""}`}
-                        ></div>
-                      </td>
-                      <td>{worker.user?.full_name || ""}</td>
-                      <td>{worker.place_work || ""}</td>
-                      <td>
-                        {formatNumber(
-                          worker.CardSales?.[0]?.cards_sailed_in_general || 0,
-                        )}
-                      </td>
-                      <td>
-                        {formatNumber(worker.CardSales?.[0]?.cards_sailed || 0)}
-                      </td>
-                      <td>
-                        {formatNumber(
-                          worker.CardTurnovers?.[0]?.activated_cards || 0,
-                        )}
-                      </td>
-                      <td>{formatNumber(worker.CardSales?.[0]?.deb_osd || 0)}</td>
-                      <td>{formatNumber(worker.CardSales?.[0]?.deb_osk || 0)}</td>
-                      <td>{formatNumber(calculateTotalPremia(worker))}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {renderPagination()}
-          </>
+          <Table
+            dataSource={filteredData}
+            rowKey={(record) => record.ID ?? record.id}
+            pagination={{ pageSize: 10 }}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+            })}
+            bordered
+          >
+            <Table.Column
+              title="Выберите"
+              key="select"
+              render={(_, record) => (
+                <div
+                  className={`choose-td ${selectedRow === (record.ID ?? record.id) ? "active" : ""}`}
+                ></div>
+              )}
+              width={100}
+            />
+            <Table.Column
+              title="ФИО"
+              key="full_name"
+              render={(_, record) => record.user?.full_name || ""}
+            />
+            <Table.Column title="Место работы" dataIndex="place_work" key="place_work" />
+            <Table.Column
+              title="Всего карт до текущего периода"
+              key="total_cards"
+              render={(_, record) => formatNumber(record.CardSales?.[0]?.cards_sailed_in_general || 0)}
+            />
+            <Table.Column
+              title="Выдано карт в текущем периоде"
+              key="cards_sailed"
+              render={(_, record) => formatNumber(record.CardSales?.[0]?.cards_sailed || 0)}
+            />
+            <Table.Column
+              title="Активных карт за текущий период"
+              key="activated_cards"
+              render={(_, record) => formatNumber(record.CardTurnovers?.[0]?.activated_cards || 0)}
+            />
+            <Table.Column
+              title="Обороты по дебету"
+              key="deb_osd"
+              render={(_, record) => formatNumber(record.CardSales?.[0]?.deb_osd || 0)}
+            />
+            <Table.Column
+              title="Обороты по кредиту"
+              key="deb_osk"
+              render={(_, record) => formatNumber(record.CardSales?.[0]?.deb_osk || 0)}
+            />
+            <Table.Column
+              title="Премия"
+              key="premia"
+              render={(_, record) => formatNumber(calculateTotalPremia(record))}
+            />
+          </Table>
         )}
       </div>
     </div>

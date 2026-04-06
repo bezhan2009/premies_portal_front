@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import '../../../../styles/components/Table.scss';
 import ReportsContent from "./ReportContent.jsx";
 
@@ -34,94 +35,45 @@ const ApplicationReport = () => {
             turnoverDetails: "Детали 1",
             date: ""
         },
-        // Add more data entries as needed
     ];
 
-    const [checkedStates, setCheckedStates] = useState(
-        initialData.map(() => false)
-    );
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
-    const handleHeaderCheckboxChange = (e) => {
-        const newCheckedState = e.target.checked;
-        setCheckedStates(initialData.map(() => newCheckedState));
+    const onSelectChange = (newSelectedRowKeys) => {
+        setSelectedRowKeys(newSelectedRowKeys);
     };
 
-    const handleRowCheckboxChange = (index) => (e) => {
-        const newCheckedStates = [...checkedStates];
-        newCheckedStates[index] = e.target.checked;
-        setCheckedStates(newCheckedStates);
-
-        // Update "select all" checkbox if not all are checked
-        const allChecked = newCheckedStates.every(Boolean);
-        if (allChecked !== checkedStates.every(Boolean)) {
-            setCheckedStates(newCheckedStates);
-        }
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: onSelectChange,
     };
 
     return (
-        <>
-            <div className="report-table-container">
-                <h2>Заявки</h2>
-                <table className="table-reports">
-                    <thead>
-                    <tr>
-                        <th>
-                            <div className="checkbox-wrapper">
-                                <input
-                                    type="checkbox"
-                                    checked={checkedStates.every(Boolean)}
-                                    onChange={handleHeaderCheckboxChange}
-                                />
-                                <span className="tooltip">Выбрать все</span>
-                            </div>
-                        </th>
-                        <th>ID</th>
-                        <th>Статус</th>
-                        <th>Комментарий</th>
-                        <th>ФИО</th>
-                        <th>Оборот</th>
-                        <th>Тип карты</th>
-                        <th>Документ</th>
-                        <th>ИНН</th>
-                        <th>Адрес</th>
-                        <th>Карта</th>
-                        <th>Скважина оборота</th>
-                        <th>Детали оборота</th>
-                        <th>Дата</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {initialData.map((item, index) => (
-                        <tr key={index}>
-                            <td>
-                                <div className="checkbox-wrapper">
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedStates[index]}
-                                        onChange={handleRowCheckboxChange(index)}
-                                    />
-                                    <span className="tooltip">Выбрать</span>
-                                </div>
-                            </td>
-                            <td>{item.id || ""}</td>
-                            <td>{item.status || ""}</td>
-                            <td>{item.comment || ""}</td>
-                            <td>{item.fio || ""}</td>
-                            <td>{item.turnover || ""}</td>
-                            <td>{item.cardType || ""}</td>
-                            <td>{item.document || ""}</td>
-                            <td>{item.inn || ""}</td>
-                            <td>{item.address || ""}</td>
-                            <td>{item.card || ""}</td>
-                            <td>{item.turnoverPoint || ""}</td>
-                            <td>{item.turnoverDetails || ""}</td>
-                            <td>{item.date || ""}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            </div>
-        </>
+        <div className="report-table-container">
+            <h2>Заявки</h2>
+            <Table
+                dataSource={initialData}
+                rowKey="id"
+                pagination={false}
+                bordered
+                rowSelection={rowSelection}
+                scroll={{ x: "max-content" }}
+            >
+                <Table.Column title="ID" dataIndex="id" key="id" />
+                <Table.Column title="Статус" dataIndex="status" key="status" />
+                <Table.Column title="Комментарий" dataIndex="comment" key="comment" />
+                <Table.Column title="ФИО" dataIndex="fio" key="fio" />
+                <Table.Column title="Оборот" dataIndex="turnover" key="turnover" />
+                <Table.Column title="Тип карты" dataIndex="cardType" key="cardType" />
+                <Table.Column title="Документ" dataIndex="document" key="document" />
+                <Table.Column title="ИНН" dataIndex="inn" key="inn" />
+                <Table.Column title="Адрес" dataIndex="address" key="address" />
+                <Table.Column title="Карта" dataIndex="card" key="card" />
+                <Table.Column title="Скважина оборота" dataIndex="turnoverPoint" key="turnoverPoint" />
+                <Table.Column title="Детали оборота" dataIndex="turnoverDetails" key="turnoverDetails" />
+                <Table.Column title="Дата" dataIndex="date" key="date" />
+            </Table>
+        </div>
     );
 };
 

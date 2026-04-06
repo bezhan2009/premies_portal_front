@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import "../../../../styles/components/Table.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import Spinner from "../../../Spinner.jsx";
 import SearchBar from "../../../general/SearchBar.jsx";
 import { fetchReportKCAndTests } from "../../../../api/operator/reports/report_kc.js";
@@ -23,19 +23,15 @@ const TableReportsTest = ({ month, year }) => {
     const loadAll = async () => {
       let all = [];
       let after = null;
-
       while (true) {
         const chunk = await fetchReportKCAndTests(month, year, after);
         if (!chunk || chunk.length === 0) break;
-
         all = [...all, ...chunk];
         after = chunk[chunk.length - 1]?.ID;
         if (chunk.length < 10) break;
       }
-
       setAllData(all);
     };
-
     loadAll();
   }, [month, year]);
 
@@ -45,7 +41,6 @@ const TableReportsTest = ({ month, year }) => {
       setIsSearching(false);
       setHasMore(true);
       setData([]);
-
       try {
         const chunk = await fetchReportKCAndTests(month, year, null);
         setData(chunk);
@@ -56,13 +51,11 @@ const TableReportsTest = ({ month, year }) => {
         setLoading(false);
       }
     };
-
     load();
   }, [month, year]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isSearching) return;
-
     setLoadingMore(true);
     try {
       const lastId = data[data.length - 1]?.ID;
@@ -80,13 +73,11 @@ const TableReportsTest = ({ month, year }) => {
     (node) => {
       if (loadingMore) return;
       if (observer.current) observer.current.disconnect();
-
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
           loadMore();
         }
       });
-
       if (node) observer.current.observe(node);
     },
     [loadingMore, hasMore, loadMore],
@@ -105,92 +96,35 @@ const TableReportsTest = ({ month, year }) => {
       }
       return;
     }
-
     setIsSearching(true);
     setData(filtered);
     setHasMore(false);
   };
 
-  const handleDoubleClick = (row) => {
-    const value = row.ServiceQuality?.[0]?.tests ?? "";
-    setEditId(row.ID);
-    setEditedTests(value.toString());
-  };
-
   const saveTests = async (row) => {
     const token = localStorage.getItem("access_token");
     const value = Number(editedTests);
-
     try {
       const existing = row.ServiceQuality?.[0];
-
       if (existing?.ID) {
-        const res = await fetch(
-          `${backendURL}/service-quality/${existing.ID}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              tests: value,
-              WorkerID: row.ID,
-            }),
-          },
-        );
-
+        const res = await fetch(`${backendURL}/service-quality/${existing.ID}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tests: value, WorkerID: row.ID }),
+        });
         if (!res.ok) throw new Error("Ошибка при PATCH");
-
-        setData((prev) =>
-          prev.map((item) =>
-            item.ID === row.ID
-              ? {
-                  ...item,
-                  ServiceQuality: [{ ...existing, tests: value }],
-                }
-              : item,
-          ),
-        );
+        setData((prev) => prev.map((item) => item.ID === row.ID ? { ...item, ServiceQuality: [{ ...existing, tests: value }] } : item));
       } else {
         const createdAt = new Date(Date.UTC(year, month - 1, 1)).toISOString();
         const res = await fetch(`${backendURL}/service-quality`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tests: value,
-            coefficient: 0,
-            complaint: 0,
-            call_center: 0,
-            WorkerID: row.ID,
-            CreatedAt: createdAt,
-          }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tests: value, coefficient: 0, complaint: 0, call_center: 0, WorkerID: row.ID, CreatedAt: createdAt }),
         });
-
         if (!res.ok) throw new Error("Ошибка при POST");
-
         const created = await res.json();
-
-        setData((prev) =>
-          prev.map((item) =>
-            item.ID === row.ID
-              ? {
-                  ...item,
-                  ServiceQuality: [
-                    {
-                      ID: created.ID,
-                      tests: value,
-                    },
-                  ],
-                }
-              : item,
-          ),
-        );
+        setData((prev) => prev.map((item) => item.ID === row.ID ? { ...item, ServiceQuality: [{ ID: created.ID, tests: value }] } : item));
       }
-
       setHighlightedId(row.ID);
       setTimeout(() => setHighlightedId(null), 1500);
     } catch (e) {
@@ -203,10 +137,7 @@ const TableReportsTest = ({ month, year }) => {
   const handleExport = () => {
     const columns = [
       { key: (row) => row.user?.full_name || "", label: "ФИО сотрудника" },
-      {
-        key: (row) => row.ServiceQuality?.[0]?.tests ?? "",
-        label: "Средняя оценка по тестам",
-      },
+      { key: (row) => row.ServiceQuality?.[0]?.tests ?? "", label: "Средняя оценка по тестам" },
     ];
     exportToExcel(allData, columns, `Отчет_Тесты_${month}_${year}`);
   };
@@ -220,75 +151,56 @@ const TableReportsTest = ({ month, year }) => {
           placeholder="Поиск по ФИО"
           searchFields={[(item) => item.user?.full_name || ""]}
         />
-        <button className="export-excel-btn" onClick={handleExport}>
-          Экспорт в Excel
-        </button>
-      </div>
-      <div className="table-reports-div">
-        <table className="table-reports">
-          <thead>
-            <tr>
-              <th>ФИО сотрудника</th>
-              <th>Средняя оценка по тестам</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length > 0
-              ? data.map((row, idx) => {
-                  const isLast = idx === data.length - 1;
-                  const userName = row.user?.full_name || "";
-                  const tests = row.ServiceQuality?.[0]?.tests ?? "";
-
-                  return (
-                    <tr
-                      key={row.ID}
-                      ref={isLast && !isSearching ? lastRowRef : null}
-                      className={highlightedId === row.ID ? "row-updated" : ""}
-                    >
-                      <td>{userName}</td>
-                      <td onDoubleClick={() => handleDoubleClick(row)}>
-                        {editId === row.ID ? (
-                          <input
-                            type="number"
-                            value={editedTests}
-                            onChange={(e) => setEditedTests(e.target.value)}
-                            onBlur={() => saveTests(row)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveTests(row);
-                              else if (e.key === "Escape") setEditId(null);
-                            }}
-                            autoFocus
-                            className="editable-input"
-                          />
-                        ) : (
-                          tests
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              : !loading && (
-                  <tr>
-                    <td colSpan={2} style={{ textAlign: "center" }}>
-                      Нет данных за выбранный период
-                    </td>
-                  </tr>
-                )}
-          </tbody>
-        </table>
+        <button className="export-excel-btn" onClick={handleExport}>Экспорт в Excel</button>
       </div>
 
-      {loading && (
-        <div className="spinner-container">
-          <Spinner />
-        </div>
-      )}
+      <Table
+        dataSource={data}
+        rowKey="ID"
+        pagination={false}
+        bordered
+        onRow={(record, index) => ({
+          ref: index === data.length - 1 && !isSearching ? lastRowRef : null,
+          className: highlightedId === record.ID ? "row-updated" : "",
+        })}
+      >
+        <Table.Column title="ФИО сотрудника" key="userName" render={(_, row) => row.user?.full_name || ""} />
+        <Table.Column
+          title="Средняя оценка по тестам"
+          key="tests"
+          render={(_, row) => {
+            const isEditing = editId === row.ID;
+            const tests = row.ServiceQuality?.[0]?.tests ?? "";
+            if (isEditing) {
+              return (
+                <input
+                  type="number"
+                  value={editedTests}
+                  onChange={(e) => setEditedTests(e.target.value)}
+                  onBlur={() => saveTests(row)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveTests(row);
+                    else if (e.key === "Escape") setEditId(null);
+                  }}
+                  autoFocus
+                  className="editable-input"
+                />
+              );
+            }
+            return (
+              <div onDoubleClick={() => {
+                setEditId(row.ID);
+                setEditedTests(tests.toString());
+              }}>
+                {tests}
+              </div>
+            );
+          }}
+        />
+      </Table>
 
-      {loadingMore && (
-        <div style={{ textAlign: "center", padding: "1rem" }}>
-          <Spinner />
-        </div>
-      )}
+      {loadingMore && <div style={{ textAlign: "center", padding: "1rem" }}><Spinner /></div>}
+      {loading && allData.length === 0 && <div className="spinner-container"><Spinner /></div>}
     </div>
   );
 };

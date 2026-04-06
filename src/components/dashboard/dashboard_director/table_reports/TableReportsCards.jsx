@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import LastModified from "../../dashboard_general/LastModified.jsx";
 import "../../../../styles/components/TablesChairman.scss";
 import Spinner from "../../../Spinner.jsx";
@@ -29,7 +29,6 @@ const ReportTableCardsDirector = ({ onSelect }) => {
 
         const officeData = list[0];
 
-        // Если это данные по офису с работниками
         if (officeData.office_user) {
           let totalCardsForMonth = 0;
           let totalActivatedCards = 0;
@@ -41,8 +40,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
           officeData.office_user.forEach(({ worker }) => {
             if (worker?.CardSales?.length) {
               const sales = worker.CardSales[0];
-              totalCardsForMonth +=
-                sales.cards_for_month || sales.cards_sailed || 0;
+              totalCardsForMonth += sales.cards_for_month || sales.cards_sailed || 0;
               totalDebOsd += sales.deb_osd || 0;
               totalDebOsk += sales.deb_osk || 0;
               totalOutBalance += sales.out_balance || 0;
@@ -56,6 +54,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
           });
 
           setRow({
+            id: 1,
             concreteCards: totalCardsForMonth.toLocaleString(),
             concreteCardsGeneral: totalCardsInGeneral.toLocaleString(),
             concreteActiveCards: totalActivatedCards.toLocaleString(),
@@ -67,9 +66,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
             }),
             balanceCards: totalOutBalance.toLocaleString(),
           });
-        }
-        // Если это агрегированные данные (как в чартах)
-        else {
+        } else {
           let sumCardsForMonth = 0;
           let sumActivatedCards = 0;
           let sumDebOsd = 0;
@@ -96,6 +93,7 @@ const ReportTableCardsDirector = ({ onSelect }) => {
           });
 
           setRow({
+            id: 1,
             concreteCards: sumCardsForMonth.toLocaleString(),
             concreteCardsGeneral: sumCardsInGeneral.toLocaleString(),
             concreteActiveCards: sumActivatedCards.toLocaleString(),
@@ -144,28 +142,19 @@ const ReportTableCardsDirector = ({ onSelect }) => {
             <Spinner />
           </div>
         ) : (
-          <table className="table-reports">
-            <thead>
-              <tr>
-                <th>Всего карт до текущего периода</th>
-                <th>Выдано карт в текущем периоде</th>
-                <th>Активных карт за текущий период</th>
-                <th>Оборот по дебету</th>
-                <th>Оборот по кредиту</th>
-                <th>Остатки на картах</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{row?.concreteCardsGeneral ?? "0"}</td>
-                <td>{row?.concreteCards ?? "0"}</td>
-                <td>{row?.concreteActiveCards ?? "0"}</td>
-                <td>{row?.overdraftDebt ?? "0.00"}</td>
-                <td>{row?.overdraftCredit ?? "0.00"}</td>
-                <td>{row?.balanceCards ?? "0"}</td>
-              </tr>
-            </tbody>
-          </table>
+          <Table
+            dataSource={row ? [row] : []}
+            rowKey="id"
+            pagination={false}
+            bordered
+          >
+            <Table.Column title="Всего карт до текущего периода" dataIndex="concreteCardsGeneral" key="concreteCardsGeneral" />
+            <Table.Column title="Выдано карт в текущем периоде" dataIndex="concreteCards" key="concreteCards" />
+            <Table.Column title="Активных карт за текущий период" dataIndex="concreteActiveCards" key="concreteActiveCards" />
+            <Table.Column title="Оборот по дебету" dataIndex="overdraftDebt" key="overdraftDebt" />
+            <Table.Column title="Оборот по кредиту" dataIndex="overdraftCredit" key="overdraftCredit" />
+            <Table.Column title="Остатки на картах" dataIndex="balanceCards" key="balanceCards" />
+          </Table>
         )}
       </div>
     </div>

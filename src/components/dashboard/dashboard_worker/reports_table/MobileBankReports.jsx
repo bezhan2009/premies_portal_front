@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 import '../../../../styles/components/WorkersDataReports.scss';
 import ReportsContent from "./ReportContent.jsx";
 import Spinner from "../../../Spinner.jsx";
-import {fetchReportMobileBank} from "../../../../api/workers/reports/report_mb.js";
+import { fetchReportMobileBank } from "../../../../api/workers/reports/report_mb.js";
 
 const MBReport = ({ month, year }) => {
     const [data, setData] = useState([]);
@@ -12,23 +13,8 @@ const MBReport = ({ month, year }) => {
 
     const observer = useRef();
 
-    const lastRowRef = useCallback(
-        (node) => {
-            if (loading) return;
-            if (observer.current) observer.current.disconnect();
-
-            observer.current = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && hasMore) {
-                    loadMore();
-                }
-            });
-
-            if (node) observer.current.observe(node);
-        },
-        [loading, hasMore]
-    );
-
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
+        if (loading || !hasMore) return;
         setLoading(true);
         try {
             const newData = await fetchReportMobileBank(month, year, after);
@@ -45,55 +31,52 @@ const MBReport = ({ month, year }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [month, year, after, loading, hasMore]);
+
+    const lastRowRef = useCallback(
+        (node) => {
+            if (loading) return;
+            if (observer.current) observer.current.disconnect();
+
+            observer.current = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore) {
+                    loadMore();
+                }
+            });
+
+            if (node) observer.current.observe(node);
+        },
+        [loading, hasMore, loadMore]
+    );
 
     useEffect(() => {
-        // если сменили месяц или год — обнуляем всё и грузим заново
         setData([]);
         setAfter(null);
         setHasMore(true);
-        loadMore();
     }, [month, year]);
+
+    useEffect(() => {
+        if (data.length === 0 && hasMore && !loading) {
+            loadMore();
+        }
+    }, [data, hasMore, loading, loadMore]);
 
     return (
         <ReportsContent>
             <h2>Мобильный банк</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Прием (ТJ)</th>
-                </tr>
-                </thead>
-                <tbody>
-                {data.map((item, index) => {
-                    const isLast = index === data.length - 1;
-                    return (
-                        <tr
-                            key={item.ID}
-                            ref={isLast ? lastRowRef : null}
-                        >
-                            <td>{item.prem || ""}</td>
-                        </tr>
-                    );
-                })}
-                </tbody>
-            </table>
+            <Table dataSource={data} rowKey="ID" pagination={false} bordered onRow={(record, index) => ({
+                ref: index === data.length - 1 ? lastRowRef : null,
+            })}>
+                <Table.Column title="Прием (ТJ)" dataIndex="prem" key="prem" render={(val) => val || ""} />
+            </Table>
+
             {loading && (
-                <div
-                    style={{
-                        transform: 'scale(2)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: "100px",
-                        width: "auto"
-                    }}
-                >
+                <div style={{ transform: 'scale(2)', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: "20px 0" }}>
                     <Spinner />
                 </div>
             )}
             {!loading && !hasMore && data.length === 0 && (
-                <div className="loading" align="center">Нет данных за выбранный период</div>
+                <div className="loading" align="center" style={{ marginTop: "20px" }}>Нет данных за выбранный период</div>
             )}
         </ReportsContent>
     );

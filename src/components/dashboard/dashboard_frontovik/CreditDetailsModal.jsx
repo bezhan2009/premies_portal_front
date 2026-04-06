@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Spinner from "../../Spinner.jsx";
+import { Table } from "../../table/FlexibleAntTable.jsx";
 
 // Компонент модального окна для деталей кредита
 const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
@@ -15,10 +16,7 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
       { label: "Статус", value: data.params.statusName },
       { label: "Продукт", value: data.params.productName },
       { label: "Цель кредита", value: data.params.creditPurpose },
-      {
-        label: "Сумма кредита",
-        value: `${data.params.amount} ${data.params.currency}`,
-      },
+      { label: "Сумма кредита", value: `${data.params.amount} ${data.params.currency}` },
       { label: "Валюта", value: data.params.currency },
       { label: "Дата договора", value: data.params.documentDate },
       { label: "Срок кредита", value: data.params.term },
@@ -51,24 +49,11 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
       return <p className="no-data-msg">Нет данных</p>;
     return (
       <div className="table-responsive">
-        <table className="details-table">
-          <thead>
-            <tr>
-              <th>Код</th>
-              <th>Название</th>
-              <th>Сумма (TJS)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.balances.map((b, i) => (
-              <tr key={i}>
-                <td>{b.code}</td>
-                <td>{b.name}</td>
-                <td>{b.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table dataSource={data.balances} rowKey={(r, i) => i} bordered pagination={false} size="small">
+          <Table.Column title="Код" dataIndex="code" />
+          <Table.Column title="Название" dataIndex="name" />
+          <Table.Column title="Сумма (TJS)" dataIndex="amount" align="right" />
+        </Table>
       </div>
     );
   };
@@ -78,59 +63,27 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
       return <p className="no-data-msg">Нет данных</p>;
     return (
       <div className="table-responsive">
-        <table className="details-table">
-          <thead>
-            <tr>
-              <th>Код</th>
-              <th>Название</th>
-              <th>Номер счёта</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.paymentOptions.map((a, i) => (
-              <tr key={i}>
-                <td>{a.code}</td>
-                <td>{a.name}</td>
-                <td>{a.account}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table dataSource={data.paymentOptions} rowKey={(r, i) => i} bordered pagination={false} size="small">
+          <Table.Column title="Код" dataIndex="code" />
+          <Table.Column title="Название" dataIndex="name" />
+          <Table.Column title="Номер счёта" dataIndex="account" />
+        </Table>
       </div>
     );
   };
 
   return (
-    <div
-      className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}
-    >
+    <div className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}>
       <div className="graph-modal-container details-modal-container">
         <div className="graph-modal-header">
           <h2 className="graph-modal-title">Детали кредита</h2>
-          <button className="graph-modal-close" onClick={onClose}>
-            &times;
-          </button>
+          <button className="graph-modal-close" onClick={onClose}>&times;</button>
         </div>
 
         <div className="tabs-header">
-          <button
-            className={`tab-btn ${activeTab === "params" ? "active" : ""}`}
-            onClick={() => setActiveTab("params")}
-          >
-            Параметры кредита
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "balances" ? "active" : ""}`}
-            onClick={() => setActiveTab("balances")}
-          >
-            Остатки кредита
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "accounts" ? "active" : ""}`}
-            onClick={() => setActiveTab("accounts")}
-          >
-            Счета кредита
-          </button>
+          <button className={`tab-btn ${activeTab === "params" ? "active" : ""}`} onClick={() => setActiveTab("params")}>Параметры кредита</button>
+          <button className={`tab-btn ${activeTab === "balances" ? "active" : ""}`} onClick={() => setActiveTab("balances")}>Остатки кредита</button>
+          <button className={`tab-btn ${activeTab === "accounts" ? "active" : ""}`} onClick={() => setActiveTab("accounts")}>Счета кредита</button>
         </div>
 
         <div className="graph-modal-content">
@@ -140,7 +93,7 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
               <p>Загрузка деталей...</p>
             </div>
           ) : (
-            <div className="tab-content">
+            <div className="tab-content" style={{ padding: "16px" }}>
               {activeTab === "params" && renderParams()}
               {activeTab === "balances" && renderBalances()}
               {activeTab === "accounts" && renderAccounts()}
@@ -148,9 +101,7 @@ const CreditDetailsModal = ({ isOpen, onClose, data, isLoading }) => {
           )}
         </div>
         <div className="graph-modal-footer">
-          <button className="graph-modal-close-btn" onClick={onClose}>
-            Закрыть
-          </button>
+          <button className="graph-modal-close-btn" onClick={onClose}>Закрыть</button>
         </div>
       </div>
     </div>

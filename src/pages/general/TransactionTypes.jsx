@@ -6,12 +6,13 @@ import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import {
     getTransactions,
     putTransactions,
     putTransactionsNumber,
 } from "../../api/transactions/api.js";
+import { tableDataDef, transactionTypes } from "../../const/defConst";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 const ValidData = {
     type: { required: true },
@@ -19,13 +20,9 @@ const ValidData = {
     number: { required: true },
 };
 
-import { tableDataDef, transactionTypes } from "../../const/defConst";
-// import { useModal } from "../../hooks/useModal"
-
 export default function TransactionTypes() {
     const { data, errors, setData, validate } = useFormStore();
     const [loading, setLoading] = useState(false);
-    // const [selectedRows, setSelectedRows] = useState([]);
     const [tableData, setTableData] = useState(tableDataDef);
     const [edit, setEdit] = useState(null);
     const [filters, setFilters] = useState({
@@ -34,10 +31,6 @@ export default function TransactionTypes() {
         number: "",
         id: "",
     });
-    const [sortField, setSortField] = useState("id");
-    const [sortDirection, setSortDirection] = useState("asc");
-
-    // console.log("selectedRows", selectedRows);
 
     const upDateUserWorkers = async () => {
         const isValid = validate(ValidData);
@@ -50,22 +43,18 @@ export default function TransactionTypes() {
         try {
             const response = await putTransactions(data);
             if (response.status === 200 || response.status === 201) {
-                toast.success("Номер типа транзакции успешно обновлён!");
+                toast.success("Название операции успешно обновлено!");
                 setEdit(null);
                 getItems();
             }
         } catch (e) {
-            // Обработка ошибки
-            const errorMessage =
-                e?.response?.data?.message ||
-                e?.message ||
-                "Произошла ошибка при обновлении";
+            const errorMessage = e?.response?.data?.message || e?.message || "Ошибка при обновлении";
             toast.error(`Ошибка: ${errorMessage}`);
-            console.error("Ошибка при обновлении:", e);
         } finally {
             setLoading(false);
         }
     };
+
     const upDateUserNumber = async () => {
         const isValid = validate(ValidData);
         if (!isValid) {
@@ -77,18 +66,13 @@ export default function TransactionTypes() {
         try {
             const response = await putTransactionsNumber(data);
             if (response.status === 200 || response.status === 201) {
-                toast.success("Номер типа транзакции успешно обновлён!");
+                toast.success("Вид операции успешно обновлён!");
                 setEdit(null);
                 getItems();
             }
         } catch (e) {
-            // Обработка ошибки
-            const errorMessage =
-                e?.response?.data?.message ||
-                e?.message ||
-                "Произошла ошибка при обновлении";
+            const errorMessage = e?.response?.data?.message || e?.message || "Ошибка при обновлении";
             toast.error(`Ошибка: ${errorMessage}`);
-            console.error("Ошибка при обновлении:", e);
         } finally {
             setLoading(false);
         }
@@ -101,8 +85,6 @@ export default function TransactionTypes() {
     const getItems = async () => {
         try {
             const response = await getTransactions();
-            // console.log("response", response.data);
-
             setTableData(
                 response.data.map((item) => ({
                     type: String(item.type),
@@ -112,210 +94,94 @@ export default function TransactionTypes() {
                 })),
             );
         } catch (e) {
-            console.error("Ошибка при обновлении:", e);
+            console.error("Ошибка при загрузке:", e);
         }
     };
 
-    const applyFilters = (data, currentFilters) => {
-        if (!Array.isArray(data)) return [];
-
-        return data.filter((row) => {
-            return (
-                row?.type?.includes(currentFilters?.type || "") &&
-                row?.name?.includes(currentFilters?.name || "") &&
-                row?.number?.includes(currentFilters?.number || "") &&
-                row?.id?.includes(currentFilters?.id || "")
-            );
-        });
-    };
-
-    const filteredData = applyFilters(tableData, filters);
-
-    const handleSort = (field) => {
-        if (sortField === field) {
-            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-        } else {
-            setSortField(field);
-            setSortDirection("asc");
-        }
-    };
-
-    const sortedData = useMemo(() => {
-        const arr = [...filteredData];
-        arr.sort((a, b) => {
-            const aVal = a[sortField];
-            const bVal = b[sortField];
-            if (aVal == null && bVal == null) return 0;
-            if (aVal == null) return 1;
-            if (bVal == null) return -1;
-            const cmp = String(aVal).localeCompare(String(bVal), "ru", {
-                numeric: true,
-            });
-            return sortDirection === "asc" ? cmp : -cmp;
-        });
-        return arr;
-    }, [filteredData, sortField, sortDirection]);
+    const filteredData = useMemo(() => {
+        if (!Array.isArray(tableData)) return [];
+        return tableData.filter((row) =>
+            row?.type?.includes(filters?.type || "") &&
+            row?.name?.includes(filters?.name || "") &&
+            row?.number?.includes(filters?.number || "") &&
+            row?.id?.includes(filters?.id || "")
+        );
+    }, [tableData, filters]);
 
     useEffect(() => {
         getItems();
     }, []);
 
-    console.log("data", data);
+    const startEditName = (row) => {
+        setEdit({ type: "name", id: row.id });
+        setData("type", row.type);
+        setData("number", row.number);
+        setData("name", row.name);
+        setData("id", row.id);
+    };
+
+    const startEditNumber = (row) => {
+        setEdit({ type: "number", id: row.id });
+        setData("type", row.type);
+        setData("name", row.name);
+        setData("number", row.number);
+        setData("id", row.id);
+    };
 
     return (
-        <>
-            <div className="my-applications content-page">
-                <main>
-                    {/* <div className="my-applications-header">
-            <button>Фильтр</button>
-            <button>Редактировать</button>
-          </div> */}
-                    <div className="filters animate-slideIn">
-                        <input
-                            placeholder="Тип транзакции"
-                            value={filters.type}
-                            onChange={(e) => handleFilterChange("type", e.target.value)}
+        <div className="my-applications content-page">
+            <main>
+                <div className="filters animate-slideIn">
+                    <input placeholder="Тип транзакции" value={filters.type} onChange={(e) => handleFilterChange("type", e.target.value)} />
+                    <input placeholder="Название операции" value={filters.name} onChange={(e) => handleFilterChange("name", e.target.value)} />
+                    <input placeholder="Вид операции" value={filters.number} onChange={(e) => handleFilterChange("number", e.target.value)} />
+                    <input placeholder="id" value={filters.id} onChange={(e) => handleFilterChange("id", e.target.value)} />
+                </div>
+                <div className="my-applications-content">
+                    <Table dataSource={filteredData} rowKey="id" bordered loading={loading} pagination={{ pageSize: 15 }}>
+                        <Table.Column title="Тип транзакции" dataIndex="type" key="type" sortable />
+                        <Table.Column
+                            title="Название операции"
+                            key="name"
+                            sortable
+                            render={(val, row) => (
+                                edit?.type === "name" && edit?.id === row.id ? (
+                                    <Input type="text" onChange={(e) => setData("name", e)} value={data?.name || ""} onEnter={upDateUserWorkers} />
+                                ) : (
+                                    <div style={{ cursor: "pointer" }} onClick={() => startEditName(row)}>{row.name}</div>
+                                )
+                            )}
                         />
-                        <input
-                            placeholder="Название операции"
-                            value={filters.name}
-                            onChange={(e) => handleFilterChange("name", e.target.value)}
+                        <Table.Column
+                            title="Вид операции"
+                            key="number"
+                            sortable
+                            render={(val, row) => (
+                                edit?.type === "number" && edit?.id === row.id ? (
+                                    <Select onChange={(e) => setData("number", e)} value={data?.number || row.number} options={transactionTypes} />
+                                ) : (
+                                    <div style={{ cursor: "pointer" }} onClick={() => startEditNumber(row)}>
+                                        {transactionTypes.find((e) => e.value == row?.number)?.label || row.number}
+                                    </div>
+                                )
+                            )}
                         />
-
-                        <input
-                            placeholder="Вид операции"
-                            value={filters.number}
-                            onChange={(e) => handleFilterChange("number", e.target.value)}
+                        <Table.Column title="id" dataIndex="id" key="id" sortable />
+                        <Table.Column
+                            title="Действия"
+                            key="actions"
+                            render={(_, row) => (
+                                edit?.id === row.id ? (
+                                    <div className="active-table">
+                                        <button className="button-edit-roles small-size" onClick={() => (edit.type === "number" ? upDateUserNumber() : upDateUserWorkers())}>Сохранить</button>
+                                        <button className="button-edit-roles small-size" onClick={() => setEdit(null)} style={{ marginLeft: 5, backgroundColor: "#6c757d" }}>Отмена</button>
+                                    </div>
+                                ) : null
+                            )}
                         />
-
-                        <input
-                            placeholder="id"
-                            value={filters.id}
-                            onChange={(e) => handleFilterChange("id", e.target.value)}
-                        />
-                    </div>
-                    <div className="my-applications-content">
-                        <div className="sort-table-scroll">
-                            <table className="sort-table">
-                                <thead>
-                                <tr>
-                                    {[
-                                        { key: "type", label: "Тип транзакции" },
-                                        { key: "name", label: "Название операции" },
-                                        { key: "number", label: "Вид операции" },
-                                        { key: "id", label: "id" },
-                                    ].map((col) => (
-                                        <th
-                                            key={col.key}
-                                            className="sort-th"
-                                            onClick={() => handleSort(col.key)}
-                                        >
-                                            <span>{col.label}</span>
-                                            <span className="sort-icon">
-                          {sortField === col.key ? (
-                              sortDirection === "asc" ? (
-                                  <BsArrowUp />
-                              ) : (
-                                  <BsArrowDown />
-                              )
-                          ) : (
-                              <BsArrowDownUp className="sort-icon--idle" />
-                          )}
-                        </span>
-                                        </th>
-                                    ))}
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {sortedData.map((row, rowIndex) => (
-                                    <tr
-                                        key={rowIndex}
-                                        style={{
-                                            backgroundColor:
-                                                rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                                        }}
-                                    >
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {row.type}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                            onClick={() => {
-                                                setEdit({ type: "name", id: row.id });
-
-                                                setData("type", row.type);
-                                                setData("number", row.number);
-                                                setData("id", row.id);
-                                            }}
-                                        >
-                                            {edit?.type === "name" && edit?.id === row.id ? (
-                                                <Input
-                                                    type="text"
-                                                    defValue={data?.name || row.name}
-                                                    onChange={(e) => setData("name", e)}
-                                                    value={edit?.user?.name}
-                                                    onEnter={upDateUserWorkers}
-                                                />
-                                            ) : (
-                                                row.name
-                                            )}
-                                        </td>
-                                        <td
-                                            onClick={() => {
-                                                setEdit({ type: "number", id: row.id });
-
-                                                setData("type", row.type);
-                                                setData("name", row.name);
-                                                setData("id", row.id);
-                                            }}
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {edit?.type === "number" && edit?.id === row.id ? (
-                                                <Select
-                                                    onChange={(e) => setData("number", e)}
-                                                    value={data?.number || row.number}
-                                                    onEnter={() => upDateUserNumber(edit)}
-                                                    options={transactionTypes}
-                                                />
-                                            ) : (
-                                                transactionTypes.find((e) => e.value == row?.number)
-                                                    ?.label
-                                            )}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {row.id}
-                                        </td>
-                                        {edit?.type ? (
-                                            <td>
-                                                <button
-                                                    className="button-edit-roles"
-                                                    onClick={() => {
-                                                        if (edit?.type === "number") {
-                                                            upDateUserNumber(edit);
-                                                        } else {
-                                                            upDateUserWorkers(edit);
-                                                        }
-                                                    }}
-                                                >
-                                                    Сохранить{" "}
-                                                </button>
-                                            </td>
-                                        ) : (
-                                            ""
-                                        )}
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </main>
-            </div>
-            {/* <Modal /> */}
-        </>
+                    </Table>
+                </div>
+            </main>
+        </div>
     );
 }
