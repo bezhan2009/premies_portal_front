@@ -20,7 +20,6 @@ const AddPaymentModal = ({
 
   const handlePaymentTypeChange = (type) => {
     setPaymentType(type);
-
     if (type === "internal") {
       setNewItem((prev) => ({ ...prev, bic: "" }));
     }
