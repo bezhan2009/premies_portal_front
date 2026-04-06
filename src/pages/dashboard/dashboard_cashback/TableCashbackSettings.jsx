@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import "../../../styles/components/AddCardPriceForm.scss";
@@ -38,6 +38,7 @@ const emptyForm = {
     full_name_withdraw: "",
     cashback_percentage: "",
     cashback_name: "",
+    cashback_priority: "",
     is_active: true,
 };
 
@@ -71,154 +72,110 @@ const fields = [
     { key: "full_name_withdraw", label: "ФИО вывода", type: "text" },
     { key: "cashback_percentage", label: "% кэшбэка", type: "number", step: "0.01" },
     { key: "cashback_name", label: "Название кэшбэка", type: "text" },
+    { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" }, // ← новая колонка
     { key: "is_active", label: "Активен", type: "checkbox" },
 ];
 
-// Рекурсивно разворачивает любое количество вложенных JSON-строк
-// и PostgreSQL-массивы {a,b,c} до чистого string[]
+// Оптимизированный парсер без рекурсий и циклов
 const parseTransactionType = (value) => {
-    if (Array.isArray(value)) {
-        return value.flatMap((v) => parseTransactionType(v)).filter(Boolean);
-    }
-
-    if (value === null || value === undefined || value === "") return [];
+    if (Array.isArray(value)) return value.flatMap(v => parseTransactionType(v));
+    if (value == null || value === "") return [];
 
     let str = String(value).trim();
 
-    // До 30 итераций разворачиваем JSON-обёртки
-    for (let i = 0; i < 30; i++) {
-        // Пробуем JSON.parse для строк, массивов
-        try {
-            const parsed = JSON.parse(str);
-            if (typeof parsed === "string") {
-                const next = parsed.trim();
-                if (next === str) break; // нет прогресса
-                str = next;
-                continue;
-            }
-            if (Array.isArray(parsed)) {
-                return parsed.flatMap((v) => parseTransactionType(v)).filter(Boolean);
-            }
-            // объект или число — выходим
-            break;
-        } catch {
-            // не JSON
-        }
+    try {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) return parsed.flatMap(v => parseTransactionType(v));
+        if (typeof parsed === "string") str = parsed.trim();
+    } catch { }
 
-        // PostgreSQL / Go-массив {a,b,c}
-        if (str.startsWith("{") && str.endsWith("}")) {
-            const inner = str.slice(1, -1).trim();
-            if (!inner) return [];
-            return inner
-                .split(",")
-                .map((v) => v.trim().replace(/^["'\\]+|["'\\]+$/g, ""))
-                .filter(Boolean);
-        }
-
-        // Строка с обратными слешами без JSON-обёртки — убираем слеши и пробуем снова
-        if (str.includes("\\")) {
-            const unescaped = str.replace(/\\+/g, "");
-            if (unescaped === str) break;
-            str = unescaped.trim();
-            continue;
-        }
-
-        break;
+    if (str.startsWith("{") && str.endsWith("}")) {
+        const inner = str.slice(1, -1).trim();
+        if (!inner) return [];
+        return inner.split(",").map(v => v.trim().replace(/^["'\\]+|["'\\]+$/g, "")).filter(Boolean);
     }
 
-    // Финал: обычная строка через запятую
-    return str
-        .split(",")
-        .map((v) => v.trim().replace(/^["'\\{}]+|["'\\{}]+$/g, ""))
-        .filter(Boolean);
+    return str.split(",").map(v => v.trim()).filter(Boolean);
 };
 
-// Нормализуем все поля item при получении с сервера
 const normalizeItem = (item) => ({
     ...item,
     transaction_type: parseTransactionType(item.transaction_type),
 });
 
-const tagBoxStyle = {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "4px",
-    padding: "4px 6px",
-    border: "1px solid #ced4da",
-    borderRadius: "4px",
-    minHeight: "32px",
-    alignItems: "center",
-    background: "#fff",
-    minWidth: "160px",
-};
+// ------ Компоненты ячеек (мемоизированные) ------
+const TagDisplay = React.memo(({ tags }) => {
+    if (!tags.length) return <span style={{ color: "#aaa" }}>-</span>;
+    return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            {tags.map((tag, idx) => (
+                <span key={idx} style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px",
+                    background: "#e7f0ff",
+                    color: "#2563eb",
+                    borderRadius: "4px",
+                    padding: "2px 7px",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    whiteSpace: "nowrap",
+                }}>{tag}</span>
+            ))}
+        </div>
+    );
+});
 
-const tagStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "3px",
-    background: "#e7f0ff",
-    color: "#2563eb",
-    borderRadius: "4px",
-    padding: "2px 7px",
-    fontSize: "12px",
-    fontWeight: 500,
-    whiteSpace: "nowrap",
-};
-
-const tagRemoveStyle = {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: "#2563eb",
-    fontSize: "14px",
-    lineHeight: 1,
-    padding: 0,
-};
-
-const tagInputStyle = {
-    border: "none",
-    outline: "none",
-    fontSize: "13px",
-    flex: 1,
-    minWidth: "80px",
-    background: "transparent",
-};
-
-const InlineTagInput = ({ tags, onChange }) => {
+const InlineTagInput = React.memo(({ tags, onChange }) => {
     const [inputVal, setInputVal] = useState("");
 
-    const addTags = (raw) => {
-        const newTags = raw
-            .split(/[,\s]+/)
-            .map((v) => v.trim())
-            .filter(Boolean);
+    const addTags = useCallback((raw) => {
+        const newTags = raw.split(/[,\s]+/).map(v => v.trim()).filter(Boolean);
         if (!newTags.length) return;
         onChange([...new Set([...tags, ...newTags])]);
         setInputVal("");
-    };
+    }, [tags, onChange]);
 
-    const removeTag = (idx) => onChange(tags.filter((_, i) => i !== idx));
+    const removeTag = useCallback((idx) => {
+        onChange(tags.filter((_, i) => i !== idx));
+    }, [tags, onChange]);
 
-    const handleKeyDown = (event) => {
-        if (["Enter", ","].includes(event.key)) {
-            event.preventDefault();
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
             addTags(inputVal);
-            return;
-        }
-        if (event.key === "Backspace" && !inputVal && tags.length) {
+        } else if (e.key === "Backspace" && !inputVal && tags.length) {
             removeTag(tags.length - 1);
         }
     };
+
+    const tagStyle = {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "3px",
+        background: "#e7f0ff",
+        color: "#2563eb",
+        borderRadius: "4px",
+        padding: "2px 7px",
+        fontSize: "12px",
+        fontWeight: 500,
+        whiteSpace: "nowrap",
+    };
+    const tagRemoveStyle = { background: "none", border: "none", cursor: "pointer", color: "#2563eb", fontSize: "14px" };
+    const tagBoxStyle = {
+        display: "flex", flexWrap: "wrap", gap: "4px", padding: "4px 6px",
+        border: "1px solid #ced4da", borderRadius: "4px", minHeight: "32px",
+        alignItems: "center", background: "#fff", minWidth: "160px",
+    };
+    const tagInputStyle = { border: "none", outline: "none", fontSize: "13px", flex: 1, minWidth: "80px", background: "transparent" };
 
     return (
         <div style={tagBoxStyle}>
             {tags.map((tag, index) => (
                 <span key={index} style={tagStyle}>
-          {tag}
-                    <button type="button" style={tagRemoveStyle} onClick={() => removeTag(index)}>
-            x
-          </button>
-        </span>
+                    {tag}
+                    <button type="button" style={tagRemoveStyle} onClick={() => removeTag(index)}>x</button>
+                </span>
             ))}
             <input
                 style={tagInputStyle}
@@ -229,25 +186,67 @@ const InlineTagInput = ({ tags, onChange }) => {
             />
         </div>
     );
-};
+});
 
-const TagDisplay = ({ value }) => {
-    // value уже нормализован через normalizeItem, но на всякий случай
-    const tags = Array.isArray(value) ? value : parseTransactionType(value);
+const ReadonlyCell = React.memo(({ value, fieldType }) => {
+    const formatValue = (val, type) => {
+        if (type === "checkbox") return val ? "Да" : "Нет";
+        if (val == null || val === "") return "-";
+        if (Array.isArray(val)) return val.join(", ") || "-";
+        if (type === "date") {
+            try {
+                const d = new Date(val);
+                if (isNaN(d.getTime())) return val;
+                return d.toLocaleDateString("ru-RU");
+            } catch { return val; }
+        }
+        return String(val);
+    };
 
-    if (!tags.length) return <span style={{ color: "#aaa" }}>-</span>;
+    if (fieldType === "tags") return <TagDisplay tags={Array.isArray(value) ? value : parseTransactionType(value)} />;
+    return <>{formatValue(value, fieldType)}</>;
+});
 
+const EditableCell = React.memo(({ field, value, onChange, onSave }) => {
+    const [localValue, setLocalValue] = useState(() => {
+        if (field.type === "date" && value) {
+            try { return new Date(value).toISOString().slice(0, 10); } catch { return value; }
+        }
+        return value ?? "";
+    });
+
+    useEffect(() => {
+        if (field.type === "date" && value) {
+            try { setLocalValue(new Date(value).toISOString().slice(0, 10)); } catch { setLocalValue(value); }
+        } else {
+            setLocalValue(value ?? "");
+        }
+    }, [value, field.type]);
+
+    const handleChange = (newVal) => {
+        setLocalValue(newVal);
+        onChange(newVal);
+    };
+
+    if (field.type === "checkbox") {
+        return <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} />;
+    }
+    if (field.type === "tags") {
+        return <InlineTagInput tags={Array.isArray(value) ? value : parseTransactionType(value)} onChange={onChange} />;
+    }
     return (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-            {tags.map((tag, index) => (
-                <span key={index} style={tagStyle}>
-          {tag}
-        </span>
-            ))}
-        </div>
+        <input
+            type={field.type}
+            step={field.step}
+            value={localValue}
+            style={{ width: "100%", minWidth: "80px", boxSizing: "border-box", padding: "4px 6px", border: "1px solid #ced4da", borderRadius: "4px", fontSize: "13px" }}
+            onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSave()}
+        />
     );
-};
+});
 
+// ------ Основной компонент ------
 const TableCashbackSettings = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -259,34 +258,35 @@ const TableCashbackSettings = () => {
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
+    const abortControllerRef = useRef(null);
 
     const fetchItems = useCallback(async () => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
         try {
             const token = localStorage.getItem("access_token");
             setLoading(true);
-
             const response = await fetch(`${backendURL}/cashback-settings`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                signal,
             });
-
             const data = await response.json();
+            let rawItems = [];
+            if (Array.isArray(data)) rawItems = data;
+            else if (data && Array.isArray(data.data)) rawItems = data.data;
+            else rawItems = [];
 
-            // normalizeItem применяется ко всем записям сразу при загрузке
-            if (Array.isArray(data)) {
-                setItems(data.map(normalizeItem));
-            } else if (data && Array.isArray(data.data)) {
-                setItems(data.data.map(normalizeItem));
-            } else {
-                console.error("Неправильный формат ответа:", data);
+            const normalized = rawItems.map(normalizeItem);
+            setItems(normalized);
+            setError(null);
+        } catch (e) {
+            if (e.name !== "AbortError") {
+                console.error("Ошибка загрузки:", e);
+                setError("Ошибка загрузки данных");
                 setItems([]);
             }
-        } catch (e) {
-            console.error("Ошибка загрузки:", e);
-            setError("Ошибка загрузки данных");
-            setItems([]);
         } finally {
             setLoading(false);
         }
@@ -294,13 +294,14 @@ const TableCashbackSettings = () => {
 
     useEffect(() => {
         fetchItems();
+        return () => abortControllerRef.current?.abort();
     }, [fetchItems]);
 
     const handleDoubleClick = useCallback((item) => {
         setEditId(item.ID);
         setEditedItem({
             ...item,
-            transaction_type: parseTransactionType(item.transaction_type),
+            transaction_type: Array.isArray(item.transaction_type) ? [...item.transaction_type] : parseTransactionType(item.transaction_type),
         });
     }, []);
 
@@ -322,228 +323,118 @@ const TableCashbackSettings = () => {
         reversal: parseInt(raw.reversal, 10) || 0,
         mcc: parseInt(raw.mcc, 10) || 0,
         cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
+        cashback_priority: parseInt(raw.cashback_priority, 10) || 0, // ← новое поле
         from_date: toDateOnly(raw.from_date),
         to_date: toDateOnly(raw.to_date),
-        // Отправляем только чистый string[] — никаких JSON.stringify
-        transaction_type: parseTransactionType(raw.transaction_type),
+        transaction_type: Array.isArray(raw.transaction_type) ? raw.transaction_type : parseTransactionType(raw.transaction_type),
     }), []);
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
+        if (!editId) return;
         try {
             const token = localStorage.getItem("access_token");
             const payload = buildPayload(editedItem);
             const response = await fetch(`${backendURL}/cashback-settings/${editId}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(payload),
             });
-
             if (!response.ok) throw new Error("Ошибка при обновлении");
-
-            setItems((prev) =>
-                prev.map((item) =>
-                    item.ID === editId ? normalizeItem({ ...payload, ID: editId }) : item,
-                ),
-            );
+            setItems(prev => prev.map(item => item.ID === editId ? normalizeItem({ ...payload, ID: editId }) : item));
             setEditId(null);
             setEditedItem({});
         } catch (e) {
             console.error("Ошибка при сохранении:", e);
         }
-    };
+    }, [editId, editedItem, backendURL, buildPayload]);
 
-    const handleDelete = async (id) => {
+    const handleDelete = useCallback(async (id) => {
         try {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${backendURL}/cashback-settings/${id}`, {
                 method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             });
-
             if (!response.ok) throw new Error("Ошибка при удалении");
-
-            setItems((prev) => prev.filter((item) => item.ID !== id));
+            setItems(prev => prev.filter(item => item.ID !== id));
         } catch (e) {
             console.error("Ошибка при удалении:", e);
         }
-    };
+    }, [backendURL]);
 
-    const handleAdd = async () => {
+    const handleAdd = useCallback(async () => {
         try {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${backendURL}/cashback-settings`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(buildPayload(newItem)),
             });
-
             if (!response.ok) throw new Error("Ошибка при добавлении");
-
             await fetchItems();
             setNewItem({ ...emptyForm });
             setShowAddModal(false);
         } catch (e) {
             console.error("Ошибка при добавлении:", e);
         }
-    };
+    }, [backendURL, buildPayload, newItem, fetchItems]);
 
-    const handleExport = () => {
-        const columns = fields.map(({ key, label }) => ({ key, label }));
-        exportToExcel(items, columns, "Настройки кэшбэка");
-    };
+    const handleExport = useCallback(() => {
+        const cols = fields.map(({ key, label }) => ({ key, label }));
+        exportToExcel(items, cols, "Настройки кэшбэка");
+    }, [items, exportToExcel]);
 
-    const formatValue = (value, fieldType) => {
-        if (fieldType === "checkbox") return value ? "Да" : "Нет";
-        if (fieldType === "tags") return null;
-        if (value === null || value === undefined || value === "") return "-";
-        if (Array.isArray(value)) return value.join(", ") || "-";
-        if (fieldType === "date") {
-            try {
-                const date = new Date(value);
-                if (Number.isNaN(date.getTime())) return value;
-                return date.toLocaleDateString("ru-RU");
-            } catch {
-                return value;
-            }
-        }
-        return String(value);
-    };
+    const columns = useMemo(() => {
+        const actionCol = {
+            title: "Действия",
+            key: "actions",
+            width: 150,
+            render: (_, item) => editId === item.ID ? (
+                <button onClick={handleSave} className="action-buttons__btn">Сохранить</button>
+            ) : (
+                <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">Удалить</button>
+            ),
+        };
 
-    const renderCell = useCallback(
-        (item, field) => {
-            const isEditing = editId === item.ID;
-
-            if (field.type === "tags") {
-                if (!isEditing) return <TagDisplay value={item[field.key]} />;
-
-                return (
-                    <InlineTagInput
-                        tags={
-                            Array.isArray(editedItem[field.key])
-                                ? editedItem[field.key]
-                                : parseTransactionType(editedItem[field.key])
-                        }
-                        onChange={(value) =>
-                            setEditedItem({ ...editedItem, [field.key]: value })
-                        }
-                    />
-                );
-            }
-
-            if (!isEditing) return formatValue(item[field.key], field.type);
-
-            let inputVal = editedItem[field.key] ?? "";
-            if (field.type === "date" && inputVal) {
-                try {
-                    inputVal = new Date(inputVal).toISOString().slice(0, 10);
-                } catch {
-                    inputVal = editedItem[field.key] ?? "";
+        const dataCols = fields.map((field) => ({
+            title: field.label,
+            dataIndex: field.key,
+            key: field.key,
+            render: (_, item) => {
+                const isEditing = editId === item.ID;
+                if (isEditing) {
+                    return (
+                        <EditableCell
+                            field={field}
+                            value={editedItem[field.key]}
+                            onChange={(val) => setEditedItem(prev => ({ ...prev, [field.key]: val }))}
+                            onSave={handleSave}
+                        />
+                    );
                 }
-            }
-
-            if (field.type === "checkbox") {
                 return (
-                    <input
-                        type="checkbox"
-                        checked={!!editedItem[field.key]}
-                        onChange={(e) =>
-                            setEditedItem({ ...editedItem, [field.key]: e.target.checked })
-                        }
-                    />
-                );
-            }
-
-            return (
-                <input
-                    type={field.type}
-                    step={field.step}
-                    value={inputVal}
-                    style={{
-                        width: "100%",
-                        minWidth: "80px",
-                        boxSizing: "border-box",
-                        padding: "4px 6px",
-                        border: "1px solid #ced4da",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                    }}
-                    onChange={(e) =>
-                        setEditedItem({ ...editedItem, [field.key]: e.target.value })
-                    }
-                    onKeyDown={(e) => e.key === "Enter" && handleSave()}
-                />
-            );
-        },
-        [editId, editedItem, handleSave],
-    );
-
-    const columns = useMemo(
-        () => [
-            ...fields.map((field) => ({
-                title: field.label,
-                dataIndex: field.key,
-                key: field.key,
-                render: (_, item) => (
                     <div onDoubleClick={() => handleDoubleClick(item)}>
-                        {renderCell(item, field)}
+                        <ReadonlyCell value={item[field.key]} fieldType={field.type} />
                     </div>
-                ),
-            })),
-            {
-                title: "Действия",
-                key: "actions",
-                sortable: false,
-                width: 150,
-                render: (_, item) =>
-                    editId === item.ID ? (
-                        <button onClick={handleSave} className="action-buttons__btn">
-                            Сохранить
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => handleDelete(item.ID)}
-                            className="action-buttons__btn"
-                        >
-                            Удалить
-                        </button>
-                    ),
+                );
             },
-        ],
-        [editId, handleDelete, handleDoubleClick, handleSave, renderCell],
-    );
+        }));
+        return [...dataCols, actionCol];
+    }, [editId, editedItem, handleSave, handleDelete, handleDoubleClick]);
 
     return (
         <div className="block_info_prems content-page">
             <div className="table-header-actions" style={{ margin: "16px" }}>
                 <h2>Настройки кэшбэка</h2>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    <button
-                        className="action-buttons__btn"
-                        onClick={() => setShowAddModal(true)}
-                    >
-                        + Добавить настройку
-                    </button>
-                    <button className="export-excel-btn" onClick={handleExport}>
-                        Экспорт в Excel
-                    </button>
+                    <button className="action-buttons__btn" onClick={() => setShowAddModal(true)}>+ Добавить настройку</button>
+                    <button className="export-excel-btn" onClick={handleExport}>Экспорт в Excel</button>
                 </div>
             </div>
 
             <AddCashbackModal
                 isOpen={showAddModal}
-                onClose={() => {
-                    setShowAddModal(false);
-                    setNewItem({ ...emptyForm });
-                }}
+                onClose={() => { setShowAddModal(false); setNewItem({ ...emptyForm }); }}
                 newItem={newItem}
                 setNewItem={setNewItem}
                 onSave={handleAdd}
@@ -557,10 +448,7 @@ const TableCashbackSettings = () => {
                     columns={columns}
                     dataSource={items}
                     rowKey={(record) => record?.ID ?? record?.id}
-                    loading={{
-                        spinning: loading,
-                        indicator: <Spinner size="small" />,
-                    }}
+                    loading={{ spinning: loading, indicator: <Spinner size="small" /> }}
                     pagination={false}
                     bordered
                     scroll={{ x: "max-content" }}
