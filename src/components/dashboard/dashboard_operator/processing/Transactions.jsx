@@ -538,12 +538,8 @@ export default function DashboardOperatorProcessingTransactions() {
               : row.conCurrency === 978
                 ? exchangeRates.EUR
                 : 1;
-          const amountTJS = Math.round((row.conamt || 0) * rate);
-          return formatAmount(
-            amountTJS,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
-          );
+          const amountTJS = Math.abs(Math.round((row.conamt || 0) * rate));
+          return formatAmount(amountTJS);
         },
         label: "Сумма в нац. валюте (TJS)",
       },
@@ -1337,14 +1333,12 @@ export default function DashboardOperatorProcessingTransactions() {
                                         : transaction.conCurrency === 978
                                           ? exchangeRates.EUR
                                           : 1;
-                                    const amountTJS = Math.round(
-                                      (transaction.conamt || 0) * rate,
+                                    const amountTJS = Math.abs(
+                                      Math.round(
+                                        (transaction.conamt || 0) * rate,
+                                      ),
                                     );
-                                    return formatAmount(
-                                      amountTJS,
-                                      transactionTypeValue ||
-                                        transaction.transactionTypeNumber,
-                                    );
+                                    return formatAmount(amountTJS);
                                   })()}
                                 </span>
                               </td>
