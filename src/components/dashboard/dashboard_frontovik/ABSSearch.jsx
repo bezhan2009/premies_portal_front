@@ -878,7 +878,7 @@ export default function ABSClientSearch() {
         onClose={handleCloseGraphModal}
         referenceId={selectedReferenceId}
         graphData={graphData}
-        isLoading={isGraphLoading}
+        isLoading={isGraphLoading}  
       />
 
       {/* Модальное окно для досрочного погашения */}
