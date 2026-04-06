@@ -8,7 +8,8 @@ import Spinner from "../../components/Spinner.jsx";
 import "../../styles/components/StatsEQMS.scss";
 import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
-const ACCOUNT_NUMBER = "26202972381810638175";
+// Счёт, по которому загружается выписка (остаётся для GET-запроса)
+const STATEMENT_ACCOUNT_NUMBER = "26202972381810638175";
 
 const formatDateForQuery = (dateStr) => {
     if (!dateStr) return "";
@@ -47,6 +48,8 @@ export default function AbsWithdrawsList() {
         setTimeout(() => setAlert(null), 3500);
     };
 
+    // Формируем плоский список транзакций, добавляя поля из родительского дня
+    // и ОБЯЗАТЕЛЬНО account (номер счёта, который нужен для оплаты)
     const flatRows = useMemo(
         () =>
             statementData.flatMap((day) =>
@@ -57,6 +60,7 @@ export default function AbsWithdrawsList() {
                     sumBalOut: day.SumBalOut,
                     sumMovD: day.SumMovD,
                     sumMovC: day.SumMovC,
+                    account: day.Account,          // ← ключевое поле для payer_iban
                     _key: `${day.DOPER}__${tx.NUMDOC}__${tx.REFER}`,
                 })),
             ),
@@ -72,7 +76,7 @@ export default function AbsWithdrawsList() {
             try {
                 const sd = formatDateForQuery(startDate);
                 const ed = formatDateForQuery(endDate);
-                const url = `${backendABS}/abs-withdraw/operations?start_date=${sd}&end_date=${ed}&accountNumber=${ACCOUNT_NUMBER}`;
+                const url = `${backendABS}/abs-withdraw/operations?start_date=${sd}&end_date=${ed}&accountNumber=${STATEMENT_ACCOUNT_NUMBER}`;
                 const resp = await fetch(url, {
                     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
                 });
@@ -96,11 +100,12 @@ export default function AbsWithdrawsList() {
         [backendABS, token, startDate, endDate],
     );
 
+    // Исправлен silentRefresh: параметры теперь start_date / end_date (как в handleFetch)
     const silentRefresh = async () => {
         try {
             const sd = formatDateForQuery(startDate);
             const ed = formatDateForQuery(endDate);
-            const url = `${backendABS}/abs-withdraw/operations?startDate=${sd}&endDate=${ed}&accountNumber=${ACCOUNT_NUMBER}`;
+            const url = `${backendABS}/abs-withdraw/operations?start_date=${sd}&end_date=${ed}&accountNumber=${STATEMENT_ACCOUNT_NUMBER}`;
             const resp = await fetch(url, {
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined,
             });
@@ -108,7 +113,7 @@ export default function AbsWithdrawsList() {
             const json = await resp.json();
             setStatementData(json || []);
         } catch (_) {
-            // silent refresh
+            // silent refresh – подавляем ошибки
         }
     };
 
@@ -149,7 +154,13 @@ export default function AbsWithdrawsList() {
     const totalPaid = useMemo(() => flatRows.filter((row) => row.IsPayed).length, [flatRows]);
     const totalUnpaid = useMemo(() => flatRows.filter((row) => !row.IsPayed).length, [flatRows]);
 
+    // Функция оплаты одной транзакции – использует account из строки
     const payOne = async (row) => {
+        // Защита: если account отсутствует – ошибка
+        if (!row.account) {
+            throw new Error("Не найден номер счёта (account) для этой транзакции");
+        }
+
         const params = new URLSearchParams({
             date: row.doper || "",
             execdt: row.EXECDT || "",
@@ -163,7 +174,7 @@ export default function AbsWithdrawsList() {
                 "Content-Type": "application/json",
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ payer_iban: ACCOUNT_NUMBER }),
+            body: JSON.stringify({ payer_iban: row.account }), // ← ИСПРАВЛЕНО: берём account из транзакции
         });
         const json = await resp.json().catch(() => ({}));
         if (!resp.ok) throw new Error(json.error || `Ошибка сервера: ${resp.status}`);
@@ -179,7 +190,7 @@ export default function AbsWithdrawsList() {
         setSingleTarget(row);
         setShowSingleConfirm(true);
     };
-
+    
     const performSinglePayment = async () => {
         if (!singleTarget) return;
         setShowSingleConfirm(false);
@@ -512,7 +523,7 @@ export default function AbsWithdrawsList() {
                 )}
             </div>
 
-            {/* Стили для кнопки оплаты */}
+
             <style>{`
         .pay-button {
           padding: 8px 12px;

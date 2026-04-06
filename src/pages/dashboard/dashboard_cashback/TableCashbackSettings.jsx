@@ -38,6 +38,7 @@ const emptyForm = {
     full_name_withdraw: "",
     cashback_percentage: "",
     cashback_name: "",
+    cashback_priority: "",
     is_active: true,
 };
 
@@ -71,6 +72,7 @@ const fields = [
     { key: "full_name_withdraw", label: "ФИО вывода", type: "text" },
     { key: "cashback_percentage", label: "% кэшбэка", type: "number", step: "0.01" },
     { key: "cashback_name", label: "Название кэшбэка", type: "text" },
+    { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" }, // ← новая колонка
     { key: "is_active", label: "Активен", type: "checkbox" },
 ];
 
@@ -81,21 +83,18 @@ const parseTransactionType = (value) => {
 
     let str = String(value).trim();
 
-    // однократная попытка распарсить JSON
     try {
         const parsed = JSON.parse(str);
         if (Array.isArray(parsed)) return parsed.flatMap(v => parseTransactionType(v));
         if (typeof parsed === "string") str = parsed.trim();
-    } catch {}
+    } catch { }
 
-    // PostgreSQL массив {a,b,c}
     if (str.startsWith("{") && str.endsWith("}")) {
         const inner = str.slice(1, -1).trim();
         if (!inner) return [];
-        return inner.split(",").map(v => v.trim().replace(/^["'\\]+|["'\\]+$/g, "")).filter(Boolean);
+        return inner.split(",").map(v => v.trim().replace(/^['"\\]+|['"\\]+$/g, "")).filter(Boolean);
     }
 
-    // Обычная строка через запятую
     return str.split(",").map(v => v.trim()).filter(Boolean);
 };
 
@@ -279,7 +278,6 @@ const TableCashbackSettings = () => {
             else if (data && Array.isArray(data.data)) rawItems = data.data;
             else rawItems = [];
 
-            // Нормализуем один раз
             const normalized = rawItems.map(normalizeItem);
             setItems(normalized);
             setError(null);
@@ -292,6 +290,7 @@ const TableCashbackSettings = () => {
         } finally {
             setLoading(false);
         }
+
     }, [backendURL]);
 
     useEffect(() => {
@@ -325,6 +324,7 @@ const TableCashbackSettings = () => {
         reversal: parseInt(raw.reversal, 10) || 0,
         mcc: parseInt(raw.mcc, 10) || 0,
         cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
+        cashback_priority: parseInt(raw.cashback_priority, 10) || 0, // ← новое поле
         from_date: toDateOnly(raw.from_date),
         to_date: toDateOnly(raw.to_date),
         transaction_type: Array.isArray(raw.transaction_type) ? raw.transaction_type : parseTransactionType(raw.transaction_type),
@@ -385,7 +385,6 @@ const TableCashbackSettings = () => {
         exportToExcel(items, cols, "Настройки кэшбэка");
     }, [items, exportToExcel]);
 
-    // Мемоизированные колонки
     const columns = useMemo(() => {
         const actionCol = {
             title: "Действия",

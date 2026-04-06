@@ -282,22 +282,9 @@ export default function DashboardOperatorProcessingTransactions() {
       { key: "account", label: "Счет" },
       {
         key: (row) => {
-<<<<<<< HEAD
-          const rate =
-            row.conCurrency === 840
-              ? exchangeRates.USD
-              : row.conCurrency === 978
-                ? exchangeRates.EUR
-                : 1;
-          const amountTJS = Math.abs(Math.round((row.conamt || 0) * rate));
-          return formatAmount(amountTJS);
-        },
-        label: "Сумма в нац. валюте (TJS)",
-=======
           const rate = row.conCurrency === 840 ? exchangeRates.USD : row.conCurrency === 978 ? exchangeRates.EUR : 1;
           return formatAmount(Math.round((row.conamt || 0) * rate), getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber);
         }, label: "Сумма в нац. валюте (TJS)"
->>>>>>> 6cf13128bf6360bf002e6607cdf37eb06c7d02fc
       },
       { key: "id", label: "ID транзакции" },
     ];
@@ -630,7 +617,6 @@ export default function DashboardOperatorProcessingTransactions() {
                     {needsDateBlock && fromDate && toDate && <span className="date-range">({fromDate} — {toDate})</span>}
                   </h2>
                   <div className="table-header-actions">
-<<<<<<< HEAD
                     <button onClick={handleExport} className="export-excel-btn">
                       Экспорт в Excel
                     </button>
@@ -957,39 +943,8 @@ export default function DashboardOperatorProcessingTransactions() {
                         }
                       </span>
                     </div>
-=======
-                    <button onClick={handleExport} className="export-excel-btn">Экспорт в Excel</button>
->>>>>>> 6cf13128bf6360bf002e6607cdf37eb06c7d02fc
                   </div>
                 </div>
-                <Table
-                  dataSource={transactions}
-                  rowKey="id"
-                  pagination={{ pageSize: 15 }}
-                  bordered
-                  scroll={{ x: "max-content" }}
-                >
-                  <Table.Column title="Дата и время" key="dateTime" render={(_, row) => `${row.localTransactionDate || "N/A"} ${row.localTransactionTime || "N/A"}`} sortable />
-                  <Table.Column title="Статус" key="status" render={(_, row) => getStatusBadge(row.responseCode, row.reversal, row.responseDescription)} />
-                  <Table.Column title="Номер карты" key="cardNumber" render={(_, row) => row.cardNumber ? formatCardNumber(row.cardNumber) : "N/A"} sortable />
-                  <Table.Column title="ID карты" dataIndex="cardId" key="cardId" sortable />
-                  <Table.Column title="Тип операции" dataIndex="transactionTypeName" key="transactionTypeName" sortable />
-                  <Table.Column title="Сумма (валюта)" key="amount" render={(_, row) => `${formatAmount(row.amount, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.currency)}`} sortable />
-                  <Table.Column title="Сумма в валюте карты" key="conamt" render={(_, row) => `${formatAmount(row.conamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} ${getCurrencyCode(row.conCurrency)}`} sortable />
-                  <Table.Column title="Доступный баланс" key="acctbal" render={(_, row) => formatAmount(row.acctbal)} sortable />
-                  <Table.Column title="UTRNNO" dataIndex="utrnno" key="utrnno" sortable />
-                  <Table.Column title="ID терминала" dataIndex="terminalId" key="terminalId" sortable />
-                  <Table.Column title="ID АТМ" dataIndex="atmId" key="atmId" sortable />
-                  <Table.Column title="Запрошенная сумма" key="reqamt" render={(_, row) => formatAmount(row.reqamt, getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber)} sortable />
-                  <Table.Column title="Адрес терминала" dataIndex="terminalAddress" key="terminalAddress" />
-                  <Table.Column title="MCC" dataIndex="mcc" key="mcc" />
-                  <Table.Column title="Счет" dataIndex="account" key="account" />
-                  <Table.Column title="ID транзакции" dataIndex="id" key="id" />
-                  <Table.Column title="Сумма (TJS)" key="amountTjs" render={(_, row) => {
-                    const rate = row.conCurrency === 840 ? exchangeRates.USD : row.conCurrency === 978 ? exchangeRates.EUR : 1;
-                    return formatAmount(Math.round((row.conamt || 0) * rate), getTransactionTypeValue(row.transactionType) || row.transactionTypeNumber);
-                  }} />
-                </Table>
               </div>
             </div>
           )}

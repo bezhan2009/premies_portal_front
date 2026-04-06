@@ -30,6 +30,7 @@ const fields = [
     { key: "full_name_withdraw", label: "ФИО вывода", type: "text" },
     { key: "cashback_percentage", label: "% кэшбэка", type: "number", step: "0.01" },
     { key: "cashback_name", label: "Название кэшбэка", type: "text" },
+    { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" }, // ← новая колонка
 ];
 
 // ── TagInput ──────────────────────────────────────────────────────────────────
