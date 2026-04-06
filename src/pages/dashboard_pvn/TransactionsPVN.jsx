@@ -48,7 +48,10 @@ export default function PVNTransactionsList() {
     };
 
     const isPaidTransaction = (row) => {
-        return row.transaction_card_payed?.isPayed === true;
+        // Поле может быть is_payed или isPayed (на всякий случай проверяем оба варианта)
+        const payedObj = row.transaction_card_payed;
+        if (!payedObj) return false;
+        return payedObj.is_payed === true || payedObj.isPayed === true;
     };
 
     const formatAmount = (value) => {
