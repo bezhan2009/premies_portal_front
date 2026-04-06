@@ -35,22 +35,22 @@ export default function Input({
         />
       ) : (
         <input
+          {...rest}
           id={id}
           type={type}
           placeholder={placeholder}
           value={value ?? ""}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange?.(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
               onEnter?.(value);
             }
           }}
-          {...rest}
         />
       )}
-      {error && <p className={error?.[id] && "error-input"}>{error?.[id]}</p>}
+      {error && <p className={error?.[id] ? "error-input" : ""}>{error?.[id]}</p>}
     </label>
   );
 }

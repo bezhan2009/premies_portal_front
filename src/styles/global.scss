@@ -31,7 +31,8 @@ body {
   border-radius: 50px;
   margin: 0 0 30px 0;
   position: relative;
-  > span {
+
+  >span {
     background-color: #c31414;
     position: absolute;
     border-radius: 50px;
@@ -40,13 +41,16 @@ body {
     z-index: 1;
     transition: all 0.3s linear;
   }
-  > .activeL {
+
+  >.activeL {
     left: 0;
   }
-  > .activeR {
+
+  >.activeR {
     left: calc(100% - 250px);
   }
-  > button {
+
+  >button {
     height: 45px;
     width: 250px;
     border: none;
@@ -58,7 +62,8 @@ body {
     z-index: 2;
     background-color: transparent;
   }
-  > button.active {
+
+  >button.active {
     color: white;
   }
 }
@@ -100,6 +105,7 @@ textarea:focus {
   border-radius: 20px;
   // padding: 24px;
 }
+
 /* Для кнопок в вашем EQMS */
 .pay-button:focus {
   box-shadow: 0 0 0 3px rgba(175, 76, 76, 0.4);
@@ -111,7 +117,8 @@ textarea:focus {
   display: flex;
   justify-content: center;
   align-items: center;
-  > span {
+
+  >span {
     // display: block;
     width: 15px;
     height: 15px;
@@ -171,13 +178,16 @@ textarea:focus {
   position: sticky;
   right: 0;
   background-color: #fff !important;
-  > svg {
+
+  >svg {
     border: 1px solid transparent;
+
     &:hover {
       border: 1px solid #999;
     }
   }
 }
+
 /* Стили для всех скроллбаров (Firefox) */
 * {
   scrollbar-width: thin;
@@ -219,7 +229,8 @@ table {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.4s ease-out;
-  > thead {
+
+  >thead {
     position: sticky;
     top: 0;
     background-color: white;
@@ -227,6 +238,7 @@ table {
     z-index: 2;
   }
 }
+
 /* Заголовки столбцов */
 th {
   background-color: #fff;
@@ -274,6 +286,7 @@ td:not(:last-child) {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -285,6 +298,7 @@ td:not(:last-child) {
     opacity: 0;
     transform: translateX(10px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -295,45 +309,59 @@ td:not(:last-child) {
 tr:nth-child(1) {
   animation-delay: 0.1s;
 }
+
 tr:nth-child(2) {
   animation-delay: 0.2s;
 }
+
 tr:nth-child(3) {
   animation-delay: 0.3s;
 }
+
 tr:nth-child(4) {
   animation-delay: 0.4s;
 }
+
 tr:nth-child(5) {
   animation-delay: 0.5s;
 }
+
 tr:nth-child(6) {
   animation-delay: 0.6s;
 }
+
 tr:nth-child(7) {
   animation-delay: 0.7s;
 }
+
 tr:nth-child(8) {
   animation-delay: 0.8s;
 }
+
 tr:nth-child(9) {
   animation-delay: 0.9s;
 }
+
 tr:nth-child(10) {
   animation-delay: 1s;
 }
+
 tr:nth-child(11) {
   animation-delay: 1.1s;
 }
+
 tr:nth-child(12) {
   animation-delay: 1.2s;
 }
+
 tr:nth-child(13) {
   animation-delay: 1.3s;
 }
+
 tr:nth-child(14) {
   animation-delay: 1.4s;
 }
+
 /* ... и так далее по необходимости */
 
 //.modal {
@@ -392,16 +420,19 @@ tr:nth-child(14) {
     animation: fadeIn 0.5s ease-out;
   }
 }
+
 .file:nth-child(7) {
   img {
     max-width: 200px;
   }
 }
+
 .file:nth-child(5) {
   img {
     max-width: 200px;
   }
 }
+
 .input {
   max-height: 100%;
   position: relative;
@@ -415,9 +446,11 @@ tr:nth-child(14) {
     margin: 0;
     display: none;
   }
+
   .error-input {
     display: flex;
   }
+
   input {
     width: 95%;
     height: 35px;
@@ -447,16 +480,20 @@ tr:nth-child(14) {
     }
   }
 
-  > span {
+  >span {
     width: auto;
-    position: absolute;
+    /* position: absolute; ← удали или замени на relative */
     height: 31px;
-    padding: 10px 10px;
-    background-color: #f1f1f1;
+    padding: 0;
+    /* убери лишний padding */
+    background-color: transparent;
+    /* фон не нужен для лейбла */
     border-radius: 12px;
     border: none;
     display: flex;
     align-items: center;
+    font-size: 13px;
+    color: #555;
     animation: fadeIn 0.5s ease-out;
   }
 }
@@ -493,6 +530,7 @@ tr:nth-child(14) {
   padding: 0px 0px 0 10px;
   animation: fadeIn 0.4s ease-out;
   height: 55px;
+
   h1 {
     color: #000 !important;
   }
@@ -632,7 +670,7 @@ tr:nth-child(14) {
       align-items: center;
       gap: 10px;
 
-      & > div {
+      &>div {
         max-width: 15px !important;
         min-width: 15px;
         max-height: 15px !important;
@@ -691,6 +729,7 @@ tr:nth-child(14) {
         border: none;
         color: #000;
         animation: fadeIn 0.6s ease-out;
+
         &:focus {
           outline: #e21a1c solid 2px;
           background-color: #00000092;
@@ -734,7 +773,8 @@ tr:nth-child(14) {
       gap: 20px;
       padding: 20px;
       animation: fadeIn 0.5s ease-out;
-      & > div {
+
+      &>div {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -743,6 +783,7 @@ tr:nth-child(14) {
         animation: fadeIn 0.6s ease-out;
       }
     }
+
     .content-form-credit {
       margin-top: 20px;
       display: grid;
@@ -752,6 +793,7 @@ tr:nth-child(14) {
       justify-content: space-between;
       animation: fadeIn 0.6s ease-out;
     }
+
     .content-form {
       margin-top: 20px;
       display: grid;
@@ -762,7 +804,7 @@ tr:nth-child(14) {
       justify-content: space-between;
       animation: fadeIn 0.6s ease-out;
 
-      > * {
+      >* {
         grid-area: auto !important;
         grid-column: auto !important;
         min-width: 0;
@@ -819,7 +861,7 @@ tr:nth-child(14) {
   // height: 100vh;
   animation: fadeIn 0.3s ease-out;
 
-  > main {
+  >main {
     height: calc(100% - 40px) !important;
     width: 98%;
     background-color: #fff;
@@ -856,6 +898,7 @@ tr:nth-child(14) {
       gap: 15px;
       margin-top: 20px;
       animation: fadeIn 0.6s ease-out;
+
       .input {
         display: flex;
         align-items: center;
@@ -872,9 +915,11 @@ tr:nth-child(14) {
     }
   }
 }
+
 .ant-picker {
   margin: 0;
 }
+
 .recharts-curve {
   background-color: transparent;
 }
@@ -884,7 +929,7 @@ tr:nth-child(14) {
   // height: calc(100vh - 130px);
   animation: fadeIn 0.3s ease-out;
 
-  > main {
+  >main {
     // height: 1103px;
     width: 98%;
     background-color: #fff;
@@ -931,7 +976,7 @@ tr:nth-child(14) {
         background-color: green;
       }
 
-      & > div {
+      &>div {
         display: flex;
         gap: 10px;
         position: relative;
@@ -993,10 +1038,12 @@ tr:nth-child(14) {
       margin-top: 20px;
       animation: fadeIn 0.6s ease-out;
       height: 35px;
-      > div {
+
+      >div {
         display: flex;
         gap: 15px;
         align-items: center;
+
         .input {
           display: flex;
           align-items: center;
@@ -1037,7 +1084,7 @@ body {
 }
 
 .modal {
-  > main {
+  >main {
     width: 95vw;
     height: 90vh;
     overflow: auto;
@@ -1058,7 +1105,7 @@ body {
   // margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
-  > main {
+  >main {
     height: auto;
     // max-height: 90vh;
     overflow: hidden;
@@ -1072,7 +1119,7 @@ body {
       grid-auto-rows: minmax(60px, auto);
       animation: fadeIn 0.5s ease-out;
 
-      > div {
+      >div {
         grid-area: auto !important;
       }
     }
@@ -1177,6 +1224,7 @@ body {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -1296,10 +1344,12 @@ body {
     transform: scale(1);
     box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
   }
+
   50% {
     transform: scale(1.02);
     box-shadow: 0 0 12px rgba(175, 76, 76, 0.5);
   }
+
   100% {
     transform: scale(1);
     box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
@@ -1311,6 +1361,7 @@ body {
     opacity: 0;
     transform: translateY(30px) scale(0.85) rotate(-3deg);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1) rotate(0deg);
@@ -1321,6 +1372,7 @@ body {
   from {
     left: 100%;
   }
+
   to {
     left: 0;
   }
@@ -1348,7 +1400,8 @@ option {
   font-family: "Arial", sans-serif;
   font-size: 16px;
   color: #ffffff;
-  background-color: #ff1a1a; /* Зеленый фон */
+  background-color: #ff1a1a;
+  /* Зеленый фон */
   padding: 10px;
   border-radius: 8px;
   transition:
@@ -1381,32 +1434,38 @@ button:active {
   transform: scale(0.9);
   transition: 0.3s;
 }
+
 .btn-test-nav {
   // margin-top: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  > .btn {
+
+  >.btn {
     cursor: no-drop;
     padding: 12px 18px;
     font-size: 18px;
   }
 }
+
 .active-btn {
   background-color: #e21a1c;
   color: white;
   cursor: pointer !important;
+
   &:hover {
     background-color: #e9585a;
   }
 }
+
 .header-worker-questions {
   padding: 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  > h1 {
+
+  >h1 {
     background-color: #e21a1c;
     color: white;
     padding: 4px 15px;
@@ -1414,6 +1473,7 @@ button:active {
     border-radius: 6px;
   }
 }
+
 .worker-question-wrapper {
   display: flex;
   gap: 2%;
@@ -1423,7 +1483,8 @@ button:active {
   height: auto;
   flex: 1;
   transition: all 0.7s ease-in-out;
-  > nav {
+
+  >nav {
     padding: 0 2%;
     min-width: 96%;
   }
@@ -1456,6 +1517,7 @@ button:active {
     opacity: 0;
     transform: translateY(50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1467,6 +1529,7 @@ button:active {
     opacity: 0;
     transform: translateY(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1512,6 +1575,7 @@ button:active {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1522,6 +1586,7 @@ button:active {
     transform: scale(0.9);
     opacity: 0.6;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -1534,6 +1599,7 @@ button:active {
   font-weight: 500;
   margin: 0;
 }
+
 .selection-stats-card {
   margin-left: 24px;
   background: #ffffff;
@@ -1682,6 +1748,7 @@ button:active {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -1909,6 +1976,7 @@ button:active {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -2005,7 +2073,8 @@ button:active {
   user-select: none;
   position: relative !important;
   transition: background-color 0.2s;
-  padding-right: 25px !important; /* Ensure space for the icon */
+  padding-right: 25px !important;
+  /* Ensure space for the icon */
 
   &:hover {
     background-color: rgba(144, 144, 144, 0.1) !important;
@@ -2056,7 +2125,8 @@ input[type="datetime-local"] {
   color: #374151;
   outline: none;
   transition: all 0.3s ease;
-  min-height: 40px; /* Ensure touch target size */
+  min-height: 40px;
+  /* Ensure touch target size */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
   /* Placeholder color fix if needed */
@@ -2072,8 +2142,10 @@ input[type="datetime-local"] {
   &:focus {
     border-color: #e21a1c;
     box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.2);
-    background-color: #fff !important; /* Override .input input behavior if necessary */
-    color: #374151 !important; /* Override .input input behavior */
+    background-color: #fff !important;
+    /* Override .input input behavior if necessary */
+    color: #374151 !important;
+    /* Override .input input behavior */
   }
 
   /* Customizing the calendar picker indicator */
@@ -2086,7 +2158,8 @@ input[type="datetime-local"] {
       background-color 0.2s,
       transform 0.2s;
     /* Optional: Filter to colorize the default icon if desired */
-    /* filter: invert(24%) sepia(93%) saturate(1756%) hue-rotate(346deg) brightness(88%) contrast(96%); */ /* Red color filter example */
+    /* filter: invert(24%) sepia(93%) saturate(1756%) hue-rotate(346deg) brightness(88%) contrast(96%); */
+    /* Red color filter example */
   }
 
   &::-webkit-calendar-picker-indicator:hover {
@@ -2098,8 +2171,10 @@ input[type="datetime-local"] {
 /* Ensure overrides for .input wrapper specific styles if they conflict */
 .input input[type="date"],
 .input input[type="datetime-local"] {
-  background-color: #fff; /* Reset from gray */
-  height: 40px; /* Match min-height */
+  background-color: #fff;
+  /* Reset from gray */
+  height: 40px;
+  /* Match min-height */
 
   &:focus {
     background-color: #fff;
@@ -2183,10 +2258,12 @@ input[type="checkbox"]:checked::after {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4);
   }
+
   50% {
     transform: scale(1.1);
     box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
   }
+
   100% {
     transform: scale(1);
   }
