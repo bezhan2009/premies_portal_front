@@ -36,12 +36,12 @@ const ClientDataTabs = ({
 
   return (
     <>
-      {/* РљР°СЂС‚С‹ */}
+      {/* Карты */}
       {cardsData?.length > 0 && (
         <div className="processing-integration__limits-table">
           <div className="limits-table">
             <div className="limits-table__header">
-              <h2 className="limits-table__title">Р”Р°РЅРЅС‹Рµ РєР°СЂС‚</h2>
+              <h2 className="limits-table__title">Данные карт</h2>
               <div className="limits-table__actions">
                 <button
                   onClick={() =>
@@ -51,13 +51,13 @@ const ClientDataTabs = ({
                   style={{ marginRight: 10, background: "#2ecc71" }}
                   disabled={!hasTransactionsAccess}
                 >
-                  РџРѕСЃРјРѕС‚СЂРµС‚СЊ РёСЃС‚РѕСЂРёСЋ
+                  Посмотреть историю
                 </button>
                 <button
                   onClick={handleExportCards}
                   className="export-excel-btn"
                 >
-                  Р­РєСЃРїРѕСЂС‚ РІ Excel
+                  Экспорт в Excel
                 </button>
               </div>
             </div>
@@ -70,21 +70,21 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCards("cardId")}
                       className="limits-table__ th sortable-header"
                     >
-                      ID РљР°СЂС‚С‹{" "}
+                      ID Карты{" "}
                       <SortIcon sortConfig={sortCardsConfig} sortKey="cardId" />
                     </th>
                     <th
                       onClick={() => requestSortCards("type")}
                       className="limits-table__th sortable-header"
                     >
-                      РўРёРї{" "}
+                      Тип{" "}
                       <SortIcon sortConfig={sortCardsConfig} sortKey="type" />
                     </th>
                     <th
                       onClick={() => requestSortCards("statusName")}
                       className="limits-table__th sortable-header"
                     >
-                      РЎС‚Р°С‚СѓСЃ{" "}
+                      Статус{" "}
                       <SortIcon
                         sortConfig={sortCardsConfig}
                         sortKey="statusName"
@@ -94,7 +94,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCards("expirationDate")}
                       className="limits-table__th sortable-header"
                     >
-                      РЎСЂРѕРє{" "}
+                      Срок{" "}
                       <SortIcon
                         sortConfig={sortCardsConfig}
                         sortKey="expirationDate"
@@ -104,7 +104,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCards("currency")}
                       className="limits-table__th sortable-header"
                     >
-                      Р’Р°Р»СЋС‚Р°{" "}
+                      Валюта{" "}
                       <SortIcon
                         sortConfig={sortCardsConfig}
                         sortKey="currency"
@@ -114,13 +114,13 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCards("accounts.0.state")}
                       className="limits-table__th sortable-header"
                     >
-                      РћСЃС‚Р°С‚РѕРє{" "}
+                      Остаток{" "}
                       <SortIcon
                         sortConfig={sortCardsConfig}
                         sortKey="accounts.0.state"
                       />
                     </th>
-                    <th className="limits-table__th">Р”РµР№СЃС‚РІРёСЏ</th>
+                    <th className="limits-table__th">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="limits-table__body">
@@ -145,22 +145,22 @@ const ClientDataTabs = ({
                           }
                           title={
                             !hasTransactionsAccess
-                              ? "РЈ РІР°СЃ РЅРµС‚ РґРѕСЃС‚СѓРїР°"
-                              : "РџСЂРѕСЃРјРѕС‚СЂ РёСЃС‚РѕСЂРёРё С‚СЂР°РЅР·Р°РєС†РёР№"
+                              ? "У вас нет доступа"
+                              : "Просмотр истории транзакций"
                           }
                         >
-                          РСЃС‚РѕСЂРёСЏ
+                          История
                         </button>
                         <button
                           className="selectAll-toggle"
                           style={{ background: "#374151" }}
                           onClick={() =>
-                            (window.location.href =
-                              "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                              card.cardId)
+                          (window.location.href =
+                            "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                            card.cardId)
                           }
                         >
-                          РџРѕСЃРјРѕС‚СЂРµС‚СЊ С‚Р°СЂРёС„
+                          Посмотреть тариф
                         </button>
                       </td>
                     </tr>
@@ -172,12 +172,12 @@ const ClientDataTabs = ({
         </div>
       )}
 
-      {/* РЎС‡РµС‚Р° */}
+      {/* Счета */}
       {accountsData?.length > 0 && (
         <div className="processing-integration__limits-table">
           <div className="limits-table">
             <div className="limits-table__header">
-              <h2 className="limits-table__title">Р”Р°РЅРЅС‹Рµ СЃС‡РµС‚РѕРІ</h2>
+              <h2 className="limits-table__title">Данные счетов</h2>
               <div className="limits-table__actions">
                 <button
                   onClick={handleExportAccounts}
@@ -226,7 +226,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortAccounts("DateOpened")}
                       className="limits-table__th sortable-header"
                     >
-                      Р”Р°С‚Р° РѕС‚РєСЂС‹С‚РёСЏ{" "}
+                      Дата открытия{" "}
                       <SortIcon
                         sortConfig={sortAccountsConfig}
                         sortKey="DateOpened"
@@ -236,13 +236,13 @@ const ClientDataTabs = ({
                       onClick={() => requestSortAccounts("Branch.Name")}
                       className="limits-table__th sortable-header"
                     >
-                      Р¤РёР»РёР°Р»{" "}
+                      Филиал{" "}
                       <SortIcon
                         sortConfig={sortAccountsConfig}
                         sortKey="Branch.Name"
                       />
                     </th>
-                    <th className="limits-table__th">Р”РµР№СЃС‚РІРёСЏ</th>
+                    <th className="limits-table__th">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="limits-table__body">
@@ -263,11 +263,11 @@ const ClientDataTabs = ({
                           }
                           title={
                             !hasAccountOperationsAccess
-                              ? "РЈ РІР°СЃ РЅРµС‚ РґРѕСЃС‚СѓРїР°"
-                              : "РџСЂРѕСЃРјРѕС‚СЂ РІС‹РїРёСЃРєРё СЃС‡РµС‚Р°"
+                              ? "У вас нет доступа"
+                              : "Просмотр выписки счета"
                           }
                         >
-                          Р’С‹РїРёСЃРєРё СЃС‡РµС‚Р°
+                          Выписки счета
                         </button>
                       </td>
                     </tr>
@@ -279,18 +279,18 @@ const ClientDataTabs = ({
         </div>
       )}
 
-      {/* РљСЂРµРґРёС‚С‹ */}
+      {/* Кредиты */}
       {creditsData?.length > 0 && (
         <div className="processing-integration__limits-table">
           <div className="limits-table">
             <div className="limits-table__header">
-              <h2 className="limits-table__title">Р”Р°РЅРЅС‹Рµ РєСЂРµРґРёС‚РѕРІ</h2>
+              <h2 className="limits-table__title">Данные кредитов</h2>
               <div className="limits-table__actions">
                 <button
                   onClick={handleExportCredits}
                   className="export-excel-btn"
                 >
-                  Р­РєСЃРїРѕСЂС‚ РІ Excel
+                  Экспорт в Excel
                 </button>
               </div>
             </div>
@@ -303,7 +303,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("contractNumber")}
                       className="limits-table__th sortable-header"
                     >
-                      РќРѕРјРµСЂ РґРѕРіРѕРІРѕСЂР°{" "}
+                      Номер договора{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="contractNumber"
@@ -313,7 +313,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("referenceId")}
                       className="limits-table__th sortable-header"
                     >
-                      РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ СЃСЃС‹Р»РєРё{" "}
+                      Идентификатор ссылки{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="referenceId"
@@ -323,7 +323,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("statusName")}
                       className="limits-table__th sortable-header"
                     >
-                      РЎС‚Р°С‚СѓСЃ{" "}
+                      Статус{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="statusName"
@@ -333,7 +333,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("amount")}
                       className="limits-table__th sortable-header"
                     >
-                      РЎСѓРјРјР°{" "}
+                      Сумма{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="amount"
@@ -343,7 +343,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("documentDate")}
                       className="limits-table__th sortable-header"
                     >
-                      Р”Р°С‚Р° РґРѕРєСѓРјРµРЅС‚Р°{" "}
+                      Дата документа{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="documentDate"
@@ -353,7 +353,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("clientCode")}
                       className="limits-table__th sortable-header"
                     >
-                      РљР»РёРµРЅС‚РљРѕРґ{" "}
+                      Клиент Код{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="clientCode"
@@ -363,7 +363,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("productCode")}
                       className="limits-table__th sortable-header"
                     >
-                      РљРѕРґ РїСЂРѕРґСѓРєС‚Р°{" "}
+                      Код продукта{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="productCode"
@@ -373,7 +373,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("productName")}
                       className="limits-table__th sortable-header"
                     >
-                      РќР°Р·РІР°РЅРёРµ РїСЂРѕРґСѓРєС‚Р°{" "}
+                      Название продукта{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="productName"
@@ -383,13 +383,13 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("department")}
                       className="limits-table__th sortable-header"
                     >
-                      РћС‚РґРµР»{" "}
+                      Отдел{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="department"
                       />
                     </th>
-                    <th className="limits-table__th">Р”РµР№СЃС‚РІРёСЏ</th>
+                    <th className="limits-table__th">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="limits-table__body">
@@ -419,7 +419,7 @@ const ClientDataTabs = ({
                           onClick={() => handleOpenGraph(card.referenceId)}
                           disabled={!card.referenceId}
                         >
-                          Р“СЂР°С„РёРє
+                          График
                         </button>
                         <button
                           className="selectAll-toggle"
@@ -430,7 +430,7 @@ const ClientDataTabs = ({
                           onClick={() => handleOpenDetails(card.referenceId)}
                           disabled={!card.referenceId}
                         >
-                          Р”РµС‚Р°Р»Рё
+                          Детали
                         </button>
                         {String(card.statusName || "").trim().toLowerCase() !== "погашен" && (
                           <button
@@ -454,18 +454,18 @@ const ClientDataTabs = ({
         </div>
       )}
 
-      {/* Р”РµРїРѕР·РёС‚С‹ */}
+      {/* Депозиты */}
       {depositsData?.length > 0 && (
         <div className="processing-integration__limits-table">
           <div className="limits-table">
             <div className="limits-table__header">
-              <h2 className="limits-table__title">Р”Р°РЅРЅС‹Рµ РґРµРїРѕР·РёС‚РѕРІ</h2>
+              <h2 className="limits-table__title">Данные депозитов</h2>
               <div className="limits-table__actions">
                 <button
                   onClick={handleExportDeposits}
                   className="export-excel-btn"
                 >
-                  Р­РєСЃРїРѕСЂС‚ РІ Excel
+                  Экспорт в Excel
                 </button>
               </div>
             </div>
@@ -478,7 +478,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortDeposits("AgreementData.Code")}
                       className="limits-table__th sortable-header"
                     >
-                      РќРѕРјРµСЂ РґРѕРіРѕРІРѕСЂР°{" "}
+                      Номер договора{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.Code"
@@ -490,7 +490,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      Р РµС„РµСЂРµРЅСЃ{" "}
+                      Референс{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.ColvirReferenceId"
@@ -502,7 +502,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РЎС‚Р°С‚СѓСЃ{" "}
+                      Статус{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.Status.Name"
@@ -514,7 +514,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РћСЃС‚Р°С‚РѕРє РґРµРїРѕР·РёС‚Р°{" "}
+                      Остаток депозита{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="BalanceAccounts.0.Balance"
@@ -526,7 +526,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      Р”Р°С‚Р° РЅР°С‡Р°Р»Р°{" "}
+                      Дата начала{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.DateFrom"
@@ -538,7 +538,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      Р”Р°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ{" "}
+                      Дата окончания{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.DateTo"
@@ -550,7 +550,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РџСЂРѕРґСѓРєС‚{" "}
+                      Продукт{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.Product.Name"
@@ -562,7 +562,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РЎСЂРѕРє{" "}
+                      Срок{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.DepoTermTU"
@@ -574,7 +574,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РћС‚РґРµР»{" "}
+                      Отдел{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.Department.Code"
@@ -586,7 +586,7 @@ const ClientDataTabs = ({
                       }
                       className="limits-table__th sortable-header"
                     >
-                      РЎСѓРјРјР° РґРѕРіРѕРІРѕСЂР°{" "}
+                      Сумма договора{" "}
                       <SortIcon
                         sortConfig={sortDepositsConfig}
                         sortKey="AgreementData.Amount"
