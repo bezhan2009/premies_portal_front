@@ -196,7 +196,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortAccounts("Number")}
                       className="limits-table__th sortable-header"
                     >
-                      РќРѕРјРµСЂ СЃС‡РµС‚Р°{" "}
+                      Номер счета{" "}
                       <SortIcon
                         sortConfig={sortAccountsConfig}
                         sortKey="Number"
@@ -206,7 +206,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortAccounts("Balance")}
                       className="limits-table__th sortable-header"
                     >
-                      Р‘Р°Р»Р°РЅСЃ{" "}
+                      Баланс{" "}
                       <SortIcon
                         sortConfig={sortAccountsConfig}
                         sortKey="Balance"
@@ -216,7 +216,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortAccounts("Status.Name")}
                       className="limits-table__th sortable-header"
                     >
-                      РЎС‚Р°С‚СѓСЃ{" "}
+                      Статус{" "}
                       <SortIcon
                         sortConfig={sortAccountsConfig}
                         sortKey="Status.Name"
