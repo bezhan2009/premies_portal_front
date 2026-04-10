@@ -343,6 +343,14 @@ $gray-900: #111827;
     background: $gray-50;
   }
 
+  &__head th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: $gray-50;
+    box-shadow: inset 0 -1px 0 rgba(17, 24, 39, 0.08);
+  }
+
   &__th {
     padding: 1rem 1.5rem;
     text-align: left;

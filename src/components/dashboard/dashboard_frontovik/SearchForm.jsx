@@ -7,6 +7,7 @@ import {
 import { FaTelegramPlane } from "react-icons/fa";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import Select from "../../elements/Select";
+import "../../../styles/components/ClientDocuments.scss";
 
 const SearchForm = ({
   selectTypeSearchClient,
@@ -22,6 +23,12 @@ const SearchForm = ({
   telegramData,
   handleDeleteTelegram,
   telegramDeleteLoading,
+  clientPhotoUrl,
+  clientPhotoLoading,
+  onOpenClientPhoto,
+  onOpenClientDocuments,
+  documentsCount = 0,
+  selectedClientINN,
 }) => {
   return (
     <div className="processing-integration__search-card">
@@ -130,6 +137,51 @@ const SearchForm = ({
               Очистить
             </button>
           </div>
+
+          {selectedClientINN && (
+            <div className="search-card__photo-group">
+              <button
+                type="button"
+                className="search-card__photo-button"
+                onClick={onOpenClientPhoto}
+                disabled={!clientPhotoUrl}
+                title={
+                  clientPhotoUrl
+                    ? "Посмотреть фото клиента"
+                    : "Фото клиента не найдено"
+                }
+              >
+                {clientPhotoLoading ? (
+                  <div className="search-card__photo-placeholder">Загрузка...</div>
+                ) : clientPhotoUrl ? (
+                  <img
+                    src={clientPhotoUrl}
+                    alt="Фото клиента"
+                    className="search-card__photo"
+                  />
+                ) : (
+                  <div className="search-card__photo-placeholder">Фото не найдено</div>
+                )}
+              </button>
+
+              <div className="search-card__photo-meta">
+                <div className="search-card__photo-title">Лицо клиента</div>
+                <div className="search-card__photo-description">
+                  ИНН: {selectedClientINN}
+                  <br />
+                  Документов найдено: {documentsCount}
+                </div>
+                <button
+                  type="button"
+                  className="search-card__documents-button"
+                  onClick={onOpenClientDocuments}
+                  disabled={clientPhotoLoading && !documentsCount}
+                >
+                  Посмотреть документы клиента
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

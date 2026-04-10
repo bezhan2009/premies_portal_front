@@ -13,6 +13,18 @@
   width: 100%;
 }
 
+.flexible-ant-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: #ffffff;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+}
+
+.flexible-ant-table .ant-table-sticky-holder {
+  z-index: 14;
+}
+
 .flexible-ant-table__th {
   position: relative;
   cursor: grab;

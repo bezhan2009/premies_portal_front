@@ -162,7 +162,7 @@ export default function CustomDateInput({
     className: pickerClassName,
     placeholder: resolvedPlaceholder,
     allowClear: true,
-    inputReadOnly: true,
+    inputReadOnly: false,
     popupClassName: "site-calendar-dropdown",
     autoFocus,
     onClick,
