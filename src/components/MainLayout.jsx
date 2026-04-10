@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./general/DynamicMenu.jsx";
 import useSidebar from "../hooks/useSideBar.js";
+import CurrencyRatesWidget from "./general/CurrencyRatesWidget.jsx";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -104,6 +105,7 @@ const MainLayout = () => {
       <div className="main-content-wrapper">
         <Outlet />
       </div>
+      <CurrencyRatesWidget />
     </div>
   );
 };

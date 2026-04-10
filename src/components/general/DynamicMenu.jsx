@@ -8,128 +8,8 @@ import { useWebSocket } from "../../api/application/wsnotifications.js";
 import ChangePasswordIcon from "../../assets/change_password.png";
 import AlertMessage from "./AlertMessage.jsx";
 import Spinner from "../Spinner.jsx";
-import { fetchConversionRates } from "../../api/conversion/conversion.js";
-import {
-  buildCurrencyRateRows,
-  getCurrencyDisplayLabel,
-} from "../../api/utils/getCurrencyCode.js";
 
-const CURRENCY_META = {
-    USD: { flag: "🇺🇸", label: "Доллар" },
-    EUR: { flag: "🇪🇺", label: "Евро" },
-    RUB: { flag: "🇷🇺", label: "Рубль" },
-};
 
-function CurrencyRatesWidget() {
-  const [rates, setRates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const data = await fetchConversionRates(new Date());
-        if (mounted) {
-          setRates(data);
-          setLoading(false);
-        }
-      } catch {
-        if (mounted) {
-          setError(true);
-          setLoading(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-    const groupedLegacy = useMemo(() => {
-        const g = {};
-        rates.forEach((r) => {
-            const isRubPair = r.currencyFrom === "TJS" && r.currencyTo === "RUB" ||
-                r.currencyFrom === "RUB" && r.currencyTo === "TJS";
-
-            const fc = r.currencyFrom !== "TJS" ? r.currencyFrom : r.currencyTo;
-            if (!CURRENCY_META[fc]) return;
-            if (!g[fc]) g[fc] = { buy: null, sell: null };
-
-            if (isRubPair) {
-                // Для RUB: from = "1 TJS → X RUB", значит buy = 1/amountTo
-                // to = "X RUB → 1 TJS", значит sell = 1/amount
-                if (r.type === "from") g[fc].buy = 1 / r.amountTo;
-                else if (r.type === "to") g[fc].sell = 1 / r.amount;
-            } else {
-                if (r.type === "from" && r.currencyFrom !== "TJS") g[fc].buy = r.amountTo;
-                else if (r.type === "to" && r.currencyTo !== "TJS") g[fc].sell = r.amount;
-            }
-        });
-        return Object.entries(g).map(([c, v]) => ({
-            currency: c,
-            ...v,
-            meta: CURRENCY_META[c],
-        }));
-    }, [rates]);
-
-    const grouped = useMemo(
-      () =>
-        buildCurrencyRateRows(rates).map((row) => ({
-          ...row,
-          meta: CURRENCY_META[row.currency],
-        })),
-      [rates],
-    );
-
-    void groupedLegacy;
-
-  if (loading) {
-    return (
-      <div className="currency-widget">
-        <Spinner size="small" label="Загружаем курсы валют" />
-        <div className="currency-widget-title">💱 Курсы валют</div>
-        <div className="currency-widget-loading">Загрузка...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="currency-widget">
-        <div className="currency-widget-title">💱 Курсы валют</div>
-        <div className="currency-widget-error">Ошибка загрузки</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="currency-widget">
-      <div className="currency-widget-title">💱 Курсы валют</div>
-      <div className="currency-widget-table">
-        <div className="currency-widget-header">
-          <span>Валюта</span>
-          <span>Покупка</span>
-          <span>Продажа</span>
-        </div>
-        {grouped.map((row) => (
-          <div key={row.currency} className="currency-widget-row">
-            <span className="currency-widget-name">
-              {row.meta.flag} {getCurrencyDisplayLabel(row.currency, row.unit)}
-            </span>
-            <span className="currency-widget-buy">
-              {row.buy != null ? row.buy.toFixed(2) : "—"}
-            </span>
-            <span className="currency-widget-sell">
-              {row.sell != null ? row.sell.toFixed(2) : "—"}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
   const navigate = useNavigate();
@@ -998,7 +878,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             );
           })}
         </nav>
-        {isOpen && <CurrencyRatesWidget />}
         <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>
           <div className="username-wrapper">
             <span>
