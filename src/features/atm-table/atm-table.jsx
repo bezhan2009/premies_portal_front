@@ -185,76 +185,6 @@ function compareId(a, b) {
   });
 }
 
-const getRegionGroup = (region) => {
-  if (!region) return "Прочие";
-
-  const r = String(region).trim().toLowerCase();
-  if (!r) return "Прочие";
-
-  // Душанбе
-  if (r.includes("душанбе")) return "Душанбе";
-
-  // Согдийская область
-  if (
-    r.includes("хучанд") ||
-    r.includes("худжанд") ||
-    r.includes("панҷакент") ||
-    r.includes("панчакент") ||
-    r.includes("вилояти сугд") ||
-    r.includes("согдийская")
-  )
-    return "Вилояти Суғд";
-
-  // Куляб (Хатлон)
-  if (
-    r.includes("кулоб") ||
-    r.includes("куляб") ||
-    r.includes("восеъ") ||
-    r.includes("восе")
-  )
-    return "Минтақаи Қӯлоб";
-
-  // Бохтар (Хатлон)
-  if (
-    r.includes("бохтар") ||
-    r.includes("кубодиён") ||
-    r.includes("кабодиён") ||
-    r.includes("шахритуз") ||
-    r.includes("шаҳритус") ||
-    r.includes("ҷайҳун") ||
-    r.includes("джайхун")
-  )
-    return "Минтақаи Бохтар";
-
-  // ГБАО (Горный Бадахшан)
-  if (
-    r.includes("гбао") ||
-    r.includes("горный бадахшан") ||
-    r.includes("иштихон") ||
-    r.includes("хорог") ||
-    r.includes("калайхумб")
-  )
-    return "ГБАО";
-
-  // НТЧ (Рогун, Турсунзода, Вахдат, Ҳисор, Шаҳринав, Файзобод и др.)
-  if (
-    r.includes("рогун") ||
-    r.includes("турсунзода") ||
-    r.includes("вахдат") ||
-    r.includes("ҳисор") ||
-    r.includes("хисор") ||
-    r.includes("шаҳринав") ||
-    r.includes("шахринав") ||
-    r.includes("файзобод") ||
-    r.includes("файзобод") ||
-    r.includes("нтч")
-  )
-    return "НТЧ";
-
-  // Если регион не классифицирован — Прочие
-  return "Прочие";
-};
-
 export default function AtmStickyTable() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedAtm, setSelectedAtm] = useState(null);
@@ -288,7 +218,7 @@ export default function AtmStickyTable() {
     total: 170,
     turnover: 170,
     bpt: 230,
-    daysEnough: 170, 
+    daysEnough: 170, // ✅ NEW
     errors: 260,
     warnings: 260,
     actions: 130,
@@ -561,68 +491,6 @@ export default function AtmStickyTable() {
     XLSX.writeFile(wb, `atm_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  const GROUP_ORDER = [
-    "Душанбе",
-    "НТЧ",
-    "Вилояти Суғд",
-    "Минтақаи Бохтар",
-    "Минтақаи Қӯлоб",
-    "ГБАО",
-    "Прочие",
-  ];
-
-  const exportSummaryToExcel = () => {
-    const grouped = {};
-
-    sortedRows.forEach((row) => {
-      const group = getRegionGroup(row.region);
-      if (!grouped[group]) {
-        grouped[group] = { count: 0, balanceTjs: 0, balanceUsd: 0 };
-      }
-      grouped[group].count += 1;
-      grouped[group].balanceTjs += row.balanceTjs ?? 0;
-      grouped[group].balanceUsd += row.balanceUsd ?? 0;
-    });
-
-    const sortedGroups = [
-      ...GROUP_ORDER.filter((g) => grouped[g]),
-      ...Object.keys(grouped).filter((g) => !GROUP_ORDER.includes(g)),
-    ];
-
-    const sheetRows = sortedGroups.map((group) => ({
-      "Мавқеи ҷойгиршавӣ": group,
-      "Миқдори банкоматҳо": grouped[group].count,
-      "Бақияи маблағ бо сомонӣ": grouped[group].balanceTjs,
-      "Бақияи маблағ бо доллари ИМА": grouped[group].balanceUsd,
-    }));
-
-    sheetRows.push({
-      "Мавқеи ҷойгиршавӣ": "Ҳамагӣ",
-      "Миқдори банкоматҳо": sheetRows.reduce(
-        (s, r) => s + r["Миқдори банкоматҳо"],
-        0,
-      ),
-      "Бақияи маблағ бо сомонӣ": sheetRows.reduce(
-        (s, r) => s + r["Бақияи маблағ бо сомонӣ"],
-        0,
-      ),
-      "Бақияи маблағ бо доллари ИМА": sheetRows.reduce(
-        (s, r) => s + r["Бақияи маблағ бо доллари ИМА"],
-        0,
-      ),
-    });
-
-    const ws = XLSX.utils.json_to_sheet(sheetRows);
-    ws["!cols"] = [{ wch: 28 }, { wch: 20 }, { wch: 26 }, { wch: 30 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Отчёт по регионам");
-    XLSX.writeFile(
-      wb,
-      `atm_summary_${new Date().toISOString().slice(0, 10)}.xlsx`,
-    );
-  };
-
   const clickSort = (key) => {
     setSort((prev) => {
       if (prev.key !== key) return { key, direction: "desc" };
@@ -662,9 +530,6 @@ export default function AtmStickyTable() {
         />
         <button className="export-button" onClick={exportToExcel}>
           Экспорт в Excel
-        </button>
-        <button className="export-button" onClick={exportSummaryToExcel}>
-          Отчёт по регионам
         </button>
       </div>
 
@@ -775,9 +640,10 @@ export default function AtmStickyTable() {
                 className="table-header table-header-issues sortable-header"
                 title="Сначала банкоматы с ошибками"
               >
-                <span onClick={() => clickSort("errors")}>
-                  Ошибки{sortMark("errors")}
-                </span>
+                <div onClick={() => clickSort("errors")}>
+                  Ошибки{" "}
+                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />
+                </div>
               </ResizableTh>
 
               <ResizableTh
