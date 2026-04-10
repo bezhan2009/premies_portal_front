@@ -183,7 +183,7 @@ const ClientDataTabs = ({
                   onClick={handleExportAccounts}
                   className="export-excel-btn"
                 >
-                  Р­РєСЃРїРѕСЂС‚ РІ Excel
+                  Экспорт в Excel
                 </button>
               </div>
             </div>
