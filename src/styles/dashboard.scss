@@ -1,7 +1,7 @@
 @import 'variables/dashboard.scss';
 
 body {
-    background-color: #f1f1f1;
+    background-color: var(--bg-color);
     margin: 0;
     padding: 0;
 }
@@ -19,18 +19,19 @@ body {
 
   &__item {
     padding: 10px 15px;
-    background-color: #fff;
+    background-color: var(--bg-surface);
+    color: var(--text-color);
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
 
     &:hover {
-      background-color: darken(#fff, 10%);
+      background-color: var(--bg-secondary);
     }
 
     &--active {
-      background-color: $primary-color;
-      color: #fff;
+      background-color: var(--primary-color);
+      color: white;
     }
   }
 }
@@ -45,7 +46,7 @@ body {
   margin-left: 280px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
-  background: #f8f9fa;
+  background: var(--bg-color);
   display: flex;
   flex-direction: column;
 
@@ -60,10 +61,11 @@ body {
 }
 
 .page-content {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 // Стили для простого заголовка
@@ -71,9 +73,9 @@ body {
   display: flex;
   align-items: center;
   padding: 1rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 
   .menu-toggle-btn {
     background: none;
@@ -92,7 +94,7 @@ body {
 
   h1 {
     margin: 0;
-    color: #2c3e50;
+    color: var(--text-color);
     font-size: 1.5rem;
     font-weight: 600;
   }
