@@ -71,12 +71,13 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
         flexWrap: "wrap",
         gap: "4px",
         padding: "4px 8px",
-        border: "1px solid #ced4da",
+        border: "1px solid var(--border-color)",
         borderRadius: "6px",
         minHeight: "36px",
         alignItems: "center",
-        background: disabled ? "#f8f9fa" : "#fff",
+        background: disabled ? "var(--bg-secondary)" : "var(--bg-color)",
         cursor: disabled ? "not-allowed" : "text",
+        transition: "all 0.2s ease",
       }}
     >
       {tags.map((tag, i) => (
@@ -86,8 +87,9 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
             display: "inline-flex",
             alignItems: "center",
             gap: "3px",
-            background: "#ffe7e7",
+            background: "rgba(235, 37, 37, 0.15)",
             color: "#eb2525",
+            border: "1px solid rgba(235, 37, 37, 0.2)",
             borderRadius: "4px",
             padding: "2px 7px",
             fontSize: "12px",
@@ -108,6 +110,7 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
                 fontSize: "14px",
                 lineHeight: 1,
                 padding: 0,
+                marginLeft: "2px",
               }}
             >
               ×
@@ -129,6 +132,7 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
             flex: 1,
             minWidth: "100px",
             background: "transparent",
+            color: "var(--text-color)",
             padding: "2px 0",
           }}
         />
