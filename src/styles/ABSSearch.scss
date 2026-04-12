@@ -16,7 +16,7 @@
     }
 
     p {
-      color: #7f8c8d;
+      color: var(--text-secondary);
       font-size: 16px;
     }
   }
@@ -36,7 +36,7 @@
       display: block;
       margin-bottom: 8px;
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--text-color);
     }
 
     input {
@@ -114,11 +114,12 @@
       }
 
       &.clear-btn {
-        background: #95a5a6;
-        color: white;
+        background: var(--bg-secondary);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
 
         &:hover:not(:disabled) {
-          background: #7f8c8d;
+          background: var(--border-color);
         }
       }
     }
@@ -244,7 +245,7 @@
     }
 
     .summary-info {
-      background: #f8f9fa;
+      background: var(--bg-secondary);
       padding: 20px;
       border-radius: 8px;
       margin-top: 20px;
@@ -288,7 +289,7 @@
     }
 
     p {
-      color: #7f8c8d;
+      color: var(--text-secondary);
       font-size: 16px;
     }
   }
@@ -296,7 +297,7 @@
   &__no-data {
     text-align: center;
     padding: 40px;
-    background: #f8f9fa;
+    background: var(--bg-secondary);
     border-radius: 10px;
     margin-top: 30px;
 
@@ -333,7 +334,7 @@
     }
 
     .examples {
-      background: white;
+      background: var(--bg-surface);
       padding: 15px;
       border-radius: 6px;
 
@@ -357,12 +358,12 @@
 
 /* Стили для селектора клиентов */
 .client-selector {
-  background-color: #ffffff;
+  background-color: var(--bg-surface);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e5e9;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 
   &__title {
     font-size: 16px;
@@ -379,11 +380,11 @@
 
   &__select {
     padding: 10px 15px;
-    border: 1px solid #d1d9e0;
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 14px;
-    background-color: #ffffff;
-    color: #2c3e50;
+    background-color: var(--bg-surface);
+    color: var(--text-color);
     cursor: pointer;
     transition: border-color 0.2s;
 
@@ -523,9 +524,10 @@
 }
 
 .graph-modal-container {
-  background-color: white;
+  background-color: var(--bg-elevated);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
   width: 95vw;
   max-width: 95vw;
   height: 90vh;
@@ -663,7 +665,7 @@
   min-width: 1200px;
 
   thead {
-    background-color: #f8f9fa;
+    background-color: var(--bg-secondary);
     position: sticky;
     top: 0;
     z-index: 10;
