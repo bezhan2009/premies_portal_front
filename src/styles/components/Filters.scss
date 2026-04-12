@@ -5,10 +5,11 @@
 .filters {
   @include filter_block;
   width: $block-width;
-  background-color: #f1f1f1;
+  background-color: var(--bg-secondary);
   padding: 30px;
   margin: 20px auto;
   border-radius: 15px;
+  border: 1px solid var(--border-color);
 
   &__left,
   &__right {
@@ -45,11 +46,12 @@
 .reports_filter {
   @include filter_block;
   width: $block-width;
-  background-color: #f1f1f1;
+  background-color: var(--bg-secondary);
   padding: 30px;
   margin: 10px;
   width: calc(100% - 80px);
   border-radius: 15px;
+  border: 1px solid var(--border-color);
 
   &__button {
     @include filter_button;
@@ -92,12 +94,12 @@
 }
 
 .filters__modal-content {
-  background: #fff;
+  background: var(--bg-elevated);
   padding: 30px;
   border-radius: 12px;
   max-width: 450px;
   width: 90%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   animation: fadeInModal 0.3s ease;
 }
 
@@ -127,9 +129,9 @@
   padding: 10px 12px;
   font-size: 1rem;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
-  color: #1c1c1c;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
   cursor: pointer;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
@@ -142,7 +144,7 @@
   /* Кнопка внутри file-input */
   &::file-selector-button {
     background-color: var(--primary-color);
-    color: #fff;
+    color: white;
     border: none;
     padding: 10px 16px;
     border-radius: 6px;
@@ -184,28 +186,29 @@
 
 .filters__modal-actions button:first-of-type {
   background-color: var(--primary-color);
-  color: #fff;
+  color: white;
 
   &:hover {
     background-color: var(--primary-hover);
   }
 
   &:disabled {
-    background-color: #cbb9ff;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
 
 .filters__modal-actions button:last-of-type {
-  background-color: #ddd;
+  background-color: var(--bg-secondary);
   color: var(--text-color);
+  border: 1px solid var(--border-color);
 
   &:hover {
-    background-color: #bbb;
+    background-color: var(--bg-color);
   }
 
   &:disabled {
-    background-color: #eee;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
@@ -219,13 +222,14 @@
     padding: 8px 12px;
     font-size: 14px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
     transition: border-color 0.3s;
 
     &:focus {
       outline: none;
-      border-color: #6a1fff;
+      border-color: var(--primary-color);
     }
   }
 }
@@ -236,14 +240,15 @@
   padding: 8px 12px;
   font-size: 14px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
   transition: box-shadow 0.3s, border-color 0.3s;
 
   &:focus {
     outline: none;
-    border-color: #6a1fff;
-    box-shadow: 0 0 5px rgba(106, 31, 255, 0.4);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(var(--primary-rgb), 0.4);
   }
 }
 
@@ -258,9 +263,7 @@
   }
 
   &:disabled {
-    background-color: #ef5350 !important;
-    border-color: #ef5350 !important;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
-

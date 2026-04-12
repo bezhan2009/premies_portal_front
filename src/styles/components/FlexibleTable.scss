@@ -17,8 +17,8 @@
   position: sticky;
   top: 0;
   z-index: 12;
-  background: #ffffff;
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+  background: var(--bg-surface);
+  box-shadow: inset 0 -1px 0 var(--border-color);
 }
 
 .flexible-ant-table .ant-table-sticky-holder {
@@ -63,18 +63,17 @@
   width: 1px;
   height: 68%;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.08);
-  box-shadow: 0 0 10px rgba(17, 24, 39, 0.08);
+  background: var(--border-color);
+  opacity: 0.45;
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease,
     opacity 0.2s ease;
-  opacity: 0.45;
 }
 
 .flexible-ant-table__resize-handle:hover::after,
 .native-flex-table__resize-handle:hover::after {
-  background: rgba(var(--primary-rgb), 0.35);
+  background: var(--primary-color);
   box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.22);
   opacity: 1;
 }
@@ -177,7 +176,7 @@
   position: relative;
 }
 
-/* Добавляем красную полоску слева для точного указания места вставки */
+/* Добавляем полоску слева для точного указания места вставки */
 .flexible-ant-table__th.is-drop-target::before,
 .native-flex-table__th.is-drop-target::before {
   content: '';
@@ -213,12 +212,13 @@
   left: -9999px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.92);
-  color: #fff;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
+  box-shadow: var(--shadow-lg);
   pointer-events: none;
   white-space: nowrap;
   z-index: 9999;

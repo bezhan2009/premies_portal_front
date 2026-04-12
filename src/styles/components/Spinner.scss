@@ -6,12 +6,9 @@
   gap: 14px;
   padding: 14px 18px;
   border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 245, 245, 0.98) 100%);
-  border: 1px solid rgba(var(--primary-rgb), 0.08);
-  box-shadow:
-    0 14px 30px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 
   &--center {
     display: flex;
@@ -23,7 +20,7 @@
 .spinner-state__label {
   font-size: 14px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   letter-spacing: 0.01em;
   animation: spinner-label-pulse 1.6s ease-in-out infinite;
 }

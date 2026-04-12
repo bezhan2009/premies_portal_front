@@ -5,10 +5,10 @@
   min-width: 0;
   min-height: 56px;
   padding: 0 16px;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
   transition: all 0.25s ease;
 
   &:hover {
@@ -20,12 +20,12 @@
   &:focus-within {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
-    background: #fff;
+    background: var(--bg-surface);
   }
 
   &.ant-picker-disabled {
-    background: #f3f4f6;
-    color: #9ca3af;
+    background: var(--bg-color);
+    color: var(--text-muted);
     cursor: not-allowed;
   }
 
@@ -50,33 +50,24 @@
     animation: none;
     font-size: 15px;
     font-family: inherit;
-    color: #111827;
+    color: var(--text-color);
   }
 
   .ant-picker-input > input:hover,
   .ant-picker-input > input:focus {
     background: transparent !important;
-    color: #111827 !important;
+    color: var(--text-color) !important;
     outline: none !important;
   }
 
   .ant-picker-input > input::placeholder {
-    color: #9ca3af !important;
-  }
-
-  .ant-picker-input > input:hover::placeholder,
-  .ant-picker-input > input:focus::placeholder {
-    color: #9ca3af !important;
+    color: var(--text-muted) !important;
   }
 
   .ant-picker-suffix,
   .ant-picker-clear {
     color: var(--primary-color);
     flex-shrink: 0;
-  }
-
-  .ant-picker-suffix {
-    margin-inline-start: 8px;
   }
 }
 
@@ -86,63 +77,66 @@
   min-height: 35px;
   padding: 0 10px 0 12px;
   border: 1px solid transparent;
-  background: #f1f1f1;
+  background: var(--bg-secondary);
   box-shadow: none;
 
   &:hover {
     border-color: var(--primary-color);
-    background: #f1f1f1;
+    background: var(--bg-secondary);
   }
 
   &.ant-picker-focused,
   &:focus-within {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.14);
-    background: #fff;
+    background: var(--bg-surface);
   }
 
   .ant-picker-input > input {
     font-size: 14px;
     line-height: 1.2;
-  }
-}
-
-.custom-date-control--error.ant-picker,
-.custom-date-control--error.ant-picker-time {
-  border-color: #ef4444;
-
-  &.ant-picker-focused,
-  &:focus-within {
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.14);
+    color: var(--text-color);
   }
 }
 
 .site-calendar-dropdown {
+  background-color: var(--bg-elevated);
+  
   .ant-picker-panel-container,
   .ant-picker-time-panel-container {
-    border: 1px solid rgba(var(--primary-rgb), 0.2);
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-color);
     border-radius: 18px;
     overflow: hidden;
     z-index: 1050 !important; 
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
+    box-shadow: var(--shadow-lg);
   }
 
   .ant-picker-header {
     padding: 14px 12px;
-    background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.05) 0%, #ffffff 100%);
-    border-bottom: 1px solid rgba(var(--primary-rgb), 0.1);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
   }
 
   .ant-picker-header-view,
   .ant-picker-header button {
-    color: var(--primary-color);
+    color: var(--text-color);
     font-weight: 600;
+    
+    &:hover {
+      color: var(--primary-color);
+    }
   }
 
   .ant-picker-content th {
-    color: var(--primary-color);
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 12px;
+  }
+  
+  .ant-picker-content td {
+    color: var(--text-color);
   }
 
   .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
@@ -151,13 +145,14 @@
   }
 
   .ant-picker-cell .ant-picker-cell-inner {
+    color: var(--text-color);
     border-radius: 10px;
     transition: all 0.2s ease;
   }
 
   .ant-picker-cell:hover .ant-picker-cell-inner,
   .ant-picker-time-panel-cell:hover .ant-picker-time-panel-cell-inner {
-    background: rgba(var(--primary-rgb), 0.08);
+    background: rgba(var(--primary-rgb), 0.15);
   }
 
   .ant-picker-cell-selected .ant-picker-cell-inner,
@@ -165,17 +160,19 @@
   .ant-picker-cell-range-end .ant-picker-cell-inner,
   .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
     background: var(--primary-color) !important;
-    color: #fff !important;
+    color: white !important;
     font-weight: 600;
   }
 
   .ant-picker-cell-in-range::before {
-    background: rgba(var(--primary-rgb), 0.08);
+    background: rgba(var(--primary-rgb), 0.1);
   }
 
   .ant-picker-footer {
-    border-top: 1px solid #fee2e2;
+    background-color: var(--bg-elevated);
+    border-top: 1px solid var(--border-color);
     padding: 10px 12px;
+    color: var(--text-color);
   }
 
   .ant-picker-now-btn,
@@ -186,19 +183,12 @@
   .ant-picker-ok button {
     background: var(--primary-color);
     border-color: var(--primary-color);
-    color: #fff;
+    color: white;
     border-radius: 10px;
-  }
-}
-
-.custom-date-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 100%;
-
-  &--compact {
-    width: auto;
+    
+    &:hover {
+      background-color: var(--primary-hover);
+    }
   }
 }
 
@@ -206,23 +196,23 @@
   position: absolute;
   right: 12px;
   pointer-events: none;
-  color: #8c8c8c;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
 }
 
 .custom-date-control {
   width: 100%;
-  padding: 6px 36px 6px 12px; /* место под иконку справа */
-  border: 1px solid #d9d9d9;
+  padding: 6px 36px 6px 12px;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   font-family: inherit;
   font-size: 14px;
-  color: inherit;
-  background: #fff;
+  color: var(--text-color);
+  background: var(--bg-surface);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  appearance: none; /* убирает стрелку браузера в некоторых браузерах */
+  appearance: none;
 
   &:hover:not(:disabled) {
     border-color: var(--primary-hover);
@@ -234,23 +224,8 @@
   }
 
   &:disabled {
-    background: #f5f5f5;
-    color: #bfbfbf;
+    background: var(--bg-color);
+    color: var(--text-muted);
     cursor: not-allowed;
-  }
-
-  &--error {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
-  }
-
-  /* Скрываем дефолтный значок браузера, чтобы показывать свой */
-  &::-webkit-calendar-picker-indicator {
-    opacity: 0;
-    position: absolute;
-    right: 0;
-    width: 36px;
-    height: 100%;
-    cursor: pointer;
   }
 }
