@@ -112,7 +112,7 @@
     }
 
     &:hover {
-      background-color: #eef2ff !important;
+      background-color: var(--bg-secondary) !important;
     }
   }
 
@@ -168,10 +168,10 @@
 
   /* Активная колонка сортировки */
   &--active {
-    background: #fff;
-    box-shadow: inset 0 -3px 0 #60a5fa;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 -3px 0 var(--primary-color);
     .eqms-th__icon {
-      color: #93c5fd;
+      color: var(--primary-color);
     }
   }
 }
@@ -187,7 +187,7 @@
   margin-left: 5px;
   font-size: 12px;
   vertical-align: middle;
-  color: #bfdbfe;
+  color: var(--text-muted);
   transition: color 0.15s ease;
 
   &--idle {

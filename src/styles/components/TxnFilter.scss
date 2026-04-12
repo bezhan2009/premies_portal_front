@@ -21,11 +21,10 @@ $txn-gray-800: var(--text-color);
   &__card {
     max-width: 1300px;
     margin: 0 auto 2rem;
-    background: white;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 1rem;
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.06),
-      0 6px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
     animation: txnFadeUp 0.5s ease both;
   }
@@ -39,10 +38,10 @@ $txn-gray-800: var(--text-color);
 
   // ─── Section ────────────────────────────────────────
   &__section {
-    border: 1px solid $txn-gray-200;
+    border: 1px solid var(--border-color);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem 1.25rem;
-    background: $txn-gray-50;
+    background: var(--bg-secondary);
     transition:
       border-color 0.25s,
       box-shadow 0.25s;
