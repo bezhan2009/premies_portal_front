@@ -1,24 +1,26 @@
 .chart-wrapper {
   padding: 1.5rem;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  color: #333;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
 
   h2 {
     margin-bottom: 0.5rem;
     font-size: 1.5rem;
+    color: var(--text-color);
   }
 
   p {
     margin-bottom: 1rem;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
   }
 }
 
 .chart-wrapper.alt {
-  background-color: #f8f9fb;
-  border: 1px solid #eee;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
 }
 
