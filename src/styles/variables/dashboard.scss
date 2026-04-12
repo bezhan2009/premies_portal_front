@@ -1,4 +1,6 @@
-$primary-color: #ff3e3e;
+@import "./general.scss";
+
+$primary-color: $primary-color;
 $secondary-color: #f5f5f5;
 $text-color: #333;
 $border-color: #e0e0e0;

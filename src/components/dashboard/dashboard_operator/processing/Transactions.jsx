@@ -23,6 +23,7 @@ import SortIcon from "../../../general/SortIcon.jsx";
 import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 
 // Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType) => {
@@ -30,6 +31,23 @@ const getTransactionTypeValue = (transactionType) => {
   const found = dataTrans.find((e) => e.label === transactionType);
   return found?.value;
 };
+
+const getExchangeRate = (conCurrency, exchangeRates) => {
+  if (conCurrency === 840) {
+    return exchangeRates.USD;
+  }
+
+  if (conCurrency === 978) {
+    return exchangeRates.EUR;
+  }
+
+  return 1;
+};
+
+const getNationalAmount = (transaction, exchangeRates) =>
+  Math.abs(
+    Math.round((Number(transaction?.conamt || 0) || 0) * getExchangeRate(transaction?.conCurrency, exchangeRates)),
+  );
 
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
@@ -42,7 +60,6 @@ export default function DashboardOperatorProcessingTransactions() {
   const [allowedCardId, setAllowedCardId] = useState(null);
 
   const [transactions, setTransactions] = useState([]);
-
   const {
     items: sortedTransactions,
     requestSort,
@@ -482,6 +499,186 @@ export default function DashboardOperatorProcessingTransactions() {
     ],
   );
 
+  const transactionTableData = useMemo(
+    () =>
+      transactions.map((transaction) => ({
+        ...transaction,
+        nationalAmount: getNationalAmount(transaction, exchangeRates),
+      })),
+    [transactions, exchangeRates],
+  );
+
+  const transactionColumns = useMemo(
+    () => [
+      {
+        title: "Дата",
+        key: "localTransactionDate",
+        width: 190,
+        render: (_, transaction) => (
+          <span className="default-value">
+            {transaction.localTransactionDate || "N/A"}{" "}
+            {transaction.localTransactionTime || "N/A"}
+          </span>
+        ),
+        sortValue: (transaction) =>
+          `${transaction.localTransactionDate || ""} ${transaction.localTransactionTime || ""}`,
+      },
+      {
+        title: "Статус",
+        key: "responseDescription",
+        width: 190,
+        render: (_, transaction) =>
+          getStatusBadge(
+            transaction.responseCode,
+            transaction.reversal,
+            transaction.responseDescription,
+          ),
+        sortValue: (transaction) => transaction.responseDescription || "",
+      },
+      {
+        title: "Номер карты",
+        dataIndex: "cardNumber",
+        key: "cardNumber",
+        width: 180,
+        render: (value) => (value ? formatCardNumber(value) : "N/A"),
+      },
+      {
+        title: "ID карты",
+        dataIndex: "cardId",
+        key: "cardId",
+        width: 150,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Тип операции",
+        dataIndex: "transactionTypeName",
+        key: "transactionTypeName",
+        width: 220,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Сумма (валюта)",
+        dataIndex: "amount",
+        key: "amount",
+        width: 180,
+        render: (_, transaction) => {
+          const transactionTypeValue =
+            getTransactionTypeValue(transaction.transactionType) ||
+            transaction.transactionTypeNumber;
+
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.amount, transactionTypeValue)}{" "}
+              {getCurrencyCode(transaction.currency)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "Сумма в валюте карты",
+        dataIndex: "conamt",
+        key: "conamt",
+        width: 220,
+        render: (_, transaction) => {
+          const transactionTypeValue =
+            getTransactionTypeValue(transaction.transactionType) ||
+            transaction.transactionTypeNumber;
+
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.conamt, transactionTypeValue)}{" "}
+              {getCurrencyCode(transaction.conCurrency)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "Доступный баланс",
+        dataIndex: "acctbal",
+        key: "acctbal",
+        width: 180,
+        render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
+      },
+      {
+        title: "UTRNNO",
+        dataIndex: "utrnno",
+        key: "utrnno",
+        width: 160,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "ID терминала",
+        dataIndex: "terminalId",
+        key: "terminalId",
+        width: 170,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "ID ATM",
+        dataIndex: "atmId",
+        key: "atmId",
+        width: 150,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Запрошенная сумма",
+        dataIndex: "reqamt",
+        key: "reqamt",
+        width: 190,
+        render: (_, transaction) => {
+          const transactionTypeValue =
+            getTransactionTypeValue(transaction.transactionType) ||
+            transaction.transactionTypeNumber;
+
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.reqamt, transactionTypeValue)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "Адрес терминала",
+        dataIndex: "terminalAddress",
+        key: "terminalAddress",
+        width: 260,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "MCC",
+        dataIndex: "mcc",
+        key: "mcc",
+        width: 130,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Счет",
+        dataIndex: "account",
+        key: "account",
+        width: 200,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Сумма в нац. валюте",
+        dataIndex: "nationalAmount",
+        key: "nationalAmount",
+        width: 190,
+        render: (value) => (
+          <span className="amount-value" style={{ fontWeight: "bold" }}>
+            {formatAmount(value)}
+          </span>
+        ),
+      },
+      {
+        title: "ID транзакции",
+        dataIndex: "id",
+        key: "id",
+        width: 150,
+      },
+    ],
+    [exchangeRates],
+  );
+
   const handleExport = () => {
     const columns = [
       { key: "localTransactionDate", label: "Дата" },
@@ -546,7 +743,7 @@ export default function DashboardOperatorProcessingTransactions() {
       { key: "id", label: "ID транзакции" },
     ];
     exportToExcel(
-      sortedTransactions,
+      transactionTableData,
       columns,
       `Транзакции_${searchType}_${new Date().toISOString().split("T")[0]}`,
     );
@@ -1052,6 +1249,16 @@ export default function DashboardOperatorProcessingTransactions() {
 
                 <div className="limits-table__container">
                   <div className="limits-table__wrapper">
+                    <Table
+                      tableId="processing-transactions"
+                      rowKey="id"
+                      columns={transactionColumns}
+                      dataSource={transactionTableData}
+                      pagination={false}
+                      sticky
+                      scroll={{ y: 620 }}
+                    />
+                    {false && (
                     <table className="limits-table__content">
                       <thead className="limits-table__head">
                         <tr>
@@ -1347,6 +1554,7 @@ export default function DashboardOperatorProcessingTransactions() {
                         })}
                       </tbody>
                     </table>
+                    )}
                   </div>
 
                   <div className="limits-table__footer">

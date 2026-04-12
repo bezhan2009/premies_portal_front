@@ -70,13 +70,13 @@
 
       &.active,
       &:hover {
-        background: #fff3f3;
+        background: rgba(var(--primary-rgb), 0.05);
         transform: scale(1.02);
       }
 
       &.active {
         font-weight: 600;
-        color: #c31414;
+        color: var(--primary-color);
       }
 
       &:not(.active) {
@@ -107,7 +107,7 @@
     font-size: 1.4rem;
     margin-top: 0;
     margin-bottom: 18px;
-    color: #c31414;
+    color: var(--primary-color);
     animation: fadeIn 0.4s ease;
   }
 
@@ -135,9 +135,9 @@
       }
 
       &.active {
-        border-color: #c31414;
-        color: #c31414;
-        box-shadow: 0 0 0 3px #fff3f3;
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
       }
 
       h4 {
@@ -186,7 +186,7 @@
         }
 
         &:hover {
-          color: #c31414;
+          color: var(--primary-color);
         }
       }
     }
@@ -279,14 +279,15 @@
       box-shadow 0.3s ease;
 
     &:focus {
-      border-color: #c31414;
-      box-shadow: 0 0 0 2px #fff3f3;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
       outline: none;
+      background-color: var(--bg-color);
     }
 
     /* Кнопка внутри file-input */
     &::file-selector-button {
-      background-color: #c31414;
+      background-color: var(--primary-color);
       color: #fff;
       border: none;
       padding: 10px 16px;
@@ -310,7 +311,7 @@
   margin-top: 20px;
 
   button {
-    background: #c31414;
+    background: var(--primary-color);
     color: #fff;
     border: none;
     padding: 8px 14px;
@@ -318,7 +319,7 @@
     cursor: pointer;
 
     &:hover {
-      background: #e21a1c;
+      background: var(--primary-hover);
     }
   }
 }

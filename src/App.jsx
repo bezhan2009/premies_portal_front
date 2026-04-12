@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 // import { CardTable } from "./pages/product/card/CardTable.jsx";
 import GlobalNativeTableEnhancer from "./components/table/GlobalNativeTableEnhancer.jsx";
+import ThemeManager from "./ThemeManager";
 
 function App() {
   const isTechnicalDay = false;
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <>
+      <ThemeManager />
       <GlobalNativeTableEnhancer />
       <AppRouter />
       <ToastContainer

@@ -1,8 +1,8 @@
 // general.scss
-$primary-color: #e21a1c;
-$primary-hover: #c31414;
-$background: #ffffff;
-$text-color: #333;
-$border-color: #e21a1c;
+$primary-color: var(--primary-color);
+$primary-hover: var(--primary-hover);
+$background: var(--bg-color);
+$text-color: var(--text-color);
+$border-color: var(--border-color);
 $primary-opacity: 0.85;
 $general-width: 100%;

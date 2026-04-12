@@ -69,21 +69,18 @@ export default function ApplicationsList() {
         async (nextId = null, reset = false) => {
             try {
                 setLoading(true);
-                const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-                let query = new URLSearchParams();
+                const params = {};
 
-                if (nextId) query.append("after", nextId);
-                if (data?.month) query.append("month", data?.month);
-                if (data?.year) query.append("year", data?.year);
-                if (data?.status)
-                    query.append("status_id", data?.status);
+                if (nextId) params.after = nextId;
+                if (data?.month) params.month = data.month;
+                if (data?.year) params.year = data.year;
+                if (data?.status) params.status_id = data.status;
 
-                const response = await fetch(
-                    `${backendUrl}/applications${
-                        archive ? "/archive" : `?${query.toString()}`
-                    }`,
+                const response = await apiClientApplication.get(
+                    archive ? "/applications/archive" : "/applications",
+                    { params },
                 );
-                const result = await response.json();
+                const result = response.data || [];
 
                 if (reset || nextId === null) {
                     setTableData(result);
@@ -307,7 +304,7 @@ export default function ApplicationsList() {
 
                     <div className="my-applications-header">
                         <Select
-                            style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+                            style={{ border: selectedRows.length && "4px solid var(--primary-color)" }}
                             id={"status"}
                             value={data?.status}
                             onChange={(e) => {
@@ -503,7 +500,7 @@ export default function ApplicationsList() {
                                                     onClick={() => deleteApplication(row.ID)}
                                                     style={{
                                                         fontSize: 35,
-                                                        color: "#c31414",
+                                                        color: "var(--primary-color)",
                                                         cursor: "pointer",
                                                     }}
                                                 />

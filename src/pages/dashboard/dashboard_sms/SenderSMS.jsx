@@ -62,7 +62,7 @@ export default function SendSmsForm() {
               type="submit"
               style={{
                 height: "40px",
-                backgroundColor: "#e21a1c",
+                backgroundColor: "var(--primary-color)",
                 color: "#fff",
                 border: "none",
                 borderRadius: "12px",

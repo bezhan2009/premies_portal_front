@@ -13,6 +13,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { fetchEmployee } from "../../../api/chairman/reports/employee_spec.js";
 import { getMonthName } from "../../../api/utils/date.js";
 import Spinner from "../../Spinner.jsx";
+import useThemeStore from "../../../store/useThemeStore.js";
 
 const ChartReportFinance = ({ url }) => {
   const [chartData, setChartData] = useState([]);
@@ -118,11 +119,12 @@ const ChartReportFinance = ({ url }) => {
       <div
         style={{
           padding: "10px",
-          color: "#555",
+          color: "var(--text-secondary)",
           fontSize: "16px",
           textAlign: "center",
-          backgroundColor: "#f0f0f0",
+          backgroundColor: "var(--bg-secondary)",
           borderRadius: "4px",
+          border: "1px solid var(--border-color)",
         }}
       >
         Выберите отделения/сотрудника
@@ -135,11 +137,12 @@ const ChartReportFinance = ({ url }) => {
       <div
         style={{
           padding: "10px",
-          color: "#555",
+          color: "var(--text-secondary)",
           fontSize: "16px",
           textAlign: "center",
-          backgroundColor: "#f0f0f0",
+          backgroundColor: "var(--bg-secondary)",
           borderRadius: "4px",
+          border: "1px solid var(--border-color)",
         }}
       >
         Нет данных для отображения
@@ -148,7 +151,7 @@ const ChartReportFinance = ({ url }) => {
   }
 
   return (
-    <div className="chart-wrapper light-theme alt">
+    <div className="chart-wrapper">
       <h2>Финансовая динамика {chartData[0].full_name}</h2>
       <p>Дебет, кредит и остатки по месяцам</p>
       <ResponsiveContainer width="100%" height={300}>
@@ -163,28 +166,28 @@ const ChartReportFinance = ({ url }) => {
               <stop offset="100%" stopColor="#0ea820" stopOpacity={0.1} />
             </linearGradient>
             <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#c31414" stopOpacity={0.8} />
-              <stop offset="100%" stopColor="#c31414" stopOpacity={0.1} />
+              <stop offset="0%" stopColor="var(--primary-color)" stopOpacity={0.8} />
+              <stop offset="100%" stopColor="var(--primary-color)" stopOpacity={0.1} />
             </linearGradient>
           </defs>
 
           <XAxis
             dataKey="name"
-            stroke="#333"
-            tick={{ fill: "#333", fontSize: 12 }}
+            stroke="var(--text-secondary)"
+            tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            stroke="#333"
-            tick={{ fill: "#333", fontSize: 12 }}
+            stroke="var(--text-secondary)"
+            tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
 
           <Tooltip
             content={<CustomFinanceTooltip />}
-            cursor={{ stroke: "#c31414", strokeWidth: 1 }}
+            cursor={{ stroke: "var(--primary-color)", strokeWidth: 1 }}
           />
 
           <Area
@@ -209,10 +212,10 @@ const ChartReportFinance = ({ url }) => {
             type="monotone"
             dataKey="balance"
             name="Остатки"
-            stroke="#c31414"
+            stroke="var(--primary-color)"
             fill="url(#balanceGradient)"
             strokeWidth={3}
-            dot={{ stroke: "#c31414", strokeWidth: 2, r: 3 }}
+            dot={{ stroke: "var(--primary-color)", strokeWidth: 2, r: 3 }}
           />
         </AreaChart>
       </ResponsiveContainer>

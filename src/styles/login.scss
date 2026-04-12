@@ -22,16 +22,19 @@ body {
     p {
       margin-top: 20px;
       font-size: 16px;
-      color: #666;
+      color: var(--text-secondary);
     }
   }
 }
 
 .login-form {
-  background: white;
+  background: rgba(var(--bg-rgb), 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
   width: 320px;
   max-height: 80vh;
   overflow-y: auto;
@@ -40,7 +43,7 @@ body {
     display: block;
     margin-bottom: 1rem;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
 
     input {
       width: 95%;
@@ -49,12 +52,14 @@ body {
       border: none;
       border-radius: 6px;
       outline: none;
-      background: #f5f5f5;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border-color);
       height: $login-input-height;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      color: var(--text-color);
 
       &::placeholder {
-        color: #999;
+        color: var(--text-muted);
         font-weight: 700;
       }
     }
@@ -67,7 +72,7 @@ body {
       background: none;
       border: none;
       cursor: pointer;
-      color: #666;
+      color: var(--text-secondary);
       font-size: 1.2rem;
       line-height: 1;
       width: auto;
@@ -85,17 +90,18 @@ body {
 
   button {
     width: 100%;
-    padding: 0.75rem;
-    background-color: #333;
+    padding: 0.85rem;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-weight: bold;
+    border-radius: 8px;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    transition: all 0.2s ease;
 
     &:hover {
-      background-color: #e21a1c;
+      background-color: var(--primary-color);
     }
   }
 
@@ -105,7 +111,7 @@ body {
     p {
       font-size: 0.95rem;
       font-weight: 600;
-      color: #444;
+      color: var(--text-color);
       margin-bottom: 0.8rem;
       text-align: left;
     }
@@ -120,7 +126,7 @@ body {
       transition: 0.2s ease;
 
       &:hover {
-        background: rgba(226, 26, 28, 0.04);
+        background: rgba(var(--primary-rgb), 0.04);
         border-radius: 6px;
         padding-left: 0.4rem;
       }
@@ -131,7 +137,7 @@ body {
         -webkit-appearance: none;
         width: 22px;
         height: 22px;
-        border: 2px solid #ccc;
+        border: 2px solid var(--border-color);
         border-radius: 6px;
         margin-right: 12px;
         position: relative;
@@ -140,20 +146,20 @@ body {
         transition: all 0.2s ease;
 
         &:hover {
-          border-color: #e21a1c;
-          background: rgba(226, 26, 28, 0.07);
+          border-color: var(--primary-color);
+          background: rgba(var(--primary-rgb), 0.07);
         }
 
         &:checked {
-          background: #e21a1c;
-          border-color: #e21a1c;
+          background: var(--primary-color);
+          border-color: var(--primary-color);
         }
       }
 
       // Текст роли
       label {
         font-size: 0.95rem;
-        color: #333;
+        color: var(--text-color);
         cursor: pointer;
         user-select: none;
         margin: 0;
@@ -166,7 +172,7 @@ body {
 }
 
 .error {
-  color: #e21a1c;
+  color: var(--primary-color);
   font-weight: bold;
   font-size: 0.85rem;
   margin-bottom: 1rem;

@@ -16,7 +16,9 @@ export const ROLE_ACCOUNT_OPERATIONS = 20;
 
 // Роль Фронтовика
 export const ROLE_FRONTOVIK = 17;
+export const ROLE_CLIENT_DOCUMENTS = 27;
 
 export const canAccessTransactions = () => hasRole(ROLE_PROCESSING);
 export const canAccessAccountOperations = () => hasRole(ROLE_ACCOUNT_OPERATIONS);
 export const isFrontovik = () => hasRole(ROLE_FRONTOVIK);
+export const canAccessClientDocuments = () => hasRole(ROLE_CLIENT_DOCUMENTS);

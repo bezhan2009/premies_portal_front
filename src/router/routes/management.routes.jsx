@@ -11,6 +11,7 @@ import DashboardOperatorProcessing from "../../pages/dashboard/dashboard_operato
 import DashboardOperatorProcessingTransactions from "../../pages/dashboard/dashboard_operator/Transactions.jsx";
 import DashboardOperatorProcessingTransactionUniversal
     from "../../pages/dashboard/dashboard_operator/TransactionUniversal.jsx";
+import DashboardClientDocuments from "../../pages/dashboard/dashboard_client_documents/ClientDocuments.jsx";
 
 const managementRoutes = (
   <>
@@ -87,9 +88,22 @@ const managementRoutes = (
               </RequireRole>
           }
       >
+      <Route
+          path="/processing-search/transactions"
+          element={<DashboardOperatorProcessingTransactionUniversal />}
+      />
+      </Route>
+
+      <Route
+          element={
+              <RequireRole allowedRoles={[27]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
           <Route
-              path="/processing-search/transactions"
-              element={<DashboardOperatorProcessingTransactionUniversal />}
+              path="/client-documents"
+              element={<DashboardClientDocuments />}
           />
       </Route>
 

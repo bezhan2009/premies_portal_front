@@ -35,7 +35,7 @@
           max-width: 100%;
           max-height: 230px;
           object-fit: contain;
-          background: #fff;
+          background: var(--bg-surface);
         }
 
         p {
@@ -45,8 +45,9 @@
           margin: 0;
           padding: 10px 12px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.92);
-          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+          background: var(--bg-elevated);
+          color: var(--text-color);
+          box-shadow: var(--shadow-md);
         }
       }
 
@@ -64,9 +65,10 @@
           width: 100%;
           margin: 0;
           padding: 16px 18px;
-          background: #fff;
-          border: 1px solid #d9dee7;
+          background: var(--bg-surface);
+          border: 1px solid var(--border-color);
           border-radius: 12px;
+          color: var(--text-color);
 
           h1 {
             margin: 0 0 12px;
@@ -153,7 +155,7 @@
 }
 
 .terror-warning {
-  background-color: #fff5f5;
+  background-color: rgba(220, 38, 38, 0.1);
   border: 2px solid #dc2626;
   border-radius: 8px;
   padding: 12px 16px;
@@ -179,10 +181,10 @@
 .sms-section {
   margin: 20px 0;
   padding: 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
   animation: fadeIn 0.3s ease-out;
 
   .sms-section-header {
@@ -246,9 +248,10 @@
       gap: 12px;
 
       .sms-option {
-        background: white;
-        border: 2px solid #e5e7eb;
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
         border-radius: 10px;
+        color: var(--text-color);
         padding: 16px;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -263,8 +266,8 @@
         }
 
         &.sms-option-selected {
-          border-color: #dc2626;
-          background-color: #ffefef;
+          border-color: var(--primary-color);
+          background-color: rgba(var(--primary-rgb), 0.08);
         }
 
         .sms-option-radio {
@@ -307,16 +310,16 @@
   }
 
   .rejection-reason-section {
-    background: white;
+    background: var(--bg-surface);
     border-radius: 10px;
     padding: 20px;
-    border: 1px solid #fca5a5;
+    border: 1px solid var(--border-color);
     margin-top: 16px;
 
     .rejection-reason-label {
       display: block;
       margin-bottom: 10px;
-      color: #dc2626;
+      color: var(--error-color);
       font-weight: 500;
       font-size: 15px;
 
@@ -329,13 +332,14 @@
     .rejection-reason-textarea {
       width: 97%;
       padding: 12px;
-      border: 2px solid #fca5a5;
+      border: 2px solid var(--border-color);
       border-radius: 8px;
       font-family: inherit;
       font-size: 14px;
-      color: #374151;
+      background: var(--bg-color);
+      color: var(--text-color);
       resize: vertical;
-      transition: border-color 0.2s;
+      transition: border-color var(--transition-fast);
 
       &:focus {
         outline: none;

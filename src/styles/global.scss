@@ -1,30 +1,34 @@
+@import "./tokens.scss";
+
 body {
-  background: white;
+  background: var(--bg-color);
+  color: var(--text-color);
   margin: 0;
   padding: 0;
   animation: fadeIn 0.5s ease-out;
   font-family: sans-serif;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 ::selection {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
   color: white;
 }
 
 /* Для Firefox */
 ::-moz-selection {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
   color: white;
 }
 
 /* Кастомный фокус для всех элементов */
 :focus {
-  outline: 2px solid #e21a1c;
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
 .add-payment-modal-content-bts {
-  background-color: #e5e7eb;
+  background-color: var(--bg-secondary);
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -33,7 +37,7 @@ body {
   position: relative;
 
   >span {
-    background-color: #c31414;
+    background-color: var(--primary-hover);
     position: absolute;
     border-radius: 50px;
     width: 250px;
@@ -94,14 +98,15 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(226, 26, 28, 0.3);
-  border-color: #e21a1c;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
+  border-color: var(--primary-color);
 }
 
 .product-bank-page {
   width: 100%;
   overflow-x: auto !important;
-  background-color: #fff;
+  background-color: var(--bg-surface);
+  color: var(--text-color);
   border-radius: 20px;
   // padding: 24px;
 }
@@ -113,7 +118,7 @@ textarea:focus {
 }
 
 .button-loading {
-  background-color: #333 !important;
+  background-color: var(--bg-elevated) !important;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -142,7 +147,7 @@ textarea:focus {
   animation: fadeIn 0.6s ease-out;
 
   &:hover {
-    background-color: #e21a1c;
+    background-color: var(--primary-color);
   }
 }
 
@@ -156,13 +161,13 @@ textarea:focus {
 }
 
 .archive-toggle-activ {
-  background-color: #e21a1c !important;
+  background-color: var(--primary-color) !important;
 }
 
 .selectAll-toggle {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
   padding: 1rem 2rem;
-  background: #e21a1c;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 0.75rem;
@@ -177,7 +182,8 @@ textarea:focus {
 .active-table {
   position: sticky;
   right: 0;
-  background-color: #fff !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-color);
 
   >svg {
     border: 1px solid transparent;
@@ -191,7 +197,7 @@ textarea:focus {
 /* Стили для всех скроллбаров (Firefox) */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #e21a1c transparent;
+  scrollbar-color: var(--primary-color) transparent;
 }
 
 /* Стили для всех скроллбаров (Webkit) */
@@ -200,23 +206,23 @@ textarea:focus {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
   border-radius: 6px;
-  border: 3px solid #fff;
+  border: 3px solid var(--bg-color);
   transition: background-color 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #bd1517;
+  background-color: var(--primary-hover);
 }
 
 /* Исправленный селектор (без пробела!) */
 body.scrolling::-webkit-scrollbar-thumb {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
 }
 
 div.scrolling::-webkit-scrollbar-thumb {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
 }
 
 table {
@@ -225,24 +231,25 @@ table {
   // min-height: 1400px;
   font-family: sans-serif;
   font-size: 14px;
-  background: white;
+  background: var(--bg-surface);
+  color: var(--text-color);
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   animation: fadeIn 0.4s ease-out;
 
   >thead {
     position: sticky;
     top: 0;
-    background-color: white;
-    border-bottom: 2px solid #e21a1c;
+    background-color: var(--bg-color);
+    border-bottom: 2px solid var(--primary-color);
     z-index: 2;
   }
 }
 
 /* Заголовки столбцов */
 th {
-  background-color: #fff;
-  color: #333;
+  background-color: var(--bg-surface);
+  color: var(--text-color);
   font-weight: 600;
   padding: 12px 16px;
   text-align: left;
@@ -259,8 +266,9 @@ th:hover {
 /* Ячейки таблицы */
 td {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
 }
 
 /* Анимация появления строк */
@@ -271,13 +279,13 @@ tr {
 
 /* Подсветка строки при наведении */
 tr:hover td {
-  background: rgba(226, 26, 28, 0.03);
+  background: rgba(var(--primary-rgb), 0.03);
 }
 
 /* Разделители столбцов (тонкие линии) */
 th:not(:last-child),
 td:not(:last-child) {
-  border-right: 1px solid #f5f5f5;
+  border-right: 1px solid var(--border-color);
 }
 
 /* Анимации */
@@ -382,7 +390,7 @@ tr:nth-child(14) {
 //    justify-content: center;
 //    width: 80%;
 //    height: 80%;
-//    background-color: #fff;
+//    background-color: var(--bg-surface);
 //    border-radius: 12px;
 //    position: relative;
 //    animation: fadeIn 0.4s ease-out;
@@ -401,7 +409,7 @@ tr:nth-child(14) {
   justify-content: center;
   align-items: center;
   position: relative;
-  background-color: #fff;
+  background-color: var(--bg-surface);
   border-radius: 12px;
   animation: fadeIn 0.4s ease-out;
 
@@ -442,7 +450,7 @@ tr:nth-child(14) {
   animation: fadeIn 0.4s ease-out;
 
   p {
-    color: #e21a1c;
+    color: var(--primary-color);
     margin: 0;
     display: none;
   }
@@ -452,13 +460,11 @@ tr:nth-child(14) {
   }
 
   input {
-    width: 95%;
-    height: 35px;
-    padding: 10px 10px;
-    background-color: #f1f1f1;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     border-radius: 12px;
-    border: none;
-    transition: 0.09s;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
     animation: fadeIn 0.5s ease-out;
 
     &::placeholder {
@@ -466,7 +472,7 @@ tr:nth-child(14) {
     }
 
     &:hover {
-      outline: #e21a1c solid 2px;
+      outline: var(--primary-color) solid 2px;
     }
 
     &:focus {
@@ -493,7 +499,7 @@ tr:nth-child(14) {
     display: flex;
     align-items: center;
     font-size: 13px;
-    color: #555;
+    color: var(--text-secondary);
     animation: fadeIn 0.5s ease-out;
   }
 }
@@ -526,13 +532,13 @@ tr:nth-child(14) {
   gap: 0px;
   width: 370px;
   border-radius: 12px;
-  background-color: #fff;
+  background-color: var(--bg-surface);
   padding: 0px 0px 0 10px;
   animation: fadeIn 0.4s ease-out;
   height: 55px;
 
   h1 {
-    color: #000 !important;
+    color: var(--text-color) !important;
   }
 
   div {
@@ -542,7 +548,7 @@ tr:nth-child(14) {
     gap: 10px;
     height: 40px;
     width: 135px;
-    background-color: #e2e2e2;
+    background-color: var(--bg-secondary);
     padding-left: 10px;
     border-radius: 12px 12px 12px 12px;
     animation: fadeIn 0.5s ease-out;
@@ -559,8 +565,8 @@ tr:nth-child(14) {
       min-width: 15px;
       max-height: 15px !important;
       min-height: 15px;
-      border: 2px solid #999;
-      background-color: white;
+      border: 2px solid var(--border-input);
+      background-color: var(--bg-color);
       border-radius: 50%;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -570,7 +576,7 @@ tr:nth-child(14) {
     }
 
     .checked {
-      border-color: #e21a1c !important;
+      border-color: var(--primary-color) !important;
       border-width: 5px;
       max-width: 10px !important;
       min-width: 10px;
@@ -581,7 +587,7 @@ tr:nth-child(14) {
 }
 
 .form-check-box {
-  background-color: #f1f1f1;
+  background-color: var(--bg-color);
   height: 55px;
   animation: fadeIn 0.4s ease-out;
 
@@ -597,7 +603,7 @@ tr:nth-child(14) {
     gap: 10px;
     height: 40px;
     width: 50%;
-    background-color: #e2e2e2;
+    background-color: var(--bg-secondary);
     border-radius: 12px 12px 12px 12px;
     animation: fadeIn 0.5s ease-out;
 
@@ -613,8 +619,8 @@ tr:nth-child(14) {
       min-width: 15px;
       max-height: 15px !important;
       min-height: 15px;
-      border: 2px solid #999;
-      background-color: white;
+      border: 2px solid var(--border-input);
+      background-color: var(--bg-color);
       border-radius: 50%;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -624,7 +630,7 @@ tr:nth-child(14) {
     }
 
     .checked {
-      border-color: #e21a1c !important;
+      border-color: var(--primary-color) !important;
       border-width: 5px;
       max-width: 10px !important;
       min-width: 10px;
@@ -675,8 +681,8 @@ tr:nth-child(14) {
         min-width: 15px;
         max-height: 15px !important;
         min-height: 15px;
-        background-color: #fff !important;
-        border: 2px solid #999;
+        background-color: var(--bg-color) !important;
+        border: 2px solid var(--border-input);
         border-radius: 50%;
         -webkit-appearance: none;
         -moz-appearance: none;
@@ -687,7 +693,7 @@ tr:nth-child(14) {
     }
 
     .checked {
-      border-color: #e21a1c;
+      border-color: var(--primary-color);
       border-width: 5px;
       max-width: 10px !important;
       min-width: 10px;
@@ -708,7 +714,7 @@ tr:nth-child(14) {
   main {
     // min-height: 1103px;
     width: 95%;
-    background-color: #fff;
+    background-color: var(--bg-surface);
     border-radius: 12px;
     padding: 20px;
     animation: fadeIn 0.4s ease-out;
@@ -724,15 +730,15 @@ tr:nth-child(14) {
         width: 100%;
         height: 50px;
         padding: 10px;
-        background-color: #f1f1f1;
+        background-color: var(--bg-color);
         border-radius: 12px;
         border: none;
-        color: #000;
+        color: var(--text-color);
         animation: fadeIn 0.6s ease-out;
 
         &:focus {
           outline: #e21a1c solid 2px;
-          background-color: #00000092;
+          background-color: var(--text-color)00092;
           color: #fff;
         }
       }
@@ -741,7 +747,7 @@ tr:nth-child(14) {
         position: absolute;
         bottom: 0;
         margin: 0;
-        color: #e21a1c;
+        color: var(--primary-color);
       }
     }
 
@@ -752,7 +758,7 @@ tr:nth-child(14) {
       animation: fadeIn 0.5s ease-out;
 
       div {
-        background-color: #f1f1f1;
+        background-color: var(--bg-secondary);
         height: 200px;
         flex: 1;
         border-radius: 12px;
@@ -765,7 +771,7 @@ tr:nth-child(14) {
     }
 
     .header-passport {
-      background-color: #f1f1f1;
+      background-color: var(--bg-color);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -816,7 +822,7 @@ tr:nth-child(14) {
       align-items: center;
       gap: 20px;
       height: 70px;
-      background-color: #f1f1f1;
+      background-color: var(--bg-color);
       margin-top: 20px;
       border-radius: 12px;
       padding: 20px;
@@ -824,7 +830,7 @@ tr:nth-child(14) {
 
       button {
         cursor: pointer;
-        background-color: white;
+        background-color: var(--bg-surface);
         border: none;
         padding: 20px;
         border-radius: 12px;
@@ -864,7 +870,7 @@ tr:nth-child(14) {
   >main {
     height: calc(100% - 40px) !important;
     width: 98%;
-    background-color: #fff;
+    background-color: var(--bg-surface);
     border-radius: 12px;
     padding: 20px;
     display: grid;
@@ -887,7 +893,7 @@ tr:nth-child(14) {
         animation: fadeIn 0.6s ease-out;
 
         &:last-child {
-          background-color: #e21a1c;
+          background-color: var(--primary-color);
         }
       }
     }
@@ -932,7 +938,7 @@ tr:nth-child(14) {
   >main {
     // height: 1103px;
     width: 98%;
-    background-color: #fff;
+    background-color: var(--bg-surface);
     border-radius: 12px;
     padding: 20px;
     display: flex;
@@ -965,7 +971,7 @@ tr:nth-child(14) {
       }
 
       .save {
-        background-color: #e21a1c;
+        background-color: var(--primary-color);
       }
 
       .Unloading {
@@ -997,7 +1003,7 @@ tr:nth-child(14) {
           padding: 10px 40px;
           height: 100% !important;
           margin-left: -30px;
-          background-color: #e21a1c;
+          background-color: var(--primary-color);
           animation: fadeIn 0.7s ease-out;
         }
       }
@@ -1012,15 +1018,15 @@ tr:nth-child(14) {
           width: 100%;
           height: 50px;
           padding: 10px;
-          background-color: #f1f1f1;
+          background-color: var(--bg-color);
           border-radius: 12px;
           border: none;
-          color: #000;
+          color: var(--text-color);
           animation: fadeIn 0.7s ease-out;
 
           &:focus {
-            outline: #e21a1c solid 2px;
-            background-color: #00000092;
+            outline: var(--primary-color) solid 2px;
+            background-color: var(--text-color)00092;
             color: #fff;
           }
         }
@@ -1071,7 +1077,7 @@ body {
   // padding: 24px;
   overflow-y: auto;
   height: 100vh;
-  background-color: #f1f1f1;
+  background-color: var(--bg-color);
 }
 
 .page-content-wrapper {
@@ -1186,7 +1192,7 @@ body {
 
 .custom-modal-content {
   position: relative;
-  background: white;
+  background: var(--bg-surface);
   padding: 20px;
   border-radius: 12px;
   max-width: 90vw;
@@ -1316,8 +1322,8 @@ body {
 
 .filters input:focus,
 .filters select:focus {
-  border-color: #ff1a1a;
-  box-shadow: 0 0 8px rgba(175, 76, 76, 0.3);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.3);
   outline: none;
   animation: pulse 0.5s ease-out;
 }
@@ -1382,15 +1388,15 @@ select {
   width: 100%;
   height: 50px;
   padding: 10px;
-  background-color: #f1f1f1;
+  background-color: var(--bg-color);
   border-radius: 12px;
   border: none;
-  color: #000;
+  color: var(--text-color);
   animation: fadeIn 0.7s ease-out;
 
   &:focus {
     outline: #e21a1c solid 2px;
-    background-color: #00000092;
+    background-color: var(--text-color)00092;
     color: #fff;
   }
 }
@@ -1400,7 +1406,7 @@ option {
   font-family: "Arial", sans-serif;
   font-size: 16px;
   color: #ffffff;
-  background-color: #ff1a1a;
+  background-color: var(--primary-color);
   /* Зеленый фон */
   padding: 10px;
   border-radius: 8px;
@@ -1411,13 +1417,13 @@ option {
 
 /* При наведении - изменение цвета и поднятие */
 option:hover {
-  background-color: #ff1a1a;
+  background-color: var(--primary-color);
   transform: scale(1.02);
 }
 
 /* Стиль для выбранного элемента (если позволяют стили) */
 option:checked {
-  background-color: #ff1a1a;
+  background-color: var(--primary-color);
   color: #ffffff;
 }
 
@@ -1450,7 +1456,7 @@ button:active {
 }
 
 .active-btn {
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
   color: white;
   cursor: pointer !important;
 
@@ -1466,7 +1472,7 @@ button:active {
   justify-content: space-between;
 
   >h1 {
-    background-color: #e21a1c;
+    background-color: var(--primary-color);
     color: white;
     padding: 4px 15px;
     margin: 0;
@@ -1565,7 +1571,7 @@ button:active {
   width: 50px;
   height: 50px;
   border: 5px solid #eee;
-  border-top: 5px solid #de3a38;
+  border-top: 5px solid var(--primary-color);
   border-radius: 50%;
   margin: 0 auto 12px auto;
   animation: spin 1s linear infinite;
@@ -1738,7 +1744,7 @@ button:active {
   width: 16px;
   height: 16px;
   border: 2px solid #f3f3f3;
-  border-top: 2px solid #f63b3b;
+  border-top: 2px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-right: 8px;
@@ -1797,16 +1803,16 @@ button:active {
 }
 
 .button:hover {
-  background: #ff0000;
-  border-color: #c41e3a;
+  background: var(--primary-color);
+  border-color: var(--primary-hover);
   color: #f2f2f2;
-  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
   transform: translateY(-1px);
 }
 
 .button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+  box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.2);
 }
 
 .button:disabled {
@@ -1828,22 +1834,22 @@ button:active {
 
 /* Focus state для accessibility */
 .button:focus-visible {
-  outline: 2px solid #c41e3a;
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
 /* Primary variant - изначально красная кнопка */
 .button.primary {
-  background: #c41e3a;
+  background: var(--primary-color);
   color: #ffffff;
-  border-color: #c41e3a;
-  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.2);
 }
 
 .button.primary:hover {
-  background: #a01830;
-  border-color: #a01830;
-  box-shadow: 0 6px 16px rgba(196, 30, 58, 0.4);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.4);
 }
 
 /* Secondary variant - серая с красным hover */
@@ -1854,24 +1860,24 @@ button:active {
 }
 
 .button.secondary:hover {
-  background: #c41e3a;
+  background: var(--primary-color);
   color: #ffffff;
-  border-color: #c41e3a;
-  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Outline variant - прозрачная с границей */
 .button.outline {
   background: transparent;
-  color: #c41e3a;
-  border: 2px solid #c41e3a;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
   box-shadow: none;
 }
 
 .button.outline:hover {
-  background: #c41e3a;
+  background: var(--primary-color);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Ghost variant - только текст */
@@ -1883,9 +1889,9 @@ button:active {
 }
 
 .button.ghost:hover {
-  background: rgba(196, 30, 58, 0.1);
-  color: #c41e3a;
-  box-shadow: 0 2px 8px rgba(196, 30, 58, 0.15);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.15);
 }
 
 /* Size variants */
@@ -2019,7 +2025,7 @@ button:active {
   position: fixed;
   top: 20px;
   left: 20px;
-  background: #e21a1c;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 50%;
@@ -2036,7 +2042,7 @@ button:active {
 }
 
 .back-button:hover {
-  background: #c31414;
+  background: var(--primary-hover);
   transform: scale(1.1);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -2102,7 +2108,7 @@ button:active {
 
     &.active {
       opacity: 1;
-      color: #de3a38;
+      color: var(--primary-color);
     }
 
     &.desc {
@@ -2116,7 +2122,7 @@ input[type="date"],
 input[type="datetime-local"] {
   appearance: none;
   -webkit-appearance: none;
-  background-color: #fff;
+  background-color: var(--bg-surface);
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 8px 12px;
@@ -2135,14 +2141,14 @@ input[type="datetime-local"] {
   }
 
   &:hover {
-    border-color: #e21a1c;
-    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
   }
 
   &:focus {
-    border-color: #e21a1c;
-    box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.2);
-    background-color: #fff !important;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.2);
+    background-color: var(--bg-surface) !important;
     /* Override .input input behavior if necessary */
     color: #374151 !important;
     /* Override .input input behavior */
@@ -2171,13 +2177,13 @@ input[type="datetime-local"] {
 /* Ensure overrides for .input wrapper specific styles if they conflict */
 .input input[type="date"],
 .input input[type="datetime-local"] {
-  background-color: #fff;
+  background-color: var(--bg-surface);
   /* Reset from gray */
   height: 40px;
   /* Match min-height */
 
   &:focus {
-    background-color: #fff;
+    background-color: var(--bg-surface);
     color: #374151;
   }
 }
@@ -2197,14 +2203,14 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:hover {
-  border-color: #ff4757;
+  border-color: var(--primary-color);
   transform: scale(1.08);
-  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
 input[type="checkbox"]:checked {
-  background-color: #ff4757;
-  border-color: #ff4757;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
   animation: checkFill 0.5s ease-out;
 }
 

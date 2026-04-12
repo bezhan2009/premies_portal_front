@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import SortIcon from "../../general/SortIcon.jsx";
 
 const ClientDataTabs = ({
@@ -155,9 +155,9 @@ const ClientDataTabs = ({
                           className="selectAll-toggle"
                           style={{ background: "#374151" }}
                           onClick={() =>
-                            (window.location.href =
-                              "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                              card.cardId)
+                          (window.location.href =
+                            "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                            card.cardId)
                           }
                         >
                           Посмотреть тариф
@@ -353,7 +353,7 @@ const ClientDataTabs = ({
                       onClick={() => requestSortCredits("clientCode")}
                       className="limits-table__th sortable-header"
                     >
-                      КлиентКод{" "}
+                      Клиент Код{" "}
                       <SortIcon
                         sortConfig={sortCreditsConfig}
                         sortKey="clientCode"
@@ -432,16 +432,18 @@ const ClientDataTabs = ({
                         >
                           Детали
                         </button>
-                        <button
-                          className="selectAll-toggle"
-                          style={{
-                            marginLeft: 10,
-                            background: "#27ae60",
-                          }}
-                          onClick={() => handleOpenRepayModal(card)}
-                        >
-                          Погасить
-                        </button>
+                        {String(card.statusName || "").trim().toLowerCase() !== "погашен" && (
+                          <button
+                            className="selectAll-toggle"
+                            style={{
+                              marginLeft: 10,
+                              background: "#27ae60",
+                            }}
+                            onClick={() => handleOpenRepayModal(card)}
+                          >
+                            Погасить
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -640,3 +642,4 @@ const ClientDataTabs = ({
 };
 
 export default ClientDataTabs;
+

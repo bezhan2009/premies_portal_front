@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "../../../styles/ABSSearch.scss";
-import Select from "../../elements/Select";
 import "../../../styles/components/BlockInfo.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import AlertMessage from "../../general/AlertMessage.jsx";
-import Modal from "../../general/Modal.jsx";
 import {
   getUserCards,
   getUserAccounts,
@@ -32,6 +30,9 @@ import RepayModal from "./RepayModal.jsx";
 import SearchForm from "./SearchForm.jsx";
 import ClientPersonalInfo from "./ClientPersonalInfo.jsx";
 import ClientDataTabs from "./ClientDataTabs.jsx";
+import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.jsx";
+import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
+import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
 // Utilities
 import {
@@ -39,6 +40,10 @@ import {
   formatPhoneNumber as formatPhoneNumberUtil,
   copyToClipboard as copyToClipboardUtil,
 } from "./absSearchUtils.js";
+import {
+  getClientSelfieDocument,
+  resolveClientDocumentUrl,
+} from "../../../utils/clientDocuments.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
@@ -64,6 +69,13 @@ export default function ABSClientSearch() {
   const [telegramData, setTelegramData] = useState(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [telegramDeleteLoading, setTelegramDeleteLoading] = useState(false);
+  const [clientDocuments, setClientDocuments] = useState([]);
+  const [clientDocumentsLoading, setClientDocumentsLoading] = useState(false);
+  const [clientDocumentsModalOpen, setClientDocumentsModalOpen] =
+    useState(false);
+  const [documentPreview, setDocumentPreview] = useState(null);
+  const [documentPreviewVariant, setDocumentPreviewVariant] =
+    useState("default");
 
   // Проверка доступа к страницам
   const hasTransactionsAccess = canAccessTransactions();
@@ -173,6 +185,10 @@ export default function ABSClientSearch() {
     setDepositsData([]);
     setIsMobile(null);
     setTelegramData(null);
+    setClientDocuments([]);
+    setClientDocumentsModalOpen(false);
+    setDocumentPreview(null);
+    setDocumentPreviewVariant("default");
     sessionStorage.removeItem("absClientSearchState");
   };
 
@@ -550,6 +566,29 @@ export default function ABSClientSearch() {
     setSelectedCreditForRepay(null);
   };
 
+  const openDocumentPreview = (document, variant = "default") => {
+    setDocumentPreview(document);
+    setDocumentPreviewVariant(variant);
+  };
+
+  const handleCloseDocumentPreview = () => {
+    setDocumentPreview(null);
+    setDocumentPreviewVariant("default");
+  };
+
+  const handleOpenClientPhoto = () => {
+    if (!selectedClientSelfie) {
+      showAlert("Фото клиента не найдено", "warning");
+      return;
+    }
+
+    openDocumentPreview(selectedClientSelfie, "oval");
+  };
+
+  const handleOpenClientDocuments = () => {
+    setClientDocumentsModalOpen(true);
+  };
+
   const handleRepaySubmit = async (repayData) => {
     try {
       setIsRepayLoading(true);
@@ -587,6 +626,48 @@ export default function ABSClientSearch() {
 
   const selectedClient =
     clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+  const selectedClientINN = selectedClient?.tax_code?.trim() || "";
+  const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
+  const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selectedClientINN) {
+      setClientDocuments([]);
+      setClientDocumentsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadClientDocuments = async () => {
+      try {
+        setClientDocumentsLoading(true);
+        const response = await getClientDocumentsByINN(selectedClientINN);
+
+        if (!cancelled) {
+          setClientDocuments(response || []);
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки документов клиента:", error);
+        if (!cancelled) {
+          setClientDocuments([]);
+          showAlert("Не удалось загрузить документы клиента", "error");
+        }
+      } finally {
+        if (!cancelled) {
+          setClientDocumentsLoading(false);
+        }
+      }
+    };
+
+    loadClientDocuments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClientINN]);
 
   const tableData = selectedClient
     ? [
@@ -820,6 +901,12 @@ export default function ABSClientSearch() {
               telegramData={telegramData}
               handleDeleteTelegram={handleDeleteTelegram}
               telegramDeleteLoading={telegramDeleteLoading}
+              clientPhotoUrl={selectedClientPhotoUrl}
+              clientPhotoLoading={clientDocumentsLoading}
+              onOpenClientPhoto={handleOpenClientPhoto}
+              onOpenClientDocuments={handleOpenClientDocuments}
+              documentsCount={clientDocuments.length}
+              selectedClientINN={selectedClientINN}
             />
 
             <ClientPersonalInfo
@@ -897,6 +984,33 @@ export default function ABSClientSearch() {
         onClose={handleCloseDetailsModal}
         data={detailsData}
         isLoading={isDetailsLoading}
+      />
+
+      <ClientDocumentsModal
+        isOpen={clientDocumentsModalOpen}
+        onClose={() => setClientDocumentsModalOpen(false)}
+        documents={clientDocuments}
+        isLoading={clientDocumentsLoading}
+        onPreview={(document) => openDocumentPreview(document)}
+        title="Документы клиента"
+        subtitle={
+          selectedClient
+            ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""} · ИНН: ${selectedClientINN || "не указан"}`
+            : ""
+        }
+        tableId="frontovik-client-documents"
+      />
+
+      <DocumentPreviewModal
+        isOpen={Boolean(documentPreview)}
+        onClose={handleCloseDocumentPreview}
+        document={documentPreview}
+        oval={documentPreviewVariant === "oval"}
+        title={
+          documentPreviewVariant === "oval"
+            ? "Фото клиента"
+            : documentPreview?.title || "Предпросмотр документа"
+        }
       />
     </>
   );
