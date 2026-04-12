@@ -11,7 +11,7 @@ const CustomSelect = ({
   options = [],
   value,
   onChange,
-  placeholder = "Р’С‹Р±РµСЂРёС‚Рµ...",
+  placeholder = "Выберите...",
   error,
   title,
   className = "",
@@ -150,7 +150,7 @@ const CustomSelect = ({
                 </Motion.div>
               ))
             ) : (
-              <div className="no-options">РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РІР°СЂРёР°РЅС‚РѕРІ</div>
+              <div className="no-options">Нет доступных вариантов</div>
             )}
           </div>
         </Motion.div>

@@ -592,6 +592,14 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
       });
     }
 
+    if (roles.includes(27)) {
+      additionalLinks.push({
+        name: "База документов клиентов",
+        href: "/client-documents",
+        key: "client_documents",
+      });
+    }
+
     if (roles.includes(19)) {
       additionalLinks.push({
         name: "Банкоматы",

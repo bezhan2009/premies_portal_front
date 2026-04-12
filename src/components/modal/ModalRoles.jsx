@@ -12,13 +12,19 @@ import Select from "../elements/Select";
 import AlertMessage from "../general/AlertMessage";
 import UserPhoto from "../../assets/user.png";
 import { getWorkerByUserId } from "../../api/workers/getWorkerByUserId";
+import {
+    getApplicationOffices,
+    getUserApplicationOffices,
+} from "../../api/applicationOffices/applicationOffices.js";
 import "../../styles/components/ModalRoles.scss";
 
 export default function ModalRoles({ open = true, data, setOpenRoles }) {
     const [loading, setLoading] = useState(false);
     const [roles, setRoles] = useState([]);
     const [offices, setOffices] = useState([]);
+    const [applicationOffices, setApplicationOffices] = useState([]);
     const [userRoles, setUserRoles] = useState([]);
+    const [selectedApplicationOfficeIds, setSelectedApplicationOfficeIds] = useState([]);
     const [details, setDetails] = useState({
         office_title: "",
         office_desc: "",
@@ -69,6 +75,32 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
         } catch (err) {
             console.error(err);
             setAlert({ message: "Ошибка загрузки офисов", type: "error" });
+        }
+    };
+
+    const loadApplicationOffices = async () => {
+        try {
+            const officesData = await getApplicationOffices();
+            setApplicationOffices(officesData || []);
+        } catch (err) {
+            console.error(err);
+            setApplicationOffices([]);
+            setAlert({ message: "Ошибка загрузки офисов заявок", type: "error" });
+        }
+    };
+
+    const loadUserApplicationOffices = async () => {
+        if (!data?.ID) return;
+
+        try {
+            const officesData = await getUserApplicationOffices(data.ID);
+            setSelectedApplicationOfficeIds(
+                (officesData || []).map((office) => office.ID),
+            );
+        } catch (err) {
+            console.error(err);
+            setSelectedApplicationOfficeIds([]);
+            setAlert({ message: "Ошибка загрузки офисов заявок пользователя", type: "error" });
         }
     };
 
@@ -159,6 +191,8 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
             loadData();
             loadDataUser();
             loadAllOffices();
+            loadApplicationOffices();
+            loadUserApplicationOffices();
             loadWorkerData();
             loadDirectorOffice();
         }
@@ -177,6 +211,14 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
     }, [userRoles]);
 
     const isRoleActive = (roleId) => userRoles.some((el) => el.ID === roleId);
+
+    const toggleApplicationOffice = (officeId) => {
+        setSelectedApplicationOfficeIds((prev) =>
+            prev.includes(officeId)
+                ? prev.filter((id) => id !== officeId)
+                : [...prev, officeId],
+        );
+    };
 
     const validateFields = () => {
         const errors = [];
@@ -217,6 +259,7 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                 plan: +details.plan || 0,
                 salary_project: +details.salary_project || 0,
                 role_ids: userRoles.map((r) => r.ID),
+                application_office_ids: selectedApplicationOfficeIds,
             });
             setAlert({ message: "Изменения успешно сохранены!", type: "success" });
             setTimeout(() => setOpenRoles({ open: false, data: null }), 10);
@@ -302,6 +345,45 @@ export default function ModalRoles({ open = true, data, setOpenRoles }) {
                                     );
                                 })}
                             </div>
+                        )}
+                    </section>
+
+                    <section className="extra-section">
+                        <h3>Офисы заявок</h3>
+                        <p className="display-field">
+                            Если ничего не выбрано, пользователь видит заявки всех офисов.
+                        </p>
+                        {applicationOffices.length > 0 ? (
+                            <div className="roles-grid">
+                                {applicationOffices.map((office, index) => {
+                                    const active = selectedApplicationOfficeIds.includes(office.ID);
+                                    const id = `application-office-${office.ID}`;
+
+                                    return (
+                                        <label
+                                            key={office.ID}
+                                            htmlFor={id}
+                                            className={`role-item ${active ? "active" : ""}`}
+                                            style={{ animationDelay: `${index * 0.04}s` }}
+                                        >
+                                            <input
+                                                id={id}
+                                                type="checkbox"
+                                                checked={active}
+                                                onChange={() => toggleApplicationOffice(office.ID)}
+                                            />
+                                            <span className="checkmark">
+                        <svg viewBox="0 0 24 24">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                                            <span className="role-label">{office.title}</span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="display-field">Офисы заявок пока не найдены</p>
                         )}
                     </section>
 

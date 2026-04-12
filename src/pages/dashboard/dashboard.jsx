@@ -90,6 +90,8 @@ function RedirectDashboard() {
         navigate("accounts/account-operations", { replace: true });
     } else if (roleIds.includes(21)) {
         navigate("/processing-search/transactions", { replace: true });
+    } else if (roleIds.includes(27)) {
+        navigate("/client-documents", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });
