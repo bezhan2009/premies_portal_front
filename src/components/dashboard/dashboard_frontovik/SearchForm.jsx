@@ -47,7 +47,7 @@ const SearchForm = ({
               </>
             ) : isMobile !== null ? (
               <>
-                <MdOutlinePhonelinkErase color="#e21a1c" size={"30px"} />
+                <MdOutlinePhonelinkErase color="var(--primary-color)" size={"30px"} />
                 Не подключен к мобильному банку
               </>
             ) : (
@@ -57,7 +57,7 @@ const SearchForm = ({
 
           <div className="search-card__telegram-group">
             {telegramLoading ? (
-              <span style={{ fontSize: "13px", color: "#999" }}>
+              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                 Проверка Telegram...
               </span>
             ) : telegramData?.userTelegramId ? (
@@ -82,7 +82,7 @@ const SearchForm = ({
               </>
             ) : telegramData !== null || (displayPhone && !telegramLoading) ? (
               <FaTelegramPlane
-                color="#e21a1c"
+                color="var(--primary-color)"
                 size={"28px"}
                 title="Пользователь не найден в Telegram"
               />

@@ -62,8 +62,8 @@
 
 .flexible-ant-table__resize-handle:hover::after,
 .native-flex-table__resize-handle:hover::after {
-  background: rgba(185, 28, 28, 0.35);
-  box-shadow: 0 0 12px rgba(185, 28, 28, 0.22);
+  background: rgba(var(--primary-rgb), 0.35);
+  box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.22);
   opacity: 1;
 }
 
@@ -149,8 +149,8 @@
 .flexible-ant-table__th.is-dragging,
 .native-flex-table__th.is-dragging {
   opacity: 0.6;
-  background: rgba(255, 245, 245, 0.95);
-  box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.18);
+  background: rgba(var(--primary-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.18);
   transform: scale(1.01);
   cursor: grabbing;
   transition: all 0.15s ease;
@@ -158,10 +158,10 @@
 
 .flexible-ant-table__th.is-drop-target,
 .native-flex-table__th.is-drop-target {
-  background: rgba(254, 242, 242, 0.98);
+  background: rgba(var(--primary-rgb), 0.03);
   box-shadow:
-    inset 0 0 0 1px rgba(185, 28, 28, 0.24),
-    0 10px 24px rgba(185, 28, 28, 0.08);
+    inset 0 0 0 1px rgba(var(--primary-rgb), 0.24),
+    0 10px 24px rgba(var(--primary-rgb), 0.08);
   position: relative;
 }
 
@@ -174,8 +174,8 @@
   bottom: 0;
   left: 0;
   width: 3px;
-  background-color: #e21a1c;
-  box-shadow: 0 0 6px rgba(226, 26, 28, 0.6);
+  background-color: var(--primary-color);
+  box-shadow: 0 0 6px rgba(var(--primary-rgb), 0.6);
   pointer-events: none;
   animation: pulse 1s ease-in-out infinite;
 }

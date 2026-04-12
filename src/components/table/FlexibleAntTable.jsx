@@ -7,25 +7,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Table as AntTable, ConfigProvider } from "antd";
+import { Table as AntTable, ConfigProvider, theme } from "antd";
 import ruRU from "antd/locale/ru_RU";
 import "../../styles/components/FlexibleTable.scss";
+import useThemeStore from "../../store/useThemeStore";
 
-const CUSTOM_THEME = {
+// Static parts of the theme
+const BASE_THEME_CONFIG = {
   token: {
-    colorPrimary: "#e21a1c",
     borderRadius: 12,
     fontFamily: "inherit",
-  },
-  components: {
-    Pagination: {
-      itemActiveBg: "#e21a1c",
-      activeBorderColor: "#e21a1c",
-    },
-    Select: {
-      activeBorderColor: "#e21a1c",
-      hoverBorderColor: "#f15454",
-    },
   },
 };
 
@@ -297,13 +288,49 @@ const ResizableHeaderCell = ({
 };
 
 export const Table = ({
-  children,
-  columns,
-  dataSource = [],
-  tableId,
-  onChange,
+  columns: initialColumns,
+  dataSource,
+  onColumnOrderChange,
   ...restProps
 }) => {
+  const { primaryColor, theme: currentTheme } = useThemeStore();
+
+  const dynamicTheme = useMemo(
+    () => ({
+      ...BASE_THEME_CONFIG,
+      algorithm: currentTheme === "dark" ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      token: {
+        ...BASE_THEME_CONFIG.token,
+        colorPrimary: primaryColor,
+        colorBgContainer: "var(--bg-surface)",
+        colorBgLayout: "var(--bg-color)",
+        colorText: "var(--text-color)",
+        colorBorder: "var(--border-color)",
+      },
+      components: {
+        Pagination: {
+          itemActiveBg: primaryColor,
+          activeBorderColor: primaryColor,
+        },
+        Select: {
+          activeBorderColor: primaryColor,
+          hoverBorderColor: primaryColor,
+        },
+        Button: {
+          colorPrimary: primaryColor,
+          colorPrimaryHover: primaryColor,
+        },
+        Checkbox: {
+          colorPrimary: primaryColor,
+        },
+        Radio: {
+          colorPrimary: primaryColor,
+        },
+      },
+    }),
+    [primaryColor],
+  );
+
   const dragColumnKey = useRef(null);
   const wrapperRef = useRef(null);
   const storageKey = useMemo(() => {
@@ -614,7 +641,7 @@ export const Table = ({
   );
 
   return (
-    <ConfigProvider locale={ruRU} theme={CUSTOM_THEME}>
+    <ConfigProvider locale={ruRU} theme={dynamicTheme}>
       <div className="flexible-ant-table" ref={wrapperRef}>
         <AntTable
           {...restProps}

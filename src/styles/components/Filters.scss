@@ -115,7 +115,7 @@
 .filters__modal-content h3 {
   margin-top: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-color);
   margin-bottom: 20px;
 }
 
@@ -134,14 +134,14 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
   &:focus {
-    border-color: #c31414;
-    box-shadow: 0 0 0 2px #fff3f3;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
     outline: none;
   }
 
   /* Кнопка внутри file-input */
   &::file-selector-button {
-    background-color: #c31414;
+    background-color: var(--primary-color);
     color: #fff;
     border: none;
     padding: 10px 16px;
@@ -152,7 +152,7 @@
     transition: background-color 0.3s ease;
 
     &:hover {
-      background-color: darken(#c31414, 10%);
+      background-color: var(--primary-hover);
     }
   }
 }
@@ -183,11 +183,11 @@
 }
 
 .filters__modal-actions button:first-of-type {
-  background-color: #c31414;
+  background-color: var(--primary-color);
   color: #fff;
 
   &:hover {
-    background-color: darken(#c31414, 10%);
+    background-color: var(--primary-hover);
   }
 
   &:disabled {
@@ -198,7 +198,7 @@
 
 .filters__modal-actions button:last-of-type {
   background-color: #ddd;
-  color: #333;
+  color: var(--text-color);
 
   &:hover {
     background-color: #bbb;
@@ -248,13 +248,13 @@
 }
 
 .filters__button--red {
-  background-color: #d32f2f !important;
+  background-color: var(--primary-color) !important;
   color: white !important;
-  border: 1px solid #c62828 !important;
+  border: 1px solid var(--primary-hover) !important;
 
   &:hover {
-    background-color: #b71c1c !important;
-    border-color: #b71c1c !important;
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
   }
 
   &:disabled {

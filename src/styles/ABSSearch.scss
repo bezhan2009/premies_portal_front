@@ -10,7 +10,7 @@
     margin-bottom: 30px;
 
     h1 {
-      color: #2c3e50;
+      color: var(--text-color);
       font-size: 28px;
       margin-bottom: 10px;
     }
@@ -22,11 +22,11 @@
   }
 
   &__search {
-    background: #f8f9fa;
+    background: var(--bg-secondary);
     border-radius: 10px;
     padding: 25px;
     margin-bottom: 30px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   &__phone-input {
@@ -42,18 +42,20 @@
     input {
       width: 100%;
       padding: 12px 15px;
-      border: 2px solid #ddd;
+      border: 2px solid var(--border-color);
       border-radius: 6px;
       font-size: 16px;
+      background: var(--bg-surface);
+      color: var(--text-color);
       transition: border-color 0.3s;
 
       &:focus {
         outline: none;
-        border-color: #3498db;
+        border-color: var(--primary-color);
       }
 
       &:disabled {
-        background: #f5f5f5;
+        background: var(--bg-color);
         cursor: not-allowed;
       }
     }
@@ -84,11 +86,11 @@
       }
 
       &.search-btn {
-        background: #3498db;
+        background: var(--primary-color);
         color: white;
 
         &:hover:not(:disabled) {
-          background: #2980b9;
+          background: var(--primary-hover);
         }
 
         &--loading {
@@ -157,13 +159,13 @@
     .client-table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: var(--bg-surface);
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-md);
 
       th {
-        background: #2c3e50;
+        background: var(--primary-color);
         color: white;
         padding: 15px;
         text-align: left;
@@ -184,7 +186,7 @@
 
       td {
         padding: 15px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
 
         &:first-child {
           .field-name {
@@ -233,7 +235,7 @@
       }
 
       tr:hover {
-        background: #f9f9f9;
+        background: rgba(var(--primary-rgb), 0.05);
       }
 
       tr:last-child td {
@@ -278,8 +280,8 @@
     .spinner {
       width: 50px;
       height: 50px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #de3a38;
+      border: 4px solid rgba(var(--primary-rgb), 0.1);
+      border-top: 4px solid var(--primary-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
@@ -386,13 +388,13 @@
     transition: border-color 0.2s;
 
     &:hover {
-      border-color: #de3a38;
+      border-color: var(--primary-color);
     }
 
     &:focus {
       outline: none;
-      border-color: #de3a38;
-      box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
     }
 
     option {
@@ -441,7 +443,7 @@
 .limits-table__client-counter {
   font-size: 14px;
   font-weight: normal;
-  color: #7d6c6c;
+  color: var(--text-muted);
   margin-left: 10px;
 }
 
@@ -550,9 +552,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 30px;
-  background-color: #db3434;
+  background-color: var(--primary-color);
   color: white;
-  border-bottom: 1px solid #e03a3a;
+  border-bottom: 1px solid var(--primary-hover);
 
   .graph-modal-title {
     margin: 0;
@@ -606,8 +608,8 @@
   .graph-modal-spinner {
     width: 50px;
     height: 50px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #db3434;
+    border: 4px solid rgba(var(--primary-rgb), 0.1);
+    border-top: 4px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 20px;
@@ -638,19 +640,19 @@
   }
 
   scrollbar-width: thin;
-  scrollbar-color: #e21a1c #f1f1f1;
+  scrollbar-color: var(--primary-color) var(--bg-secondary);
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #e21a1c;
+    background: var(--primary-color);
     border-radius: 4px;
 
     &:hover {
-      background: #bd1517;
+      background: var(--primary-hover);
     }
   }
 }
@@ -776,11 +778,11 @@
     transition: all 0.2s;
 
     &:hover {
-      color: #de3a38;
+      color: var(--primary-color);
     }
 
     &.active {
-      color: #de3a38;
+      color: var(--primary-color);
       &:after {
         content: "";
         position: absolute;
@@ -788,7 +790,7 @@
         left: 0;
         right: 0;
         height: 3px;
-        background-color: #de3a38;
+        background-color: var(--primary-color);
       }
     }
   }

@@ -3,10 +3,17 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./general/DynamicMenu.jsx";
 import useSidebar from "../hooks/useSideBar.js";
 import CurrencyRatesWidget from "./general/CurrencyRatesWidget.jsx";
+import useThemeStore from "../store/useThemeStore.js";
+import { useEffect } from "react";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
   const location = useLocation();
+  const { applySettings } = useThemeStore();
+
+  useEffect(() => {
+    applySettings();
+  }, [applySettings]);
 
   const getActiveLink = (pathname) => {
     // Product pages

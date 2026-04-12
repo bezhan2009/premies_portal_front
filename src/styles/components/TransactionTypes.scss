@@ -20,7 +20,7 @@
         margin-top: 5px;
       }
       > p {
-        color: #e21a1c;
+        color: var(--primary-color);
         margin: 0;
         // display: none;
       }
@@ -40,7 +40,7 @@
       font-size: 15px;
       cursor: pointer;
       border: none;
-      background-color: #e21a1c;
+      background-color: var(--primary-color);
       color: #fff;
     }
   }
@@ -80,7 +80,7 @@
     }
 
     &:hover {
-      background-color: #eef2ff !important;
+      background-color: rgba(var(--primary-rgb), 0.05) !important;
     }
   }
 

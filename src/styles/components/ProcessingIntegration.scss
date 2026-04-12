@@ -1,13 +1,13 @@
 // Variables
-$primary-color: #e21a1c;
-$primary-hover: #c31414;
-$primary-light: rgba(226, 26, 28, 0.1);
-$primary-glow: rgba(226, 26, 28, 0.3);
+$primary-color: var(--primary-color);
+$primary-hover: var(--primary-hover);
+$primary-light: rgba(var(--primary-rgb), 0.1);
+$primary-glow: rgba(var(--primary-rgb), 0.3);
 
-$danger-color: #c31414;
-$danger-hover: #a01212;
-$danger-light: rgba(195, 20, 20, 0.1);
-$danger-glow: rgba(195, 20, 20, 0.3);
+$danger-color: var(--primary-color);
+$danger-hover: var(--primary-hover);
+$danger-light: rgba(var(--primary-rgb), 0.1);
+$danger-glow: rgba(var(--primary-rgb), 0.3);
 
 $success-color: #10b981;
 $success-hover: #059669;

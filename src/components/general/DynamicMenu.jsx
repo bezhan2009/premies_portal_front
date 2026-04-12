@@ -8,6 +8,8 @@ import { useWebSocket } from "../../api/application/wsnotifications.js";
 import ChangePasswordIcon from "../../assets/change_password.png";
 import AlertMessage from "./AlertMessage.jsx";
 import Spinner from "../Spinner.jsx";
+import { Settings } from "lucide-react";
+import SettingsModal from "./SettingsModal.jsx";
 
 
 
@@ -28,6 +30,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
   const [roles, setRoles] = useState([]);
   const [ws, setWs] = useState(null);
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Функция для проверки необходимости смены пароля
   const checkPasswordChangeRequired = useCallback(() => {
@@ -877,6 +880,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             </span>
             <button
               className="change-password-btn"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings 
+                className="settings-icon" 
+                size={27} 
+                title="Настройки интерфейса"
+              />
+            </button>
+            <button
+              className="change-password-btn"
               onClick={handleChangePassword}
             >
               <img
@@ -936,6 +949,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
           </div>
         </div>
       )}
+
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </>
   );
 }

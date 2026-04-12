@@ -6,6 +6,8 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import "dayjs/locale/ru";
 import { CalendarDays, Clock3 } from "lucide-react";
 import "../../styles/components/CustomDateInput.scss";
+import useThemeStore from "../../store/useThemeStore";
+import { useMemo } from "react";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("ru");
@@ -22,23 +24,10 @@ const VALUE_FORMATS = {
   time: "HH:mm",
 };
 
-const CUSTOM_THEME = {
+const BASE_THEME_CONFIG = {
   token: {
-    colorPrimary: "#e21a1c",
     borderRadius: 12,
     fontFamily: "inherit",
-  },
-  components: {
-    DatePicker: {
-      activeBorderColor: "#e21a1c",
-      hoverBorderColor: "#f15454",
-      activeShadow: "0 0 0 4px rgba(226, 26, 28, 0.12)",
-    },
-    TimePicker: {
-      activeBorderColor: "#e21a1c",
-      hoverBorderColor: "#f15454",
-      activeShadow: "0 0 0 4px rgba(226, 26, 28, 0.12)",
-    },
   },
 };
 
@@ -124,6 +113,30 @@ export default function CustomDateInput({
   autoFocus = false,
   variant = "default",
 }) {
+  const { primaryColor } = useThemeStore();
+
+  const dynamicTheme = useMemo(
+    () => ({
+      ...BASE_THEME_CONFIG,
+      token: {
+        ...BASE_THEME_CONFIG.token,
+        colorPrimary: primaryColor,
+      },
+      components: {
+        DatePicker: {
+          activeBorderColor: primaryColor,
+          hoverBorderColor: primaryColor,
+          activeShadow: `0 0 0 4px rgba(${primaryColor.replace("#", "")}, 0.12)`,
+        },
+        TimePicker: {
+          activeBorderColor: primaryColor,
+          hoverBorderColor: primaryColor,
+          activeShadow: `0 0 0 4px rgba(${primaryColor.replace("#", "")}, 0.12)`,
+        },
+      },
+    }),
+    [primaryColor],
+  );
   const isTime = type === "time";
   const isDateTime = type === "datetime-local";
   const pickerValue = parsePickerValue(value, type);
@@ -178,7 +191,7 @@ export default function CustomDateInput({
   };
 
   return (
-    <ConfigProvider locale={ruRU} theme={CUSTOM_THEME}>
+    <ConfigProvider locale={ruRU} theme={dynamicTheme}>
       {isTime ? (
         <TimePicker
           {...sharedProps}

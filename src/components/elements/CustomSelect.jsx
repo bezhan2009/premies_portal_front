@@ -143,7 +143,7 @@ const CustomSelect = ({
                   key={option.value || index}
                   className={`option-item ${String(option.value) === String(value) ? "selected" : ""}`}
                   onClick={() => handleSelect(option.value)}
-                  whileHover={{ backgroundColor: "rgba(226, 26, 28, 0.08)" }}
+                  whileHover={{ backgroundColor: "rgba(var(--primary-rgb), 0.08)" }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {option.label}

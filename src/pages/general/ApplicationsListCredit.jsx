@@ -255,7 +255,7 @@ export default function ApplicationsListCredit() {
         <main>
           <div className="my-applications-header">
             <Select
-              style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
+              style={{ border: selectedRows.length && "4px solid var(--primary-color)" }}
               id={"status"}
               value={data?.status}
               onChange={(e) => {
@@ -448,7 +448,8 @@ export default function ApplicationsListCredit() {
                               onClick={() => deleteApplication(row.ID)}
                               style={{
                                 fontSize: 35,
-                                color: "#c31414",
+                                color: "var(--primary-color)",
+                                border: "none",
                                 cursor: "pointer",
                               }}
                             />
