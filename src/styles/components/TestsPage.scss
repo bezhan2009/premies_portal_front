@@ -15,8 +15,8 @@
 
 .kb-sidebar {
   flex: 0 0 220px;
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   padding: 20px;
   animation: fadeIn 0.5s ease;
@@ -25,7 +25,7 @@
     @include font;
     font-size: 1.5rem;
     margin-bottom: 14px;
-    color: #c31414;
+    color: var(--primary-color);
   }
 
   ul {
@@ -46,13 +46,13 @@
 
       &:hover,
       &.active {
-        background: #fff3f3;
+        background: rgba(var(--primary-rgb), 0.05);
         transform: scale(1.02);
-        color: #c31414;
+        color: var(--primary-color);
       }
 
       &:not(.active) {
-        color: #333;
+        color: var(--text-color);
       }
     }
   }
@@ -60,8 +60,8 @@
 
 .kb-content {
   flex: 1;
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   padding: 20px;
   animation: fadeIn 0.5s ease;
@@ -69,7 +69,7 @@
   p {
     @include font;
     font-size: 1rem;
-    color: #777;
+    color: var(--text-color);
   }
 }
 .questions-grid {
@@ -97,7 +97,7 @@
   h4 {
     font-size: 1.2rem;
     margin-bottom: 12px;
-    color: #333;
+    color: var(--text-color);
   }
 
   p.question-type {
@@ -125,7 +125,7 @@
 }
 
 .question-single_choice {
-  border-left: 5px solid #c31414;
+  border-left: 5px solid var(--primary-color);
 }
 
 .question-multiple_choice {
@@ -187,7 +187,7 @@
 }
 
 .kb-add-btn {
-  background: #d52f2f;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 9px 17px;
@@ -198,7 +198,7 @@
   transition: background 0.3s;
 
   &:hover {
-    background: #d52f2f;
+    background: var(--primary-hover);
     color: white;
   }
 
@@ -237,17 +237,17 @@
 
 select {
   padding: 8px 12px;
-  border: 2px solid #e21a1c;
+  border: 2px solid var(--primary-color);
   border-radius: 4px;
   font-size: 16px;
   outline: none;
   color: #fff;
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
 }
 
 option {
   color: #fff;
-  background-color: #e21a1c;
+  background-color: var(--primary-color);
 }
 
 select:hover {
@@ -288,11 +288,11 @@ option:hover {
 
     strong {
       font-size: 1.1rem;
-      color: #333;
+      color: var(--text-color);
     }
 
     .answer-type {
-      background: #e21a1c;
+      background: var(--primary-color);
       color: #fff;
       padding: 4px 8px;
       border-radius: 4px;

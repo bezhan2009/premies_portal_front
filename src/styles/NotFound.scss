@@ -4,7 +4,7 @@ body {
   font-family: $font-family !important;
   margin: 0;
   padding: 0;
-  background-color: #fff;
+  background-color: var(--bg-color);
 }
 div {
   display: block;

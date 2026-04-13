@@ -1,10 +1,11 @@
 .selection-stats-card {
   margin-left: 24px;
-  background: #ffffff;
+  background: var(--bg-surface);
   padding: 12px 20px;
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #eef2f6;
+  box-shadow: var(--shadow-md);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 20px;
@@ -19,14 +20,14 @@
 
     .label {
       font-size: 13px;
-      color: #64748b;
+      color: var(--text-secondary);
       margin-bottom: 4px;
     }
 
     .value {
       font-size: 20px;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--text-color);
 
       &.paid {
         color: #16a34a;
@@ -42,7 +43,7 @@
   .divider {
     width: 1px;
     height: 36px;
-    background: #e2e8f0;
+    background: var(--border-color);
   }
 
   .highlight {
@@ -94,7 +95,8 @@
   border-collapse: collapse;
   font-size: 13px;
   font-family: "Inter", system-ui, sans-serif;
-  background: #fff;
+  background: var(--bg-surface);
+  color: var(--text-color);
 
   thead {
     position: sticky;
@@ -106,20 +108,20 @@
     transition: background-color 0.15s ease;
 
     &:nth-child(even) {
-      background-color: #f8fafc;
+      background-color: var(--bg-color);
     }
 
     &:hover {
-      background-color: #eef2ff !important;
+      background-color: var(--bg-secondary) !important;
     }
   }
 
   td {
     padding: 9px 12px;
-    border-bottom: 1px solid #e8edf3;
-    border-right: 1px solid #e8edf3;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     text-align: center;
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 12.5px;
     white-space: nowrap;
 
@@ -132,8 +134,8 @@
 /* Ячейка хедера */
 .eqms-th {
   padding: 11px 12px;
-  background: #fff;
-  color: #000;
+  background: var(--bg-surface);
+  color: var(--text-color);
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
@@ -166,10 +168,10 @@
 
   /* Активная колонка сортировки */
   &--active {
-    background: #fff;
-    box-shadow: inset 0 -3px 0 #60a5fa;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 -3px 0 var(--primary-color);
     .eqms-th__icon {
-      color: #93c5fd;
+      color: var(--primary-color);
     }
   }
 }
@@ -185,7 +187,7 @@
   margin-left: 5px;
   font-size: 12px;
   vertical-align: middle;
-  color: #bfdbfe;
+  color: var(--text-muted);
   transition: color 0.15s ease;
 
   &--idle {

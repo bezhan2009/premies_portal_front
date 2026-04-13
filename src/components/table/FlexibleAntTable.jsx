@@ -7,8 +7,18 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Table as AntTable } from "antd";
+import { Table as AntTable, ConfigProvider, theme } from "antd";
+import ruRU from "antd/locale/ru_RU";
 import "../../styles/components/FlexibleTable.scss";
+import useThemeStore from "../../store/useThemeStore";
+
+// Static parts of the theme
+const BASE_THEME_CONFIG = {
+  token: {
+    borderRadius: 12,
+    fontFamily: "inherit",
+  },
+};
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
 
@@ -58,7 +68,9 @@ const compareValues = (left, right) => {
   const leftNumber = Number(leftValue);
   const rightNumber = Number(rightValue);
   const leftIsNumber =
-    leftValue !== "" && !Number.isNaN(leftNumber) && Number.isFinite(leftNumber);
+    leftValue !== "" &&
+    !Number.isNaN(leftNumber) &&
+    Number.isFinite(leftNumber);
   const rightIsNumber =
     rightValue !== "" &&
     !Number.isNaN(rightNumber) &&
@@ -99,7 +111,10 @@ const extractText = (node) => {
   }
 
   if (Array.isArray(node)) {
-    return node.map((item) => extractText(item)).join(" ").trim();
+    return node
+      .map((item) => extractText(item))
+      .join(" ")
+      .trim();
   }
 
   if (isValidElement(node)) {
@@ -259,8 +274,9 @@ const ResizableHeaderCell = ({
       onDragEnter={handleDragEnter}
       onDragEnd={onFinishColumnDrag}
       onDrop={handleDrop}
-      className={`${restProps.className || ""} flexible-ant-table__th ${draggedColumnKey === columnKey ? "is-dragging" : ""
-        } ${dropTargetKey === columnKey ? "is-drop-target" : ""}`.trim()}
+      className={`${restProps.className || ""} flexible-ant-table__th ${
+        draggedColumnKey === columnKey ? "is-dragging" : ""
+      } ${dropTargetKey === columnKey ? "is-drop-target" : ""}`.trim()}
     >
       <div className="flexible-ant-table__th-inner">{children}</div>
       <span
@@ -272,13 +288,61 @@ const ResizableHeaderCell = ({
 };
 
 export const Table = ({
-  children,
   columns,
-  dataSource = [],
+  dataSource,
+  onColumnOrderChange,
+  children,
   tableId,
   onChange,
   ...restProps
 }) => {
+  const { primaryColor, theme: currentTheme } = useThemeStore();
+
+  const dynamicTheme = useMemo(
+    () => ({
+      ...BASE_THEME_CONFIG,
+      algorithm: currentTheme === "dark" ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      token: {
+        ...BASE_THEME_CONFIG.token,
+        colorPrimary: primaryColor,
+        colorBgContainer: "var(--bg-surface)",
+        colorBgLayout: "var(--bg-color)",
+        colorText: "var(--text-color)",
+        colorBorder: "var(--border-color)",
+        colorFillAlter: "var(--bg-secondary)",
+        colorFillContent: "var(--bg-secondary)",
+      },
+      components: {
+        Table: {
+          headerBg: "var(--bg-secondary)",
+          headerColor: "var(--text-color)",
+          rowHoverBg: "rgba(var(--primary-rgb), 0.08)",
+          selectedRowBg: "rgba(var(--primary-rgb), 0.12)",
+          selectedRowHoverBg: "rgba(var(--primary-rgb), 0.15)",
+        },
+        Pagination: {
+          itemActiveBg: primaryColor,
+          activeBorderColor: primaryColor,
+        },
+        Select: {
+          activeBorderColor: primaryColor,
+          hoverBorderColor: primaryColor,
+        },
+        Button: {
+          colorPrimary: primaryColor,
+          colorPrimaryHover: primaryColor,
+        },
+        Checkbox: {
+          colorPrimary: primaryColor,
+        },
+        Radio: {
+          colorPrimary: primaryColor,
+        },
+      },
+    }),
+    [primaryColor],
+  );
+
   const dragColumnKey = useRef(null);
   const wrapperRef = useRef(null);
   const storageKey = useMemo(() => {
@@ -292,7 +356,10 @@ export const Table = ({
         : columnsFromChildren(children);
 
     const baseId = sourceColumns
-      .map((column) => column?.dataIndex ?? column?.key ?? extractText(column?.title))
+      .map(
+        (column) =>
+          column?.dataIndex ?? column?.key ?? extractText(column?.title),
+      )
       .filter(Boolean)
       .join("-");
 
@@ -301,6 +368,10 @@ export const Table = ({
   const [columnOrder, setColumnOrder] = useState([]);
   const [columnWidths, setColumnWidths] = useState({});
   const [sortState, setSortState] = useState({ columnKey: null, order: null });
+  const [paginationState, setPaginationState] = useState({
+    current: 1,
+    pageSize: restProps.pagination?.pageSize ?? 15,
+  });
   const [containerWidth, setContainerWidth] = useState(0);
   const [draggedColumnKey, setDraggedColumnKey] = useState(null);
   const [dropTargetKey, setDropTargetKey] = useState(null);
@@ -330,11 +401,16 @@ export const Table = ({
 
   useEffect(() => {
     try {
-      const persistedState = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      const persistedState = JSON.parse(
+        localStorage.getItem(storageKey) || "{}",
+      );
       if (Array.isArray(persistedState.columnOrder)) {
         setColumnOrder(persistedState.columnOrder);
       }
-      if (persistedState.columnWidths && typeof persistedState.columnWidths === "object") {
+      if (
+        persistedState.columnWidths &&
+        typeof persistedState.columnWidths === "object"
+      ) {
         setColumnWidths(persistedState.columnWidths);
       }
     } catch (error) {
@@ -345,8 +421,12 @@ export const Table = ({
   useEffect(() => {
     const availableKeys = normalizedColumns.map((column) => column.key);
     setColumnOrder((previousOrder) => {
-      const filteredKeys = previousOrder.filter((key) => availableKeys.includes(key));
-      const missingKeys = availableKeys.filter((key) => !filteredKeys.includes(key));
+      const filteredKeys = previousOrder.filter((key) =>
+        availableKeys.includes(key),
+      );
+      const missingKeys = availableKeys.filter(
+        (key) => !filteredKeys.includes(key),
+      );
       return [...filteredKeys, ...missingKeys];
     });
   }, [normalizedColumns]);
@@ -399,9 +479,7 @@ export const Table = ({
       return normalizedColumns;
     }
 
-    return columnOrder
-      .map((key) => columnMap.get(key))
-      .filter(Boolean);
+    return columnOrder.map((key) => columnMap.get(key)).filter(Boolean);
   }, [columnMap, columnOrder, normalizedColumns]);
 
   const { widths: responsiveWidths, totalWidth } = useMemo(
@@ -427,17 +505,23 @@ export const Table = ({
       typeof sortColumn.sorterCompare === "function"
         ? sortColumn.sorterCompare
         : (leftRecord, rightRecord) => {
-          const leftValue =
-            typeof sortColumn.sortValue === "function"
-              ? sortColumn.sortValue(leftRecord)
-              : getValueByPath(leftRecord, sortColumn.dataIndex ?? sortColumn.key);
-          const rightValue =
-            typeof sortColumn.sortValue === "function"
-              ? sortColumn.sortValue(rightRecord)
-              : getValueByPath(rightRecord, sortColumn.dataIndex ?? sortColumn.key);
+            const leftValue =
+              typeof sortColumn.sortValue === "function"
+                ? sortColumn.sortValue(leftRecord)
+                : getValueByPath(
+                    leftRecord,
+                    sortColumn.dataIndex ?? sortColumn.key,
+                  );
+            const rightValue =
+              typeof sortColumn.sortValue === "function"
+                ? sortColumn.sortValue(rightRecord)
+                : getValueByPath(
+                    rightRecord,
+                    sortColumn.dataIndex ?? sortColumn.key,
+                  );
 
-          return compareValues(leftValue, rightValue);
-        };
+            return compareValues(leftValue, rightValue);
+          };
 
     return [...dataSource].sort((leftRecord, rightRecord) => {
       const result = comparator(leftRecord, rightRecord);
@@ -558,29 +642,46 @@ export const Table = ({
         order: normalizedSorter?.order ?? null,
       });
 
+      setPaginationState({
+        current: pagination.current,
+        pageSize: pagination.pageSize,
+      });
+
       onChange?.(pagination, filters, sorter, extra);
     },
     [onChange],
   );
 
   return (
-    <div className="flexible-ant-table" ref={wrapperRef}>
-      <AntTable
-        {...restProps}
-        components={{
-          header: {
-            cell: ResizableHeaderCell,
-          },
-        }}
-        columns={enhancedColumns}
-        dataSource={sortedDataSource}
-        onChange={handleTableChange}
-        scroll={{
-          ...restProps.scroll,
-          x: Math.max(totalWidth, containerWidth || 0),
-        }}
-      />
-    </div>
+    <ConfigProvider locale={ruRU} theme={dynamicTheme}>
+      <div className="flexible-ant-table" ref={wrapperRef}>
+        <AntTable
+          {...restProps}
+          components={{
+            header: {
+              cell: ResizableHeaderCell,
+            },
+          }}
+          columns={enhancedColumns}
+          dataSource={sortedDataSource}
+          onChange={handleTableChange}
+          pagination={
+            restProps.pagination !== false
+              ? {
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "15", "20", "50", "100"],
+                  ...restProps.pagination,
+                  ...paginationState,
+                }
+              : false
+          }
+          scroll={{
+            ...restProps.scroll,
+            x: Math.max(totalWidth, containerWidth || 0),
+          }}
+        />
+      </div>
+    </ConfigProvider>
   );
 };
 

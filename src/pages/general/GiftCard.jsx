@@ -58,6 +58,15 @@ export default function GiftCard({ edit = false }) {
         cardName: useRef(null)
     };
 
+    // 🔐 Вспомогательная функция для получения заголовков с токеном
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem("access_token");
+        return {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        };
+    };
+
     // ИСПРАВЛЕННАЯ функция для проверки в списке террористов
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
@@ -83,10 +92,7 @@ export default function GiftCard({ edit = false }) {
 
             const response = await fetch(url, {
                 method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
             });
 
             if (!response.ok) {
@@ -221,16 +227,12 @@ export default function GiftCard({ edit = false }) {
     const loadClientDetails = async (clientCode) => {
         try {
             const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(
                 `${backendUrl}/addresses?clientIndex=${clientCode}`,
                 {
                     method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 }
             );
 
@@ -408,16 +410,12 @@ export default function GiftCard({ edit = false }) {
         try {
             setSearching(true);
             const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(
                 `${backendUrl}/client/info?phoneNumber=${phoneNumber}`,
                 {
                     method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 }
             );
 
@@ -494,14 +492,10 @@ export default function GiftCard({ edit = false }) {
         try {
             setDownloading(true);
             const automationUrl = import.meta.env.VITE_BACKEND_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(`${automationUrl}/automation/poll`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -528,14 +522,10 @@ export default function GiftCard({ edit = false }) {
         try {
             setDownloadingOffer(true);
             const automationUrl = import.meta.env.VITE_BACKEND_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(`${automationUrl}/automation/offer`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -741,6 +731,9 @@ export default function GiftCard({ edit = false }) {
             if (edit) {
                 const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
                     method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                    },
                     body: formData,
                 });
 
@@ -761,6 +754,9 @@ export default function GiftCard({ edit = false }) {
             } else {
                 const response = await fetch(`${backendUrl}/applications`, {
                     method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                    },
                     body: formData,
                 });
 

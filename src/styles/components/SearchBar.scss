@@ -9,7 +9,9 @@
     padding: 8px 12px;
     font-size: 1rem;
     border-radius: 6px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-color);
     max-width: 300px;
     width: 100%;
     transition: 0.2s ease;
@@ -17,20 +19,24 @@
     &:focus {
       @include input-focus;
     }
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
   }
 
   button {
     padding: 8px 16px;
     font-size: 1rem;
     border-radius: 6px;
-    background-color: #ff1a1a;
-    color: #fff;
+    background-color: var(--primary-color);
+    color: white;
     border: none;
     cursor: pointer;
     transition: 0.2s ease;
 
     &:hover {
-      opacity: 0.9;
+      background-color: var(--primary-hover);
     }
 
     &:active {

@@ -10,7 +10,6 @@ import Spinner from "../../components/Spinner.jsx";
 import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
-import { deleteApplicationById } from "../../api/application/deleteApplicationById.js";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
@@ -64,26 +63,33 @@ export default function ApplicationsList() {
     const wsUrl =
         import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + "/applications/portal";
 
-    // ✅ fetchData объявлен ПЕРВЫМ
+    // Вспомогательная функция для получения заголовков с токеном
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem("access_token");
+        return {
+            Authorization: `Bearer ${token}`,
+        };
+    };
+
     const fetchData = useCallback(
         async (nextId = null, reset = false) => {
             try {
                 setLoading(true);
-                const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-                let query = new URLSearchParams();
+                const params = {};
 
-                if (nextId) query.append("after", nextId);
-                if (data?.month) query.append("month", data?.month);
-                if (data?.year) query.append("year", data?.year);
-                if (data?.status)
-                    query.append("status_id", data?.status);
+                if (nextId) params.after = nextId;
+                if (data?.month) params.month = data.month;
+                if (data?.year) params.year = data.year;
+                if (data?.status) params.status_id = data.status;
 
-                const response = await fetch(
-                    `${backendUrl}/applications${
-                        archive ? "/archive" : `?${query.toString()}`
-                    }`,
+                const response = await apiClientApplication.get(
+                    archive ? "/applications/archive" : "/applications",
+                    {
+                        params,
+                        headers: getAuthHeaders(), // 🔐 Добавлен токен
+                    },
                 );
-                const result = await response.json();
+                const result = response.data || [];
 
                 if (reset || nextId === null) {
                     setTableData(result);
@@ -107,7 +113,6 @@ export default function ApplicationsList() {
         [archive, data?.month, data?.year, data?.status],
     );
 
-    // ✅ handleNewApplication объявлен ПОСЛЕ fetchData
     const handleNewApplication = useCallback(
         (newApplication) => {
             console.log("Новая заявка получена:", newApplication);
@@ -126,8 +131,6 @@ export default function ApplicationsList() {
     );
 
     useWebSocket(wsUrl, handleNewApplication, [archive]);
-
-
 
     const handleExport = async () => {
         try {
@@ -232,10 +235,11 @@ export default function ApplicationsList() {
 
     const deleteApplication = async (id) => {
         try {
-            const res = await deleteApplicationById(id);
-            if (res) {
-                setTimeout(() => fetchData(), 200);
-            }
+            // 🔐 Прямой вызов API с заголовком авторизации
+            await apiClientApplication.delete(`/applications/${id}`, {
+                headers: getAuthHeaders(),
+            });
+            setTimeout(() => fetchData(), 200);
         } catch (e) {
             console.error(e);
         }
@@ -245,11 +249,16 @@ export default function ApplicationsList() {
 
     const upDateStatusApplications = async (status) => {
         try {
-            await selectedRows.map(async (e) => {
-                await apiClientApplication.patch(`/applications/${e}`, {
-                    application_status_id: +status,
-                });
-            });
+            // 🔐 Выполняем запросы с токеном
+            await Promise.all(
+                selectedRows.map((id) =>
+                    apiClientApplication.patch(
+                        `/applications/${id}`,
+                        { application_status_id: +status },
+                        { headers: getAuthHeaders() }
+                    )
+                )
+            );
 
             setData("status", "");
             fetchData(null, true);
@@ -267,8 +276,6 @@ export default function ApplicationsList() {
     useEffect(() => {
         fetchData(null, true);
     }, [data?.month, data?.year, data?.status, fetchData]);
-
-
 
     useEffect(() => {
         if (fetching && nextId !== undefined) {

@@ -29,16 +29,16 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  // border: 1px solid #e0e0e0;
   border-radius: 8px;
   animation: fadeIn 0.4s ease;
 }
 
 .kb-sidebar {
   flex: 0 0 220px; // чуть больше ширина
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   padding: 20px;
   animation: fadeIn 0.5s ease;
@@ -47,7 +47,7 @@
     @include font;
     font-size: 1.2rem;
     margin-bottom: 14px;
-    color: #333;
+    color: var(--text-color);
   }
 
   ul {
@@ -70,17 +70,17 @@
 
       &.active,
       &:hover {
-        background: #fff3f3;
+        background: rgba(var(--primary-rgb), 0.05);
         transform: scale(1.02);
       }
 
       &.active {
         font-weight: 600;
-        color: #c31414;
+        color: var(--primary-color);
       }
 
       &:not(.active) {
-        color: #333;
+        color: var(--text-color);
       }
     }
   }
@@ -89,8 +89,8 @@
 .kb-content {
   flex: 1;
   padding: 20px;
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   animation: fadeIn 0.5s ease;
 
@@ -107,7 +107,7 @@
     font-size: 1.4rem;
     margin-top: 0;
     margin-bottom: 18px;
-    color: #c31414;
+    color: var(--primary-color);
     animation: fadeIn 0.4s ease;
   }
 
@@ -135,9 +135,9 @@
       }
 
       &.active {
-        border-color: #c31414;
-        color: #c31414;
-        box-shadow: 0 0 0 3px #fff3f3;
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
       }
 
       h4 {
@@ -186,7 +186,7 @@
         }
 
         &:hover {
-          color: #c31414;
+          color: var(--primary-color);
         }
       }
     }
@@ -279,14 +279,15 @@
       box-shadow 0.3s ease;
 
     &:focus {
-      border-color: #c31414;
-      box-shadow: 0 0 0 2px #fff3f3;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
       outline: none;
+      background-color: var(--bg-color);
     }
 
     /* Кнопка внутри file-input */
     &::file-selector-button {
-      background-color: #c31414;
+      background-color: var(--primary-color);
       color: #fff;
       border: none;
       padding: 10px 16px;
@@ -310,7 +311,7 @@
   margin-top: 20px;
 
   button {
-    background: #c31414;
+    background: var(--primary-color);
     color: #fff;
     border: none;
     padding: 8px 14px;
@@ -318,7 +319,7 @@
     cursor: pointer;
 
     &:hover {
-      background: #e21a1c;
+      background: var(--primary-hover);
     }
   }
 }

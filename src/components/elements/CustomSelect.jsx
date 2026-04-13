@@ -11,7 +11,7 @@ const CustomSelect = ({
   options = [],
   value,
   onChange,
-  placeholder = "Р’С‹Р±РµСЂРёС‚Рµ...",
+  placeholder = "Выберите...",
   error,
   title,
   className = "",
@@ -143,14 +143,14 @@ const CustomSelect = ({
                   key={option.value || index}
                   className={`option-item ${String(option.value) === String(value) ? "selected" : ""}`}
                   onClick={() => handleSelect(option.value)}
-                  whileHover={{ backgroundColor: "rgba(226, 26, 28, 0.08)" }}
+                  whileHover={{ backgroundColor: "rgba(var(--primary-rgb), 0.08)" }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {option.label}
                 </Motion.div>
               ))
             ) : (
-              <div className="no-options">РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РІР°СЂРёР°РЅС‚РѕРІ</div>
+              <div className="no-options">Нет доступных вариантов</div>
             )}
           </div>
         </Motion.div>

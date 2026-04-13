@@ -1,33 +1,33 @@
 // Variables
-$primary-color: #e21a1c;
-$primary-hover: #c31414;
-$primary-light: rgba(226, 26, 28, 0.1);
-$primary-glow: rgba(226, 26, 28, 0.3);
+$primary-color: var(--primary-color);
+$primary-hover: var(--primary-hover);
+$primary-light: rgba(var(--primary-rgb), 0.1);
+$primary-glow: rgba(var(--primary-rgb), 0.3);
 
-$secondary-color: #e21a1c;
-$secondary-hover: #c31414;
-$secondary-light: rgba(185, 69, 69, 0.1);
+$secondary-color: var(--primary-color);
+$secondary-hover: var(--primary-hover);
+$secondary-light: rgba(var(--primary-rgb), 0.1);
 
-$danger-color: #c31414;
+$danger-color: var(--primary-hover);
 $danger-hover: #a01212;
-$danger-light: rgba(195, 20, 20, 0.1);
-$danger-glow: rgba(195, 20, 20, 0.3);
+$danger-light: rgba(var(--primary-rgb), 0.1);
+$danger-glow: rgba(var(--primary-rgb), 0.3);
 
 $success-color: #10b981;
 $success-hover: #059669;
 $warning-color: #f59e0b;
 $warning-hover: #d97706;
 
-$gray-50: #f9fafb;
-$gray-100: #f3f4f6;
-$gray-200: #e5e7eb;
-$gray-300: #d1d5db;
-$gray-400: #9ca3af;
-$gray-500: #6b7280;
-$gray-600: #4b5563;
-$gray-700: #374151;
-$gray-800: #1f2937;
-$gray-900: #111827;
+$gray-50: var(--bg-secondary);
+$gray-100: var(--bg-color);
+$gray-200: var(--border-color);
+$gray-300: var(--border-color);
+$gray-400: var(--text-muted);
+$gray-500: var(--text-secondary);
+$gray-600: var(--text-secondary);
+$gray-700: var(--text-color);
+$gray-800: var(--text-color);
+$gray-900: var(--text-color);
 
 // Mixins
 @mixin flex-center {
@@ -226,7 +226,8 @@ $gray-900: #111827;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
     font-size: 1rem;
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     appearance: none;
     background-repeat: no-repeat;
     background-position: right 1rem center;
@@ -267,7 +268,8 @@ $gray-900: #111827;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
     font-size: 1rem;
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     @include smooth-transition;
 
     &:focus {
@@ -306,7 +308,8 @@ $gray-900: #111827;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
     font-size: 1rem;
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     height: 3.5rem;
     box-sizing: border-box;
     @include smooth-transition;
@@ -436,7 +439,8 @@ $gray-900: #111827;
 }
 
 .limits-table {
-  background: white;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   border-radius: 1rem;
   @include card-shadow;
   overflow: hidden;
@@ -518,7 +522,7 @@ $gray-900: #111827;
   }
 
   &__body {
-    background: white;
+    background: var(--bg-surface);
   }
 
   &__row {
@@ -757,7 +761,7 @@ $gray-900: #111827;
 // Scrollbar styling
 .limits-table__wrapper {
   scrollbar-width: thin;
-  scrollbar-color: #e21a1c #f1f1f1;
+  scrollbar-color: var(--primary-color) var(--bg-secondary);
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -765,16 +769,16 @@ $gray-900: #111827;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #e21a1c;
+    background: var(--primary-color);
     border-radius: 4px;
 
     &:hover {
-      background: #bd1517;
+      background: var(--primary-hover);
     }
   }
 }

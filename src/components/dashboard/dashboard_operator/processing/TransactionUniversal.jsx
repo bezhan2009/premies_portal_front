@@ -15,12 +15,30 @@ import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import TransactionsChart from "../../../graph/graph.jsx";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
+import { Table } from "../../../table/FlexibleAntTable.jsx";
 
 const getTransactionTypeValue = (transactionType) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
   const found = dataTrans.find((e) => e.label === transactionType);
   return found?.value;
 };
+
+const getExchangeRate = (conCurrency, exchangeRates) => {
+  if (conCurrency === 840) {
+    return exchangeRates.USD;
+  }
+
+  if (conCurrency === 978) {
+    return exchangeRates.EUR;
+  }
+
+  return 1;
+};
+
+const getNationalAmount = (transaction, exchangeRates) =>
+  Math.abs(
+    Math.round((Number(transaction?.conamt || 0) || 0) * getExchangeRate(transaction?.conCurrency, exchangeRates)),
+  );
 
 // ── TagInput ──────────────────────────────────────────────────────────────────
 const TagInput = ({ tags, onChange, disabled, placeholder }) => {
@@ -53,12 +71,13 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
         flexWrap: "wrap",
         gap: "4px",
         padding: "4px 8px",
-        border: "1px solid #ced4da",
+        border: "1px solid var(--border-color)",
         borderRadius: "6px",
         minHeight: "36px",
         alignItems: "center",
-        background: disabled ? "#f8f9fa" : "#fff",
+        background: disabled ? "var(--bg-secondary)" : "var(--bg-color)",
         cursor: disabled ? "not-allowed" : "text",
+        transition: "all 0.2s ease",
       }}
     >
       {tags.map((tag, i) => (
@@ -68,8 +87,9 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
             display: "inline-flex",
             alignItems: "center",
             gap: "3px",
-            background: "#ffe7e7",
+            background: "rgba(235, 37, 37, 0.15)",
             color: "#eb2525",
+            border: "1px solid rgba(235, 37, 37, 0.2)",
             borderRadius: "4px",
             padding: "2px 7px",
             fontSize: "12px",
@@ -90,6 +110,7 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
                 fontSize: "14px",
                 lineHeight: 1,
                 padding: 0,
+                marginLeft: "2px",
               }}
             >
               ×
@@ -111,6 +132,7 @@ const TagInput = ({ tags, onChange, disabled, placeholder }) => {
             flex: 1,
             minWidth: "100px",
             background: "transparent",
+            color: "var(--text-color)",
             padding: "2px 0",
           }}
         />
@@ -437,15 +459,31 @@ export default function DashboardOperatorTransactionSearch() {
     setTransactions([]);
   };
 
-  const { totalAmount, totalCountByResponse } = React.useMemo(() => {
+  const transactionTableData = React.useMemo(
+    () =>
+      transactions.map((transaction) => ({
+        ...transaction,
+        nationalAmount: getNationalAmount(transaction, exchangeRates),
+      })),
+    [transactions, exchangeRates],
+  );
+
+  const { totalAmount, totalNationalAmount, totalCountByResponse } = React.useMemo(() => {
     let total = 0;
+    let totalTJS = 0;
     const counts = { success: 0, error: 0, warning: 0, reversal: 0 };
     transactions.forEach((tx) => {
       const val = parseFloat(tx.conamt || 0);
+      const nationalValue = getNationalAmount(tx, exchangeRates);
       const type =
         getTransactionTypeValue(tx.transactionType) || tx.transactionTypeNumber;
-      if (type === 2) total -= val;
-      else total += val;
+      if (type === 2) {
+        total -= val;
+        totalTJS -= nationalValue;
+      } else {
+        total += val;
+        totalTJS += nationalValue;
+      }
       if (tx.reversal) {
         counts.reversal++;
       } else {
@@ -462,8 +500,160 @@ export default function DashboardOperatorTransactionSearch() {
         }
       }
     });
-    return { totalAmount: total, totalCountByResponse: counts };
-  }, [transactions]);
+    return {
+      totalAmount: total,
+      totalNationalAmount: totalTJS,
+      totalCountByResponse: counts,
+    };
+  }, [transactions, exchangeRates]);
+
+  const transactionColumns = React.useMemo(
+    () => [
+      {
+        title: "Дата",
+        key: "localTransactionDate",
+        width: 190,
+        render: (_, transaction) => (
+          <span className="default-value">
+            {transaction.localTransactionDate || "N/A"}{" "}
+            {transaction.localTransactionTime || "N/A"}
+          </span>
+        ),
+        sortValue: (transaction) =>
+          `${transaction.localTransactionDate || ""} ${transaction.localTransactionTime || ""}`,
+      },
+      {
+        title: "Статус",
+        key: "responseDescription",
+        width: 190,
+        render: (_, transaction) =>
+          getStatusBadge(
+            transaction.responseCode,
+            transaction.reversal,
+            transaction.responseDescription,
+          ),
+        sortValue: (transaction) => transaction.responseDescription || "",
+      },
+      {
+        title: "Номер карты",
+        dataIndex: "cardNumber",
+        key: "cardNumber",
+        width: 180,
+        render: (value) => (value ? formatCardNumber(value) : "N/A"),
+      },
+      {
+        title: "ID карты",
+        dataIndex: "cardId",
+        key: "cardId",
+        width: 150,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Тип операции",
+        dataIndex: "transactionTypeName",
+        key: "transactionTypeName",
+        width: 220,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Сумма (валюта)",
+        dataIndex: "amount",
+        key: "amount",
+        width: 180,
+        render: (_, transaction) => (
+          <span className="amount-value">
+            {formatAmount(transaction.amount)} {getCurrencyCode(transaction.currency)}
+          </span>
+        ),
+      },
+      {
+        title: "Сумма в валюте карты",
+        dataIndex: "conamt",
+        key: "conamt",
+        width: 220,
+        render: (_, transaction) => (
+          <span className="amount-value">
+            {formatAmount(transaction.conamt)}{" "}
+            {getCurrencyCode(transaction.conCurrency)}
+          </span>
+        ),
+      },
+      {
+        title: "Доступный баланс",
+        dataIndex: "acctbal",
+        key: "acctbal",
+        width: 180,
+        render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
+      },
+      {
+        title: "UTRNNO",
+        dataIndex: "utrnno",
+        key: "utrnno",
+        width: 160,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "ID терминала",
+        dataIndex: "terminalId",
+        key: "terminalId",
+        width: 170,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "ID ATM",
+        dataIndex: "atmId",
+        key: "atmId",
+        width: 150,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Запрошенная сумма",
+        dataIndex: "reqamt",
+        key: "reqamt",
+        width: 190,
+        render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
+      },
+      {
+        title: "Адрес терминала",
+        dataIndex: "terminalAddress",
+        key: "terminalAddress",
+        width: 260,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "MCC",
+        dataIndex: "mcc",
+        key: "mcc",
+        width: 130,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Счет",
+        dataIndex: "account",
+        key: "account",
+        width: 200,
+        render: (value) => value || "N/A",
+      },
+      {
+        title: "Сумма в нац. валюте",
+        dataIndex: "nationalAmount",
+        key: "nationalAmount",
+        width: 190,
+        render: (value) => (
+          <span className="amount-value" style={{ fontWeight: "bold" }}>
+            {formatAmount(value)}
+          </span>
+        ),
+      },
+      {
+        title: "ID транзакции",
+        dataIndex: "id",
+        key: "id",
+        width: 150,
+      },
+    ],
+    [],
+  );
 
   const handleExport = () => {
     const columns = [
@@ -514,7 +704,7 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "id", label: "ID транзакции" },
     ];
     exportToExcel(
-      sortedTransactions,
+      transactionTableData,
       columns,
       `Транзакции_${new Date().toISOString().split("T")[0]}`,
     );
@@ -979,6 +1169,12 @@ export default function DashboardOperatorTransactionSearch() {
                     {formatAmount(totalAmount)}
                   </div>
                 </div>
+                <div className="txn-stats__card txn-stats__card--total">
+                  <div className="txn-stats__label">Сумма в TJS</div>
+                  <div className="txn-stats__value">
+                    {formatAmount(totalNationalAmount)}
+                  </div>
+                </div>
                 <div className="txn-stats__card txn-stats__card--success">
                   <div className="txn-stats__label">Успешных операций</div>
                   <div className="txn-stats__value">
@@ -1005,7 +1201,7 @@ export default function DashboardOperatorTransactionSearch() {
                 </div>
               </div>
               <div className="txn-stats__chart">
-                <TransactionsChart transactions={transactions} />
+                <TransactionsChart transactions={transactionTableData} />
               </div>
             </div>
           )}
@@ -1033,6 +1229,16 @@ export default function DashboardOperatorTransactionSearch() {
 
                 <div className="limits-table__container">
                   <div className="limits-table__wrapper">
+                    <Table
+                      tableId="processing-search-transactions"
+                      rowKey="id"
+                      columns={transactionColumns}
+                      dataSource={transactionTableData}
+                      pagination={false}
+                      sticky
+                      scroll={{ y: 620 }}
+                    />
+                    {false && (
                     <table className="limits-table__content">
                       <thead className="limits-table__head">
                         <tr>
@@ -1181,6 +1387,7 @@ export default function DashboardOperatorTransactionSearch() {
                         })}
                       </tbody>
                     </table>
+                    )}
                   </div>
 
                   <div className="limits-table__footer">

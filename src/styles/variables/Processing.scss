@@ -1,8 +1,10 @@
-$primary-color: #3b82f6;
+@import "./general.scss";
+
+$primary-color: $primary-color;
 $primary-hover: #2563eb;
 $success-color: #10b981;
 $success-hover: #059669;
-$danger-color: #ef4444;
+$danger-color: $primary-color;
 $danger-hover: #dc2626;
 $warning-color: #f59e0b;
 $warning-hover: #d97706;

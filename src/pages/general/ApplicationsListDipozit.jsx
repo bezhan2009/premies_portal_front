@@ -352,11 +352,11 @@ export default function ApplicationsListDipozit() {
                                         <td className="active-table">
                                             <AiFillEdit
                                                 onClick={() => navigate(`/agent/dipozit/card/${row.ID}`)}
-                                                style={{ fontSize: 35, color: "green", cursor: "pointer", marginBottom: "10px" }}
+                                                style={{ fontSize: 35, color: "var(--primary-color)", cursor: "pointer", marginBottom: "10px" }}
                                             />
                                             <AiFillDelete
                                                 onClick={() => deleteApplication(row.ID)}
-                                                style={{ fontSize: 35, color: "#c31414", cursor: "pointer" }}
+                                                style={{ fontSize: 35, color: "var(--primary-color)", cursor: "pointer" }}
                                             />
                                         </td>
                                     </tr>

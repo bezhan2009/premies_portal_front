@@ -1,18 +1,18 @@
 // ─── Transaction Filter & Stats — dedicated styles ───
-$txn-primary: #e21a1c;
-$txn-primary-hover: #c31414;
-$txn-primary-light: rgba(226, 26, 28, 0.08);
-$txn-primary-glow: rgba(226, 26, 28, 0.25);
+$txn-primary: var(--primary-color);
+$txn-primary-hover: var(--primary-hover);
+$txn-primary-light: rgba(var(--primary-rgb), 0.08);
+$txn-primary-glow: rgba(var(--primary-rgb), 0.25);
 
-$txn-gray-50: #f9fafb;
-$txn-gray-100: #f3f4f6;
-$txn-gray-200: #e5e7eb;
-$txn-gray-300: #d1d5db;
-$txn-gray-400: #9ca3af;
-$txn-gray-500: #6b7280;
-$txn-gray-600: #4b5563;
-$txn-gray-700: #374151;
-$txn-gray-800: #1f2937;
+$txn-gray-50: var(--bg-color);
+$txn-gray-100: var(--bg-secondary);
+$txn-gray-200: var(--border-color);
+$txn-gray-300: var(--border-input);
+$txn-gray-400: var(--text-muted);
+$txn-gray-500: var(--text-secondary);
+$txn-gray-600: var(--text-secondary);
+$txn-gray-700: var(--text-color);
+$txn-gray-800: var(--text-color);
 
 // ─── Filter card ──────────────────────────────────────
 .txn-filter {
@@ -21,11 +21,10 @@ $txn-gray-800: #1f2937;
   &__card {
     max-width: 1300px;
     margin: 0 auto 2rem;
-    background: white;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 1rem;
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.06),
-      0 6px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
     animation: txnFadeUp 0.5s ease both;
   }
@@ -39,10 +38,10 @@ $txn-gray-800: #1f2937;
 
   // ─── Section ────────────────────────────────────────
   &__section {
-    border: 1px solid $txn-gray-200;
+    border: 1px solid var(--border-color);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem 1.25rem;
-    background: $txn-gray-50;
+    background: var(--bg-secondary);
     transition:
       border-color 0.25s,
       box-shadow 0.25s;
@@ -104,8 +103,8 @@ $txn-gray-800: #1f2937;
     border: 1.5px solid $txn-gray-300;
     border-radius: 0.5rem;
     font-size: 0.9rem;
-    background: white;
-    color: $txn-gray-800;
+    background: var(--bg-color);
+    color: var(--text-color);
     box-sizing: border-box;
     transition:
       border-color 0.2s,
@@ -255,7 +254,8 @@ $txn-gray-800: #1f2937;
   }
 
   &__chart {
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     border-radius: 1rem;
     padding: 2rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -264,7 +264,8 @@ $txn-gray-800: #1f2937;
   }
 
   &__card {
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     border-radius: 0.75rem;
     padding: 1.1rem 1.25rem;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -312,7 +313,8 @@ $txn-gray-800: #1f2937;
   }
 
   &__chart {
-    background: white;
+    background: var(--bg-surface);
+    color: var(--text-color);
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);

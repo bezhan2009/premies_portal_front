@@ -107,7 +107,7 @@ const RepayModal = ({
                     display: "block",
                     marginBottom: "5px",
                     fontSize: "14px",
-                    color: "#666",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   Счет для списания:
@@ -123,7 +123,7 @@ const RepayModal = ({
                     <Spinner size="small" />
                     <p
                       className="loading-small"
-                      style={{ fontSize: "14px", color: "#3498db", margin: 0 }}
+                      style={{ fontSize: "14px", color: "var(--primary-color)", margin: 0 }}
                     >
                       Загрузка счетов...
                     </p>
@@ -137,7 +137,7 @@ const RepayModal = ({
                       width: "100%",
                       padding: "8px",
                       borderRadius: "4px",
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border-input)",
                     }}
                     required
                   >
@@ -186,7 +186,7 @@ const RepayModal = ({
                     display: "block",
                     marginBottom: "5px",
                     fontSize: "14px",
-                    color: "#666",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   Тип погашения
@@ -199,8 +199,8 @@ const RepayModal = ({
                     width: "100%",
                     padding: "8px",
                     borderRadius: "4px",
-                    border: "1px solid #ddd",
-                    background: "#f9f9f9",
+                    border: "1px solid var(--border-input)",
+                    background: "var(--bg-secondary)",
                   }}
                   disabled
                 />
@@ -215,7 +215,7 @@ const RepayModal = ({
                     display: "block",
                     marginBottom: "5px",
                     fontSize: "14px",
-                    color: "#666",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   Сумма
@@ -255,7 +255,7 @@ const RepayModal = ({
                 style={{
                   width: "100%",
                   padding: "12px",
-                  background: "#2980b9",
+                  background: "var(--primary-color)",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",

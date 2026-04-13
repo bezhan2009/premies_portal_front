@@ -2,9 +2,10 @@
 
 .checkout-table-container {
     width: 100%;
-    background: white;
+    background: var(--bg-surface);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
     overflow: hidden;
 }
 
@@ -14,19 +15,21 @@
     gap: 16px;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .table-title {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    color: #333;
+    color: var(--text-color);
 }
 
 .search-input {
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
     border-radius: 6px;
     font-size: 14px;
     width: 360px;
@@ -57,7 +60,8 @@
 
 /* Header styles */
 .table-header-row th {
-    background-color: white;
+    background-color: var(--bg-surface);
+    color: var(--text-color);
     font-weight: 700;
     border-bottom: 2px solid #d32f2f;
     padding: 12px 16px;
@@ -81,7 +85,7 @@
 }
 
 .sortable-header:hover {
-    background-color: #f5f5f5;
+    background-color: var(--bg-secondary);
 }
 
 .sortable-header:last-child {
@@ -99,7 +103,7 @@
 }
 
 .data-row:hover {
-    background-color: #f9f9f9;
+    background-color: var(--bg-secondary);
 }
 
 .row-selected {
@@ -133,7 +137,7 @@ td:last-child {
 /* Cell content styles */
 .cell-id {
     font-weight: 600;
-    color: #333;
+    color: var(--text-color);
 }
 
 .bank-info {

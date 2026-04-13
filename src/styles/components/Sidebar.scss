@@ -80,7 +80,7 @@
     .user-avatar {
       width: 40px;
       height: 40px;
-      background: linear-gradient(45deg, #e31919, #c31414);
+      background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -112,7 +112,7 @@
     padding: 1rem 0.5rem;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #e21a1c rgba(255, 255, 255, 0.1);
+    scrollbar-color: var(--primary-color) rgba(255, 255, 255, 0.1);
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -123,7 +123,7 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #e21a1c;
+      background: var(--primary-color);
       border-radius: 2px;
     }
   }
@@ -184,8 +184,8 @@
     }
 
     &.active {
-      background: linear-gradient(45deg, #e31919, #c31414);
-      box-shadow: 0 4px 12px rgba(227, 25, 25, 0.3);
+      background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 
       .menu-icon {
         background: rgba(255, 255, 255, 0.2);

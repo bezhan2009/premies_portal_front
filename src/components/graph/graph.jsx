@@ -114,7 +114,7 @@ export default function TransactionsChart({ transactions = [] }) {
   } = useMemo(() => {
     // фильтр
     const filtered = transactions.filter((t) => {
-      const amount = Number(t.amount);
+      const amount = Number(t.nationalAmount ?? t.amount);
       const reversal = Number(t.reversal);
       return Number.isFinite(amount) && amount > 0 && reversal !== 1;
     });
@@ -128,9 +128,11 @@ export default function TransactionsChart({ transactions = [] }) {
       const ts = parseTxTimestamp(t);
       if (!ts) continue;
 
+      const amountSource = t.nationalAmount ?? t.amount;
+
       rows.push({
         ts,
-        amount: normalizeAmount(t.amount),
+        amount: normalizeAmount(amountSource),
         dayKey: dayKeyFromTs(ts),
       });
     }
