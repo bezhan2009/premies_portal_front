@@ -279,7 +279,7 @@ tr {
 
 /* Подсветка строки при наведении */
 tr:hover td {
-  background: rgba(var(--primary-rgb), 0.03);
+  background: rgba(var(--primary-rgb), 0.08) !important;
 }
 
 /* Разделители столбцов (тонкие линии) */
@@ -460,29 +460,32 @@ tr:nth-child(14) {
   }
 
   input {
-    background-color: var(--bg-color);
+    background-color: var(--bg-surface);
     color: var(--text-color);
+    padding: 10px 16px;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     transition: all var(--transition-fast);
     animation: fadeIn 0.5s ease-out;
+    font-size: 15px;
 
     &::placeholder {
-      color: initial;
+      color: var(--text-muted);
     }
 
     &:hover {
-      outline: var(--primary-color) solid 2px;
+      border-color: var(--primary-hover);
+      background: var(--bg-secondary);
     }
 
     &:focus {
-      outline: #e21a1c solid 2px;
-      background-color: #6d6d6d;
-      color: #fff;
-
-      &::placeholder {
-        color: #f1f1f1;
-      }
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+      background-color: var(--bg-surface);
     }
   }
 

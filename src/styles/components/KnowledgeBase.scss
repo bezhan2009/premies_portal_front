@@ -29,16 +29,16 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  // border: 1px solid #e0e0e0;
   border-radius: 8px;
   animation: fadeIn 0.4s ease;
 }
 
 .kb-sidebar {
   flex: 0 0 220px; // чуть больше ширина
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   padding: 20px;
   animation: fadeIn 0.5s ease;
@@ -47,7 +47,7 @@
     @include font;
     font-size: 1.2rem;
     margin-bottom: 14px;
-    color: #333;
+    color: var(--text-color);
   }
 
   ul {
@@ -80,7 +80,7 @@
       }
 
       &:not(.active) {
-        color: #333;
+        color: var(--text-color);
       }
     }
   }
@@ -89,8 +89,8 @@
 .kb-content {
   flex: 1;
   padding: 20px;
-  background: #fafafa;
-  border: 1px solid #dcdcdc;
+  background: var(--bg-elevated);
+  // border: 1px solid #dcdcdc;
   border-radius: 6px;
   animation: fadeIn 0.5s ease;
 

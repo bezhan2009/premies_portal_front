@@ -10,7 +10,7 @@
 .worker-test-card {
   height: 100%;
   // width: 97.5%;
-  background: #fff;
+  background: var(--bg-secondary);
   // border: 1px solid #ddd;
   border-radius: 10px;
   // margin-bottom: 50px;
@@ -22,19 +22,19 @@
 }
 
 .worker-test-header {
-  background-color: #fff3f3;
+  background-color: var(--bg-elevated);
   padding: 30px 40px;
 
   h2 {
     font-size: 2rem;
-    color: #202124;
+    color: var(--primary-color);
     margin: 0 0 10px;
     font-weight: 600;
   }
 
   p {
     font-size: 1.1rem;
-    color: #5f6368;
+    color: var(--text-color);
     margin: 0;
   }
 }
