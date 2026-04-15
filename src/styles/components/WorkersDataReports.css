@@ -21,7 +21,7 @@
   border: none;
   border-radius: 6px;
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -52,12 +52,13 @@
   border-collapse: collapse;
   margin-top: 10px;
 }
-.content th, .content td {
+.content th,
+.content td {
   padding: 26px;
   border: 1px solid #e4e4e4;
   text-align: center;
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
 }
 .content th {
   font-weight: 650;
@@ -75,7 +76,7 @@
   left: 18px;
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   padding-bottom: 10px;
 }
 .filters__container .filters__left {
@@ -99,4 +100,4 @@
   width: -moz-fit-content;
   width: fit-content; /* Подгонка ширины под содержимое */
   font-weight: bold;
-}/*# sourceMappingURL=WorkersDataReports.css.map */
+} /*# sourceMappingURL=WorkersDataReports.css.map */

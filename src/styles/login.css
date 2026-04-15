@@ -11,7 +11,7 @@ body {
 }
 
 .login-form {
-  background: white;
+  background: var(--bg-surface);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -21,7 +21,7 @@ body {
   display: block;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
 }
 .login-form label input {
   width: 95%;
@@ -50,7 +50,7 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: #666;
+  color: var(--text-muted);
   font-size: 1.2rem;
   line-height: 1;
   width: auto;
@@ -65,7 +65,7 @@ body {
 .login-form button {
   width: 100%;
   padding: 0.75rem;
-  background-color: #333;
+  background-color: var(--text-color);
   color: white;
   border: none;
   border-radius: 6px;
@@ -83,4 +83,4 @@ body {
   font-size: 0.85rem;
   margin-bottom: 1rem;
   font-family: sans-serif;
-}/*# sourceMappingURL=login.css.map */
+} /*# sourceMappingURL=login.css.map */

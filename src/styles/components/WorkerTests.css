@@ -11,7 +11,7 @@
 .worker-test-card {
   height: 100%;
   width: 97.5%;
-  background: #fff;
+  background: var(--bg-surface);
   border: 1px solid #ddd;
   border-radius: 10px;
   margin-bottom: 50px;
@@ -80,7 +80,7 @@
   padding: 10px 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #fff;
+  background: var(--bg-surface);
 }
 .worker-options-list li:hover {
   background: #ffe9e9;
@@ -102,8 +102,8 @@
   font-size: 1rem;
   color: #202124;
 }
-.worker-options-list li input[type=checkbox],
-.worker-options-list li input[type=radio] {
+.worker-options-list li input[type="checkbox"],
+.worker-options-list li input[type="radio"] {
   position: absolute;
   opacity: 0;
   cursor: pointer;
@@ -205,7 +205,7 @@
 .worker-page-blocked {
   max-width: 600px;
   margin: 80px auto;
-  background: #fff;
+  background: var(--bg-surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 50px;
@@ -253,4 +253,4 @@
     opacity: 1;
     transform: translateX(0);
   }
-}/*# sourceMappingURL=WorkerTests.css.map */
+} /*# sourceMappingURL=WorkerTests.css.map */

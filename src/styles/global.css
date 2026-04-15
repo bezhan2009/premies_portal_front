@@ -65,7 +65,7 @@ table {
     -apple-system,
     sans-serif;
   font-size: 14px;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.4s ease-out;
@@ -81,7 +81,7 @@ table > thead {
 /* Заголовки столбцов */
 th {
   background-color: #fff;
-  color: #333;
+  color: var(--text-color);
   font-weight: 600;
   padding: 12px 16px;
   text-align: left;
@@ -988,7 +988,7 @@ body {
 
 .custom-modal-content {
   position: relative;
-  background: white;
+  background: var(--bg-surface);
   padding: 20px;
   border-radius: 12px;
   max-width: 90vw;
@@ -1045,7 +1045,7 @@ body {
 }
 
 .custom-modal-content {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 2rem;
   border-radius: 20px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
