@@ -65,7 +65,7 @@ const CurrencyRatesWidget = () => {
         <div key={row.currency} className="currency-card">
           <div className="currency-card-left">
             <div className="currency-flag-circle">{row.meta.flag}</div>
-            <div className="currency-code">{row.currency}</div>
+            {/* <div className="currency-code">{row.currency}</div> */}
           </div>
           <div className="currency-card-rates">
             <span className="rate-value buy">
