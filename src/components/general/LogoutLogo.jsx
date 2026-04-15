@@ -1,12 +1,11 @@
 import React from 'react';
-import logout from '../../assets/logout.png';
+import { MdLogout } from "react-icons/md";
 
 const LogoutImageComponent = ({ width, height }) => {
   return (
-    <img
-      src={logout}
-      alt="Выход"
+    <MdLogout 
       style={{ width: width, height: height }}
+      title="Выход"
     />
   );
 };
