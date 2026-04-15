@@ -170,14 +170,14 @@ const ChartReportFinance = ({ url }) => {
 
           <XAxis
             dataKey="name"
-            stroke="#333"
-            tick={{ fill: "#333", fontSize: 12 }}
+            stroke="var(--text-color)"
+            tick={{ fill: "var(--text-color)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            stroke="#333"
-            tick={{ fill: "#333", fontSize: 12 }}
+            stroke="var(--text-color)"
+            tick={{ fill: "var(--text-color)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
