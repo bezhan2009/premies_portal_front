@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, Space, Tag, message, Modal } from "antd";
-import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { Table, Button, Space, Tag, message, Modal, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useMoneyTransferStore } from "../../../store/product/useMoneyTransfer.store";
 import { MoneyTransferForm } from "./MoneyTransferForm";
 import {
@@ -89,6 +89,16 @@ export const MoneyTransferTable = () => {
         });
       }
     },
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteTransfer(id);
+      message.success("Перевод удалён");
+      fetchTransfers();
+    } catch (err) {
+      message.error("Ошибка удаления");
+    }
   };
 
   return (
@@ -216,6 +226,39 @@ export const MoneyTransferTable = () => {
           dataIndex="updateDate"
           key="updateDate"
           render={(val) => new Date(val).toLocaleString()}
+        />
+        <Table.Column
+          title="Действия"
+          key="actions"
+          render={(_, record) => (
+            <Space>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(record);
+                }}
+              />
+
+              <Popconfirm
+                title="Удалить перевод?"
+                okText="Удалить"
+                cancelText="Отмена"
+                okType="danger"
+                onConfirm={async (e) => {
+                  e?.stopPropagation?.();
+                  await handleDelete(record.id);
+                }}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Popconfirm>
+            </Space>
+          )}
         />
       </Table>
 

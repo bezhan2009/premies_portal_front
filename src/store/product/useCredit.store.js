@@ -13,14 +13,10 @@ export const useCreditStore = create((set) => ({
 
       const credits = (res.data.data || []).map((credit) => {
         const currency = ["TJS", "USD", "RUB"].indexOf(credit.currency);
-        const currencyNum =
-          currency >= 0 ? currency : Number(credit.currency) || 0;
+        const currencyNum = currency >= 0 ? currency : Number(credit.currency) || 0;
 
-        const loanType = ["Mortgage", "CarLoan", "BusinessRefinancing"].indexOf(
-          credit.loanType,
-        );
-        const loanTypeNum =
-          loanType >= 0 ? loanType : Number(credit.loanType) || 0;
+        const loanType = ["Mortgage", "CarLoan", "BusinessRefinancing", "LoanCash"].indexOf(credit.loanType);
+        const loanTypeNum = loanType >= 0 ? loanType : Number(credit.loanType) || 0;
 
         return {
           ...credit,
@@ -93,9 +89,7 @@ export const useCreditStore = create((set) => ({
 
       const res = await creditService.update(id, payload);
       set((state) => ({
-        credits: state.credits.map((c) =>
-          c.id === id ? { ...c, ...res.data } : c,
-        ),
+        credits: state.credits.map((c) => (c.id === id ? { ...c, ...res.data } : c)),
         error: null,
       }));
 

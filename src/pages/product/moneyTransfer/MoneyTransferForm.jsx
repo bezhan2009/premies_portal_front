@@ -1,28 +1,8 @@
 import { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Switch,
-  Row,
-  Col,
-  Collapse,
-} from "antd";
-import {
-  TransferTypeDict,
-  DirectionTypeDict,
-  CurrencyTypeDict,
-} from "../../../domain/product/dictionaries";
+import { Modal, Form, Input, InputNumber, Select, Switch, Row, Col, Collapse } from "antd";
+import { TransferTypeDict, DirectionTypeDict, CurrencyTypeDict } from "../../../domain/product/dictionaries";
 
-export const MoneyTransferForm = ({
-  open,
-  onClose,
-  onSubmit,
-  initialValues,
-  loading = false,
-}) => {
+export const MoneyTransferForm = ({ open, onClose, onSubmit, initialValues, loading = false }) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -104,17 +84,10 @@ export const MoneyTransferForm = ({
       destroyOnClose
     >
       <Form form={form} layout="vertical">
-        <Collapse
-          accordion
-          defaultActiveKey={["main", "amount", "limits", "channels"]}
-        >
+        <Collapse accordion defaultActiveKey={["main", "amount", "limits", "channels"]}>
           <Collapse.Panel header="Основные данные" key="main">
             <Form.Item name="bankId" label="ID Банка">
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Введите ID Банка"
-                min={0}
-              />
+              <InputNumber style={{ width: "100%" }} placeholder="Введите ID Банка" min={0} />
             </Form.Item>
 
             <Form.Item name="name" label="Название перевода">
@@ -124,11 +97,7 @@ export const MoneyTransferForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="transferType" label="Тип перевода">
-                  <Select
-                    placeholder="Выберите тип перевода"
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
+                  <Select placeholder="Выберите тип перевода" style={{ width: "100%" }} allowClear>
                     {Object.entries(TransferTypeDict).map(([key, val]) => (
                       <Select.Option key={key} value={Number(key)}>
                         {val}
@@ -140,11 +109,7 @@ export const MoneyTransferForm = ({
 
               <Col span={12}>
                 <Form.Item name="direction" label="Направление">
-                  <Select
-                    placeholder="Выберите направление"
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
+                  <Select placeholder="Выберите направление" style={{ width: "100%" }} allowClear>
                     {Object.entries(DirectionTypeDict).map(([key, val]) => (
                       <Select.Option key={key} value={Number(key)}>
                         {val}
@@ -158,11 +123,7 @@ export const MoneyTransferForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="currency" label="Валюта отправки">
-                  <Select
-                    placeholder="Выберите валюту отправки"
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
+                  <Select placeholder="Выберите валюту отправки" style={{ width: "100%" }} allowClear>
                     {Object.entries(CurrencyTypeDict).map(([key, val]) => (
                       <Select.Option key={key} value={Number(key)}>
                         {val}
@@ -174,11 +135,7 @@ export const MoneyTransferForm = ({
 
               <Col span={12}>
                 <Form.Item name="currencyTo" label="Валюта получения">
-                  <Select
-                    placeholder="Выберите валюту получения"
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
+                  <Select placeholder="Выберите валюту получения" style={{ width: "100%" }} allowClear>
                     {Object.entries(CurrencyTypeDict).map(([key, val]) => (
                       <Select.Option key={key} value={Number(key)}>
                         {val}
@@ -194,24 +151,13 @@ export const MoneyTransferForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="minAmount" label="Мин. сумма">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите минимальную сумму"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите минимальную сумму" min={0} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
-                <Form.Item
-                  name="maxAmountPerTransaction"
-                  label="Макс. сумма/транзакция"
-                >
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите максимальную сумму за транзакцию"
-                    min={0}
-                  />
+                <Form.Item name="maxAmountPerTransaction" label="Макс. сумма/транзакция">
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите максимальную сумму за транзакцию" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -219,24 +165,13 @@ export const MoneyTransferForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="maxAmountPerDay" label="Макс. сумма/день">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите максимальную сумму за день"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите максимальную сумму за день" min={0} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
-                <Form.Item
-                  name="freeTransfersCount"
-                  label="Бесплатные переводы"
-                >
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите количество бесплатных переводов"
-                    min={0}
-                  />
+                <Form.Item name="freeTransfersCount" label="Бесплатные переводы">
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите количество бесплатных переводов" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -244,23 +179,13 @@ export const MoneyTransferForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="feePercent" label="Комиссия (%)">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите комиссию в процентах"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите комиссию в процентах" min={0} max={100} step={0.1} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
                 <Form.Item name="feeFixed" label="Фиксированная комиссия">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите фиксированную комиссию"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите фиксированную комиссию" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -276,14 +201,9 @@ export const MoneyTransferForm = ({
               label="Каналы"
               tooltip="Введите каждый канал с новой строки"
               getValueFromEvent={(e) => e.target.value.split("\n")}
-              getValueProps={(value) => ({
-                value: Array.isArray(value) ? value.join("\n") : "",
-              })}
+              getValueProps={(value) => ({ value: Array.isArray(value) ? value.join("\n") : "" })}
             >
-              <Input.TextArea
-                rows={4}
-                placeholder="Каждый канал с новой строки"
-              />
+              <Input.TextArea rows={4} placeholder="Каждый канал с новой строки" />
             </Form.Item>
 
             <Form.Item name="isActive" label="Активен" valuePropName="checked">
