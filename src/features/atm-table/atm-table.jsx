@@ -288,7 +288,7 @@ export default function AtmStickyTable() {
     total: 170,
     turnover: 170,
     bpt: 230,
-    daysEnough: 170, 
+    daysEnough: 170,
     errors: 260,
     warnings: 260,
     actions: 130,
@@ -681,7 +681,6 @@ export default function AtmStickyTable() {
               >
                 Расположение банкоматов
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.id}
                 onResize={onResize("id")}
@@ -693,7 +692,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="id" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.region}
                 onResize={onResize("region")}
@@ -701,7 +699,6 @@ export default function AtmStickyTable() {
               >
                 Область
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.address}
                 onResize={onResize("address")}
@@ -709,11 +706,9 @@ export default function AtmStickyTable() {
               >
                 Адрес
               </ResizableTh>
-
               <th className="table-header" colSpan={denomCols.length}>
                 Количество
               </th>
-
               <ResizableTh
                 width={colWidths.total}
                 onResize={onResize("total")}
@@ -725,7 +720,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="total" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.turnover}
                 onResize={onResize("turnover")}
@@ -737,7 +731,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="turnover" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.bpt}
                 onResize={onResize("bpt")}
@@ -752,7 +745,6 @@ export default function AtmStickyTable() {
                   />
                 </div>
               </ResizableTh>
-
               {/* ✅ NEW COLUMN */}
               <ResizableTh
                 width={colWidths.daysEnough}
@@ -768,7 +760,6 @@ export default function AtmStickyTable() {
                   />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.errors}
                 onResize={onResize("errors")}
@@ -777,10 +768,12 @@ export default function AtmStickyTable() {
               >
                 <span onClick={() => clickSort("errors")}>
                   Ошибки{" "}
-                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />
+                  <SortIcon
+                    sortConfig={sortConfigForIcon}
+                    sortKey="errors"
+                  />{" "}
                 </span>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.warnings}
                 onResize={onResize("warnings")}
@@ -792,7 +785,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="warnings" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.actions}
                 onResize={onResize("actions")}
@@ -801,7 +793,6 @@ export default function AtmStickyTable() {
                 Действия
               </ResizableTh>
             </tr>
-
             {/* ====== HEAD ROW 2 (номиналы) ====== */}
             <tr className="table-subheader-row">
               <th
@@ -858,33 +849,27 @@ export default function AtmStickyTable() {
                     <td className="table-cell table-cell-location" colSpan={2}>
                       {row.location}
                     </td>
-
                     <td className="table-cell table-cell-id">
                       <div>{row.id}</div>
                       <div className="atm-state">{row.atmState}</div>
                     </td>
-
                     <td className="table-cell table-cell-region">
                       {row.region}
                     </td>
                     <td className="table-cell table-cell-address">
                       {row.address}
                     </td>
-
                     {denomCols.map((c) => (
                       <td key={c.key} className="table-cell table-cell-denom">
                         {row[c.key] ?? 0}
                       </td>
                     ))}
-
                     <td className="table-cell table-cell-total">
                       {n(total)} TJS
                     </td>
-
                     <td className="table-cell table-cell-turnover">
                       {n(row.turnoverYesterday)} TJS
                     </td>
-
                     <td className="table-cell table-cell-bpt">
                       {n(row.balancePlusTurnover)} TJS
                       <div className="bpt-sub">
@@ -892,7 +877,6 @@ export default function AtmStickyTable() {
                         {n(row.turnoverYesterday)}
                       </div>
                     </td>
-
                     {/* ✅ NEW CELL */}
                     <td className="table-cell table-cell-days">
                       {daysEnough == null ? (
@@ -906,15 +890,12 @@ export default function AtmStickyTable() {
                         </>
                       )}
                     </td>
-
                     <td className="table-cell table-cell-issues">
                       <ListChips items={row.errors} kind="error" />
                     </td>
-
                     <td className="table-cell table-cell-issues">
                       <ListChips items={row.warnings} kind="warning" />
                     </td>
-
                     <td className="table-cell table-cell-actions">
                       <button
                         className="button"
