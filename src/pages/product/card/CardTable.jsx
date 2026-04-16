@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
-import { Button, Space, Tag, message, Modal } from "antd";
-import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { Table, Button, Space, Tag, message, Modal, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useCardStore } from "../../../store/product/useCard.store";
 import { CardForm } from "./CardForm";
-import {
-  CardTypeDict,
-  CurrencyTypeDict,
-} from "../../../domain/product/dictionaries";
+import { CardTypeDict, CurrencyTypeDict } from "../../../domain/product/dictionaries";
 
 export const CardTable = () => {
   const { cards, fetchCards, createCard, updateCard, deleteCard } =
@@ -34,7 +31,6 @@ export const CardTable = () => {
     setSubmitting(true);
     try {
       if (editingCard) {
-        console.log("Payload для update:", card);
         await updateCard(editingCard.id, card);
         message.success("Карта успешно обновлена");
       } else {
@@ -76,7 +72,7 @@ export const CardTable = () => {
               message.success("Карты успешно удалены");
               setSelectedRowKeys([]);
               fetchCards();
-            } catch {
+            } catch (error) {
               message.error("Ошибка при удалении");
             }
           },
@@ -86,6 +82,17 @@ export const CardTable = () => {
         });
       }
     },
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteCard(id);
+      message.success("Карта удалена");
+      fetchCards();
+    } catch (err) {
+      console.error(err);
+      message.error("Ошибка удаления");
+    }
   };
 
   return (
@@ -240,7 +247,6 @@ export const CardTable = () => {
             }
           />
 
-          {/* Лимиты снятия */}
           <Table.Column
             title="Суточное снятие свой ATM"
             dataIndex="dailyCashWithdrawalOwnAtmLimit"
@@ -272,7 +278,6 @@ export const CardTable = () => {
             key="monthlyCashWithdrawalAbroadAtmLimit"
           />
 
-          {/* POS лимиты */}
           <Table.Column
             title="Суточные покупки (дом.)"
             dataIndex="dailyPosPurchaseDomesticLimit"
@@ -294,7 +299,6 @@ export const CardTable = () => {
             key="monthlyPosPurchaseAbroadLimit"
           />
 
-          {/* Онлайн и общий */}
           <Table.Column
             title="Суточные покупки онлайн"
             dataIndex="dailyOnlinePurchaseLimit"
@@ -321,6 +325,39 @@ export const CardTable = () => {
             dataIndex="updateDate"
             key="updateDate"
             render={(val) => new Date(val).toLocaleString()}
+          />
+          <Table.Column
+            title="Действия"
+            key="actions"
+            render={(_, record) => (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(record);
+                  }}
+                />
+
+                <Popconfirm
+                  title="Удалить карту?"
+                  okText="Удалить"
+                  cancelText="Отмена"
+                  okType="danger"
+                  onConfirm={async (e) => {
+                    e?.stopPropagation?.();
+                    await handleDelete(record.id);
+                  }}
+                >
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
+              </Space>
+            )}
           />
         </Table>
       </div>
