@@ -1,6 +1,6 @@
-import  { useEffect, useState } from "react";
-import { Button, Space, Tag, message, Modal } from "antd";
-import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { useEffect, useState } from "react";
+import { Table, Button, Space, Tag, message, Modal, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useCreditStore } from "../../../store/product/useCredit.store";
 import { CreditForm } from "./CreditForm";
 import { CurrencyTypeDict, LoanTypeDict } from "../../../domain/product/dictionaries";
@@ -85,6 +85,16 @@ export const CreditTable = () => {
         });
       }
     },
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteCredit(id);
+      message.success("Кредит удалён");
+      fetchCredits();
+    } catch (err) {
+      message.error("Ошибка удаления");
+    }
   };
 
   return (
@@ -179,6 +189,38 @@ export const CreditTable = () => {
           dataIndex="updateDate"
           key="updateDate"
           render={(val) => (val ? new Date(val).toLocaleString() : "-")}
+        />
+        <Table.Column
+          title="Действия"
+          key="actions"
+          render={(_, record) => (
+            <Space>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(record);
+                }}
+              />
+              <Popconfirm
+                title="Удалить кредит?"
+                okText="Удалить"
+                cancelText="Отмена"
+                okType="danger"
+                onConfirm={async (e) => {
+                  e?.stopPropagation?.();
+                  await handleDelete(record.id);
+                }}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Popconfirm>
+            </Space>
+          )}
         />
       </Table>
 
