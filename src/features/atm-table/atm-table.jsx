@@ -776,7 +776,8 @@ export default function AtmStickyTable() {
                 title="Сначала банкоматы с ошибками"
               >
                 <span onClick={() => clickSort("errors")}>
-                  Ошибки{sortMark("errors")}
+                  Ошибки{" "}
+                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />
                 </span>
               </ResizableTh>
 
