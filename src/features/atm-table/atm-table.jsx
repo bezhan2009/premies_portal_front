@@ -288,7 +288,7 @@ export default function AtmStickyTable() {
     total: 170,
     turnover: 170,
     bpt: 230,
-    daysEnough: 170, 
+    daysEnough: 170,
     errors: 260,
     warnings: 260,
     actions: 130,
@@ -777,7 +777,7 @@ export default function AtmStickyTable() {
               >
                 <span onClick={() => clickSort("errors")}>
                   Ошибки{" "}
-                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />
+                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />{" "}
                 </span>
               </ResizableTh>
 
