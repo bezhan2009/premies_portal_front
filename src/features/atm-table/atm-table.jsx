@@ -185,6 +185,76 @@ function compareId(a, b) {
   });
 }
 
+const getRegionGroup = (region) => {
+  if (!region) return "Прочие";
+
+  const r = String(region).trim().toLowerCase();
+  if (!r) return "Прочие";
+
+  // Душанбе
+  if (r.includes("душанбе")) return "Душанбе";
+
+  // Согдийская область
+  if (
+    r.includes("хучанд") ||
+    r.includes("худжанд") ||
+    r.includes("панҷакент") ||
+    r.includes("панчакент") ||
+    r.includes("вилояти сугд") ||
+    r.includes("согдийская")
+  )
+    return "Вилояти Суғд";
+
+  // Куляб (Хатлон)
+  if (
+    r.includes("кулоб") ||
+    r.includes("куляб") ||
+    r.includes("восеъ") ||
+    r.includes("восе")
+  )
+    return "Минтақаи Қӯлоб";
+
+  // Бохтар (Хатлон)
+  if (
+    r.includes("бохтар") ||
+    r.includes("кубодиён") ||
+    r.includes("кабодиён") ||
+    r.includes("шахритуз") ||
+    r.includes("шаҳритус") ||
+    r.includes("ҷайҳун") ||
+    r.includes("джайхун")
+  )
+    return "Минтақаи Бохтар";
+
+  // ГБАО (Горный Бадахшан)
+  if (
+    r.includes("гбао") ||
+    r.includes("горный бадахшан") ||
+    r.includes("иштихон") ||
+    r.includes("хорог") ||
+    r.includes("калайхумб")
+  )
+    return "ГБАО";
+
+  // НТЧ (Рогун, Турсунзода, Вахдат, Ҳисор, Шаҳринав, Файзобод и др.)
+  if (
+    r.includes("рогун") ||
+    r.includes("турсунзода") ||
+    r.includes("вахдат") ||
+    r.includes("ҳисор") ||
+    r.includes("хисор") ||
+    r.includes("шаҳринав") ||
+    r.includes("шахринав") ||
+    r.includes("файзобод") ||
+    r.includes("файзобод") ||
+    r.includes("нтч")
+  )
+    return "НТЧ";
+
+  // Если регион не классифицирован — Прочие
+  return "Прочие";
+};
+
 export default function AtmStickyTable() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedAtm, setSelectedAtm] = useState(null);
@@ -218,7 +288,7 @@ export default function AtmStickyTable() {
     total: 170,
     turnover: 170,
     bpt: 230,
-    daysEnough: 170, // ✅ NEW
+    daysEnough: 170,
     errors: 260,
     warnings: 260,
     actions: 130,
@@ -491,6 +561,68 @@ export default function AtmStickyTable() {
     XLSX.writeFile(wb, `atm_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
+  const GROUP_ORDER = [
+    "Душанбе",
+    "НТЧ",
+    "Вилояти Суғд",
+    "Минтақаи Бохтар",
+    "Минтақаи Қӯлоб",
+    "ГБАО",
+    "Прочие",
+  ];
+
+  const exportSummaryToExcel = () => {
+    const grouped = {};
+
+    sortedRows.forEach((row) => {
+      const group = getRegionGroup(row.region);
+      if (!grouped[group]) {
+        grouped[group] = { count: 0, balanceTjs: 0, balanceUsd: 0 };
+      }
+      grouped[group].count += 1;
+      grouped[group].balanceTjs += row.balanceTjs ?? 0;
+      grouped[group].balanceUsd += row.balanceUsd ?? 0;
+    });
+
+    const sortedGroups = [
+      ...GROUP_ORDER.filter((g) => grouped[g]),
+      ...Object.keys(grouped).filter((g) => !GROUP_ORDER.includes(g)),
+    ];
+
+    const sheetRows = sortedGroups.map((group) => ({
+      "Мавқеи ҷойгиршавӣ": group,
+      "Миқдори банкоматҳо": grouped[group].count,
+      "Бақияи маблағ бо сомонӣ": grouped[group].balanceTjs,
+      "Бақияи маблағ бо доллари ИМА": grouped[group].balanceUsd,
+    }));
+
+    sheetRows.push({
+      "Мавқеи ҷойгиршавӣ": "Ҳамагӣ",
+      "Миқдори банкоматҳо": sheetRows.reduce(
+        (s, r) => s + r["Миқдори банкоматҳо"],
+        0,
+      ),
+      "Бақияи маблағ бо сомонӣ": sheetRows.reduce(
+        (s, r) => s + r["Бақияи маблағ бо сомонӣ"],
+        0,
+      ),
+      "Бақияи маблағ бо доллари ИМА": sheetRows.reduce(
+        (s, r) => s + r["Бақияи маблағ бо доллари ИМА"],
+        0,
+      ),
+    });
+
+    const ws = XLSX.utils.json_to_sheet(sheetRows);
+    ws["!cols"] = [{ wch: 28 }, { wch: 20 }, { wch: 26 }, { wch: 30 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Отчёт по регионам");
+    XLSX.writeFile(
+      wb,
+      `atm_summary_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
+  };
+
   const clickSort = (key) => {
     setSort((prev) => {
       if (prev.key !== key) return { key, direction: "desc" };
@@ -531,6 +663,9 @@ export default function AtmStickyTable() {
         <button className="export-button" onClick={exportToExcel}>
           Экспорт в Excel
         </button>
+        <button className="export-button" onClick={exportSummaryToExcel}>
+          Отчёт по регионам
+        </button>
       </div>
 
       <div className="table-wrapper">
@@ -546,7 +681,6 @@ export default function AtmStickyTable() {
               >
                 Расположение банкоматов
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.id}
                 onResize={onResize("id")}
@@ -558,7 +692,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="id" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.region}
                 onResize={onResize("region")}
@@ -566,7 +699,6 @@ export default function AtmStickyTable() {
               >
                 Область
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.address}
                 onResize={onResize("address")}
@@ -574,11 +706,9 @@ export default function AtmStickyTable() {
               >
                 Адрес
               </ResizableTh>
-
               <th className="table-header" colSpan={denomCols.length}>
                 Количество
               </th>
-
               <ResizableTh
                 width={colWidths.total}
                 onResize={onResize("total")}
@@ -590,7 +720,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="total" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.turnover}
                 onResize={onResize("turnover")}
@@ -602,7 +731,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="turnover" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.bpt}
                 onResize={onResize("bpt")}
@@ -617,7 +745,6 @@ export default function AtmStickyTable() {
                   />
                 </div>
               </ResizableTh>
-
               {/* ✅ NEW COLUMN */}
               <ResizableTh
                 width={colWidths.daysEnough}
@@ -633,19 +760,20 @@ export default function AtmStickyTable() {
                   />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.errors}
                 onResize={onResize("errors")}
                 className="table-header table-header-issues sortable-header"
                 title="Сначала банкоматы с ошибками"
               >
-                <div onClick={() => clickSort("errors")}>
+                <span onClick={() => clickSort("errors")}>
                   Ошибки{" "}
-                  <SortIcon sortConfig={sortConfigForIcon} sortKey="errors" />
-                </div>
+                  <SortIcon
+                    sortConfig={sortConfigForIcon}
+                    sortKey="errors"
+                  />{" "}
+                </span>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.warnings}
                 onResize={onResize("warnings")}
@@ -657,7 +785,6 @@ export default function AtmStickyTable() {
                   <SortIcon sortConfig={sortConfigForIcon} sortKey="warnings" />
                 </div>
               </ResizableTh>
-
               <ResizableTh
                 width={colWidths.actions}
                 onResize={onResize("actions")}
@@ -666,7 +793,6 @@ export default function AtmStickyTable() {
                 Действия
               </ResizableTh>
             </tr>
-
             {/* ====== HEAD ROW 2 (номиналы) ====== */}
             <tr className="table-subheader-row">
               <th
@@ -723,33 +849,27 @@ export default function AtmStickyTable() {
                     <td className="table-cell table-cell-location" colSpan={2}>
                       {row.location}
                     </td>
-
                     <td className="table-cell table-cell-id">
                       <div>{row.id}</div>
                       <div className="atm-state">{row.atmState}</div>
                     </td>
-
                     <td className="table-cell table-cell-region">
                       {row.region}
                     </td>
                     <td className="table-cell table-cell-address">
                       {row.address}
                     </td>
-
                     {denomCols.map((c) => (
                       <td key={c.key} className="table-cell table-cell-denom">
                         {row[c.key] ?? 0}
                       </td>
                     ))}
-
                     <td className="table-cell table-cell-total">
                       {n(total)} TJS
                     </td>
-
                     <td className="table-cell table-cell-turnover">
                       {n(row.turnoverYesterday)} TJS
                     </td>
-
                     <td className="table-cell table-cell-bpt">
                       {n(row.balancePlusTurnover)} TJS
                       <div className="bpt-sub">
@@ -757,7 +877,6 @@ export default function AtmStickyTable() {
                         {n(row.turnoverYesterday)}
                       </div>
                     </td>
-
                     {/* ✅ NEW CELL */}
                     <td className="table-cell table-cell-days">
                       {daysEnough == null ? (
@@ -771,15 +890,12 @@ export default function AtmStickyTable() {
                         </>
                       )}
                     </td>
-
                     <td className="table-cell table-cell-issues">
                       <ListChips items={row.errors} kind="error" />
                     </td>
-
                     <td className="table-cell table-cell-issues">
                       <ListChips items={row.warnings} kind="warning" />
                     </td>
-
                     <td className="table-cell table-cell-actions">
                       <button
                         className="button"

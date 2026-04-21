@@ -34,7 +34,7 @@
   z-index: 100;
 }
 .logout-confirmation .confirmation-box {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 20px;
   width: 400px;
   height: 300px;
@@ -51,7 +51,7 @@
   font-family: sans-serif;
   font-weight: 500;
   font-size: 16px;
-  color: #333;
+  color: var(--text-color);
   width: 340px;
 }
 .logout-confirmation .confirmation-box h1 {
@@ -69,13 +69,15 @@
   font-family: sans-serif;
   font-weight: 500;
   background-color: #ddd;
-  color: #333;
+  color: var(--text-color);
   border: none;
   font-size: 16px;
   padding: 8px 40px;
   border-radius: 4px;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 .logout-confirmation .confirmation-box .confirm-btn:hover {
   background-color: #c31414;
@@ -86,13 +88,15 @@
 }
 .logout-confirmation .confirmation-box .cancel-btn {
   background-color: #ddd;
-  color: #333;
+  color: var(--text-color);
   border: none;
   font-size: 16px;
   padding: 8px 40px;
   border-radius: 4px;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 .logout-confirmation .confirmation-box .cancel-btn:hover {
   background-color: #c31414;
@@ -109,4 +113,4 @@
   to {
     opacity: 1;
   }
-}/*# sourceMappingURL=Logout.css.map */
+} /*# sourceMappingURL=Logout.css.map */

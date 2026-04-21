@@ -5,8 +5,8 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(226, 26, 28, 0.1);
-  color: #c31414;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary-color);
 }
 
 .client-documents-table__preview-btn,
@@ -18,7 +18,7 @@
   border: none;
   border-radius: 12px;
   padding: 10px 16px;
-  background: #e21a1c;
+  background: var(--primary-color);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -30,9 +30,9 @@
 
 .client-documents-table__preview-btn:hover,
 .search-card__documents-button:hover:not(:disabled) {
-  background: #c31414;
+  background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(195, 20, 20, 0.18);
+  box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.18);
 }
 
 .search-card__documents-button:disabled {
@@ -135,7 +135,7 @@
   justify-content: center;
   padding: 10px 18px;
   border-radius: 12px;
-  background: #e21a1c;
+  background: var(--primary-color);
   color: #fff;
   font-weight: 600;
   text-decoration: none;
@@ -145,6 +145,7 @@
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  justify-content: center;
   margin-bottom: 24px;
 }
 
@@ -232,8 +233,8 @@
   height: 110px;
   object-fit: cover;
   border-radius: 999px;
-  border: 3px solid rgba(226, 26, 28, 0.2);
-  box-shadow: 0 14px 30px rgba(226, 26, 28, 0.12);
+  border: 3px solid rgba(var(--primary-rgb), 0.2);
+  box-shadow: 0 14px 30px rgba(var(--primary-rgb), 0.12);
 }
 
 .search-card__photo-placeholder {
@@ -279,8 +280,8 @@
 
 .client-documents-page__input:focus {
   outline: none;
-  border-color: #e21a1c;
-  box-shadow: 0 0 0 4px rgba(226, 26, 28, 0.12);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
 }
 
 .client-documents-page__summary {

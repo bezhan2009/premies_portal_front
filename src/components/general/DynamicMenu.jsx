@@ -1,11 +1,11 @@
 import "../../styles/components/Menu.scss";
 import LogoImageComponent from "../Logo.jsx";
 import LogoutButton from "./Logout.jsx";
-import RowDown from "../../assets/row_down.png";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
-import ChangePasswordIcon from "../../assets/change_password.png";
+import { FaChevronDown } from "react-icons/fa6";
+import { MdPassword } from "react-icons/md";
 import AlertMessage from "./AlertMessage.jsx";
 import Spinner from "../Spinner.jsx";
 import { Settings } from "lucide-react";
@@ -834,7 +834,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         isDropdownOpen ? "open" : ""
                       }`}
                     >
-                      <img src={RowDown} alt="▼" width="16" height="10" />
+                      <FaChevronDown size={16} />
                     </span>
                   </button>
                   {isDropdownOpen && (
@@ -900,11 +900,8 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
               className="change-password-btn"
               onClick={handleChangePassword}
             >
-              <img
-                src={ChangePasswordIcon}
-                alt="Изменить пароль"
-                width={27}
-                height={27}
+              <MdPassword 
+                size={27}
                 title="Изменить пароль"
               />
             </button>

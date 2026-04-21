@@ -26,7 +26,7 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  background: #fff;
+  background: var(--bg-surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   animation: fadeIn 0.4s ease;
@@ -45,7 +45,7 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1.2rem;
   margin-bottom: 14px;
-  color: #333;
+  color: var(--text-color);
 }
 .kb-sidebar ul {
   list-style: none;
@@ -76,7 +76,7 @@
   color: #c31414;
 }
 .kb-sidebar ul li:not(.active) {
-  color: #333;
+  color: var(--text-color);
 }
 
 .kb-content {
@@ -91,7 +91,7 @@
   font-weight: 470;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1rem;
-  color: #777;
+  color: var(--text-muted);
 }
 
 .kb-detail h2 {
@@ -112,7 +112,7 @@
 .kb-detail .kb-items .kb-item {
   font-weight: 470;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #fff;
+  background: var(--bg-surface);
   border: 1px solid #dcdcdc;
   border-radius: 8px;
   padding: 16px;
@@ -138,7 +138,7 @@
 .kb-detail .kb-items .kb-item p {
   font-size: 0.95rem;
   margin: 0;
-  color: #555;
+  color: var(--text-secondary);
 }
 .kb-detail .kb-docs-list {
   font-weight: 470;
@@ -197,7 +197,7 @@
   margin-left: 8px;
   cursor: pointer;
   font-size: 16px;
-  color: #666;
+  color: var(--text-muted);
 }
 .kb-action-btn:hover {
   color: #c31414;
@@ -226,7 +226,7 @@
 }
 
 .kb-modal {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 30px;
   border-radius: 8px;
   width: 400px;

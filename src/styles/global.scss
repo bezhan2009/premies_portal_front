@@ -7,7 +7,13 @@ body {
   padding: 0;
   animation: fadeIn 0.5s ease-out;
   font-family: sans-serif;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 ::selection {
@@ -16,15 +22,32 @@ body {
 }
 
 /* Для Firefox */
+
+
+
+
+
+
+
+
+
+
+
 ::-moz-selection {
   background-color: var(--primary-color);
   color: white;
 }
 
-/* Кастомный фокус для всех элементов */
 :focus {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
+}
+
+.settings-footer > button{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: cente;
 }
 
 .add-payment-modal-content-bts {
@@ -36,7 +59,7 @@ body {
   margin: 0 0 30px 0;
   position: relative;
 
-  >span {
+  > span {
     background-color: var(--primary-hover);
     position: absolute;
     border-radius: 50px;
@@ -46,15 +69,15 @@ body {
     transition: all 0.3s linear;
   }
 
-  >.activeL {
+  > .activeL {
     left: 0;
   }
 
-  >.activeR {
+  > .activeR {
     left: calc(100% - 250px);
   }
 
-  >button {
+  > button {
     height: 45px;
     width: 250px;
     border: none;
@@ -67,7 +90,7 @@ body {
     background-color: transparent;
   }
 
-  >button.active {
+  > button.active {
     color: white;
   }
 }
@@ -123,7 +146,7 @@ textarea:focus {
   justify-content: center;
   align-items: center;
 
-  >span {
+  > span {
     // display: block;
     width: 15px;
     height: 15px;
@@ -185,7 +208,7 @@ textarea:focus {
   background-color: var(--bg-surface) !important;
   color: var(--text-color);
 
-  >svg {
+  > svg {
     border: 1px solid transparent;
 
     &:hover {
@@ -237,7 +260,7 @@ table {
   box-shadow: var(--shadow-sm);
   animation: fadeIn 0.4s ease-out;
 
-  >thead {
+  > thead {
     position: sticky;
     top: 0;
     background-color: var(--bg-color);
@@ -260,7 +283,7 @@ th {
 
 /* Эффект при наведении на заголовок */
 th:hover {
-  background-color: rgba(255, 71, 87, 0.05);
+  background-color: rgba(var(--primary-rgb), 0.05);
 }
 
 /* Ячейки таблицы */
@@ -279,7 +302,7 @@ tr {
 
 /* Подсветка строки при наведении */
 tr:hover td {
-  background: rgba(var(--primary-rgb), 0.03);
+  background: rgba(var(--primary-rgb), 0.08) !important;
 }
 
 /* Разделители столбцов (тонкие линии) */
@@ -460,33 +483,36 @@ tr:nth-child(14) {
   }
 
   input {
-    background-color: var(--bg-color);
+    background-color: var(--bg-surface);
     color: var(--text-color);
+    padding: 10px 16px;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     transition: all var(--transition-fast);
     animation: fadeIn 0.5s ease-out;
+    font-size: 15px;
 
     &::placeholder {
-      color: initial;
+      color: var(--text-muted);
     }
 
     &:hover {
-      outline: var(--primary-color) solid 2px;
+      border-color: var(--primary-hover);
+      background: var(--bg-secondary);
     }
 
     &:focus {
-      outline: #e21a1c solid 2px;
-      background-color: #6d6d6d;
-      color: #fff;
-
-      &::placeholder {
-        color: #f1f1f1;
-      }
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+      background-color: var(--bg-surface);
     }
   }
 
-  >span {
+  > span {
     width: auto;
     /* position: absolute; ← удали или замени на relative */
     height: 31px;
@@ -676,7 +702,7 @@ tr:nth-child(14) {
       align-items: center;
       gap: 10px;
 
-      &>div {
+      & > div {
         max-width: 15px !important;
         min-width: 15px;
         max-height: 15px !important;
@@ -737,9 +763,9 @@ tr:nth-child(14) {
         animation: fadeIn 0.6s ease-out;
 
         &:focus {
-          outline: #e21a1c solid 2px;
-          background-color: var(--text-color)00092;
-          color: #fff;
+          outline: var(--primary-color) solid 2px;
+          background-color: var(--bg-elevated);
+          color: var(--text-color);
         }
       }
 
@@ -780,7 +806,7 @@ tr:nth-child(14) {
       padding: 20px;
       animation: fadeIn 0.5s ease-out;
 
-      &>div {
+      & > div {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -810,7 +836,7 @@ tr:nth-child(14) {
       justify-content: space-between;
       animation: fadeIn 0.6s ease-out;
 
-      >* {
+      > * {
         grid-area: auto !important;
         grid-column: auto !important;
         min-width: 0;
@@ -867,7 +893,7 @@ tr:nth-child(14) {
   // height: 100vh;
   animation: fadeIn 0.3s ease-out;
 
-  >main {
+  > main {
     height: calc(100% - 40px) !important;
     width: 98%;
     background-color: var(--bg-surface);
@@ -935,7 +961,7 @@ tr:nth-child(14) {
   // height: calc(100vh - 130px);
   animation: fadeIn 0.3s ease-out;
 
-  >main {
+  > main {
     // height: 1103px;
     width: 98%;
     background-color: var(--bg-surface);
@@ -982,7 +1008,7 @@ tr:nth-child(14) {
         background-color: green;
       }
 
-      &>div {
+      & > div {
         display: flex;
         gap: 10px;
         position: relative;
@@ -1026,7 +1052,7 @@ tr:nth-child(14) {
 
           &:focus {
             outline: var(--primary-color) solid 2px;
-            background-color: var(--text-color)00092;
+            background-color: var(--text-color) 00092;
             color: #fff;
           }
         }
@@ -1045,7 +1071,7 @@ tr:nth-child(14) {
       animation: fadeIn 0.6s ease-out;
       height: 35px;
 
-      >div {
+      > div {
         display: flex;
         gap: 15px;
         align-items: center;
@@ -1090,7 +1116,7 @@ body {
 }
 
 .modal {
-  >main {
+  > main {
     width: 95vw;
     height: 90vh;
     overflow: auto;
@@ -1111,7 +1137,7 @@ body {
   // margin-top: 30px;
   animation: fadeIn 0.3s ease-out;
 
-  >main {
+  > main {
     height: auto;
     // max-height: 90vh;
     overflow: hidden;
@@ -1125,7 +1151,7 @@ body {
       grid-auto-rows: minmax(60px, auto);
       animation: fadeIn 0.5s ease-out;
 
-      >div {
+      > div {
         grid-area: auto !important;
       }
     }
@@ -1166,7 +1192,7 @@ body {
   position: absolute;
   top: 8px;
   right: 12px;
-  background: #f44336;
+  background: var(--primary-color);
   color: white;
   border: none;
   font-size: 20px;
@@ -1251,10 +1277,11 @@ body {
 }
 
 .custom-modal-content {
-  background: #fff;
+  background: var(--bg-elevated);
+  color: var(--text-color);
   padding: 2rem;
   border-radius: 20px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   max-width: 80vw;
   max-height: 80vh;
   overflow: auto;
@@ -1267,7 +1294,7 @@ body {
   position: absolute;
   top: 15px;
   right: 15px;
-  background-color: #ff4d4d;
+  background-color: var(--primary-color);
   color: #fff;
   border: none;
   font-size: 20px;
@@ -1285,7 +1312,7 @@ body {
 }
 
 .custom-modal-close:hover {
-  background-color: #ff1a1a;
+  background-color: var(--primary-hover);
   transform: scale(1.05);
 }
 
@@ -1395,9 +1422,9 @@ select {
   animation: fadeIn 0.7s ease-out;
 
   &:focus {
-    outline: #e21a1c solid 2px;
-    background-color: var(--text-color)00092;
-    color: #fff;
+    outline: var(--primary-color) solid 2px;
+    background-color: var(--bg-elevated);
+    color: var(--text-color);
   }
 }
 
@@ -1448,7 +1475,7 @@ button:active {
   justify-content: center;
   gap: 10px;
 
-  >.btn {
+  > .btn {
     cursor: no-drop;
     padding: 12px 18px;
     font-size: 18px;
@@ -1471,7 +1498,7 @@ button:active {
   align-items: center;
   justify-content: space-between;
 
-  >h1 {
+  > h1 {
     background-color: var(--primary-color);
     color: white;
     padding: 4px 15px;
@@ -1490,7 +1517,7 @@ button:active {
   flex: 1;
   transition: all 0.7s ease-in-out;
 
-  >nav {
+  > nav {
     padding: 0 2%;
     min-width: 96%;
   }
@@ -1558,10 +1585,10 @@ button:active {
 }
 
 .loading-box {
-  background: #fff;
+  background: var(--bg-elevated);
   padding: 24px 36px;
   border-radius: 14px;
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   text-align: center;
   font-family: "Inter", sans-serif;
   animation: scaleIn 0.3s ease-out;
@@ -1601,18 +1628,18 @@ button:active {
 
 .loading-box p {
   font-size: 16px;
-  color: #333;
+  color: var(--text-color);
   font-weight: 500;
   margin: 0;
 }
 
 .selection-stats-card {
   margin-left: 24px;
-  background: #ffffff;
+  background: var(--bg-surface);
   padding: 12px 20px;
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #eef2f6;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 20px;
@@ -1627,14 +1654,14 @@ button:active {
 
     .label {
       font-size: 13px;
-      color: #64748b;
+      color: var(--text-secondary);
       margin-bottom: 4px;
     }
 
     .value {
       font-size: 20px;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--text-color);
 
       &.paid {
         color: #16a34a;
@@ -1650,7 +1677,7 @@ button:active {
   .divider {
     width: 1px;
     height: 36px;
-    background: #e2e8f0;
+    background: var(--border-color);
   }
 
   .highlight {
@@ -1768,12 +1795,12 @@ button:active {
 
 .table-info {
   font-size: 14px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .atm-id {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
 }
 
 .date-display {
@@ -1794,10 +1821,10 @@ button:active {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-surface);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
   outline: none;
   font-family: inherit;
 }
@@ -1854,9 +1881,9 @@ button:active {
 
 /* Secondary variant - серая с красным hover */
 .button.secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border-color: #d1d5db;
+  background: var(--bg-secondary);
+  color: var(--text-color);
+  border-color: var(--border-color);
 }
 
 .button.secondary:hover {
@@ -2227,7 +2254,9 @@ input[type="checkbox"]::before {
   transform-origin: bottom left;
   transform: translate(-50%, -60%) rotate(45deg) scale(0);
   opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.2s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+    opacity 0.2s ease;
 }
 
 input[type="checkbox"]:checked::before {
@@ -2246,11 +2275,14 @@ input[type="checkbox"]::after {
   line-height: 1;
   color: #ccc;
   opacity: 1;
-  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.2s ease, color 0.2s;
+  transition:
+    transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+    opacity 0.2s ease,
+    color 0.2s;
 }
 
 input[type="checkbox"]:hover::after {
-  color: #ff4757;
+  color: var(--primary-color);
 }
 
 input[type="checkbox"]:checked::after {

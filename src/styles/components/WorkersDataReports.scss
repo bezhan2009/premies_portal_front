@@ -1,4 +1,4 @@
-@import '../mixins/filters.scss';
+@import "../mixins/filters.scss";
 
 .container {
   font-family: Arial, sans-serif;
@@ -22,7 +22,7 @@
   border: none;
   border-radius: 6px;
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -55,19 +55,19 @@
     margin-top: 10px;
   }
 
-  th, td {
+  th,
+  td {
     padding: 26px;
     border: 1px solid #e4e4e4;
     text-align: center;
     font-size: 14px;
-    color: #333;
+    color: var(--text-color);
   }
 
   th {
     font-weight: 650;
   }
 }
-
 
 .filters__container {
   @include filter-container-table;
@@ -80,14 +80,14 @@
 }
 
 .loading {
-  font-size: 16px;        /* Размер шрифта */
-  color: #ff0000;         /* Цвет текста, например красный */
-  text-align: center;     /* Выравнивание по центру */
-  padding: 10px;          /* Внутренние отступы */
-  background-color: #f0f0f0; /* Светлый фон */
-  border-radius: 5px;     /* Скругление углов */
-  font-family: Arial, sans-serif; /* Семейство шрифтов */
-  margin: 20px auto;      /* Отступы и центрирование блока */
-  width: fit-content;     /* Подгонка ширины под содержимое */
+  font-size: 16px;
+  color: var(--primary-color);
+  text-align: center;
+  padding: 10px;
+  background-color: var(--bg-secondary);
+  border-radius: 5px;
+  font-family: inherit;
+  margin: 20px auto;
+  width: fit-content;
   font-weight: bold;
 }

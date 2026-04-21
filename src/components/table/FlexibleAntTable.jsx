@@ -288,9 +288,12 @@ const ResizableHeaderCell = ({
 };
 
 export const Table = ({
-  columns: initialColumns,
+  columns,
   dataSource,
   onColumnOrderChange,
+  children,
+  tableId,
+  onChange,
   ...restProps
 }) => {
   const { primaryColor, theme: currentTheme } = useThemeStore();
@@ -306,8 +309,17 @@ export const Table = ({
         colorBgLayout: "var(--bg-color)",
         colorText: "var(--text-color)",
         colorBorder: "var(--border-color)",
+        colorFillAlter: "var(--bg-secondary)",
+        colorFillContent: "var(--bg-secondary)",
       },
       components: {
+        Table: {
+          headerBg: "var(--bg-secondary)",
+          headerColor: "var(--text-color)",
+          rowHoverBg: "rgba(var(--primary-rgb), 0.08)",
+          selectedRowBg: "rgba(var(--primary-rgb), 0.12)",
+          selectedRowHoverBg: "rgba(var(--primary-rgb), 0.15)",
+        },
         Pagination: {
           itemActiveBg: primaryColor,
           activeBorderColor: primaryColor,

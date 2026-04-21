@@ -644,7 +644,7 @@ $gray-900: var(--text-color);
 }
 
 .default-value {
-  color: #666;
+  color: var(--text-muted);
 }
 
 // Стили для статусов
