@@ -1,4 +1,4 @@
-import RadioSelect from "../../components/elements/RadioSelect";
+﻿import RadioSelect from "../../components/elements/RadioSelect";
 import {
     districtTypes,
     docTypes, genders,
@@ -58,7 +58,7 @@ export default function GiftCard({ edit = false }) {
         cardName: useRef(null)
     };
 
-    // 🔐 Вспомогательная функция для получения заголовков с токеном
+    // рџ”ђ Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РіРѕР»РѕРІРєРѕРІ СЃ С‚РѕРєРµРЅРѕРј
     const getAuthHeaders = () => {
         const token = localStorage.getItem("access_token");
         return {
@@ -67,7 +67,7 @@ export default function GiftCard({ edit = false }) {
         };
     };
 
-    // ИСПРАВЛЕННАЯ функция для проверки в списке террористов
+    // РРЎРџР РђР’Р›Р•РќРќРђРЇ С„СѓРЅРєС†РёСЏ РґР»СЏ РїСЂРѕРІРµСЂРєРё РІ СЃРїРёСЃРєРµ С‚РµСЂСЂРѕСЂРёСЃС‚РѕРІ
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
@@ -80,19 +80,17 @@ export default function GiftCard({ edit = false }) {
             const token = localStorage.getItem("access_token");
 
             if (!token) {
-                console.error("Токен не найден");
+                console.error("РўРѕРєРµРЅ РЅРµ РЅР°Р№РґРµРЅ");
                 return;
             }
 
-            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`;
-
-            if (birthDate && birthDate.trim() !== '') {
-                url += `&bday=${encodeURIComponent(birthDate.trim())}`;
-            }
-
-            const response = await fetch(url, {
-                method: "GET",
-                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    name: name.trim(),
+                    bday: birthDate?.trim() || "",
+                }),
             });
 
             if (!response.ok) {
@@ -106,14 +104,14 @@ export default function GiftCard({ edit = false }) {
                 setTerrorCheckResults(prev => ({ ...prev, [type]: result.is_match }));
             }
         } catch (error) {
-            console.error(`Ошибка при проверке списка террористов (${type}):`, error);
+            console.error(`РћС€РёР±РєР° РїСЂРё РїСЂРѕРІРµСЂРєРµ СЃРїРёСЃРєР° С‚РµСЂСЂРѕСЂРёСЃС‚РѕРІ (${type}):`, error);
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
         } finally {
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
         }
     }, []);
 
-    // Debounced проверка для полного имени (ФИО)
+    // Debounced РїСЂРѕРІРµСЂРєР° РґР»СЏ РїРѕР»РЅРѕРіРѕ РёРјРµРЅРё (Р¤РРћ)
     const debouncedCheckFullName = useCallback((fullName, birthDate) => {
         if (terrorCheckTimeoutRefs.fullName.current) {
             clearTimeout(terrorCheckTimeoutRefs.fullName.current);
@@ -124,7 +122,7 @@ export default function GiftCard({ edit = false }) {
         }, 800);
     }, [checkTerrorList]);
 
-    // Debounced проверка для имени на карте
+    // Debounced РїСЂРѕРІРµСЂРєР° РґР»СЏ РёРјРµРЅРё РЅР° РєР°СЂС‚Рµ
     const debouncedCheckCardName = useCallback((cardName) => {
         if (terrorCheckTimeoutRefs.cardName.current) {
             clearTimeout(terrorCheckTimeoutRefs.cardName.current);
@@ -135,11 +133,11 @@ export default function GiftCard({ edit = false }) {
         }, 800);
     }, [checkTerrorList, data.birth_date]);
 
-    // НОВЫЙ обработчик для изменения даты рождения
+    // РќРћР’Р«Р™ РѕР±СЂР°Р±РѕС‚С‡РёРє РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ РґР°С‚С‹ СЂРѕР¶РґРµРЅРёСЏ
     const handleBirthDateChange = (value) => {
         setData("birth_date", value);
 
-        // Собираем полное ФИО
+        // РЎРѕР±РёСЂР°РµРј РїРѕР»РЅРѕРµ Р¤РРћ
         const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
         if (fullName.length >= 2) {
             debouncedCheckFullName(fullName, value);
@@ -150,17 +148,17 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // Состояния для работы с несколькими клиентами
+    // РЎРѕСЃС‚РѕСЏРЅРёСЏ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РЅРµСЃРєРѕР»СЊРєРёРјРё РєР»РёРµРЅС‚Р°РјРё
     const [foundClients, setFoundClients] = useState([]);
     const [showClientSelector, setShowClientSelector] = useState(false);
     const [selectedClientIndex, setSelectedClientIndex] = useState(0);
 
-    // Состояние для выбора типа SMS
+    // РЎРѕСЃС‚РѕСЏРЅРёРµ РґР»СЏ РІС‹Р±РѕСЂР° С‚РёРїР° SMS
     const [showSMSType, setShowSMSType] = useState(false);
     const [smsTypes] = useState([
-        { value: "accepted", label: "Заявка принята" },
-        { value: "rejected", label: "Заявка отклонена" },
-        { value: "card_opened", label: "Карта успешно открыта" },
+        { value: "accepted", label: "Р—Р°СЏРІРєР° РїСЂРёРЅСЏС‚Р°" },
+        { value: "rejected", label: "Р—Р°СЏРІРєР° РѕС‚РєР»РѕРЅРµРЅР°" },
+        { value: "card_opened", label: "РљР°СЂС‚Р° СѓСЃРїРµС€РЅРѕ РѕС‚РєСЂС‹С‚Р°" },
     ]);
 
     const ValidData = {
@@ -195,16 +193,16 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    // ИСПРАВЛЕННЫЙ обработчик для изменения имени, фамилии и отчества с проверкой террористов
+    // РРЎРџР РђР’Р›Р•РќРќР«Р™ РѕР±СЂР°Р±РѕС‚С‡РёРє РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ РёРјРµРЅРё, С„Р°РјРёР»РёРё Рё РѕС‚С‡РµСЃС‚РІР° СЃ РїСЂРѕРІРµСЂРєРѕР№ С‚РµСЂСЂРѕСЂРёСЃС‚РѕРІ
     const handleNameChange = (field, value) => {
         setData(field, value);
 
-        // Получаем текущие значения всех полей ФИО
+        // РџРѕР»СѓС‡Р°РµРј С‚РµРєСѓС‰РёРµ Р·РЅР°С‡РµРЅРёСЏ РІСЃРµС… РїРѕР»РµР№ Р¤РРћ
         const surname = field === 'surname' ? value : data.surname || '';
         const name = field === 'name' ? value : data.name || '';
         const patronymic = field === 'patronymic' ? value : data.patronymic || '';
 
-        // Собираем полное ФИО
+        // РЎРѕР±РёСЂР°РµРј РїРѕР»РЅРѕРµ Р¤РРћ
         const fullName = `${surname} ${name} ${patronymic}`.trim();
 
         if (fullName.length >= 2) {
@@ -232,7 +230,7 @@ export default function GiftCard({ edit = false }) {
                 `${backendUrl}/addresses?clientIndex=${clientCode}`,
                 {
                     method: "GET",
-                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
+                    headers: getAuthHeaders(), // рџ”ђ РСЃРїРѕР»СЊР·СѓРµРј С„СѓРЅРєС†РёСЋ СЃ С‚РѕРєРµРЅРѕРј
                 }
             );
 
@@ -243,7 +241,7 @@ export default function GiftCard({ edit = false }) {
             const clientDetails = await response.json();
             return clientDetails;
         } catch (error) {
-            console.error("Ошибка при загрузке деталей клиента:", error);
+            console.error("РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РґРµС‚Р°Р»РµР№ РєР»РёРµРЅС‚Р°:", error);
             throw error;
         }
     };
@@ -303,9 +301,9 @@ export default function GiftCard({ edit = false }) {
             }
 
             if (clientDetails.sex === "M") {
-                setData("gender", true);  // Муж
+                setData("gender", true);  // РњСѓР¶
             } else if (clientDetails.sex === "F") {
-                setData("gender", false); // Жен
+                setData("gender", false); // Р–РµРЅ
             }
 
             if (
@@ -371,7 +369,7 @@ export default function GiftCard({ edit = false }) {
                 );
             }
 
-            // ИСПРАВЛЕНО: Проверяем полное ФИО (с отчеством) в списке террористов
+            // РРЎРџР РђР’Р›Р•РќРћ: РџСЂРѕРІРµСЂСЏРµРј РїРѕР»РЅРѕРµ Р¤РРћ (СЃ РѕС‚С‡РµСЃС‚РІРѕРј) РІ СЃРїРёСЃРєРµ С‚РµСЂСЂРѕСЂРёСЃС‚РѕРІ
             const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""} ${clientDetails.middle_name || ""}`.trim();
             const birthDate = clientDetails.birth_date ? new Date(clientDetails.birth_date).toISOString().split("T")[0] : null;
 
@@ -385,11 +383,11 @@ export default function GiftCard({ edit = false }) {
                 await checkTerrorList(cardNameForCheck, birthDate, "cardName");
             }
 
-            showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+            showAlert("Р”Р°РЅРЅС‹Рµ РєР»РёРµРЅС‚Р° СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹ РёР· РђР‘РЎ", "success", 5000);
         } catch (error) {
-            console.error("Ошибка при загрузке деталей клиента:", error);
+            console.error("РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РґРµС‚Р°Р»РµР№ РєР»РёРµРЅС‚Р°:", error);
             showAlert(
-                "Основные данные загружены, но не удалось загрузить детали клиента",
+                "РћСЃРЅРѕРІРЅС‹Рµ РґР°РЅРЅС‹Рµ Р·Р°РіСЂСѓР¶РµРЅС‹, РЅРѕ РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґРµС‚Р°Р»Рё РєР»РёРµРЅС‚Р°",
                 "warning",
                 5000
             );
@@ -400,7 +398,7 @@ export default function GiftCard({ edit = false }) {
 
     const handleSearchClient = async () => {
         if (!data.phone_number) {
-            showAlert("Пожалуйста, заполните поле 'Телефон'", "error", 5000);
+            showAlert("РџРѕР¶Р°Р»СѓР№СЃС‚Р°, Р·Р°РїРѕР»РЅРёС‚Рµ РїРѕР»Рµ 'РўРµР»РµС„РѕРЅ'", "error", 5000);
             return;
         }
 
@@ -415,13 +413,13 @@ export default function GiftCard({ edit = false }) {
                 `${backendUrl}/client/info?phoneNumber=${phoneNumber}`,
                 {
                     method: "GET",
-                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
+                    headers: getAuthHeaders(), // рџ”ђ РСЃРїРѕР»СЊР·СѓРµРј С„СѓРЅРєС†РёСЋ СЃ С‚РѕРєРµРЅРѕРј
                 }
             );
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    showAlert("Клиенты не найдены в АБС", "error", 5000);
+                    showAlert("РљР»РёРµРЅС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹ РІ РђР‘РЎ", "error", 5000);
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -432,7 +430,7 @@ export default function GiftCard({ edit = false }) {
             const clientsData = await response.json();
 
             if (clientsData.length === 0) {
-                showAlert("Клиенты не найдены в АБС", "error", 5000);
+                showAlert("РљР»РёРµРЅС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹ РІ РђР‘РЎ", "error", 5000);
                 setFoundClients([]);
                 return;
             }
@@ -441,19 +439,19 @@ export default function GiftCard({ edit = false }) {
 
             if (clientsData.length === 1) {
                 await fillFormWithClientData(clientsData[0]);
-                showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+                showAlert("Р”Р°РЅРЅС‹Рµ РєР»РёРµРЅС‚Р° СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹ РёР· РђР‘РЎ", "success", 5000);
             } else {
                 setSelectedClientIndex(0);
                 setShowClientSelector(true);
                 showAlert(
-                    `Найдено ${clientsData.length} клиентов. Выберите нужного.`,
+                    `РќР°Р№РґРµРЅРѕ ${clientsData.length} РєР»РёРµРЅС‚РѕРІ. Р’С‹Р±РµСЂРёС‚Рµ РЅСѓР¶РЅРѕРіРѕ.`,
                     "info",
                     5000
                 );
             }
         } catch (error) {
-            console.error("Ошибка при поиске клиента в АБС:", error);
-            showAlert("Произошла ошибка при поиске клиента в АБС", "error", 5000);
+            console.error("РћС€РёР±РєР° РїСЂРё РїРѕРёСЃРєРµ РєР»РёРµРЅС‚Р° РІ РђР‘РЎ:", error);
+            showAlert("РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё РїРѕРёСЃРєРµ РєР»РёРµРЅС‚Р° РІ РђР‘РЎ", "error", 5000);
             setFoundClients([]);
         } finally {
             setSearching(false);
@@ -465,7 +463,7 @@ export default function GiftCard({ edit = false }) {
             await fillFormWithClientData(foundClients[clientIndex]);
             setShowClientSelector(false);
             showAlert(
-                `Данные клиента ${clientIndex + 1} успешно загружены`,
+                `Р”Р°РЅРЅС‹Рµ РєР»РёРµРЅС‚Р° ${clientIndex + 1} СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹`,
                 "success",
                 5000
             );
@@ -495,7 +493,7 @@ export default function GiftCard({ edit = false }) {
 
             const response = await fetch(`${automationUrl}/automation/poll`, {
                 method: "POST",
-                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
+                headers: getAuthHeaders(), // рџ”ђ РСЃРїРѕР»СЊР·СѓРµРј С„СѓРЅРєС†РёСЋ СЃ С‚РѕРєРµРЅРѕРј
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -509,10 +507,10 @@ export default function GiftCard({ edit = false }) {
             const filename = `poll_${applicationId}.zip`;
             downloadFile(blob, filename);
 
-            showAlert("Анкета успешно скачана!", "success", 4000);
+            showAlert("РђРЅРєРµС‚Р° СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅР°!", "success", 4000);
         } catch (error) {
-            console.error("Ошибка скачивания анкеты:", error);
-            showAlert("Произошла ошибка при скачивании анкеты", "error", 5000);
+            console.error("РћС€РёР±РєР° СЃРєР°С‡РёРІР°РЅРёСЏ Р°РЅРєРµС‚С‹:", error);
+            showAlert("РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё СЃРєР°С‡РёРІР°РЅРёРё Р°РЅРєРµС‚С‹", "error", 5000);
         } finally {
             setDownloading(false);
         }
@@ -525,7 +523,7 @@ export default function GiftCard({ edit = false }) {
 
             const response = await fetch(`${automationUrl}/automation/offer`, {
                 method: "POST",
-                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
+                headers: getAuthHeaders(), // рџ”ђ РСЃРїРѕР»СЊР·СѓРµРј С„СѓРЅРєС†РёСЋ СЃ С‚РѕРєРµРЅРѕРј
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -539,10 +537,10 @@ export default function GiftCard({ edit = false }) {
             const filename = `offer_${applicationId}.zip`;
             downloadFile(blob, filename);
 
-            showAlert("Оферт успешно скачан!", "success", 4000);
+            showAlert("РћС„РµСЂС‚ СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅ!", "success", 4000);
         } catch (error) {
-            console.error("Ошибка скачивания оферта:", error);
-            showAlert("Произошла ошибка при скачивании оферта", "error", 5000);
+            console.error("РћС€РёР±РєР° СЃРєР°С‡РёРІР°РЅРёСЏ РѕС„РµСЂС‚Р°:", error);
+            showAlert("РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё СЃРєР°С‡РёРІР°РЅРёРё РѕС„РµСЂС‚Р°", "error", 5000);
         } finally {
             setDownloadingOffer(false);
         }
@@ -550,23 +548,23 @@ export default function GiftCard({ edit = false }) {
 
     const validateOfferFields = () => {
         const requiredFields = [
-            { field: "product", label: "Продукт" },
-            { field: "account_usd", label: "Счет USD" },
-            { field: "account_eur", label: "Счет EUR" },
-            { field: "account_tjs", label: "Счет TJS" },
-            { field: "contract_number", label: "Номер договора" },
-            { field: "contract_date", label: "Дата договора" },
+            { field: "product", label: "РџСЂРѕРґСѓРєС‚" },
+            { field: "account_usd", label: "РЎС‡РµС‚ USD" },
+            { field: "account_eur", label: "РЎС‡РµС‚ EUR" },
+            { field: "account_tjs", label: "РЎС‡РµС‚ TJS" },
+            { field: "contract_number", label: "РќРѕРјРµСЂ РґРѕРіРѕРІРѕСЂР°" },
+            { field: "contract_date", label: "Р”Р°С‚Р° РґРѕРіРѕРІРѕСЂР°" },
         ];
 
         for (const { field, label } of requiredFields) {
             if (!data[field] || data[field].toString().trim() === "") {
-                showAlert(`Заполните поле: ${label}`, "error", 5000);
+                showAlert(`Р—Р°РїРѕР»РЅРёС‚Рµ РїРѕР»Рµ: ${label}`, "error", 5000);
                 return false;
             }
         }
 
         if (!data.visa_card && !data.mc_card && !data.nc_card) {
-            showAlert("Выберите тип карты", "error", 5000);
+            showAlert("Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї РєР°СЂС‚С‹", "error", 5000);
             return false;
         }
 
@@ -597,11 +595,11 @@ export default function GiftCard({ edit = false }) {
 
         if (data.is_new_client) {
             if (!data.message_type) {
-                showAlert("Выберите тип SMS для отправки", "error", 5000);
+                showAlert("Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї SMS РґР»СЏ РѕС‚РїСЂР°РІРєРё", "error", 5000);
                 return false;
             }
             if (data.message_type === "rejected" && !data.rejection_reason) {
-                showAlert("Укажите причину отклонения заявки", "error", 5000);
+                showAlert("РЈРєР°Р¶РёС‚Рµ РїСЂРёС‡РёРЅСѓ РѕС‚РєР»РѕРЅРµРЅРёСЏ Р·Р°СЏРІРєРё", "error", 5000);
                 return false;
             }
         }
@@ -636,7 +634,7 @@ export default function GiftCard({ edit = false }) {
                 { key: "name", value: safeTrim(data.name) },
                 { key: "surname", value: safeTrim(data.surname) },
                 { key: "patronymic", value: safeTrim(data.patronymic) },
-                { key: "gender", value: data.gender === true ? "Муж" : "Жен" },
+                { key: "gender", value: data.gender === true ? "РњСѓР¶" : "Р–РµРЅ" },
                 { key: "client_index", value: safeTrim(data.client_index) },
                 { key: "issued_by", value: safeTrim(data.issued_by) },
                 {
@@ -732,7 +730,7 @@ export default function GiftCard({ edit = false }) {
                 const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
                     method: "PATCH",
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // рџ”ђ Р”РѕР±Р°РІР»РµРЅ С‚РѕРєРµРЅ
                     },
                     body: formData,
                 });
@@ -741,21 +739,21 @@ export default function GiftCard({ edit = false }) {
                     throw new Error(`HTTP error! status: ${response.status}`);
 
                 const result = await response.json();
-                console.log("Успешно обновлено:", result);
+                console.log("РЈСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅРѕ:", result);
 
                 if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
                     downloadOffer(applicationId);
                 } else if (!isForPoll && !isForOffer) {
-                    showAlert("Данные успешно сохранены!", "success", 4000);
+                    showAlert("Р”Р°РЅРЅС‹Рµ СѓСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅРµРЅС‹!", "success", 4000);
                 }
                 return true;
             } else {
                 const response = await fetch(`${backendUrl}/applications`, {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // рџ”ђ Р”РѕР±Р°РІР»РµРЅ С‚РѕРєРµРЅ
                     },
                     body: formData,
                 });
@@ -764,7 +762,7 @@ export default function GiftCard({ edit = false }) {
                     throw new Error(`HTTP error! status: ${response.status}`);
 
                 const result = await response.json();
-                console.log("Успешно создано:", result);
+                console.log("РЈСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅРѕ:", result);
 
                 applicationId = result.ID || result.id;
 
@@ -774,13 +772,13 @@ export default function GiftCard({ edit = false }) {
                     downloadOffer(applicationId);
                 } else {
                     navigate(0);
-                    showAlert("Данные успешно сохранены!", "success", 4000);
+                    showAlert("Р”Р°РЅРЅС‹Рµ СѓСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅРµРЅС‹!", "success", 4000);
                 }
                 return true;
             }
         } catch (error) {
-            console.error("Ошибка отправки:", error);
-            showAlert("Произошла ошибка при сохранении данных", "error", 5000);
+            console.error("РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё:", error);
+            showAlert("РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё СЃРѕС…СЂР°РЅРµРЅРёРё РґР°РЅРЅС‹С…", "error", 5000);
             return false;
         }
     };
@@ -804,7 +802,7 @@ export default function GiftCard({ edit = false }) {
                 const responseData = await getApplicationById(id);
                 setDataMore({
                     ...responseData,
-                    gemder: responseData.gender === "Муж",
+                    gemder: responseData.gender === "РњСѓР¶",
                     birth_date: formaterDate(responseData?.birth_date, "dateOnly"),
                     passport_issued_at: formaterDate(
                         responseData?.passport_issued_at,
@@ -815,7 +813,7 @@ export default function GiftCard({ edit = false }) {
                     UpdatedAt: formaterDate(responseData?.UpdatedAt, "dateOnly"),
                 });
 
-                // ИСПРАВЛЕНО: Проверяем полное ФИО с датой рождения
+                // РРЎРџР РђР’Р›Р•РќРћ: РџСЂРѕРІРµСЂСЏРµРј РїРѕР»РЅРѕРµ Р¤РРћ СЃ РґР°С‚РѕР№ СЂРѕР¶РґРµРЅРёСЏ
                 const birthDate = formaterDate(responseData?.birth_date, "dateOnly");
 
                 if (responseData.is_new_client) {
@@ -836,7 +834,7 @@ export default function GiftCard({ edit = false }) {
                 }
             } catch (e) {
                 console.error(e);
-                showAlert("Ошибка при загрузке данных", "error", 5000);
+                showAlert("РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РґР°РЅРЅС‹С…", "error", 5000);
             } finally {
                 setLoading(false);
             }
@@ -879,8 +877,8 @@ export default function GiftCard({ edit = false }) {
                         selectedIndex={selectedClientIndex}
                         onSelect={handleSelectClient}
                         onClose={() => setShowClientSelector(false)}
-                        title="Выберите клиента"
-                        description={`Найдено ${foundClients.length} клиентов с номером телефона ${data.phone_number}. Выберите нужного:`}
+                        title="Р’С‹Р±РµСЂРёС‚Рµ РєР»РёРµРЅС‚Р°"
+                        description={`РќР°Р№РґРµРЅРѕ ${foundClients.length} РєР»РёРµРЅС‚РѕРІ СЃ РЅРѕРјРµСЂРѕРј С‚РµР»РµС„РѕРЅР° ${data.phone_number}. Р’С‹Р±РµСЂРёС‚Рµ РЅСѓР¶РЅРѕРіРѕ:`}
                     />
                 )}
 
@@ -889,9 +887,9 @@ export default function GiftCard({ edit = false }) {
                 ) : (
                     <main>
                         <h1>
-                            Выберите карту! Нажав на{" "}
-                            <img src={file} alt="file" width={16} /> вы можете посмотреть и
-                            распечатать тарифы.
+                            Р’С‹Р±РµСЂРёС‚Рµ РєР°СЂС‚Сѓ! РќР°Р¶Р°РІ РЅР°{" "}
+                            <img src={file} alt="file" width={16} /> РІС‹ РјРѕР¶РµС‚Рµ РїРѕСЃРјРѕС‚СЂРµС‚СЊ Рё
+                            СЂР°СЃРїРµС‡Р°С‚Р°С‚СЊ С‚Р°СЂРёС„С‹.
                         </h1>
                         <div className="header-form">
                             <div>
@@ -941,13 +939,13 @@ export default function GiftCard({ edit = false }) {
                         {hasTerrorMatch && (
                             <div className="terror-warning">
                                 <div className="terror-warning-header">
-                                    <span className="terror-warning-icon">⚠</span>
-                                    <strong>ВНИМАНИЕ: Совпадение в базе Excon найдено!</strong>
+                                    <span className="terror-warning-icon">вљ </span>
+                                    <strong>Р’РќРРњРђРќРР•: РЎРѕРІРїР°РґРµРЅРёРµ РІ Р±Р°Р·Рµ Excon РЅР°Р№РґРµРЅРѕ!</strong>
                                 </div>
                                 <div className="terror-warning-details">
                                     {terrorCheckResults.fullName === true && (
                                         <div className="terror-match-item">
-                                            <span className="terror-match-label">По ФИО:</span>
+                                            <span className="terror-match-label">РџРѕ Р¤РРћ:</span>
                                             <span className="terror-match-value">
                                                 {data.surname || ''} {data.name || ''} {data.patronymic || ''}
                                             </span>
@@ -955,18 +953,18 @@ export default function GiftCard({ edit = false }) {
                                     )}
                                     {terrorCheckResults.cardName === true && (
                                         <div className="terror-match-item">
-                                            <span className="terror-match-label">По имени на карте:</span>
+                                            <span className="terror-match-label">РџРѕ РёРјРµРЅРё РЅР° РєР°СЂС‚Рµ:</span>
                                             <span className="terror-match-value">{data.card_name || ''}</span>
                                         </div>
                                     )}
                                 </div>
                                 <div className="terror-warning-note">
-                                    Проверьте данные клиента перед продолжением оформления
+                                    РџСЂРѕРІРµСЂСЊС‚Рµ РґР°РЅРЅС‹Рµ РєР»РёРµРЅС‚Р° РїРµСЂРµРґ РїСЂРѕРґРѕР»Р¶РµРЅРёРµРј РѕС„РѕСЂРјР»РµРЅРёСЏ
                                 </div>
                             </div>
                         )}
 
-                        <h1>Внимательно заполните данные клиента! Следуйте подсказкам</h1>
+                        <h1>Р’РЅРёРјР°С‚РµР»СЊРЅРѕ Р·Р°РїРѕР»РЅРёС‚Рµ РґР°РЅРЅС‹Рµ РєР»РёРµРЅС‚Р°! РЎР»РµРґСѓР№С‚Рµ РїРѕРґСЃРєР°Р·РєР°Рј</h1>
 
                         <div className="header-passport">
                             <File
@@ -1019,12 +1017,12 @@ export default function GiftCard({ edit = false }) {
 
                             <div className="verification-section">
                                 <CheckBox
-                                    title={"Личность подтверждена?"}
+                                    title={"Р›РёС‡РЅРѕСЃС‚СЊ РїРѕРґС‚РІРµСЂР¶РґРµРЅР°?"}
                                     value={data.identity_verified}
                                     onChange={(e) => setData("identity_verified", e)}
                                 />
                                 <CheckBox
-                                    title={"Отправить СМС?"}
+                                    title={"РћС‚РїСЂР°РІРёС‚СЊ РЎРњРЎ?"}
                                     value={data.is_new_client}
                                     onChange={handleSMSChange}
                                 />
@@ -1034,19 +1032,19 @@ export default function GiftCard({ edit = false }) {
                         {showSMSType && (
                             <div className="sms-section">
                                 <div className="sms-section-header">
-                                    <h3>Настройки SMS</h3>
+                                    <h3>РќР°СЃС‚СЂРѕР№РєРё SMS</h3>
                                     <div className="sms-status-indicator">
                                         {data.message_type ? (
-                                            <span className="sms-status-active">SMS будет отправлен</span>
+                                            <span className="sms-status-active">SMS Р±СѓРґРµС‚ РѕС‚РїСЂР°РІР»РµРЅ</span>
                                         ) : (
-                                            <span className="sms-status-inactive">Выберите тип SMS</span>
+                                            <span className="sms-status-inactive">Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї SMS</span>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="sms-type-selector">
                                     <label className="sms-type-label">
-                                        Выберите тип SMS для отправки клиенту:
+                                        Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї SMS РґР»СЏ РѕС‚РїСЂР°РІРєРё РєР»РёРµРЅС‚Сѓ:
                                     </label>
                                     <div className="sms-options">
                                         {smsTypes.map((type) => (
@@ -1065,9 +1063,9 @@ export default function GiftCard({ edit = false }) {
                                                 <div className="sms-option-content">
                                                     <div className="sms-option-title">{type.label}</div>
                                                     <div className="sms-option-description">
-                                                        {type.value === "accepted" && "Клиент получит SMS о принятии заявки"}
-                                                        {type.value === "rejected" && "Клиент получит SMS об отклонении заявки"}
-                                                        {type.value === "card_opened" && "Клиент получит SMS об открытии карты"}
+                                                        {type.value === "accepted" && "РљР»РёРµРЅС‚ РїРѕР»СѓС‡РёС‚ SMS Рѕ РїСЂРёРЅСЏС‚РёРё Р·Р°СЏРІРєРё"}
+                                                        {type.value === "rejected" && "РљР»РёРµРЅС‚ РїРѕР»СѓС‡РёС‚ SMS РѕР± РѕС‚РєР»РѕРЅРµРЅРёРё Р·Р°СЏРІРєРё"}
+                                                        {type.value === "card_opened" && "РљР»РёРµРЅС‚ РїРѕР»СѓС‡РёС‚ SMS РѕР± РѕС‚РєСЂС‹С‚РёРё РєР°СЂС‚С‹"}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1078,7 +1076,7 @@ export default function GiftCard({ edit = false }) {
                                 {data.message_type === "rejected" && (
                                     <div className="rejection-reason-section">
                                         <label className="rejection-reason-label">
-                                            Причина отклонения заявки:
+                                            РџСЂРёС‡РёРЅР° РѕС‚РєР»РѕРЅРµРЅРёСЏ Р·Р°СЏРІРєРё:
                                             <span className="required-asterisk">*</span>
                                         </label>
                                         <textarea
@@ -1086,12 +1084,12 @@ export default function GiftCard({ edit = false }) {
                                             onChange={(e) =>
                                                 setData("rejection_reason", e.target.value)
                                             }
-                                            placeholder="Введите подробную причину отклонения заявки..."
+                                            placeholder="Р’РІРµРґРёС‚Рµ РїРѕРґСЂРѕР±РЅСѓСЋ РїСЂРёС‡РёРЅСѓ РѕС‚РєР»РѕРЅРµРЅРёСЏ Р·Р°СЏРІРєРё..."
                                             rows={3}
                                             className="rejection-reason-textarea"
                                         />
                                         <div className="rejection-reason-hint">
-                                            Эта информация будет отправлена клиенту в SMS сообщении
+                                            Р­С‚Р° РёРЅС„РѕСЂРјР°С†РёСЏ Р±СѓРґРµС‚ РѕС‚РїСЂР°РІР»РµРЅР° РєР»РёРµРЅС‚Сѓ РІ SMS СЃРѕРѕР±С‰РµРЅРёРё
                                         </div>
                                     </div>
                                 )}
@@ -1100,7 +1098,7 @@ export default function GiftCard({ edit = false }) {
                         <div className="content-form">
                             <div className="div1 input-with-check">
                                 <Input
-                                    placeholder={"Фамилия"}
+                                    placeholder={"Р¤Р°РјРёР»РёСЏ"}
                                     onChange={(e) => handleNameChange("surname", e)}
                                     value={data?.surname}
                                     error={errors}
@@ -1119,7 +1117,7 @@ export default function GiftCard({ edit = false }) {
 
                             <div className="div2 input-with-check">
                                 <Input
-                                    placeholder={"Имя"}
+                                    placeholder={"РРјСЏ"}
                                     onChange={(e) => handleNameChange("name", e)}
                                     value={data?.name}
                                     error={errors}
@@ -1138,7 +1136,7 @@ export default function GiftCard({ edit = false }) {
 
                             <div className="div3 input-with-check">
                                 <Input
-                                    placeholder={"Отчество"}
+                                    placeholder={"РћС‚С‡РµСЃС‚РІРѕ"}
                                     onChange={(e) => handleNameChange("patronymic", e)}
                                     value={data?.patronymic}
                                     error={errors}
@@ -1166,7 +1164,7 @@ export default function GiftCard({ edit = false }) {
 
                             <Input
                                 className={"div5"}
-                                placeholder={"Телефон"}
+                                placeholder={"РўРµР»РµС„РѕРЅ"}
                                 onChange={(e) => setData("phone_number", e)}
                                 value={data?.phone_number}
                                 error={errors}
@@ -1174,7 +1172,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div6"}
-                                placeholder={"Кодовое"}
+                                placeholder={"РљРѕРґРѕРІРѕРµ"}
                                 onChange={(e) => setData("secret_word", e)}
                                 value={data?.secret_word}
                                 error={errors}
@@ -1182,7 +1180,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div9"}
-                                placeholder={"Получаемый оффис"}
+                                placeholder={"РџРѕР»СѓС‡Р°РµРјС‹Р№ РѕС„С„РёСЃ"}
                                 onChange={(e) => setData("receiving_office", e)}
                                 value={data?.receiving_office}
                                 error={errors}
@@ -1190,7 +1188,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div7"}
-                                placeholder={"Почта"}
+                                placeholder={"РџРѕС‡С‚Р°"}
                                 onChange={(e) => setData("email", e)}
                                 value={data?.email}
                                 error={errors}
@@ -1199,7 +1197,7 @@ export default function GiftCard({ edit = false }) {
 
                             <div className="div8 input-with-check">
                                 <Input
-                                    placeholder={"Имя на карте"}
+                                    placeholder={"РРјСЏ РЅР° РєР°СЂС‚Рµ"}
                                     onChange={handleCardNameChange}
                                     value={data?.card_name}
                                     error={errors}
@@ -1218,23 +1216,23 @@ export default function GiftCard({ edit = false }) {
 
                             <Input
                                 className={"div30"}
-                                placeholder={"Код клиента в АБС"}
+                                placeholder={"РљРѕРґ РєР»РёРµРЅС‚Р° РІ РђР‘РЎ"}
                                 onChange={(e) => setData("client_code", e)}
                                 value={data?.client_code}
                                 error={errors}
                                 id={"client_code"}
                             />
                             <CheckBox
-                                yes={"Муж"}
-                                no={"Жен"}
+                                yes={"РњСѓР¶"}
+                                no={"Р–РµРЅ"}
                                 className={"div61 form-check-box"}
-                                title={"Пол"}
+                                title={"РџРѕР»"}
                                 value={data.gender}
                                 onChange={(e) => setData("gender", e)}
                             />
                             <CheckBox
                                 className={"div10 form-check-box"}
-                                title={"Резидент Тадж-на?"}
+                                title={"Р РµР·РёРґРµРЅС‚ РўР°РґР¶-РЅР°?"}
                                 value={data.is_resident}
                                 onChange={(e) => setData("is_resident", e)}
                             />
@@ -1248,7 +1246,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div12"}
-                                placeholder={"Серия"}
+                                placeholder={"РЎРµСЂРёСЏ"}
                                 onChange={(e) => setData("documents_series", e)}
                                 value={data?.documents_series}
                                 error={errors}
@@ -1256,7 +1254,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div13"}
-                                placeholder={"Номер"}
+                                placeholder={"РќРѕРјРµСЂ"}
                                 onChange={(e) => setData("document_number", e)}
                                 value={data?.document_number}
                                 error={errors}
@@ -1265,7 +1263,7 @@ export default function GiftCard({ edit = false }) {
                             <Input
                                 type="date"
                                 className={"div14"}
-                                placeholder={"Дата выдачи"}
+                                placeholder={"Р”Р°С‚Р° РІС‹РґР°С‡Рё"}
                                 onChange={(e) => setData("passport_issued_at", e)}
                                 value={data?.passport_issued_at}
                                 error={errors}
@@ -1274,7 +1272,7 @@ export default function GiftCard({ edit = false }) {
                             <Input
                                 type="date"
                                 className={"div15"}
-                                placeholder={"Срок действия"}
+                                placeholder={"РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ"}
                                 onChange={(e) => setData("passport_deadline", e)}
                                 value={data?.passport_deadline}
                                 error={errors}
@@ -1282,7 +1280,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div16"}
-                                placeholder={"Кем выдан"}
+                                placeholder={"РљРµРј РІС‹РґР°РЅ"}
                                 onChange={(e) => setData("issued_by", e)}
                                 value={data?.issued_by}
                                 error={errors}
@@ -1290,7 +1288,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div17"}
-                                placeholder={"ИНН"}
+                                placeholder={"РРќРќ"}
                                 onChange={(e) => setData("inn", e)}
                                 value={data?.inn}
                                 error={errors}
@@ -1298,7 +1296,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div57"}
-                                placeholder={"Страна"}
+                                placeholder={"РЎС‚СЂР°РЅР°"}
                                 onChange={(e) => setData("country", e)}
                                 value={data?.country}
                                 error={errors}
@@ -1314,7 +1312,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div19"}
-                                placeholder={"Регион"}
+                                placeholder={"Р РµРіРёРѕРЅ"}
                                 onChange={(e) => setData("region", e)}
                                 value={data?.region}
                                 error={errors}
@@ -1330,7 +1328,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div21"}
-                                placeholder={"Нас пункт"}
+                                placeholder={"РќР°СЃ РїСѓРЅРєС‚"}
                                 onChange={(e) => setData("populated", e)}
                                 value={data?.populated}
                                 error={errors}
@@ -1346,7 +1344,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div23"}
-                                placeholder={"Района"}
+                                placeholder={"Р Р°Р№РѕРЅР°"}
                                 onChange={(e) => setData("district", e)}
                                 value={data?.district}
                                 error={errors}
@@ -1354,7 +1352,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div65"}
-                                placeholder={"Гражданство"}
+                                placeholder={"Р“СЂР°Р¶РґР°РЅСЃС‚РІРѕ"}
                                 onChange={(e) => setData("citizenship", e)}
                                 value={data?.citizenship}
                                 error={errors}
@@ -1362,7 +1360,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div66"}
-                                placeholder={"Национальность"}
+                                placeholder={"РќР°С†РёРѕРЅР°Р»СЊРЅРѕСЃС‚СЊ"}
                                 onChange={(e) => setData("nationality", e)}
                                 value={data?.nationality}
                                 error={errors}
@@ -1370,7 +1368,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div67"}
-                                placeholder={"Место рождения"}
+                                placeholder={"РњРµСЃС‚Рѕ СЂРѕР¶РґРµРЅРёСЏ"}
                                 onChange={(e) => setData("place_of_birth", e)}
                                 value={data?.place_of_birth}
                                 error={errors}
@@ -1386,7 +1384,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div25"}
-                                placeholder={"Улица"}
+                                placeholder={"РЈР»РёС†Р°"}
                                 onChange={(e) => setData("street", e)}
                                 value={data?.street}
                                 error={errors}
@@ -1394,7 +1392,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div26"}
-                                placeholder={"Дом"}
+                                placeholder={"Р”РѕРј"}
                                 onChange={(e) => setData("house_number", e)}
                                 value={data?.house_number}
                                 error={errors}
@@ -1402,7 +1400,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div27"}
-                                placeholder={"Корпус"}
+                                placeholder={"РљРѕСЂРїСѓСЃ"}
                                 onChange={(e) => setData("corpus", e)}
                                 value={data?.corpus}
                                 error={errors}
@@ -1410,7 +1408,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div29"}
-                                placeholder={"Кв"}
+                                placeholder={"РљРІ"}
                                 onChange={(e) => setData("apartment_number", e)}
                                 value={data?.apartment_number}
                                 error={errors}
@@ -1418,7 +1416,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div28"}
-                                placeholder={"Индекс"}
+                                placeholder={"РРЅРґРµРєСЃ"}
                                 onChange={(e) => setData("client_index", e)}
                                 value={data?.client_index}
                                 error={errors}
@@ -1426,7 +1424,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div36"}
-                                placeholder={"Продукт"}
+                                placeholder={"РџСЂРѕРґСѓРєС‚"}
                                 onChange={(e) => setData("product", e)}
                                 value={data?.product}
                                 error={errors}
@@ -1435,7 +1433,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div31"}
-                                placeholder={"Счет USD*"}
+                                placeholder={"РЎС‡РµС‚ USD*"}
                                 onChange={(e) => setData("account_usd", e)}
                                 value={data?.account_usd}
                                 error={errors}
@@ -1444,7 +1442,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div32"}
-                                placeholder={"Счет EUR*"}
+                                placeholder={"РЎС‡РµС‚ EUR*"}
                                 onChange={(e) => setData("account_eur", e)}
                                 value={data?.account_eur}
                                 error={errors}
@@ -1453,7 +1451,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div33"}
-                                placeholder={"Счет TJS*"}
+                                placeholder={"РЎС‡РµС‚ TJS*"}
                                 onChange={(e) => setData("account_tjs", e)}
                                 value={data?.account_tjs}
                                 error={errors}
@@ -1462,7 +1460,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div34"}
-                                placeholder={"Номер договора*"}
+                                placeholder={"РќРѕРјРµСЂ РґРѕРіРѕРІРѕСЂР°*"}
                                 onChange={(e) => setData("contract_number", e)}
                                 value={data?.contract_number}
                                 error={errors}
@@ -1472,7 +1470,7 @@ export default function GiftCard({ edit = false }) {
                             <Input
                                 type="date"
                                 className={"div35"}
-                                placeholder={"Дата договора*"}
+                                placeholder={"Р”Р°С‚Р° РґРѕРіРѕРІРѕСЂР°*"}
                                 onChange={(e) => setData("contract_date", e)}
                                 value={data?.contract_date}
                                 error={errors}
@@ -1484,9 +1482,9 @@ export default function GiftCard({ edit = false }) {
                                     <Input
                                         type="text"
                                         className="div37"
-                                        placeholder="Создан в"
+                                        placeholder="РЎРѕР·РґР°РЅ РІ"
                                         value={
-                                            data?.CreatedAt ? `Создано: ${data.CreatedAt}` : ""
+                                            data?.CreatedAt ? `РЎРѕР·РґР°РЅРѕ: ${data.CreatedAt}` : ""
                                         }
                                         disabled
                                         id="CreatedAt"
@@ -1496,9 +1494,9 @@ export default function GiftCard({ edit = false }) {
                                     <Input
                                         type="text"
                                         className="div51"
-                                        placeholder="Обновлен в"
+                                        placeholder="РћР±РЅРѕРІР»РµРЅ РІ"
                                         value={
-                                            data?.UpdatedAt ? `Обновлено: ${data.UpdatedAt}` : ""
+                                            data?.UpdatedAt ? `РћР±РЅРѕРІР»РµРЅРѕ: ${data.UpdatedAt}` : ""
                                         }
                                         disabled
                                         id="UpdatedAt"
@@ -1512,7 +1510,7 @@ export default function GiftCard({ edit = false }) {
                                 disabled={downloading || downloadingOffer}
                             >
                                 <img src={save} alt="" />
-                                <span>Сохранить</span>
+                                <span>РЎРѕС…СЂР°РЅРёС‚СЊ</span>
                             </button>
                             <button
                                 onClick={handleSaveAndDownloadOffer}
@@ -1520,7 +1518,7 @@ export default function GiftCard({ edit = false }) {
                             >
                                 <img src={offer} alt="" />
                                 <span>
-                    {downloadingOffer ? "Загрузка..." : "Загрузить оферт"}
+                    {downloadingOffer ? "Р—Р°РіСЂСѓР·РєР°..." : "Р—Р°РіСЂСѓР·РёС‚СЊ РѕС„РµСЂС‚"}
                   </span>
                             </button>
                             <button
@@ -1529,16 +1527,16 @@ export default function GiftCard({ edit = false }) {
                             >
                                 <img src={download} alt="" />
                                 <span>
-                    {downloading ? "Скачивание..." : "Скачать анкету"}
+                    {downloading ? "РЎРєР°С‡РёРІР°РЅРёРµ..." : "РЎРєР°С‡Р°С‚СЊ Р°РЅРєРµС‚Сѓ"}
                   </span>
                             </button>
                             <button>
                                 <img src={share} alt="" />
-                                <span>Загрузить анкету</span>
+                                <span>Р—Р°РіСЂСѓР·РёС‚СЊ Р°РЅРєРµС‚Сѓ</span>
                             </button>
                             <button onClick={handleSearchClient} disabled={searching}>
                                 <img src={search_user} alt="" />
-                                <span>{searching ? "Поиск..." : "Найти клиента в АБС"}</span>
+                                <span>{searching ? "РџРѕРёСЃРє..." : "РќР°Р№С‚Рё РєР»РёРµРЅС‚Р° РІ РђР‘РЎ"}</span>
                             </button>
                         </footer>
                     </main>
@@ -1547,3 +1545,4 @@ export default function GiftCard({ edit = false }) {
         </>
     );
 }
+
