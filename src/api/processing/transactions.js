@@ -171,3 +171,58 @@ export const fetchTransactionsSearch = async (params) => {
     }
 };
 
+// Получение подробной информации о карте
+export const fetchCardDetails = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/card-data`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card details:', error);
+        return null;
+    }
+};
+
+// Получение информации об уведомлениях (сервисах) карты
+export const fetchCardServices = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/services?CardId=${cardId}`, {
+            headers: {
+                'accept': '*/*'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card services:', error);
+        return [];
+    }
+};
+
+// Изменение статуса карты (блокировка)
+export const changeCardStatus = async (cardId, status) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/change-card-status`, {
+            cardId: String(cardId),
+            hotCardStatus: String(status)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error changing card status:', error);
+        throw error;
+    }
+};
+
