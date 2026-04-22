@@ -197,15 +197,16 @@ export default function DashboardAccountOperations() {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL;
       const token = localStorage.getItem("access_token");
-      const response = await fetch(
-        `${baseUrl}/otp/send/${accountNumber.trim()}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${baseUrl}/otp/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          account: accountNumber.trim(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Ошибка при отправке OTP");

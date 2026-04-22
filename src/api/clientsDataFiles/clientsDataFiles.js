@@ -1,9 +1,7 @@
 import { apiClient } from "../utils/apiClient";
 
 export const getClientDocumentsByINN = async (inn) => {
-  const response = await apiClient.get("/clients-data-files", {
-    params: { inn },
-  });
+  const response = await apiClient.post("/clients-data-files/search", { inn });
 
   return response.data || [];
 };
