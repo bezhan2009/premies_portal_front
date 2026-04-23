@@ -26,6 +26,10 @@ import {
   fetchCardDetails,
   fetchCardServices,
   changeCardStatus,
+  unblockCard,
+  resetPinCounter,
+  generatePin,
+  manageCardService,
 } from "../../../api/processing/transactions.js";
 
 // Extracted Components
@@ -36,6 +40,8 @@ import SearchForm from "./SearchForm.jsx";
 import ClientPersonalInfo from "./ClientPersonalInfo.jsx";
 import ClientDataTabs from "./ClientDataTabs.jsx";
 import BlockCardModal from "./BlockCardModal.jsx";
+import ServicesModal from "./ServicesModal.jsx";
+import ChangePinModal from "./ChangePinModal.jsx";
 import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
@@ -83,8 +89,13 @@ export default function ABSClientSearch() {
   const [documentPreviewVariant, setDocumentPreviewVariant] =
     useState("default");
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+  const [activeCardId, setActiveCardId] = useState(null);
+  const [activeCardServices, setActiveCardServices] = useState([]);
   const [blockingCardId, setBlockingCardId] = useState(null);
   const [isBlockingLoading, setIsBlockingLoading] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Проверка доступа к страницам
   const hasTransactionsAccess = canAccessTransactions();
@@ -494,6 +505,70 @@ export default function ABSClientSearch() {
   const openBlockModal = (cardId) => {
     setBlockingCardId(cardId);
     setIsBlockModalOpen(true);
+  };
+
+  const handleResetPin = async (cardId) => {
+    try {
+      await resetPinCounter(cardId);
+      showAlert("Счетчик ПИН-кода успешно сброшен", "success");
+      handleGetDataUser();
+    } catch (e) {
+      showAlert("Ошибка при сбросе счетчика ПИН", "error");
+    }
+  };
+
+  const handleUnblockCard = async (cardId) => {
+    try {
+      await unblockCard(cardId);
+      showAlert("Карта успешно разблокирована", "success");
+      handleGetDataUser();
+    } catch (e) {
+      showAlert("Ошибка при разблокировке карты", "error");
+    }
+  };
+
+  const openPinModal = (cardId) => {
+    setActiveCardId(cardId);
+    setIsPinModalOpen(true);
+  };
+
+  const openServicesModal = (cardId, services) => {
+    setActiveCardId(cardId);
+    setActiveCardServices(services);
+    setIsServicesModalOpen(true);
+  };
+
+  const handleChangePinConfirm = async (phone, pin) => {
+    setModalLoading(true);
+    try {
+      const res = await generatePin(activeCardId, phone, pin);
+      if (res.responseCode === "00") {
+        showAlert(res.pinValue ? `ПИН-код сгенерирован: ${res.pinValue}` : "Запрос на смену ПИН отправлен", "success");
+        setIsPinModalOpen(false);
+      } else {
+        showAlert(res.message || "Ошибка при смене ПИН", "error");
+      }
+    } catch (e) {
+      showAlert("Ошибка при смене ПИН", "error");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleManageServicesConfirm = async (actions) => {
+    setModalLoading(true);
+    try {
+      for (const action of actions) {
+        await manageCardService(action);
+      }
+      showAlert("Сервисы успешно обновлены", "success");
+      setIsServicesModalOpen(false);
+      handleGetDataUser();
+    } catch (e) {
+      showAlert("Ошибка при обновлении сервисов", "error");
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const handleExportAccounts = () => {
@@ -1017,6 +1092,10 @@ export default function ABSClientSearch() {
               sortDepositsConfig={sortDepositsConfig}
               handleExportDeposits={handleExportDeposits}
               onBlockCard={openBlockModal}
+              onUnblockCard={handleUnblockCard}
+              onResetPin={handleResetPin}
+              onChangePin={openPinModal}
+              onManageServices={openServicesModal}
             />
           </div>
         </div>
@@ -1081,6 +1160,23 @@ export default function ABSClientSearch() {
         onClose={() => setIsBlockModalOpen(false)}
         onConfirm={handleBlockCardConfirm}
         isLoading={isBlockingLoading}
+      />
+
+      <ServicesModal
+        isOpen={isServicesModalOpen}
+        onClose={() => setIsServicesModalOpen(false)}
+        onConfirm={handleManageServicesConfirm}
+        cardId={activeCardId}
+        initialServices={activeCardServices}
+        isLoading={modalLoading}
+      />
+
+      <ChangePinModal
+        isOpen={isPinModalOpen}
+        onClose={() => setIsPinModalOpen(false)}
+        onConfirm={handleChangePinConfirm}
+        isLoading={modalLoading}
+        defaultPhoneNumber={clientsData[selectedClientIndex]?.phone || ""}
       />
     </>
   );

@@ -216,7 +216,8 @@ export default function TransactionsQR() {
   const selectedSum = useMemo(() => {
     return selectedRows.reduce((acc, key) => {
       const row = sortedData.find((r) => getRowKey(r) === key);
-      return acc + (row ? Number(row.amount || 0) : 0);
+      const isSuccess = row?.status === "success";
+      return acc + (row && isSuccess ? Number(row.amount || 0) : 0);
     }, 0);
   }, [selectedRows, sortedData, getRowKey]);
 
