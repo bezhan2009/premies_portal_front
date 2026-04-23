@@ -139,8 +139,8 @@ const CardsReport = ({ month, year }) => {
               <tr key={card.ID ?? card.id} ref={isLast ? lastCardRef : null}>
                 <td>{card.issue_date?.split("T")[0] || ""}</td>
                 <td style={{ fontSize: '11px', color: '#666' }}>{card.ID ?? card.id}</td>
-                <td>{card.details?.cardNumberMask || "-"}</td>
-                <td>{card.details?.cardTypeName || "-"}</td>
+                <td>{card.CardNumber || card.details?.cardNumberMask || "-"}</td>
+                <td>{card.CardTypeName || card.details?.cardTypeName || "-"}</td>
                 <td>{card.statusName || "-"}</td>
                 <td>
                   <span style={{ color: card.details?.statusDescription?.toLowerCase()?.includes('valid') ? '#27ae60' : 'inherit' }}>
@@ -157,7 +157,7 @@ const CardsReport = ({ month, year }) => {
                 <td className="limits-table__td" style={{ color: '#27ae60' }}>
                   {card.details?.accounts?.map((acc, aIdx) => (
                     <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
-                      <b>{acc.balance}</b> {acc.currency}
+                      <b>{Number(acc.balance).toFixed(2)}</b> {acc.currency}
                     </div>
                   ))}
                 </td>

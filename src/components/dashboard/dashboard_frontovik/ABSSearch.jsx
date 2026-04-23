@@ -541,14 +541,15 @@ export default function ABSClientSearch() {
   const handleChangePinConfirm = async (phone, pin) => {
     setModalLoading(true);
     try {
+      console.log("Attempting pin change:", { cardId: activeCardId, phone, pin });
       const res = await generatePin(activeCardId, phone, pin);
-      if (res.responseCode === "00") {
-        showAlert(res.pinValue ? `ПИН-код сгенерирован: ${res.pinValue}` : "Запрос на смену ПИН отправлен", "success");
-        setIsPinModalOpen(false);
-      } else {
-        showAlert(res.message || "Ошибка при смене ПИН", "error");
-      }
+      console.log("Pin change response:", res);
+      
+      showAlert("Запрос на смену ПИН выполнен", "success");
+      setIsPinModalOpen(false);
+      handleGetDataUser();
     } catch (e) {
+      console.error("Pin change error:", e);
       showAlert("Ошибка при смене ПИН", "error");
     } finally {
       setModalLoading(false);
@@ -558,13 +559,16 @@ export default function ABSClientSearch() {
   const handleManageServicesConfirm = async (actions) => {
     setModalLoading(true);
     try {
+      console.log("Attempting services update:", actions);
       for (const action of actions) {
-        await manageCardService(action);
+        const res = await manageCardService(action);
+        console.log("Service update response:", res);
       }
       showAlert("Сервисы успешно обновлены", "success");
       setIsServicesModalOpen(false);
       handleGetDataUser();
     } catch (e) {
+      console.error("Services update error:", e);
       showAlert("Ошибка при обновлении сервисов", "error");
     } finally {
       setModalLoading(false);

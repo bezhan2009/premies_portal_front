@@ -90,8 +90,8 @@ const ClientDataTabs = ({
                     return (
                       <tr key={idx} className="limits-table__row" style={{ backgroundColor: pinError ? 'rgba(225, 29, 72, 0.1)' : 'inherit' }}>
                         <td className="limits-table__td" style={{ fontSize: '11px', color: '#666' }}>{card.cardId}</td>
-                        <td className="limits-table__td">{card.details?.cardNumberMask || "-"}</td>
-                        <td className="limits-table__td">{card.details?.cardTypeName || "-"}</td>
+                        <td className="limits-table__td">{card.CardNumber || card.details?.cardNumberMask || "-"}</td>
+                        <td className="limits-table__td">{card.CardTypeName || card.details?.cardTypeName || "-"}</td>
                         <td className="limits-table__td">{card.statusName || "-"}</td>
                         <td className="limits-table__td">
                           <span style={{ color: card.details?.statusDescription?.toLowerCase()?.includes('valid') ? '#27ae60' : 'inherit' }}>
@@ -110,7 +110,7 @@ const ClientDataTabs = ({
                             const absAcc = accountsData?.find(a => a.Number === acc.number);
                             return (
                               <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
-                                {absAcc ? `${absAcc.Balance} ${absAcc.Currency?.Code || ''}` : "-"}
+                                {absAcc ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ''}` : "-"}
                               </div>
                             );
                           })}
@@ -118,7 +118,7 @@ const ClientDataTabs = ({
                         <td className="limits-table__td" style={{ color: '#27ae60' }}>
                           {card.details?.accounts?.map((acc, aIdx) => (
                             <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
-                              <b>{acc.balance}</b> {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
+                              <b>{Number(acc.balance).toFixed(2)}</b> {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
                             </div>
                           ))}
                         </td>
