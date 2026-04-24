@@ -1,3 +1,6 @@
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+
 export function getMonthName(monthNumber) {
     const months = [
         "Янв", // 1
@@ -18,5 +21,14 @@ export function getMonthName(monthNumber) {
         return months[monthNumber - 1];
     } else {
         return "Некорректный месяц";
+    }
+}
+
+export function formatDate(dateString) {
+    if (!dateString || dateString === "0001-01-01T00:00:00Z") return "—";
+    try {
+        return format(new Date(dateString), "dd.MM.yyyy HH:mm:ss", { locale: ru });
+    } catch {
+        return dateString;
     }
 }

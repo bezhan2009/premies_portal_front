@@ -1,10 +1,4 @@
-$primary-color: #644cd1;
-$primary-hover: #6039bb;
-$background: var(--text-color);
-$text-color: var(--text-color);
-$border-color: #ccc;
-$primary-opacity: 0.85;
-$general-width: 93%;
+@use "../variables/general" as vars;
 
 @mixin flex-center {
   display: flex;
@@ -13,7 +7,7 @@ $general-width: 93%;
 }
 
 @mixin hover-opacity {
-  opacity: $primary-opacity;
+  opacity: vars.$primary-opacity;
   transition: 0.2s;
 }
 

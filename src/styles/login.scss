@@ -1,6 +1,6 @@
-@import "variables/general";
-@import "variables/input";
-@import "mixins/general";
+@use "variables/general" as *;
+@use "variables/input" as *;
+@use "mixins/general" as *;
 
 body {
   margin: 0;
