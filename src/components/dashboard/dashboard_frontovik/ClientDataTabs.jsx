@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import SortIcon from "../../general/SortIcon.jsx";
 
 const ClientDataTabs = ({
@@ -31,8 +31,13 @@ const ClientDataTabs = ({
   requestSortDeposits,
   sortDepositsConfig,
   handleExportDeposits,
+  onBlockCard,
+  onUnblockCard,
+  onResetPin,
+  onChangePin,
+  onManageServices,
 }) => {
-  if (!selectedClient) return null;
+  // if (!selectedClient) return null;
 
   return (
     <>
@@ -66,105 +71,144 @@ const ClientDataTabs = ({
               <table className="limits-table">
                 <thead className="limits-table__head">
                   <tr>
-                    <th
-                      onClick={() => requestSortCards("cardId")}
-                      className="limits-table__ th sortable-header"
-                    >
-                      ID Карты{" "}
-                      <SortIcon sortConfig={sortCardsConfig} sortKey="cardId" />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("type")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Тип{" "}
-                      <SortIcon sortConfig={sortCardsConfig} sortKey="type" />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("statusName")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="statusName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("expirationDate")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Срок{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="expirationDate"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("currency")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Валюта{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="currency"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCards("accounts.0.state")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Остаток{" "}
-                      <SortIcon
-                        sortConfig={sortCardsConfig}
-                        sortKey="accounts.0.state"
-                      />
-                    </th>
+                    <th className="limits-table__th">ID Карты</th>
+                    <th className="limits-table__th">Карта</th>
+                    <th className="limits-table__th">Тип</th>
+                    <th className="limits-table__th">Статус АБС</th>
+                    <th className="limits-table__th">Статус ПЦ</th>
+                    <th className="limits-table__th">Счета карты</th>
+                    <th className="limits-table__th">Остатки в АБС</th>
+                    <th className="limits-table__th" style={{ color: '#27ae60' }}>Остатки в ПЦ</th>
+                    <th className="limits-table__th">PIN</th>
+                    <th className="limits-table__th">Уведомления</th>
                     <th className="limits-table__th">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="limits-table__body">
-                  {sortedCards?.map((card, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">{card.cardId}</td>
-                      <td className="limits-table__td">{card.type}</td>
-                      <td className="limits-table__td">{card.statusName}</td>
-                      <td className="limits-table__td">
-                        {card.expirationDate}
-                      </td>
-                      <td className="limits-table__td">{card.currency}</td>
-                      <td className="limits-table__td">
-                        {card.accounts?.[0]?.state || "-"}
-                      </td>
-                      <td className="limits-table__td">
-                        <button
-                          className="selectAll-toggle"
-                          style={{ marginRight: 10 }}
-                          onClick={() =>
-                            handleNavigateToTransactions(card.cardId)
-                          }
-                          title={
-                            !hasTransactionsAccess
-                              ? "У вас нет доступа"
-                              : "Просмотр истории транзакций"
-                          }
-                        >
-                          История
-                        </button>
-                        <button
-                          className="selectAll-toggle"
-                          style={{ background: "#374151" }}
-                          onClick={() =>
-                          (window.location.href =
-                            "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                            card.cardId)
-                          }
-                        >
-                          Посмотреть тариф
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {sortedCards?.map((card, idx) => {
+                    const pinError = Number(card.details?.pinDenialCounter || 0) >= 3;
+                    return (
+                      <tr key={idx} className="limits-table__row" style={{ backgroundColor: pinError ? 'rgba(225, 29, 72, 0.1)' : 'inherit' }}>
+                        <td className="limits-table__td" style={{ fontSize: '11px', color: '#666' }}>{card.cardId}</td>
+                        <td className="limits-table__td">{card.CardNumber || card.details?.cardNumberMask || "-"}</td>
+                        <td className="limits-table__td">{card.CardTypeName || card.details?.cardTypeName || "-"}</td>
+                        <td className="limits-table__td">{card.statusName || "-"}</td>
+                        <td className="limits-table__td">
+                          <span style={{ color: card.details?.statusDescription?.toLowerCase()?.includes('valid') ? '#27ae60' : 'inherit' }}>
+                            {card.details?.statusDescription || "-"} ({card.details?.hotCardStatus || "-"})
+                          </span>
+                        </td>
+                        <td className="limits-table__td">
+                          {card.details?.accounts?.map((acc, aIdx) => (
+                            <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                              {acc.number}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="limits-table__td">
+                          {card.details?.accounts?.map((acc, aIdx) => {
+                            const absAcc = accountsData?.find(a => a.Number === acc.number);
+                            return (
+                              <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                                {absAcc ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ''}` : "-"}
+                              </div>
+                            );
+                          })}
+                        </td>
+                        <td className="limits-table__td" style={{ color: '#27ae60' }}>
+                          {card.details?.accounts?.map((acc, aIdx) => (
+                            <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                              <b>{Number(acc.balance).toFixed(2)}</b> {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="limits-table__td">
+                          <div style={{ color: pinError ? 'red' : 'inherit', fontWeight: pinError ? 'bold' : 'normal' }}>
+                            {card.details?.pinDenialCounter || "0"}
+                          </div>
+                        </td>
+                        <td className="limits-table__td">
+                          {card.services?.map((s, sIdx) => {
+                            const type = s.identification?.serviceId === "300" ? "SMS" : 
+                                         s.identification?.serviceId === "330" ? "3DS" : null;
+                            if (!type) return null;
+                            return (
+                              <div key={sIdx} style={{ whiteSpace: 'nowrap' }}>
+                                {s.extNumber} {type}
+                              </div>
+                            );
+                          })}
+                          {(!card.services || card.services.length === 0) && "-"}
+                        </td>
+                        <td className="limits-table__td">
+                          <button
+                            className="selectAll-toggle"
+                            style={{ background: '#059669', width: '100%', marginBottom: '4px' }}
+                            onClick={() => onManageServices(card.cardId, card.services || [])}
+                          >
+                            Уведомления
+                          </button>
+                          
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            <button
+                              className="selectAll-toggle"
+                              style={{ flex: 1, minWidth: '80px' }}
+                              onClick={() => handleNavigateToTransactions(card.cardId)}
+                              title={!hasTransactionsAccess ? "У вас нет доступа" : "Просмотр истории транзакций"}
+                            >
+                              История
+                            </button>
+                            
+                            <button
+                              className="selectAll-toggle"
+                              style={{ background: "#374151", flex: 1, minWidth: '80px' }}
+                              onClick={() => window.open("http://10.64.1.10/services/tariff_by_idn.php?idn=" + card.cardId, "_blank")}
+                            >
+                              Тариф
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            <button
+                              className="selectAll-toggle"
+                              style={{ background: '#4b5563', flex: 1, minWidth: '80px' }}
+                              onClick={() => onChangePin(card.cardId)}
+                            >
+                              Сменить ПИН
+                            </button>
+
+                            {pinError && (
+                              <button
+                                className="selectAll-toggle"
+                                style={{ background: '#f59e0b', flex: 1, minWidth: '80px' }}
+                                onClick={() => onResetPin(card.cardId)}
+                              >
+                                Сброс ПИН
+                              </button>
+                            )}
+                          </div>
+
+                          {card.details?.hotCardStatus === "0" ? (
+                            <button
+                              className="selectAll-toggle"
+                              style={{ background: '#e11d48', marginTop: 4, width: '100%' }}
+                              onClick={() => onBlockCard(card.cardId)}
+                            >
+                              Заблокировать
+                            </button>
+                          ) : (
+                            <button
+                              className="selectAll-toggle"
+                              style={{ background: '#10b981', marginTop: 4, width: '100%' }}
+                              onClick={() => onUnblockCard(card.cardId)}
+                            >
+                              Разблокировать
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

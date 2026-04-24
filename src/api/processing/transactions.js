@@ -171,3 +171,134 @@ export const fetchTransactionsSearch = async (params) => {
     }
 };
 
+// Получение подробной информации о карте
+export const fetchCardDetails = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/card-data`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card details:', error);
+        return null;
+    }
+};
+
+// Получение информации об уведомлениях (сервисах) карты
+export const fetchCardServices = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/services?CardId=${cardId}`, {
+            headers: {
+                'accept': '*/*'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card services:', error);
+        return [];
+    }
+};
+
+// Изменение статуса карты (блокировка)
+export const changeCardStatus = async (cardId, status) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/change-card-status`, {
+            cardId: String(cardId),
+            hotCardStatus: String(status)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error changing card status:', error);
+        throw error;
+    }
+};
+
+// Разблокировка карты
+export const unblockCard = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/validate-card`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error unblocking card:', error);
+        throw error;
+    }
+};
+
+// Сброс счетчика ПИН
+export const resetPinCounter = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/reset-pin-counter`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error resetting pin counter:', error);
+        throw error;
+    }
+};
+
+// Генерация/Смена ПИН
+export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/generate-pin`, {
+            cardId: String(cardId),
+            phoneNumber: String(phoneNumber),
+            pinDeliveryMethod: "WS",
+            pinValue: String(pinValue)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error generating pin:', error);
+        throw error;
+    }
+};
+
+// Управление сервисами (SMS/3DS)
+export const manageCardService = async (payload) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/update-service`, payload, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error managing card service:', error);
+        throw error;
+    }
+};

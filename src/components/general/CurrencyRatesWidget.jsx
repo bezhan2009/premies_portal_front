@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import "../../styles/components/CurrencyRatesWidget.scss";
 import { fetchConversionRates } from "../../api/conversion/conversion.js";
 import {
@@ -22,6 +23,8 @@ const CurrencyRatesWidget = () => {
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const location = useLocation();
 
   useEffect(() => {
     let mounted = true;
@@ -59,6 +62,8 @@ const CurrencyRatesWidget = () => {
   }, [rates]);
 
 
+  if (location.pathname.includes("/agent-qr/transactions/list")) return null;
+
   return (
     <div className="currency-rates-overlay">
       {grouped.map((row) => (
@@ -69,10 +74,10 @@ const CurrencyRatesWidget = () => {
           </div>
           <div className="currency-card-rates">
             <span className="rate-value buy">
-              {row.buy != null ? row.buy.toFixed(4) : "—"}
+              {row.buy != null ? row.buy.toFixed(2) : "—"}
             </span>
             <span className="rate-value sell">
-              {row.sell != null ? row.sell.toFixed(4) : "—"}
+              {row.sell != null ? row.sell.toFixed(2) : "—"}
             </span>
           </div>
         </div>
