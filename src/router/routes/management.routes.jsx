@@ -12,6 +12,7 @@ import DashboardOperatorProcessingTransactions from "../../pages/dashboard/dashb
 import DashboardOperatorProcessingTransactionUniversal
     from "../../pages/dashboard/dashboard_operator/TransactionUniversal.jsx";
 import DashboardClientDocuments from "../../pages/dashboard/dashboard_client_documents/ClientDocuments.jsx";
+import CardBalance from "../../pages/dashboard/dashboard_card_balance/CardBalance.jsx";
 
 const managementRoutes = (
   <>
@@ -104,6 +105,19 @@ const managementRoutes = (
           <Route
               path="/client-documents"
               element={<DashboardClientDocuments />}
+          />
+      </Route>
+
+      <Route
+          element={
+              <RequireRole allowedRoles={[28]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route
+              path="/card-balance"
+              element={<CardBalance />}
           />
       </Route>
 

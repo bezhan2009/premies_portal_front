@@ -600,6 +600,14 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
       });
     }
 
+    if (roles.includes(28)) {
+      additionalLinks.push({
+        name: "Остатки по картам",
+        href: "/card-balance",
+        key: "card_balance",
+      });
+    }
+
     if (roles.includes(19)) {
       additionalLinks.push({
         name: "Банкоматы",

@@ -1,0 +1,270 @@
+@use "../tokens" as *;
+
+.card-balance-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: $text-color;
+
+  .page-header {
+    margin-bottom: 24px;
+    h1 {
+      font-size: 24px;
+      margin: 0;
+      color: $text-color;
+    }
+  }
+
+  .card-balance-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h2 {
+      font-size: 18px;
+      margin: 0;
+      color: $text-color;
+    }
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    background: $bg-dashboard;
+    border-radius: 8px;
+    border: 1px solid $border-color;
+  }
+
+  .modern-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid $border-color;
+    }
+
+    th {
+      font-weight: 500;
+      color: $text-muted;
+      background: rgba($bg-hover, 0.5);
+    }
+
+    tbody tr {
+      transition: background 0.2s;
+      &:hover {
+        background: rgba($bg-hover, 0.3);
+      }
+    }
+
+    // Row coloring logic
+    tr.row-exceed {
+      background-color: rgba(239, 68, 68, 0.1); // Light red
+      &:hover {
+        background-color: rgba(239, 68, 68, 0.15);
+      }
+    }
+
+    tr.row-blocked {
+      background-color: rgba(107, 114, 128, 0.2); // Light gray
+      color: $text-muted;
+      &:hover {
+        background-color: rgba(107, 114, 128, 0.25);
+      }
+    }
+  }
+
+  // Badges & Statuses
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &.active {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+    &.inactive {
+      background: rgba(107, 114, 128, 0.2);
+      color: #9ca3af;
+    }
+  }
+
+  .limit-alert {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+
+    &.exceeded {
+      background: #ef4444;
+      color: white;
+    }
+    &.normal {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+  }
+
+  .block-status {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+
+    &.blocked {
+      background: #4b5563;
+      color: white;
+    }
+    &.active {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+  }
+
+  // Buttons
+  .primary-btn {
+    background: $primary-color;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+
+    &:hover {
+      background: darken($primary-color, 10%);
+    }
+  }
+
+  .secondary-btn {
+    background: transparent;
+    color: $text-color;
+    border: 1px solid $border-color;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+
+    &:hover {
+      background: $bg-hover;
+    }
+  }
+
+  .text-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    
+    &.edit-btn {
+      color: $primary-color;
+      &:hover { background: rgba($primary-color, 0.1); }
+    }
+    &.delete-btn {
+      color: #ef4444;
+      &:hover { background: rgba(239, 68, 68, 0.1); }
+    }
+  }
+
+  .action-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    &.block-btn {
+      background: #4b5563;
+      color: white;
+    }
+    &.unblock-btn {
+      background: #22c55e;
+      color: white;
+    }
+  }
+
+  // Modal styles
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: $bg-dashboard;
+    padding: 24px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid $border-color;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+    h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: $text-color;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: $text-muted;
+        font-size: 14px;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid $border-color;
+        border-radius: 4px;
+        background: transparent;
+        color: $text-color;
+        
+        &:focus {
+          outline: none;
+          border-color: $primary-color;
+        }
+      }
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+  }
+}
