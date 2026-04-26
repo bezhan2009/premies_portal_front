@@ -36,6 +36,7 @@ const ClientDataTabs = ({
   onResetPin,
   onChangePin,
   onManageServices,
+  onOpenLimits,
 }) => {
   // if (!selectedClient) return null;
 
@@ -205,6 +206,14 @@ const ClientDataTabs = ({
                               Разблокировать
                             </button>
                           )}
+
+                          <button
+                            className="selectAll-toggle"
+                            style={{ background: '#3b82f6', marginTop: 4, width: '100%' }}
+                            onClick={() => onOpenLimits(card.cardId)}
+                          >
+                            Лимиты
+                          </button>
                         </td>
                       </tr>
                     );

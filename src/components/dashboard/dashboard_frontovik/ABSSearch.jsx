@@ -30,6 +30,7 @@ import {
   resetPinCounter,
   generatePin,
   manageCardService,
+  fetchCardLimits,
 } from "../../../api/processing/transactions.js";
 
 // Extracted Components
@@ -42,6 +43,7 @@ import ClientDataTabs from "./ClientDataTabs.jsx";
 import BlockCardModal from "./BlockCardModal.jsx";
 import ServicesModal from "./ServicesModal.jsx";
 import ChangePinModal from "./ChangePinModal.jsx";
+import CardLimitsModal from "./CardLimitsModal.jsx";
 import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
@@ -95,6 +97,8 @@ export default function ABSClientSearch() {
   const [activeCardServices, setActiveCardServices] = useState([]);
   const [blockingCardId, setBlockingCardId] = useState(null);
   const [isBlockingLoading, setIsBlockingLoading] = useState(false);
+  const [isLimitsModalOpen, setIsLimitsModalOpen] = useState(false);
+  const [cardLimits, setCardLimits] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
 
   // Проверка доступа к страницам
@@ -570,6 +574,21 @@ export default function ABSClientSearch() {
     } catch (e) {
       console.error("Services update error:", e);
       showAlert("Ошибка при обновлении сервисов", "error");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleOpenLimits = async (cardId) => {
+    setActiveCardId(cardId);
+    setIsLimitsModalOpen(true);
+    setModalLoading(true);
+    try {
+      const limits = await fetchCardLimits(cardId);
+      setCardLimits(limits);
+    } catch (e) {
+      console.error("Error fetching limits:", e);
+      showAlert("Ошибка при загрузке лимитов", "error");
     } finally {
       setModalLoading(false);
     }
@@ -1095,11 +1114,12 @@ export default function ABSClientSearch() {
               requestSortDeposits={requestSortDeposits}
               sortDepositsConfig={sortDepositsConfig}
               handleExportDeposits={handleExportDeposits}
-              onBlockCard={openBlockModal}
+              onBlockCard={handleBlockCard}
               onUnblockCard={handleUnblockCard}
               onResetPin={handleResetPin}
-              onChangePin={openPinModal}
-              onManageServices={openServicesModal}
+              onChangePin={handleChangePin}
+              onManageServices={handleManageServices}
+              onOpenLimits={handleOpenLimits}
             />
           </div>
         </div>
@@ -1181,6 +1201,14 @@ export default function ABSClientSearch() {
         onConfirm={handleChangePinConfirm}
         isLoading={modalLoading}
         defaultPhoneNumber={clientsData[selectedClientIndex]?.phone || ""}
+      />
+
+      <CardLimitsModal
+        isOpen={isLimitsModalOpen}
+        onClose={() => setIsLimitsModalOpen(false)}
+        limits={cardLimits}
+        isLoading={modalLoading}
+        cardId={activeCardId}
       />
     </>
   );

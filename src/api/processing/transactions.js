@@ -302,3 +302,18 @@ export const manageCardService = async (payload) => {
         throw error;
     }
 };
+// Получение лимитов карты
+export const fetchCardLimits = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/limits?CardId=${cardId}`, {
+            headers: {
+                'accept': '*/*'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card limits:', error);
+        return [];
+    }
+};
