@@ -85,8 +85,7 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
                                 </button>
                             </div>
 
-                            {/* Phone Input (Kept for functionality) */}
-                            <div>
+                            {/* <div>
                                 <label style={{ display: 'block', marginBottom: '8px', color: '#6b7280', fontSize: '14px' }}>Номер телефона для СМС</label>
                                 <input 
                                     type="text" 
@@ -95,7 +94,7 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
                                     placeholder="992XXXXXXXXX"
                                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
                                 />
-                            </div>
+                            </div> */}
 
                             {mode === "generate" ? (
                                 <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center' }}>
@@ -115,7 +114,6 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
                                 </div>
                             )}
 
-                            {/* Execute Button */}
                             <button 
                                 className="selectAll-toggle" 
                                 onClick={handleExecute}
