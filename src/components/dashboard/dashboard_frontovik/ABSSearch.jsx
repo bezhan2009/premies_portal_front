@@ -1114,11 +1114,11 @@ export default function ABSClientSearch() {
               requestSortDeposits={requestSortDeposits}
               sortDepositsConfig={sortDepositsConfig}
               handleExportDeposits={handleExportDeposits}
-              onBlockCard={handleBlockCard}
+              onBlockCard={openBlockModal}
               onUnblockCard={handleUnblockCard}
               onResetPin={handleResetPin}
-              onChangePin={handleChangePin}
-              onManageServices={handleManageServices}
+              onChangePin={openPinModal}
+              onManageServices={openServicesModal}
               onOpenLimits={handleOpenLimits}
             />
           </div>
