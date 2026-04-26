@@ -1,5 +1,5 @@
-import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
 import { Helmet } from "react-helmet";
+import LimitsChangeForm from "../../../components/dashboard/dashboard_operator/LimitsChangeForm.jsx";
 
 export default function DashboardOperatorProcessing() {
   return (
@@ -7,7 +7,9 @@ export default function DashboardOperatorProcessing() {
       <Helmet>
         <title>Процессинг - Лимиты</title>
       </Helmet>
-      <GetBlockInfo page="operator_processing_limits" />
+      <div style={{ padding: '40px 20px' }}>
+         <LimitsChangeForm />
+      </div>
     </>
   );
 }

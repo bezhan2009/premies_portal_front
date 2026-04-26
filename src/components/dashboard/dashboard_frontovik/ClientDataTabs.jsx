@@ -110,11 +110,13 @@ const ClientDataTabs = ({
                         <td className="limits-table__td">
                           {card.CardNumber ||
                             card.details?.cardNumberMask ||
+                            card.cardId ||
                             "-"}
                         </td>
                         <td className="limits-table__td">
                           {card.CardTypeName ||
                             card.details?.cardTypeName ||
+                            card.type ||
                             "-"}
                         </td>
                         <td className="limits-table__td">

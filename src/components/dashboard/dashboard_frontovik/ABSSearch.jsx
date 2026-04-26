@@ -410,7 +410,6 @@ export default function ABSClientSearch() {
       setCreditsData(resCredits || []);
       setDepositsData(resDeposits || []);
 
-      // Обогащаем данные карт дополнительной информацией
       if (resCards && resCards.length > 0) {
         const enrichedCards = await Promise.all(
           resCards.map(async (card) => {
