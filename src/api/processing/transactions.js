@@ -290,7 +290,7 @@ export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
 export const manageCardService = async (payload) => {
     const BASE_URL_5012 = 'http://10.64.20.84:5012';
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/update-service`, payload, {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/service-action`, payload, {
             headers: {
                 'accept': '*/*',
                 'Content-Type': 'application/json'
