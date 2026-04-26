@@ -34,6 +34,11 @@ const FiltersDatas = ({ onSelect }) => {
           class: "reports_filter__button--purple-bright",
           key: "journal",
       },
+      {
+          text: "Документы пользователей",
+          class: "reports_filter__button--blue",
+          key: "user_documents",
+      },
     // { text: "Роли", class: "reports_filter__button--yellow", key: "roles" },
   ];
 

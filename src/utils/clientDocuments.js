@@ -1,3 +1,4 @@
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const APPLICATION_BACKEND_URL = import.meta.env.VITE_BACKEND_APPLICATION_URL;
 
 const DOCUMENT_TYPE_LABELS = {
@@ -40,7 +41,10 @@ export const resolveClientDocumentUrl = (document) => {
     .replace(/^\/+/, "")
     .replace(/^uploads\//i, "");
 
-  return `${APPLICATION_BACKEND_URL}/uploads/${normalizedPath}`;
+  const source = document?.source || document?.Source;
+  const baseUrl = source === "premies_portal" ? BACKEND_URL : APPLICATION_BACKEND_URL;
+
+  return `${baseUrl}/uploads/${normalizedPath}`;
 };
 
 export const getClientDocumentExtension = (document) => {

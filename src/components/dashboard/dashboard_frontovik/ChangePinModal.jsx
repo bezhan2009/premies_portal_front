@@ -1,12 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Spinner from "../../Spinner.jsx";
+import { sendPinOtp, checkPinOtp } from "../../../api/processing/transactions.js";
 
 const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNumber = "" }) => {
+    const [step, setStep] = useState("otp-request"); // "otp-request", "otp-verify", "pin-mode"
     const [mode, setMode] = useState("generate"); // "generate" or "manual"
     const [phoneNumber, setPhoneNumber] = useState(defaultPhoneNumber);
+    const [otpCode, setOtpCode] = useState("");
     const [pinValue, setPinValue] = useState("");
+    const [localLoading, setLocalLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setStep("otp-request");
+            setPhoneNumber(defaultPhoneNumber);
+            setOtpCode("");
+            setPinValue("");
+            setMode("generate");
+        }
+    }, [isOpen, defaultPhoneNumber]);
 
     if (!isOpen) return null;
+
+    const handleSendOtp = async () => {
+        if (!phoneNumber) {
+            alert("Номер телефона обязателен");
+            return;
+        }
+        setLocalLoading(true);
+        try {
+            await sendPinOtp(phoneNumber);
+            setStep("otp-verify");
+        } catch (error) {
+            alert("Ошибка при отправке СМС. Попробуйте еще раз.");
+        } finally {
+            setLocalLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otpCode || otpCode.length !== 4) {
+            alert("Введите 4-значный код подтверждения");
+            return;
+        }
+        setLocalLoading(true);
+        try {
+            const res = await checkPinOtp(phoneNumber, otpCode);
+            if (res.message === "success") {
+                setStep("pin-mode");
+            } else {
+                alert("Неверный код подтверждения");
+            }
+        } catch (error) {
+            alert("Ошибка при проверке кода. Возможно код неверный или истек.");
+        } finally {
+            setLocalLoading(false);
+        }
+    };
 
     const handleExecute = () => {
         if (!phoneNumber) {
@@ -21,19 +71,20 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
         onConfirm(phoneNumber, mode === "manual" ? pinValue : "");
     };
 
+    const isProcessing = isLoading || localLoading;
+
     return (
         <div className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}>
             <div className="graph-modal-container" style={{ maxWidth: '450px', borderRadius: '12px', overflow: 'hidden' }}>
-                {/* Header */}
                 <div className="graph-modal-header" style={{ background: '#e11d48', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none' }}>
                     <h2 style={{ color: 'white', margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Сменить Пин код</h2>
-                    <button className="graph-modal-close" onClick={onClose} style={{ color: 'white', fontSize: '24px', opacity: 1 }}>
+                    <button className="graph-modal-close" onClick={onClose} style={{ color: 'white', fontSize: '24px', opacity: 1 }} disabled={isProcessing}>
                         &times;
                     </button>
                 </div>
 
                 <div className="graph-modal-content" style={{ padding: '30px 25px', background: 'white' }}>
-                    {isLoading ? (
+                    {isProcessing ? (
                         <div className="graph-modal-loading">
                             <Spinner center />
                             <p>Выполнение операции...</p>
@@ -41,97 +92,177 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             
-                            {/* Segmented Control (Tabs) */}
-                            <div style={{ 
-                                display: 'flex', 
-                                background: '#e5e7eb', 
-                                padding: '4px', 
-                                borderRadius: '10px',
-                                marginBottom: '10px'
-                            }}>
-                                <button 
-                                    onClick={() => setMode("generate")}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        borderRadius: '8px',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        background: mode === "generate" ? 'white' : 'transparent',
-                                        color: mode === "generate" ? '#374151' : '#6b7280',
-                                        boxShadow: mode === "generate" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    Сгенерировать ПИН
-                                </button>
-                                <button 
-                                    onClick={() => setMode("manual")}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        borderRadius: '8px',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        background: mode === "manual" ? 'white' : 'transparent',
-                                        color: mode === "manual" ? '#374151' : '#6b7280',
-                                        boxShadow: mode === "manual" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    Задать вручную
-                                </button>
-                            </div>
-
-                            {/* <div>
-                                <label style={{ display: 'block', marginBottom: '8px', color: '#6b7280', fontSize: '14px' }}>Номер телефона для СМС</label>
-                                <input 
-                                    type="text" 
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="992XXXXXXXXX"
-                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
-                                />
-                            </div> */}
-
-                            {mode === "generate" ? (
-                                <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center' }}>
-                                    <p style={{ color: '#9ca3af', fontSize: '14px', margin: 0 }}>ПИН код придет в виде СМС клиенту</p>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>Передайте клавиатуру клиенту, чтобы он установил Пин</p>
-                                    <input 
-                                        type="password" 
-                                        maxLength={4}
-                                        value={pinValue}
-                                        onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ""))}
-                                        placeholder="Введите значение"
-                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', textAlign: 'center', letterSpacing: '10px', fontSize: '18px' }}
-                                    />
-                                </div>
+                            {step === "otp-request" && (
+                                <>
+                                    <p style={{ color: '#4b5563', fontSize: '15px', margin: 0 }}>
+                                        Для смены ПИН-кода необходимо подтверждение по СМС.
+                                    </p>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', color: '#6b7280', fontSize: '14px' }}>Номер телефона клиента</label>
+                                        <input 
+                                            type="text" 
+                                            value={phoneNumber}
+                                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                                            placeholder="992XXXXXXXXX"
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                                        />
+                                    </div>
+                                    <button 
+                                        className="selectAll-toggle" 
+                                        onClick={handleSendOtp}
+                                        disabled={!phoneNumber || phoneNumber.length < 9}
+                                        style={{ 
+                                            background: '#e11d48', 
+                                            width: '100%', 
+                                            padding: '14px', 
+                                            borderRadius: '10px', 
+                                            fontSize: '16px', 
+                                            fontWeight: 'bold', 
+                                            border: 'none',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        Отправить код
+                                    </button>
+                                </>
                             )}
 
-                            <button 
-                                className="selectAll-toggle" 
-                                onClick={handleExecute}
-                                disabled={isLoading || !phoneNumber || (mode === "manual" && pinValue.length !== 4)}
-                                style={{ 
-                                    background: '#e11d48', 
-                                    width: '100%', 
-                                    padding: '14px', 
-                                    borderRadius: '10px', 
-                                    fontSize: '16px', 
-                                    fontWeight: 'bold', 
-                                    marginTop: '10px',
-                                    border: 'none',
-                                    color: 'white'
-                                }}
-                            >
-                                Выполнить
-                            </button>
+                            {step === "otp-verify" && (
+                                <>
+                                    <p style={{ color: '#4b5563', fontSize: '15px', margin: 0 }}>
+                                        СМС с кодом отправлено на номер <b>{phoneNumber}</b>
+                                    </p>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', color: '#6b7280', fontSize: '14px' }}>Код подтверждения</label>
+                                        <input 
+                                            type="text" 
+                                            maxLength={4}
+                                            value={otpCode}
+                                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                                            placeholder="XXXX"
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', textAlign: 'center', fontSize: '18px', letterSpacing: '8px' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button 
+                                            onClick={() => setStep("otp-request")}
+                                            style={{ 
+                                                flex: 1,
+                                                background: '#f3f4f6', 
+                                                padding: '14px', 
+                                                borderRadius: '10px', 
+                                                fontSize: '16px', 
+                                                border: 'none',
+                                                color: '#374151',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Назад
+                                        </button>
+                                        <button 
+                                            className="selectAll-toggle" 
+                                            onClick={handleVerifyOtp}
+                                            disabled={otpCode.length !== 4}
+                                            style={{ 
+                                                flex: 2,
+                                                background: '#e11d48', 
+                                                padding: '14px', 
+                                                borderRadius: '10px', 
+                                                fontSize: '16px', 
+                                                fontWeight: 'bold', 
+                                                border: 'none',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            Подтвердить
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {step === "pin-mode" && (
+                                <>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        background: '#e5e7eb', 
+                                        padding: '4px', 
+                                        borderRadius: '10px',
+                                        marginBottom: '10px'
+                                    }}>
+                                        <button 
+                                            onClick={() => setMode("generate")}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px',
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                background: mode === "generate" ? 'white' : 'transparent',
+                                                color: mode === "generate" ? '#374151' : '#6b7280',
+                                                boxShadow: mode === "generate" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Сгенерировать ПИН
+                                        </button>
+                                        <button 
+                                            onClick={() => setMode("manual")}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px',
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                background: mode === "manual" ? 'white' : 'transparent',
+                                                color: mode === "manual" ? '#374151' : '#6b7280',
+                                                boxShadow: mode === "manual" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Задать вручную
+                                        </button>
+                                    </div>
+
+                                    {mode === "generate" ? (
+                                        <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center' }}>
+                                            <p style={{ color: '#9ca3af', fontSize: '14px', margin: 0 }}>ПИН код придет в виде СМС клиенту</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                            <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>Передайте клавиатуру клиенту, чтобы он установил Пин</p>
+                                            <input 
+                                                type="password" 
+                                                maxLength={4}
+                                                value={pinValue}
+                                                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ""))}
+                                                placeholder="Введите значение"
+                                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', textAlign: 'center', letterSpacing: '10px', fontSize: '18px' }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <button 
+                                        className="selectAll-toggle" 
+                                        onClick={handleExecute}
+                                        disabled={mode === "manual" && pinValue.length !== 4}
+                                        style={{ 
+                                            background: '#e11d48', 
+                                            width: '100%', 
+                                            padding: '14px', 
+                                            borderRadius: '10px', 
+                                            fontSize: '16px', 
+                                            fontWeight: 'bold', 
+                                            marginTop: '10px',
+                                            border: 'none',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        Выполнить
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

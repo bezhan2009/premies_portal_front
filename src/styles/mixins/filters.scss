@@ -1,4 +1,4 @@
-@import "./general.scss";
+@use "./general.scss" as *;
 
 @mixin filter_block {
   display: flex;

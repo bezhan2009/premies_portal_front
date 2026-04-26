@@ -21,6 +21,8 @@ import { useTableSort } from "../../../hooks/useTableSort.js";
 import {
   canAccessTransactions,
   canAccessAccountOperations,
+  canBlockCard,
+  canChangePin,
 } from "../../../api/roleHelper.js";
 import {
   fetchCardDetails,
@@ -104,6 +106,8 @@ export default function ABSClientSearch() {
   // Проверка доступа к страницам
   const hasTransactionsAccess = canAccessTransactions();
   const hasAccountOperationsAccess = canAccessAccountOperations();
+  const hasBlockCardAccess = canBlockCard();
+  const hasChangePinAccess = canChangePin();
 
   const {
     items: sortedCards,
@@ -1119,6 +1123,8 @@ export default function ABSClientSearch() {
               onChangePin={openPinModal}
               onManageServices={openServicesModal}
               onOpenLimits={handleOpenLimits}
+              hasBlockCardAccess={hasBlockCardAccess}
+              hasChangePinAccess={hasChangePinAccess}
             />
           </div>
         </div>

@@ -208,15 +208,16 @@ export const fetchCardServices = async (cardId) => {
 
 // Изменение статуса карты (блокировка)
 export const changeCardStatus = async (cardId, status) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/change-card-status`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/block-card`, {
             cardId: String(cardId),
             hotCardStatus: String(status)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -266,9 +267,9 @@ export const resetPinCounter = async (cardId) => {
 
 // Генерация/Смена ПИН
 export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/generate-pin`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/generate-pin`, {
             cardId: String(cardId),
             phoneNumber: String(phoneNumber),
             pinDeliveryMethod: "WS",
@@ -276,12 +277,52 @@ export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
     } catch (error) {
         console.error('Error generating pin:', error);
+        throw error;
+    }
+};
+
+export const sendPinOtp = async (phoneNumber) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/send-pin-otp`, {
+            phoneNumber: String(phoneNumber)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error sending pin OTP:', error);
+        throw error;
+    }
+};
+
+export const checkPinOtp = async (phoneNumber, otpCode) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/check-pin-otp`, {
+            phoneNumber: String(phoneNumber),
+            otpCode: String(otpCode)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error checking pin OTP:', error);
         throw error;
     }
 };

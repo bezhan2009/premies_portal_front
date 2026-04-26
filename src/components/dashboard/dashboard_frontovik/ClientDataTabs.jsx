@@ -34,6 +34,8 @@ const ClientDataTabs = ({
   onChangePin,
   onManageServices,
   onOpenLimits,
+  hasBlockCardAccess,
+  hasChangePinAccess,
 }) => {
   // if (!selectedClient) return null;
 
@@ -296,17 +298,19 @@ const ClientDataTabs = ({
                               marginTop: "4px",
                             }}
                           >
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#4b5563",
-                                flex: 1,
-                                minWidth: "80px",
-                              }}
-                              onClick={() => onChangePin(card.cardId)}
-                            >
-                              Сменить ПИН
-                            </button>
+                            {hasChangePinAccess && (
+                              <button
+                                className="selectAll-toggle"
+                                style={{
+                                  background: "#4b5563",
+                                  flex: 1,
+                                  minWidth: "80px",
+                                }}
+                                onClick={() => onChangePin(card.cardId)}
+                              >
+                                Сменить ПИН
+                              </button>
+                            )}
 
                             {pinError && (
                               <button
@@ -323,30 +327,32 @@ const ClientDataTabs = ({
                             )}
                           </div>
 
-                          {card.details?.hotCardStatus === "0" ? (
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#e11d48",
-                                marginTop: 4,
-                                width: "100%",
-                              }}
-                              onClick={() => onBlockCard(card.cardId)}
-                            >
-                              Заблокировать
-                            </button>
-                          ) : (
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#10b981",
-                                marginTop: 4,
-                                width: "100%",
-                              }}
-                              onClick={() => onUnblockCard(card.cardId)}
-                            >
-                              Разблокировать
-                            </button>
+                          {hasBlockCardAccess && (
+                            card.details?.hotCardStatus === "0" ? (
+                              <button
+                                className="selectAll-toggle"
+                                style={{
+                                  background: "#e11d48",
+                                  marginTop: 4,
+                                  width: "100%",
+                                }}
+                                onClick={() => onBlockCard(card.cardId)}
+                              >
+                                Заблокировать
+                              </button>
+                            ) : (
+                              <button
+                                className="selectAll-toggle"
+                                style={{
+                                  background: "#10b981",
+                                  marginTop: 4,
+                                  width: "100%",
+                                }}
+                                onClick={() => onUnblockCard(card.cardId)}
+                              >
+                                Разблокировать
+                              </button>
+                            )
                           )}
 
                           <button
