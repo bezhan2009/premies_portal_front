@@ -2,11 +2,8 @@ import React from "react";
 import SortIcon from "../../general/SortIcon.jsx";
 
 const ClientDataTabs = ({
-  selectedClient,
   cardsData,
   sortedCards,
-  requestSortCards,
-  sortCardsConfig,
   handleExportCards,
   handleNavigateToTransactions,
   handleNavigateToAllCardsTransactions,
@@ -79,7 +76,12 @@ const ClientDataTabs = ({
                     <th className="limits-table__th">Статус ПЦ</th>
                     <th className="limits-table__th">Счета карты</th>
                     <th className="limits-table__th">Остатки в АБС</th>
-                    <th className="limits-table__th" style={{ color: '#27ae60' }}>Остатки в ПЦ</th>
+                    <th
+                      className="limits-table__th"
+                      style={{ color: "#27ae60" }}
+                    >
+                      Остатки в ПЦ
+                    </th>
                     <th className="limits-table__th">PIN</th>
                     <th className="limits-table__th">Уведомления</th>
                     <th className="limits-table__th">Действия</th>
@@ -87,92 +89,218 @@ const ClientDataTabs = ({
                 </thead>
                 <tbody className="limits-table__body">
                   {sortedCards?.map((card, idx) => {
-                    const pinError = Number(card.details?.pinDenialCounter || 0) >= 3;
+                    const pinError =
+                      Number(card.details?.pinDenialCounter || 0) >= 3;
                     return (
-                      <tr key={idx} className="limits-table__row" style={{ backgroundColor: pinError ? 'rgba(225, 29, 72, 0.1)' : 'inherit' }}>
-                        <td className="limits-table__td" style={{ fontSize: '11px', color: '#666' }}>{card.cardId}</td>
-                        <td className="limits-table__td">{card.CardNumber || card.details?.cardNumberMask || "-"}</td>
-                        <td className="limits-table__td">{card.CardTypeName || card.details?.cardTypeName || "-"}</td>
-                        <td className="limits-table__td">{card.statusName || "-"}</td>
+                      <tr
+                        key={idx}
+                        className="limits-table__row"
+                        style={{
+                          backgroundColor: pinError
+                            ? "rgba(225, 29, 72, 0.1)"
+                            : "inherit",
+                        }}
+                      >
+                        <td
+                          className="limits-table__td"
+                          style={{ fontSize: "11px", color: "#666" }}
+                        >
+                          {card.cardId}
+                        </td>
                         <td className="limits-table__td">
-                          <span style={{ color: card.details?.statusDescription?.toLowerCase()?.includes('valid') ? '#27ae60' : 'inherit' }}>
-                            {card.details?.statusDescription || "-"} ({card.details?.hotCardStatus || "-"})
+                          {card.CardNumber ||
+                            card.details?.cardNumberMask ||
+                            "-"}
+                        </td>
+                        <td className="limits-table__td">
+                          {card.CardTypeName ||
+                            card.details?.cardTypeName ||
+                            "-"}
+                        </td>
+                        <td className="limits-table__td">
+                          {card.statusName || "-"}
+                        </td>
+                        <td className="limits-table__td">
+                          <span
+                            style={{
+                              color: card.details?.statusDescription
+                                ?.toLowerCase()
+                                ?.includes("valid")
+                                ? "#27ae60"
+                                : "inherit",
+                            }}
+                          >
+                            {card.details?.statusDescription || "-"} (
+                            {card.details?.hotCardStatus || "-"})
                           </span>
                         </td>
                         <td className="limits-table__td">
                           {card.details?.accounts?.map((acc, aIdx) => (
-                            <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                            <div
+                              key={aIdx}
+                              style={{
+                                whiteSpace: "nowrap",
+                                borderBottom:
+                                  aIdx < card.details.accounts.length - 1
+                                    ? "1px solid #eee"
+                                    : "none",
+                                padding: "2px 0",
+                              }}
+                            >
                               {acc.number}
                             </div>
                           ))}
                         </td>
                         <td className="limits-table__td">
                           {card.details?.accounts?.map((acc, aIdx) => {
-                            const absAcc = accountsData?.find(a => a.Number === acc.number);
+                            const absAcc = accountsData?.find(
+                              (a) => a.Number === acc.number,
+                            );
                             return (
-                              <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
-                                {absAcc ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ''}` : "-"}
+                              <div
+                                key={aIdx}
+                                style={{
+                                  whiteSpace: "nowrap",
+                                  borderBottom:
+                                    aIdx < card.details.accounts.length - 1
+                                      ? "1px solid #eee"
+                                      : "none",
+                                  padding: "2px 0",
+                                }}
+                              >
+                                {absAcc
+                                  ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ""}`
+                                  : "-"}
                               </div>
                             );
                           })}
                         </td>
-                        <td className="limits-table__td" style={{ color: '#27ae60' }}>
+                        <td
+                          className="limits-table__td"
+                          style={{ color: "#27ae60" }}
+                        >
                           {card.details?.accounts?.map((acc, aIdx) => (
-                            <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
-                              <b>{Number(acc.balance).toFixed(2)}</b> {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
+                            <div
+                              key={aIdx}
+                              style={{
+                                whiteSpace: "nowrap",
+                                borderBottom:
+                                  aIdx < card.details.accounts.length - 1
+                                    ? "1px solid #eee"
+                                    : "none",
+                                padding: "2px 0",
+                              }}
+                            >
+                              <b>{Number(acc.balance).toFixed(2)}</b>{" "}
+                              {acc.currency === "972"
+                                ? "TJS"
+                                : acc.currency === "840"
+                                  ? "USD"
+                                  : acc.currency === "978"
+                                    ? "EUR"
+                                    : acc.currency}
                             </div>
                           ))}
                         </td>
                         <td className="limits-table__td">
-                          <div style={{ color: pinError ? 'red' : 'inherit', fontWeight: pinError ? 'bold' : 'normal' }}>
+                          <div
+                            style={{
+                              color: pinError ? "red" : "inherit",
+                              fontWeight: pinError ? "bold" : "normal",
+                            }}
+                          >
                             {card.details?.pinDenialCounter || "0"}
                           </div>
                         </td>
                         <td className="limits-table__td">
                           {card.services?.map((s, sIdx) => {
-                            const type = s.identification?.serviceId === "300" ? "SMS" : 
-                                         s.identification?.serviceId === "330" ? "3DS" : null;
+                            const type =
+                              s.identification?.serviceId === "300"
+                                ? "SMS"
+                                : s.identification?.serviceId === "330"
+                                  ? "3DS"
+                                  : null;
                             if (!type) return null;
                             return (
-                              <div key={sIdx} style={{ whiteSpace: 'nowrap' }}>
+                              <div key={sIdx} style={{ whiteSpace: "nowrap" }}>
                                 {s.extNumber} {type}
                               </div>
                             );
                           })}
-                          {(!card.services || card.services.length === 0) && "-"}
+                          {(!card.services || card.services.length === 0) &&
+                            "-"}
                         </td>
                         <td className="limits-table__td">
                           <button
                             className="selectAll-toggle"
-                            style={{ background: '#059669', width: '100%', marginBottom: '4px' }}
-                            onClick={() => onManageServices(card.cardId, card.services || [])}
+                            style={{
+                              background: "#059669",
+                              width: "100%",
+                              marginBottom: "4px",
+                            }}
+                            onClick={() =>
+                              onManageServices(card.cardId, card.services || [])
+                            }
                           >
                             Уведомления
                           </button>
-                          
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "4px",
+                              flexWrap: "wrap",
+                            }}
+                          >
                             <button
                               className="selectAll-toggle"
-                              style={{ flex: 1, minWidth: '80px' }}
-                              onClick={() => handleNavigateToTransactions(card.cardId)}
-                              title={!hasTransactionsAccess ? "У вас нет доступа" : "Просмотр истории транзакций"}
+                              style={{ flex: 1, minWidth: "80px" }}
+                              onClick={() =>
+                                handleNavigateToTransactions(card.cardId)
+                              }
+                              title={
+                                !hasTransactionsAccess
+                                  ? "У вас нет доступа"
+                                  : "Просмотр истории транзакций"
+                              }
                             >
                               История
                             </button>
-                            
+
                             <button
                               className="selectAll-toggle"
-                              style={{ background: "#374151", flex: 1, minWidth: '80px' }}
-                              onClick={() => window.open("http://10.64.1.10/services/tariff_by_idn.php?idn=" + card.cardId, "_blank")}
+                              style={{
+                                background: "#374151",
+                                flex: 1,
+                                minWidth: "80px",
+                              }}
+                              onClick={() =>
+                                window.open(
+                                  "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                                    card.cardId,
+                                  "_blank",
+                                )
+                              }
                             >
                               Тариф
                             </button>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "4px",
+                              flexWrap: "wrap",
+                              marginTop: "4px",
+                            }}
+                          >
                             <button
                               className="selectAll-toggle"
-                              style={{ background: '#4b5563', flex: 1, minWidth: '80px' }}
+                              style={{
+                                background: "#4b5563",
+                                flex: 1,
+                                minWidth: "80px",
+                              }}
                               onClick={() => onChangePin(card.cardId)}
                             >
                               Сменить ПИН
@@ -181,7 +309,11 @@ const ClientDataTabs = ({
                             {pinError && (
                               <button
                                 className="selectAll-toggle"
-                                style={{ background: '#f59e0b', flex: 1, minWidth: '80px' }}
+                                style={{
+                                  background: "#f59e0b",
+                                  flex: 1,
+                                  minWidth: "80px",
+                                }}
                                 onClick={() => onResetPin(card.cardId)}
                               >
                                 Сброс ПИН
@@ -192,7 +324,11 @@ const ClientDataTabs = ({
                           {card.details?.hotCardStatus === "0" ? (
                             <button
                               className="selectAll-toggle"
-                              style={{ background: '#e11d48', marginTop: 4, width: '100%' }}
+                              style={{
+                                background: "#e11d48",
+                                marginTop: 4,
+                                width: "100%",
+                              }}
                               onClick={() => onBlockCard(card.cardId)}
                             >
                               Заблокировать
@@ -200,7 +336,11 @@ const ClientDataTabs = ({
                           ) : (
                             <button
                               className="selectAll-toggle"
-                              style={{ background: '#10b981', marginTop: 4, width: '100%' }}
+                              style={{
+                                background: "#10b981",
+                                marginTop: 4,
+                                width: "100%",
+                              }}
                               onClick={() => onUnblockCard(card.cardId)}
                             >
                               Разблокировать
@@ -209,7 +349,11 @@ const ClientDataTabs = ({
 
                           <button
                             className="selectAll-toggle"
-                            style={{ background: '#3b82f6', marginTop: 4, width: '100%' }}
+                            style={{
+                              background: "#3b82f6",
+                              marginTop: 4,
+                              width: "100%",
+                            }}
                             onClick={() => onOpenLimits(card.cardId)}
                           >
                             Лимиты
@@ -485,7 +629,9 @@ const ClientDataTabs = ({
                         >
                           Детали
                         </button>
-                        {String(card.statusName || "").trim().toLowerCase() !== "погашен" && (
+                        {String(card.statusName || "")
+                          .trim()
+                          .toLowerCase() !== "погашен" && (
                           <button
                             className="selectAll-toggle"
                             style={{
@@ -695,4 +841,3 @@ const ClientDataTabs = ({
 };
 
 export default ClientDataTabs;
-
