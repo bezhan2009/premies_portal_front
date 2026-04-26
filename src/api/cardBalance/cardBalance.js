@@ -1,6 +1,6 @@
 import { apiClient } from "../utils/apiClient";
 
-const API_V1_PREFIX = "/api/v1/card-balance";
+const API_V1_PREFIX = "/card-balance";
 
 export const cardBalanceApi = {
   // --- Settings ---
