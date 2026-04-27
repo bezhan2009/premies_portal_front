@@ -9,19 +9,11 @@ import {
     fetchCardServices,
 } from "../../../../api/processing/transactions.js";
 
-// Функция для преобразования дирамов в сомони
+// Преобразование дирамов в сомони (деление на 100)
 const convertDiramToSomoni = (amount) => {
-    if (!amount && amount !== 0) return 0;
-    // Если сумма приходит как число, делим на 100
-    // Если как строка, преобразуем и делим
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return numAmount / 100;
-};
-
-// Форматирование суммы с правильным отображением
-const formatBalance = (balance, currency) => {
-    const somoni = convertDiramToSomoni(balance);
-    return `${somoni.toFixed(2)} ${currency}`;
+    if (amount === undefined || amount === null) return 0;
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return isNaN(num) ? 0 : num / 100;
 };
 
 const CardsReport = ({ month, year }) => {
@@ -42,7 +34,6 @@ const CardsReport = ({ month, year }) => {
         try {
             const newCards = await fetchReportCards(month, year, afterRef.current);
 
-            // Обогащаем данные карт дополнительной информацией
             const enrichedCards = await Promise.all(
                 newCards.map(async (card) => {
                     try {
@@ -52,12 +43,12 @@ const CardsReport = ({ month, year }) => {
                             fetchCardServices(cardId),
                         ]);
 
-                        // Преобразуем балансы в сомони в данных деталей
-                        if (details && details.accounts) {
+                        // Преобразуем балансы в сомони, если есть счета
+                        if (details?.accounts && Array.isArray(details.accounts)) {
                             details.accounts = details.accounts.map(acc => ({
                                 ...acc,
                                 balance: convertDiramToSomoni(acc.balance),
-                                balanceRaw: acc.balance // сохраняем оригинальное значение если нужно
+                                originalBalance: acc.balance // сохраняем оригинал на всякий случай
                             }));
                         }
 
