@@ -1,276 +1,206 @@
-import React, { useState, useEffect } from "react";
-import { cardBalanceApi } from "../../../../api/cardBalance/cardBalance";
-import "../../../../styles/components/CardBalance.scss";
-import { formatDate } from "../../../../api/utils/date";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import "../../../../styles/components/WorkersDataReports.scss";
+import ReportsContent from "./ReportContent.jsx";
+import { fetchReportCards } from "../../../../api/workers/reports/report_cards.js";
+import Spinner from "../../../Spinner.jsx";
+import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import {
+  fetchCardDetails,
+  fetchCardServices,
+} from "../../../../api/processing/transactions.js";
 
-export default function CardBalance() {
-    const [settings, setSettings] = useState([]);
-    const [balances, setBalances] = useState([]);
-    const [loading, setLoading] = useState(true);
+const CardsReport = ({ month, year }) => {
+  const [cards, setCards] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const { exportToExcel } = useExcelExport();
 
-    // Modal state
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingSetting, setEditingSetting] = useState(null);
-    const [formData, setFormData] = useState({ cardId: "", phoneNumber: "", isActive: true });
+  const observer = useRef(null);
+  const afterRef = useRef(null);
+  const loadingRef = useRef(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current) return;
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [settingsData, balancesData] = await Promise.all([
-                cardBalanceApi.getAllSettings(),
-                cardBalanceApi.getAllBalances()
+    loadingRef.current = true;
+    setLoading(true);
+    try {
+      const newCards = await fetchReportCards(month, year, afterRef.current);
+      
+      // Обогащаем данные карт дополнительной информацией
+      const enrichedCards = await Promise.all(
+        newCards.map(async (card) => {
+          try {
+            const cardId = card.ID ?? card.id ?? card.code;
+            const [details, services] = await Promise.all([
+              fetchCardDetails(cardId),
+              fetchCardServices(cardId),
             ]);
-            setSettings(settingsData || []);
-            setBalances(balancesData || []);
-        } catch (error) {
-            console.error("Error fetching card balance data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return { ...card, details, services };
+          } catch (e) {
+            console.error(`Ошибка при обогащении карты:`, e);
+            return card;
+          }
+        }),
+      );
 
-    const handleOpenModal = (setting = null) => {
-        if (setting) {
-            setEditingSetting(setting);
-            setFormData({
-                cardId: setting.cardId,
-                phoneNumber: setting.phoneNumber,
-                isActive: setting.isActive
-            });
-        } else {
-            setEditingSetting(null);
-            setFormData({ cardId: "", phoneNumber: "", isActive: true });
-        }
-        setIsModalOpen(true);
-    };
+      setCards((prev) => [...prev, ...enrichedCards]);
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setEditingSetting(null);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingSetting) {
-                await cardBalanceApi.updateSetting(editingSetting.id, formData);
-            } else {
-                await cardBalanceApi.createSetting(formData);
-            }
-            handleCloseModal();
-            fetchData();
-        } catch (error) {
-            console.error("Error saving setting:", error);
-            alert("Ошибка при сохранении: " + (error.response?.data?.error || error.message));
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (window.confirm("Удалить настройку?")) {
-            try {
-                await cardBalanceApi.deleteSetting(id);
-                fetchData();
-            } catch (error) {
-                console.error("Error deleting setting:", error);
-            }
-        }
-    };
-
-    const handleToggleBlock = async (id, isBlocked) => {
-        try {
-            if (isBlocked) {
-                await cardBalanceApi.unblockCard(id);
-            } else {
-                await cardBalanceApi.blockCard(id);
-            }
-            fetchData();
-        } catch (error) {
-            console.error("Error toggling block status:", error);
-            alert("Ошибка изменения статуса: " + (error.response?.data?.error || error.message));
-        }
-    };
-
-    // Функция преобразования дирамов в сомони
-    const toSomoni = (value) => {
-        if (value === undefined || value === null) return '-';
-        const num = typeof value === 'string' ? parseFloat(value) : value;
-        if (isNaN(num)) return '-';
-        return (num / 100).toLocaleString('ru-RU', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }) + ' TJS';
-    };
-
-    if (loading) {
-        return <div className="card-balance-loading">Загрузка данных...</div>;
+      if (newCards.length > 0) {
+        afterRef.current =
+          newCards[newCards.length - 1].ID ?? newCards[newCards.length - 1].id;
+      } else {
+        setHasMore(false);
+      }
+    } catch (e) {
+      console.error("Ошибка при загрузке карт:", e);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
     }
+  }, [month, year]);
 
-    return (
-        <div className="card-balance-page">
-            <div className="page-header">
-                <h1>Остатки по картам</h1>
-            </div>
+  const lastCardRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
 
-            <div className="card-balance-sections">
-                {/* Settings Section */}
-                <section className="settings-section">
-                    <div className="section-header">
-                        <h2>Настройки лимитов по картам</h2>
-                        <button className="primary-btn" onClick={() => handleOpenModal()}>Добавить настройку</button>
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore, loadMore],
+  );
+
+  useEffect(() => {
+    setCards([]);
+    setHasMore(true);
+    afterRef.current = null;
+    loadingRef.current = false;
+    loadMore();
+  }, [month, year, loadMore]);
+
+  useEffect(() => () => observer.current?.disconnect(), []);
+
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.details?.cardNumberMask || "-", label: "Карта" },
+      { key: (row) => row.details?.cardTypeName || "-", label: "Тип" },
+      { key: (row) => row.statusName || "-", label: "Статус АБС" },
+      { key: (row) => `${row.details?.statusDescription || ""} (${row.details?.hotCardStatus || ""})`, label: "Статус ПЦ" },
+      { key: (row) => row.details?.accounts?.map(a => a.number).join("\n") || "-", label: "Счета карты" },
+      { 
+        key: (row) => row.details?.accounts?.map(a => `${(Number(a.balance) / 100).toFixed(2)} ${a.currency}`).join("\n") || "-", 
+        label: "Остатки в ПЦ" 
+      },
+      { key: (row) => {
+          const accs = row.details?.accounts?.map(a => `${a.number} ${(Number(a.balance) / 100).toFixed(2)} (${a.currency})`);
+          return accs?.join(", ") || "-";
+        }, label: "Счета" },
+      { key: (row) => {
+          const svcs = row.services?.map(s => {
+            const type = s.identification?.serviceId === "300" ? "SMS" : 
+                         s.identification?.serviceId === "330" ? "3DS" : null;
+            return type ? `${s.extNumber} ${type}` : null;
+          }).filter(Boolean);
+          return svcs?.join(", ") || "-";
+        }, label: "Уведомления" },
+    ];
+    exportToExcel(cards, columns, "Выданные карты");
+  };
+
+  return (
+    <ReportsContent>
+      <div className="table-header-actions">
+        <h2>Выданные карты</h2>
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Дата выдачи</th>
+            <th>ID Карты</th>
+            <th>Карта</th>
+            <th>Тип</th>
+            <th>Статус АБС</th>
+            <th>Статус ПЦ</th>
+            <th>Счета карты</th>
+            <th style={{ color: '#27ae60' }}>Остатки в ПЦ</th>
+            <th>Уведомления</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cards.map((card, index) => {
+            const isLast = index === cards.length - 1;
+            return (
+              <tr key={card.ID ?? card.id} ref={isLast ? lastCardRef : null}>
+                <td>{card.issue_date?.split("T")[0] || ""}</td>
+                <td style={{ fontSize: '11px', color: '#666' }}>{card.ID ?? card.id}</td>
+                <td>{card.CardNumber || card.details?.cardNumberMask || "-"}</td>
+                <td>{card.CardTypeName || card.details?.cardTypeName || "-"}</td>
+                <td>{card.statusName || "-"}</td>
+                <td>
+                  <span style={{ color: card.details?.statusDescription?.toLowerCase()?.includes('valid') ? '#27ae60' : 'inherit' }}>
+                    {card.details?.statusDescription || "-"} ({card.details?.hotCardStatus || "-"})
+                  </span>
+                </td>
+                <td className="limits-table__td">
+                  {card.details?.accounts?.map((acc, aIdx) => (
+                    <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                      {acc.number}
                     </div>
-
-                    <div className="table-responsive">
-                        <table className="modern-table">
-                            <thead>
-                            <tr>
-                                <th>ID Карты</th>
-                                <th>Номер телефона</th>
-                                <th>Баланс на пред. проверку</th>
-                                <th>Время пред. проверки</th>
-                                <th>Статус (вкл/выкл)</th>
-                                <th>Действия</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {settings.length === 0 ? (
-                                <tr><td colSpan="6" className="text-center">Нет настроек</td></tr>
-                            ) : (
-                                settings.map((setting) => (
-                                    <tr key={`setting-${setting.id}`}>
-                                        <td>{setting.cardId}</td>
-                                        <td>{setting.phoneNumber}</td>
-                                        <td>{setting.lastBalance !== undefined && setting.lastBalance !== null
-                                            ? toSomoni(setting.lastBalance)
-                                            : '-'
-                                        }</td>
-                                        <td>{setting.lastCheckedAt && setting.lastCheckedAt !== "0001-01-01T00:00:00Z"
-                                            ? formatDate(setting.lastCheckedAt)
-                                            : "еще не проверялась"
-                                        }</td>
-                                        <td>
-                        <span className={`status-badge ${setting.isActive ? 'active' : 'inactive'}`}>
-                          {setting.isActive ? 'Активен' : 'Отключен'}
-                        </span>
-                                        </td>
-                                        <td className="actions-cell">
-                                            <button className="text-btn edit-btn" onClick={() => handleOpenModal(setting)}>Р</button>
-                                            <button className="text-btn delete-btn" onClick={() => handleDelete(setting.id)}>Х</button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                            </tbody>
-                        </table>
+                  ))}
+                </td>
+                <td className="limits-table__td" style={{ color: '#27ae60' }}>
+                  {card.details?.accounts?.map((acc, aIdx) => (
+                    <div key={aIdx} style={{ whiteSpace: 'nowrap', borderBottom: aIdx < (card.details.accounts.length - 1) ? '1px solid #eee' : 'none', padding: '2px 0' }}>
+                      <b>{(Number(acc.balance) / 100).toFixed(2)}</b> {acc.currency}
                     </div>
-                </section>
-
-                {/* Balances Section */}
-                <section className="balances-section">
-                    <div className="section-header">
-                        <h2>Статусы баланса карт</h2>
-                    </div>
-
-                    <div className="table-responsive">
-                        <table className="modern-table">
-                            <thead>
-                            <tr>
-                                <th>ID Карты</th>
-                                <th>Статус лимита</th>
-                                <th>Статус блокировки</th>
-                                <th>Действия</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {balances.length === 0 ? (
-                                <tr><td colSpan="4" className="text-center">Нет статусов</td></tr>
-                            ) : (
-                                balances.map((balance) => {
-                                    const isExceed = balance.isCardExceed;
-                                    const isBlocked = balance.isCardBlocked;
-                                    let rowClass = "";
-                                    if (isBlocked) rowClass = "row-blocked";
-                                    else if (isExceed) rowClass = "row-exceed";
-
-                                    return (
-                                        <tr key={`balance-${balance.id}`} className={rowClass}>
-                                            <td>{balance.cardId}</td>
-                                            <td>
-                                                {isExceed ? (
-                                                    <span className="limit-alert exceeded">Превышен</span>
-                                                ) : (
-                                                    <span className="limit-alert normal">В норме</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {isBlocked ? (
-                                                    <span className="block-status blocked">Заблокирована</span>
-                                                ) : (
-                                                    <span className="block-status active">Активна</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                <button
-                                                    className={`action-btn ${isBlocked ? 'unblock-btn' : 'block-btn'}`}
-                                                    onClick={() => handleToggleBlock(balance.id, isBlocked)}
-                                                >
-                                                    {isBlocked ? 'Разблокировать' : 'Заблокировать'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-
-            {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>{editingSetting ? "Редактировать настройку" : "Добавить настройку"}</h3>
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label>ID Карты (договора):</label>
-                                <input
-                                    type="text"
-                                    value={formData.cardId}
-                                    onChange={(e) => setFormData({...formData, cardId: e.target.value})}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Номер телефона SMS (992...):</label>
-                                <input
-                                    type="text"
-                                    value={formData.phoneNumber}
-                                    onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group checkbox-group">
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.isActive}
-                                        onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
-                                    />
-                                    Активно (мониторинг включен)
-                                </label>
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" className="secondary-btn" onClick={handleCloseModal}>Отмена</button>
-                                <button type="submit" className="primary-btn">Сохранить</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                  ))}
+                </td>
+                <td className="limits-table__td">
+                  {card.services?.map((s, sIdx) => {
+                    const type = s.identification?.serviceId === "300" ? "SMS" : 
+                                 s.identification?.serviceId === "330" ? "3DS" : null;
+                    if (!type) return null;
+                    return (
+                      <div key={sIdx} style={{ whiteSpace: 'nowrap' }}>
+                        {s.extNumber} {type}
+                      </div>
+                    );
+                  })}
+                  {(!card.services || card.services.length === 0) && "-"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {loading && (
+        <div
+          style={{
+            transform: "scale(2)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "100px",
+            width: "auto",
+          }}
+        >
+          <Spinner />
         </div>
-    );
-}
+      )}
+      {!loading && !hasMore && cards.length === 0 && (
+        <div className="loading">Нет данных за выбранный период</div>
+      )}
+    </ReportsContent>
+  );
+};
+
+export default CardsReport;
