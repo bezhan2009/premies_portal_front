@@ -413,7 +413,7 @@ export default function ABSClientSearch() {
                                 fetchCardServices(card.cardId),
                             ]);
 
-                            // Преобразуем балансы счетов в ПЦ из дирамов в сомони
+                            // 1. Преобразуем балансы счетов в ПЦ из дирамов в сомони
                             if (details && details.accounts && Array.isArray(details.accounts)) {
                                 details.accounts = details.accounts.map(acc => ({
                                     ...acc,
@@ -421,7 +421,19 @@ export default function ABSClientSearch() {
                                 }));
                             }
 
-                            return { ...card, details, services };
+                            // 2. Формируем отображаемый тип карты: тип из АБС + (тип из ПЦ)
+                            const absType = details?.cardTypeName || card.CardTypeName || "";
+                            const pcType = card.type || "";
+                            const displayType = pcType
+                                ? `${absType} (${pcType})`
+                                : absType;
+
+                            return {
+                                ...card,
+                                details,
+                                services,
+                                cardTypeDisplay: displayType   // добавляем вычисляемое поле
+                            };
                         } catch (e) {
                             console.error(`Ошибка при обогащении карты ${card.cardId}:`, e);
                             return card;
@@ -472,7 +484,8 @@ export default function ABSClientSearch() {
         const columns = [
             { key: "cardId", label: "ID Карты" },
             { key: (row) => row.details?.cardNumberMask || "-", label: "Карта" },
-            { key: (row) => row.details?.cardTypeName || "-", label: "Тип" },
+            // Используем вычисляемое поле cardTypeDisplay
+            { key: (row) => row.cardTypeDisplay || row.details?.cardTypeName || row.CardTypeName || "-", label: "Тип" },
             { key: "statusName", label: "Статус АБС" },
             { key: (row) => `${row.details?.statusDescription || ""} (${row.details?.hotCardStatus || ""})`, label: "Статус ПЦ" },
             { key: (row) => row.details?.accounts?.map(a => a.number).join("\n") || "-", label: "Счета карты" },
