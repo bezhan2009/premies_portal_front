@@ -54,7 +54,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
               </div>
               <div className="theme-details">
                 <span className="name">Светлая</span>
-                <span className="desc">Классический вид</span>
+                <span className="desc">{" "}Классический вид</span>
               </div>
               {theme === "light" && <Check className="check-icon" size={16} />}
             </button>
@@ -67,7 +67,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
               </div>
               <div className="theme-details">
                 <span className="name">Темная</span>
-                <span className="desc">Для ночной работы</span>
+                <span className="desc">{" "}Для ночной работы</span>
               </div>
               {theme === "dark" && <Check className="check-icon" size={16} />}
             </button>

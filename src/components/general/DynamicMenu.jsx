@@ -8,7 +8,61 @@ import { FaChevronDown, FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdPassword } from "react-icons/md";
 import AlertMessage from "./AlertMessage.jsx";
 import Spinner from "../Spinner.jsx";
-import { Settings } from "lucide-react";
+import {
+    Settings,
+    BookOpen,
+    GraduationCap,
+    Award,
+    BarChart2,
+    PieChart,
+    UserCog,
+    Trophy,
+    FileText,
+    Database,
+    CheckSquare,
+    Settings2,
+    CreditCard,
+    PlusCircle,
+    ListChecks,
+    Briefcase,
+    DollarSign,
+    Wallet,
+    PiggyBank,
+    ArrowLeftRight,
+    Landmark,
+    Coins,
+    ClipboardList,
+    Banknote,
+    Vault,
+    History,
+    QrCode,
+    Activity,
+    Receipt,
+    Monitor,
+    List,
+    Sliders,
+    MessageSquare,
+    Send,
+    Zap,
+    RefreshCw,
+    Type,
+    Ship,
+    Anchor,
+    Users,
+    Search,
+    Cpu,
+    ShieldAlert,
+    Repeat,
+    ZoomIn,
+    Folder,
+    Layers,
+    HardDrive,
+    Table,
+    FileSpreadsheet,
+    Eye,
+    Gift,
+    Wrench
+} from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
@@ -326,15 +380,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     // Базовые ссылки меню (доступны всем) и дополнительные в зависимости от ролей
     const links = useMemo(() => {
         const baseLinks = [
-            { name: "База знаний", href: "/user/knowledge-base", key: "knowledge" },
+            { name: "База знаний", href: "/user/knowledge-base", key: "knowledge", icon: BookOpen },
         ];
 
         const additionalLinks = [];
 
         if (roles.includes(6) || roles.includes(8)) {
             additionalLinks.push(
-                { name: "Тесты", href: "/worker/tests", key: "tests" },
-                { name: "Моя премия", href: "/worker/premies", key: "worker_premies" },
+                { name: "Тесты", href: "/worker/tests", key: "tests", icon: GraduationCap },
+                { name: "Моя премия", href: "/worker/premies", key: "worker_premies", icon: Award },
             );
         }
 
@@ -343,6 +397,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 name: "Статистика моего офиса",
                 href: "/director/reports",
                 key: "director",
+                icon: BarChart2
             });
         }
 
@@ -351,6 +406,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 name: "Статистика банка",
                 href: "/chairman/reports",
                 key: "chairman",
+                icon: PieChart
             });
         }
 
@@ -358,19 +414,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Оператор",
                 key: "operator",
+                icon: UserCog,
                 children: [
-                    { name: "Премии", href: "/operator/premies", key: "premi" },
+                    { name: "Премии", href: "/operator/premies", key: "premi", icon: Trophy },
                     {
                         name: "Отчеты",
                         href: "/operator/reports",
                         key: "reports_operator",
+                        icon: FileText
                     },
-                    { name: "Данные", href: "/operator/data", key: "data" },
-                    { name: "Тесты", href: "/operator/tests", key: "tests_operator" },
+                    { name: "Данные", href: "/operator/data", key: "data", icon: Database },
+                    { name: "Тесты", href: "/operator/tests", key: "tests_operator", icon: CheckSquare },
                     {
                         name: "Управление Базой знаний",
                         href: "/operator/knowledge-base",
                         key: "kb_operator",
+                        icon: Settings2
                     },
                 ],
             });
@@ -380,12 +439,14 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Заявки на карты",
                 key: "application",
+                icon: CreditCard,
                 children: [
-                    { name: "Карта", href: "/agent/card", key: "gift_card" },
+                    { name: "Карта", href: "/agent/card", key: "gift_card", icon: PlusCircle },
                     {
                         name: "Заявки",
                         href: "/agent/applications-list",
                         key: "applications",
+                        icon: ListChecks,
                         hasNotification: hasNewApplications,
                     },
                 ],
@@ -396,31 +457,37 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Продукты банка",
                 key: "products",
+                icon: Briefcase,
                 children: [
                     {
                         name: "Карты",
                         href: "/product/cards",
                         key: "product_cards",
+                        icon: CreditCard
                     },
                     {
                         name: "Кредиты",
                         href: "/product/credits",
                         key: "product_credits",
+                        icon: DollarSign
                     },
                     {
                         name: "Счета",
                         href: "/product/accounts",
                         key: "product_accounts",
+                        icon: Wallet
                     },
                     {
                         name: "Депозиты",
                         href: "/product/deposits",
                         key: "product_deposits",
+                        icon: PiggyBank
                     },
                     {
                         name: "Переводы",
                         href: "/product/transfers",
                         key: "product_transfers",
+                        icon: ArrowLeftRight
                     },
                 ],
             });
@@ -430,9 +497,10 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Заявки на кредиты",
                 key: "credit",
+                icon: Landmark,
                 children: [
-                    { name: "Кредит", href: "/credit/card", key: "gift_credit" },
-                    { name: "Заявки", href: "/credit/applications-list", key: "credits" },
+                    { name: "Кредит", href: "/credit/card", key: "gift_credit", icon: Coins },
+                    { name: "Заявки", href: "/credit/applications-list", key: "credits", icon: ClipboardList },
                 ],
             });
         }
@@ -441,12 +509,14 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Заявки на депозиты",
                 key: "deposit",
+                icon: Banknote,
                 children: [
-                    { name: "Депозит", href: "/agent/dipozit/card", key: "gift_deposit" },
+                    { name: "Депозит", href: "/agent/dipozit/card", key: "gift_deposit", icon: Vault },
                     {
                         name: "Заявки",
                         href: "/agent/dipozit/applications-list",
                         key: "deposits",
+                        icon: History
                     },
                 ],
             });
@@ -456,21 +526,25 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Агент по QR-ам",
                 key: "qr",
+                icon: QrCode,
                 children: [
                     {
                         name: "Транзакции",
                         href: "/agent-qr/transactions/list",
                         key: "list_qr",
+                        icon: Activity
                     },
                     {
                         name: "QR другого банка выписки",
                         href: "/accounts-qr/operations",
                         key: "qr_another_bank_transactions",
+                        icon: Receipt
                     },
                     {
                         name: "QR другого банка настройки",
                         href: "/accounts-qr/settings",
                         key: "qr_another_bank_settings",
+                        icon: Settings
                     },
                 ],
             });
@@ -480,16 +554,19 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Управления ПВН",
                 key: "pvn",
+                icon: Monitor,
                 children: [
                     {
                         name: "ПВН транзакций",
                         href: "/pvn/transactions/list",
                         key: "pvn_transactions",
+                        icon: List
                     },
                     {
                         name: "ПВН настройки",
                         href: "/pvn/settings/list",
                         key: "pvn_settings",
+                        icon: Sliders
                     },
                 ],
             });
@@ -499,11 +576,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Агент по SMS",
                 key: "sms",
+                icon: MessageSquare,
                 children: [
                     {
                         name: "Отправка SMS",
                         href: "/agent-sms/sms-sender",
                         key: "sms_send",
+                        icon: Send
                     },
                 ],
             });
@@ -513,16 +592,19 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Агент по транзакциям",
                 key: "transactions",
+                icon: Zap,
                 children: [
                     {
                         name: "Обновление типа транзакции",
                         href: "/agent-transaction/update-transaction",
                         key: "update_transaction",
+                        icon: RefreshCw
                     },
                     {
                         name: "Названия терминалов",
                         href: "/agent-transaction/terminal-names",
                         key: "terminal_names",
+                        icon: Type
                     },
                 ],
             });
@@ -532,11 +614,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Агент по таможне",
                 key: "customs",
+                icon: Ship,
                 children: [
                     {
                         name: "Просмотр/Оплата таможни",
                         href: "/agent-custom/eqms",
                         key: "eqms_list",
+                        icon: Anchor
                     },
                 ],
             });
@@ -546,11 +630,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Фронтовик",
                 key: "frontovik",
+                icon: Users,
                 children: [
                     {
                         name: "Поиск клиентов в АБС",
                         href: "/frontovik/abs-search",
                         key: "abs_search",
+                        icon: Search
                     },
                 ],
             });
@@ -560,17 +646,20 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Процессинг",
                 key: "processing",
+                icon: Cpu,
                 children: [
                     {
                         name: "Лимиты",
                         href: "/processing/limits",
                         key: "limits",
+                        icon: ShieldAlert,
                         description: "Управление лимитами карт",
                     },
                     {
                         name: "Транзакции",
                         href: "/processing/transactions",
                         key: "transactions",
+                        icon: Repeat,
                         description: "Мониторинг транзакций",
                     },
                 ],
@@ -581,11 +670,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Поиск по процессингу",
                 key: "processing_search",
+                icon: Search,
                 children: [
                     {
                         name: "Поиск транзакций",
                         href: "/processing-search/transactions",
                         key: "transactions_search",
+                        icon: ZoomIn,
                         description: "Мониторинг транзакций универсальный поиск",
                     },
                 ],
@@ -597,6 +688,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 name: "База документов клиентов",
                 href: "/client-documents",
                 key: "client_documents",
+                icon: Folder
             });
         }
 
@@ -605,6 +697,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 name: "Остатки по картам",
                 href: "/card-balance",
                 key: "card_balance",
+                icon: Layers
             });
         }
 
@@ -612,11 +705,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Банкоматы",
                 key: "atms",
+                icon: HardDrive,
                 children: [
                     {
                         name: "Таблица банкоматов",
                         href: "/atm/table",
                         key: "atm_table",
+                        icon: Table,
                         description: "Таблица ATM",
                     },
                 ],
@@ -627,11 +722,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Выписки со счетов",
                 key: "acc_operations",
+                icon: FileSpreadsheet,
                 children: [
                     {
                         name: "Просмотр выписки со счетов",
                         href: "/accounts/account-operations",
                         key: "account_operations",
+                        icon: Eye
                     },
                 ],
             });
@@ -641,21 +738,25 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Кэшбэк",
                 key: "cashbacks",
+                icon: Gift,
                 children: [
                     {
                         name: "Настройки кэшбэк-ов",
                         href: "/cashback/settings",
                         key: "cashbacks_settings",
+                        icon: Wrench
                     },
                     {
                         name: "Кэшбэк по картам",
                         href: "/cashback/card-list",
                         key: "card_cashback_list",
+                        icon: CreditCard
                     },
                     {
                         name: "Кэшбэк по QR",
                         href: "/cashback/qr-list",
                         key: "qr_cashback_list",
+                        icon: QrCode
                     },
                 ],
             });
@@ -665,11 +766,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             additionalLinks.push({
                 name: "Платежи",
                 key: "payments",
+                icon: CreditCard,
                 children: [
                     {
                         name: "Список платежей",
                         href: "/agent-payments/list",
                         key: "payments_list",
+                        icon: List
                     },
                 ],
             });
@@ -843,16 +946,21 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                             toggleDropdown(link.key);
                                         }}
                                     >
-                                        {link.name}
-                                        <span
-                                            className={`dropdown-arrow ${
-                                                isDropdownOpen ? "open" : ""
-                                            }`}
-                                        >
-                      <FaChevronDown size={16} />
-                    </span>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
+                                            {isOpen && link.name}
+                                        </div>
+                                        {isOpen && (
+                                            <span
+                                                className={`dropdown-arrow ${
+                                                    isDropdownOpen ? "open" : ""
+                                                }`}
+                                            >
+                                                <FaChevronDown size={16} />
+                                            </span>
+                                        )}
                                     </button>
-                                    {isDropdownOpen && (
+                                    {isDropdownOpen && isOpen && (
                                         <div className="sub-menu">
                                             {link.children.map((child) => (
                                                 <Link
@@ -866,6 +974,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                                         handleLinkClick();
                                                     }}
                                                 >
+                                                    {child.icon && <child.icon size={18} style={{ marginRight: '10px' }} />}
                                                     {child.name}
                                                 </Link>
                                             ))}
@@ -888,7 +997,8 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                     }
                                 }}
                             >
-                                {link.name}
+                                {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
+                                {isOpen && link.name}
                                 {link.hasNotification && (
                                     <span className="notification-dot"></span>
                                 )}
