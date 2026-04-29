@@ -106,9 +106,7 @@
     }
   }
 
-  tr:hover td {
-    background-color: rgba(var(--primary-rgb), 0.08) !important;
-  }
+// tr:hover td удален
 
   th:last-child,
   td:last-child {
@@ -186,9 +184,7 @@ tr.paid-row td {
   background-color: rgba(16, 185, 129, 0.1) !important;
 }
 
-tr.paid-row:hover td {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-}
+// tr.paid-row:hover td удален
 
 .table-header-actions {
   display: flex;

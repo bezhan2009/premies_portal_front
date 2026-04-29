@@ -299,10 +299,7 @@
 .limits-table__row {
   transition: all 0.3s ease;
 }
-.limits-table__row:hover {
-  background: #f9fafb;
-  transform: translateX(2px);
-}
+// .limits-table__row:hover удален
 .limits-table__row:not(:last-child) {
   border-bottom: 1px solid #e5e7eb;
 }
