@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { Button, Space, Tag, message, Modal } from "antd";
-import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { Table, Button, Space, Tag, message, Modal, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { useAccountStore } from "../../../store/product/useCurrentAccount.store";
 import { CurrentAccountForm } from "./CurrentAccountForm";
-import {
-  AccountTypeDict,
-  CurrencyTypeDict,
-} from "../../../domain/product/dictionaries";
+import { AccountTypeDict, CurrencyTypeDict } from "../../../domain/product/dictionaries";
 
 export const CurrentAccountTable = () => {
   const {
@@ -97,7 +94,7 @@ export const CurrentAccountTable = () => {
               message.success("Текущий счёт успешно удалены");
               setSelectedRowKeys([]);
               fetchAccounts();
-            } catch {
+            } catch (error) {
               message.error("Ошибка при удалении");
             }
           },
@@ -107,6 +104,16 @@ export const CurrentAccountTable = () => {
         });
       }
     },
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteAccount(id);
+      message.success("Счёт удалён");
+      fetchAccounts();
+    } catch (err) {
+      message.error("Ошибка удаления");
+    }
   };
 
   return (
@@ -192,6 +199,38 @@ export const CurrentAccountTable = () => {
           title="Дата обновления"
           dataIndex="updateDate"
           render={(val) => (val ? new Date(val).toLocaleString() : "-")}
+        />
+        <Table.Column
+          title="Действия"
+          key="actions"
+          render={(_, record) => (
+            <Space>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(record);
+                }}
+              />
+              <Popconfirm
+                title="Удалить счёт?"
+                okText="Удалить"
+                cancelText="Отмена"
+                okType="danger"
+                onConfirm={async (e) => {
+                  e?.stopPropagation?.();
+                  await handleDelete(record.id);
+                }}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Popconfirm>
+            </Space>
+          )}
         />
       </Table>
 

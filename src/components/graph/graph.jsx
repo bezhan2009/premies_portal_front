@@ -84,7 +84,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           backdropFilter: "blur(8px)",
           fontSize: "13px",
-          color: "#333",
+          color: "var(--text-color)",
         }}
       >
         <div style={{ fontWeight: "600", marginBottom: "6px" }}>{label}</div>
@@ -196,7 +196,9 @@ export default function TransactionsChart({ transactions = [] }) {
               <span className="stats-chip">
                 Средний чек: {formatIntWithDots(avgAmount)}
               </span>
-              <span className="stats-chip">Среднее операций/день: {avgOpsPerDay}</span>
+              <span className="stats-chip">
+                Среднее операций/день: {avgOpsPerDay}
+              </span>
 
               {/* ✅ НОВОЕ ПОЛЕ */}
               <span className="stats-chip">
@@ -239,7 +241,9 @@ export default function TransactionsChart({ transactions = [] }) {
               <Area
                 type="monotone"
                 dataKey={metric === "count" ? "operations" : "amount"}
-                name={metric === "count" ? "Количество операций" : "Сумма операций"}
+                name={
+                  metric === "count" ? "Количество операций" : "Сумма операций"
+                }
                 stroke="#C41E3A"
                 fill="url(#atmGradient)"
                 strokeWidth={2.5}

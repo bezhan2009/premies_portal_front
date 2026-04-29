@@ -73,6 +73,7 @@ const OfficeTable = () => {
     const columns = [
       { key: "title", label: "Название офиса" },
       { key: "code", label: "Код офиса" },
+      { key: "application_view_name", label: "Название в заявках" },
     ];
 
     exportToExcel(data, columns, "Офисы");
@@ -134,6 +135,12 @@ const OfficeTable = () => {
           dataIndex="code"
           key="code"
           render={(_, record) => renderEditableCell(record, "code")}
+        />
+        <Table.Column
+          title="Название в заявках"
+          dataIndex="application_view_name"
+          key="application_view_name"
+          render={(_, record) => renderEditableCell(record, "application_view_name")}
         />
       </Table>
     </div>

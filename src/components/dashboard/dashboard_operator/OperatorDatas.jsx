@@ -11,6 +11,7 @@ import TableCardMargents from "./table_datas/TableCardMargents.jsx";
 import RolesTable from "./table_datas/RolesTable.jsx";
 import RolesLogsTable from "./table_datas/RoleLogsTable.jsx";
 import JournalTable from "./table_datas/JournalLogs.jsx";
+import UserDocumentsTable from "./table_datas/UserDocumentsTable.jsx";
 
 const OperatorDatasBlockInfo = () => {
   const [selectedTable, setSelectedTable] = useState("office");
@@ -64,6 +65,13 @@ const OperatorDatasBlockInfo = () => {
                 <>
                     <Filters modificationDesc="Журнал операций" />
                     <JournalTable key="journal" />
+                </>
+            );
+        case "user_documents":
+            return (
+                <>
+                    <Filters modificationDesc="База документов пользователей" />
+                    <UserDocumentsTable key="user_documents" />
                 </>
             );
       default:

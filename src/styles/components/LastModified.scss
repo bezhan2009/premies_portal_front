@@ -1,8 +1,8 @@
-@import '../mixins/general';
+@use "../mixins/general" as *;
 
 .last-modified-container {
   font-family: Arial, sans-serif;
-  color: #333;
+  color: var(--text-color);
   margin: 0px 0;
   display: flex;
   flex-direction: column;
@@ -17,8 +17,8 @@
   &__label {
     font-size: 18px;
     font-weight: 380;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #111;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
   }
 
   &__date {
@@ -26,7 +26,6 @@
     font-weight: bold;
   }
 }
-
 
 .modification-desc {
   display: flex;
@@ -36,8 +35,8 @@
   &__label {
     font-size: 18px;
     font-weight: 380;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #111;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
   }
 }
 
@@ -45,7 +44,6 @@
   display: flex;
   align-items: center;
   gap: 15px;
-
 
   &__inputs {
     display: flex;
@@ -56,7 +54,7 @@
       width: 6ch;
       font-size: 0.95rem;
       font-family: inherit;
-      color: #333;
+      color: var(--text-color);
       border: none;
       border-bottom: 1px solid grey;
       background-color: transparent;
@@ -77,7 +75,7 @@
     span {
       margin: 0 1px;
       font-size: 0.95rem;
-      color: #555;
+      color: var(--text-secondary);
     }
   }
 
@@ -116,7 +114,6 @@
   width: 0;
   height: 0;
   border-style: solid;
-  
 
   .date-filter__arrow--left & {
     border-width: 6px 10px 6px 0;
@@ -137,7 +134,7 @@
   border-radius: 6px;
   border: 1px solid #ccc;
   background-color: white;
-  color: #333;
+  color: var(--text-color);
   margin-right: 6px;
   transition: all 0.2s ease;
 
@@ -155,7 +152,6 @@
   border-radius: 6px;
   border: 1px solid #ccc;
 }
-
 
 .date-filter__inputs__year-input {
   width: 100px;

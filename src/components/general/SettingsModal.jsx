@@ -16,10 +16,13 @@ const PRESET_COLORS = [
 ];
 
 const SettingsModal = ({ isOpen, onClose }) => {
-  const { 
-    theme, setTheme, 
-    primaryColor, setPrimaryColor, 
-    fontSize, setFontSize 
+  const {
+    theme,
+    setTheme,
+    primaryColor,
+    setPrimaryColor,
+    fontSize,
+    setFontSize,
   } = useThemeStore();
 
   const handleSizeChange = (e) => {
@@ -27,15 +30,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
   };
 
   const handleReset = () => {
-    setTheme('light');
-    setPrimaryColor('#e21a1c');
+    setTheme("light");
+    setPrimaryColor("#e21a1c");
     setFontSize(16);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Настройки интерфейса">
       <div className="settings-container">
-        
         {/* Theme Settings */}
         <section className="settings-section">
           <div className="section-header">
@@ -43,31 +45,31 @@ const SettingsModal = ({ isOpen, onClose }) => {
             <span>Тема оформления</span>
           </div>
           <div className="theme-options">
-            <button 
-              className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
-              onClick={() => setTheme('light')}
+            <button
+              className={`theme-btn ${theme === "light" ? "active" : ""}`}
+              onClick={() => setTheme("light")}
             >
               <div className="theme-icon-wrapper">
                 <Sun size={20} />
               </div>
               <div className="theme-details">
                 <span className="name">Светлая</span>
-                <span className="desc">Классический вид</span>
+                <span className="desc">{" "}Классический вид</span>
               </div>
-              {theme === 'light' && <Check className="check-icon" size={16} />}
+              {theme === "light" && <Check className="check-icon" size={16} />}
             </button>
-            <button 
-              className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
-              onClick={() => setTheme('dark')}
+            <button
+              className={`theme-btn ${theme === "dark" ? "active" : ""}`}
+              onClick={() => setTheme("dark")}
             >
               <div className="theme-icon-wrapper">
                 <Moon size={20} />
               </div>
               <div className="theme-details">
                 <span className="name">Темная</span>
-                <span className="desc">Для ночной работы</span>
+                <span className="desc">{" "}Для ночной работы</span>
               </div>
-              {theme === 'dark' && <Check className="check-icon" size={16} />}
+              {theme === "dark" && <Check className="check-icon" size={16} />}
             </button>
           </div>
         </section>
@@ -81,9 +83,9 @@ const SettingsModal = ({ isOpen, onClose }) => {
           <div className="color-options">
             <div className="presets-grid">
               {PRESET_COLORS.map((color) => (
-                <div 
+                <div
                   key={color}
-                  className={`color-swatch ${primaryColor === color ? 'active' : ''}`}
+                  className={`color-swatch ${primaryColor === color ? "active" : ""}`}
                   style={{ backgroundColor: color }}
                   onClick={() => setPrimaryColor(color)}
                 >
@@ -91,8 +93,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
                 </div>
               ))}
               <div className="custom-color-wrapper">
-                <input 
-                  type="color" 
+                <input
+                  type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="custom-color-picker"
@@ -111,12 +113,12 @@ const SettingsModal = ({ isOpen, onClose }) => {
           </div>
           <div className="size-control">
             <div className="slider-container">
-              <input 
-                type="range" 
-                min="12" 
-                max="22" 
+              <input
+                type="range"
+                min="12"
+                max="22"
                 step="1"
-                value={fontSize} 
+                value={fontSize}
                 onChange={handleSizeChange}
                 className="size-slider"
               />
@@ -124,33 +126,32 @@ const SettingsModal = ({ isOpen, onClose }) => {
             </div>
           </div>
           <div className="size-presets">
-            <button 
+            <button
               onClick={() => setFontSize(14)}
-              className={fontSize === 14 ? 'active' : ''}
+              className={fontSize === 14 ? "active" : ""}
             >
               Убористый
             </button>
-            <button 
+            <button
               onClick={() => setFontSize(16)}
-              className={fontSize === 16 ? 'active' : ''}
+              className={fontSize === 16 ? "active" : ""}
             >
               Стандарт
             </button>
-            <button 
+            <button
               onClick={() => setFontSize(20)}
-              className={fontSize === 20 ? 'active' : ''}
+              className={fontSize === 20 ? "active" : ""}
             >
               Крупный
             </button>
           </div>
         </section>
 
-        <div className="settings-footer">
+        <div className="settings-footer size-presets ">
           <button className="reset-btn" onClick={handleReset}>
             <RotateCcw size={14} /> Сбросить настройки
           </button>
         </div>
-
       </div>
     </Modal>
   );

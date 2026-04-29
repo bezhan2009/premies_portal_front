@@ -171,3 +171,205 @@ export const fetchTransactionsSearch = async (params) => {
     }
 };
 
+// Получение подробной информации о карте
+export const fetchCardDetails = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/card-data`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card details:', error);
+        return null;
+    }
+};
+
+// Получение информации об уведомлениях (сервисах) карты
+export const fetchCardServices = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/services?CardId=${cardId}`, {
+            headers: {
+                'accept': '*/*'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card services:', error);
+        return [];
+    }
+};
+
+// Изменение статуса карты (блокировка)
+export const changeCardStatus = async (cardId, status) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/block-card`, {
+            cardId: String(cardId),
+            hotCardStatus: String(status)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error changing card status:', error);
+        throw error;
+    }
+};
+
+// Разблокировка карты
+export const unblockCard = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/validate-card`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error unblocking card:', error);
+        throw error;
+    }
+};
+
+// Сброс счетчика ПИН
+export const resetPinCounter = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/reset-pin-counter`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error resetting pin counter:', error);
+        throw error;
+    }
+};
+
+// Генерация/Смена ПИН
+export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/generate-pin`, {
+            cardId: String(cardId),
+            phoneNumber: String(phoneNumber),
+            pinDeliveryMethod: "WS",
+            pinValue: String(pinValue)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error generating pin:', error);
+        throw error;
+    }
+};
+
+export const sendPinOtp = async (phoneNumber) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/send-pin-otp`, {
+            phoneNumber: String(phoneNumber)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error sending pin OTP:', error);
+        throw error;
+    }
+};
+
+export const checkPinOtp = async (phoneNumber, otpCode) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/check-pin-otp`, {
+            phoneNumber: String(phoneNumber),
+            otpCode: String(otpCode)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error checking pin OTP:', error);
+        throw error;
+    }
+};
+
+// Управление сервисами (SMS/3DS)
+export const manageCardService = async (payload) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/service-action`, payload, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error managing card service:', error);
+        throw error;
+    }
+};
+export const fetchCardLimits = async (cardId) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/limits?CardId=${cardId}`, {
+            headers: {
+                'accept': '*/*'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card limits:', error);
+        return [];
+    }
+};
+
+export const changeCardLimit = async (payload) => {
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    try {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/change-card-limit`, payload, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error changing card limit:', error);
+        throw error;
+    }
+};

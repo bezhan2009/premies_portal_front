@@ -10,7 +10,8 @@
   margin: 20px auto;
   border-radius: 15px;
 }
-.filters__left, .filters__right {
+.filters__left,
+.filters__right {
   gap: 10px;
 }
 .filters__button {
@@ -116,7 +117,7 @@
 }
 
 .filters__modal-content {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 30px;
   border-radius: 12px;
   max-width: 450px;
@@ -138,12 +139,12 @@
 .filters__modal-content h3 {
   margin-top: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-color);
   margin-bottom: 20px;
 }
 
 .filters__modal-content select,
-.filters__modal-content input[type=file] {
+.filters__modal-content input[type="file"] {
   display: block;
   width: 97%;
   margin-bottom: 20px;
@@ -154,17 +155,19 @@
   background-color: #f9f9f9;
   color: #1c1c1c;
   cursor: pointer;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
   /* Кнопка внутри file-input */
 }
 .filters__modal-content select:focus,
-.filters__modal-content input[type=file]:focus {
+.filters__modal-content input[type="file"]:focus {
   border-color: #c31414;
   box-shadow: 0 0 0 2px #fff3f3;
   outline: none;
 }
 .filters__modal-content select::file-selector-button,
-.filters__modal-content input[type=file]::file-selector-button {
+.filters__modal-content input[type="file"]::file-selector-button {
   background-color: #c31414;
   color: #fff;
   border: none;
@@ -176,15 +179,15 @@
   transition: background-color 0.3s ease;
 }
 .filters__modal-content select::file-selector-button:hover,
-.filters__modal-content input[type=file]::file-selector-button:hover {
+.filters__modal-content input[type="file"]::file-selector-button:hover {
   background-color: rgb(148.7441860465, 15.2558139535, 15.2558139535);
 }
 
 /* Кастомная стрелочка для select */
 .filters__modal-content select {
   -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='10' viewBox='0 0 14 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%238c52ff' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -221,7 +224,7 @@
 
 .filters__modal-actions button:last-of-type {
   background-color: #ddd;
-  color: #333;
+  color: var(--text-color);
 }
 .filters__modal-actions button:last-of-type:hover {
   background-color: #bbb;
@@ -257,7 +260,9 @@
   border-radius: 6px;
   border: 1px solid #ccc;
   background-color: #f9f9f9;
-  transition: box-shadow 0.3s, border-color 0.3s;
+  transition:
+    box-shadow 0.3s,
+    border-color 0.3s;
 }
 .filters__year-input:focus {
   outline: none;
@@ -278,4 +283,4 @@
   background-color: #ef5350 !important;
   border-color: #ef5350 !important;
   cursor: not-allowed;
-}/*# sourceMappingURL=Filters.css.map */
+} /*# sourceMappingURL=Filters.css.map */

@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import ClientDocumentsTable from "../../../components/client-documents/ClientDocumentsTable.jsx";
 import DocumentPreviewModal from "../../../components/client-documents/DocumentPreviewModal.jsx";
+import ClientDocumentUploadModal from "../../../components/client-documents/ClientDocumentUploadModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import { getClientSelfieDocument } from "../../../utils/clientDocuments.js";
 import "../../../styles/components/BlockInfo.scss";
@@ -13,6 +14,7 @@ export default function DashboardClientDocuments() {
   const [inn, setInn] = useState("");
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
   const [alert, setAlert] = useState({
     show: false,
@@ -149,10 +151,17 @@ export default function DashboardClientDocuments() {
 
             <div className="processing-integration__limits-table">
               <div className="limits-table">
-                <div className="limits-table__header">
+                <div className="limits-table__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2 className="limits-table__title">
                     База документов клиента
                   </h2>
+                  <button 
+                    className="primary-btn" 
+                    onClick={() => setIsUploadModalOpen(true)}
+                    style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    Загрузить документ
+                  </button>
                 </div>
 
                 <div className="limits-table__wrapper">
@@ -183,6 +192,16 @@ export default function DashboardClientDocuments() {
         isOpen={Boolean(previewDocument)}
         onClose={() => setPreviewDocument(null)}
         document={previewDocument}
+      />
+
+      <ClientDocumentUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        inn={normalizedINN}
+        onUploadSuccess={() => {
+          showAlert("Документ успешно загружен!", "success");
+          if (normalizedINN) handleSearch();
+        }}
       />
     </>
   );

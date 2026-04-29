@@ -58,6 +58,15 @@ export default function GiftCard({ edit = false }) {
         cardName: useRef(null)
     };
 
+    // 🔐 Вспомогательная функция для получения заголовков с токеном
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem("access_token");
+        return {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        };
+    };
+
     // ИСПРАВЛЕННАЯ функция для проверки в списке террористов
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
@@ -75,18 +84,13 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            let url = `${import.meta.env.VITE_BACKEND_URL}/terror-list/${encodeURIComponent(name.trim())}`;
-
-            if (birthDate && birthDate.trim() !== '') {
-                url += `&bday=${encodeURIComponent(birthDate.trim())}`;
-            }
-
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    name: name.trim(),
+                    bday: birthDate?.trim() || "",
+                }),
             });
 
             if (!response.ok) {
@@ -221,16 +225,12 @@ export default function GiftCard({ edit = false }) {
     const loadClientDetails = async (clientCode) => {
         try {
             const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(
                 `${backendUrl}/addresses?clientIndex=${clientCode}`,
                 {
                     method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 }
             );
 
@@ -252,9 +252,8 @@ export default function GiftCard({ edit = false }) {
         setData("patronymic", clientData.patronymic || "");
         setData("phone_number", clientData.phone || "");
 
-        const cardName = `${clientData.ltn_name || ""} ${
-            clientData.ltn_surname || ""
-        }`.trim();
+        const cardName = `${clientData.ltn_name || ""} ${clientData.ltn_surname || ""
+            }`.trim();
         setData("card_name", cardName);
 
         const docType = docTypes.find(
@@ -408,16 +407,12 @@ export default function GiftCard({ edit = false }) {
         try {
             setSearching(true);
             const backendUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(
                 `${backendUrl}/client/info?phoneNumber=${phoneNumber}`,
                 {
                     method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 }
             );
 
@@ -494,14 +489,10 @@ export default function GiftCard({ edit = false }) {
         try {
             setDownloading(true);
             const automationUrl = import.meta.env.VITE_BACKEND_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(`${automationUrl}/automation/poll`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -528,14 +519,10 @@ export default function GiftCard({ edit = false }) {
         try {
             setDownloadingOffer(true);
             const automationUrl = import.meta.env.VITE_BACKEND_URL;
-            const token = localStorage.getItem("access_token");
 
             const response = await fetch(`${automationUrl}/automation/offer`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(), // 🔐 Используем функцию с токеном
                 body: JSON.stringify({
                     application_ids: [applicationId],
                 }),
@@ -549,10 +536,10 @@ export default function GiftCard({ edit = false }) {
             const filename = `offer_${applicationId}.zip`;
             downloadFile(blob, filename);
 
-            showAlert("Оферт успешно скачан!", "success", 4000);
+            showAlert("Оферта успешно скачана!", "success", 4000);
         } catch (error) {
-            console.error("Ошибка скачивания оферта:", error);
-            showAlert("Произошла ошибка при скачивании оферта", "error", 5000);
+            console.error("Ошибка скачивания оферты:", error);
+            showAlert("Произошла ошибка при скачивании оферты", "error", 5000);
         } finally {
             setDownloadingOffer(false);
         }
@@ -741,6 +728,9 @@ export default function GiftCard({ edit = false }) {
             if (edit) {
                 const response = await fetch(`${backendUrl}/applications/${data.ID}`, {
                     method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                    },
                     body: formData,
                 });
 
@@ -761,6 +751,9 @@ export default function GiftCard({ edit = false }) {
             } else {
                 const response = await fetch(`${backendUrl}/applications`, {
                     method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`, // 🔐 Добавлен токен
+                    },
                     body: formData,
                 });
 
@@ -808,7 +801,7 @@ export default function GiftCard({ edit = false }) {
                 const responseData = await getApplicationById(id);
                 setDataMore({
                     ...responseData,
-                    gemder: responseData.gender === "Муж",
+                    gender: responseData.gender === "Муж",
                     birth_date: formaterDate(responseData?.birth_date, "dateOnly"),
                     passport_issued_at: formaterDate(
                         responseData?.passport_issued_at,
@@ -846,8 +839,6 @@ export default function GiftCard({ edit = false }) {
             }
         }
     };
-
-    console.log("data", data);
 
     useEffect(() => {
         getData();
@@ -1056,9 +1047,8 @@ export default function GiftCard({ edit = false }) {
                                         {smsTypes.map((type) => (
                                             <div
                                                 key={type.value}
-                                                className={`sms-option ${
-                                                    data.message_type === type.value ? 'sms-option-selected' : ''
-                                                }`}
+                                                className={`sms-option ${data.message_type === type.value ? 'sms-option-selected' : ''
+                                                    }`}
                                                 onClick={() => handleSMSTypeChange(type.value)}
                                             >
                                                 <div className="sms-option-radio">
@@ -1186,7 +1176,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div9"}
-                                placeholder={"Получаемый оффис"}
+                                placeholder={"Получаемый офис"}
                                 onChange={(e) => setData("receiving_office", e)}
                                 value={data?.receiving_office}
                                 error={errors}
@@ -1350,7 +1340,7 @@ export default function GiftCard({ edit = false }) {
                             />
                             <Input
                                 className={"div23"}
-                                placeholder={"Района"}
+                                placeholder={"Район"}
                                 onChange={(e) => setData("district", e)}
                                 value={data?.district}
                                 error={errors}
@@ -1524,8 +1514,8 @@ export default function GiftCard({ edit = false }) {
                             >
                                 <img src={offer} alt="" />
                                 <span>
-                    {downloadingOffer ? "Загрузка..." : "Загрузить оферт"}
-                  </span>
+                                    {downloadingOffer ? "Загрузка..." : "Загрузить оферту"}
+                                </span>
                             </button>
                             <button
                                 onClick={handleSaveAndDownload}
@@ -1533,8 +1523,8 @@ export default function GiftCard({ edit = false }) {
                             >
                                 <img src={download} alt="" />
                                 <span>
-                    {downloading ? "Скачивание..." : "Скачать анкету"}
-                  </span>
+                                    {downloading ? "Скачивание..." : "Скачать анкету"}
+                                </span>
                             </button>
                             <button>
                                 <img src={share} alt="" />

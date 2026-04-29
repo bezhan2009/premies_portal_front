@@ -1,27 +1,8 @@
 import { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  InputNumber,
-  Select,
-  Switch,
-  Row,
-  Col,
-  Input,
-  Collapse,
-} from "antd";
-import {
-  AccountTypeDict,
-  CurrencyTypeDict,
-} from "../../../domain/product/dictionaries";
+import { Modal, Form, InputNumber, Select, Switch, Row, Col, Input, Collapse } from "antd";
+import { AccountTypeDict, CurrencyTypeDict } from "../../../domain/product/dictionaries";
 
-export const CurrentAccountForm = ({
-  open,
-  onClose,
-  onSubmit,
-  initialValues,
-  loading = false,
-}) => {
+export const CurrentAccountForm = ({ open, onClose, onSubmit, initialValues, loading = false }) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -76,7 +57,7 @@ export const CurrentAccountForm = ({
     }
   };
 
-  const overdraftAllowed = Form.useWatch("overdraftAllowed", form);
+  const overdraftAllowed = Form.useWatch('overdraftAllowed', form);
 
   return (
     <Modal
@@ -93,27 +74,16 @@ export const CurrentAccountForm = ({
       destroyOnClose
     >
       <Form form={form} layout="vertical">
-        <Collapse
-          accordion
-          defaultActiveKey={["main", "credit", "fees", "limits", "status"]}
-        >
+        <Collapse accordion defaultActiveKey={["main", "credit", "fees", "limits", "status"]}>
           <Collapse.Panel header="Основные данные" key="main">
             <Form.Item name="bankId" label="ID Банка">
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Введите ID Банка"
-                min={0}
-              />
+              <InputNumber style={{ width: "100%" }} placeholder="Введите ID Банка" min={0} />
             </Form.Item>
             <Form.Item name="name" label="Название счета">
               <Input placeholder="Введите название счета" />
             </Form.Item>
             <Form.Item name="accountType" label="Тип счета">
-              <Select
-                placeholder="Выберите тип счета"
-                style={{ width: "100%" }}
-                allowClear
-              >
+              <Select placeholder="Выберите тип счета" style={{ width: "100%" }} allowClear>
                 {Object.entries(AccountTypeDict).map(([key, val]) => (
                   <Select.Option key={key} value={Number(key)}>
                     {val}
@@ -122,11 +92,7 @@ export const CurrentAccountForm = ({
               </Select>
             </Form.Item>
             <Form.Item name="currency" label="Валюта">
-              <Select
-                placeholder="Выберите валюту"
-                style={{ width: "100%" }}
-                allowClear
-              >
+              <Select placeholder="Выберите валюту" style={{ width: "100%" }} allowClear>
                 {Object.entries(CurrencyTypeDict).map(([key, val]) => (
                   <Select.Option key={key} value={Number(key)}>
                     {val}
@@ -139,45 +105,20 @@ export const CurrentAccountForm = ({
           <Collapse.Panel header="Кредиты / овердрафт" key="credit">
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="overdraftAllowed"
-                  label="Овердрафт разрешен"
-                  valuePropName="checked"
-                >
+                <Form.Item name="overdraftAllowed" label="Овердрафт разрешен" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="interestOnBalance" label="Процент на остаток">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите процент на остаток"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите процент на остаток" min={0} max={100} step={0.1} />
                 </Form.Item>
               </Col>
             </Row>
 
             {overdraftAllowed && (
-              <Form.Item
-                name="overdraftRate"
-                label="Ставка овердрафта"
-                rules={[
-                  {
-                    required: true,
-                    message: "Пожалуйста, введите ставку овердрафта",
-                  },
-                ]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Введите ставку овердрафта"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                />
+              <Form.Item name="overdraftRate" label="Ставка овердрафта" rules={[{ required: true, message: 'Пожалуйста, введите ставку овердрафта' }]}>
+                <InputNumber style={{ width: "100%" }} placeholder="Введите ставку овердрафта" min={0} max={100} step={0.1} />
               </Form.Item>
             )}
           </Collapse.Panel>
@@ -186,20 +127,12 @@ export const CurrentAccountForm = ({
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="openingFee" label="Комиссия за открытие">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите комиссию за открытие"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите комиссию за открытие" min={0} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="monthlyFee" label="Ежемесячная комиссия">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="Введите ежемесячную комиссию"
-                    min={0}
-                  />
+                  <InputNumber style={{ width: "100%" }} placeholder="Введите ежемесячную комиссию" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -207,31 +140,19 @@ export const CurrentAccountForm = ({
 
           <Collapse.Panel header="Лимиты" key="limits">
             <Form.Item name="freeTransfersCount" label="Бесплатные переводы">
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Введите количество бесплатных переводов"
-                min={0}
-              />
+              <InputNumber style={{ width: "100%" }} placeholder="Введите количество бесплатных переводов" min={0} />
             </Form.Item>
           </Collapse.Panel>
 
           <Collapse.Panel header="Статус / Прочее" key="status">
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="onlineOpening"
-                  label="Онлайн открытие"
-                  valuePropName="checked"
-                >
+                <Form.Item name="onlineOpening" label="Онлайн открытие" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="isActive"
-                  label="Активен"
-                  valuePropName="checked"
-                >
+                <Form.Item name="isActive" label="Активен" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>

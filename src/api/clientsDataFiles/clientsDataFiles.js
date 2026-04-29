@@ -1,9 +1,7 @@
 import { apiClient } from "../utils/apiClient";
 
 export const getClientDocumentsByINN = async (inn) => {
-  const response = await apiClient.get("/clients-data-files", {
-    params: { inn },
-  });
+  const response = await apiClient.post("/clients-data-files/search", { inn });
 
   return response.data || [];
 };
@@ -20,5 +18,19 @@ export const createClientDocument = async (payload) => {
 
 export const deleteClientDocument = async (id) => {
   const response = await apiClient.delete(`/clients-data-files/${id}`);
+  return response.data;
+};
+
+export const uploadClientDocument = async (inn, title, file) => {
+  const formData = new FormData();
+  formData.append("inn", inn);
+  formData.append("title", title);
+  formData.append("file", file);
+
+  const response = await apiClient.post("/clients-data-files/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return response.data;
 };

@@ -228,20 +228,11 @@ export default function TransactionTypes() {
                                 </thead>
                                 <tbody>
                                 {sortedData.map((row, rowIndex) => (
-                                    <tr
-                                        key={rowIndex}
-                                        style={{
-                                            backgroundColor:
-                                                rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                                        }}
-                                    >
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
+                                    <tr key={rowIndex}>
+                                        <td>
                                             {row.type}
                                         </td>
                                         <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
                                             onClick={() => {
                                                 setEdit({ type: "name", id: row.id });
 
@@ -270,7 +261,6 @@ export default function TransactionTypes() {
                                                 setData("name", row.name);
                                                 setData("id", row.id);
                                             }}
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
                                         >
                                             {edit?.type === "number" && edit?.id === row.id ? (
                                                 <Select
@@ -284,9 +274,7 @@ export default function TransactionTypes() {
                                                     ?.label
                                             )}
                                         </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
+                                        <td>
                                             {row.id}
                                         </td>
                                         {edit?.type ? (

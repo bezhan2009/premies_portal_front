@@ -89,7 +89,7 @@
 }
 
 .search-card {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 1rem;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
@@ -132,7 +132,7 @@
   border-radius: 0.75rem;
   border-right: none;
   font-size: 1rem;
-  background: white;
+  background: var(--bg-surface);
   transition: all 0.3s ease;
 }
 .search-card__input:focus {
@@ -198,7 +198,7 @@
 }
 
 .limits-table {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 1rem;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
@@ -294,15 +294,12 @@
   min-width: 120px;
 }
 .limits-table__body {
-  background: white;
+  background: var(--bg-surface);
 }
 .limits-table__row {
   transition: all 0.3s ease;
 }
-.limits-table__row:hover {
-  background: #f9fafb;
-  transform: translateX(2px);
-}
+// .limits-table__row:hover удален
 .limits-table__row:not(:last-child) {
   border-bottom: 1px solid #e5e7eb;
 }
@@ -411,7 +408,7 @@
 
 .modal-processing {
   position: relative;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 1rem;
   padding: 0;
   max-width: 500px;
@@ -538,7 +535,7 @@
 }
 
 .debug-section {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 0.75rem;
   overflow: hidden;
   box-shadow:
@@ -571,7 +568,7 @@
 .debug-section__content {
   margin: 0;
   padding: 2rem;
-  background: white;
+  background: var(--bg-surface);
   border-top: 1px solid #e5e7eb;
   font-size: 0.75rem;
   color: #374151;
@@ -688,7 +685,7 @@
   text-align: center;
   font-size: 1.1rem;
   margin-bottom: 1rem;
-  color: #333;
+  color: var(--text-color);
 }
 .modal-processing--confirmation .modal-processing__changes-info {
   text-align: center;
@@ -701,7 +698,7 @@
 .modal-processing--confirmation .modal-processing__confirmation-subtext {
   text-align: center;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
   margin-bottom: 0;
 }
 .modal-processing--confirmation .modal-processing__btn--danger {
@@ -743,12 +740,12 @@
 }
 .custom-select__value {
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
   font-weight: 500;
 }
 .custom-select__arrow {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
   transition: transform 0.3s ease;
   margin-left: 8px;
 }
@@ -793,7 +790,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
 }
 .custom-select__option:hover {
   background: rgba(140, 84, 250, 0.2);
@@ -838,7 +835,7 @@
 .filter-item__label {
   font-size: 14px;
   font-weight: 600;
-  color: #555;
+  color: var(--text-secondary);
 }
 .filter-item__input {
   padding: 12px 16px;

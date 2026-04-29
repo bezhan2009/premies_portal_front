@@ -33,7 +33,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           backdropFilter: "blur(8px)",
           fontSize: "13px",
-          color: "#333",
+          color: "var(--text-color)",
         }}
       >
         <div style={{ fontWeight: "600", marginBottom: "6px" }}>{label}</div>
