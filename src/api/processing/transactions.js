@@ -148,21 +148,25 @@ export const fetchTransactionsByCardBinAndType = async (cardBin, transactionType
     }
 };
 
-// Универсальный поиск по всем параметрам (GET /api/Transactions/search-transactions)
+// Универсальный поиск по всем параметрам (POST /api/Transactions/search-transactions)
 export const fetchTransactionsSearch = async (params) => {
     try {
-        const searchParams = new URLSearchParams();
+        // Очищаем параметры от пустых значений
+        const cleanParams = {};
         Object.entries(params).forEach(([key, value]) => {
-            if (value === undefined || value === null || value === '') return;
-            if (Array.isArray(value)) {
-                value.forEach((v) => searchParams.append(key, v));
-            } else {
-                searchParams.append(key, value);
+            if (value !== undefined && value !== null && value !== '') {
+                cleanParams[key] = value;
             }
         });
 
-        const response = await axios.get(
-            `${BASE_URL}/api/Transactions/search-transactions?${searchParams.toString()}`
+        const response = await axios.post(
+            `${BASE_URL}/api/Transactions/search-transactions`,
+            cleanParams,
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
         );
         return response.data;
     } catch (error) {

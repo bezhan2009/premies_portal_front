@@ -39,6 +39,7 @@ const emptyForm = {
     cashback_percentage: "",
     cashback_name: "",
     cashback_priority: "",
+    monthly_limit: "",
     is_active: true,
 };
 
@@ -72,7 +73,8 @@ const fields = [
     { key: "full_name_withdraw", label: "ФИО вывода", type: "text" },
     { key: "cashback_percentage", label: "% кэшбэка", type: "number", step: "0.01" },
     { key: "cashback_name", label: "Название кэшбэка", type: "text" },
-    { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" }, // ← новая колонка
+    { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" },
+    { key: "monthly_limit", label: "Месячный лимит", type: "number", step: "0.01" },
     { key: "is_active", label: "Активен", type: "checkbox" },
 ];
 
@@ -323,7 +325,8 @@ const TableCashbackSettings = () => {
         reversal: parseInt(raw.reversal, 10) || 0,
         mcc: parseInt(raw.mcc, 10) || 0,
         cashback_percentage: parseFloat(raw.cashback_percentage) || 0,
-        cashback_priority: parseInt(raw.cashback_priority, 10) || 0, // ← новое поле
+        cashback_priority: parseInt(raw.cashback_priority, 10) || 0,
+        monthly_limit: parseFloat(raw.monthly_limit) || 0,
         from_date: toDateOnly(raw.from_date),
         to_date: toDateOnly(raw.to_date),
         transaction_type: Array.isArray(raw.transaction_type) ? raw.transaction_type : parseTransactionType(raw.transaction_type),
