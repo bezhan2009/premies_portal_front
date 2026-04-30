@@ -35,10 +35,7 @@
   cursor: pointer;
   font-size: 16px;
 }
-.table-reports td:hover {
-  background-color: #ff1a1a;
-  color: white;
-}
+/* .table-reports td:hover удален */
 .table-reports .checkbox-wrapper {
   position: relative;
   display: inline-block;
@@ -94,9 +91,7 @@
   transform: translateY(0) scale(1);
   animation: fadeIn 0.3s ease-out;
 }
-.table-reports tr:hover {
-  background-color: #ffebeb;
-}
+/* .table-reports tr:hover удален */
 .table-reports th:last-child,
 .table-reports td:last-child {
   border-right: none;

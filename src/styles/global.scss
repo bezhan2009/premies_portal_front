@@ -271,10 +271,7 @@ th {
   transition: all 0.3s ease;
 }
 
-/* Эффект при наведении на заголовок */
-th:hover {
-  background-color: rgba(var(--primary-rgb), 0.05);
-}
+/* Эффект при наведении на заголовок удален */
 
 /* Ячейки таблицы */
 td {
@@ -290,9 +287,12 @@ tr {
   opacity: 0;
 }
 
-/* Подсветка строки при наведении */
-tr:hover td {
-  background: rgba(var(--primary-rgb), 0.08) !important;
+/* Подсветка строки при наведении удалена */
+
+/* Отключение эффекта наведения в таблицах Ant Design */
+.ant-table-tbody > tr.ant-table-row:hover > td,
+.ant-table-tbody > tr > td.ant-table-cell-row-hover {
+  background: inherit !important;
 }
 
 /* Разделители столбцов (тонкие линии) */

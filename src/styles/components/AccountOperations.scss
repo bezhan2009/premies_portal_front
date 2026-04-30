@@ -207,9 +207,7 @@ $info: #0c5460;
     border-bottom: 1px solid #dee2e6;
     transition: background-color 0.2s;
   }
-  .table tbody tr:hover {
-    background-color: #f8f9fa;
-  }
+// .table tbody tr:hover удален
   .table tbody td {
     padding: 12px;
     vertical-align: top;
@@ -218,10 +216,7 @@ $info: #0c5460;
 .operation-row {
   border-left: 4px solid transparent;
 }
-.operation-row:hover {
-  border-left-color: $primary;
-  background-color: #f8f9fa !important;
-}
+// .operation-row:hover удален
 .date-cell {
   font-weight: 500;
 }

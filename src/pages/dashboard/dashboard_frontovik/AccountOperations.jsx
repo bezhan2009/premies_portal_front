@@ -693,9 +693,7 @@ export default function DashboardAccountOperations() {
           user-select: none;
         }
 
-        .sortable-header:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
+/* .sortable-header:hover удален */
       `}</style>
     </>
   );

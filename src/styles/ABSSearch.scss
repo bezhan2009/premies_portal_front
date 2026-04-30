@@ -235,9 +235,7 @@
         }
       }
 
-      tr:hover {
-        background: rgba(var(--primary-rgb), 0.05);
-      }
+// tr:hover удален
 
       tr:last-child td {
         border-bottom: none;
@@ -689,16 +687,12 @@
       border-bottom: 1px solid #e0e0e0;
       transition: background-color 0.2s;
 
-      &:hover {
-        background-color: #f9f9f9;
-      }
+// &:hover удален
 
       &:nth-child(even) {
         background-color: #f8f9fa;
 
-        &:hover {
-          background-color: #f1f3f5;
-        }
+// &:hover удален
       }
 
       td {
@@ -852,9 +846,7 @@
     color: var(--text-color);
   }
 
-  tr:hover {
-    background-color: #f1f3f5;
-  }
+// tr:hover удален
 }
 
 .no-data-msg {

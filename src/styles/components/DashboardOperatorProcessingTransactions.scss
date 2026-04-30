@@ -528,10 +528,7 @@ $gray-900: var(--text-color);
   &__row {
     @include smooth-transition;
 
-    &:hover {
-      background: $gray-50;
-      transform: translateX(2px);
-    }
+    // &:hover удален
 
     &:not(:last-child) {
       border-bottom: 1px solid $gray-200;
@@ -605,33 +602,25 @@ $gray-900: var(--text-color);
   &.transaction-row--type-1 {
     background-color: rgba(76, 175, 80, 0.08);
 
-    &:hover {
-      background-color: rgba(76, 175, 80, 0.15);
-    }
+    // &:hover удален
   }
 
   &.transaction-row--type-2 {
     background-color: rgba(244, 67, 54, 0.08);
 
-    &:hover {
-      background-color: rgba(244, 67, 54, 0.15);
-    }
+// &:hover удален
   }
 
   &.transaction-row--type-3 {
     background-color: rgba(255, 193, 7, 0.08);
 
-    &:hover {
-      background-color: rgba(255, 193, 7, 0.15);
-    }
+// &:hover удален
   }
 
   &.transaction-row--type-4 {
     background-color: rgba(33, 150, 243, 0.08);
 
-    &:hover {
-      background-color: rgba(33, 150, 243, 0.15);
-    }
+// &:hover удален
   }
 }
 

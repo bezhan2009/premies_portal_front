@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import Input from "../../components/elements/Input.jsx";
 import { FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
@@ -717,10 +717,7 @@ export default function AbsWithdrawsList() {
           background-color: #f0f0f0;
           color: var(--text-color);
         }
-        .pay-button:hover:not(:disabled) {
-          background-color: #e0e0e0;
-          transform: translateY(-1px);
-        }
+/* .pay-button:hover удален */
         .pay-button.paid {
           background-color: #e6ffe6;
           color: #2c6e2c;
