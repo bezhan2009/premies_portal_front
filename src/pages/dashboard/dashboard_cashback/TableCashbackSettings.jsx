@@ -414,9 +414,9 @@ const TableCashbackSettings = () => {
 
         // Dates/Times
         const now = new Date();
-        // Временное окно: +- 1 час от текущего времени (с учётом часового пояса устройства)
-        const fromObj = new Date(now.getTime() - 60 * 60 * 1000);
-        const toObj = new Date(now.getTime() + 60 * 60 * 1000);
+        // Временное окно: +- 10 минут от текущего времени (с учётом часового пояса устройства)
+        const fromObj = new Date(now.getTime() - 10 * 60 * 1000);
+        const toObj = new Date(now.getTime() + 10 * 60 * 1000);
 
         // Форматирование даты локально
         const defaultFromDate = fromObj.toLocaleDateString('sv-SE'); // sv-SE даёт формат YYYY-MM-DD
