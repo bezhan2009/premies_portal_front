@@ -289,10 +289,10 @@ tr {
 
 /* Подсветка строки при наведении удалена */
 
-/* Отключение эффекта наведения в таблицах Ant Design */
+/* Стили для таблиц Ant Design исправлены для корректного отображения hover */
 .ant-table-tbody > tr.ant-table-row:hover > td,
 .ant-table-tbody > tr > td.ant-table-cell-row-hover {
-  background: inherit !important;
+  background: rgba(var(--primary-rgb), 0.08) !important;
 }
 
 /* Разделители столбцов (тонкие линии) */

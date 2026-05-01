@@ -106,7 +106,9 @@
     }
   }
 
-// tr:hover td удален
+  tbody tr:hover td {
+    background-color: rgba(var(--primary-rgb), 0.05);
+  }
 
   th:last-child,
   td:last-child {
