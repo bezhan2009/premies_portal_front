@@ -393,36 +393,48 @@ const TableCashbackSettings = () => {
         const baseURL = "http://10.64.20.84:5012/api/Transactions/search-transactions";
         const q = new URLSearchParams();
 
-        if (item.card_number) q.append("CardNumber", item.card_number);
-        if (item.card_id) q.append("CardId", item.card_id);
-        if (item.response_code) q.append("ResponseCode", item.response_code);
-        if (item.utrnno) q.append("Utrnno", item.utrnno);
-        if (item.currency) q.append("Currency", item.currency);
-        if (item.conCurrency) q.append("ConCurrency", item.conCurrency);
-        q.append("Reversal", item.reversal || 0);
+        if (item.card_number) q.append("cardNumber", item.card_number);
+        if (item.card_id) q.append("cardId", item.card_id);
+        if (item.response_code) q.append("responseCode", item.response_code);
+        if (item.utrnno) q.append("utrnno", item.utrnno);
+        if (item.currency) q.append("currency", item.currency);
+        if (item.conCurrency) q.append("conCurrency", item.conCurrency);
+        q.append("reversal", item.reversal || 0);
 
         if (Array.isArray(item.transaction_type)) {
-            item.transaction_type.forEach(tt => q.append("TransactionTypes", tt));
+            item.transaction_type.forEach(tt => q.append("transactionTypes", tt));
         }
-        if (item.atm_id) q.append("AtmId", item.atm_id);
-        if (item.mcc) q.append("Mcc", item.mcc);
-        if (item.account) q.append("Account", item.account);
-        if (item.exclude_transaction_types) q.append("ExcludeTransactionTypes", item.exclude_transaction_types);
-        if (item.exclude_atm_ids) q.append("ExcludeAtmIds", item.exclude_atm_ids);
-        if (item.exclude_mcc) q.append("ExcludeMcc", item.exclude_mcc);
-        if (item.exclude_accounts) q.append("ExcludeAccounts", item.exclude_accounts);
+        if (item.atm_id) q.append("atmId", item.atm_id);
+        if (item.mcc) q.append("mcc", item.mcc);
+        if (item.account) q.append("account", item.account);
+        if (item.exclude_transaction_types) q.append("excludeTransactionTypes", item.exclude_transaction_types);
+        if (item.exclude_atm_ids) q.append("excludeAtmIds", item.exclude_atm_ids);
+        if (item.exclude_mcc) q.append("excludeMcc", item.exclude_mcc);
+        if (item.exclude_accounts) q.append("excludeAccounts", item.exclude_accounts);
 
         // Dates/Times
         const now = new Date();
-        const fromDate = item.from_date || now.toISOString().slice(0, 10);
-        const toDate = item.to_date || now.toISOString().slice(0, 10);
-        const fromTime = item.from_time || "00:00:00";
-        const toTime = item.to_time || "23:59:59";
+        // Временное окно: +- 1 час от текущего времени (с учётом часового пояса устройства)
+        const fromObj = new Date(now.getTime() - 60 * 60 * 1000);
+        const toObj = new Date(now.getTime() + 60 * 60 * 1000);
 
-        q.append("FromDate", fromDate);
-        q.append("ToDate", toDate);
-        q.append("FromTime", fromTime);
-        q.append("ToTime", toTime);
+        // Форматирование даты локально
+        const defaultFromDate = fromObj.toLocaleDateString('sv-SE'); // sv-SE даёт формат YYYY-MM-DD
+        const defaultToDate = toObj.toLocaleDateString('sv-SE');
+        
+        // Форматирование времени локально
+        const defaultFromTime = fromObj.toTimeString().slice(0, 8); // HH:MM:SS
+        const defaultToTime = toObj.toTimeString().slice(0, 8);
+
+        const fromDate = item.from_date || defaultFromDate;
+        const toDate = item.to_date || defaultToDate;
+        const fromTime = item.from_time || defaultFromTime;
+        const toTime = item.to_time || defaultToTime;
+
+        q.append("fromDate", fromDate);
+        q.append("toDate", toDate);
+        q.append("fromTime", fromTime);
+        q.append("toTime", toTime);
 
         const fullURL = `${baseURL}?${q.toString()}`;
         setPreviewItem({ url: fullURL, params: Object.fromEntries(q.entries()), rawParams: q.toString() });
