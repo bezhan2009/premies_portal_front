@@ -257,6 +257,8 @@ const TableCashbackSettings = () => {
     const [editedItem, setEditedItem] = useState({});
     const [newItem, setNewItem] = useState({ ...emptyForm });
     const [showAddModal, setShowAddModal] = useState(false);
+    const [previewItem, setPreviewItem] = useState(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -387,15 +389,62 @@ const TableCashbackSettings = () => {
         exportToExcel(items, cols, "Настройки кэшбэка");
     }, [items, exportToExcel]);
 
+    const handlePreview = (item) => {
+        const baseURL = "http://10.64.20.84:5012/api/Transactions/search-transactions";
+        const q = new URLSearchParams();
+
+        if (item.card_number) q.append("CardNumber", item.card_number);
+        if (item.card_id) q.append("CardId", item.card_id);
+        if (item.response_code) q.append("ResponseCode", item.response_code);
+        if (item.utrnno) q.append("Utrnno", item.utrnno);
+        if (item.currency) q.append("Currency", item.currency);
+        if (item.conCurrency) q.append("ConCurrency", item.conCurrency);
+        q.append("Reversal", item.reversal || 0);
+
+        if (Array.isArray(item.transaction_type)) {
+            item.transaction_type.forEach(tt => q.append("TransactionTypes", tt));
+        }
+        if (item.atm_id) q.append("AtmId", item.atm_id);
+        if (item.mcc) q.append("Mcc", item.mcc);
+        if (item.account) q.append("Account", item.account);
+        if (item.exclude_transaction_types) q.append("ExcludeTransactionTypes", item.exclude_transaction_types);
+        if (item.exclude_atm_ids) q.append("ExcludeAtmIds", item.exclude_atm_ids);
+        if (item.exclude_mcc) q.append("ExcludeMcc", item.exclude_mcc);
+        if (item.exclude_accounts) q.append("ExcludeAccounts", item.exclude_accounts);
+
+        // Dates/Times
+        const now = new Date();
+        const fromDate = item.from_date || now.toISOString().slice(0, 10);
+        const toDate = item.to_date || now.toISOString().slice(0, 10);
+        const fromTime = item.from_time || "00:00:00";
+        const toTime = item.to_time || "23:59:59";
+
+        q.append("FromDate", fromDate);
+        q.append("ToDate", toDate);
+        q.append("FromTime", fromTime);
+        q.append("ToTime", toTime);
+
+        const fullURL = `${baseURL}?${q.toString()}`;
+        setPreviewItem({ url: fullURL, params: Object.fromEntries(q.entries()), rawParams: q.toString() });
+        setShowPreviewModal(true);
+    };
+
     const columns = useMemo(() => {
         const actionCol = {
             title: "Действия",
             key: "actions",
             width: 150,
-            render: (_, item) => editId === item.ID ? (
-                <button onClick={handleSave} className="action-buttons__btn">Сохранить</button>
-            ) : (
-                <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">Удалить</button>
+            render: (_, item) => (
+                <div style={{ display: "flex", gap: "8px" }}>
+                    {editId === item.ID ? (
+                        <button onClick={handleSave} className="action-buttons__btn">Сохранить</button>
+                    ) : (
+                        <>
+                            <button onClick={() => handlePreview(item)} className="action-buttons__btn" title="Превью запроса">🔍</button>
+                            <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">Удалить</button>
+                        </>
+                    )}
+                </div>
             ),
         };
 
@@ -457,6 +506,47 @@ const TableCashbackSettings = () => {
                     scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
                 />
+            )}
+
+            {showPreviewModal && (
+                <div className="modal-overlay" style={{
+                    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+                    background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        background: "#fff", padding: "24px", borderRadius: "8px", maxWidth: "80%", width: "800px",
+                        maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
+                    }}>
+                        <h3 style={{ marginTop: 0 }}>Превью запроса (daily_tasks)</h3>
+                        <p>Это URL, который джоба <code>ReturnCashbackCard</code> использует для поиска транзакций:</p>
+                        
+                        <div style={{ background: "#f5f5f5", padding: "12px", borderRadius: "4px", marginBottom: "16px", wordBreak: "break-all", fontFamily: "monospace", fontSize: "13px", border: "1px solid #ddd" }}>
+                            <strong>GET</strong> {previewItem?.url}
+                        </div>
+
+                        <h4>Параметры запроса:</h4>
+                        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+                            <thead>
+                                <tr style={{ background: "#f0f0f0" }}>
+                                    <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Параметр</th>
+                                    <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Значение</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {previewItem && Object.entries(previewItem.params).map(([key, val]) => (
+                                    <tr key={key}>
+                                        <td style={{ border: "1px solid #ddd", padding: "8px", fontWeight: "bold" }}>{key}</td>
+                                        <td style={{ border: "1px solid #ddd", padding: "8px", wordBreak: "break-all" }}>{val}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button className="action-buttons__btn" onClick={() => setShowPreviewModal(false)}>Закрыть</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
