@@ -26,7 +26,7 @@ const restoreImportantKeys = (preserved) => {
     });
 };
 
-function LogoutButton() {
+function LogoutButton({ className = "logout-button", iconSize = { width: 40, height: 26 } }) {
     const navigate = useNavigate();
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -105,15 +105,15 @@ function LogoutButton() {
     return (
         <div className="logout-container">
             <button
-                className="logout-button"
-                title="Выход"
+                className={className}
+                title="Выйти из системы"
                 onClick={() => setShowConfirmation(true)}
                 disabled={isLoading}
             >
                 {isLoading ? (
                     <Spinner />
                 ) : (
-                    <LogoutImageComponent width={40} height={26} />
+                    <LogoutImageComponent width={iconSize.width} height={iconSize.height} />
                 )}
             </button>
             {showConfirmation && (

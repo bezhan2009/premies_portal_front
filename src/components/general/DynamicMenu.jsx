@@ -1030,8 +1030,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 title="Изменить пароль"
                             />
                         </button>
+                        <LogoutButton
+                            className="change-password-btn"
+                            iconSize={{ width: 27, height: 27 }}
+                        />
                     </div>
-                    <LogoutButton />
                 </div>
             </aside>
             {isModalOpen && (

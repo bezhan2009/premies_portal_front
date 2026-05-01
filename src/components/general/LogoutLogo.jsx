@@ -5,7 +5,7 @@ const LogoutImageComponent = ({ width, height }) => {
   return (
     <MdLogout 
       style={{ width: width, height: height }}
-      title="Выход"
+      title="Выйти из системы"
     />
   );
 };
