@@ -106,7 +106,7 @@ const QRCashbackTable = () => {
             spinning: loading,
             indicator: <Spinner size="small" />,
           }}
-          pagination={false}
+          pagination={{ pageSize: 10 }}
           bordered
           scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}

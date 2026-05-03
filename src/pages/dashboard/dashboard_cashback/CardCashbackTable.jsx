@@ -20,6 +20,9 @@ const fields = [
   { key: "account_number", label: "Номер счёта", type: "text" },
   { key: "atm_id", label: "ID банкомата", type: "text" },
   { key: "terminal_address", label: "Адрес терминала", type: "text" },
+  { key: "status", label: "Статус", type: "status" },
+  { key: "reversal", label: "Возврат", type: "reversal" },
+  { key: "actions", label: "Действия", type: "actions" },
 ];
 
 const getFieldValue = (item, key) => {
@@ -62,8 +65,31 @@ const CardCashbackTable = () => {
   }, [fetchItems]);
 
   const handleExport = () => {
-    const columns = fields.map(({ key, label }) => ({ key, label }));
+    const columns = fields
+      .filter((f) => f.key !== "actions")
+      .map(({ key, label }) => ({ key, label }));
     exportToExcel(items, columns, "Кэшбэк по картам");
+  };
+
+  const handlePay = async (utrno) => {
+    try {
+      await apiClient.post(`${backendURL}/card-cashback/pay/${utrno}`);
+      fetchItems();
+    } catch (e) {
+      console.error("Ошибка при оплате:", e);
+      alert("Ошибка при повторе платежа");
+    }
+  };
+
+  const handleReturn = async (utrno) => {
+    if (!window.confirm("Вы уверены, что хотите вернуть кэшбэк?")) return;
+    try {
+      await apiClient.post(`${backendURL}/card-cashback/return/${utrno}`);
+      fetchItems();
+    } catch (e) {
+      console.error("Ошибка при возврате:", e);
+      alert("Ошибка при возврате кэшбэка");
+    }
   };
 
   const formatValue = (value, fieldType, item) => {
@@ -82,6 +108,36 @@ const CardCashbackTable = () => {
     if (fieldType === "amount_currency") {
       const currencyCode = getCurrencyCode(String(item?.currency ?? ""));
       return `${value} ${currencyCode}`;
+    }
+
+    if (fieldType === "status") {
+      const color = value === "Оплачено" ? "green" : value === "Ошибка АБС" ? "red" : "orange";
+      return <span style={{ color, fontWeight: "bold" }}>{value || "В обработке"}</span>;
+    }
+
+    if (fieldType === "reversal") {
+      return value === "ДА" ? <span style={{ color: "red", fontWeight: "bold" }}>ДА</span> : "НЕТ";
+    }
+
+    if (fieldType === "actions") {
+      return (
+        <div style={{ display: "flex", gap: "5px" }}>
+          {item.status === "Ошибка АБС" && (
+            <button
+              onClick={() => handlePay(item.utrno)}
+              style={{ padding: "5px 10px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+            >
+              Оплатить
+            </button>
+          )}
+          <button
+            onClick={() => handleReturn(item.utrno)}
+            style={{ padding: "5px 10px", backgroundColor: "#f44336", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+          >
+            Вернуть кэшбэк
+          </button>
+        </div>
+      );
     }
 
     return String(value);
@@ -121,7 +177,7 @@ const CardCashbackTable = () => {
             spinning: loading,
             indicator: <Spinner size="small" />,
           }}
-          pagination={false}
+          pagination={{ pageSize: 10 }}
           bordered
           scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}

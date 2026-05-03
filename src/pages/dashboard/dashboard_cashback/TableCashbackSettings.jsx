@@ -393,8 +393,8 @@ const TableCashbackSettings = () => {
         const baseURL = "http://10.64.20.84:5012/api/Transactions/search-transactions";
         const q = new URLSearchParams();
 
-        if (item.card_number) q.append("cardNumber", item.card_number);
-        if (item.card_id) q.append("cardId", item.card_id);
+        if (item.card_number && item.card_number !== "********") q.append("cardNumber", item.card_number);
+        if (item.card_id && item.card_id !== "********") q.append("cardId", item.card_id);
         if (item.response_code) q.append("responseCode", item.response_code);
         if (item.utrnno) q.append("utrnno", item.utrnno);
         if (item.currency) q.append("currency", item.currency);
@@ -513,7 +513,7 @@ const TableCashbackSettings = () => {
                     dataSource={items}
                     rowKey={(record) => record?.ID ?? record?.id}
                     loading={{ spinning: loading, indicator: <Spinner size="small" /> }}
-                    pagination={false}
+                    pagination={{ pageSize: 10 }}
                     bordered
                     scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
