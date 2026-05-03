@@ -1,35 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { Input, Button, Space, Tag } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/AddCardPriceForm.scss";
-import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
-import {getCurrencyCode} from "../../../api/utils/getCurrencyCode.js";
-
-const fields = [
-  { key: "ID", label: "ID", type: "number" },
-  { key: "created_at", label: "Дата создания", type: "datetime" },
-  { key: "amount", label: "Сумма кэшбэка", type: "amount_currency" },
-  { key: "utrno", label: "UTRNO", type: "text" },
-  { key: "cashback_name", label: "Название кэшбэка", type: "text" },
-  { key: "card_number", label: "Номер карты", type: "text" },
-  { key: "card_id", label: "ID карты", type: "text" },
-  { key: "account_number", label: "Номер счёта", type: "text" },
-  { key: "atm_id", label: "ID банкомата", type: "text" },
-  { key: "terminal_address", label: "Адрес терминала", type: "text" },
-  { key: "status", label: "Статус", type: "status" },
-  { key: "reversal", label: "Возврат", type: "reversal" },
-  { key: "actions", label: "Действия", type: "actions" },
-];
-
-const getFieldValue = (item, key) => {
-  if (item?.[key] !== undefined) return item[key];
-  if (key === "ID") return item?.id;
-  return item?.[key];
-};
+import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
 
 const CardCashbackTable = () => {
   const [items, setItems] = useState([]);
@@ -64,13 +42,6 @@ const CardCashbackTable = () => {
     fetchItems();
   }, [fetchItems]);
 
-  const handleExport = () => {
-    const columns = fields
-      .filter((f) => f.key !== "actions")
-      .map(({ key, label }) => ({ key, label }));
-    exportToExcel(items, columns, "Кэшбэк по картам");
-  };
-
   const handlePay = async (utrno) => {
     try {
       await apiClient.post(`${backendURL}/card-cashback/pay/${utrno}`);
@@ -92,77 +63,149 @@ const CardCashbackTable = () => {
     }
   };
 
-  const formatValue = (value, fieldType, item) => {
-    if (value === null || value === undefined || value === "") return "-";
-
-    if (fieldType === "datetime") {
-      try {
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) return value;
-        return d.toLocaleString("ru-RU");
-      } catch {
-        return value;
-      }
-    }
-
-    if (fieldType === "amount_currency") {
-      const currencyCode = getCurrencyCode(String(item?.currency ?? ""));
-      return `${value} ${currencyCode}`;
-    }
-
-    if (fieldType === "status") {
-      const color = value === "Оплачено" ? "green" : value === "Ошибка АБС" ? "red" : "orange";
-      return <span style={{ color, fontWeight: "bold" }}>{value || "В обработке"}</span>;
-    }
-
-    if (fieldType === "reversal") {
-      return value === "ДА" ? <span style={{ color: "red", fontWeight: "bold" }}>ДА</span> : "НЕТ";
-    }
-
-    if (fieldType === "actions") {
-      return (
-        <div style={{ display: "flex", gap: "5px" }}>
-          {item.status === "Ошибка АБС" && (
-            <button
-              onClick={() => handlePay(item.utrno)}
-              style={{ padding: "5px 10px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-            >
-              Оплатить
-            </button>
-          )}
-          <button
-            onClick={() => handleReturn(item.utrno)}
-            style={{ padding: "5px 10px", backgroundColor: "#f44336", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+  const getColumnSearchProps = (dataIndex, label) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={`Поиск ${label}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => confirm()}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
           >
-            Вернуть кэшбэк
-          </button>
-        </div>
-      );
-    }
-
-    return String(value);
-  };
+            Поиск
+          </Button>
+          <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+            Сброс
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex] ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()) : false,
+  });
 
   const columns = useMemo(
-    () =>
-      fields.map(({ key, label, type }) => ({
-        title: label,
-        dataIndex: key,
-        key,
-        render: (_, item) => formatValue(getFieldValue(item, key), type, item),
-      })),
-    [],
+    () => [
+      {
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
+        sorter: (a, b) => a.id - b.id,
+        width: 80,
+      },
+      {
+        title: "Дата создания",
+        dataIndex: "created_at",
+        key: "created_at",
+        sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+      },
+      {
+        title: "Сумма кэшбэка",
+        dataIndex: "amount",
+        key: "amount",
+        sorter: (a, b) => a.amount - b.amount,
+        render: (val, record) => `${val} ${getCurrencyCode(String(record.currency || ""))}`,
+      },
+      {
+        title: "UTRNO",
+        dataIndex: "utrno",
+        key: "utrno",
+        ...getColumnSearchProps("utrno", "UTRNO"),
+      },
+      {
+        title: "Название кэшбэка",
+        dataIndex: "cashback_name",
+        key: "cashback_name",
+        ...getColumnSearchProps("cashback_name", "Название кэшбэка"),
+      },
+      {
+        title: "Номер карты",
+        dataIndex: "card_number",
+        key: "card_number",
+        ...getColumnSearchProps("card_number", "Номер карты"),
+      },
+      {
+        title: "ID карты",
+        dataIndex: "card_id",
+        key: "card_id",
+        ...getColumnSearchProps("card_id", "ID карты"),
+      },
+      {
+        title: "Статус",
+        dataIndex: "status",
+        key: "status",
+        filters: [
+          { text: "Оплачено", value: "Оплачено" },
+          { text: "Ошибка АБС", value: "Ошибка АБС" },
+          { text: "В обработке", value: "" },
+        ],
+        onFilter: (value, record) => (record.status || "") === value,
+        render: (val) => {
+          let color = "orange";
+          let text = val || "В обработке";
+          if (val === "Оплачено") color = "green";
+          if (val === "Ошибка АБС") color = "red";
+          return <Tag color={color}>{text}</Tag>;
+        },
+      },
+      {
+        title: "Возврат",
+        dataIndex: "reversal",
+        key: "reversal",
+        filters: [
+          { text: "ДА", value: "ДА" },
+          { text: "НЕТ", value: "НЕТ" },
+        ],
+        onFilter: (value, record) => (record.reversal || "НЕТ") === value,
+        render: (val) => (
+          <Tag color={val === "ДА" ? "red" : "blue"}>{val === "ДА" ? "ДА" : "НЕТ"}</Tag>
+        ),
+      },
+      {
+        title: "Действия",
+        key: "actions",
+        render: (_, record) => (
+          <Space>
+            {record.status === "Ошибка АБС" && (
+              <Button type="primary" size="small" onClick={() => handlePay(record.utrno)}>
+                Оплатить
+              </Button>
+            )}
+            <Button danger size="small" onClick={() => handleReturn(record.utrno)}>
+              Вернуть
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    [fetchItems],
   );
+
+  const handleExport = () => {
+    const exportColumns = columns
+      .filter((col) => col.key !== "actions")
+      .map((col) => ({ key: col.dataIndex, label: col.title }));
+    exportToExcel(items, exportColumns, "Кэшбэк по картам");
+  };
 
   return (
     <div className="block_info_prems content-page">
       <div className="table-header-actions" style={{ margin: "16px" }}>
         <h2>Кэшбэк по картам</h2>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <button className="export-excel-btn" onClick={handleExport}>
-            Экспорт в Excel
-          </button>
-        </div>
+        <Button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </Button>
       </div>
 
       {error ? (
@@ -172,7 +215,7 @@ const CardCashbackTable = () => {
           tableId="cashback-card-list"
           columns={columns}
           dataSource={items}
-          rowKey={(record) => record?.ID ?? record?.id ?? record?.utrno}
+          rowKey={(record) => record.id || record.utrno}
           loading={{
             spinning: loading,
             indicator: <Spinner size="small" />,

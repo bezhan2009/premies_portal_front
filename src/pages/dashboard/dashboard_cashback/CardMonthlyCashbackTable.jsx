@@ -1,27 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { Input, Button, Space } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import "../../../styles/components/Table.scss";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 
-const fields = [
-  { key: "card_id", label: "ID карты", type: "text" },
-  { key: "cashback_name", label: "Название кэшбэка", type: "text" },
-  { key: "month", label: "Месяц", type: "text" },
-  { key: "total_amount", label: "Получено за месяц", type: "amount" },
-  { key: "monthly_limit", label: "Месячный лимит", type: "amount" },
-];
-
-const getFieldValue = (item, key) => {
-  if (key === "cashback_name") return item?.setting?.cashback_name || "-";
-  if (key === "monthly_limit") return item?.setting?.monthly_limit || "Без лимита";
-  return item?.[key];
-};
-
 const CardMonthlyCashbackTable = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [searchedColumn, setSearchedColumn] = useState("");
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -48,19 +38,85 @@ const CardMonthlyCashbackTable = () => {
     fetchItems();
   }, [fetchItems]);
 
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
+
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText("");
+  };
+
+  const getColumnSearchProps = (dataIndex, label) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={`Поиск ${label}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Поиск
+          </Button>
+          <Button onClick={() => handleReset(clearFilters)} size="small" style={{ width: 90 }}>
+            Сброс
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+    onFilter: (value, record) => {
+        const val = dataIndex.split('.').reduce((obj, key) => obj?.[key], record);
+        return val ? val.toString().toLowerCase().includes(value.toLowerCase()) : false;
+    },
+  });
+
   const columns = useMemo(
-    () =>
-      fields.map(({ key, label }) => ({
-        title: label,
-        dataIndex: key,
-        key,
-        render: (_, item) => {
-            const val = getFieldValue(item, key);
-            if (key === "total_amount") return `${val} TJS`;
-            if (key === "monthly_limit" && typeof val === "number") return `${val} TJS`;
-            return val;
-        },
-      })),
+    () => [
+      {
+        title: "ID карты",
+        dataIndex: "card_id",
+        key: "card_id",
+        ...getColumnSearchProps("card_id", "ID карты"),
+      },
+      {
+        title: "Название кэшбэка",
+        dataIndex: ["setting", "cashback_name"],
+        key: "cashback_name",
+        ...getColumnSearchProps("setting.cashback_name", "Название кэшбэка"),
+        render: (_, record) => record?.setting?.cashback_name || "-",
+      },
+      {
+        title: "Месяц",
+        dataIndex: "month",
+        key: "month",
+        ...getColumnSearchProps("month", "Месяц"),
+      },
+      {
+        title: "Получено за месяц",
+        dataIndex: "total_amount",
+        key: "total_amount",
+        sorter: (a, b) => a.total_amount - b.total_amount,
+        render: (val) => `${val || 0} TJS`,
+      },
+      {
+        title: "Месячный лимит",
+        dataIndex: ["setting", "monthly_limit"],
+        key: "monthly_limit",
+        render: (_, record) => record?.setting?.monthly_limit ? `${record.setting.monthly_limit} TJS` : "Без лимита",
+      },
+    ],
     [],
   );
 

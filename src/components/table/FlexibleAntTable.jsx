@@ -316,13 +316,17 @@ export const Table = ({
         Table: {
           headerBg: "var(--bg-secondary)",
           headerColor: "var(--text-color)",
+          headerSortHoverBg: "rgba(var(--primary-rgb), 0.05)",
+          headerSortActiveBg: "rgba(var(--primary-rgb), 0.1)",
+          bodySortBg: "rgba(var(--primary-rgb), 0.02)",
           rowHoverBg: "rgba(var(--primary-rgb), 0.08)",
           selectedRowBg: "rgba(var(--primary-rgb), 0.12)",
           selectedRowHoverBg: "rgba(var(--primary-rgb), 0.15)",
         },
         Pagination: {
           itemActiveBg: primaryColor,
-          activeBorderColor: primaryColor,
+          itemActiveColor: "#fff",
+          itemActiveBgDisabled: "rgba(0, 0, 0, 0.15)",
         },
         Select: {
           activeBorderColor: primaryColor,
