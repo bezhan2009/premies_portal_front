@@ -86,9 +86,9 @@ const CardMonthlyCashbackTable = () => {
     () => [
       {
         title: "ID карты",
-        dataIndex: "card_id",
+        dataIndex: "CardID",  // Исправлено: с большой буквы CardID
         key: "CardID",
-        ...getColumnSearchProps("card_id", "ID карты"),
+        ...getColumnSearchProps("CardID", "ID карты"),
       },
       {
         title: "Название кэшбэка",
@@ -99,9 +99,9 @@ const CardMonthlyCashbackTable = () => {
       },
       {
         title: "Месяц",
-        dataIndex: "month",
+        dataIndex: "Month",  // Исправлено: с большой буквы Month
         key: "Month",
-        ...getColumnSearchProps("month", "Месяц"),
+        ...getColumnSearchProps("Month", "Месяц"),
       },
       {
         title: "Получено за месяц",
@@ -133,7 +133,7 @@ const CardMonthlyCashbackTable = () => {
           tableId="card-monthly-cashback-list"
           columns={columns}
           dataSource={items}
-          rowKey={(record) => `${record.card_id}-${record.setting_id}-${record.month}`}
+          rowKey={(record) => `${record.CardID}-${record.SettingID}-${record.Month}`}  // Исправлено: CardID, SettingID, Month
           loading={{
             spinning: loading,
             indicator: <Spinner size="small" />,
