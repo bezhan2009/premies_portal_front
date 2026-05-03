@@ -753,6 +753,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: CreditCard
                     },
                     {
+                        name: "Месячные лимиты",
+                        href: "/cashback/monthly-limits",
+                        key: "cashback_monthly_limits",
+                        icon: Activity
+                    },
+                    {
                         name: "Кэшбэк по QR",
                         href: "/cashback/qr-list",
                         key: "qr_cashback_list",

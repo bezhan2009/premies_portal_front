@@ -85,6 +85,7 @@ const MainLayout = () => {
     // Cashback
     if (pathname.includes("/cashback/settings")) return "cashbacks_settings";
     if (pathname.includes("/cashback/card-list")) return "card_cashback_list";
+    if (pathname.includes("/cashback/monthly-limits")) return "cashback_monthly_limits";
     if (pathname.includes("/cashback/qr-list")) return "qr_cashback_list";
 
     // Payments
