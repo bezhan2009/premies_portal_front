@@ -77,8 +77,8 @@ const CardMonthlyCashbackTable = () => {
     ),
     filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
     onFilter: (value, record) => {
-        const val = dataIndex.split('.').reduce((obj, key) => obj?.[key], record);
-        return val ? val.toString().toLowerCase().includes(value.toLowerCase()) : false;
+      const val = dataIndex.split('.').reduce((obj, key) => obj?.[key], record);
+      return val ? val.toString().toLowerCase().includes(value.toLowerCase()) : false;
     },
   });
 
@@ -87,7 +87,7 @@ const CardMonthlyCashbackTable = () => {
       {
         title: "ID карты",
         dataIndex: "card_id",
-        key: "card_id",
+        key: "CardID",
         ...getColumnSearchProps("card_id", "ID карты"),
       },
       {
@@ -100,7 +100,7 @@ const CardMonthlyCashbackTable = () => {
       {
         title: "Месяц",
         dataIndex: "month",
-        key: "month",
+        key: "Month",
         ...getColumnSearchProps("month", "Месяц"),
       },
       {
