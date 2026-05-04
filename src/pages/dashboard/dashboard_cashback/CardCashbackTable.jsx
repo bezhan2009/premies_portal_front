@@ -156,6 +156,7 @@ const CardCashbackTable = () => {
           let text = val || "В обработке";
           if (val === "Оплачено") color = "green";
           if (val === "Ошибка АБС") color = "red";
+          if (val === "Возвращено" || val === "Возврат") color = "volcano";
           return <Tag color={color}>{text}</Tag>;
         },
       },
@@ -175,18 +176,26 @@ const CardCashbackTable = () => {
       {
         title: "Действия",
         key: "actions",
-        render: (_, record) => (
-          <Space>
-            {record.status === "Ошибка АБС" && (
-              <Button type="primary" size="small" onClick={() => handlePay(record.utrno)}>
-                Оплатить
+        render: (_, record) => {
+          const isReturned = record.reversal === "ДА" || record.status === "Возвращено" || record.status === "Возврат";
+          return (
+            <Space>
+              {record.status === "Ошибка АБС" && (
+                <Button type="primary" size="small" onClick={() => handlePay(record.utrno)}>
+                  Оплатить
+                </Button>
+              )}
+              <Button 
+                danger 
+                size="small" 
+                onClick={() => handleReturn(record.utrno)}
+                disabled={isReturned}
+              >
+                {isReturned ? "Возвращено" : "Вернуть"}
               </Button>
-            )}
-            <Button danger size="small" onClick={() => handleReturn(record.utrno)}>
-              Вернуть
-            </Button>
-          </Space>
-        ),
+            </Space>
+          );
+        },
       },
     ],
     [fetchItems],
