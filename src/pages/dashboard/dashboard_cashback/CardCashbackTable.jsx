@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Input, Button, Space, Tag } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import "../../../styles/components/Table.scss";
 import "../../../styles/components/ProcessingIntegration.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
@@ -13,6 +13,10 @@ const CardCashbackTable = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [sortedInfo, setSortedInfo] = useState({
+        columnKey: "created_at",
+        order: "descend",
+    });
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -42,6 +46,10 @@ const CardCashbackTable = () => {
         fetchItems();
     }, [fetchItems]);
 
+    const handleRefresh = () => {
+        fetchItems();
+    };
+
     const handlePay = async (utrno) => {
         try {
             await apiClient.post(`${backendURL}/card-cashback/pay/${utrno}`);
@@ -61,6 +69,10 @@ const CardCashbackTable = () => {
             console.error("Ошибка при возврате:", e);
             alert("Ошибка при возврате кэшбэка");
         }
+    };
+
+    const handleTableChange = (pagination, filters, sorter) => {
+        setSortedInfo(sorter);
     };
 
     const getColumnSearchProps = (dataIndex, label) => ({
@@ -102,6 +114,7 @@ const CardCashbackTable = () => {
                 key: "id",
                 sorter: (a, b) => a.id - b.id,
                 width: 80,
+                sortOrder: sortedInfo.columnKey === "id" ? sortedInfo.order : null,
             },
             {
                 title: "Дата создания",
@@ -109,6 +122,7 @@ const CardCashbackTable = () => {
                 key: "created_at",
                 sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
                 render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+                sortOrder: sortedInfo.columnKey === "created_at" ? sortedInfo.order : null,
             },
             {
                 title: "Дата обновления",
@@ -116,6 +130,7 @@ const CardCashbackTable = () => {
                 key: "updated_at",
                 sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
                 render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+                sortOrder: sortedInfo.columnKey === "updated_at" ? sortedInfo.order : null,
             },
             {
                 title: "Сумма кэшбэка",
@@ -230,7 +245,7 @@ const CardCashbackTable = () => {
                 },
             },
         ],
-        [fetchItems],
+        [fetchItems, sortedInfo],
     );
 
     const handleExport = () => {
@@ -244,9 +259,18 @@ const CardCashbackTable = () => {
         <div className="block_info_prems content-page">
             <div className="table-header-actions" style={{ margin: "16px" }}>
                 <h2>Кэшбэк по картам</h2>
-                <Button className="export-excel-btn" onClick={handleExport}>
-                    Экспорт в Excel
-                </Button>
+                <Space>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={handleRefresh}
+                        loading={loading}
+                    >
+                        Обновить
+                    </Button>
+                    <Button className="export-excel-btn" onClick={handleExport}>
+                        Экспорт в Excel
+                    </Button>
+                </Space>
             </div>
 
             {error ? (
@@ -261,10 +285,12 @@ const CardCashbackTable = () => {
                         spinning: loading,
                         indicator: <Spinner size="small" />,
                     }}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
                     bordered
                     scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
+                    onChange={handleTableChange}
+                    defaultSortOrder="descend"
                 />
             )}
         </div>
