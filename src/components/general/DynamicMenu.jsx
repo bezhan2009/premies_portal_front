@@ -1012,9 +1012,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                         }
                                     >
                                         <div className="collapsed-dropdown-trigger">
-                                            <Tooltip title={link.name} placement="right">
-                                                {content}
-                                            </Tooltip>
+                                            {content}
                                         </div>
                                     </Dropdown>
                                 );

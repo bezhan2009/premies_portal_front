@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 import Input from "../../components/elements/Input.jsx";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
@@ -208,26 +209,20 @@ export default function TransactionsQR() {
     }
   }, [backendMain, token]);
 
-  const sentinelRef = useRef(null);
-
-  useEffect(() => {
-    if (!hasMore || loading || isLoans) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
+  const getMerchants = useCallback(async () => {
+    try {
+      const resp = await fetch(`${backendMain}/merchants`, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
+      const json = await resp.json();
+      setMerchants(Array.isArray(json) ? json : []);
+    } catch (err) {
+      console.error("Ошибка загрузки мерчантов:", err);
+      setMerchants([]);
     }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, isLoans, handleLoadMore]);
+  }, [backendMain, token]);
 
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
@@ -1013,189 +1008,142 @@ export default function TransactionsQR() {
                 Нет данных для отображения
               </div>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>
+              <Table
+                tableId="qr-transactions-table"
+                dataSource={sortedData}
+                rowKey={getRowKey}
+                pagination={{ pageSize: 20 }}
+                loading={loading}
+                scroll={{ x: "max-content", y: 600 }}
+              >
+                <Table.Column
+                  title={
+                    <input
+                      type="checkbox"
+                      className="custom-checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
+                  }
+                  key="selection"
+                  width={60}
+                  render={(_, row) => {
+                    const key = getRowKey(row);
+                    return (
                       <input
                         type="checkbox"
                         className="custom-checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
+                        checked={selectedRows.includes(key)}
+                        onChange={(e) => handleCheckboxToggle(key, e.target.checked)}
                       />
-                    </th>
-                    <th
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
-                      }
-                    >
-                      ID {sortOrder === "asc" ? "▲" : "▼"}
-                    </th>
-                    {isUsOnThem ? (
-                      <>
-                        <th>ФИО</th>
-                        <th>Телефон</th>
-                      </>
-                    ) : null}
-                    {isThemOnUs ? (
-                      <>
-                        <th>Мерчант</th>
-                        <th>Код терминала</th>
-                        {/* <th>partner_trn_id</th> */}
-                      </>
-                    ) : (
-                      <>
-                        <th>Номер в АРМ</th>
-                        <th>qrId</th>
-                      </>
-                    )}
-                    <th>Статус</th>
-                    <th>Банк отправителя</th>
-                    <th>Банк получателя</th>
-                    <th>Сумма</th>
-                    <th>Дата создания</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((row) => {
-                    const key = getRowKey(row);
-                    const merchantTitle =
-                      merchants.find((m) => m.code === row.merchant_code)
-                        ?.title ??
-                      row.merchant_code ??
-                      "-";
-                    return (
-                      <tr key={key}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="custom-checkbox"
-                            checked={selectedRows.includes(key)}
-                            onChange={(e) =>
-                              handleCheckboxToggle(key, e.target.checked)
-                            }
-                          />
-                        </td>
-
-                        <td>{key}</td>
-
-                        {isUsOnThem && (
-                          <>
-                            <td>{row.sender_name || "-"}</td>
-                            <td>{row.sender_phone || "-"}</td>
-                          </>
-                        )}
-
-                        {isThemOnUs ? (
-                          <>
-                            <td>{merchantTitle}</td>
-                            <td>{row.terminal_code || "-"}</td>
-                            {/* <td>{row.partner_trn_id || "-"}</td> */}
-                          </>
-                        ) : (
-                          <>
-                            <td>{row.trnId || "-"}</td>
-                            <td>{row.qrId || "-"}</td>
-                          </>
-                        )}
-
-                        <td>
-                          {row.status === "success" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcOk style={{ fontSize: 22 }} />
-                              <span style={{ color: "green" }}>Успешно</span>
-                            </div>
-                          ) : row.status === "process" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcProcess style={{ fontSize: 22 }} />
-                              <span style={{ color: "orange" }}>
-                                В процессе
-                              </span>
-                            </div>
-                          ) : row.status === "cancel" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcCancel style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>Отменено</span>
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcHighPriority style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>
-                                Высокий приоритет
-                              </span>
-                            </div>
-                          )}
-                        </td>
-
-                        <td>
-                          {banks.find(
-                            (b) =>
-                              b.id === row?.sender_bank ||
-                              b.bankId === row?.sender,
-                          )?.bankName || "-"}
-                        </td>
-                        <td>
-                          {banks.find((b) => b.id === row?.receiver)
-                            ?.bankName || "-"}
-                        </td>
-
-                        <td>{row.amount} с.</td>
-                        <td>
-                          {isUsOnThem
-                            ? formatDateForDisplay(row.created_at)
-                            : formatDateForDisplay(row.creation_datetime)}
-                        </td>
-                      </tr>
                     );
-                  })}
-                </tbody>
-              </table>
+                  }}
+                />
+                <Table.Column
+                  title="ID"
+                  key="id"
+                  width={150}
+                  render={(_, row) => getRowKey(row)}
+                />
+                {isUsOnThem && (
+                  <>
+                    <Table.Column title="ФИО" dataIndex="sender_name" key="sender_name" render={(val) => val || "-"} />
+                    <Table.Column title="Телефон" dataIndex="sender_phone" key="sender_phone" render={(val) => val || "-"} />
+                  </>
+                )}
+                {isThemOnUs ? (
+                  <>
+                    <Table.Column 
+                      title="Мерчант" 
+                      key="merchant" 
+                      render={(_, row) => {
+                        return merchants.find((m) => m.code === row.merchant_code)?.title ?? row.merchant_code ?? "-";
+                      }} 
+                    />
+                    <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
+                  </>
+                ) : (
+                  <>
+                    <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                    <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                  </>
+                )}
+                <Table.Column
+                  title="Статус"
+                  dataIndex="status"
+                  key="status"
+                  render={(status) => {
+                    if (status === "success") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcOk style={{ fontSize: 22 }} />
+                          <span style={{ color: "green" }}>Успешно</span>
+                        </div>
+                      );
+                    } else if (status === "process") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcProcess style={{ fontSize: 22 }} />
+                          <span style={{ color: "orange" }}>В процессе</span>
+                        </div>
+                      );
+                    } else if (status === "cancel") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcCancel style={{ fontSize: 22 }} />
+                          <span style={{ color: "red" }}>Отменено</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <FcHighPriority style={{ fontSize: 22 }} />
+                        <span style={{ color: "red" }}>Высокий приоритет</span>
+                      </div>
+                    );
+                  }}
+                />
+                <Table.Column 
+                  title="Банк отправителя" 
+                  key="bank_sender" 
+                  render={(_, row) => {
+                    const bankId = isUsOnThem ? 80 : row.bank_id;
+                    return banks.find((b) => b.id === bankId)?.name || `ID: ${bankId}`;
+                  }} 
+                />
+                <Table.Column 
+                  title="Банк получателя" 
+                  key="bank_receiver" 
+                  render={(_, row) => {
+                    const bankId = isThemOnUs ? 80 : row.bank_id;
+                    return banks.find((b) => b.id === bankId)?.name || `ID: ${bankId}`;
+                  }} 
+                />
+                <Table.Column 
+                  title="Сумма" 
+                  key="amount" 
+                  render={(_, row) => (
+                    <span style={{ fontWeight: "600" }}>
+                      {Number(row.amount).toLocaleString("ru-RU")} с.
+                    </span>
+                  )} 
+                  sortValue={(row) => Number(row.amount)}
+                />
+                <Table.Column
+                  title="Дата создания"
+                  key="date"
+                  render={(_, row) => {
+                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                    return formatDateForDisplay(d);
+                  }}
+                  sortValue={(row) => {
+                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                    return new Date(d).getTime();
+                  }}
+                />
+              </Table>
             )}
 
-            {!isLoans && (
-              <div 
-                ref={sentinelRef} 
-                style={{ 
-                  height: "40px", 
-                  display: "flex", 
-                  justifyContent: "center", 
-                  alignItems: "center",
-                  padding: "20px" 
-                }}
-              >
-                {loading && page > 1 && <Spinner size="small" />}
-                {!hasMore && tableData.length > 0 && (
-                  <span style={{ color: "gray", fontSize: "14px", fontStyle: "italic" }}>
-                    Все транзакции загружены
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </main>
       </div>
