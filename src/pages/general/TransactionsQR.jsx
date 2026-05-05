@@ -592,23 +592,10 @@ export default function TransactionsQR() {
             </button>
 
             <button
-              className={`button ${isLoans ? "active" : ""}`}
-              onClick={() => {
-                setIsLoans(true);
-                setIsUsOnThem(false);
-                setIsThemOnUs(false);
-                setSelectedRows([]);
-                setSelectAll(false);
-              }}
-            >
-              Кредиты
-            </button>
-
-            <button
               className={`button ${showMerchantTranslator ? "active" : ""}`}
               onClick={() => setShowMerchantTranslator(!showMerchantTranslator)}
             >
-              Переводитель мерчантов
+              Поиск мерчантов
             </button>
 
             <button
@@ -768,7 +755,7 @@ export default function TransactionsQR() {
 
           {showMerchantTranslator && (
             <div className="filters animate-slideIn" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-               <h3 style={{ marginBottom: "10px" }}>Переводитель мерчант кодов</h3>
+               <h3 style={{ marginBottom: "10px" }}>Поиск мерчант кодов</h3>
                <div style={{ display: "flex", gap: "10px", width: "100%" }}>
                   <input 
                     placeholder="Введите код или название мерчанта..." 
@@ -1080,8 +1067,8 @@ export default function TransactionsQR() {
                 <Table.Column
                   title="ID"
                   key="id"
-                  width={150}
-                  render={(_, row) => getRowKey(row)}
+                  width={100}
+                  render={(_, row) => row.id || "-"}
                 />
                 {isUsOnThem && (
                   <>
@@ -1156,7 +1143,7 @@ export default function TransactionsQR() {
                   render={(_, row) => {
                     const bankId = isUsOnThem ? row.sender_bank : row.sender;
                     const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? bank.bankName : `ID: ${bankId}`;
+                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
@@ -1165,7 +1152,7 @@ export default function TransactionsQR() {
                   render={(_, row) => {
                     const bankId = row.receiver;
                     const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? bank.bankName : `ID: ${bankId}`;
+                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
