@@ -259,7 +259,7 @@ const EmployeesTable = () => {
                     loading={loading}
                     bordered
                     pagination={false}
-                    scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
+                    scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
                 >
                     <Table.Column
@@ -314,18 +314,21 @@ const EmployeesTable = () => {
                     />
                 </Table>
                 
-                {/* Элемент-маяк для отслеживания скролла */}
                 <div 
                     ref={sentinelRef} 
                     style={{ 
-                        height: "20px", 
-                        margin: "10px 0", 
+                        height: "40px", 
+                        margin: "20px 0", 
                         display: "flex", 
                         alignItems: "center", 
-                        justifyContent: "center" 
+                        justifyContent: "center",
+                        width: "100%"
                     }}
                 >
-                    {loadingMore && <div className="loader-dots">Загрузка...</div>}
+                    {loadingMore && <div className="loader-dots">Загрузка новых данных...</div>}
+                    {!hasMore && employees.length > 0 && (
+                        <div style={{ color: "#888", fontSize: "14px" }}>Все сотрудники загружены</div>
+                    )}
                 </div>
             </div>
         </div>

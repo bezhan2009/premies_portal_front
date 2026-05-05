@@ -184,9 +184,9 @@ export default function TransactionsQR() {
 
   const getBanks = useCallback(async () => {
     try {
-      const resp = await fetch(`${backendMain}/banks`, {
+      // Пользователь указал этот URL как верный для базы банков
+      const resp = await fetch("http://10.64.20.101:8080/banks", {
         method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
@@ -195,13 +195,13 @@ export default function TransactionsQR() {
       console.error("Ошибка загрузки банков:", err);
       setBanks([]);
     }
-  }, [backendMain, token]);
+  }, []);
 
   const getMerchants = useCallback(async () => {
     try {
-      const resp = await fetch(`${backendMain}/merchants`, {
+      // Предполагаем, что мерчанты также на 8080 порту в той же базе
+      const resp = await fetch("http://10.64.20.101:8080/merchants", {
         method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
@@ -210,7 +210,7 @@ export default function TransactionsQR() {
       console.error("Ошибка загрузки мерчантов:", err);
       setMerchants([]);
     }
-  }, [backendMain, token]);
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
@@ -1039,17 +1039,17 @@ export default function TransactionsQR() {
                     <Table.Column title="Телефон" dataIndex="sender_phone" key="sender_phone" render={(val) => val || "-"} />
                   </>
                 )}
+                <Table.Column 
+                  title="Мерчант" 
+                  key="merchant" 
+                  render={(_, row) => {
+                    const code = row.merchant_code || row.merchant_id;
+                    if (!code) return "—";
+                    return merchants.find((m) => m.code === code)?.title ?? code;
+                  }} 
+                />
                 {isThemOnUs ? (
-                  <>
-                    <Table.Column 
-                      title="Мерчант" 
-                      key="merchant" 
-                      render={(_, row) => {
-                        return merchants.find((m) => m.code === row.merchant_code)?.title ?? row.merchant_code ?? "-";
-                      }} 
-                    />
-                    <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
-                  </>
+                  <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
                 ) : (
                   <>
                     <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />

@@ -306,7 +306,7 @@ const JournalTable = () => {
           loading={loading}
           bordered
           pagination={false}
-          scroll={{ x: "max-content", y: "calc(100vh - 450px)" }}
+          scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}
         >
           <Table.Column

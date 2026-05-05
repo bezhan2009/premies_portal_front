@@ -261,7 +261,7 @@ const RolesTable = () => {
           loading={loading}
           bordered
           pagination={false}
-          scroll={{ x: "max-content", y: "calc(100vh - 350px)" }}
+          scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}
         >
           <Table.Column
@@ -339,16 +339,17 @@ const RolesTable = () => {
         <div
           ref={sentinelRef}
           style={{
-            height: "20px",
+            height: "40px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "10px"
+            padding: "20px",
+            width: "100%"
           }}
         >
-          {loadingMore && <div style={{ color: "#666" }}>Загрузка...</div>}
+          {loadingMore && <div style={{ color: "#666" }}>Загрузка новых данных...</div>}
           {!hasMore && employees.length > 0 && !isSearching && (
-            <div style={{ color: "#666", fontStyle: "italic", fontSize: "12px" }}>
+            <div style={{ color: "#888", fontStyle: "italic", fontSize: "14px" }}>
               Все данные загружены
             </div>
           )}

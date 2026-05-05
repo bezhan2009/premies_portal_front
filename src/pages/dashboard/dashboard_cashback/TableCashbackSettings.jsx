@@ -62,8 +62,8 @@ const fields = [
     { key: "account", label: "Счёт", type: "text" },
     { key: "from_date", label: "Дата от", type: "date" },
     { key: "to_date", label: "Дата до", type: "date" },
-    { key: "from_time", label: "Время от", type: "time" },
-    { key: "to_time", label: "Время до", type: "time" },
+    { key: "from_time", label: "Время от", type: "text" },
+    { key: "to_time", label: "Время до", type: "text" },
     { key: "exclude_transaction_types", label: "Искл. типы", type: "text" },
     { key: "exclude_atm_ids", label: "Искл. ATM", type: "text" },
     { key: "exclude_mcc", label: "Искл. MCC", type: "text" },
@@ -421,7 +421,7 @@ const TableCashbackSettings = () => {
         // Форматирование даты локально
         const defaultFromDate = fromObj.toLocaleDateString('sv-SE'); // sv-SE даёт формат YYYY-MM-DD
         const defaultToDate = toObj.toLocaleDateString('sv-SE');
-        
+
         // Форматирование времени локально
         const defaultFromTime = fromObj.toTimeString().slice(0, 8); // HH:MM:SS
         const defaultToTime = toObj.toTimeString().slice(0, 8);
@@ -531,7 +531,7 @@ const TableCashbackSettings = () => {
                     }}>
                         <h3 style={{ marginTop: 0 }}>Превью запроса (daily_tasks)</h3>
                         <p>Это URL, который джоба <code>ReturnCashbackCard</code> использует для поиска транзакций:</p>
-                        
+
                         <div style={{ background: "#f5f5f5", padding: "12px", borderRadius: "4px", marginBottom: "16px", wordBreak: "break-all", fontFamily: "monospace", fontSize: "13px", border: "1px solid #ddd" }}>
                             <strong>GET</strong> {previewItem?.url}
                         </div>
@@ -539,18 +539,18 @@ const TableCashbackSettings = () => {
                         <h4>Параметры запроса:</h4>
                         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
                             <thead>
-                                <tr style={{ background: "#f0f0f0" }}>
-                                    <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Параметр</th>
-                                    <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Значение</th>
-                                </tr>
+                            <tr style={{ background: "#f0f0f0" }}>
+                                <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Параметр</th>
+                                <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Значение</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {previewItem && Object.entries(previewItem.params).map(([key, val]) => (
-                                    <tr key={key}>
-                                        <td style={{ border: "1px solid #ddd", padding: "8px", fontWeight: "bold" }}>{key}</td>
-                                        <td style={{ border: "1px solid #ddd", padding: "8px", wordBreak: "break-all" }}>{val}</td>
-                                    </tr>
-                                ))}
+                            {previewItem && Object.entries(previewItem.params).map(([key, val]) => (
+                                <tr key={key}>
+                                    <td style={{ border: "1px solid #ddd", padding: "8px", fontWeight: "bold" }}>{key}</td>
+                                    <td style={{ border: "1px solid #ddd", padding: "8px", wordBreak: "break-all" }}>{val}</td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
 
