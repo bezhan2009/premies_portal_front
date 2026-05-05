@@ -1070,40 +1070,56 @@ export default function TransactionsQR() {
                   width={100}
                   render={(_, row) => row.id || "-"}
                 />
-                {/* 👇 Столбцы только для режима "Наш клиент – чужой QR" */}
+
+                {/* ⚡️ Исправлено: каждое условие отдельно, без фрагментов */}
                 {isUsOnThem && (
-                  <>
-                    <Table.Column title="ФИО" dataIndex="sender_name" key="sender_name" render={(val) => val || "-"} />
-                    <Table.Column title="Телефон" dataIndex="sender_phone" key="sender_phone" render={(val) => val || "-"} />
-                  </>
+                  <Table.Column
+                    title="ФИО"
+                    dataIndex="sender_name"
+                    key="sender_name"
+                    render={(val) => val || "-"}
+                  />
                 )}
+                {isUsOnThem && (
+                  <Table.Column
+                    title="Телефон"
+                    dataIndex="sender_phone"
+                    key="sender_phone"
+                    render={(val) => val || "-"}
+                  />
+                )}
+
                 {isThemOnUs && (
-                  <Table.Column 
-                    title="Мерчант" 
-                    key="merchant" 
+                  <Table.Column
+                    title="Мерчант"
+                    key="merchant"
                     render={(_, row) => {
                       const code = row.merchant_code || row.merchant_id;
                       if (!code) return "—";
                       return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
-                    }} 
+                    }}
                   />
                 )}
                 {isThemOnUs && (
-                   <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
+                  <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
                 )}
                 {isThemOnUs && (
-                   <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
+                  <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
                 )}
+
                 <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
-                {/* 👇 Здесь для нашего клиента отображаются "Номер в АРМ" и "qrId" */}
-                {isThemOnUs ? (
+
+                {/* ⚡️ Исправлено: раздельные условия вместо тернарника с фрагментом */}
+                {isThemOnUs && (
                   <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
-                ) : (
-                  <>
-                    <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
-                    <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
-                  </>
                 )}
+                {!isThemOnUs && (
+                  <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                )}
+                {!isThemOnUs && (
+                  <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                )}
+
                 <Table.Column
                   title="Статус"
                   dataIndex="status"
@@ -1139,32 +1155,32 @@ export default function TransactionsQR() {
                     );
                   }}
                 />
-                <Table.Column 
-                  title="Банк отправителя" 
-                  key="bank_sender" 
+                <Table.Column
+                  title="Банк отправителя"
+                  key="bank_sender"
                   render={(_, row) => {
                     const bankId = isUsOnThem ? row.sender_bank : row.sender;
                     const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
                     return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }} 
+                  }}
                 />
-                <Table.Column 
-                  title="Банк получателя" 
-                  key="bank_receiver" 
+                <Table.Column
+                  title="Банк получателя"
+                  key="bank_receiver"
                   render={(_, row) => {
                     const bankId = row.receiver;
                     const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
                     return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }} 
+                  }}
                 />
-                <Table.Column 
-                  title="Сумма" 
-                  key="amount" 
+                <Table.Column
+                  title="Сумма"
+                  key="amount"
                   render={(_, row) => (
                     <span style={{ fontWeight: "600" }}>
                       {Number(row.amount).toLocaleString("ru-RU")} с.
                     </span>
-                  )} 
+                  )}
                   sortValue={(row) => Number(row.amount)}
                 />
                 <Table.Column
@@ -1181,7 +1197,6 @@ export default function TransactionsQR() {
                 />
               </Table>
             )}
-
           </div>
         </main>
       </div>
