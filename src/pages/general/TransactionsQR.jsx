@@ -74,6 +74,8 @@ export default function TransactionsQR() {
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(true);
+  const [showMerchantTranslator, setShowMerchantTranslator] = useState(false);
+  const [merchantSearch, setMerchantSearch] = useState("");
 
   const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
   const backendMain = import.meta.env.VITE_BACKEND_URL;
@@ -199,8 +201,8 @@ export default function TransactionsQR() {
 
   const getMerchants = useCallback(async () => {
     try {
-      // Предполагаем, что мерчанты также на 8080 порту в той же базе
-      const resp = await fetch("http://10.64.20.101:8080/merchants", {
+      // Пользователь указал этот URL как верный для базы мерчантов
+      const resp = await fetch("http://10.65.10.20:7575/merchants", {
         method: "GET",
       });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
@@ -603,6 +605,13 @@ export default function TransactionsQR() {
             </button>
 
             <button
+              className={`button ${showMerchantTranslator ? "active" : ""}`}
+              onClick={() => setShowMerchantTranslator(!showMerchantTranslator)}
+            >
+              Переводитель мерчантов
+            </button>
+
+            <button
               className="button button-success"
               onClick={handleExport}
               disabled={selectedRows.length === 0 || isLoading}
@@ -754,6 +763,47 @@ export default function TransactionsQR() {
                   setFilters((p) => ({ ...p, amount: e.target.value }))
                 }
               />
+            </div>
+          )}
+
+          {showMerchantTranslator && (
+            <div className="filters animate-slideIn" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+               <h3 style={{ marginBottom: "10px" }}>Переводитель мерчант кодов</h3>
+               <div style={{ display: "flex", gap: "10px", width: "100%" }}>
+                  <input 
+                    placeholder="Введите код или название мерчанта..." 
+                    value={merchantSearch}
+                    onChange={(e) => setMerchantSearch(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="button" onClick={() => setMerchantSearch("")}>Очистить</button>
+               </div>
+               {merchantSearch && (
+                 <div style={{ marginTop: "10px", width: "100%", maxHeight: "200px", overflowY: "auto", background: "white", borderRadius: "8px", border: "1px solid #ddd" }}>
+                   <table className="limits-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Код</th>
+                          <th>Название</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {merchants
+                          .filter(m => 
+                            String(m.code).includes(merchantSearch) || 
+                            m.title.toLowerCase().includes(merchantSearch.toLowerCase())
+                          )
+                          .map(m => (
+                            <tr key={m.ID}>
+                              <td>{m.code}</td>
+                              <td>{m.title}</td>
+                            </tr>
+                          ))
+                        }
+                      </tbody>
+                   </table>
+                 </div>
+               )}
             </div>
           )}
 
@@ -1039,15 +1089,24 @@ export default function TransactionsQR() {
                     <Table.Column title="Телефон" dataIndex="sender_phone" key="sender_phone" render={(val) => val || "-"} />
                   </>
                 )}
-                <Table.Column 
-                  title="Мерчант" 
-                  key="merchant" 
-                  render={(_, row) => {
-                    const code = row.merchant_code || row.merchant_id;
-                    if (!code) return "—";
-                    return merchants.find((m) => m.code === code)?.title ?? code;
-                  }} 
-                />
+                {isThemOnUs && (
+                  <Table.Column 
+                    title="Мерчант" 
+                    key="merchant" 
+                    render={(_, row) => {
+                      const code = row.merchant_code || row.merchant_id;
+                      if (!code) return "—";
+                      return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
+                    }} 
+                  />
+                )}
+                {isThemOnUs && (
+                   <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
+                )}
+                {isThemOnUs && (
+                   <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
+                )}
+                <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
                 {isThemOnUs ? (
                   <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
                 ) : (
