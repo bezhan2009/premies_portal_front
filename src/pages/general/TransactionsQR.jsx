@@ -184,15 +184,18 @@ export default function TransactionsQR() {
 
   const getBanks = useCallback(async () => {
     try {
-      const resp = await fetch(`${backendQR}banks`);
+      const resp = await fetch(`${backendMain}/banks`, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
-      setBanks(json || []);
+      setBanks(Array.isArray(json) ? json : []);
     } catch (err) {
       console.error("Ошибка загрузки банков:", err);
       setBanks([]);
     }
-  }, [backendQR]);
+  }, [backendMain, token]);
 
   const getMerchants = useCallback(async () => {
     try {
@@ -1083,7 +1086,7 @@ export default function TransactionsQR() {
                     return (
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <FcHighPriority style={{ fontSize: 22 }} />
-                        <span style={{ color: "red" }}>Высокий приоритет</span>
+                        <span style={{ color: "red" }}>Ошибка</span>
                       </div>
                     );
                   }}
@@ -1093,8 +1096,8 @@ export default function TransactionsQR() {
                   key="bank_sender" 
                   render={(_, row) => {
                     const bankId = isUsOnThem ? row.sender_bank : row.sender;
-                    const bank = banks.find((b) => b.bank_id === bankId);
-                    return bank ? bank.bank_name : `ID: ${bankId}`;
+                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                    return bank ? bank.bankName : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
@@ -1102,8 +1105,8 @@ export default function TransactionsQR() {
                   key="bank_receiver" 
                   render={(_, row) => {
                     const bankId = row.receiver;
-                    const bank = banks.find((b) => b.bank_id === bankId);
-                    return bank ? bank.bank_name : `ID: ${bankId}`;
+                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                    return bank ? bank.bankName : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
