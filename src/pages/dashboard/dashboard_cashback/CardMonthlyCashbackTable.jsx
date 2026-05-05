@@ -86,7 +86,7 @@ const CardMonthlyCashbackTable = () => {
     () => [
       {
         title: "ID карты",
-        dataIndex: "CardID",  // Исправлено: с большой буквы CardID
+        dataIndex: "card_id",  // Исправлено: с большой буквы CardID
         key: "CardID",
         ...getColumnSearchProps("CardID", "ID карты"),
       },
@@ -99,7 +99,7 @@ const CardMonthlyCashbackTable = () => {
       },
       {
         title: "Месяц",
-        dataIndex: "Month",  // Исправлено: с большой буквы Month
+        dataIndex: "month",
         key: "Month",
         ...getColumnSearchProps("Month", "Месяц"),
       },

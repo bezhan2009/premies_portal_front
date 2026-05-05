@@ -62,15 +62,24 @@ const CurrencyRatesWidget = () => {
   }, [rates]);
 
 
+  const [isVisible, setIsVisible] = useState(true);
+
   if (location.pathname.includes("/agent-qr/transactions/list")) return null;
 
   return (
-    <div className="currency-rates-overlay">
-      {grouped.map((row) => (
+    <div className={`currency-rates-overlay ${!isVisible ? "minimized" : ""}`}>
+      <button 
+        className="toggle-visibility-btn" 
+        onClick={() => setIsVisible(!isVisible)}
+        title={isVisible ? "Скрыть курсы" : "Показать курсы"}
+      >
+        {isVisible ? "✕" : "💰"}
+      </button>
+      
+      {isVisible && grouped.map((row) => (
         <div key={row.currency} className="currency-card">
           <div className="currency-card-left">
             <div className="currency-flag-circle">{row.meta.flag}</div>
-            {/* <div className="currency-code">{row.currency}</div> */}
           </div>
           <div className="currency-card-rates">
             <span className="rate-value buy">

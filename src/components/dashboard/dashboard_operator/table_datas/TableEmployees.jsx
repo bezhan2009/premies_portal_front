@@ -7,7 +7,7 @@ import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js"
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../../api/utils/apiClient.js";
 
-const PAGE_SIZE = 20; // Количество записей на одну загрузку
+const PAGE_SIZE = 10; // Количество записей на одну загрузку
 
 const formatRoles = (roles) => {
     if (!Array.isArray(roles)) {

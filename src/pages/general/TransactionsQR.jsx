@@ -31,6 +31,9 @@ export default function TransactionsQR() {
   const [merchants, setMerchants] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 50;
   const [showFilters, setShowFilters] = useState(false);
 
   const [isUsOnThem, setIsUsOnThem] = useState(false);
@@ -134,7 +137,7 @@ export default function TransactionsQR() {
   );
 
   const fetchData = useCallback(
-    async (type = "themOnUs") => {
+    async (type = "themOnUs", pageNum = 1) => {
       try {
         setLoading(true);
         const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
@@ -142,23 +145,41 @@ export default function TransactionsQR() {
         const startDate = data?.start_date ?? "2025-09-25";
         const endDate = data?.end_date ?? "2025-10-01";
 
-        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
+        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
 
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
         const json = await resp.json();
-        setTableData(json || []);
-        showAlert(`Загружено ${json.length} записей`, "success");
+        
+        if (Array.isArray(json)) {
+            if (pageNum === 1) {
+                setTableData(json);
+            } else {
+                setTableData(prev => [...prev, ...json]);
+            }
+            setHasMore(json.length === PAGE_SIZE);
+            showAlert(`Загружено ${json.length} записей`, "success");
+        } else {
+            setHasMore(false);
+        }
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
         showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
-        setTableData([]);
+        if (pageNum === 1) setTableData([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     },
     [backendQR, data.end_date, data.start_date],
   );
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    const type = isUsOnThem ? "usOnThem" : "themOnUs";
+    fetchData(type, nextPage);
+  };
 
   const getBanks = useCallback(async () => {
     try {
@@ -249,8 +270,9 @@ export default function TransactionsQR() {
   }, []);
 
   useEffect(() => {
-    if (isUsOnThem) fetchData("usOnThem");
-    else if (isThemOnUs) fetchData("themOnUs");
+    setPage(1);
+    if (isUsOnThem) fetchData("usOnThem", 1);
+    else if (isThemOnUs) fetchData("themOnUs", 1);
   }, [isUsOnThem, isThemOnUs, fetchData]);
 
   // Handle loan search
@@ -383,8 +405,9 @@ export default function TransactionsQR() {
 
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
-      if (isUsOnThem) fetchData("usOnThem");
-      else if (isThemOnUs) fetchData("themOnUs");
+      setPage(1);
+      if (isUsOnThem) fetchData("usOnThem", 1);
+      else if (isThemOnUs) fetchData("themOnUs", 1);
     }
   }, [data.start_date, data.end_date, fetchData, isUsOnThem, isThemOnUs]);
 
@@ -1132,6 +1155,20 @@ export default function TransactionsQR() {
                   })}
                 </tbody>
               </table>
+            )}
+
+            {!isLoans && hasMore && !loading && (
+              <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
+                <button className="button" onClick={handleLoadMore}>
+                   Загрузить ещё
+                </button>
+              </div>
+            )}
+            
+            {!isLoans && loading && page > 1 && (
+               <div style={{ textAlign: "center", padding: "1rem" }}>
+                 <Spinner size="small" />
+               </div>
             )}
           </div>
         </main>

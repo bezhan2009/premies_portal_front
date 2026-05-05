@@ -64,6 +64,7 @@ import {
     Wrench
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
+import { Tooltip } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
@@ -936,23 +937,24 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         <span></span>
                     </button>
                 </div>
-                <nav className={`nav-links ${isOpen ? "visible" : "hidden"}`}>
+                <nav className={`nav-links ${isOpen ? "visible" : "collapsed-nav"}`}>
                     {links.map((link) => {
                         if (link.children) {
                             const isDropdownOpen = openDropdowns[link.key] || false;
                             const isActive = link.children.some(
                                 (child) => child.key === activeLink,
                             );
-                            return (
+
+                            const content = (
                                 <div key={link.key} className="dropdown-wrapper">
                                     <button
-                                        className={`dropdown-toggle ${isActive ? "active" : ""}`}
+                                        className={`dropdown-toggle ${isActive ? "active" : ""} ${!isOpen ? "collapsed-btn" : ""}`}
                                         onClick={(e) => {
                                             createRipple(e);
                                             toggleDropdown(link.key);
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isOpen ? 'flex-start' : 'center', width: '100%' }}>
                                             {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
                                             {isOpen && link.name}
                                         </div>
@@ -988,12 +990,20 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                     )}
                                 </div>
                             );
+
+                            return !isOpen ? (
+                                <Tooltip key={link.key} title={link.name} placement="right">
+                                    {content}
+                                </Tooltip>
+                            ) : content;
                         }
-                        return (
+
+                        const linkContent = (
                             <Link
                                 key={link.key}
                                 to={link.href}
-                                className={`${link.key === activeLink ? "active" : ""}`}
+                                className={`${link.key === activeLink ? "active" : ""} ${!isOpen ? "collapsed-link" : ""}`}
+                                style={{ justifyContent: isOpen ? 'flex-start' : 'center' }}
                                 onClick={(e) => {
                                     createRipple(e);
                                     if (link.key === "applications") {
@@ -1010,6 +1020,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 )}
                             </Link>
                         );
+
+                        return !isOpen ? (
+                            <Tooltip key={link.key} title={link.name} placement="right">
+                                {linkContent}
+                            </Tooltip>
+                        ) : linkContent;
                     })}
                 </nav>
                 <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>
