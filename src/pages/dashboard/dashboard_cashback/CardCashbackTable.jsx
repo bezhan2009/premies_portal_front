@@ -111,6 +111,13 @@ const CardCashbackTable = () => {
                 render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
             },
             {
+                title: "Дата обновления",
+                dataIndex: "updated_at",
+                key: "updated_at",
+                sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
+                render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+            },
+            {
                 title: "Сумма кэшбэка",
                 dataIndex: "amount",
                 key: "amount",
@@ -140,6 +147,25 @@ const CardCashbackTable = () => {
                 dataIndex: "card_id",
                 key: "card_id",
                 ...getColumnSearchProps("card_id", "ID карты"),
+            },
+            {
+                title: "Номер счета",
+                dataIndex: "account_number",
+                key: "account_number",
+                ...getColumnSearchProps("account_number", "Номер счета"),
+            },
+            {
+                title: "ATM ID",
+                dataIndex: "atm_id",
+                key: "atm_id",
+                ...getColumnSearchProps("atm_id", "ATM ID"),
+            },
+            {
+                title: "Адрес терминала",
+                dataIndex: "terminal_address",
+                key: "terminal_address",
+                ...getColumnSearchProps("terminal_address", "Адрес терминала"),
+                ellipsis: true,
             },
             {
                 title: "Статус",

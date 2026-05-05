@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import "../../../../styles/components/Table.scss";
 import SearchBar from "../../../general/SearchBar.jsx";
 import Input from "../../../elements/Input.jsx";
