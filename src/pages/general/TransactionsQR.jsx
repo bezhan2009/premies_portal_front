@@ -653,7 +653,7 @@ export default function TransactionsQR() {
               {isUsOnThem && (
                 <>
                   <input
-                    placeholder="Имя отправителя"
+                    placeholder="ФИО"
                     onChange={(e) =>
                       setFilters((p) => ({
                         ...p,
@@ -667,24 +667,6 @@ export default function TransactionsQR() {
                       setFilters((p) => ({
                         ...p,
                         sender_phone: e.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    placeholder="qrId"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        qrId: e.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    placeholder="Номер в АРМ"
-                    onChange={(e) =>
-                      setFilters((p) => ({
-                        ...p,
-                        trnId: e.target.value,
                       }))
                     }
                   />
@@ -1088,12 +1070,11 @@ export default function TransactionsQR() {
                   width={100}
                   render={(_, row) => row.id || "-"}
                 />
+                {/* 👇 Столбцы только для режима "Наш клиент – чужой QR" */}
                 {isUsOnThem && (
                   <>
-                    <Table.Column title="Имя отправителя" dataIndex="sender_name" key="sender_name" render={(val) => val || "-"} />
+                    <Table.Column title="ФИО" dataIndex="sender_name" key="sender_name" render={(val) => val || "-"} />
                     <Table.Column title="Телефон" dataIndex="sender_phone" key="sender_phone" render={(val) => val || "-"} />
-                    <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
-                    <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
                   </>
                 )}
                 {isThemOnUs && (
@@ -1114,8 +1095,14 @@ export default function TransactionsQR() {
                    <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
                 )}
                 <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
-                {isThemOnUs && (
+                {/* 👇 Здесь для нашего клиента отображаются "Номер в АРМ" и "qrId" */}
+                {isThemOnUs ? (
                   <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
+                ) : (
+                  <>
+                    <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                    <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                  </>
                 )}
                 <Table.Column
                   title="Статус"
