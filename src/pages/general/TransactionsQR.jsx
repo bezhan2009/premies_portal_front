@@ -1092,16 +1092,18 @@ export default function TransactionsQR() {
                   title="Банк отправителя" 
                   key="bank_sender" 
                   render={(_, row) => {
-                    const bankId = isUsOnThem ? 80 : row.bank_id;
-                    return banks.find((b) => b.id === bankId)?.name || `ID: ${bankId}`;
+                    const bankId = isUsOnThem ? row.sender_bank : row.sender;
+                    const bank = banks.find((b) => b.bank_id === bankId);
+                    return bank ? bank.bank_name : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
                   title="Банк получателя" 
                   key="bank_receiver" 
                   render={(_, row) => {
-                    const bankId = isThemOnUs ? 80 : row.bank_id;
-                    return banks.find((b) => b.id === bankId)?.name || `ID: ${bankId}`;
+                    const bankId = row.receiver;
+                    const bank = banks.find((b) => b.bank_id === bankId);
+                    return bank ? bank.bank_name : `ID: ${bankId}`;
                   }} 
                 />
                 <Table.Column 
