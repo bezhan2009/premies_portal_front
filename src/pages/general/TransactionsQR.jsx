@@ -209,21 +209,6 @@ export default function TransactionsQR() {
     }
   }, [backendMain, token]);
 
-  const getMerchants = useCallback(async () => {
-    try {
-      const resp = await fetch(`${backendMain}/merchants`, {
-        method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
-      const json = await resp.json();
-      setMerchants(Array.isArray(json) ? json : []);
-    } catch (err) {
-      console.error("Ошибка загрузки мерчантов:", err);
-      setMerchants([]);
-    }
-  }, [backendMain, token]);
-
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
     return tableData.filter((row) =>

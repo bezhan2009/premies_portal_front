@@ -1,6 +1,6 @@
-@import 'variables/general';
-@import 'variables/input';
-@import 'mixins/general';
+@import './variables/general';
+@import './variables/input';
+@import './mixins/general';
 
 .extra-form {
   max-height: 0;
