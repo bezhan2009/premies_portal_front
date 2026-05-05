@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Input from "../../components/elements/Input.jsx";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
@@ -207,6 +207,27 @@ export default function TransactionsQR() {
       setMerchants([]);
     }
   }, [backendMain, token]);
+
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasMore || loading || isLoans) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, isLoans, handleLoadMore]);
 
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
@@ -552,17 +573,16 @@ export default function TransactionsQR() {
             </button>
           </div>
         </main>
-        <main>
-          <div className="my-applications-header header-with-balance">
+        <main className="transactions-main-content">
+          <div className="header-with-balance">
             <button
-              className={!showFilters ? "filter-toggle" : "Unloading"}
+              className={`button ${!showFilters ? "" : "active"}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               Фильтры
             </button>
-            {/* <div style={{ display: "flex", gap: "50px" }}> */}
             <button
-              className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
+              className={`button ${isUsOnThem ? "active" : ""}`}
               onClick={() => {
                 setIsUsOnThem(true);
                 setIsThemOnUs(false);
@@ -570,11 +590,11 @@ export default function TransactionsQR() {
                 setSelectAll(false);
               }}
             >
-              Наш клиент — чужой QR (Us on Them)
+              Наш клиент — чужой QR
             </button>
 
             <button
-              className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
+              className={`button ${isThemOnUs ? "active" : ""}`}
               onClick={() => {
                 setIsThemOnUs(true);
                 setIsUsOnThem(false);
@@ -583,12 +603,11 @@ export default function TransactionsQR() {
                 setSelectAll(false);
               }}
             >
-              Наш QR — чужой клиент (Them on Us)
+              Наш QR — чужой клиент
             </button>
-            {/* </div> */}
 
             <button
-              className={`archive-toggle ${isLoans ? "active" : ""}`}
+              className={`button ${isLoans ? "active" : ""}`}
               onClick={() => {
                 setIsLoans(true);
                 setIsUsOnThem(false);
@@ -601,7 +620,7 @@ export default function TransactionsQR() {
             </button>
 
             <button
-              className="Unloading"
+              className="button button-success"
               onClick={handleExport}
               disabled={selectedRows.length === 0 || isLoading}
             >
@@ -609,21 +628,19 @@ export default function TransactionsQR() {
             </button>
 
             <button
-              className={selectAll ? "selectAll-toggle" : ""}
+              className={`button ${selectAll ? "active" : ""}`}
               onClick={toggleSelectAll}
             >
               {selectAll ? "Снять выделение" : "Выбрать все"}
             </button>
 
-            <div
-              className="activebank-balance"
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-            >
+            <div className="activebank-balance">
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   width: "100%",
+                  gap: "10px"
                 }}
               >
                 <span className="label">Баланс Активбанк:</span>
@@ -639,7 +656,8 @@ export default function TransactionsQR() {
                     display: "flex",
                     justifyContent: "space-between",
                     width: "100%",
-                    color: "#417cd5",
+                    color: "var(--primary-color)",
+                    marginTop: "4px"
                   }}
                 >
                   <span className="label">Выбрано:</span>
@@ -940,41 +958,43 @@ export default function TransactionsQR() {
                             className="limits-table__td"
                             style={{ display: "flex", gap: "8px" }}
                           >
-                            <button
-                              className="selectAll-toggle"
-                              style={{ padding: "5px 10px", fontSize: "12px" }}
-                              onClick={() =>
-                                handleOpenGraph(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              График
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#2980b9",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() =>
-                                handleOpenDetails(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              Детали
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#27ae60",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() => handleOpenRepayModal(credit)}
-                            >
-                              Погасить
-                            </button>
+                             <button
+                               className="button"
+                               style={{ padding: "5px 10px", fontSize: "12px" }}
+                               onClick={() =>
+                                 handleOpenGraph(credit.referenceId)
+                               }
+                               disabled={!credit.referenceId}
+                             >
+                               График
+                             </button>
+                             <button
+                               className="button"
+                               style={{
+                                 background: "#2980b9",
+                                 color: "white",
+                                 padding: "5px 10px",
+                                 fontSize: "12px",
+                               }}
+                               onClick={() =>
+                                 handleOpenDetails(credit.referenceId)
+                               }
+                               disabled={!credit.referenceId}
+                             >
+                               Детали
+                             </button>
+                             <button
+                               className="button"
+                               style={{
+                                 background: "#27ae60",
+                                 color: "white",
+                                 padding: "5px 10px",
+                                 fontSize: "12px",
+                               }}
+                               onClick={() => handleOpenRepayModal(credit)}
+                             >
+                               Погасить
+                             </button>
                           </td>
                         </tr>
                       ))}
@@ -1157,18 +1177,24 @@ export default function TransactionsQR() {
               </table>
             )}
 
-            {!isLoans && hasMore && !loading && (
-              <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
-                <button className="button" onClick={handleLoadMore}>
-                   Загрузить ещё
-                </button>
+            {!isLoans && (
+              <div 
+                ref={sentinelRef} 
+                style={{ 
+                  height: "40px", 
+                  display: "flex", 
+                  justifyContent: "center", 
+                  alignItems: "center",
+                  padding: "20px" 
+                }}
+              >
+                {loading && page > 1 && <Spinner size="small" />}
+                {!hasMore && tableData.length > 0 && (
+                  <span style={{ color: "gray", fontSize: "14px", fontStyle: "italic" }}>
+                    Все транзакции загружены
+                  </span>
+                )}
               </div>
-            )}
-            
-            {!isLoans && loading && page > 1 && (
-               <div style={{ textAlign: "center", padding: "1rem" }}>
-                 <Spinner size="small" />
-               </div>
             )}
           </div>
         </main>

@@ -109,6 +109,27 @@ const RolesTable = () => {
     }
   }, [hasMore, isSearching, loadingMore]);
 
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || isSearching) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, isSearching, loadMore]);
+
   const handleChange = (key, value) => {
     setEdit((previous) => ({ ...previous, [key]: value }));
   };
@@ -232,111 +253,106 @@ const RolesTable = () => {
         </button>
       </div>
 
-      <Table
-        tableId="operator-roles-table"
-        dataSource={employees}
-        rowKey={(record) => record.ID}
-        loading={loading}
-        bordered
-        pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: "Нет данных" }}
-      >
-        <Table.Column
-          title="ФИО"
-          dataIndex="full_name"
-          key="full_name"
-          render={(_, record) => renderEditableCell(record, "full_name")}
-        />
-        <Table.Column
-          title="Логин"
-          dataIndex="username"
-          key="username"
-          render={(_, record) => renderEditableCell(record, "username")}
-        />
-        <Table.Column
-          title="Номер телефона"
-          dataIndex="phone"
-          key="phone"
-          render={(_, record) => renderEditableCell(record, "phone")}
-        />
-        <Table.Column
-          title="Email"
-          dataIndex="email"
-          key="email"
-          render={(_, record) => renderEditableCell(record, "email")}
-        />
-        <Table.Column
-          title="Перераспределение ролей"
-          key="role-actions"
-          sortable={false}
-          render={(_, record) => (
-            <button
-              className="button-edit-roles"
-              onClick={() => setOpenRoles({ data: record, open: true })}
-            >
-              Перераспределить
-            </button>
-          )}
-        />
-        <Table.Column
-          title="Действия"
-          key="actions"
-          sortable={false}
-          render={(_, record) => (
-            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-              {record.is_active && (
+      <div className="infinite-scroll-wrapper" style={{ position: "relative" }}>
+        <Table
+          tableId="operator-roles-table"
+          dataSource={employees}
+          rowKey={(record) => record.ID}
+          loading={loading}
+          bordered
+          pagination={false}
+          scroll={{ x: "max-content", y: "calc(100vh - 350px)" }}
+          locale={{ emptyText: "Нет данных" }}
+        >
+          <Table.Column
+            title="ФИО"
+            dataIndex="full_name"
+            key="full_name"
+            render={(_, record) => renderEditableCell(record, "full_name")}
+          />
+          <Table.Column
+            title="Логин"
+            dataIndex="username"
+            key="username"
+            render={(_, record) => renderEditableCell(record, "username")}
+          />
+          <Table.Column
+            title="Номер телефона"
+            dataIndex="phone"
+            key="phone"
+            render={(_, record) => renderEditableCell(record, "phone")}
+          />
+          <Table.Column
+            title="Email"
+            dataIndex="email"
+            key="email"
+            render={(_, record) => renderEditableCell(record, "email")}
+          />
+          <Table.Column
+            title="Перераспределение ролей"
+            key="role-actions"
+            sortable={false}
+            render={(_, record) => (
+              <button
+                className="button-edit-roles"
+                onClick={() => setOpenRoles({ data: record, open: true })}
+              >
+                Перераспределить
+              </button>
+            )}
+          />
+          <Table.Column
+            title="Действия"
+            key="actions"
+            sortable={false}
+            render={(_, record) => (
+              <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                {record.is_active && (
+                  <button
+                    className="button-edit-roles"
+                    onClick={() => handleDeactivate(record.ID)}
+                    disabled={actionLoading === record.ID}
+                    style={{
+                      backgroundColor: "#dc3545",
+                      opacity: actionLoading === record.ID ? 0.6 : 1,
+                    }}
+                  >
+                    {actionLoading === record.ID ? "..." : "Деактивировать"}
+                  </button>
+                )}
                 <button
                   className="button-edit-roles"
-                  onClick={() => handleDeactivate(record.ID)}
+                  onClick={() => handleResetPassword(record.ID)}
                   disabled={actionLoading === record.ID}
                   style={{
-                    backgroundColor: "#dc3545",
+                    backgroundColor: "#ffc107",
                     opacity: actionLoading === record.ID ? 0.6 : 1,
                   }}
                 >
-                  {actionLoading === record.ID ? "..." : "Деактивировать"}
+                  {actionLoading === record.ID ? "..." : "Сбросить пароль"}
                 </button>
-              )}
-              <button
-                className="button-edit-roles"
-                onClick={() => handleResetPassword(record.ID)}
-                disabled={actionLoading === record.ID}
-                style={{
-                  backgroundColor: "#ffc107",
-                  opacity: actionLoading === record.ID ? 0.6 : 1,
-                }}
-              >
-                {actionLoading === record.ID ? "..." : "Сбросить пароль"}
-              </button>
+              </div>
+            )}
+          />
+        </Table>
+
+        <div
+          ref={sentinelRef}
+          style={{
+            height: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px"
+          }}
+        >
+          {loadingMore && <div style={{ color: "#666" }}>Загрузка...</div>}
+          {!hasMore && employees.length > 0 && !isSearching && (
+            <div style={{ color: "#666", fontStyle: "italic", fontSize: "12px" }}>
+              Все данные загружены
             </div>
           )}
-        />
-      </Table>
-
-      <div style={{ textAlign: "center", padding: "10px" }}>
-        {!loadingMore && hasMore && !isSearching && (
-          <button
-            onClick={loadMore}
-            className="button-edit-roles"
-            style={{ margin: "10px 0" }}
-          >
-            Загрузить еще
-          </button>
-        )}
-
-        {loadingMore && <div style={{ color: "#666" }}>Загрузка...</div>}
-
-        {!hasMore && employees.length > 0 && !isSearching && (
-          <div
-            style={{
-              color: "#666",
-              fontStyle: "italic",
-            }}
-          >
-            Все данные загружены
-          </div>
-        )}
+        </div>
       </div>
 
       {openRoles.open && (

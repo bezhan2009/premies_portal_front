@@ -236,9 +236,10 @@ const ClientDataTabs = ({
                         </td>
                         <td className="limits-table__td">
                           <button
-                            className="selectAll-toggle"
+                            className="button"
                             style={{
                               background: "#059669",
+                              color: "white",
                               width: "100%",
                               marginBottom: "4px",
                             }}
@@ -257,7 +258,7 @@ const ClientDataTabs = ({
                             }}
                           >
                             <button
-                              className="selectAll-toggle"
+                              className="button"
                               style={{ flex: 1, minWidth: "80px" }}
                               onClick={() =>
                                 handleNavigateToTransactions(card.cardId)
@@ -272,9 +273,10 @@ const ClientDataTabs = ({
                             </button>
 
                             <button
-                              className="selectAll-toggle"
+                              className="button"
                               style={{
                                 background: "#374151",
+                                color: "white",
                                 flex: 1,
                                 minWidth: "80px",
                               }}
@@ -300,9 +302,10 @@ const ClientDataTabs = ({
                           >
                             {hasChangePinAccess && (
                               <button
-                                className="selectAll-toggle"
+                                className="button"
                                 style={{
                                   background: "#4b5563",
+                                  color: "white",
                                   flex: 1,
                                   minWidth: "80px",
                                 }}
@@ -314,9 +317,10 @@ const ClientDataTabs = ({
 
                             {pinError && (
                               <button
-                                className="selectAll-toggle"
+                                className="button"
                                 style={{
                                   background: "#f59e0b",
+                                  color: "white",
                                   flex: 1,
                                   minWidth: "80px",
                                 }}
@@ -330,9 +334,10 @@ const ClientDataTabs = ({
                           {hasBlockCardAccess && (
                             card.details?.hotCardStatus === "0" ? (
                               <button
-                                className="selectAll-toggle"
+                                className="button"
                                 style={{
                                   background: "#e11d48",
+                                  color: "white",
                                   marginTop: 4,
                                   width: "100%",
                                 }}
@@ -342,9 +347,10 @@ const ClientDataTabs = ({
                               </button>
                             ) : (
                               <button
-                                className="selectAll-toggle"
+                                className="button"
                                 style={{
                                   background: "#10b981",
+                                  color: "white",
                                   marginTop: 4,
                                   width: "100%",
                                 }}
@@ -356,9 +362,10 @@ const ClientDataTabs = ({
                           )}
 
                           <button
-                            className="selectAll-toggle"
+                            className="button"
                             style={{
                               background: "#3b82f6",
+                              color: "white",
                               marginTop: 4,
                               width: "100%",
                             }}
@@ -462,7 +469,7 @@ const ClientDataTabs = ({
                       <td className="limits-table__td">{acc.Branch?.Name}</td>
                       <td className="limits-table__td">
                         <button
-                          className="selectAll-toggle"
+                          className="button"
                           onClick={() =>
                             handleNavigateToAccountOperations(acc.Number)
                           }
@@ -620,14 +627,14 @@ const ClientDataTabs = ({
                         style={{ display: "flex" }}
                       >
                         <button
-                          className="selectAll-toggle"
+                          className="button"
                           onClick={() => handleOpenGraph(card.referenceId)}
                           disabled={!card.referenceId}
                         >
                           График
                         </button>
                         <button
-                          className="selectAll-toggle"
+                          className="button"
                           style={{
                             marginLeft: 10,
                             background: "#2980b9",
@@ -641,7 +648,7 @@ const ClientDataTabs = ({
                           .trim()
                           .toLowerCase() !== "погашен" && (
                           <button
-                            className="selectAll-toggle"
+                            className="button"
                             style={{
                               marginLeft: 10,
                               background: "#27ae60",

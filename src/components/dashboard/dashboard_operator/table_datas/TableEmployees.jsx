@@ -208,11 +208,33 @@ const EmployeesTable = () => {
         );
     };
 
+    const sentinelRef = useRef(null);
+
+    // Intersection Observer для бесконечного скролла
+    useEffect(() => {
+        if (!hasMore || loading || loadingMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (sentinelRef.current) {
+            observer.observe(sentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, loadMore]);
+
     return (
         <div className="report-table-container">
             <div className="table-header-actions" style={{ flexWrap: "wrap", gap: 10 }}>
                 <SearchBar
-                    key={employees.length} // Пересоздаём SearchBar при изменении списка, чтобы перефильтровать
+                    key={employees.length}
                     allData={employees}
                     onSearch={(filtered) => setFilteredEmployees(filtered || [])}
                     placeholder="Поиск по ФИО, логину, должности..."
@@ -229,87 +251,83 @@ const EmployeesTable = () => {
                 </button>
             </div>
 
-            <Table
-                tableId="operator-employees-table"
-                dataSource={filteredEmployees}
-                rowKey={(record) => record.ID}
-                loading={loading}
-                bordered
-                pagination={false} // Отключаем встроенную пагинацию, используем свою
-                scroll={{ x: "max-content", y: "calc(100vh - 250px)" }}
-                locale={{ emptyText: "Нет данных" }}
-            >
-                <Table.Column
-                    title="ФИО"
-                    dataIndex="fio"
-                    key="fio"
-                    render={(_, record) => renderEditableCell(record, "fio")}
-                />
-                <Table.Column
-                    title="Логин"
-                    dataIndex="login"
-                    key="login"
-                    render={(_, record) => renderEditableCell(record, "login")}
-                />
-                <Table.Column
-                    title="Должность"
-                    dataIndex="position"
-                    key="position"
-                    render={(_, record) => renderEditableCell(record, "position")}
-                />
-                <Table.Column
-                    title="Место работы"
-                    dataIndex="place_work"
-                    key="place_work"
-                    render={(_, record) => renderEditableCell(record, "place_work")}
-                />
-                <Table.Column
-                    title="Оклад"
-                    dataIndex="salary"
-                    key="salary"
-                    render={(_, record) => renderEditableCell(record, "salary", "number")}
-                />
-                <Table.Column
-                    title="План"
-                    dataIndex="plan"
-                    key="plan"
-                    render={(_, record) => renderEditableCell(record, "plan", "number")}
-                />
-                <Table.Column
-                    title="Зарплатный проект"
-                    dataIndex="salary_project"
-                    key="salary_project"
-                    render={(_, record) =>
-                        renderEditableCell(record, "salary_project", "number")
-                    }
-                />
-                <Table.Column
-                    title="Группа продаж"
-                    dataIndex="group"
-                    key="group"
-                    render={(_, record) => renderEditableCell(record, "group")}
-                />
-            </Table>
-
-            {hasMore && (
-                <div style={{ textAlign: "center", marginTop: 16 }}>
-                    <button
-                        onClick={loadMore}
-                        disabled={loadingMore || loading}
-                        className="load-more-btn"
-                        style={{
-                            padding: "8px 16px",
-                            background: loadingMore ? "#f5f5f5" : "#1890ff",
-                            color: loadingMore ? "#aaa" : "#fff",
-                            border: "none",
-                            borderRadius: 4,
-                            cursor: loadingMore ? "not-allowed" : "pointer",
-                        }}
-                    >
-                        {loadingMore ? "Загрузка..." : "Загрузить ещё"}
-                    </button>
+            <div className="infinite-scroll-wrapper" style={{ position: "relative" }}>
+                <Table
+                    tableId="operator-employees-table"
+                    dataSource={filteredEmployees}
+                    rowKey={(record) => record.ID}
+                    loading={loading}
+                    bordered
+                    pagination={false}
+                    scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
+                    locale={{ emptyText: "Нет данных" }}
+                >
+                    <Table.Column
+                        title="ФИО"
+                        dataIndex="fio"
+                        key="fio"
+                        render={(_, record) => renderEditableCell(record, "fio")}
+                    />
+                    <Table.Column
+                        title="Логин"
+                        dataIndex="login"
+                        key="login"
+                        render={(_, record) => renderEditableCell(record, "login")}
+                    />
+                    <Table.Column
+                        title="Должность"
+                        dataIndex="position"
+                        key="position"
+                        render={(_, record) => renderEditableCell(record, "position")}
+                    />
+                    <Table.Column
+                        title="Место работы"
+                        dataIndex="place_work"
+                        key="place_work"
+                        render={(_, record) => renderEditableCell(record, "place_work")}
+                    />
+                    <Table.Column
+                        title="Оклад"
+                        dataIndex="salary"
+                        key="salary"
+                        render={(_, record) => renderEditableCell(record, "salary", "number")}
+                    />
+                    <Table.Column
+                        title="План"
+                        dataIndex="plan"
+                        key="plan"
+                        render={(_, record) => renderEditableCell(record, "plan", "number")}
+                    />
+                    <Table.Column
+                        title="Зарплатный проект"
+                        dataIndex="salary_project"
+                        key="salary_project"
+                        render={(_, record) =>
+                            renderEditableCell(record, "salary_project", "number")
+                        }
+                    />
+                    <Table.Column
+                        title="Группа продаж"
+                        dataIndex="group"
+                        key="group"
+                        render={(_, record) => renderEditableCell(record, "group")}
+                    />
+                </Table>
+                
+                {/* Элемент-маяк для отслеживания скролла */}
+                <div 
+                    ref={sentinelRef} 
+                    style={{ 
+                        height: "20px", 
+                        margin: "10px 0", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center" 
+                    }}
+                >
+                    {loadingMore && <div className="loader-dots">Загрузка...</div>}
                 </div>
-            )}
+            </div>
         </div>
     );
 };

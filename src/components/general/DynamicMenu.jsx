@@ -64,7 +64,7 @@ import {
     Wrench
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
-import { Tooltip } from "antd";
+import { Tooltip, Dropdown, Menu } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
@@ -991,11 +991,36 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 </div>
                             );
 
-                            return !isOpen ? (
-                                <Tooltip key={link.key} title={link.name} placement="right">
-                                    {content}
-                                </Tooltip>
-                            ) : content;
+                            if (!isOpen) {
+                                return (
+                                    <Dropdown
+                                        key={link.key}
+                                        trigger={['click', 'hover']}
+                                        placement="rightTop"
+                                        overlay={
+                                            <Menu className="collapsed-flyout-menu">
+                                                <Menu.ItemGroup title={link.name}>
+                                                    {link.children.map((child) => (
+                                                        <Menu.Item key={child.key} icon={child.icon && <child.icon size={16} />}>
+                                                            <Link to={child.href} onClick={handleLinkClick}>
+                                                                {child.name}
+                                                            </Link>
+                                                        </Menu.Item>
+                                                    ))}
+                                                </Menu.ItemGroup>
+                                            </Menu>
+                                        }
+                                    >
+                                        <div className="collapsed-dropdown-trigger">
+                                            <Tooltip title={link.name} placement="right">
+                                                {content}
+                                            </Tooltip>
+                                        </div>
+                                    </Dropdown>
+                                );
+                            }
+
+                            return content;
                         }
 
                         const linkContent = (

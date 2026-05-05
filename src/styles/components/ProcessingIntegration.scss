@@ -199,7 +199,8 @@ $gray-900: var(--text-color);
     font-size: 1rem;
     background: var(--bg-surface);
     color: var(--text-color);
-    height: 3rem;
+    min-height: 44px;
+    width: 100%;
     box-sizing: border-box;
     @include smooth-transition;
 
@@ -215,7 +216,7 @@ $gray-900: var(--text-color);
   }
 
   &__button {
-    padding: 0 1.5rem;
+    padding: 0.75rem 1.5rem;
     background: $primary-color;
     color: white;
     border: none;
@@ -223,12 +224,15 @@ $gray-900: var(--text-color);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    height: 3rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     @include smooth-transition;
 
     &:hover:not(:disabled) {
       background: $primary-hover;
-      box-shadow: 0 0 0 3px $primary-light;
+      box-shadow: 0 4px 12px $primary-light;
     }
 
     &:active {
@@ -560,11 +564,15 @@ $gray-900: var(--text-color);
   }
 
   &__input {
-    width: 91%;
-    padding: 1rem 1.25rem;
+    width: 100%;
+    padding: 10px 16px;
     border: 2px solid $gray-300;
     border-radius: 0.75rem;
     font-size: 1rem;
+    box-sizing: border-box;
+    min-height: 44px;
+    background: var(--bg-surface);
+    color: var(--text-color);
     @include smooth-transition;
 
     &:focus {

@@ -62,7 +62,7 @@ const CurrencyRatesWidget = () => {
   }, [rates]);
 
 
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
 
   if (location.pathname.includes("/agent-qr/transactions/list")) return null;
 
