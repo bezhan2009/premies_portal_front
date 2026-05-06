@@ -76,6 +76,7 @@ const fields = [
     { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" },
     { key: "monthly_limit", label: "Месячный лимит", type: "number", step: "0.01" },
     { key: "is_active", label: "Активен", type: "checkbox" },
+    { key: "created_at", label: "Дата создания", type: "date" },
 ];
 
 // Оптимизированный парсер без рекурсий и циклов
@@ -259,6 +260,10 @@ const TableCashbackSettings = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewItem, setPreviewItem] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [sortedInfo, setSortedInfo] = useState({
+        columnKey: "created_at",
+        order: "descend",
+    });
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -295,6 +300,10 @@ const TableCashbackSettings = () => {
             setLoading(false);
         }
     }, [backendURL]);
+
+    const handleTableChange = (pagination, filters, sorter) => {
+        setSortedInfo(sorter);
+    };
 
     useEffect(() => {
         fetchItems();
@@ -464,6 +473,8 @@ const TableCashbackSettings = () => {
             title: field.label,
             dataIndex: field.key,
             key: field.key,
+            sorter: field.type === "number" ? (a, b) => a[field.key] - b[field.key] : (a, b) => String(a[field.key]).localeCompare(String(b[field.key])),
+            sortOrder: sortedInfo.columnKey === field.key ? sortedInfo.order : null,
             render: (_, item) => {
                 const isEditing = editId === item.ID;
                 if (isEditing) {
@@ -484,7 +495,7 @@ const TableCashbackSettings = () => {
             },
         }));
         return [...dataCols, actionCol];
-    }, [editId, editedItem, handleSave, handleDelete, handleDoubleClick]);
+    }, [editId, editedItem, handleSave, handleDelete, handleDoubleClick, sortedInfo]);
 
     return (
         <div className="block_info_prems content-page">
@@ -517,6 +528,7 @@ const TableCashbackSettings = () => {
                     bordered
                     scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
+                    onChange={handleTableChange}
                 />
             )}
 

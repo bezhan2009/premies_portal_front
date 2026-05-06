@@ -12,6 +12,10 @@ const CardMonthlyCashbackTable = () => {
   const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
+  const [sortedInfo, setSortedInfo] = useState({
+    columnKey: "Month",
+    order: "descend",
+  });
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -37,6 +41,10 @@ const CardMonthlyCashbackTable = () => {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    setSortedInfo(sorter);
+  };
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -86,9 +94,11 @@ const CardMonthlyCashbackTable = () => {
     () => [
       {
         title: "ID карты",
-        dataIndex: "card_id",  // Исправлено: с большой буквы CardID
+        dataIndex: "card_id",
         key: "CardID",
         ...getColumnSearchProps("CardID", "ID карты"),
+        sorter: (a, b) => String(a.card_id).localeCompare(String(b.card_id)),
+        sortOrder: sortedInfo.columnKey === "CardID" ? sortedInfo.order : null,
       },
       {
         title: "Название кэшбэка",
@@ -96,12 +106,16 @@ const CardMonthlyCashbackTable = () => {
         key: "cashback_name",
         ...getColumnSearchProps("setting.cashback_name", "Название кэшбэка"),
         render: (_, record) => record?.setting?.cashback_name || "-",
+        sorter: (a, b) => String(a?.setting?.cashback_name || "").localeCompare(String(b?.setting?.cashback_name || "")),
+        sortOrder: sortedInfo.columnKey === "cashback_name" ? sortedInfo.order : null,
       },
       {
         title: "Месяц",
         dataIndex: "month",
         key: "Month",
         ...getColumnSearchProps("Month", "Месяц"),
+        sorter: (a, b) => String(a.month).localeCompare(String(b.month)),
+        sortOrder: sortedInfo.columnKey === "Month" ? sortedInfo.order : null,
       },
       {
         title: "Получено за месяц",
@@ -109,15 +123,18 @@ const CardMonthlyCashbackTable = () => {
         key: "total_amount",
         sorter: (a, b) => a.total_amount - b.total_amount,
         render: (val) => `${val || 0} TJS`,
+        sortOrder: sortedInfo.columnKey === "total_amount" ? sortedInfo.order : null,
       },
       {
         title: "Месячный лимит",
         dataIndex: ["setting", "monthly_limit"],
         key: "monthly_limit",
         render: (_, record) => record?.setting?.monthly_limit ? `${record.setting.monthly_limit} TJS` : "Без лимита",
+        sorter: (a, b) => (a?.setting?.monthly_limit || 0) - (b?.setting?.monthly_limit || 0),
+        sortOrder: sortedInfo.columnKey === "monthly_limit" ? sortedInfo.order : null,
       },
     ],
-    [],
+    [sortedInfo],
   );
 
   return (
@@ -133,7 +150,7 @@ const CardMonthlyCashbackTable = () => {
           tableId="card-monthly-cashback-list"
           columns={columns}
           dataSource={items}
-          rowKey={(record) => `${record.CardID}-${record.SettingID}-${record.Month}`}  // Исправлено: CardID, SettingID, Month
+          rowKey={(record) => `${record.CardID}-${record.SettingID}-${record.Month}`}
           loading={{
             spinning: loading,
             indicator: <Spinner size="small" />,
@@ -142,6 +159,7 @@ const CardMonthlyCashbackTable = () => {
           bordered
           scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}
+          onChange={handleTableChange}
         />
       )}
     </div>

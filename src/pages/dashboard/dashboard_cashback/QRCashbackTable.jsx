@@ -12,6 +12,10 @@ const QRCashbackTable = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortedInfo, setSortedInfo] = useState({
+    columnKey: "created_at",
+    order: "descend",
+  });
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { exportToExcel } = useExcelExport();
@@ -40,6 +44,10 @@ const QRCashbackTable = () => {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    setSortedInfo(sorter);
+  };
 
   const getColumnSearchProps = (dataIndex, label) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
@@ -80,6 +88,7 @@ const QRCashbackTable = () => {
         key: "id",
         sorter: (a, b) => a.id - b.id,
         width: 80,
+        sortOrder: sortedInfo.columnKey === "id" ? sortedInfo.order : null,
       },
       {
         title: "Дата создания",
@@ -87,6 +96,7 @@ const QRCashbackTable = () => {
         key: "created_at",
         sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
         render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+        sortOrder: sortedInfo.columnKey === "created_at" ? sortedInfo.order : null,
       },
       {
         title: "Сумма",
@@ -94,6 +104,7 @@ const QRCashbackTable = () => {
         key: "amount",
         sorter: (a, b) => a.amount - b.amount,
         render: (val) => `${val} TJS`,
+        sortOrder: sortedInfo.columnKey === "amount" ? sortedInfo.order : null,
       },
       {
         title: "Номер в ARM",
@@ -142,9 +153,10 @@ const QRCashbackTable = () => {
         key: "processed_at",
         sorter: (a, b) => new Date(a.processed_at) - new Date(b.processed_at),
         render: (val) => (val ? new Date(val).toLocaleString("ru-RU") : "-"),
+        sortOrder: sortedInfo.columnKey === "processed_at" ? sortedInfo.order : null,
       },
     ],
-    [],
+    [sortedInfo],
   );
 
   const handleExport = () => {
@@ -177,6 +189,7 @@ const QRCashbackTable = () => {
           bordered
           scroll={{ x: "max-content" }}
           locale={{ emptyText: "Нет данных" }}
+          onChange={handleTableChange}
         />
       )}
     </div>

@@ -70,7 +70,7 @@ export default function TransactionsQR() {
   const [filters, setFilters] = useState({});
   const [alert, setAlert] = useState(null);
 
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(true);
@@ -233,6 +233,13 @@ export default function TransactionsQR() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
+      const da = new Date(a.created_at || a.creation_datetime || 0).getTime();
+      const db = new Date(b.created_at || b.creation_datetime || 0).getTime();
+      
+      if (da !== db) {
+        return sortOrder === "asc" ? da - db : db - da;
+      }
+
       const ka = Number(a.id ?? a.tx_id ?? a.trnId ?? 0);
       const kb = Number(b.id ?? b.tx_id ?? b.trnId ?? 0);
       return sortOrder === "asc" ? ka - kb : kb - ka;
