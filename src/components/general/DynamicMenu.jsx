@@ -61,7 +61,8 @@ import {
     FileSpreadsheet,
     Eye,
     Gift,
-    Wrench
+    Wrench,
+    Clock
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
 import { Tooltip, Dropdown, Menu } from "antd";
@@ -780,6 +781,38 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/agent-payments/list",
                         key: "payments_list",
                         icon: List
+                    },
+                ],
+            });
+        }
+
+        if (roles.includes(31)) {
+            additionalLinks.push({
+                name: "Логи",
+                key: "logs",
+                icon: FileText,
+                children: [
+                    {
+                        name: "Просмотр логов",
+                        href: "/admin/logs",
+                        key: "logs_viewer",
+                        icon: List
+                    },
+                ],
+            });
+        }
+
+        if (roles.includes(32)) {
+            additionalLinks.push({
+                name: "Фоновые задачи",
+                key: "daily_tasks",
+                icon: Clock,
+                children: [
+                    {
+                        name: "Управление джобами",
+                        href: "/admin/daily-tasks",
+                        key: "dt_management",
+                        icon: Sliders
                     },
                 ],
             });

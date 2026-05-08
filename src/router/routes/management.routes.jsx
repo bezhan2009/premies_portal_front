@@ -13,6 +13,8 @@ import DashboardOperatorProcessingTransactionUniversal
     from "../../pages/dashboard/dashboard_operator/TransactionUniversal.jsx";
 import DashboardClientDocuments from "../../pages/dashboard/dashboard_client_documents/ClientDocuments.jsx";
 import CardBalance from "../../pages/dashboard/dashboard_card_balance/CardBalance.jsx";
+import LogsPage from "../../pages/dashboard/LogsPage.jsx";
+import DailyTasksPage from "../../pages/dashboard/DailyTasksPage.jsx";
 
 const managementRoutes = (
   <>
@@ -134,6 +136,27 @@ const managementRoutes = (
           />
       </Route>
 
+      {/* Logger (Role 31) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[31]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/admin/logs" element={<LogsPage />} />
+      </Route>
+
+      {/* DailyTasks Agent (Role 32) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[32]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/admin/daily-tasks" element={<DailyTasksPage />} />
+      </Route>
   </>
 );
 
