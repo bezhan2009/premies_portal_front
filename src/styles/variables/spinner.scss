@@ -1,4 +1,4 @@
-@import "./general.scss";
+@use "./general" as *;
 
 $size: 1.5rem;
 $color: $primary-color;

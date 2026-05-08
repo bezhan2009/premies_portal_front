@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Switch, InputNumber, Space, Typography, Tag, message, Modal } from 'antd';
-import apiClient from '../../api/apiClient';
+import { apiClient } from '../../api/utils/apiClient';
 import { RefreshCw, Play, Settings } from 'lucide-react';
 
 const { Title } = Typography;

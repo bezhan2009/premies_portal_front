@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Select, Button, Space, Typography, Tag, Row, Col } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import FlexibleAntTable from '../../components/table/FlexibleAntTable';
-import apiClient from '../../api/apiClient';
+import { apiClient } from '../../api/utils/apiClient';
 import { RefreshCw, Filter } from 'lucide-react';
 
 const { Title } = Typography;

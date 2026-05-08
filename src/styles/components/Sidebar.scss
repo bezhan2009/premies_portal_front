@@ -1,4 +1,4 @@
-@import "../mixins/general.scss";
+@use "../mixins/general" as *;
 
 .sidebar {
   position: fixed;

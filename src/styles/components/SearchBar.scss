@@ -1,4 +1,4 @@
-@import "../mixins/general";
+@use "../mixins/general" as *;
 
 .search-bar {
   display: flex;
