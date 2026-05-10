@@ -83,7 +83,21 @@ const LogsPage = () => {
             title: 'Сообщение',
             dataIndex: 'message',
             key: 'message',
-            ellipsis: true,
+            render: (text) => (
+                <div style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    wordBreak: 'break-word',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                    color: 'var(--text-color)',
+                    background: 'rgba(0,0,0,0.02)',
+                    padding: '8px',
+                    borderRadius: '4px'
+                }}>
+                    {text}
+                </div>
+            ),
         },
     ];
 
@@ -104,27 +118,7 @@ const LogsPage = () => {
             </div>
 
             <Row gutter={[16, 16]}>
-                <Col span={24} lg={8}>
-                    <Card title="Статистика логов" style={{ height: '400px' }}>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={stats}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" onClick={(data) => setLevelFilter(data.name)}>
-                                    {stats.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#8884d8'} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                        <div style={{ textAlign: 'center', color: '#8c8c8c', fontSize: '12px' }}>
-                            Кликните на столбец для фильтрации
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={24} lg={16}>
+                <Col span={24}>
                     <Card title="Фильтры">
                         <Space wrap>
                             <Space>
@@ -169,9 +163,32 @@ const LogsPage = () => {
                             columns={columns}
                             loading={loading}
                             pagination={{ pageSize: 10 }}
-                            rowKey={(record) => record.timestamp + record.message}
+                            rowKey={(record, index) => record.timestamp + record.message + index}
                         />
                     </div>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+                <Col span={24}>
+                    <Card title="Статистика логов" style={{ minHeight: '400px' }}>
+                        <ResponsiveContainer width="100%" height={350}>
+                            <BarChart data={stats}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Bar dataKey="count" onClick={(data) => setLevelFilter(data.name)}>
+                                    {stats.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#8884d8'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                        <div style={{ textAlign: 'center', color: '#8c8c8c', fontSize: '12px', marginTop: '8px' }}>
+                            Кликните на столбец для фильтрации по уровню
+                        </div>
+                    </Card>
                 </Col>
             </Row>
         </div>
