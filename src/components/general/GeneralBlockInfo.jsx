@@ -7,7 +7,6 @@ import GeneralUnderDevelopment from "./UnderDevelopment.jsx";
 import WorkerPremiesBlockInfo from "../dashboard/dashboard_worker/WorkerPremies.jsx";
 import RenderReports from "../dashboard/dashboard_worker/reports_table/RenderReports.jsx";
 import ChairmanReports from "../dashboard/dashboard_chairman/ChairmanReports.jsx";
-import "../../styles/components/BlockInfo.scss";
 import GeneralKnowledgeBaseBlockInfo from "../dashboard/dashboard_general/GeneralKnowledgeBase.jsx";
 import OperatorTestsDashboard from "../dashboard/dashboard_operator/OperatorTestsPage.jsx";
 import WorkerTestsPage from "../dashboard/dashboard_worker/WorkerTestsPage.jsx";

@@ -2,7 +2,6 @@ import React from "react";
 import Modal from "./Modal.jsx";
 import useThemeStore from "../../store/useThemeStore.js";
 import { Sun, Moon, Type, Palette, RotateCcw, Check } from "lucide-react";
-import "../../styles/components/SettingsModal.scss";
 
 const PRESET_COLORS = [
   "#e21a1c", // Default Red

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import "../../styles/components/CurrencyRatesWidget.scss";
 import { fetchConversionRates } from "../../api/conversion/conversion.js";
 import {
   buildCurrencyRateRows,

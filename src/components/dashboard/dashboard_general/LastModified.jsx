@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Select from '../../elements/Select';
-import '../../../styles/components/LastModified.scss';
 
 const monthNames = [
   'Январь', 'Февраль', 'Март', 'Апрель',

@@ -12,7 +12,10 @@ export default function Select({
   placeholder,
   disabled,
   dropdownPosition,
+  required,
 }) {
+  const errorMessage = typeof error === 'object' ? error?.[id] : error;
+
   return (
     <CustomSelect
       id={id}
@@ -20,12 +23,14 @@ export default function Select({
       value={value}
       onChange={onChange}
       options={options}
-      error={error?.[id]}
+      error={errorMessage}
       className={className}
       style={style}
       placeholder={placeholder}
       disabled={disabled}
       dropdownPosition={dropdownPosition}
+      required={required}
     />
   );
 }
+

@@ -1,5 +1,4 @@
 import React from 'react'
-import '../../styles/components/BlockInfo.scss'
 import UnderDevelopmentPage from '../dashboard/dashboard_general/UnderDevelopment';
 import { AnimatePresence, motion } from 'framer-motion';
 

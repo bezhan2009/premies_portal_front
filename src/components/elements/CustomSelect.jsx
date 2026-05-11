@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion as Motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import "../../styles/components/CustomSelect.scss";
 
 const DROPDOWN_MAX_HEIGHT = 260;
 const VIEWPORT_OFFSET = 8;

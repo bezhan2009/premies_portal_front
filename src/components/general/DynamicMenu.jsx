@@ -1,4 +1,3 @@
-import "../../styles/components/Menu.scss";
 import LogoImageComponent from "../Logo.jsx";
 import LogoutButton from "./Logout.jsx";
 import { Link, useNavigate } from "react-router-dom";
