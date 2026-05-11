@@ -1,8 +1,4 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import "../../../styles/components/Table.scss";
-import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/AddCardPriceForm.scss";
-import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";

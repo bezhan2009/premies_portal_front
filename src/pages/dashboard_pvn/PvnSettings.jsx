@@ -1,8 +1,5 @@
 // pages/PVN/PVNSettings.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import "../../styles/components/Table.scss";
-import "../../styles/components/ProcessingIntegration.scss";
-import "../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../hooks/useExcelExport.js";
 import { useTableSort } from "../../hooks/useTableSort.js";
 import SortIcon from "../../components/general/SortIcon.jsx";

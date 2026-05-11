@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { cardBalanceApi } from "../../../api/cardBalance/cardBalance";
-import "../../../styles/components/CardBalance.scss";
 import { formatDate } from "../../../api/utils/date";
 
 export default function CardBalance() {

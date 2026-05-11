@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "../../../styles/components/BlockInfo.scss";
 
 export default function SendSmsForm() {
   const [phoneNumber, setPhoneNumber] = useState("");
