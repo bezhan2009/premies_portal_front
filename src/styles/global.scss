@@ -48,15 +48,16 @@ body {
   border-radius: 50px;
   margin: 0 0 30px 0;
   position: relative;
+  overflow: hidden;
 
   > span {
     background-color: var(--primary-hover);
     position: absolute;
     border-radius: 50px;
-    width: 250px;
+    width: 50%;
     height: 45px;
     z-index: 1;
-    transition: all 0.3s linear;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   > .activeL {
@@ -64,12 +65,12 @@ body {
   }
 
   > .activeR {
-    left: calc(100% - 250px);
+    left: 50%;
   }
 
   > button {
     height: 45px;
-    width: 250px;
+    flex: 1;
     border: none;
     border-radius: 50px;
     cursor: pointer;
@@ -78,6 +79,7 @@ body {
     position: relative;
     z-index: 2;
     background-color: transparent;
+    transition: color 0.3s ease;
   }
 
   > button.active {
@@ -179,17 +181,35 @@ textarea:focus {
 
 .selectAll-toggle {
   background-color: var(--primary-color);
-  padding: 1rem 2rem;
-  background: var(--primary-color);
+  padding: 0.75rem 1.5rem;
   color: white;
   border: none;
-  border-radius: 0.75rem;
-  font-size: 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
   font-weight: 600;
-  transform: translateY(-1px);
   cursor: pointer;
-  height: 3.5rem;
-  transition: all 0.3s ease;
+  height: auto;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+
+  &:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &.active {
+    background-color: var(--primary-hover);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
 }
 
 .active-table {
@@ -902,125 +922,127 @@ tr:nth-child(5) { animation-delay: 0.25s; }
   animation: fadeIn 0.3s ease-out;
 
   > main {
-    // height: 1103px;
-    width: 98%;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
     background-color: var(--bg-surface);
     border-radius: 12px;
-    padding: 20px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    // grid-template-rows: auto auto 1fr;
     animation: fadeIn 0.4s ease-out;
+    box-shadow: var(--shadow-md);
+
+    @media (max-width: 768px) {
+      padding: 16px;
+      border-radius: 0;
+    }
 
     .my-applications-header {
       display: flex;
-      gap: 15px;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
       animation: fadeIn 0.5s ease-out;
 
       button {
-        border-radius: 12px;
-        padding: 10px 20px;
+        border-radius: 10px;
+        padding: 8px 16px;
         background-color: #999;
         color: #fff;
         border: none;
-        font-size: 16px;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s ease;
         animation: fadeIn 0.6s ease-out;
-      }
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
 
-      .filter {
-        background-color: #999;
-      }
-
-      .edit {
-        background-color: #999;
+        &:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
       }
 
       .save {
         background-color: var(--primary-color);
       }
 
-      .Unloading {
-        background-color: green;
+      .Unloading, .Report {
+        background-color: #217346;
       }
-
-      .Report {
-        background-color: green;
-      }
-
+      
       & > div {
         display: flex;
+        flex-wrap: wrap;
         gap: 10px;
-        position: relative;
         animation: fadeIn 0.6s ease-out;
 
         .input {
-          display: flex;
-          height: 60%;
-          width: 300px;
-          animation: fadeIn 0.7s ease-out;
-
+          min-width: 200px;
+          flex: 1;
+          
           input {
-            height: 100%;
+            height: 40px;
           }
         }
 
         button {
-          padding: 10px 40px;
-          height: 100% !important;
-          margin-left: -30px;
+          margin-left: 0;
           background-color: var(--primary-color);
-          animation: fadeIn 0.7s ease-out;
         }
       }
 
       .select {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         animation: fadeIn 0.6s ease-out;
+        min-width: 150px;
 
         select {
           width: 100%;
-          height: 50px;
-          padding: 10px;
+          height: 40px;
+          padding: 0 12px;
           background-color: var(--bg-color);
-          border-radius: 12px;
-          border: none;
+          border-radius: 10px;
+          border: 1px solid var(--border-color);
           color: var(--text-color);
           animation: fadeIn 0.7s ease-out;
 
           &:focus {
-            outline: var(--primary-color) solid 2px;
-            background-color: var(--text-color) 00092;
-            color: #fff;
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
           }
-        }
-
-        p {
-          position: absolute;
-          bottom: 0;
         }
       }
     }
 
     .my-applications-sub-header {
       display: flex;
-      gap: 30px;
-      margin-top: 20px;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
       animation: fadeIn 0.6s ease-out;
-      height: 35px;
+      height: auto;
+      align-items: center;
 
       > div {
         display: flex;
-        gap: 15px;
+        gap: 10px;
         align-items: center;
+        flex-wrap: wrap;
 
         .input {
-          display: flex;
-          align-items: center;
-          width: 80px;
-          animation: fadeIn 0.7s ease-out;
+          width: 150px;
+          
+          input {
+            height: 36px;
+          }
         }
       }
     }
@@ -1030,6 +1052,8 @@ tr:nth-child(5) { animation-delay: 0.25s; }
       margin-top: 20px;
       overflow: auto;
       animation: fadeIn 0.7s ease-out;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
     }
   }
 }
@@ -1756,19 +1780,24 @@ button:active {
 /* ===== GENERAL BUTTON STYLES ===== */
 
 .button {
-  padding: 10px 20px;
-  font-size: 14px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   font-weight: 600;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--bg-surface);
   color: var(--text-color);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   outline: none;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .button:hover {

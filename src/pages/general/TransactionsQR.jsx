@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
 import Input from "../../components/elements/Input.jsx";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
@@ -29,6 +30,9 @@ export default function TransactionsQR() {
   const [merchants, setMerchants] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 50;
   const [showFilters, setShowFilters] = useState(false);
 
   const [isUsOnThem, setIsUsOnThem] = useState(false);
@@ -64,10 +68,12 @@ export default function TransactionsQR() {
   const [filters, setFilters] = useState({});
   const [alert, setAlert] = useState(null);
 
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(true);
+  const [showMerchantTranslator, setShowMerchantTranslator] = useState(false);
+  const [merchantSearch, setMerchantSearch] = useState("");
 
   const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
   const backendMain = import.meta.env.VITE_BACKEND_URL;
@@ -132,7 +138,7 @@ export default function TransactionsQR() {
   );
 
   const fetchData = useCallback(
-    async (type = "themOnUs") => {
+    async (type = "themOnUs", pageNum = 1) => {
       try {
         setLoading(true);
         const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
@@ -140,17 +146,28 @@ export default function TransactionsQR() {
         const startDate = data?.start_date ?? "2025-09-25";
         const endDate = data?.end_date ?? "2025-10-01";
 
-        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
+        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
 
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
         const json = await resp.json();
-        setTableData(json || []);
-        showAlert(`Загружено ${json.length} записей`, "success");
+        
+        if (Array.isArray(json)) {
+            if (pageNum === 1) {
+                setTableData(json);
+            } else {
+                setTableData(prev => [...prev, ...json]);
+            }
+            setHasMore(json.length === PAGE_SIZE);
+            showAlert(`Загружено ${json.length} записей`, "success");
+        } else {
+            setHasMore(false);
+        }
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
         showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
-        setTableData([]);
+        if (pageNum === 1) setTableData([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -158,23 +175,33 @@ export default function TransactionsQR() {
     [backendQR, data.end_date, data.start_date],
   );
 
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    const type = isUsOnThem ? "usOnThem" : "themOnUs";
+    fetchData(type, nextPage);
+  };
+
   const getBanks = useCallback(async () => {
     try {
-      const resp = await fetch(`${backendQR}banks`);
+      // Пользователь указал этот URL как верный для базы банков
+      const resp = await fetch("http://10.64.20.101:8080/banks", {
+        method: "GET",
+      });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
-      setBanks(json || []);
+      setBanks(Array.isArray(json) ? json : []);
     } catch (err) {
       console.error("Ошибка загрузки банков:", err);
       setBanks([]);
     }
-  }, [backendQR]);
+  }, []);
 
   const getMerchants = useCallback(async () => {
     try {
-      const resp = await fetch(`${backendMain}/merchants`, {
+      // Пользователь указал этот URL как верный для базы мерчантов
+      const resp = await fetch("http://10.65.10.20:7575/merchants", {
         method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
@@ -183,7 +210,7 @@ export default function TransactionsQR() {
       console.error("Ошибка загрузки мерчантов:", err);
       setMerchants([]);
     }
-  }, [backendMain, token]);
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
@@ -204,6 +231,13 @@ export default function TransactionsQR() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
+      const da = new Date(a.created_at || a.creation_datetime || 0).getTime();
+      const db = new Date(b.created_at || b.creation_datetime || 0).getTime();
+      
+      if (da !== db) {
+        return sortOrder === "asc" ? da - db : db - da;
+      }
+
       const ka = Number(a.id ?? a.tx_id ?? a.trnId ?? 0);
       const kb = Number(b.id ?? b.tx_id ?? b.trnId ?? 0);
       return sortOrder === "asc" ? ka - kb : kb - ka;
@@ -247,8 +281,9 @@ export default function TransactionsQR() {
   }, []);
 
   useEffect(() => {
-    if (isUsOnThem) fetchData("usOnThem");
-    else if (isThemOnUs) fetchData("themOnUs");
+    setPage(1);
+    if (isUsOnThem) fetchData("usOnThem", 1);
+    else if (isThemOnUs) fetchData("themOnUs", 1);
   }, [isUsOnThem, isThemOnUs, fetchData]);
 
   // Handle loan search
@@ -381,8 +416,9 @@ export default function TransactionsQR() {
 
   useEffect(() => {
     if (data?.start_date && data?.end_date) {
-      if (isUsOnThem) fetchData("usOnThem");
-      else if (isThemOnUs) fetchData("themOnUs");
+      setPage(1);
+      if (isUsOnThem) fetchData("usOnThem", 1);
+      else if (isThemOnUs) fetchData("themOnUs", 1);
     }
   }, [data.start_date, data.end_date, fetchData, isUsOnThem, isThemOnUs]);
 
@@ -527,17 +563,16 @@ export default function TransactionsQR() {
             </button>
           </div>
         </main>
-        <main>
-          <div className="my-applications-header header-with-balance">
+        <main className="transactions-main-content">
+          <div className="header-with-balance">
             <button
-              className={!showFilters ? "filter-toggle" : "Unloading"}
+              className={`button ${!showFilters ? "" : "active"}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               Фильтры
             </button>
-            {/* <div style={{ display: "flex", gap: "50px" }}> */}
             <button
-              className={`archive-toggle-activ ${isUsOnThem ? "active" : ""}`}
+              className={`button ${isUsOnThem ? "active" : ""}`}
               onClick={() => {
                 setIsUsOnThem(true);
                 setIsThemOnUs(false);
@@ -545,11 +580,11 @@ export default function TransactionsQR() {
                 setSelectAll(false);
               }}
             >
-              Наш клиент — чужой QR (Us on Them)
+              Наш клиент — чужой QR
             </button>
 
             <button
-              className={`archive-toggle ${isThemOnUs ? "active" : ""}`}
+              className={`button ${isThemOnUs ? "active" : ""}`}
               onClick={() => {
                 setIsThemOnUs(true);
                 setIsUsOnThem(false);
@@ -558,25 +593,18 @@ export default function TransactionsQR() {
                 setSelectAll(false);
               }}
             >
-              Наш QR — чужой клиент (Them on Us)
+              Наш QR — чужой клиент
             </button>
-            {/* </div> */}
 
             <button
-              className={`archive-toggle ${isLoans ? "active" : ""}`}
-              onClick={() => {
-                setIsLoans(true);
-                setIsUsOnThem(false);
-                setIsThemOnUs(false);
-                setSelectedRows([]);
-                setSelectAll(false);
-              }}
+              className={`button ${showMerchantTranslator ? "active" : ""}`}
+              onClick={() => setShowMerchantTranslator(!showMerchantTranslator)}
             >
-              Кредиты
+              Поиск мерчантов
             </button>
 
             <button
-              className="Unloading"
+              className="button button-success"
               onClick={handleExport}
               disabled={selectedRows.length === 0 || isLoading}
             >
@@ -584,21 +612,19 @@ export default function TransactionsQR() {
             </button>
 
             <button
-              className={selectAll ? "selectAll-toggle" : ""}
+              className={`button ${selectAll ? "active" : ""}`}
               onClick={toggleSelectAll}
             >
               {selectAll ? "Снять выделение" : "Выбрать все"}
             </button>
 
-            <div
-              className="activebank-balance"
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-            >
+            <div className="activebank-balance">
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   width: "100%",
+                  gap: "10px"
                 }}
               >
                 <span className="label">Баланс Активбанк:</span>
@@ -614,7 +640,8 @@ export default function TransactionsQR() {
                     display: "flex",
                     justifyContent: "space-between",
                     width: "100%",
-                    color: "#417cd5",
+                    color: "var(--primary-color)",
+                    marginTop: "4px"
                   }}
                 >
                   <span className="label">Выбрано:</span>
@@ -728,6 +755,47 @@ export default function TransactionsQR() {
                   setFilters((p) => ({ ...p, amount: e.target.value }))
                 }
               />
+            </div>
+          )}
+
+          {showMerchantTranslator && (
+            <div className="filters animate-slideIn" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+               <h3 style={{ marginBottom: "10px" }}>Поиск мерчант кодов</h3>
+               <div style={{ display: "flex", gap: "10px", width: "100%" }}>
+                  <input 
+                    placeholder="Введите код или название мерчанта..." 
+                    value={merchantSearch}
+                    onChange={(e) => setMerchantSearch(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="button" onClick={() => setMerchantSearch("")}>Очистить</button>
+               </div>
+               {merchantSearch && (
+                 <div style={{ marginTop: "10px", width: "100%", maxHeight: "200px", overflowY: "auto", background: "white", borderRadius: "8px", border: "1px solid #ddd" }}>
+                   <table className="limits-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Код</th>
+                          <th>Название</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {merchants
+                          .filter(m => 
+                            String(m.code).includes(merchantSearch) || 
+                            m.title.toLowerCase().includes(merchantSearch.toLowerCase())
+                          )
+                          .map(m => (
+                            <tr key={m.ID}>
+                              <td>{m.code}</td>
+                              <td>{m.title}</td>
+                            </tr>
+                          ))
+                        }
+                      </tbody>
+                   </table>
+                 </div>
+               )}
             </div>
           )}
 
@@ -915,41 +983,43 @@ export default function TransactionsQR() {
                             className="limits-table__td"
                             style={{ display: "flex", gap: "8px" }}
                           >
-                            <button
-                              className="selectAll-toggle"
-                              style={{ padding: "5px 10px", fontSize: "12px" }}
-                              onClick={() =>
-                                handleOpenGraph(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              График
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#2980b9",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() =>
-                                handleOpenDetails(credit.referenceId)
-                              }
-                              disabled={!credit.referenceId}
-                            >
-                              Детали
-                            </button>
-                            <button
-                              className="selectAll-toggle"
-                              style={{
-                                background: "#27ae60",
-                                padding: "5px 10px",
-                                fontSize: "12px",
-                              }}
-                              onClick={() => handleOpenRepayModal(credit)}
-                            >
-                              Погасить
-                            </button>
+                             <button
+                               className="button"
+                               style={{ padding: "5px 10px", fontSize: "12px" }}
+                               onClick={() =>
+                                 handleOpenGraph(credit.referenceId)
+                               }
+                               disabled={!credit.referenceId}
+                             >
+                               График
+                             </button>
+                             <button
+                               className="button"
+                               style={{
+                                 background: "#2980b9",
+                                 color: "white",
+                                 padding: "5px 10px",
+                                 fontSize: "12px",
+                               }}
+                               onClick={() =>
+                                 handleOpenDetails(credit.referenceId)
+                               }
+                               disabled={!credit.referenceId}
+                             >
+                               Детали
+                             </button>
+                             <button
+                               className="button"
+                               style={{
+                                 background: "#27ae60",
+                                 color: "white",
+                                 padding: "5px 10px",
+                                 fontSize: "12px",
+                               }}
+                               onClick={() => handleOpenRepayModal(credit)}
+                             >
+                               Погасить
+                             </button>
                           </td>
                         </tr>
                       ))}
@@ -968,168 +1038,169 @@ export default function TransactionsQR() {
                 Нет данных для отображения
               </div>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>
+              <Table
+                tableId="qr-transactions-table"
+                dataSource={sortedData}
+                rowKey={getRowKey}
+                pagination={{ pageSize: 20 }}
+                loading={loading}
+                scroll={{ x: "max-content", y: 600 }}
+              >
+                <Table.Column
+                  title={
+                    <input
+                      type="checkbox"
+                      className="custom-checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
+                  }
+                  key="selection"
+                  width={60}
+                  render={(_, row) => {
+                    const key = getRowKey(row);
+                    return (
                       <input
                         type="checkbox"
                         className="custom-checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
+                        checked={selectedRows.includes(key)}
+                        onChange={(e) => handleCheckboxToggle(key, e.target.checked)}
                       />
-                    </th>
-                    <th
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        setSortOrder((s) => (s === "asc" ? "desc" : "asc"))
-                      }
-                    >
-                      ID {sortOrder === "asc" ? "▲" : "▼"}
-                    </th>
-                    {isUsOnThem ? (
-                      <>
-                        <th>ФИО</th>
-                        <th>Телефон</th>
-                      </>
-                    ) : null}
-                    {isThemOnUs ? (
-                      <>
-                        <th>Мерчант</th>
-                        <th>Код терминала</th>
-                        {/* <th>partner_trn_id</th> */}
-                      </>
-                    ) : (
-                      <>
-                        <th>Номер в АРМ</th>
-                        <th>qrId</th>
-                      </>
-                    )}
-                    <th>Статус</th>
-                    <th>Банк отправителя</th>
-                    <th>Банк получателя</th>
-                    <th>Сумма</th>
-                    <th>Дата создания</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((row) => {
-                    const key = getRowKey(row);
-                    const merchantTitle =
-                      merchants.find((m) => m.code === row.merchant_code)
-                        ?.title ??
-                      row.merchant_code ??
-                      "-";
-                    return (
-                      <tr key={key}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="custom-checkbox"
-                            checked={selectedRows.includes(key)}
-                            onChange={(e) =>
-                              handleCheckboxToggle(key, e.target.checked)
-                            }
-                          />
-                        </td>
-
-                        <td>{key}</td>
-
-                        {isUsOnThem && (
-                          <>
-                            <td>{row.sender_name || "-"}</td>
-                            <td>{row.sender_phone || "-"}</td>
-                          </>
-                        )}
-
-                        {isThemOnUs ? (
-                          <>
-                            <td>{merchantTitle}</td>
-                            <td>{row.terminal_code || "-"}</td>
-                            {/* <td>{row.partner_trn_id || "-"}</td> */}
-                          </>
-                        ) : (
-                          <>
-                            <td>{row.trnId || "-"}</td>
-                            <td>{row.qrId || "-"}</td>
-                          </>
-                        )}
-
-                        <td>
-                          {row.status === "success" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcOk style={{ fontSize: 22 }} />
-                              <span style={{ color: "green" }}>Успешно</span>
-                            </div>
-                          ) : row.status === "process" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcProcess style={{ fontSize: 22 }} />
-                              <span style={{ color: "orange" }}>
-                                В процессе
-                              </span>
-                            </div>
-                          ) : row.status === "cancel" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcCancel style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>Отменено</span>
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              }}
-                            >
-                              <FcHighPriority style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>
-                                Высокий приоритет
-                              </span>
-                            </div>
-                          )}
-                        </td>
-
-                        <td>
-                          {banks.find(
-                            (b) =>
-                              b.id === row?.sender_bank ||
-                              b.bankId === row?.sender,
-                          )?.bankName || "-"}
-                        </td>
-                        <td>
-                          {banks.find((b) => b.id === row?.receiver)
-                            ?.bankName || "-"}
-                        </td>
-
-                        <td>{row.amount} с.</td>
-                        <td>
-                          {isUsOnThem
-                            ? formatDateForDisplay(row.created_at)
-                            : formatDateForDisplay(row.creation_datetime)}
-                        </td>
-                      </tr>
                     );
-                  })}
-                </tbody>
-              </table>
+                  }}
+                />
+                <Table.Column
+                  title="ID"
+                  key="id"
+                  width={100}
+                  render={(_, row) => row.id || "-"}
+                />
+
+                {/* ⚡️ Исправлено: каждое условие отдельно, без фрагментов */}
+                {isUsOnThem && (
+                  <Table.Column
+                    title="ФИО"
+                    dataIndex="sender_name"
+                    key="sender_name"
+                    render={(val) => val || "-"}
+                  />
+                )}
+                {isUsOnThem && (
+                  <Table.Column
+                    title="Телефон"
+                    dataIndex="sender_phone"
+                    key="sender_phone"
+                    render={(val) => val || "-"}
+                  />
+                )}
+
+                {isThemOnUs && (
+                  <Table.Column
+                    title="Мерчант"
+                    key="merchant"
+                    render={(_, row) => {
+                      const code = row.merchant_code || row.merchant_id;
+                      if (!code) return "—";
+                      return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
+                    }}
+                  />
+                )}
+                {isThemOnUs && (
+                  <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
+                )}
+                {isThemOnUs && (
+                  <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
+                )}
+
+                <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
+
+                {/* ⚡️ Исправлено: раздельные условия вместо тернарника с фрагментом */}
+                {isThemOnUs && (
+                  <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
+                )}
+                {!isThemOnUs && (
+                  <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                )}
+                {!isThemOnUs && (
+                  <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                )}
+
+                <Table.Column
+                  title="Статус"
+                  dataIndex="status"
+                  key="status"
+                  render={(status) => {
+                    if (status === "success") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcOk style={{ fontSize: 22 }} />
+                          <span style={{ color: "green" }}>Успешно</span>
+                        </div>
+                      );
+                    } else if (status === "process") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcProcess style={{ fontSize: 22 }} />
+                          <span style={{ color: "orange" }}>В процессе</span>
+                        </div>
+                      );
+                    } else if (status === "cancel") {
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcCancel style={{ fontSize: 22 }} />
+                          <span style={{ color: "red" }}>Отменено</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <FcHighPriority style={{ fontSize: 22 }} />
+                        <span style={{ color: "red" }}>Ошибка</span>
+                      </div>
+                    );
+                  }}
+                />
+                <Table.Column
+                  title="Банк отправителя"
+                  key="bank_sender"
+                  render={(_, row) => {
+                    const bankId = isUsOnThem ? row.sender_bank : row.sender;
+                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                  }}
+                />
+                <Table.Column
+                  title="Банк получателя"
+                  key="bank_receiver"
+                  render={(_, row) => {
+                    const bankId = row.receiver;
+                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                  }}
+                />
+                <Table.Column
+                  title="Сумма"
+                  key="amount"
+                  render={(_, row) => (
+                    <span style={{ fontWeight: "600" }}>
+                      {Number(row.amount).toLocaleString("ru-RU")} с.
+                    </span>
+                  )}
+                  sortValue={(row) => Number(row.amount)}
+                />
+                <Table.Column
+                  title="Дата создания"
+                  key="date"
+                  render={(_, row) => {
+                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                    return formatDateForDisplay(d);
+                  }}
+                  sortValue={(row) => {
+                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                    return new Date(d).getTime();
+                  }}
+                />
+              </Table>
             )}
           </div>
         </main>

@@ -60,9 +60,11 @@ import {
     FileSpreadsheet,
     Eye,
     Gift,
-    Wrench
+    Wrench,
+    Clock
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
+import { Tooltip, Dropdown, Menu } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
@@ -752,6 +754,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: CreditCard
                     },
                     {
+                        name: "Месячные лимиты",
+                        href: "/cashback/monthly-limits",
+                        key: "cashback_monthly_limits",
+                        icon: Activity
+                    },
+                    {
                         name: "Кэшбэк по QR",
                         href: "/cashback/qr-list",
                         key: "qr_cashback_list",
@@ -772,6 +780,38 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         href: "/agent-payments/list",
                         key: "payments_list",
                         icon: List
+                    },
+                ],
+            });
+        }
+
+        if (roles.includes(31)) {
+            additionalLinks.push({
+                name: "Логи",
+                key: "logs",
+                icon: FileText,
+                children: [
+                    {
+                        name: "Просмотр логов",
+                        href: "/admin/logs",
+                        key: "logs_viewer",
+                        icon: List
+                    },
+                ],
+            });
+        }
+
+        if (roles.includes(32)) {
+            additionalLinks.push({
+                name: "Фоновые задачи",
+                key: "daily_tasks",
+                icon: Clock,
+                children: [
+                    {
+                        name: "Управление джобами",
+                        href: "/admin/daily-tasks",
+                        key: "dt_management",
+                        icon: Sliders
                     },
                 ],
             });
@@ -929,23 +969,24 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         <span></span>
                     </button>
                 </div>
-                <nav className={`nav-links ${isOpen ? "visible" : "hidden"}`}>
+                <nav className={`nav-links ${isOpen ? "visible" : "collapsed-nav"}`}>
                     {links.map((link) => {
                         if (link.children) {
                             const isDropdownOpen = openDropdowns[link.key] || false;
                             const isActive = link.children.some(
                                 (child) => child.key === activeLink,
                             );
-                            return (
+
+                            const content = (
                                 <div key={link.key} className="dropdown-wrapper">
                                     <button
-                                        className={`dropdown-toggle ${isActive ? "active" : ""}`}
+                                        className={`dropdown-toggle ${isActive ? "active" : ""} ${!isOpen ? "collapsed-btn" : ""}`}
                                         onClick={(e) => {
                                             createRipple(e);
                                             toggleDropdown(link.key);
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isOpen ? 'flex-start' : 'center', width: '100%' }}>
                                             {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
                                             {isOpen && link.name}
                                         </div>
@@ -981,12 +1022,43 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                     )}
                                 </div>
                             );
+
+                            if (!isOpen) {
+                                return (
+                                    <Dropdown
+                                        key={link.key}
+                                        trigger={['click', 'hover']}
+                                        placement="rightTop"
+                                        overlay={
+                                            <Menu className="collapsed-flyout-menu">
+                                                <Menu.ItemGroup title={link.name}>
+                                                    {link.children.map((child) => (
+                                                        <Menu.Item key={child.key} icon={child.icon && <child.icon size={16} />}>
+                                                            <Link to={child.href} onClick={handleLinkClick}>
+                                                                {child.name}
+                                                            </Link>
+                                                        </Menu.Item>
+                                                    ))}
+                                                </Menu.ItemGroup>
+                                            </Menu>
+                                        }
+                                    >
+                                        <div className="collapsed-dropdown-trigger">
+                                            {content}
+                                        </div>
+                                    </Dropdown>
+                                );
+                            }
+
+                            return content;
                         }
-                        return (
+
+                        const linkContent = (
                             <Link
                                 key={link.key}
                                 to={link.href}
-                                className={`${link.key === activeLink ? "active" : ""}`}
+                                className={`${link.key === activeLink ? "active" : ""} ${!isOpen ? "collapsed-link" : ""}`}
+                                style={{ justifyContent: isOpen ? 'flex-start' : 'center' }}
                                 onClick={(e) => {
                                     createRipple(e);
                                     if (link.key === "applications") {
@@ -1003,6 +1075,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 )}
                             </Link>
                         );
+
+                        return !isOpen ? (
+                            <Tooltip key={link.key} title={link.name} placement="right">
+                                {linkContent}
+                            </Tooltip>
+                        ) : linkContent;
                     })}
                 </nav>
                 <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>

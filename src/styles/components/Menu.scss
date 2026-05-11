@@ -814,7 +814,7 @@
   transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
   z-index: 1000;
   border-radius: 0 16px 16px 0;
-  overflow: hidden;
+  overflow: visible; // Changed from hidden to visible to allow flyouts
   padding-bottom: 10px;
 }
 
@@ -849,6 +849,10 @@
   gap: 0.5rem;
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: none; // Remove scrollbar for Firefox
+  &::-webkit-scrollbar {
+    display: none; // Remove scrollbar for Chrome/Safari
+  }
   opacity: 1;
   transition:
     opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
@@ -880,8 +884,45 @@
   }
 }
 
-.nav-links.hidden {
-  @include hide-focuc;
+.nav-links.collapsed-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  align-items: center;
+  padding-top: 1rem;
+  
+  .collapsed-link, .collapsed-btn {
+    padding: 0.8rem;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; // For dropdown positioning if needed
+    
+    &:hover {
+      background: rgba(var(--primary-rgb), 0.1);
+      transform: scale(1.1);
+      
+      svg {
+        color: var(--primary-color);
+        filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.4));
+      }
+    }
+    
+    &.active {
+      background: var(--primary-color);
+      color: white;
+      
+      svg {
+        color: white;
+      }
+    }
+
+    svg {
+      transition: all 0.3s ease;
+    }
+  }
 }
 
 .dropdown-wrapper {
@@ -1296,4 +1337,55 @@
   80% {
     transform: translateX(5px);
   }
+}
+
+// Collapsed Flyout Menu Styles
+.collapsed-flyout-menu {
+  background: var(--bg-sidebar) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 8px !important;
+  min-width: 200px;
+
+  .ant-dropdown-menu-item-group-title {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px 4px;
+  }
+
+  .ant-dropdown-menu-item {
+    border-radius: 8px !important;
+    margin: 4px 0 !important;
+    padding: 8px 12px !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(var(--primary-rgb), 0.1) !important;
+    }
+
+    a {
+      color: var(--text-color) !important;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .anticon {
+      margin-right: 10px;
+      color: var(--primary-color);
+    }
+  }
+}
+
+.collapsed-dropdown-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
 }

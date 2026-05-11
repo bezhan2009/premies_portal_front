@@ -105,7 +105,7 @@ function getStatusMeta(tx) {
         return { label: "Успешно", color: "success", icon: "check" };
 
     if (desc.includes("приоритет") || desc.includes("высок"))
-        return { label: "Высокий приоритет", color: "error", icon: "priority" };
+        return { label: "Ошибка", color: "error", icon: "priority" };
 
     return { label: tx.responseDescription || "Ошибка", color: "error", icon: "cancel" };
 }
@@ -113,24 +113,24 @@ function getStatusMeta(tx) {
 // Простые SVG иконки - КАК В QR
 const IconCheck = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
     </svg>
 );
 
 const IconCancel = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
     </svg>
 );
 
 const IconPriority = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+        <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z" />
     </svg>
 );
 
 const getStatusIcon = (iconName) => {
-    switch(iconName) {
+    switch (iconName) {
         case "check": return <IconCheck />;
         case "cancel": return <IconCancel />;
         case "priority": return <IconPriority />;
@@ -285,169 +285,169 @@ export default function CheckoutTable({ transactions = [] }) {
             <div className="table-wrapper">
                 <table className="data-table">
                     <thead>
-                    <tr className="table-header-row">
-                        <th className="checkbox-header">
-                            <input
-                                type="checkbox"
-                                className="custom-checkbox"
-                                checked={allChecked}
-                                onChange={(e) => toggleAll(e.target.checked)}
-                                ref={(el) => {
-                                    if (el) el.indeterminate = someChecked;
-                                }}
-                            />
-                        </th>
+                        <tr className="table-header-row">
+                            <th className="checkbox-header">
+                                <input
+                                    type="checkbox"
+                                    className="custom-checkbox"
+                                    checked={allChecked}
+                                    onChange={(e) => toggleAll(e.target.checked)}
+                                    ref={(el) => {
+                                        if (el) el.indeterminate = someChecked;
+                                    }}
+                                />
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("id")}
-                        >
-                            ID{getSortArrow("id")}
-                        </th>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("id")}
+                            >
+                                ID{getSortArrow("id")}
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("bank")}
-                        >
-                            Банк{getSortArrow("bank")}
-                        </th>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("bank")}
+                            >
+                                Банк{getSortArrow("bank")}
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("terminal")}
-                        >
-                            Код терминала{getSortArrow("terminal")}
-                        </th>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("terminal")}
+                            >
+                                Код терминала{getSortArrow("terminal")}
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("utrnno")}
-                        >
-                            utrnno{getSortArrow("utrnno")}
-                        </th>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("utrnno")}
+                            >
+                                utrnno{getSortArrow("utrnno")}
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("status")}
-                        >
-                            Статус{getSortArrow("status")}
-                        </th>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("status")}
+                            >
+                                Статус{getSortArrow("status")}
+                            </th>
 
-                        <th>Тип</th>
+                            <th>Тип</th>
 
-                        <th
-                            className="sortable-header text-right"
-                            onClick={() => onSort("amount")}
-                        >
-                            Сумма{getSortArrow("amount")}
-                        </th>
+                            <th
+                                className="sortable-header text-right"
+                                onClick={() => onSort("amount")}
+                            >
+                                Сумма{getSortArrow("amount")}
+                            </th>
 
-                        <th
-                            className="sortable-header"
-                            onClick={() => onSort("date")}
-                        >
-                            Дата создания{getSortArrow("date")}
-                        </th>
-                    </tr>
+                            <th
+                                className="sortable-header"
+                                onClick={() => onSort("date")}
+                            >
+                                Дата создания{getSortArrow("date")}
+                            </th>
+                        </tr>
                     </thead>
 
                     <tbody>
-                    {filteredSorted.map((r) => {
-                        const checked = selectedIds.has(r.rowId);
-                        const money = formatMoneySmart(r.amount, r.currency);
-                        const rowClass = checked ? "row-selected" : "";
+                        {filteredSorted.map((r) => {
+                            const checked = selectedIds.has(r.rowId);
+                            const money = formatMoneySmart(r.amount, r.currency);
+                            const rowClass = checked ? "row-selected" : "";
 
-                        return (
-                            <tr key={r.rowId} className={`data-row ${rowClass}`}>
-                                <td className="checkbox-cell">
-                                    <input
-                                        type="checkbox"
-                                        className="custom-checkbox"
-                                        checked={checked}
-                                        onChange={(e) => toggleOne(r.rowId, e.target.checked)}
-                                    />
-                                </td>
+                            return (
+                                <tr key={r.rowId} className={`data-row ${rowClass}`}>
+                                    <td className="checkbox-cell">
+                                        <input
+                                            type="checkbox"
+                                            className="custom-checkbox"
+                                            checked={checked}
+                                            onChange={(e) => toggleOne(r.rowId, e.target.checked)}
+                                        />
+                                    </td>
 
-                                <td>
-                                    <div className="cell-id">{r.id ?? "—"}</div>
-                                </td>
+                                    <td>
+                                        <div className="cell-id">{r.id ?? "—"}</div>
+                                    </td>
 
-                                <td>
-                                    <div className="bank-info">
-                                        <div className="bank-name">{r.bankName || "—"}</div>
-                                        <div className="bin-info">
-                                            BIN: {r.bin6 || "—"}
+                                    <td>
+                                        <div className="bank-info">
+                                            <div className="bank-name">{r.bankName || "—"}</div>
+                                            <div className="bin-info">
+                                                BIN: {r.bin6 || "—"}
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
+                                    </td>
 
-                                <td>
-                                    <div className="terminal-info">
-                                        ATM: {r.atmId || "—"}
-                                    </div>
-                                </td>
+                                    <td>
+                                        <div className="terminal-info">
+                                            ATM: {r.atmId || "—"}
+                                        </div>
+                                    </td>
 
-                                <td>
-                                    <div className="utrnno-cell">
-                                        {r.utrnno ?? "—"}
-                                    </div>
-                                </td>
+                                    <td>
+                                        <div className="utrnno-cell">
+                                            {r.utrnno ?? "—"}
+                                        </div>
+                                    </td>
 
-                                <td>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "8px"
-                                        }}
-                                    >
-                                        <span style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            color: r.statusColor === "success" ? "green" :
-                                                r.statusColor === "error" ? "red" : "orange"
-                                        }}>
-                                            {getStatusIcon(r.statusIcon)}
-                                        </span>
-                                        <span style={{
-                                            color: r.statusColor === "success" ? "green" :
-                                                r.statusColor === "error" ? "red" : "orange"
-                                        }}>
-                                            {r.statusLabel}
-                                        </span>
-                                    </div>
-                                </td>
+                                    <td>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "8px"
+                                            }}
+                                        >
+                                            <span style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                color: r.statusColor === "success" ? "green" :
+                                                    r.statusColor === "error" ? "red" : "orange"
+                                            }}>
+                                                {getStatusIcon(r.statusIcon)}
+                                            </span>
+                                            <span style={{
+                                                color: r.statusColor === "success" ? "green" :
+                                                    r.statusColor === "error" ? "red" : "orange"
+                                            }}>
+                                                {r.statusLabel}
+                                            </span>
+                                        </div>
+                                    </td>
 
-                                <td>
-                                    <div
-                                        className="type-cell"
-                                        title={r.terminalAddress || ""}
-                                    >
-                                        {r.typeName || "—"}
-                                    </div>
-                                </td>
+                                    <td>
+                                        <div
+                                            className="type-cell"
+                                            title={r.terminalAddress || ""}
+                                        >
+                                            {r.typeName || "—"}
+                                        </div>
+                                    </td>
 
-                                <td className="text-right">
-                                    <div className="amount-cell">{money}</div>
-                                </td>
+                                    <td className="text-right">
+                                        <div className="amount-cell">{money}</div>
+                                    </td>
 
-                                <td>
-                                    <div className="date-time-cell">
-                                        <div className="date-cell">{r.date}</div>
-                                        <div className="time-cell">{r.time}</div>
-                                    </div>
+                                    <td>
+                                        <div className="date-time-cell">
+                                            <div className="date-cell">{r.date}</div>
+                                            <div className="time-cell">{r.time}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+
+                        {filteredSorted.length === 0 && (
+                            <tr>
+                                <td colSpan={9} className="no-data-cell">
+                                    Нет данных
                                 </td>
                             </tr>
-                        );
-                    })}
-
-                    {filteredSorted.length === 0 && (
-                        <tr>
-                            <td colSpan={9} className="no-data-cell">
-                                Нет данных
-                            </td>
-                        </tr>
-                    )}
+                        )}
                     </tbody>
                 </table>
             </div>

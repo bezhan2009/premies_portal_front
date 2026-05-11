@@ -58,8 +58,8 @@ const fields = [
     { key: "account", label: "Счёт", type: "text" },
     { key: "from_date", label: "Дата от", type: "date" },
     { key: "to_date", label: "Дата до", type: "date" },
-    { key: "from_time", label: "Время от", type: "time" },
-    { key: "to_time", label: "Время до", type: "time" },
+    { key: "from_time", label: "Время от", type: "text" },
+    { key: "to_time", label: "Время до", type: "text" },
     { key: "exclude_transaction_types", label: "Искл. типы", type: "text" },
     { key: "exclude_atm_ids", label: "Искл. ATM", type: "text" },
     { key: "exclude_mcc", label: "Искл. MCC", type: "text" },
@@ -72,6 +72,7 @@ const fields = [
     { key: "cashback_priority", label: "Приоритет кешбека", type: "number", step: "1" },
     { key: "monthly_limit", label: "Месячный лимит", type: "number", step: "0.01" },
     { key: "is_active", label: "Активен", type: "checkbox" },
+    { key: "created_at", label: "Дата создания", type: "date" },
 ];
 
 // Оптимизированный парсер без рекурсий и циклов
@@ -253,6 +254,12 @@ const TableCashbackSettings = () => {
     const [editedItem, setEditedItem] = useState({});
     const [newItem, setNewItem] = useState({ ...emptyForm });
     const [showAddModal, setShowAddModal] = useState(false);
+    const [previewItem, setPreviewItem] = useState(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [sortedInfo, setSortedInfo] = useState({
+        columnKey: "created_at",
+        order: "descend",
+    });
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -289,6 +296,10 @@ const TableCashbackSettings = () => {
             setLoading(false);
         }
     }, [backendURL]);
+
+    const handleTableChange = (pagination, filters, sorter) => {
+        setSortedInfo(sorter);
+    };
 
     useEffect(() => {
         fetchItems();
@@ -383,15 +394,74 @@ const TableCashbackSettings = () => {
         exportToExcel(items, cols, "Настройки кэшбэка");
     }, [items, exportToExcel]);
 
+    const handlePreview = (item) => {
+        const baseURL = "http://10.64.20.84:5012/api/Transactions/search-transactions";
+        const q = new URLSearchParams();
+
+        if (item.card_number && item.card_number !== "********") q.append("cardNumber", item.card_number);
+        if (item.card_id && item.card_id !== "********") q.append("cardId", item.card_id);
+        if (item.response_code) q.append("responseCode", item.response_code);
+        if (item.utrnno) q.append("utrnno", item.utrnno);
+        if (item.currency) q.append("currency", item.currency);
+        if (item.conCurrency) q.append("conCurrency", item.conCurrency);
+        q.append("reversal", item.reversal || 0);
+
+        if (Array.isArray(item.transaction_type)) {
+            item.transaction_type.forEach(tt => q.append("transactionTypes", tt));
+        }
+        if (item.atm_id) q.append("atmId", item.atm_id);
+        if (item.mcc) q.append("mcc", item.mcc);
+        if (item.account) q.append("account", item.account);
+        if (item.exclude_transaction_types) q.append("excludeTransactionTypes", item.exclude_transaction_types);
+        if (item.exclude_atm_ids) q.append("excludeAtmIds", item.exclude_atm_ids);
+        if (item.exclude_mcc) q.append("excludeMcc", item.exclude_mcc);
+        if (item.exclude_accounts) q.append("excludeAccounts", item.exclude_accounts);
+
+        // Dates/Times
+        const now = new Date();
+        // Временное окно: +- 10 минут от текущего времени (с учётом часового пояса устройства)
+        const fromObj = new Date(now.getTime() - 10 * 60 * 1000);
+        const toObj = new Date(now.getTime() + 10 * 60 * 1000);
+
+        // Форматирование даты локально
+        const defaultFromDate = fromObj.toLocaleDateString('sv-SE'); // sv-SE даёт формат YYYY-MM-DD
+        const defaultToDate = toObj.toLocaleDateString('sv-SE');
+
+        // Форматирование времени локально
+        const defaultFromTime = fromObj.toTimeString().slice(0, 8); // HH:MM:SS
+        const defaultToTime = toObj.toTimeString().slice(0, 8);
+
+        const fromDate = item.from_date || defaultFromDate;
+        const toDate = item.to_date || defaultToDate;
+        const fromTime = item.from_time || defaultFromTime;
+        const toTime = item.to_time || defaultToTime;
+
+        q.append("fromDate", fromDate);
+        q.append("toDate", toDate);
+        q.append("fromTime", fromTime);
+        q.append("toTime", toTime);
+
+        const fullURL = `${baseURL}?${q.toString()}`;
+        setPreviewItem({ url: fullURL, params: Object.fromEntries(q.entries()), rawParams: q.toString() });
+        setShowPreviewModal(true);
+    };
+
     const columns = useMemo(() => {
         const actionCol = {
             title: "Действия",
             key: "actions",
             width: 150,
-            render: (_, item) => editId === item.ID ? (
-                <button onClick={handleSave} className="action-buttons__btn">Сохранить</button>
-            ) : (
-                <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">Удалить</button>
+            render: (_, item) => (
+                <div style={{ display: "flex", gap: "8px" }}>
+                    {editId === item.ID ? (
+                        <button onClick={handleSave} className="action-buttons__btn">Сохранить</button>
+                    ) : (
+                        <>
+                            <button onClick={() => handlePreview(item)} className="action-buttons__btn" title="Превью запроса">🔍</button>
+                            <button onClick={() => handleDelete(item.ID)} className="action-buttons__btn">Удалить</button>
+                        </>
+                    )}
+                </div>
             ),
         };
 
@@ -399,6 +469,8 @@ const TableCashbackSettings = () => {
             title: field.label,
             dataIndex: field.key,
             key: field.key,
+            sorter: field.type === "number" ? (a, b) => a[field.key] - b[field.key] : (a, b) => String(a[field.key]).localeCompare(String(b[field.key])),
+            sortOrder: sortedInfo.columnKey === field.key ? sortedInfo.order : null,
             render: (_, item) => {
                 const isEditing = editId === item.ID;
                 if (isEditing) {
@@ -419,7 +491,7 @@ const TableCashbackSettings = () => {
             },
         }));
         return [...dataCols, actionCol];
-    }, [editId, editedItem, handleSave, handleDelete, handleDoubleClick]);
+    }, [editId, editedItem, handleSave, handleDelete, handleDoubleClick, sortedInfo]);
 
     return (
         <div className="block_info_prems content-page">
@@ -448,11 +520,53 @@ const TableCashbackSettings = () => {
                     dataSource={items}
                     rowKey={(record) => record?.ID ?? record?.id}
                     loading={{ spinning: loading, indicator: <Spinner size="small" /> }}
-                    pagination={false}
+                    pagination={{ pageSize: 10 }}
                     bordered
                     scroll={{ x: "max-content" }}
                     locale={{ emptyText: "Нет данных" }}
+                    onChange={handleTableChange}
                 />
+            )}
+
+            {showPreviewModal && (
+                <div className="modal-overlay" style={{
+                    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+                    background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        background: "#fff", padding: "24px", borderRadius: "8px", maxWidth: "80%", width: "800px",
+                        maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
+                    }}>
+                        <h3 style={{ marginTop: 0 }}>Превью запроса (daily_tasks)</h3>
+                        <p>Это URL, который джоба <code>ReturnCashbackCard</code> использует для поиска транзакций:</p>
+
+                        <div style={{ background: "#f5f5f5", padding: "12px", borderRadius: "4px", marginBottom: "16px", wordBreak: "break-all", fontFamily: "monospace", fontSize: "13px", border: "1px solid #ddd" }}>
+                            <strong>GET</strong> {previewItem?.url}
+                        </div>
+
+                        <h4>Параметры запроса:</h4>
+                        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+                            <thead>
+                            <tr style={{ background: "#f0f0f0" }}>
+                                <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Параметр</th>
+                                <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Значение</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {previewItem && Object.entries(previewItem.params).map(([key, val]) => (
+                                <tr key={key}>
+                                    <td style={{ border: "1px solid #ddd", padding: "8px", fontWeight: "bold" }}>{key}</td>
+                                    <td style={{ border: "1px solid #ddd", padding: "8px", wordBreak: "break-all" }}>{val}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button className="action-buttons__btn" onClick={() => setShowPreviewModal(false)}>Закрыть</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

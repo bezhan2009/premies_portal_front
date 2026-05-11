@@ -315,13 +315,17 @@ export const Table = ({
         Table: {
           headerBg: "var(--bg-secondary)",
           headerColor: "var(--text-color)",
+          headerSortHoverBg: "rgba(var(--primary-rgb), 0.05)",
+          headerSortActiveBg: "rgba(var(--primary-rgb), 0.1)",
+          bodySortBg: "rgba(var(--primary-rgb), 0.02)",
           rowHoverBg: "rgba(var(--primary-rgb), 0.08)",
           selectedRowBg: "rgba(var(--primary-rgb), 0.12)",
           selectedRowHoverBg: "rgba(var(--primary-rgb), 0.15)",
         },
         Pagination: {
           itemActiveBg: primaryColor,
-          activeBorderColor: primaryColor,
+          itemActiveColor: "#fff",
+          itemActiveBgDisabled: "rgba(0, 0, 0, 0.15)",
         },
         Select: {
           activeBorderColor: primaryColor,
@@ -364,18 +368,6 @@ export const Table = ({
 
     return `flexible-ant-table:${baseId || "default"}`;
   }, [children, columns, tableId]);
-  const [columnOrder, setColumnOrder] = useState([]);
-  const [columnWidths, setColumnWidths] = useState({});
-  const [sortState, setSortState] = useState({ columnKey: null, order: null });
-  const [paginationState, setPaginationState] = useState({
-    current: 1,
-    pageSize: restProps.pagination?.pageSize ?? 15,
-  });
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [draggedColumnKey, setDraggedColumnKey] = useState(null);
-  const [dropTargetKey, setDropTargetKey] = useState(null);
-  const prevContainerWidth = useRef(0);
-
   const sourceColumns = useMemo(
     () =>
       Array.isArray(columns) && columns.length
@@ -397,6 +389,31 @@ export const Table = ({
       })),
     [sourceColumns],
   );
+
+  const [columnOrder, setColumnOrder] = useState([]);
+  const [columnWidths, setColumnWidths] = useState({});
+  const [sortState, setSortState] = useState(() => {
+    const defaultSortColumn = sourceColumns.find((col) => col.sortOrder);
+    if (defaultSortColumn) {
+      return {
+        columnKey:
+          defaultSortColumn.key ??
+          (Array.isArray(defaultSortColumn.dataIndex)
+            ? defaultSortColumn.dataIndex.join(".")
+            : defaultSortColumn.dataIndex),
+        order: defaultSortColumn.sortOrder,
+      };
+    }
+    return { columnKey: null, order: null };
+  });
+  const [paginationState, setPaginationState] = useState({
+    current: 1,
+    pageSize: restProps.pagination?.pageSize ?? 15,
+  });
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [draggedColumnKey, setDraggedColumnKey] = useState(null);
+  const [dropTargetKey, setDropTargetKey] = useState(null);
+  const prevContainerWidth = useRef(0);
 
   useEffect(() => {
     try {
@@ -503,24 +520,26 @@ export const Table = ({
     const comparator =
       typeof sortColumn.sorterCompare === "function"
         ? sortColumn.sorterCompare
-        : (leftRecord, rightRecord) => {
-            const leftValue =
-              typeof sortColumn.sortValue === "function"
-                ? sortColumn.sortValue(leftRecord)
-                : getValueByPath(
-                    leftRecord,
-                    sortColumn.dataIndex ?? sortColumn.key,
-                  );
-            const rightValue =
-              typeof sortColumn.sortValue === "function"
-                ? sortColumn.sortValue(rightRecord)
-                : getValueByPath(
-                    rightRecord,
-                    sortColumn.dataIndex ?? sortColumn.key,
-                  );
+        : typeof sortColumn.sorter === "function"
+          ? sortColumn.sorter
+          : (leftRecord, rightRecord) => {
+              const leftValue =
+                typeof sortColumn.sortValue === "function"
+                  ? sortColumn.sortValue(leftRecord)
+                  : getValueByPath(
+                      leftRecord,
+                      sortColumn.dataIndex ?? sortColumn.key,
+                    );
+              const rightValue =
+                typeof sortColumn.sortValue === "function"
+                  ? sortColumn.sortValue(rightRecord)
+                  : getValueByPath(
+                      rightRecord,
+                      sortColumn.dataIndex ?? sortColumn.key,
+                    );
 
-            return compareValues(leftValue, rightValue);
-          };
+              return compareValues(leftValue, rightValue);
+            };
 
     return [...dataSource].sort((leftRecord, rightRecord) => {
       const result = comparator(leftRecord, rightRecord);
