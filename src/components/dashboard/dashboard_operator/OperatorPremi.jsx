@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "../../../styles/components/BlockInfo.scss";
 import Filters from "../../../components/dashboard/dashboard_general/Filters";
 import TablePremies from "../../../components/dashboard/dashboard_operator/TablePremies";
 import { AnimatePresence, motion } from "framer-motion";

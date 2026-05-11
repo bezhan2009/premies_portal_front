@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import "../../../styles/components/BlockInfo.scss";
 import Filters from "../../../components/dashboard/dashboard_general/Filters";
 import FiltersReports from "../../../components/dashboard/dashboard_operator/FiltersReports";
 import TableReportsCards from "../../../components/dashboard/dashboard_operator/table_reports/TableReportsCards";

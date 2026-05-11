@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Select from "../../elements/Select";
-import "../../../styles/components/TestsPage.scss";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/KnowledgeBase.scss";
 import Spinner from "../../Spinner.jsx";
 import { Viewer, Worker } from "@react-pdf-viewer/core";
 

@@ -1,6 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import "../../../../styles/components/Table.scss";
-import "../../../../styles/components/Office.scss";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import Input from "../../../elements/Input.jsx";

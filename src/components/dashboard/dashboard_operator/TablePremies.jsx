@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
 import Spinner from "../../Spinner.jsx";
-import "../../../styles/components/Table.scss";
 import SearchBar from "../../general/SearchBar.jsx";
 import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
 import { DownloadCloud } from "lucide-react";

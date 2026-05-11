@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/KnowledgeBase.scss";
 import fileLogo from "../../../assets/file_logo.png";
 
 import { Worker, Viewer } from "@react-pdf-viewer/core";

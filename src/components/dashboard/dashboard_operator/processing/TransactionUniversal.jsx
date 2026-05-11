@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "../../../../styles/components/ProcessingIntegration.scss";
-import "../../../../styles/components/BlockInfo.scss";
-import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
-import "../../../../styles/components/TxnFilter.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import { fetchTransactionsSearch } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
