@@ -1,0 +1,292 @@
+﻿
+> premies_portal@0.0.0 build
+> vite build
+
+[36mvite v6.3.5 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+строка:1 знак:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (DEPRECATION WAR...art Sass 3.0.0.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "./tokens.scss";
+  тФВ         ^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\global.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import 'variables/dashboard.scss';
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\dashboard.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import 'variables/not_found';
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\NotFound.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "./general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\variables\dashboard.scss 1:9  @import
+    src\styles\dashboard.scss 1:9            root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+2 тФВ @import "./general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\variables\not_found.scss 2:9  @import
+    src\styles\NotFound.scss 1:9             root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import 'variables/general';
+  тФВ         ^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\extraForm.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+2 тФВ @import 'variables/input';
+  тФВ         ^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\extraForm.scss 2:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+3 тФВ @import 'mixins/general';
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\extraForm.scss 3:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import '../variables/spinner';
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Spinner.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "./general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\variables\spinner.scss 1:9   @import
+    src\styles\components\Spinner.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../variables/table.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Table.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general";
+  тФВ         ^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\SearchBar.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Menu.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    тХ╖
+740 тФВ @import "../mixins/general.scss";
+    тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+    тХ╡
+    src\styles\components\Menu.scss 740:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/filters.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\WorkersDataReports.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "./general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\mixins\filters.scss 1:9                 @import
+    src\styles\components\WorkersDataReports.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\KnowledgeBase.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\TestsPage.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../variables/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\SettingsModal.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Logout.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../variables/filters.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Filters.scss 1:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+2 тФВ @import "../mixins/general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Filters.scss 2:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+3 тФВ @import "../mixins/filters.scss";
+  тФВ         ^^^^^^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\Filters.scss 3:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "./general.scss";
+  тФВ         ^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\mixins\filters.scss 1:9      @import
+    src\styles\components\Filters.scss 3:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  тХ╖
+1 тФВ @import "../mixins/general";
+  тФВ         ^^^^^^^^^^^^^^^^^^^
+  тХ╡
+    src\styles\components\LastModified.scss 1:9  root stylesheet
+
+[32mтЬУ[39m 6988 modules transformed.
+[33mnode_modules/pdfjs-dist/build/pdf.js (1982:23): Use of eval in "node_modules/pdfjs-dist/build/pdf.js" is strongly 
+discouraged as it poses security risks and may cause issues with minification.[39m
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                          [39m[1m[2m    1.12 kB[22m[1m[22m[2m тФВ gzip:     0.55 kB[22m
+[2mdist/[22m[32massets/favicon-32x32-BC9ArfeB.png   [39m[1m[2m    1.36 kB[22m[1m[22m
+[2mdist/[22m[32massets/user-D54FHgP_.png            [39m[1m[2m    7.18 kB[22m[1m[22m
+[2mdist/[22m[32massets/fileIcon-YhMEvbR9.png        [39m[1m[2m   15.07 kB[22m[1m[22m
+[2mdist/[22m[32massets/file_logo-z39qVxAR.png       [39m[1m[2m   15.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/mc-CeKIpTKd.jpg              [39m[1m[2m   19.26 kB[22m[1m[22m
+[2mdist/[22m[32massets/visa-DrwSQ4Eq.jpg            [39m[1m[2m   25.77 kB[22m[1m[22m
+[2mdist/[22m[32massets/front-passport-TAN4ay_O.jpg  [39m[1m[2m   48.40 kB[22m[1m[22m
+[2mdist/[22m[32massets/back-passport-D2jExpX1.jpg   [39m[1m[2m   49.72 kB[22m[1m[22m
+[2mdist/[22m[32massets/nc-8ZGBItOi.jpg              [39m[1m[2m  109.14 kB[22m[1m[22m
+[2mdist/[22m[32massets/active_logo-C3vc2mEN.png     [39m[1m[2m  115.91 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-DpMZFyIG.css           [39m[1m[2m  272.77 kB[22m[1m[22m[2m тФВ gzip:    48.74 kB[22m
+[2mdist/[22m[36massets/index-CcFHghNo.js            [39m[1m[33m6,461.18 kB[39m[22m[2m тФВ gzip: 1,297.73 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-m
+anualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32mтЬУ built in 28.34s[39m
