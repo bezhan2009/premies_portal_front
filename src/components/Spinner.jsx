@@ -1,5 +1,4 @@
 import React from "react";
-import "../styles/components/Spinner.scss";
 
 const resolveSizeClassName = (size) => {
   switch (size) {

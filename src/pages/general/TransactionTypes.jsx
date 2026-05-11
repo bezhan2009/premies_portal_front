@@ -1,6 +1,4 @@
 import Input from "../../components/elements/Input.jsx";
-import "../../styles/components/BlockInfo.scss";
-import "../../styles/components/TransactionTypes.scss";
 import { useEffect, useMemo, useState } from "react";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";

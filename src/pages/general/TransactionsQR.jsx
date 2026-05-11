@@ -5,8 +5,6 @@ import { useFormStore } from "../../hooks/useFormState.js";
 import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import Spinner from "../../components/Spinner.jsx";
-import "../../styles/checkbox.scss";
-import "../../styles/components/TransactionsQR.scss";
 import QRStatistics from "./QRStatistics.jsx";
 
 // New imports for loan integration

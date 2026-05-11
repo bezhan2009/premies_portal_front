@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import "../../styles/login.scss";
 import LogoImageComponent from "../../components/Logo";
 import Spinner from "../../components/Spinner";
 import { login } from "../../api/auth";

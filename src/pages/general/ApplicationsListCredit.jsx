@@ -7,7 +7,6 @@ import { statusCredit } from "../../const/defConst";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
-import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { apiClientCredit } from "../../api/utils/apiClientCredit.js";

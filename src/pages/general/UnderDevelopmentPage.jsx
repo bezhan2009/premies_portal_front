@@ -1,4 +1,3 @@
-import '../../styles/dashboard.scss';
 import HeaderWorker from '../../components/dashboard/dashboard_worker/MenuWorker';
 import GetBlockInfo from '../../components/general/GeneralBlockInfo.jsx';
 import { Helmet } from 'react-helmet';

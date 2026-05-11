@@ -8,7 +8,6 @@ import { MdPayment, MdCheckCircle } from "react-icons/md";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import { toast } from "react-toastify";
 import { tableDataDef } from "../../const/defConst.js";
-import "../../styles/components/StatsEQMS.scss";
 
 export default function EQMSList() {
   const [tableData, setTableData] = useState([]);

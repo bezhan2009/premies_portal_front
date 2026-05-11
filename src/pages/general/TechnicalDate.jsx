@@ -1,6 +1,5 @@
 // components/TechnicalDayBanner/TechnicalDayBanner.tsx
 import React from 'react';
-import '../../styles/TechnicalDayBanner.scss';
 
 function TechnicalDayBanner() {
   const handleRefresh = () => {

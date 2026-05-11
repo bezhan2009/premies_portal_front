@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import "../../styles/components/CheckoutTable.css";
-import "../../styles/checkbox.scss";
 
 import { BIN_BANKS } from "../../shared/bin-banks/bin-banks";
 

@@ -7,13 +7,11 @@ import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
-import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import "../../styles/components/ApplicationsList.scss";
 
 function ImagePreviewModal({ imageUrl, onClose }) {
     if (!imageUrl) return null;
