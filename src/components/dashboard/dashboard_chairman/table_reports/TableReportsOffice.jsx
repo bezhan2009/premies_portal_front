@@ -1,8 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
 import LastModified from "../../dashboard_general/LastModified.jsx";
-import "../../../../styles/components/TablesChairman.scss";
-import "../../../../styles/pagination.scss";
 import Spinner from "../../../Spinner.jsx";
 import { fetchOffices } from "../../../../api/offices/all_offices.js";
 import { fetchUserById } from "../../../../api/users/get_user.js";

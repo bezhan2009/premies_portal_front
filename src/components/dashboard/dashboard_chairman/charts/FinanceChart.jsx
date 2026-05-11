@@ -8,7 +8,6 @@ import {
   YAxis,
 } from "recharts";
 import CustomFinanceTooltip from "./CustomFinanceTooltip.jsx";
-import "../../../../styles/components/ChartComponents.scss";
 import { AnimatePresence, motion } from "framer-motion";
 import { fetchEmployee } from "../../../../api/chairman/reports/employee_spec.js";
 import { getMonthName } from "../../../../api/utils/date.js";

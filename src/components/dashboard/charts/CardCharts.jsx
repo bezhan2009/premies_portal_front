@@ -7,7 +7,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import "../../../styles/components/ChartComponents.scss";
 import CustomCardsTooltip from "./CustomCardsTooltip.jsx";
 import { fetchEmployee } from "../../../api/chairman/reports/employee_spec.js";
 import { getMonthName } from "../../../api/utils/date.js";
