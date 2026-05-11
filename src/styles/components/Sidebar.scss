@@ -1,4 +1,3 @@
-@import "../mixins/general.scss";
 
 .sidebar {
   position: fixed;
@@ -283,20 +282,3 @@
   }
 }
 
-// Основной контент с учетом сайдбара
-.main-content {
-  margin-left: 280px;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 100vh;
-  background: #f8f9fa;
-
-  &.sidebar-collapsed {
-    margin-left: 70px;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0 !important;
-  }
-}

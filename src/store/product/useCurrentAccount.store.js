@@ -34,9 +34,10 @@ export const useAccountStore = create((set) => ({
             case "Корпоративный":
               accountType = 3;
               break;
-            default:
+            default: {
               const num = Number(account.accountType);
               accountType = isNaN(num) ? 0 : num;
+            }
           }
         }
 
@@ -53,9 +54,10 @@ export const useAccountStore = create((set) => ({
             case "RUB":
               currency = 2;
               break;
-            default:
+            default: {
               const num = Number(account.currency);
               currency = isNaN(num) ? 0 : num;
+            }
           }
         }
 
