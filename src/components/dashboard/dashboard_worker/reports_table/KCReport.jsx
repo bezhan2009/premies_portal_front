@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../../../../styles/components/WorkersDataReports.scss';
 import ReportsContent from "./ReportContent.jsx";
 import Spinner from "../../../Spinner.jsx";
 import {fetchReportKCAndTests} from "../../../../api/workers/reports/report_kc.js";

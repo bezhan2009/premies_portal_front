@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../../styles/components/ReportButton.scss';
 
 const ReportButton = ({ navigateTo, descButton }) => {
     const navigate = useNavigate();

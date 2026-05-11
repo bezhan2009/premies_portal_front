@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import "../../../styles/components/TestsPage.scss";
-import "../../../styles/components/WorkerTests.scss";
 import Spinner from "../../Spinner.jsx";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import TestTimer from "./TestTimer.jsx";

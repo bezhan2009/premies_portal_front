@@ -1,7 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import Header from './WorkerPremiesHeader.jsx';
 import { fetchWorkerData } from '../../../api/workers/reports/worker_premies.js';
-import '../../../styles/components/WorkerPremies.scss';
 import ReportButton from "./ReportButton.jsx";
 import Spinner from "../../Spinner.jsx";
 import AlertMessage from "../../general/AlertMessage.jsx";
