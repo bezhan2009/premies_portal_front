@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Select, Button, Space, Typography, Tag, Row, Col } from 'antd';
+import { Card, Select, Button, Space, Typography, Tag, Row, Col, DatePicker } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import FlexibleAntTable from '../../components/table/FlexibleAntTable';
 import { apiClient } from '../../api/utils/apiClient';
@@ -7,6 +7,7 @@ import { RefreshCw, Filter } from 'lucide-react';
 
 const { Title } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const LogsPage = () => {
     const [logs, setLogs] = useState([]);
@@ -14,6 +15,7 @@ const LogsPage = () => {
     const [loading, setLoading] = useState(false);
     const [levelFilter, setLevelFilter] = useState('');
     const [serviceFilter, setServiceFilter] = useState('');
+    const [dateRange, setDateRange] = useState(null);
 
     const fetchLogs = async () => {
         setLoading(true);
@@ -21,10 +23,14 @@ const LogsPage = () => {
             const params = {};
             if (levelFilter) params.level = levelFilter;
             if (serviceFilter) params.service = serviceFilter;
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                params.startDate = dateRange[0].toISOString();
+                params.endDate = dateRange[1].toISOString();
+            }
             
             const [logsRes, statsRes] = await Promise.all([
                 apiClient.get('/logs', { params }),
-                apiClient.get('/logs/stats')
+                apiClient.get('/logs/stats', { params })
             ]);
 
             setLogs(logsRes.data.logs || []);
@@ -44,7 +50,7 @@ const LogsPage = () => {
 
     useEffect(() => {
         fetchLogs();
-    }, [levelFilter, serviceFilter]);
+    }, [levelFilter, serviceFilter, dateRange]);
 
     const columns = [
         {
@@ -150,8 +156,17 @@ const LogsPage = () => {
                                     <Option value="daily_tasks">daily_tasks</Option>
                                 </Select>
                             </Space>
-                            {(levelFilter || serviceFilter) && (
-                                <Button type="link" onClick={() => { setLevelFilter(''); setServiceFilter(''); }}>
+                            <Space>
+                                <span>Период:</span>
+                                <RangePicker 
+                                    showTime 
+                                    value={dateRange} 
+                                    onChange={setDateRange} 
+                                    placeholder={['Начало', 'Конец']}
+                                />
+                            </Space>
+                            {(levelFilter || serviceFilter || dateRange) && (
+                                <Button type="link" onClick={() => { setLevelFilter(''); setServiceFilter(''); setDateRange(null); }}>
                                     Сбросить
                                 </Button>
                             )}
