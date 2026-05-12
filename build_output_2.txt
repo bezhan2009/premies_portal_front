@@ -1,0 +1,96 @@
+
+> premies_portal@0.0.0 build
+> vite build
+
+vite v6.3.5 building for production...
+transforming...
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+2 │ @import "variables/font.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 2:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │ @import "variables/general.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 3:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+4 │ @import "variables/table.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 4:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+5 │ @import "variables/spinner.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 5:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+6 │ @import "variables/logo.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 6:9  root stylesheet
+
+✓ 3 modules transformed.
+✗ Build failed in 411ms
+error during build:
+[vite:css] [sass] Undefined variable.
+  ╷
+5 │ $color: $primary-color;
+  │         ^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 5:9   @use
+  src/styles/components/Spinner.scss 1:1  @import
+  src/styles/index.scss 35:9              root stylesheet
+file: /home/sk/dev/premies_portal_front/src/styles/index.scss
+
+[sass] Undefined variable.
+  ╷
+5 │ $color: $primary-color;
+  │         ^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 5:9   @use
+  src/styles/components/Spinner.scss 1:1  @import
+  src/styles/index.scss 35:9              root stylesheet
+
+Error: Undefined variable.
+  ╷
+5 │ $color: $primary-color;
+  │         ^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 5:9   @use
+  src/styles/components/Spinner.scss 1:1  @import
+  src/styles/index.scss 35:9              root stylesheet
+    at Object.wrapException (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:2302:47)
+    at /home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:88859:23
+    at _wrapJsFunctionForAsync_closure.$protected (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:4921:15)
+    at _wrapJsFunctionForAsync_closure.call$2 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:38028:12)
+    at Object._asyncStartSync (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:4885:20)
+    at _EvaluateVisitor2.visitVariableExpression$body$_EvaluateVisitor0 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:88865:16)
+    at _EvaluateVisitor2.visitVariableExpression$1 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:88839:19)
+    at VariableExpression0.accept$1$1 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:124423:22)
+    at VariableExpression0.accept$1 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:124426:19)
+    at /home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:88621:23
