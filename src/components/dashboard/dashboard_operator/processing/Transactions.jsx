@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Select from "../../../elements/Select";
-import "../../../../styles/components/ProcessingIntegration.scss";
-import "../../../../styles/components/BlockInfo.scss";
-import "../../../../styles/components/DashboardOperatorProcessingTransactions.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import {
   fetchTransactionsByCardId,

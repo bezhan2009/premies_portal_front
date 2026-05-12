@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Select from '../../elements/Select';
-import '../../../styles/components/ClientSelectorModal.scss';
 
 const ClientSelectorModal = ({
                                  clients,

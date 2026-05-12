@@ -1,8 +1,4 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import "../../../styles/components/Table.scss";
-import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/AddCardPriceForm.scss";
-import "../../../styles/components/SearchBar.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import AddCashbackModal from "./AddCashbackModal.jsx";
 import Spinner from "../../../components/Spinner.jsx";

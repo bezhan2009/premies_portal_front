@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import "../../../../styles/components/WorkersDataReports.scss";
 import ReportsContent from "./ReportContent.jsx";
 import { fetchReportCards } from "../../../../api/workers/reports/report_cards.js";
 import Spinner from "../../../Spinner.jsx";

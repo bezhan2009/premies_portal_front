@@ -6,7 +6,6 @@ import {
   getCurrencyDisplayLabel,
 } from "../../../api/utils/getCurrencyCode.js";
 import Spinner from "../../../components/Spinner.jsx";
-import "../../../styles/dashboard/CurrencyRates.scss";
 
 const CURRENCY_META = {
   USD: { flag: "🇺🇸", label: "Доллар США" },

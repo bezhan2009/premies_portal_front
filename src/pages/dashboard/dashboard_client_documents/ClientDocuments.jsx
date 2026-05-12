@@ -6,9 +6,6 @@ import DocumentPreviewModal from "../../../components/client-documents/DocumentP
 import ClientDocumentUploadModal from "../../../components/client-documents/ClientDocumentUploadModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import { getClientSelfieDocument } from "../../../utils/clientDocuments.js";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/ClientDocuments.scss";
 
 export default function DashboardClientDocuments() {
   const [inn, setInn] = useState("");

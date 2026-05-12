@@ -1,5 +1,4 @@
 import React from 'react';
-import '../../../../styles/components/WorkersDataReports.scss';
 import ReportsContent from "./ReportContent.jsx";
 
 const CardTurnoversReport = () => {

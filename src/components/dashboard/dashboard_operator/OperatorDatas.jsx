@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "../../../styles/components/BlockInfo.scss";
 import Filters from "../../../components/dashboard/dashboard_general/Filters";
 import FiltersDatas from "./FiltersData";
 import OfficeTable from "./table_datas/TableOffice";

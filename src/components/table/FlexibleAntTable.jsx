@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { Table as AntTable, ConfigProvider, theme } from "antd";
 import ruRU from "antd/locale/ru_RU";
-import "../../styles/components/FlexibleTable.scss";
 import useThemeStore from "../../store/useThemeStore";
 
 // Static parts of the theme

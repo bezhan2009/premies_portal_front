@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Select from '../../components/elements/Select.jsx';
-import '../../styles/login.scss';
-import '../../styles/extraForm.scss';
 import LogoImageComponent from '../../components/Logo';
 import Spinner from '../../components/Spinner';
 import { Helmet } from 'react-helmet';

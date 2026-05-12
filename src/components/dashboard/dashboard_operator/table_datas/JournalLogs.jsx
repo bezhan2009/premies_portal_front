@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import "../../../../styles/components/Table.scss";
 import Input from "../../../elements/Input.jsx";
 import Select from "../../../elements/Select.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";

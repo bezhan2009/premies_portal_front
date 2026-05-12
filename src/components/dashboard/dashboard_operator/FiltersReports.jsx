@@ -1,6 +1,5 @@
 // FiltersReports.jsx
 import React from 'react';
-import '../../../styles/components/Filters.scss';
 
 const FiltersReports = ({ onSelect }) => {
   const buttons = [

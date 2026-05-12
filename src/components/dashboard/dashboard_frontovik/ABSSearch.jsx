@@ -1,7 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import "../../../styles/ABSSearch.scss";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/ProcessingIntegration.scss";
 import AlertMessage from "../../general/AlertMessage.jsx";
 import {
     getUserCards,

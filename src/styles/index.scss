@@ -1,0 +1,78 @@
+// 1. Variables & Mixins (No output)
+@import "variables/font.scss";
+@import "variables/general.scss";
+@import "variables/table.scss";
+@import "variables/spinner.scss";
+@import "variables/logo.scss";
+@import "variables/Processing.scss";
+@import "variables/filters.scss";
+@import "variables/worker_premies.scss";
+@import "variables/not_found.scss";
+@import "variables/input.scss";
+@import "variables/dashboard.scss";
+
+@import "mixins/general.scss";
+@import "mixins/Processing.scss";
+@import "mixins/filters.scss";
+
+// 2. Base & Tokens
+@import "tokens.scss";
+@import "global.scss";
+
+// 3. Components
+@import "components/FormElements.scss";
+@import "components/Logo.scss";
+@import "components/Sidebar.scss";
+@import "components/Menu.scss";
+@import "components/Table.scss";
+@import "components/FlexibleTable.scss";
+@import "components/table-controls.scss";
+@import "pagination.scss"; 
+@import "components/Modal.scss";
+@import "components/ModalRoles.scss";
+@import "components/SettingsModal.scss";
+@import "components/AlertMessage.scss";
+@import "components/Spinner.scss";
+@import "components/SearchBar.scss";
+@import "components/Filters.scss";
+@import "components/CustomSelect.scss";
+@import "components/CustomDateInput.scss";
+@import "components/BlockInfo.scss";
+@import "components/KnowledgeBase.scss";
+@import "components/ClientSelectorModal.scss";
+@import "components/ClientDocuments.scss";
+@import "components/CardBalance.scss";
+@import "components/CurrencyRatesWidget.scss";
+@import "components/ChartComponents.scss";
+@import "components/ReportButton.scss";
+@import "components/LastModified.scss";
+@import "components/Logout.scss";
+@import "components/UnderDevelopment.scss";
+@import "components/Office.scss";
+@import "components/ProcessingIntegration.scss";
+
+// 4. Feature Specific
+@import "components/WorkerTests.scss";
+@import "components/TestsPage.scss";
+@import "components/WorkerPremiesHeader.scss";
+@import "components/WorkerPremies.scss";
+@import "components/WorkersDataReports.scss";
+@import "components/StatsEQMS.scss";
+@import "components/TransactionsQR.scss";
+@import "components/ApplicationsList.scss";
+@import "components/TransactionTypes.scss";
+@import "components/TxnFilter.scss";
+@import "components/DashboardOperatorProcessingTransactions.scss";
+@import "components/AddCardPriceForm.scss";
+@import "components/GiftCard.scss"; 
+@import "components/AccountOperations.scss";
+
+// 5. Pages
+@import "login.scss";
+@import "dashboard.scss";
+@import "ABSSearch.scss";
+@import "NotFound.scss";
+@import "TechnicalDayBanner.scss";
+@import "extraForm.scss";
+@import "checkbox.scss";
+@import "dashboard/CurrencyRates.scss";

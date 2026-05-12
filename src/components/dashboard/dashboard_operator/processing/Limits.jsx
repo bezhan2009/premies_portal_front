@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "../../../../styles/components/ProcessingIntegration.scss";
-import "../../../../styles/components/BlockInfo.scss";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";

@@ -1,0 +1,93 @@
+
+> premies_portal@0.0.0 build
+> vite build
+
+vite v6.3.5 building for production...
+transforming...
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+2 │ @import "variables/font.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 2:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │ @import "variables/general.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 3:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+4 │ @import "variables/table.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 4:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+5 │ @import "variables/spinner.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 5:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+6 │ @import "variables/logo.scss";
+  │         ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src/styles/index.scss 6:9  root stylesheet
+
+✓ 3 modules transformed.
+✗ Build failed in 269ms
+error during build:
+[vite:css] [sass] This module and the new module both define a variable named "$primary-color".
+  ╷
+1 │ @use "./general" as *;
+  │ ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 1:1  @import
+  src/styles/index.scss 5:9              root stylesheet
+file: /home/sk/dev/premies_portal_front/src/styles/index.scss
+
+[sass] This module and the new module both define a variable named "$primary-color".
+  ╷
+1 │ @use "./general" as *;
+  │ ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 1:1  @import
+  src/styles/index.scss 5:9              root stylesheet
+
+Error: This module and the new module both define a variable named "$primary-color".
+  ╷
+1 │ @use "./general" as *;
+  │ ^^^^^^^^^^^^^^^^^^^^^
+  ╵
+  src/styles/variables/spinner.scss 1:1  @import
+  src/styles/index.scss 5:9              root stylesheet
+    at Object.throwExpression (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:2321:64)
+    at _EvaluateVisitor_visitUseRule_closure2.call$2 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:93676:13)
+    at _EvaluateVisitor__loadModule__closure6.call$0 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:92114:28)
+    at /home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:91426:29
+    at _wrapJsFunctionForAsync_closure.$protected (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:4921:15)
+    at _wrapJsFunctionForAsync_closure.call$2 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:38028:12)
+    at Object._asyncStartSync (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:4885:20)
+    at _EvaluateVisitor2._addExceptionSpanAsync$body$_EvaluateVisitor0 (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:91470:16)
+    at _EvaluateVisitor2._async_evaluate0$_addExceptionSpanAsync$1$3$addStackFrame (/home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:91406:19)
+    at /home/sk/dev/premies_portal_front/node_modules/sass/sass.dart.js:92092:39

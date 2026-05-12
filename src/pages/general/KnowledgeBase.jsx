@@ -1,4 +1,3 @@
-import "../../styles/dashboard.scss";
 // import GetBlockInfo from "../../../components/general/GeneralBlockInfo.jsx";
 import { Helmet } from "react-helmet";
 import HeaderDipozit from "../../components/dashboard/dashboard_dipozit/MenuDipozit.jsx";

@@ -1,6 +1,5 @@
 import React from 'react';
 import logo from '../assets/active_logo.png';
-import '../styles/components/Logo.scss'
 
 const LogoImageComponent = ({ width, height }) => {
   return (

@@ -1,4 +1,5 @@
-@use "../variables/spinner" as *;
+@import "../variables/spinner";
+
 
 .spinner-state {
   display: inline-flex;

@@ -14,7 +14,6 @@ import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import Spinner from "../../components/Spinner.jsx";
 import * as XLSX from "xlsx";
-import "../../styles/components/StatsEQMS.scss";
 
 export default function PVNTransactionsList() {
   const { data, setData } = useFormStore();

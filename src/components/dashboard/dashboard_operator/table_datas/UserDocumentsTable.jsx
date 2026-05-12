@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import "../../../../styles/components/Table.scss";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { formatDate } from "../../../../api/utils/date.js";

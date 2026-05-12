@@ -5,7 +5,6 @@ import { useFormStore } from "../../hooks/useFormState";
 import { status } from "../../const/defConst";
 import Select from "../../components/elements/Select";
 import Spinner from "../../components/Spinner.jsx";
-import "../../styles/checkbox.scss";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { apiClientApplicationDipozit } from "../../api/utils/apiClientApplicationDipozit.js";

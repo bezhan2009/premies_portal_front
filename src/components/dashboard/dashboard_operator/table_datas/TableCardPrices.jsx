@@ -1,8 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import "../../../../styles/components/Table.scss";
-import "../../../../styles/components/ProcessingIntegration.scss";
-import "../../../../styles/components/AddCardPriceForm.scss";
-import "../../../../styles/components/SearchBar.scss";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 

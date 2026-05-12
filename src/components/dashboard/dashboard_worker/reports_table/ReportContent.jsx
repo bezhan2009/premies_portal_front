@@ -1,5 +1,4 @@
 import React from 'react';
-import '../../../../styles/components/WorkersDataReports.scss';
 import RenderPage from "../../../RenderPage.jsx";
 
 const ReportsContent = ({ children }) => {

@@ -16,7 +16,6 @@ import {
     getApplicationOffices,
     getUserApplicationOffices,
 } from "../../api/applicationOffices/applicationOffices.js";
-import "../../styles/components/ModalRoles.scss";
 
 export default function ModalRoles({ open = true, data, setOpenRoles }) {
     const [loading, setLoading] = useState(false);

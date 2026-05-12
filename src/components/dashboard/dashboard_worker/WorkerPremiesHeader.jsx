@@ -1,5 +1,4 @@
 import React from 'react';
-import '../../../styles/components/WorkerPremiesHeader.scss';
 
 export default function Header({ month, year, total, plan, onPrev, onNext, loading }) {
     const monthNames = [

@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Input, Button, Space, Tag } from "antd";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
-import "../../../styles/components/Table.scss";
-import "../../../styles/components/ProcessingIntegration.scss";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
 import Spinner from "../../../components/Spinner.jsx";

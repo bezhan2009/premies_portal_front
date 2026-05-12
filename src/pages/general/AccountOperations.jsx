@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom"; // Добавлены импорты
-import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import CustomDateInput from "../../components/elements/CustomDateInput.jsx";
 import { canAccessAccountOperations } from "../../api/roleHelper.js";

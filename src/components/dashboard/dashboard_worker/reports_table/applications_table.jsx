@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import '../../../../styles/components/Table.scss';
 import ReportsContent from "./ReportContent.jsx";
 
 const ApplicationReport = () => {

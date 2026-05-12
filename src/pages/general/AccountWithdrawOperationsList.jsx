@@ -5,7 +5,6 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import PayIcon from "../../assets/pay_icon.png";
 import PayedIcon from "../../assets/payed_icon.png";
 import Spinner from "../../components/Spinner.jsx";
-import "../../styles/components/StatsEQMS.scss";
 import { Table } from "../../components/table/FlexibleAntTable.jsx";
 
 // Счёт, по которому загружается выписка (остаётся для GET-запроса)

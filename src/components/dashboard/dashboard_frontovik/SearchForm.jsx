@@ -7,7 +7,6 @@ import {
 import { FaTelegramPlane } from "react-icons/fa";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import Select from "../../elements/Select";
-import "../../../styles/components/ClientDocuments.scss";
 
 const SearchForm = ({
   selectTypeSearchClient,

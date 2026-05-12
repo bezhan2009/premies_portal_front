@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import "../../../styles/components/ProcessingIntegration.scss";
-import "../../../styles/components/BlockInfo.scss";
-import "../../../styles/components/DashboardOperatorProcessingTransactions.scss";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";

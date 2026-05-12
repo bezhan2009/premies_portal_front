@@ -1,5 +1,4 @@
 import React from 'react';
-import '../../styles/components/KnowledgeBase.scss';
 
 const KnowledgeBase = ({ title, items }) => {
     const half = Math.ceil(items.length / 2);

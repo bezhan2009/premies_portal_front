@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import "../../styles/components/FlexibleTable.scss";
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
 

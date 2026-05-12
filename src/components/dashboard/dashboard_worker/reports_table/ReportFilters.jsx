@@ -1,6 +1,5 @@
 // ReportFilters.jsx
 import React, { useState } from 'react';
-import '../../../../styles/components/Filters.scss'
 import LastModified from "../../dashboard_general/LastModified.jsx";
 
 const ReportFilters = ({ onSelect, onDateChange }) => {

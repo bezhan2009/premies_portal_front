@@ -1,6 +1,4 @@
 import Input from "../../components/elements/Input.jsx";
-import "../../styles/components/BlockInfo.scss";
-import "../../styles/components/TransactionTypes.scss";
 import { useEffect, useMemo, useState } from "react";
 import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
 import Select from "../../components/elements/Select.jsx";

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import '../../styles/components/SearchBar.scss';
 import {flattenObjectToString} from "../../pkg/utils/search_utils.jsx";
 
 

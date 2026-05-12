@@ -1,4 +1,3 @@
-@use "../mixins/general" as *;
 
 #root {
   background-color: var(--bg-color);
@@ -736,7 +735,6 @@
     background-color: white;
   }
 }
-
 
 
 .dashboard-container {

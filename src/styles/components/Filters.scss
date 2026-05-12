@@ -1,6 +1,3 @@
-@use "../variables/filters.scss" as *;
-@use "../mixins/general.scss" as *;
-@use "../mixins/filters.scss" as *;
 
 .filters {
   @include filter_block;

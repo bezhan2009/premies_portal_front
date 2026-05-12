@@ -21,7 +21,6 @@ import download from "../../assets/download.jpg";
 import share from "../../assets/share.jpg";
 import save from "../../assets/save.jpg";
 import offer from "../../assets/offer.png";
-import "../../styles/components/GiftCard.scss";
 import { useFormStore } from "../../hooks/useFormState";
 import File from "../../components/elements/File";
 import CheckBox from "../../components/elements/CheckBox";
@@ -1094,408 +1093,429 @@ export default function GiftCard({ edit = false }) {
                         <div className="content-form">
                             <div className="div1 input-with-check">
                                 <Input
-                                    placeholder={"Фамилия"}
-                                    onChange={(e) => handleNameChange("surname", e)}
-                                    value={data?.surname}
+                                    id="surname"
+                                    title="Фамилия"
+                                    placeholder="Введите фамилию"
+                                    value={data.surname}
+                                    onChange={(val) => handleNameChange('surname', val)}
                                     error={errors}
-                                    id={"surname"}
+                                    required
                                 />
-                                {checkingTerror.fullName && (
-                                    <div className="terror-check-indicator checking"></div>
-                                )}
-                                {terrorCheckResults.fullName === true && (
-                                    <div className="terror-check-indicator match"></div>
-                                )}
-                                {terrorCheckResults.fullName === false && (
-                                    <div className="terror-check-indicator no-match"></div>
-                                )}
+                                {checkingTerror.fullName && <div className="terror-check-indicator checking"></div>}
+                                {terrorCheckResults.fullName === true && <div className="terror-check-indicator match"></div>}
+                                {terrorCheckResults.fullName === false && <div className="terror-check-indicator no-match"></div>}
                             </div>
 
                             <div className="div2 input-with-check">
                                 <Input
-                                    placeholder={"Имя"}
-                                    onChange={(e) => handleNameChange("name", e)}
-                                    value={data?.name}
+                                    id="name"
+                                    title="Имя"
+                                    placeholder="Введите имя"
+                                    value={data.name}
+                                    onChange={(val) => handleNameChange('name', val)}
                                     error={errors}
-                                    id={"name"}
+                                    required
                                 />
-                                {checkingTerror.fullName && (
-                                    <div className="terror-check-indicator checking"></div>
-                                )}
-                                {terrorCheckResults.fullName === true && (
-                                    <div className="terror-check-indicator match"></div>
-                                )}
-                                {terrorCheckResults.fullName === false && (
-                                    <div className="terror-check-indicator no-match"></div>
-                                )}
+                                {checkingTerror.fullName && <div className="terror-check-indicator checking"></div>}
+                                {terrorCheckResults.fullName === true && <div className="terror-check-indicator match"></div>}
+                                {terrorCheckResults.fullName === false && <div className="terror-check-indicator no-match"></div>}
                             </div>
 
                             <div className="div3 input-with-check">
                                 <Input
-                                    placeholder={"Отчество"}
-                                    onChange={(e) => handleNameChange("patronymic", e)}
-                                    value={data?.patronymic}
+                                    id="patronymic"
+                                    title="Отчество"
+                                    placeholder="Введите отчество"
+                                    value={data.patronymic}
+                                    onChange={(val) => handleNameChange('patronymic', val)}
                                     error={errors}
-                                    id={"patronymic"}
                                 />
-                                {checkingTerror.fullName && (
-                                    <div className="terror-check-indicator checking"></div>
-                                )}
-                                {terrorCheckResults.fullName === true && (
-                                    <div className="terror-check-indicator match"></div>
-                                )}
-                                {terrorCheckResults.fullName === false && (
-                                    <div className="terror-check-indicator no-match"></div>
-                                )}
+                                {checkingTerror.fullName && <div className="terror-check-indicator checking"></div>}
+                                {terrorCheckResults.fullName === true && <div className="terror-check-indicator match"></div>}
+                                {terrorCheckResults.fullName === false && <div className="terror-check-indicator no-match"></div>}
                             </div>
 
                             <Input
-                                className={"div4"}
+                                id="birth_date"
+                                className="div4"
+                                title="Дата рождения"
                                 type="date"
+                                value={data.birth_date}
                                 onChange={handleBirthDateChange}
-                                value={data?.birth_date}
                                 error={errors}
-                                id={"birth_date"}
+                                required
                             />
 
                             <Input
-                                className={"div5"}
-                                placeholder={"Телефон"}
-                                onChange={(e) => setData("phone_number", e)}
-                                value={data?.phone_number}
+                                id="phone_number"
+                                className="div5"
+                                title="Телефон"
+                                placeholder="998XXXXXXXXX"
+                                value={data.phone_number}
+                                onChange={(val) => setData("phone_number", val)}
                                 error={errors}
-                                id={"phone_number"}
+                                required
                             />
+
                             <Input
-                                className={"div6"}
-                                placeholder={"Кодовое"}
-                                onChange={(e) => setData("secret_word", e)}
-                                value={data?.secret_word}
+                                id="secret_word"
+                                className="div6"
+                                title="Кодовое слово"
+                                placeholder="Слово-пароль"
+                                onChange={(val) => setData("secret_word", val)}
+                                value={data.secret_word}
                                 error={errors}
-                                id={"secret_word"}
                             />
+
                             <Input
-                                className={"div9"}
-                                placeholder={"Получаемый офис"}
-                                onChange={(e) => setData("receiving_office", e)}
-                                value={data?.receiving_office}
+                                id="receiving_office"
+                                className="div9"
+                                title="Офис получения"
+                                placeholder="Выберите офис"
+                                onChange={(val) => setData("receiving_office", val)}
+                                value={data.receiving_office}
                                 error={errors}
-                                id={"receiving_office"}
                             />
+
                             <Input
-                                className={"div7"}
-                                placeholder={"Почта"}
-                                onChange={(e) => setData("email", e)}
-                                value={data?.email}
+                                id="email"
+                                className="div7"
+                                title="Email"
+                                placeholder="example@mail.com"
+                                onChange={(val) => setData("email", val)}
+                                value={data.email}
                                 error={errors}
-                                id={"email"}
                             />
 
                             <div className="div8 input-with-check">
                                 <Input
-                                    placeholder={"Имя на карте"}
+                                    id="card_name"
+                                    title="Имя на карте"
+                                    placeholder="LATIN LETTERS ONLY"
+                                    value={data.card_name}
                                     onChange={handleCardNameChange}
-                                    value={data?.card_name}
                                     error={errors}
-                                    id={"card_name"}
+                                    required
                                 />
-                                {checkingTerror.cardName && (
-                                    <div className="terror-check-indicator checking"></div>
-                                )}
-                                {terrorCheckResults.cardName === true && (
-                                    <div className="terror-check-indicator match"></div>
-                                )}
-                                {terrorCheckResults.cardName === false && (
-                                    <div className="terror-check-indicator no-match"></div>
-                                )}
+                                {checkingTerror.cardName && <div className="terror-check-indicator checking"></div>}
+                                {terrorCheckResults.cardName === true && <div className="terror-check-indicator match"></div>}
+                                {terrorCheckResults.cardName === false && <div className="terror-check-indicator no-match"></div>}
                             </div>
 
                             <Input
-                                className={"div30"}
-                                placeholder={"Код клиента в АБС"}
-                                onChange={(e) => setData("client_code", e)}
-                                value={data?.client_code}
+                                id="client_code"
+                                className="div30"
+                                title="Код клиента (АБС)"
+                                placeholder="000000"
+                                onChange={(val) => setData("client_code", val)}
+                                value={data.client_code}
                                 error={errors}
-                                id={"client_code"}
                             />
+
                             <CheckBox
-                                yes={"Муж"}
-                                no={"Жен"}
-                                className={"div61 form-check-box"}
-                                title={"Пол"}
+                                id="gender"
+                                className="div61"
+                                title="Пол"
                                 value={data.gender}
-                                onChange={(e) => setData("gender", e)}
+                                onChange={(val) => setData("gender", val)}
+                                yes="Мужской"
+                                no="Женский"
+                                error={errors}
                             />
+
                             <CheckBox
-                                className={"div10 form-check-box"}
-                                title={"Резидент Тадж-на?"}
+                                id="is_resident"
+                                className="div10"
+                                title="Резидент"
                                 value={data.is_resident}
-                                onChange={(e) => setData("is_resident", e)}
+                                onChange={(val) => setData("is_resident", val)}
+                                error={errors}
                             />
                             <Select
-                                className={"div11"}
-                                id={"type_of_certificate"}
-                                value={data?.type_of_certificate}
-                                onChange={(e) => setData("type_of_certificate", e)}
+                                id="type_of_certificate"
+                                className="div11"
+                                title="Тип документа"
+                                value={data.type_of_certificate}
+                                onChange={(val) => setData("type_of_certificate", val)}
                                 options={docTypes}
                                 error={errors}
+                                required
                             />
                             <Input
-                                className={"div12"}
-                                placeholder={"Серия"}
-                                onChange={(e) => setData("documents_series", e)}
-                                value={data?.documents_series}
+                                id="documents_series"
+                                className="div12"
+                                title="Серия"
+                                placeholder="Серия"
+                                onChange={(val) => setData("documents_series", val)}
+                                value={data.documents_series}
                                 error={errors}
-                                id={"documents_series"}
                             />
                             <Input
-                                className={"div13"}
-                                placeholder={"Номер"}
-                                onChange={(e) => setData("document_number", e)}
-                                value={data?.document_number}
+                                id="document_number"
+                                className="div13"
+                                title="Номер"
+                                placeholder="Номер документа"
+                                onChange={(val) => setData("document_number", val)}
+                                value={data.document_number}
                                 error={errors}
-                                id={"document_number"}
+                                required
                             />
                             <Input
+                                id="passport_issued_at"
+                                className="div14"
+                                title="Дата выдачи"
                                 type="date"
-                                className={"div14"}
-                                placeholder={"Дата выдачи"}
-                                onChange={(e) => setData("passport_issued_at", e)}
-                                value={data?.passport_issued_at}
+                                onChange={(val) => setData("passport_issued_at", val)}
+                                value={data.passport_issued_at}
                                 error={errors}
-                                id={"passport_issued_at"}
                             />
                             <Input
+                                id="passport_deadline"
+                                className="div15"
+                                title="Срок действия"
                                 type="date"
-                                className={"div15"}
-                                placeholder={"Срок действия"}
-                                onChange={(e) => setData("passport_deadline", e)}
-                                value={data?.passport_deadline}
+                                onChange={(val) => setData("passport_deadline", val)}
+                                value={data.passport_deadline}
                                 error={errors}
-                                id={"passport_deadline"}
                             />
                             <Input
-                                className={"div16"}
-                                placeholder={"Кем выдан"}
-                                onChange={(e) => setData("issued_by", e)}
-                                value={data?.issued_by}
+                                id="issued_by"
+                                className="div16"
+                                title="Кем выдан"
+                                placeholder="Орган выдачи"
+                                onChange={(val) => setData("issued_by", val)}
+                                value={data.issued_by}
                                 error={errors}
-                                id={"issued_by"}
                             />
                             <Input
-                                className={"div17"}
-                                placeholder={"ИНН"}
-                                onChange={(e) => setData("inn", e)}
-                                value={data?.inn}
+                                id="inn"
+                                className="div17"
+                                title="ИНН"
+                                placeholder="ИНН"
+                                onChange={(val) => setData("inn", val)}
+                                value={data.inn}
                                 error={errors}
-                                id={"inn"}
                             />
                             <Input
-                                className={"div57"}
-                                placeholder={"Страна"}
-                                onChange={(e) => setData("country", e)}
-                                value={data?.country}
+                                id="country"
+                                className="div57"
+                                title="Страна"
+                                placeholder="Страна"
+                                onChange={(val) => setData("country", val)}
+                                value={data.country}
                                 error={errors}
-                                id={"country"}
                             />
                             <Select
-                                className={"div18"}
-                                id={"regin_type"}
-                                value={data?.regin_type}
-                                onChange={(e) => setData("regin_type", e)}
+                                id="regin_type"
+                                className="div18"
+                                title="Тип региона"
+                                value={data.regin_type}
+                                onChange={(val) => setData("regin_type", val)}
                                 options={reginTypes}
                                 error={errors}
                             />
                             <Input
-                                className={"div19"}
-                                placeholder={"Регион"}
-                                onChange={(e) => setData("region", e)}
-                                value={data?.region}
+                                id="region"
+                                className="div19"
+                                title="Регион"
+                                placeholder="Название региона"
+                                onChange={(val) => setData("region", val)}
+                                value={data.region}
                                 error={errors}
-                                id={"region"}
                             />
                             <Select
-                                className={"div20"}
-                                id={"population_type"}
-                                value={data?.population_type}
-                                onChange={(e) => setData("population_type", e)}
+                                id="population_type"
+                                className="div20"
+                                title="Тип нас. пункта"
+                                value={data.population_type}
+                                onChange={(val) => setData("population_type", val)}
                                 options={USTypes}
                                 error={errors}
                             />
                             <Input
-                                className={"div21"}
-                                placeholder={"Нас пункт"}
-                                onChange={(e) => setData("populated", e)}
-                                value={data?.populated}
+                                id="populated"
+                                className="div21"
+                                title="Населенный пункт"
+                                placeholder="Город/Село"
+                                onChange={(val) => setData("populated", val)}
+                                value={data.populated}
                                 error={errors}
-                                id={"populated"}
                             />
                             <Select
-                                className={"div22"}
-                                id={"district_type"}
-                                value={data?.district_type}
-                                onChange={(e) => setData("district_type", e)}
+                                id="district_type"
+                                className="div22"
+                                title="Тип района"
+                                value={data.district_type}
+                                onChange={(val) => setData("district_type", val)}
                                 options={districtTypes}
                                 error={errors}
                             />
                             <Input
-                                className={"div23"}
-                                placeholder={"Район"}
-                                onChange={(e) => setData("district", e)}
-                                value={data?.district}
+                                id="district"
+                                className="div23"
+                                title="Район"
+                                placeholder="Название района"
+                                onChange={(val) => setData("district", val)}
+                                value={data.district}
                                 error={errors}
-                                id={"district"}
                             />
                             <Input
-                                className={"div65"}
-                                placeholder={"Гражданство"}
-                                onChange={(e) => setData("citizenship", e)}
-                                value={data?.citizenship}
+                                id="citizenship"
+                                className="div65"
+                                title="Гражданство"
+                                placeholder="Гражданство"
+                                onChange={(val) => setData("citizenship", val)}
+                                value={data.citizenship}
                                 error={errors}
-                                id={"citizenship"}
                             />
                             <Input
-                                className={"div66"}
-                                placeholder={"Национальность"}
-                                onChange={(e) => setData("nationality", e)}
-                                value={data?.nationality}
+                                id="nationality"
+                                className="div66"
+                                title="Национальность"
+                                placeholder="Национальность"
+                                onChange={(val) => setData("nationality", val)}
+                                value={data.nationality}
                                 error={errors}
-                                id={"nationality"}
                             />
                             <Input
-                                className={"div67"}
-                                placeholder={"Место рождения"}
-                                onChange={(e) => setData("place_of_birth", e)}
-                                value={data?.place_of_birth}
+                                id="place_of_birth"
+                                className="div67"
+                                title="Место рождения"
+                                placeholder="Место рождения"
+                                onChange={(val) => setData("place_of_birth", val)}
+                                value={data.place_of_birth}
                                 error={errors}
-                                id={"place_of_birth"}
                             />
                             <Select
-                                className={"div24"}
-                                id={"street_type"}
-                                value={data?.street_type}
-                                onChange={(e) => setData("street_type", e)}
+                                id="street_type"
+                                className="div24"
+                                title="Тип улицы"
+                                value={data.street_type}
+                                onChange={(val) => setData("street_type", val)}
                                 options={streetTypes}
                                 error={errors}
                             />
                             <Input
-                                className={"div25"}
-                                placeholder={"Улица"}
-                                onChange={(e) => setData("street", e)}
-                                value={data?.street}
+                                id="street"
+                                className="div25"
+                                title="Улица"
+                                placeholder="Название улицы"
+                                onChange={(val) => setData("street", val)}
+                                value={data.street}
                                 error={errors}
-                                id={"street"}
                             />
                             <Input
-                                className={"div26"}
-                                placeholder={"Дом"}
-                                onChange={(e) => setData("house_number", e)}
-                                value={data?.house_number}
+                                id="house_number"
+                                className="div26"
+                                title="Дом"
+                                placeholder="№"
+                                onChange={(val) => setData("house_number", val)}
+                                value={data.house_number}
                                 error={errors}
-                                id={"house_number"}
                             />
                             <Input
-                                className={"div27"}
-                                placeholder={"Корпус"}
-                                onChange={(e) => setData("corpus", e)}
-                                value={data?.corpus}
+                                id="corpus"
+                                className="div27"
+                                title="Корпус"
+                                placeholder="Корпус"
+                                onChange={(val) => setData("corpus", val)}
+                                value={data.corpus}
                                 error={errors}
-                                id={"corpus"}
                             />
                             <Input
-                                className={"div29"}
-                                placeholder={"Кв"}
-                                onChange={(e) => setData("apartment_number", e)}
-                                value={data?.apartment_number}
+                                id="apartment_number"
+                                className="div29"
+                                title="Квартира"
+                                placeholder="№"
+                                onChange={(val) => setData("apartment_number", val)}
+                                value={data.apartment_number}
                                 error={errors}
-                                id={"apartment_number"}
                             />
                             <Input
-                                className={"div28"}
-                                placeholder={"Индекс"}
-                                onChange={(e) => setData("client_index", e)}
-                                value={data?.client_index}
+                                id="client_index"
+                                className="div28"
+                                title="Индекс"
+                                placeholder="000000"
+                                onChange={(val) => setData("client_index", val)}
+                                value={data.client_index}
                                 error={errors}
-                                id={"client_index"}
                             />
                             <Input
-                                className={"div36"}
-                                placeholder={"Продукт"}
-                                onChange={(e) => setData("product", e)}
-                                value={data?.product}
+                                id="product"
+                                className="div36"
+                                title="Продукт"
+                                placeholder="Название продукта"
+                                onChange={(val) => setData("product", val)}
+                                value={data.product}
                                 error={errors}
-                                id={"product"}
-                                required={true}
+                                required
                             />
                             <Input
-                                className={"div31"}
-                                placeholder={"Счет USD*"}
-                                onChange={(e) => setData("account_usd", e)}
-                                value={data?.account_usd}
+                                id="account_usd"
+                                className="div31"
+                                title="Счет USD"
+                                placeholder="Счет USD"
+                                onChange={(val) => setData("account_usd", val)}
+                                value={data.account_usd}
                                 error={errors}
-                                id={"account_usd"}
-                                required={true}
+                                required
                             />
                             <Input
-                                className={"div32"}
-                                placeholder={"Счет EUR*"}
-                                onChange={(e) => setData("account_eur", e)}
-                                value={data?.account_eur}
+                                id="account_eur"
+                                className="div32"
+                                title="Счет EUR"
+                                placeholder="Счет EUR"
+                                onChange={(val) => setData("account_eur", val)}
+                                value={data.account_eur}
                                 error={errors}
-                                id={"account_eur"}
-                                required={true}
+                                required
                             />
                             <Input
-                                className={"div33"}
-                                placeholder={"Счет TJS*"}
-                                onChange={(e) => setData("account_tjs", e)}
-                                value={data?.account_tjs}
+                                id="account_tjs"
+                                className="div33"
+                                title="Счет TJS"
+                                placeholder="Счет TJS"
+                                onChange={(val) => setData("account_tjs", val)}
+                                value={data.account_tjs}
                                 error={errors}
-                                id={"account_tjs"}
-                                required={true}
+                                required
                             />
                             <Input
-                                className={"div34"}
-                                placeholder={"Номер договора*"}
-                                onChange={(e) => setData("contract_number", e)}
-                                value={data?.contract_number}
+                                id="contract_number"
+                                className="div34"
+                                title="Номер договора"
+                                placeholder="Номер договора"
+                                onChange={(val) => setData("contract_number", val)}
+                                value={data.contract_number}
                                 error={errors}
-                                id={"contract_number"}
-                                required={true}
+                                required
                             />
                             <Input
+                                id="contract_date"
+                                className="div35"
+                                title="Дата договора"
                                 type="date"
-                                className={"div35"}
-                                placeholder={"Дата договора*"}
-                                onChange={(e) => setData("contract_date", e)}
-                                value={data?.contract_date}
+                                onChange={(val) => setData("contract_date", val)}
+                                value={data.contract_date}
                                 error={errors}
-                                id={"contract_date"}
-                                required={true}
+                                required
                             />
                             {edit && (
                                 <>
                                     <Input
-                                        type="text"
-                                        className="div37"
-                                        placeholder="Создан в"
-                                        value={
-                                            data?.CreatedAt ? `Создано: ${data.CreatedAt}` : ""
-                                        }
-                                        disabled
                                         id="CreatedAt"
-                                        style={{ width: "100%" }}
+                                        className="div37"
+                                        title="Дата создания"
+                                        value={data.CreatedAt}
+                                        disabled
                                     />
 
                                     <Input
-                                        type="text"
-                                        className="div51"
-                                        placeholder="Обновлен в"
-                                        value={
-                                            data?.UpdatedAt ? `Обновлено: ${data.UpdatedAt}` : ""
-                                        }
-                                        disabled
                                         id="UpdatedAt"
+                                        className="div51"
+                                        title="Дата обновления"
+                                        value={data.UpdatedAt}
+                                        disabled
                                     />
                                 </>
                             )}

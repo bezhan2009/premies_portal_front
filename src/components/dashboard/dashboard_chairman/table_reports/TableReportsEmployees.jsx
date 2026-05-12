@@ -1,8 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
-import "../../../../styles/components/Table.scss";
 import Filters from "../../dashboard_general/LastModified.jsx";
-import "../../../../styles/components/TablesChairman.scss";
-import "../../../../styles/pagination.scss";
 import SearchBar from "../../../general/SearchBar.jsx";
 import Spinner from "../../../Spinner.jsx";
 import { calculateTotalPremia } from "../../../../api/utils/calculate_premia.js";

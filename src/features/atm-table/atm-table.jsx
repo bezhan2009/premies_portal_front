@@ -3,7 +3,6 @@ import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
 
 import DateRangeModal from "../../components/dialog/dialog";
-import "../../styles/components/table-controls.scss";
 
 import { fetchATM } from "../../api/atm/atm.js";
 import { fetchHistory } from "../../api/atm/atm.js";
@@ -16,7 +15,6 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import SortIcon from "../../components/general/SortIcon.jsx";
 import Spinner from "../../components/Spinner.jsx";
-// import "../../styles/components/table-sorting.scss"; // If needed, but global.scss should have it
 
 /** ====== ПЕРЕВОДЫ ====== */
 const normalizeKey = (s) =>

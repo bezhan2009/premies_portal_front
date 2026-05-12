@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import LogoutImageComponent from "./LogoutLogo";
 import { useState } from "react";
-import "../../styles/components/Logout.scss";
 import Spinner from "../Spinner.jsx";
 
 // Функция для сохранения важных ключей перед очисткой
@@ -19,7 +18,6 @@ const preserveImportantKeys = () => {
     return preserved;
 };
 
-// Функция для восстановления важных ключей после очистки
 const restoreImportantKeys = (preserved) => {
     Object.keys(preserved).forEach(key => {
         localStorage.setItem(key, preserved[key]);

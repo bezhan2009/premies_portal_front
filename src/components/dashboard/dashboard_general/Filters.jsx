@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Select from '../../elements/Select';
 import LastModified from './LastModified';
-import '../../../styles/components/Filters.scss';
 import Spinner from "../../Spinner.jsx";
 
 const Filters = ({ initialDate, modificationDesc, onChange }) => {
