@@ -7,6 +7,8 @@ import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
 
+const STATUS_PAID = "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E";
+
 const CardCashbackTable = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -44,11 +46,11 @@ const CardCashbackTable = () => {
         fetchItems();
     }, [fetchItems]);
 
-    const handleRefresh = () => {
+    const handleRefresh = useCallback(() => {
         fetchItems();
-    };
+    }, [fetchItems]);
 
-    const handlePay = async (utrno) => {
+    const handlePay = useCallback(async (utrno) => {
         try {
             await apiClient.post(`${backendURL}/card-cashback/pay/${utrno}`);
             fetchItems();
@@ -56,9 +58,9 @@ const CardCashbackTable = () => {
             console.error("Ошибка при оплате:", e);
             alert("Ошибка при повторе платежа");
         }
-    };
+    }, [backendURL, fetchItems]);
 
-    const handleReturn = async (utrno) => {
+    const handleReturn = useCallback(async (utrno) => {
         if (!window.confirm("Вы уверены, что хотите вернуть кэшбэк?")) return;
         try {
             await apiClient.post(`${backendURL}/card-cashback/return/${utrno}`);
@@ -67,7 +69,18 @@ const CardCashbackTable = () => {
             console.error("Ошибка при возврате:", e);
             alert("Ошибка при возврате кэшбэка");
         }
-    };
+    }, [backendURL, fetchItems]);
+
+    const handleResetStatus = useCallback(async (utrno) => {
+        if (!window.confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441 \u0432 '\u0412 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0435'?")) return;
+        try {
+            await apiClient.post(`${backendURL}/card-cashback/reset/${utrno}`);
+            fetchItems();
+        } catch (e) {
+            console.error("Reset cashback status error:", e);
+            alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441");
+        }
+    }, [backendURL, fetchItems]);
 
     const handleTableChange = (pagination, filters, sorter) => {
         setSortedInfo(sorter);
@@ -218,6 +231,7 @@ const CardCashbackTable = () => {
                 title: "Действия",
                 key: "actions",
                 render: (_, record) => {
+                    const isPaid = record.status === STATUS_PAID;
                     // Статус "Возвращено" или "Возврат" - блокируем кнопку возврата
                     const isReturned = record.status === "Возвращено" || record.status === "Возврат";
                     // Статус "Ошибка АБС" - показываем кнопку "Повторить"
@@ -228,6 +242,11 @@ const CardCashbackTable = () => {
                             {isError && (
                                 <Button type="primary" size="small" onClick={() => handlePay(record.utrno)}>
                                     Повторить
+                                </Button>
+                            )}
+                            {isPaid && (
+                                <Button size="small" onClick={() => handleResetStatus(record.utrno)}>
+                                    {"\u041D\u0430 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0443"}
                                 </Button>
                             )}
                             <Button
@@ -243,7 +262,7 @@ const CardCashbackTable = () => {
                 },
             },
         ],
-        [fetchItems, sortedInfo],
+        [handlePay, handleResetStatus, handleReturn, sortedInfo],
     );
 
     const handleExport = () => {
