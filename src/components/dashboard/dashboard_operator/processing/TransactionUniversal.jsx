@@ -195,15 +195,17 @@ export default function DashboardOperatorTransactionSearch() {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const terminalsData = await getTerminalNames();
+        const response = await getTerminalNames();
+        const terminalsData = response?.data || response;
         if (terminalsData && Array.isArray(terminalsData)) {
-          setTerminalOptions(terminalsData.map(t => ({ label: `${t.atmId} - ${t.atmDescription}`, value: t.atmId })));
+          setTerminalOptions(terminalsData.map(t => ({ label: `${t.atmId} - ${t.description || t.atmDescription || ''}`, value: t.atmId })));
         }
       } catch (e) {
         console.error("Error fetching terminal options", e);
       }
       try {
-        const txData = await getTransactions();
+        const response = await getTransactions();
+        const txData = response?.data || response;
         if (txData && Array.isArray(txData)) {
           setTransactionOptions(txData.map(t => ({ label: `${t.type} - ${t.name}`, value: t.type.toString() })));
         }
