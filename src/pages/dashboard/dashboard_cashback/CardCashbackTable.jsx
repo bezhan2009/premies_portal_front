@@ -13,6 +13,7 @@ const CardCashbackTable = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [balance, setBalance] = useState(null);
     const [sortedInfo, setSortedInfo] = useState({
         columnKey: "created_at",
         order: "descend",
@@ -44,6 +45,20 @@ const CardCashbackTable = () => {
 
     useEffect(() => {
         fetchItems();
+        
+        const fetchBalance = async () => {
+            try {
+                const res = await fetch("http://10.64.1.10/services/bal.php?acc=26202972190810638243");
+                const text = await res.text();
+                const data = JSON.parse(text);
+                if (data && data.length > 0) {
+                    setBalance(data[0].bal);
+                }
+            } catch (e) {
+                console.error("Ошибка при получении баланса:", e);
+            }
+        };
+        fetchBalance();
     }, [fetchItems]);
 
     const handleRefresh = useCallback(() => {
@@ -145,10 +160,24 @@ const CardCashbackTable = () => {
             },
             {
                 title: "Сумма кэшбэка",
+                dataIndex: "cashback_amount",
+                key: "cashback_amount",
+                sorter: (a, b) => (a.cashback_amount || a.amount) - (b.cashback_amount || b.amount),
+                render: (val, record) => `${val || record.amount} ${getCurrencyCode(String(record.currency || ""))}`,
+            },
+            {
+                title: "Сумма операции",
                 dataIndex: "amount",
                 key: "amount",
                 sorter: (a, b) => a.amount - b.amount,
                 render: (val, record) => `${val} ${getCurrencyCode(String(record.currency || ""))}`,
+            },
+            {
+                title: "Сумма списания",
+                dataIndex: "conamt",
+                key: "conamt",
+                sorter: (a, b) => a.conamt - b.conamt,
+                render: (val, record) => `${val || 0} ${getCurrencyCode(String(record.concurrency || ""))}`,
             },
             {
                 title: "UTRNO",
@@ -215,6 +244,12 @@ const CardCashbackTable = () => {
                 },
             },
             {
+                title: "Оплата телефоном",
+                dataIndex: "payId",
+                key: "payId",
+                render: (val) => (val == "216" ? "GooglePay" : val || ""),
+            },
+            {
                 title: "Возврат",
                 dataIndex: "reversal",
                 key: "reversal",
@@ -274,8 +309,15 @@ const CardCashbackTable = () => {
 
     return (
         <div className="block_info_prems content-page">
-            <div className="table-header-actions" style={{ margin: "16px" }}>
-                <h2>Кэшбэк по картам</h2>
+            <div className="table-header-actions" style={{ margin: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <h2 style={{ margin: 0 }}>Кэшбэк по картам</h2>
+                    {balance !== null && (
+                        <Tag color="blue" style={{ fontSize: "16px", padding: "4px 8px" }}>
+                            Остаток по счету: {balance} TJS
+                        </Tag>
+                    )}
+                </div>
                 <Space>
                     <Button
                         icon={<ReloadOutlined />}
