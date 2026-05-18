@@ -262,9 +262,8 @@ export default function AccessRequestsPage() {
             gap: 20px;
           }
           .request-list-card {
-            background: rgba(30, 18, 18, 0.4);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(239, 68, 68, 0.1);
+            background: #140b0b;
+            border: 1px solid rgba(239, 68, 68, 0.25);
             border-radius: 20px;
             padding: 28px;
             display: flex;
@@ -272,13 +271,13 @@ export default function AccessRequestsPage() {
             align-items: center;
             gap: 24px;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
           }
           .request-list-card:hover {
-            border-color: rgba(239, 68, 68, 0.3);
-            background: rgba(30, 18, 18, 0.5);
+            border-color: #ef4444;
+            background: #1e1010;
             transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(239, 68, 68, 0.08);
+            box-shadow: 0 15px 35px rgba(239, 68, 68, 0.2);
           }
           @media (max-width: 900px) {
             .request-list-card {
@@ -411,15 +410,15 @@ export default function AccessRequestsPage() {
             z-index: 1000;
           }
           .edit-modal {
-            background: rgba(30, 18, 18, 0.95);
-            border: 1px solid rgba(239, 68, 68, 0.25);
+            background: #140b0b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 28px;
             max-width: 850px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
             padding: 40px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(239, 68, 68, 0.1);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(239, 68, 68, 0.15);
             animation: modalScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .modal-header {

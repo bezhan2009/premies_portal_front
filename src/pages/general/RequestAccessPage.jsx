@@ -236,15 +236,14 @@ export default function RequestAccessPage() {
               background: radial-gradient(circle at center, #1e1212 0%, #0c0808 100%);
             }
             .status-card {
-              background: rgba(30, 18, 18, 0.45);
-              backdrop-filter: blur(24px);
-              border: 1px solid rgba(239, 68, 68, 0.15);
+              background: #140b0b;
+              border: 1px solid rgba(239, 68, 68, 0.3);
               border-radius: 28px;
               padding: 48px 40px;
               max-width: 600px;
               width: 100%;
               text-align: center;
-              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(239, 68, 68, 0.05);
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(239, 68, 68, 0.1);
               animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             }
             .status-icon-wrapper {
@@ -405,15 +404,14 @@ export default function RequestAccessPage() {
               background: radial-gradient(circle at center, #1e1212 0%, #0c0808 100%);
             }
             .status-card {
-              background: rgba(30, 18, 18, 0.45);
-              backdrop-filter: blur(24px);
-              border: 1px solid rgba(239, 68, 68, 0.2);
+              background: #140b0b;
+              border: 1px solid rgba(239, 68, 68, 0.35);
               border-radius: 28px;
               padding: 48px 40px;
               max-width: 600px;
               width: 100%;
               text-align: center;
-              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
               animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             }
             .status-icon-wrapper.rejected {
@@ -501,24 +499,23 @@ export default function RequestAccessPage() {
           .form-header-card h1 {
             font-size: 32px;
             font-weight: 900;
-            color: #ffffff;
+            color: #1a1010;
             letter-spacing: -1px;
             margin-top: 20px;
           }
           .form-header-card p {
-            color: #fca5a5;
-            font-weight: 500;
+            color: #ef4444;
+            font-weight: 600;
             margin-top: 8px;
             font-size: 16px;
             opacity: 0.9;
           }
           .form-card {
-            background: rgba(30, 18, 18, 0.45);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(239, 68, 68, 0.15);
+            background: #140b0b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 28px;
             padding: 48px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
           }
           .section-title {
             font-size: 19px;
@@ -626,15 +623,15 @@ export default function RequestAccessPage() {
             animation: fadeIn 0.4s ease-out;
           }
           .error-box {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: #2a1010;
+            border: 1px solid #ef4444;
             border-radius: 14px;
             padding: 16px 24px;
-            color: #fecaca;
+            color: #ffcccc;
             font-size: 15px;
             margin-bottom: 32px;
             text-align: center;
-            font-weight: 500;
+            font-weight: 600;
           }
           .submit-button {
             width: 100%;
