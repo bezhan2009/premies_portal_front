@@ -92,6 +92,8 @@ function RedirectDashboard() {
         navigate("/processing-search/transactions", { replace: true });
     } else if (roleIds.includes(27)) {
         navigate("/client-documents", { replace: true });
+    } else if (roleIds.includes(1)) {
+        navigate("/request-access", { replace: true });
     } else {
       // Если есть роли, но ни одна не подходит под маршруты
       navigate("/404", { replace: true });

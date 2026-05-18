@@ -432,6 +432,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "kb_operator",
                         icon: Settings2
                     },
+                    {
+                        name: "Заявки на доступы",
+                        href: "/operator/access-requests",
+                        key: "access_requests_operator",
+                        icon: Users
+                    },
                 ],
             });
         }

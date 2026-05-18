@@ -9,6 +9,7 @@ import PageNotFound from "../pages/general/NotFound.jsx";
 import MainLayout from "../components/MainLayout.jsx";
 import RegisterPage from "../pages/general/RegisterPage.jsx";
 import RequireRole from "../middlewares/RequireRole.jsx";
+import RequestAccessPage from "../pages/general/RequestAccessPage.jsx";
 
 // Modularized routes
 import operatorRoutes from "./routes/operator.routes";
@@ -50,6 +51,9 @@ export default function AppRouter() {
 
           {/* Подготовленные страницы */}
           <Route path="/under/development" element={<UnderDevelopmentPage />} />
+          
+          {/* Заявка на доступ */}
+          <Route path="/request-access" element={<RequestAccessPage />} />
 
           {/* Load modularized routes */}
           {operatorRoutes}
