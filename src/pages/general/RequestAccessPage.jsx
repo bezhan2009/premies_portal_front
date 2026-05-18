@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaPaperPlane } from "react-icons/fa";
+import { FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaPaperPlane, FaUser, FaPhone, FaBriefcase, FaMoneyBillWave, FaMapMarkerAlt } from "react-icons/fa";
 import Select from "../../components/elements/Select.jsx";
 import LogoImageComponent from "../../components/Logo";
 import Spinner from "../../components/Spinner";
@@ -89,7 +89,6 @@ export default function RequestAccessPage() {
           throw new Error("Не удалось загрузить список ролей");
         }
         const data = await response.json();
-        // Exclude role 1 (New user) and 3 (Operator - operators manage requests)
         const filteredRoles = data.filter((role) => role.ID !== 1);
         setRoles(filteredRoles);
       } catch (err) {
@@ -205,7 +204,16 @@ export default function RequestAccessPage() {
   if (loadingRequest) {
     return (
       <div className="req-loading-container">
-        <Spinner size="large" label="Загрузка данных авторизации..." />
+        <style>{`
+          .req-loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            background: radial-gradient(circle at center, #1e1b1b 0%, #0f0e0e 100%);
+          }
+        `}</style>
+        <Spinner size="large" label="Синхронизация профиля..." />
       </div>
     );
   }
@@ -218,25 +226,148 @@ export default function RequestAccessPage() {
           <title>Заявка на рассмотрении</title>
         </Helmet>
         <div className="status-screen-container">
+          <style>{`
+            .status-screen-container {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 85vh;
+              padding: 24px;
+              background: radial-gradient(circle at center, #1e1212 0%, #0c0808 100%);
+            }
+            .status-card {
+              background: rgba(30, 18, 18, 0.45);
+              backdrop-filter: blur(24px);
+              border: 1px solid rgba(239, 68, 68, 0.15);
+              border-radius: 28px;
+              padding: 48px 40px;
+              max-width: 600px;
+              width: 100%;
+              text-align: center;
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(239, 68, 68, 0.05);
+              animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .status-icon-wrapper {
+              width: 100px;
+              height: 100px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 28px auto;
+              background: rgba(239, 68, 68, 0.08);
+              border: 2px solid #ef4444;
+              box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+            }
+            .status-icon {
+              color: #ef4444;
+              font-size: 42px;
+            }
+            .pulse-animation {
+              animation: rotatePulse 3s infinite ease-in-out;
+            }
+            @keyframes rotatePulse {
+              0% { transform: scale(1) rotate(0deg); }
+              50% { transform: scale(1.1) rotate(180deg); }
+              100% { transform: scale(1) rotate(360deg); }
+            }
+            .status-card h2 {
+              font-size: 28px;
+              font-weight: 800;
+              color: #ffffff;
+              letter-spacing: -0.5px;
+              margin-bottom: 12px;
+            }
+            .status-subtitle {
+              color: #fca5a5;
+              font-size: 16px;
+              line-height: 1.6;
+              margin-bottom: 32px;
+              font-weight: 500;
+            }
+            .request-summary-box {
+              background: rgba(15, 10, 10, 0.7);
+              border-radius: 20px;
+              padding: 24px;
+              margin-bottom: 32px;
+              text-align: left;
+              border: 1px solid rgba(239, 68, 68, 0.1);
+            }
+            .summary-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 12px 0;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            }
+            .summary-item:last-child {
+              border-bottom: none;
+            }
+            .summary-item .label {
+              color: #fca3a3;
+              font-weight: 500;
+              font-size: 14px;
+            }
+            .summary-item .value {
+              color: #ffffff;
+              font-weight: 600;
+              max-width: 70%;
+              text-align: right;
+              font-size: 14px;
+            }
+            .helper-note {
+              font-size: 14px;
+              color: #fca5a5;
+              line-height: 1.6;
+              margin-bottom: 36px;
+              opacity: 0.8;
+            }
+            .refresh-button {
+              background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+              color: #ffffff;
+              border: none;
+              border-radius: 14px;
+              padding: 16px 36px;
+              font-size: 16px;
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+              box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
+            .refresh-button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 12px 32px rgba(239, 68, 68, 0.45);
+              filter: brightness(1.1);
+            }
+            @keyframes slideUpFade {
+              from {
+                opacity: 0;
+                transform: translateY(30px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
           <div className="status-card pending">
             <div className="status-icon-wrapper">
               <FaHourglassHalf className="status-icon pulse-animation" />
             </div>
-            <h2>Заявка на доступы отправлена</h2>
+            <h2>Заявка отправлена</h2>
             <p className="status-subtitle">
-              Ваша заявка находится на рассмотрении у оператора. СМС-уведомление уже направлено ответственным лицам.
+              Ваш запрос на получение доступов успешно зарегистрирован в Active Directory и ожидает подтверждения оператором.
             </p>
             <div className="request-summary-box">
               <div className="summary-item">
-                <span className="label">ФИО:</span>
+                <span className="label">Сотрудник:</span>
                 <span className="value">{request.full_name}</span>
               </div>
               <div className="summary-item">
-                <span className="label">Телефон:</span>
+                <span className="label">Номер телефона:</span>
                 <span className="value">{request.phone}</span>
               </div>
               <div className="summary-item">
-                <span className="label">Выбранные роли:</span>
+                <span className="label">Запрошенные доступы:</span>
                 <span className="value">
                   {request.requested_role_ids
                     .map((id) => roles.find((r) => r.ID === id)?.Name || `Роль ${id}`)
@@ -245,10 +376,10 @@ export default function RequestAccessPage() {
               </div>
             </div>
             <div className="helper-note">
-              После подтверждения оператором вы получите полный доступ к системе. Пожалуйста, подождите или обновите страницу позже.
+              СМС-уведомление направлено ответственным лицам. Как только оператор одобрит заявку, ваш интерфейс автоматически переключится.
             </div>
             <button className="refresh-button" onClick={fetchMyRequest}>
-              Обновить статус
+              Обновить статус доступов
             </button>
           </div>
         </div>
@@ -264,16 +395,82 @@ export default function RequestAccessPage() {
           <title>Заявка отклонена</title>
         </Helmet>
         <div className="status-screen-container">
+          <style>{`
+            .status-screen-container {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 85vh;
+              padding: 24px;
+              background: radial-gradient(circle at center, #1e1212 0%, #0c0808 100%);
+            }
+            .status-card {
+              background: rgba(30, 18, 18, 0.45);
+              backdrop-filter: blur(24px);
+              border: 1px solid rgba(239, 68, 68, 0.2);
+              border-radius: 28px;
+              padding: 48px 40px;
+              max-width: 600px;
+              width: 100%;
+              text-align: center;
+              box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+              animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .status-icon-wrapper.rejected {
+              background: rgba(220, 38, 38, 0.1);
+              border: 2px solid #dc2626;
+              box-shadow: 0 0 30px rgba(220, 38, 38, 0.25);
+              width: 100px;
+              height: 100px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 28px auto;
+            }
+            .status-icon.rejected-icon {
+              color: #dc2626;
+              font-size: 42px;
+            }
+            .status-card h2 {
+              font-size: 28px;
+              font-weight: 800;
+              color: #ffffff;
+              margin-bottom: 12px;
+            }
+            .status-subtitle.rejected-sub {
+              color: #fca5a5;
+              font-size: 16px;
+              line-height: 1.6;
+              margin-bottom: 32px;
+            }
+            .retry-button {
+              background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+              color: #ffffff;
+              border: none;
+              border-radius: 14px;
+              padding: 16px 36px;
+              font-size: 16px;
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+              box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+            }
+            .retry-button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 12px 32px rgba(239, 68, 68, 0.45);
+            }
+          `}</style>
           <div className="status-card rejected">
-            <div className="status-icon-wrapper">
-              <FaTimesCircle className="status-icon error-icon" />
+            <div className="status-icon-wrapper rejected">
+              <FaTimesCircle className="status-icon rejected-icon" />
             </div>
-            <h2>Заявка отклонена оператором</h2>
-            <p className="status-subtitle text-danger">
-              К сожалению, ваша заявка на получение доступов была отклонена.
+            <h2>Заявка отклонена</h2>
+            <p className="status-subtitle rejected-sub">
+              К сожалению, ваша заявка на получение доступов к системе была отклонена оператором.
             </p>
-            <div className="helper-note">
-              Вы можете отредактировать свои данные, выбрать другие роли и отправить заявку заново.
+            <div className="helper-note" style={{ color: "#fca5a5", opacity: 0.8 }}>
+              Вы можете отредактировать свои данные, исправить ошибки и отправить запрос повторно.
             </div>
             <button className="retry-button" onClick={handleResetRequest}>
               Заполнить заново
@@ -291,166 +488,54 @@ export default function RequestAccessPage() {
       </Helmet>
       <div className="access-form-container">
         <style>{`
-          .req-loading-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 80vh;
-          }
-          .status-screen-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 75vh;
-            padding: 20px;
-          }
-          .status-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            animation: fadeInUp 0.6s ease-out;
-          }
-          .status-card h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #f8fafc;
-            margin: 20px 0 10px 0;
-          }
-          .status-subtitle {
-            color: #94a3b8;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-          }
-          .status-icon-wrapper {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-          }
-          .pending .status-icon-wrapper {
-            background: rgba(245, 158, 11, 0.15);
-            border: 2px solid #f59e0b;
-          }
-          .pending .status-icon {
-            color: #f59e0b;
-            font-size: 36px;
-          }
-          .rejected .status-icon-wrapper {
-            background: rgba(239, 68, 68, 0.15);
-            border: 2px solid #ef4444;
-          }
-          .rejected .status-icon {
-            color: #ef4444;
-            font-size: 36px;
-          }
-          .pulse-animation {
-            animation: pulse 2s infinite ease-in-out;
-          }
-          @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-          }
-          .request-summary-box {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-            text-align: left;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-          }
-          .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          }
-          .summary-item:last-child {
-            border-bottom: none;
-          }
-          .summary-item .label {
-            color: #64748b;
-            font-weight: 500;
-          }
-          .summary-item .value {
-            color: #e2e8f0;
-            font-weight: 600;
-            max-width: 70%;
-            text-align: right;
-          }
-          .helper-note {
-            font-size: 14px;
-            color: #64748b;
-            line-height: 1.5;
-            margin-bottom: 30px;
-          }
-          .refresh-button, .retry-button {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: #ffffff;
-            border: none;
-            border-radius: 12px;
-            padding: 14px 28px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-          .refresh-button:hover, .retry-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-          }
-          
-          /* Form Styles */
           .access-form-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 40px auto;
             padding: 24px;
-            animation: fadeInUp 0.6s ease-out;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .form-header-card {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
           }
           .form-header-card h1 {
-            font-size: 28px;
-            font-weight: 800;
-            color: #f8fafc;
-            margin-top: 16px;
+            font-size: 32px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -1px;
+            margin-top: 20px;
+          }
+          .form-header-card p {
+            color: #fca5a5;
+            font-weight: 500;
+            margin-top: 8px;
+            font-size: 16px;
+            opacity: 0.9;
           }
           .form-card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(30, 18, 18, 0.45);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 28px;
+            padding: 48px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
           }
           .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #3b82f6;
-            margin-bottom: 20px;
-            border-left: 4px solid #3b82f6;
-            padding-left: 10px;
+            font-size: 19px;
+            font-weight: 800;
+            color: #ef4444;
+            margin-bottom: 24px;
+            border-left: 4px solid #ef4444;
+            padding-left: 14px;
+            letter-spacing: -0.3px;
           }
           .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 24px;
+            margin-bottom: 40px;
           }
-          @media (max-width: 600px) {
+          @media (max-width: 768px) {
             .form-grid {
               grid-template-columns: 1fr;
             }
@@ -459,31 +544,45 @@ export default function RequestAccessPage() {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative;
           }
           .form-group label {
-            color: #94a3b8;
+            color: #fca5a5;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
+          }
+          .input-with-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+          }
+          .input-icon {
+            position: absolute;
+            left: 16px;
+            color: #ef4444;
+            font-size: 16px;
+            opacity: 0.85;
           }
           .form-group input, .form-group textarea {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px 16px;
-            color: #f8fafc;
+            width: 100%;
+            background: rgba(15, 10, 10, 0.6);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 14px;
+            padding: 14px 16px 14px 44px;
+            color: #ffffff;
             font-size: 15px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .form-group input:focus, .form-group textarea:focus {
-            border-color: #3b82f6;
+            border-color: #ef4444;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25), 0 0 15px rgba(239, 68, 68, 0.1);
           }
           .roles-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 30px;
+            gap: 16px;
+            margin-bottom: 40px;
           }
           @media (max-width: 600px) {
             .roles-grid {
@@ -491,78 +590,82 @@ export default function RequestAccessPage() {
             }
           }
           .role-checkbox-item {
-            background: rgba(15, 23, 42, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 12px 16px;
+            background: rgba(15, 10, 10, 0.4);
+            border: 1px solid rgba(239, 68, 68, 0.1);
+            border-radius: 16px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .role-checkbox-item:hover {
-            background: rgba(59, 130, 246, 0.05);
-            border-color: rgba(59, 130, 246, 0.2);
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.3);
+            transform: translateY(-1px);
           }
           .role-checkbox-item input {
             cursor: pointer;
-            width: 18px;
-            height: 18px;
+            accent-color: #ef4444;
+            width: 20px;
+            height: 20px;
           }
           .role-checkbox-item label {
             cursor: pointer;
-            color: #e2e8f0;
-            font-size: 14px;
-            font-weight: 500;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
           }
           .extra-fields-section {
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            animation: fadeIn 0.4s ease-in-out;
+            background: rgba(20, 10, 10, 0.4);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            animation: fadeIn 0.4s ease-out;
           }
           .error-box {
             background: rgba(239, 68, 68, 0.1);
-            border: 1px solid #ef4444;
-            border-radius: 12px;
-            padding: 14px 20px;
-            color: #fca5a5;
-            font-size: 14px;
-            margin-bottom: 30px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 14px;
+            padding: 16px 24px;
+            color: #fecaca;
+            font-size: 15px;
+            margin-bottom: 32px;
             text-align: center;
+            font-weight: 500;
           }
           .submit-button {
             width: 100%;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
             color: #ffffff;
             border: none;
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 14px;
+            padding: 18px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            gap: 12px;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
           }
           .submit-button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.45);
+            filter: brightness(1.1);
           }
           .submit-button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
           }
-          @keyframes fadeInUp {
+          @keyframes slideUpFade {
             from {
               opacity: 0;
-              transform: translateY(20px);
+              transform: translateY(30px);
             }
             to {
               opacity: 1;
@@ -577,42 +680,48 @@ export default function RequestAccessPage() {
 
         <div className="form-header-card">
           <LogoImageComponent width={120} height={100} />
-          <h1>Подача заявки на получение доступов</h1>
-          <p style={{ color: "#94a3b8", marginTop: 8 }}>
-            Пожалуйста, заполните ваш профиль и выберите роли, необходимые для вашей работы.
+          <h1>Активация доступов к порталу</h1>
+          <p>
+            Введите ваши данные и выберите роли. После подтверждения оператором вам откроются соответствующие модули.
           </p>
         </div>
 
         <form className="form-card" onSubmit={handleSubmit}>
-          <div className="section-title">Личные данные</div>
+          <div className="section-title">Личные сведения сотрудника</div>
           <div className="form-grid">
             <div className="form-group">
               <label>ФИО полностью *</label>
-              <input
-                type="text"
-                placeholder="Иванов Иван Иванович"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+              <div className="input-with-icon">
+                <FaUser className="input-icon" />
+                <input
+                  type="text"
+                  placeholder="Иванов Иван Иванович"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
             </div>
             <div className="form-group">
               <label>Номер мобильного телефона *</label>
-              <input
-                type="tel"
-                placeholder="992XXXXXXXXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-              />
+              <div className="input-with-icon">
+                <FaPhone className="input-icon" />
+                <input
+                  type="tel"
+                  placeholder="992XXXXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
-          <div className="section-title">Выбор желаемых ролей *</div>
+          <div className="section-title">Запрашиваемые роли *</div>
           {loadingRoles ? (
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 30 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 40 }}>
               <Spinner size="small" />
-              <span style={{ color: "#94a3b8" }}>Загружаем доступные роли...</span>
+              <span style={{ color: "#fca5a5" }}>Получение списка ролей из БД...</span>
             </div>
           ) : (
             <div className="roles-grid">
@@ -633,49 +742,61 @@ export default function RequestAccessPage() {
           {/* Conditional extra worker fields */}
           {selectedRoles.some((r) => [6, 8].includes(r)) && (
             <div className="extra-fields-section">
-              <div className="section-title" style={{ borderLeftColor: "#10b981", color: "#10b981" }}>
-                Данные сотрудника (Карточник / Кредитник)
+              <div className="section-title" style={{ borderLeftColor: "#ef4444", color: "#ffffff" }}>
+                💼 Данные сотрудника (Карточник / Кредитник)
               </div>
-              <div className="form-grid">
+              <div className="form-grid" style={{ marginBottom: 0 }}>
                 <div className="form-group">
                   <label>Должность *</label>
-                  <input
-                    type="text"
-                    placeholder="Специалист отдела"
-                    value={position}
-                    onChange={(e) => setPosition(e.target.value)}
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <FaBriefcase className="input-icon" />
+                    <input
+                      type="text"
+                      placeholder="Главный специалист"
+                      value={position}
+                      onChange={(e) => setPosition(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Сумма оклада *</label>
-                  <input
-                    type="number"
-                    placeholder="Оклад в сомони"
-                    value={salary}
-                    onChange={(e) => setSalary(e.target.value)}
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <FaMoneyBillWave className="input-icon" />
+                    <input
+                      type="number"
+                      placeholder="Оклад в сомони"
+                      value={salary}
+                      onChange={(e) => setSalary(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>План *</label>
-                  <input
-                    type="number"
-                    placeholder="Месячный план"
-                    value={plan}
-                    onChange={(e) => setPlan(e.target.value)}
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <FaPaperPlane className="input-icon" />
+                    <input
+                      type="number"
+                      placeholder="Месячный план продаж"
+                      value={plan}
+                      onChange={(e) => setPlan(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>ЗП проект *</label>
-                  <input
-                    type="number"
-                    placeholder="ЗП проект"
-                    value={salaryProject}
-                    onChange={(e) => setSalaryProject(e.target.value)}
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <FaMoneyBillWave className="input-icon" />
+                    <input
+                      type="number"
+                      placeholder="Сумма ЗП проекта"
+                      value={salaryProject}
+                      onChange={(e) => setSalaryProject(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="form-group" style={{ gridColumn: "span 2" }}>
                   <label>Место работы *</label>
@@ -683,7 +804,7 @@ export default function RequestAccessPage() {
                     value={placeWork}
                     onChange={(val) => setplaceWork(val)}
                     options={[
-                      { value: "", label: "Выберите офис" },
+                      { value: "", label: "Выберите обслуживающий офис" },
                       ...offices.map((title) => ({ value: title, label: title })),
                     ]}
                   />
@@ -695,37 +816,44 @@ export default function RequestAccessPage() {
           {/* Conditional extra office fields (Director) */}
           {selectedRoles.includes(5) && (
             <div className="extra-fields-section">
-              <div className="section-title" style={{ borderLeftColor: "#a855f7", color: "#a855f7" }}>
-                Данные нового офиса (Директор)
+              <div className="section-title" style={{ borderLeftColor: "#ef4444", color: "#ffffff" }}>
+                🏢 Параметры нового филиала (Директор)
               </div>
-              <div className="form-grid">
+              <div className="form-grid" style={{ marginBottom: 0 }}>
                 <div className="form-group">
-                  <label>Название офиса *</label>
-                  <input
-                    type="text"
-                    placeholder="Название нового отделения"
-                    value={officeTitle}
-                    onChange={(e) => setOfficeTitle(e.target.value)}
-                    required
-                  />
+                  <label>Название филиала *</label>
+                  <div className="input-with-icon">
+                    <FaMapMarkerAlt className="input-icon" />
+                    <input
+                      type="text"
+                      placeholder="Душанбе - Сеть 1"
+                      value={officeTitle}
+                      onChange={(e) => setOfficeTitle(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
-                  <label>Код офиса *</label>
-                  <input
-                    type="text"
-                    placeholder="Код офиса (например, 002)"
-                    value={officeCode}
-                    onChange={(e) => setOfficeCode(e.target.value)}
-                    required
-                  />
+                  <label>Код филиала *</label>
+                  <div className="input-with-icon">
+                    <FaMapMarkerAlt className="input-icon" />
+                    <input
+                      type="text"
+                      placeholder="001"
+                      value={officeCode}
+                      onChange={(e) => setOfficeCode(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="form-group" style={{ gridColumn: "span 2" }}>
-                  <label>Описание офиса *</label>
+                <div className="form-group" style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label>Описание и адрес *</label>
                   <textarea
-                    placeholder="Подробное описание офиса"
+                    placeholder="Укажите точный адрес и краткое описание филиала..."
                     value={officeDesc}
                     onChange={(e) => setOfficeDesc(e.target.value)}
                     rows={3}
+                    style={{ paddingLeft: 16 }}
                     required
                   />
                 </div>
@@ -735,7 +863,7 @@ export default function RequestAccessPage() {
 
           {error && <div className="error-box">{error}</div>}
           {success && (
-            <div className="error-box" style={{ background: "rgba(16, 185, 129, 0.1)", borderColor: "#10b981", color: "#a7f3d0" }}>
+            <div className="error-box" style={{ background: "rgba(239, 68, 68, 0.08)", borderColor: "#ef4444", color: "#ffffff" }}>
               {success}
             </div>
           )}
@@ -746,7 +874,7 @@ export default function RequestAccessPage() {
             ) : (
               <>
                 <FaPaperPlane />
-                <span>Отправить заявку оператору</span>
+                <span>Отправить заявку на доступы</span>
               </>
             )}
           </button>

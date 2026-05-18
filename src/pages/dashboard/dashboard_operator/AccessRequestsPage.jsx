@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
-import { FaUserShield, FaCheck, FaTimes, FaEdit, FaUserCheck, FaSpinner } from "react-icons/fa";
+import { FaUserShield, FaCheck, FaTimes, FaEdit, FaUserCheck, FaSpinner, FaUsers, FaFolderOpen, FaAddressCard, FaPhoneAlt, FaRegBuilding, FaBriefcase } from "react-icons/fa";
 import Select from "../../../components/elements/Select.jsx";
 import Spinner from "../../../components/Spinner";
 
@@ -197,7 +197,7 @@ export default function AccessRequestsPage() {
       <div className="admin-requests-container">
         <style>{`
           .admin-requests-container {
-            padding: 24px;
+            padding: 32px;
             max-width: 1200px;
             margin: 0 auto;
             animation: fadeIn 0.4s ease-in-out;
@@ -206,75 +206,81 @@ export default function AccessRequestsPage() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 36px;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+            padding-bottom: 20px;
           }
           .admin-header h1 {
-            font-size: 26px;
-            font-weight: 800;
-            color: #f8fafc;
+            font-size: 28px;
+            font-weight: 900;
+            color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
+            letter-spacing: -0.5px;
           }
           .admin-header h1 svg {
-            color: #3b82f6;
+            color: #ef4444;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
           }
           
           /* Tabs */
           .tabs-wrapper {
             display: flex;
-            gap: 8px;
-            background: rgba(15, 23, 42, 0.4);
+            gap: 10px;
+            background: rgba(15, 10, 10, 0.5);
             padding: 6px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(239, 68, 68, 0.15);
             max-width: fit-content;
           }
           .tab-btn {
             background: transparent;
-            color: #94a3b8;
+            color: #fca5a5;
             border: none;
-            padding: 8px 18px;
-            border-radius: 8px;
+            padding: 10px 22px;
+            border-radius: 12px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .tab-btn:hover {
-            color: #f8fafc;
+            color: #ffffff;
           }
           .tab-btn.active {
-            background: #3b82f6;
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
             color: #ffffff;
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
           }
           
-          /* Requests List */
+          /* Requests Grid */
           .requests-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 20px;
           }
           .request-list-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
-            padding: 24px;
+            background: rgba(30, 18, 18, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(239, 68, 68, 0.1);
+            border-radius: 20px;
+            padding: 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
-            transition: all 0.3s ease;
+            gap: 24px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
           }
           .request-list-card:hover {
-            border-color: rgba(59, 130, 246, 0.2);
-            background: rgba(30, 41, 59, 0.6);
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(30, 18, 18, 0.5);
             transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(239, 68, 68, 0.08);
           }
-          @media (max-width: 768px) {
+          @media (max-width: 900px) {
             .request-list-card {
               flex-direction: column;
               align-items: flex-start;
@@ -283,54 +289,64 @@ export default function AccessRequestsPage() {
           .req-info-block {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
           }
           .req-user-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
+            flex-wrap: wrap;
           }
           .req-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #f8fafc;
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.3px;
           }
           .req-username {
             font-size: 13px;
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
+            background: rgba(239, 68, 68, 0.15);
+            color: #fecaca;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            border: 1px solid rgba(239, 68, 68, 0.1);
           }
           .req-details-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            color: #94a3b8;
+            gap: 20px;
+            color: #fca5a5;
             font-size: 14px;
             margin-top: 4px;
+            font-weight: 500;
+          }
+          .req-details-row span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
           }
           .req-roles-badge-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
+            gap: 8px;
+            margin-top: 10px;
           }
           .role-badge {
             font-size: 12px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #cbd5e1;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 8px;
+            background: rgba(15, 10, 10, 0.4);
+            color: #ffffff;
+            border: 1px solid rgba(239, 68, 68, 0.15);
           }
           
           /* Actions */
           .action-btn-group {
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            flex-wrap: wrap;
           }
           .btn-action {
             display: flex;
@@ -338,51 +354,56 @@ export default function AccessRequestsPage() {
             justify-content: center;
             gap: 8px;
             border: none;
-            border-radius: 10px;
-            padding: 10px 18px;
+            border-radius: 12px;
+            padding: 12px 20px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
           }
           .btn-approve {
-            background: #10b981;
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
             color: #ffffff;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25);
           }
           .btn-approve:hover {
-            background: #059669;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(239, 68, 68, 0.4);
+            filter: brightness(1.1);
           }
           .btn-reject {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.08);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.25);
           }
           .btn-reject:hover {
             background: #ef4444;
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+            border-color: transparent;
           }
           .btn-edit {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(239, 68, 68, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(239, 68, 68, 0.2);
           }
           .btn-edit:hover {
-            background: #3b82f6;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            border-color: transparent;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+            transform: translateY(-1px);
           }
           
-          /* Editor modal / Panel */
+          /* Overlay / Modal */
           .edit-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
+            background: rgba(15, 10, 10, 0.85);
+            backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -390,109 +411,145 @@ export default function AccessRequestsPage() {
             z-index: 1000;
           }
           .edit-modal {
-            background: rgba(30, 41, 59, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            max-width: 800px;
+            background: rgba(30, 18, 18, 0.95);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 28px;
+            max-width: 850px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            padding: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: scaleIn 0.3s ease-out;
+            padding: 40px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(239, 68, 68, 0.1);
+            animation: modalScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 16px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+            padding-bottom: 18px;
           }
           .modal-header h2 {
-            font-size: 22px;
-            color: #f8fafc;
-            font-weight: 700;
+            font-size: 24px;
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: -0.5px;
           }
           .close-btn {
             background: transparent;
             border: none;
-            color: #94a3b8;
-            font-size: 20px;
+            color: #fca5a5;
+            font-size: 22px;
             cursor: pointer;
             transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
           .close-btn:hover {
-            color: #f8fafc;
+            color: #ffffff;
           }
           
-          /* Form layout inside modal */
+          /* Form Controls */
           .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-bottom: 24px;
           }
           .form-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
           }
           .form-group label {
             font-size: 13px;
-            color: #94a3b8;
-            font-weight: 500;
+            color: #fca5a5;
+            font-weight: 600;
           }
           .form-group input, .form-group textarea {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 10px 14px;
-            color: #f8fafc;
+            background: rgba(15, 10, 10, 0.6);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #ffffff;
             font-size: 14px;
+            transition: all 0.3s ease;
+          }
+          .form-group input:focus, .form-group textarea:focus {
+            border-color: #ef4444;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
           }
           .roles-checklist {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 24px;
+            gap: 12px;
+            background: rgba(15, 10, 10, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.1);
+            margin-bottom: 28px;
+          }
+          @media (max-width: 600px) {
+            .roles-checklist {
+              grid-template-columns: 1fr;
+            }
           }
           .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+          }
+          .checkbox-item:hover {
+            background: rgba(239, 68, 68, 0.05);
           }
           .checkbox-item input {
             cursor: pointer;
-            width: 16px;
-            height: 16px;
+            accent-color: #ef4444;
+            width: 18px;
+            height: 18px;
           }
           .checkbox-item label {
             cursor: pointer;
-            color: #cbd5e1;
-            font-size: 13px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
           }
           
           .empty-state {
             text-align: center;
-            padding: 60px 20px;
-            background: rgba(30, 41, 59, 0.2);
-            border-radius: 16px;
-            border: 1px dashed rgba(255, 255, 255, 0.08);
-            color: #64748b;
+            padding: 80px 20px;
+            background: rgba(30, 18, 18, 0.15);
+            border-radius: 20px;
+            border: 1px dashed rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+            animation: fadeIn 0.4s ease-out;
+          }
+          .empty-state svg {
+            font-size: 48px;
+            color: #ef4444;
+            margin-bottom: 20px;
+            opacity: 0.8;
+          }
+          .empty-state h3 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
           }
           
           @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
           }
-          @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
+          @keyframes modalScaleIn {
+            from { transform: scale(0.96); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
           }
         `}</style>
@@ -500,14 +557,14 @@ export default function AccessRequestsPage() {
         <div className="admin-header">
           <h1>
             <FaUserShield />
-            <span>Заявки на доступы</span>
+            <span>Заявки на доступы (Панель оператора)</span>
           </h1>
         </div>
 
         {/* Status Filter Tabs */}
         <div className="tabs-wrapper">
           <button className={`tab-btn ${statusTab === "pending" ? "active" : ""}`} onClick={() => setStatusTab("pending")}>
-            Ожидающие одобрения
+            Ожидающие
           </button>
           <button className={`tab-btn ${statusTab === "approved" ? "active" : ""}`} onClick={() => setStatusTab("approved")}>
             Одобренные
@@ -518,13 +575,14 @@ export default function AccessRequestsPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-            <Spinner size="large" label="Загрузка списка заявок..." />
+          <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
+            <Spinner size="large" label="Синхронизация списка..." />
           </div>
         ) : requests.length === 0 ? (
           <div className="empty-state">
-            <h3>Заявки не найдены</h3>
-            <p>В этой категории в настоящее время нет активных заявок.</p>
+            <FaFolderOpen />
+            <h3>Заявки отсутствуют</h3>
+            <p>В выбранной категории в настоящее время нет зарегистрированных заявок.</p>
           </div>
         ) : (
           <div className="requests-grid">
@@ -536,9 +594,9 @@ export default function AccessRequestsPage() {
                     <span className="req-username">@{req.User?.email ? req.User.email.split("@")[0] : "user"}</span>
                   </div>
                   <div className="req-details-row">
-                    <span>📱 {req.phone}</span>
-                    {req.position && <span>💼 {req.position}</span>}
-                    {req.place_work && <span>🏢 {req.place_work}</span>}
+                    <span><FaPhoneAlt style={{ color: "#ef4444" }} /> {req.phone}</span>
+                    {req.position && <span><FaBriefcase style={{ color: "#ef4444" }} /> {req.position}</span>}
+                    {req.place_work && <span><FaRegBuilding style={{ color: "#ef4444" }} /> {req.place_work}</span>}
                   </div>
                   <div className="req-roles-badge-list">
                     {req.requested_role_ids?.map((id) => (
@@ -571,34 +629,34 @@ export default function AccessRequestsPage() {
           <div className="edit-overlay">
             <form className="edit-modal" onSubmit={handleApprove}>
               <div className="modal-header">
-                <h2>Рассмотрение и редактирование заявки</h2>
+                <h2>Рассмотрение и одобрение прав</h2>
                 <button type="button" className="close-btn" onClick={() => setEditingRequest(null)}>
                   <FaTimes />
                 </button>
               </div>
 
               {error && (
-                <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid #ef4444", borderRadius: 10, padding: 12, color: "#f87171", marginBottom: 20, textAlign: "center", fontSize: 14 }}>
+                <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid #ef4444", borderRadius: 14, padding: 16, color: "#fca5a5", marginBottom: 24, textAlign: "center", fontSize: 14, fontWeight: 600 }}>
                   {error}
                 </div>
               )}
 
-              <div style={{ color: "#3b82f6", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
+              <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 16, marginBottom: 16, borderLeft: "3px solid #ef4444", paddingLeft: 10 }}>
                 1. Проверка личных данных
               </div>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>ФИО</label>
+                  <label>ФИО сотрудника</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>Телефон</label>
+                  <label>Номер телефона</label>
                   <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                 </div>
               </div>
 
-              <div style={{ color: "#3b82f6", fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24 }}>
-                2. Запрашиваемые роли в системе
+              <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 16, marginBottom: 16, marginTop: 28, borderLeft: "3px solid #ef4444", paddingLeft: 10 }}>
+                2. Назначаемые роли в системе
               </div>
               <div className="roles-checklist">
                 {roles.map((role) => (
@@ -616,9 +674,9 @@ export default function AccessRequestsPage() {
 
               {/* Conditional Worker Details */}
               {selectedRoles.some((r) => [6, 8].includes(r)) && (
-                <div style={{ border: "1px solid rgba(16, 185, 129, 0.2)", background: "rgba(16, 185, 129, 0.03)", padding: 20, borderRadius: 16, marginBottom: 24 }}>
-                  <div style={{ color: "#10b981", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
-                    💼 Параметры сотрудника (Карточник / Кредитник)
+                <div style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "rgba(239, 68, 68, 0.03)", padding: 28, borderRadius: 20, marginBottom: 28 }}>
+                  <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15, marginBottom: 18, display: "flex", alignParagraph: "center", gap: 8 }}>
+                    <span>💼 Сведения для карточного/кредитного отдела</span>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -626,7 +684,7 @@ export default function AccessRequestsPage() {
                       <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} required />
                     </div>
                     <div className="form-group">
-                      <label>Оклад *</label>
+                      <label>Сумма оклада *</label>
                       <input type="number" value={salary} onChange={(e) => setSalary(e.target.value)} required />
                     </div>
                     <div className="form-group">
@@ -638,7 +696,7 @@ export default function AccessRequestsPage() {
                       <input type="number" value={salaryProject} onChange={(e) => setSalaryProject(e.target.value)} required />
                     </div>
                     <div className="form-group" style={{ gridColumn: "span 2" }}>
-                      <label>Место работы *</label>
+                      <label>Обслуживающий офис *</label>
                       <Select
                         value={placeWork}
                         onChange={(val) => setplaceWork(val)}
@@ -654,21 +712,21 @@ export default function AccessRequestsPage() {
 
               {/* Conditional Office Details */}
               {selectedRoles.includes(5) && (
-                <div style={{ border: "1px solid rgba(168, 85, 247, 0.2)", background: "rgba(168, 85, 247, 0.03)", padding: 20, borderRadius: 16, marginBottom: 24 }}>
-                  <div style={{ color: "#a855f7", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
-                    🏢 Параметры офиса (Директор)
+                <div style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "rgba(239, 68, 68, 0.03)", padding: 28, borderRadius: 20, marginBottom: 28 }}>
+                  <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15, marginBottom: 18, display: "flex", alignParagraph: "center", gap: 8 }}>
+                    <span>🏢 Сведения о новом филиале</span>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label>Название офиса *</label>
+                      <label>Название филиала *</label>
                       <input type="text" value={officeTitle} onChange={(e) => setOfficeTitle(e.target.value)} required />
                     </div>
                     <div className="form-group">
-                      <label>Код офиса *</label>
+                      <label>Код филиала *</label>
                       <input type="text" value={officeCode} onChange={(e) => setOfficeCode(e.target.value)} required />
                     </div>
                     <div className="form-group" style={{ gridColumn: "span 2" }}>
-                      <label>Описание офиса *</label>
+                      <label>Описание и адрес филиала *</label>
                       <textarea
                         value={officeDesc}
                         onChange={(e) => setOfficeDesc(e.target.value)}
@@ -680,8 +738,8 @@ export default function AccessRequestsPage() {
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 30 }}>
-                <button type="button" className="btn-action" style={{ background: "rgba(255,255,255,0.05)", color: "#94a3b8" }} onClick={() => setEditingRequest(null)} disabled={actionLoading}>
+              <div style={{ display: "flex", gap: 14, justifyContent: "flex-end", marginTop: 36 }}>
+                <button type="button" className="btn-action btn-reject" onClick={() => setEditingRequest(null)} disabled={actionLoading}>
                   Отмена
                 </button>
                 <button type="submit" className="btn-action btn-approve" disabled={actionLoading}>
@@ -690,7 +748,7 @@ export default function AccessRequestsPage() {
                   ) : (
                     <>
                       <FaUserCheck />
-                      <span>Подтвердить и предоставить доступы</span>
+                      <span>Подтвердить и выдать роли</span>
                     </>
                   )}
                 </button>
