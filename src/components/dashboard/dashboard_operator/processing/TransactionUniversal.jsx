@@ -475,7 +475,19 @@ export default function DashboardOperatorTransactionSearch() {
         const response = await getTerminalNames();
         const terminalsData = response?.data || response;
         if (terminalsData && Array.isArray(terminalsData)) {
-          setTerminalOptions(terminalsData.map(t => ({ label: `${t.atmId} - ${t.description || t.atmDescription || ''}`, value: t.atmId })));
+          const uniqueTerminals = [];
+          const seenAtmIds = new Set();
+          for (const t of terminalsData) {
+            const atmIdVal = t.atmId ? String(t.atmId).trim() : "";
+            if (atmIdVal && !seenAtmIds.has(atmIdVal)) {
+              seenAtmIds.add(atmIdVal);
+              uniqueTerminals.push({
+                label: `${atmIdVal} - ${t.description || t.atmDescription || ''}`,
+                value: atmIdVal
+              });
+            }
+          }
+          setTerminalOptions(uniqueTerminals);
         }
       } catch (e) {
         console.error("Error fetching terminal options", e);
@@ -484,7 +496,19 @@ export default function DashboardOperatorTransactionSearch() {
         const response = await getTransactions();
         const txData = response?.data || response;
         if (txData && Array.isArray(txData)) {
-          setTransactionOptions(txData.map(t => ({ label: `${t.type} - ${t.name}`, value: t.type.toString() })));
+          const uniqueTxTypes = [];
+          const seenTypes = new Set();
+          for (const t of txData) {
+            const typeStr = t.type ? String(t.type).trim() : '';
+            if (typeStr && !seenTypes.has(typeStr)) {
+              seenTypes.add(typeStr);
+              uniqueTxTypes.push({
+                label: `${typeStr} - ${t.name || ''}`,
+                value: typeStr
+              });
+            }
+          }
+          setTransactionOptions(uniqueTxTypes);
         }
       } catch (e) {
         console.error("Error fetching transaction options", e);
@@ -1427,12 +1451,31 @@ export default function DashboardOperatorTransactionSearch() {
                   </div>
                   <div className="txn-filter__fields">
                     <div className="txn-filter__field">
-                      <label
-                        htmlFor="excludeTransactionTypes"
-                        className="txn-filter__label"
-                      >
-                        Искл. типы транз.
-                      </label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <label
+                          htmlFor="excludeTransactionTypes"
+                          className="txn-filter__label"
+                          style={{ margin: 0 }}
+                        >
+                          Искл. типы транз.
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => openCatalogModal('excludeTransactionTypes')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#eb2525',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: 0,
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Справочник
+                        </button>
+                      </div>
                       <Select
                         mode="multiple"
                         style={{ width: '100%', minWidth: '150px' }}
@@ -1447,12 +1490,31 @@ export default function DashboardOperatorTransactionSearch() {
                       />
                     </div>
                     <div className="txn-filter__field">
-                      <label
-                        htmlFor="excludeAtmIds"
-                        className="txn-filter__label"
-                      >
-                        Искл. ATM ID
-                      </label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <label
+                          htmlFor="excludeAtmIds"
+                          className="txn-filter__label"
+                          style={{ margin: 0 }}
+                        >
+                          Искл. ATM ID
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => openCatalogModal('excludeAtmIds')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#eb2525',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: 0,
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Справочник
+                        </button>
+                      </div>
                       <Select
                         mode="multiple"
                         style={{ width: '100%', minWidth: '150px' }}
@@ -1467,9 +1529,27 @@ export default function DashboardOperatorTransactionSearch() {
                       />
                     </div>
                     <div className="txn-filter__field">
-                      <label htmlFor="excludeMcc" className="txn-filter__label">
-                        Искл. MCC
-                      </label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <label htmlFor="excludeMcc" className="txn-filter__label" style={{ margin: 0 }}>
+                          Искл. MCC
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => openCatalogModal('excludeMcc')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#eb2525',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: 0,
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Справочник
+                        </button>
+                      </div>
                       <input
                         type="text"
                         id="excludeMcc"
@@ -1844,6 +1924,16 @@ export default function DashboardOperatorTransactionSearch() {
               </div>
             </div>
           )}
+          {/* Справочники */}
+          <CatalogSelectModal
+            open={catalogModal.open}
+            title={catalogModal.title}
+            onClose={() => setCatalogModal((prev) => ({ ...prev, open: false }))}
+            options={catalogModal.options}
+            selectedValues={catalogModal.selectedValues}
+            onSelect={handleCatalogSelect}
+            multiple={catalogModal.multiple}
+          />
         </div>
       </div>
     </>
