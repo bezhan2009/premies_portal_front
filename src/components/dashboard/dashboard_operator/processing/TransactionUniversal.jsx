@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AlertMessage from "../../../general/AlertMessage.jsx";
-import { fetchTransactionsSearch } from "../../../../api/processing/transactions.js";
+import { fetchTransactionsSearch, fetchCardFios } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
 import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
@@ -704,9 +704,28 @@ export default function DashboardOperatorTransactionSearch() {
       if (excludeMcc) params.excludeMcc = excludeMcc;
       if (excludeAccounts) params.excludeAccounts = excludeAccounts;
 
-      const transactionsData = await fetchTransactionsSearch(params);
+      let transactionsData = await fetchTransactionsSearch(params);
 
       if (transactionsData && Array.isArray(transactionsData)) {
+        // Fetch FIOs
+        const uniqueCardIds = [...new Set(transactionsData.map(t => t.cardId).filter(Boolean))];
+        if (uniqueCardIds.length > 0) {
+          try {
+            const fiosResponse = await fetchCardFios(uniqueCardIds);
+            const fiosMap = fiosResponse?.data || {};
+            transactionsData = transactionsData.map(t => ({
+              ...t,
+              fio: fiosMap[t.cardId] || "N/A"
+            }));
+          } catch (e) {
+            console.error("Failed to fetch FIOs", e);
+            transactionsData = transactionsData.map(t => ({
+              ...t,
+              fio: "N/A"
+            }));
+          }
+        }
+
         setTransactions(transactionsData);
         showAlert(`Загружено ${transactionsData.length} транзакций`, "success");
       } else {
@@ -992,6 +1011,7 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "responseDescription", label: "Статус" },
       { key: "cardNumber", label: "Номер карты" },
       { key: "cardId", label: "ID карты" },
+      { key: "fio", label: "ФИО" },
       { key: "transactionTypeName", label: "Тип операции" },
       {
         key: (row) => {

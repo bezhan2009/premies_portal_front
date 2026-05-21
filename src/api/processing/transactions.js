@@ -192,6 +192,25 @@ export const fetchCardDetails = async (cardId) => {
     }
 };
 
+export const fetchCardFios = async (cardIds) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/card-fio`, {
+            cardIds: cardIds
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching card fios:', error);
+        return { data: {} };
+    }
+};
+
 // Получение информации об уведомлениях (сервисах) карты
 export const fetchCardServices = async (cardId) => {
     const BASE_URL_5012 = 'http://10.64.20.84:5012';
