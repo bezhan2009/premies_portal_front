@@ -437,15 +437,48 @@ export const Table = ({
   useEffect(() => {
     const availableKeys = normalizedColumns.map((column) => column.key);
     setColumnOrder((previousOrder) => {
-      const filteredKeys = previousOrder.filter((key) =>
+      if (!previousOrder || !previousOrder.length) {
+        return availableKeys;
+      }
+
+      const filteredPrevious = previousOrder.filter((key) =>
         availableKeys.includes(key),
       );
-      const missingKeys = availableKeys.filter(
-        (key) => !filteredKeys.includes(key),
-      );
-      return [...filteredKeys, ...missingKeys];
+
+      const previousSet = new Set(filteredPrevious);
+      const result = [];
+      let prevIdx = 0;
+
+      for (const key of availableKeys) {
+        if (!previousSet.has(key)) {
+          // If the key is new, insert it at the current position
+          result.push(key);
+        } else {
+          // If the key exists, bring in all keys from previousOrder up to this key
+          const targetIdx = filteredPrevious.indexOf(key);
+          while (prevIdx <= targetIdx) {
+            const pKey = filteredPrevious[prevIdx];
+            if (!result.includes(pKey)) {
+              result.push(pKey);
+            }
+            prevIdx++;
+          }
+        }
+      }
+
+      // Append any remaining keys from filteredPrevious
+      while (prevIdx < filteredPrevious.length) {
+        const pKey = filteredPrevious[prevIdx];
+        if (!result.includes(pKey)) {
+          result.push(pKey);
+        }
+        prevIdx++;
+      }
+
+      return result;
     });
   }, [normalizedColumns]);
+
 
   useEffect(() => {
     localStorage.setItem(
