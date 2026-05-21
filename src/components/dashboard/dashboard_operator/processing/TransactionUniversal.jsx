@@ -898,6 +898,13 @@ export default function DashboardOperatorTransactionSearch() {
         render: (value) => value || "N/A",
       },
       {
+        title: "ФИО",
+        dataIndex: "fio",
+        key: "fio",
+        width: 200,
+        render: (value) => value || "N/A",
+      },
+      {
         title: "Тип операции",
         dataIndex: "transactionTypeName",
         key: "transactionTypeName",
