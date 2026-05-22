@@ -823,6 +823,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(33)) {
+            additionalLinks.push({
+                name: "Комплайнс",
+                key: "compliance",
+                icon: ShieldAlert,
+                children: [
+                    {
+                        name: "Настройки сходства",
+                        href: "/compliance/settings",
+                        key: "compliance_settings",
+                        icon: Sliders
+                    },
+                ],
+            });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 

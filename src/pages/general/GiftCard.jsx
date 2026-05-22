@@ -936,7 +936,7 @@ export default function GiftCard({ edit = false }) {
                             <div className="terror-warning">
                                 <div className="terror-warning-header">
                                     <span className="terror-warning-icon">⚠</span>
-                                    <strong>ВНИМАНИЕ: Совпадение в базе Excon найдено!</strong>
+                                    <strong>Найдено совпадение в базе комплайнс</strong>
                                 </div>
                                 <div className="terror-warning-details">
                                     {terrorCheckResults.fullName === true && (
