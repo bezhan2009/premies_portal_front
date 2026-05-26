@@ -98,6 +98,9 @@ const MainLayout = () => {
     // Knowledge base
     if (pathname.includes("knowledge-base")) return "knowledge";
 
+    // Compliance
+    if (pathname.includes("/compliance/requests")) return "compliance_requests";
+
     return "";
   };
 

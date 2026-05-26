@@ -1251,7 +1251,7 @@ export default function DashboardOperatorProcessingTransactions() {
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={{ pageSize: 20 }}
+                      pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
                       sticky
                       scroll={{ y: 620 }}
                     />

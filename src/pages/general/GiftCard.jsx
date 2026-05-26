@@ -791,6 +791,45 @@ export default function GiftCard({ edit = false }) {
         return `uploads/${path}`;
     };
 
+    const handleSendToCompliance = async () => {
+        try {
+            setLoading(true);
+            const backendUrl = import.meta.env.VITE_BACKEND_URL;
+            const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
+            
+            const response = await fetch(`${backendUrl}/compliance/requests`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    application_id: data.ID || 0,
+                    client_full_name: fullName,
+                    client_phone: data.phone_number || "",
+                    client_birth_date: data.birth_date || "",
+                    match_similarity: 100.0, // Should be actual similarity from backend if available
+                    client_occupation: data.client_occupation || "",
+                    net_worth: data.net_worth || "",
+                    monthly_income: data.monthly_income || "",
+                    total_outgoing_transactions_amount: data.total_outgoing_transactions_amount || "",
+                    total_outgoing_transactions_count: data.total_outgoing_transactions_count || "",
+                    total_cash_transactions_amount: data.total_cash_transactions_amount || "",
+                    total_cash_transactions_count: data.total_cash_transactions_count || "",
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            showAlert("Заявка успешно отправлена в Комплаенс", "success", 5000);
+            navigate(0);
+        } catch (error) {
+            console.error("Ошибка при отправке в комплаенс:", error);
+            showAlert("Ошибка при отправке в комплаенс", "error", 5000);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getData = async () => {
         if (edit) {
             try {
@@ -1500,6 +1539,72 @@ export default function GiftCard({ edit = false }) {
                                 error={errors}
                                 required
                             />
+                            
+                            {/* Compliance Fields */}
+                            <Input
+                                id="client_occupation"
+                                className="div68"
+                                title="Чем занимается клиент"
+                                placeholder="Сфера деятельности"
+                                onChange={(val) => setData("client_occupation", val)}
+                                value={data.client_occupation}
+                                error={errors}
+                            />
+                            <Input
+                                id="net_worth"
+                                className="div69"
+                                title="Чистая стоимость/оборот"
+                                placeholder="Сумма"
+                                onChange={(val) => setData("net_worth", val)}
+                                value={data.net_worth}
+                                error={errors}
+                            />
+                            <Input
+                                id="monthly_income"
+                                className="div70"
+                                title="Доход в месяц"
+                                placeholder="Сумма"
+                                onChange={(val) => setData("monthly_income", val)}
+                                value={data.monthly_income}
+                                error={errors}
+                            />
+                            <Input
+                                id="total_outgoing_transactions_amount"
+                                className="div71"
+                                title="Общая сумма исходящих транзакций"
+                                placeholder="Сумма"
+                                onChange={(val) => setData("total_outgoing_transactions_amount", val)}
+                                value={data.total_outgoing_transactions_amount}
+                                error={errors}
+                            />
+                            <Input
+                                id="total_outgoing_transactions_count"
+                                className="div72"
+                                title="Кол-во исходящих транзакций"
+                                placeholder="Количество"
+                                onChange={(val) => setData("total_outgoing_transactions_count", val)}
+                                value={data.total_outgoing_transactions_count}
+                                error={errors}
+                            />
+                            <Input
+                                id="total_cash_transactions_amount"
+                                className="div73"
+                                title="Общая сумма кассовых сделок"
+                                placeholder="Сумма"
+                                onChange={(val) => setData("total_cash_transactions_amount", val)}
+                                value={data.total_cash_transactions_amount}
+                                error={errors}
+                            />
+                            <Input
+                                id="total_cash_transactions_count"
+                                className="div74"
+                                title="Кол-во кассовых сделок"
+                                placeholder="Количество"
+                                onChange={(val) => setData("total_cash_transactions_count", val)}
+                                value={data.total_cash_transactions_count}
+                                error={errors}
+                            />
+
                             {edit && (
                                 <>
                                     <Input
@@ -1521,13 +1626,23 @@ export default function GiftCard({ edit = false }) {
                             )}
                         </div>
                         <footer>
-                            <button
-                                onClick={() => onSend(false, false)}
-                                disabled={downloading || downloadingOffer}
-                            >
-                                <img src={save} alt="" />
-                                <span>Сохранить</span>
-                            </button>
+                            {hasTerrorMatch ? (
+                                <button
+                                    onClick={handleSendToCompliance}
+                                    disabled={loading}
+                                    style={{ background: "#dc3545", color: "white" }}
+                                >
+                                    <span>Отправить в Комплаенс</span>
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => onSend(false, false)}
+                                        disabled={downloading || downloadingOffer}
+                                    >
+                                        <img src={save} alt="" />
+                                        <span>Сохранить</span>
+                                    </button>
                             <button
                                 onClick={handleSaveAndDownloadOffer}
                                 disabled={downloading || downloadingOffer}
@@ -1550,6 +1665,8 @@ export default function GiftCard({ edit = false }) {
                                 <img src={share} alt="" />
                                 <span>Загрузить анкету</span>
                             </button>
+                                </>
+                            )}
                             <button onClick={handleSearchClient} disabled={searching}>
                                 <img src={search_user} alt="" />
                                 <span>{searching ? "Поиск..." : "Найти клиента в АБС"}</span>

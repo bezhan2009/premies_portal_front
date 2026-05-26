@@ -3,6 +3,7 @@ import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
 import Spinner from "../../Spinner.jsx";
+import { Table } from "../../table/FlexibleAntTable.jsx";
 
 // Компонент модального окна для графика платежей
 const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
@@ -13,19 +14,25 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
 
     const resultMap = new Map();
     graphData.forEach((item) => {
-      const key = `${item.PaymentDate}_${item.Code}`;
+      const key = item.PaymentDate;
       if (!resultMap.has(key)) {
         resultMap.set(key, {
           ...item,
-          principal: item.Amount || 0,
-          interest: 0,
+          Code: "CR_PD/CR_INTER",
+          LongName: "Погашение основного долга и процентов",
+          principal: item.Code === "CR_PD" ? parseFloat(item.Amount || 0) : 0,
+          interest: item.Code === "CR_INTER" ? parseFloat(item.Amount || 0) : 0,
           totalAmount: parseFloat(item.Amount || 0),
         });
       } else {
         const existing = resultMap.get(key);
-        existing.interest = item.Amount || 0;
+        if (item.Code === "CR_PD") {
+            existing.principal = parseFloat(item.Amount || 0);
+        } else if (item.Code === "CR_INTER") {
+            existing.interest = parseFloat(item.Amount || 0);
+        }
         existing.totalAmount = (
-          parseFloat(existing.principal) + parseFloat(item.Amount || 0)
+          parseFloat(existing.principal || 0) + parseFloat(existing.interest || 0)
         ).toFixed(2);
       }
     });
@@ -99,156 +106,30 @@ const GraphModal = ({ isOpen, onClose, referenceId, graphData, isLoading }) => {
             <>
               <div className="graph-data-table-container">
                 <div className="graph-data-table-wrapper">
-                  <table className="graph-data-table">
-                    <thead>
-                      <tr>
-                        <th
-                          onClick={() => requestSort("ID")}
-                          className="sortable-header"
-                        >
-                          ID <SortIcon sortConfig={sortConfig} sortKey="ID" />
-                        </th>
-                        <th
-                          onClick={() => requestSort("Code")}
-                          className="sortable-header"
-                        >
-                          Код{" "}
-                          <SortIcon sortConfig={sortConfig} sortKey="Code" />
-                        </th>
-                        <th
-                          onClick={() => requestSort("LongName")}
-                          className="sortable-header"
-                        >
-                          Наименование{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="LongName"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("PaymentDate")}
-                          className="sortable-header"
-                        >
-                          Дата платежа{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="PaymentDate"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("principal")}
-                          className="sortable-header"
-                        >
-                          Основной долг{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="principal"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("interest")}
-                          className="sortable-header"
-                        >
-                          Проценты{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="interest"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("totalAmount")}
-                          className="sortable-header"
-                        >
-                          Итого к оплате{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="totalAmount"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("CalculatingAmount")}
-                          className="sortable-header"
-                        >
-                          Расчетная сумма{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="CalculatingAmount"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("Type")}
-                          className="sortable-header"
-                        >
-                          Тип{" "}
-                          <SortIcon sortConfig={sortConfig} sortKey="Type" />
-                        </th>
-                        <th
-                          onClick={() => requestSort("Status")}
-                          className="sortable-header"
-                        >
-                          Статус{" "}
-                          <SortIcon sortConfig={sortConfig} sortKey="Status" />
-                        </th>
-                        <th
-                          onClick={() => requestSort("DateFrom")}
-                          className="sortable-header"
-                        >
-                          Дата с{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="DateFrom"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("DateTo")}
-                          className="sortable-header"
-                        >
-                          Дата по{" "}
-                          <SortIcon sortConfig={sortConfig} sortKey="DateTo" />
-                        </th>
-                        <th
-                          onClick={() => requestSort("CalculatingDate")}
-                          className="sortable-header"
-                        >
-                          Дата расчета{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="CalculatingDate"
-                          />
-                        </th>
-                        <th
-                          onClick={() => requestSort("ExpectationDate")}
-                          className="sortable-header"
-                        >
-                          Дата ожидания{" "}
-                          <SortIcon
-                            sortConfig={sortConfig}
-                            sortKey="ExpectationDate"
-                          />
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedData.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.ID}</td>
-                          <td>{item.Code}</td>
-                          <td>{item.LongName}</td>
-                          <td>{item.PaymentDate}</td>
-                          <td>{item.principal}</td>
-                          <td>{item.interest}</td>
-                          <td>{item.totalAmount}</td>
-                          <td>{item.CalculatingAmount}</td>
-                          <td>{item.Type}</td>
-                          <td>{item.Status}</td>
-                          <td>{item.DateFrom}</td>
-                          <td>{item.DateTo}</td>
-                          <td>{item.CalculatingDate}</td>
-                          <td>{item.ExpectationDate}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <Table
+                    tableId="graph-modal-table"
+                    rowKey={(record, index) => `${record.PaymentDate}-${index}`}
+                    dataSource={sortedData}
+                    pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
+                    bordered
+                    scroll={{ x: "max-content", y: 400 }}
+                    columns={[
+                      { title: "ID", dataIndex: "ID", key: "ID", sorter: (a, b) => String(a.ID).localeCompare(String(b.ID)) },
+                      { title: "Код", dataIndex: "Code", key: "Code", sorter: (a, b) => String(a.Code).localeCompare(String(b.Code)) },
+                      { title: "Наименование", dataIndex: "LongName", key: "LongName", sorter: (a, b) => String(a.LongName).localeCompare(String(b.LongName)) },
+                      { title: "Дата платежа", dataIndex: "PaymentDate", key: "PaymentDate", sorter: (a, b) => String(a.PaymentDate).localeCompare(String(b.PaymentDate)) },
+                      { title: "Основной долг", dataIndex: "principal", key: "principal", sorter: (a, b) => parseFloat(a.principal) - parseFloat(b.principal) },
+                      { title: "Проценты", dataIndex: "interest", key: "interest", sorter: (a, b) => parseFloat(a.interest) - parseFloat(b.interest) },
+                      { title: "Итого к оплате", dataIndex: "totalAmount", key: "totalAmount", sorter: (a, b) => parseFloat(a.totalAmount) - parseFloat(b.totalAmount) },
+                      { title: "Расчетная сумма", dataIndex: "CalculatingAmount", key: "CalculatingAmount", sorter: (a, b) => parseFloat(a.CalculatingAmount) - parseFloat(b.CalculatingAmount) },
+                      { title: "Тип", dataIndex: "Type", key: "Type", sorter: (a, b) => String(a.Type).localeCompare(String(b.Type)) },
+                      { title: "Статус", dataIndex: "Status", key: "Status", sorter: (a, b) => String(a.Status).localeCompare(String(b.Status)) },
+                      { title: "Дата с", dataIndex: "DateFrom", key: "DateFrom", sorter: (a, b) => String(a.DateFrom).localeCompare(String(b.DateFrom)) },
+                      { title: "Дата по", dataIndex: "DateTo", key: "DateTo", sorter: (a, b) => String(a.DateTo).localeCompare(String(b.DateTo)) },
+                      { title: "Дата расчета", dataIndex: "CalculatingDate", key: "CalculatingDate", sorter: (a, b) => String(a.CalculatingDate).localeCompare(String(b.CalculatingDate)) },
+                      { title: "Дата ожидания", dataIndex: "ExpectationDate", key: "ExpectationDate", sorter: (a, b) => String(a.ExpectationDate).localeCompare(String(b.ExpectationDate)) },
+                    ]}
+                  />
                 </div>
               </div>
               <div className="graph-modal-footer">

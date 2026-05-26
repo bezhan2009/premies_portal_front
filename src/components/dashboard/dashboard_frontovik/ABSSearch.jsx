@@ -107,6 +107,10 @@ export default function ABSClientSearch() {
     const [cardLimits, setCardLimits] = useState([]);
     const [modalLoading, setModalLoading] = useState(false);
 
+    // Terrorist check states
+    const [terrorMatch, setTerrorMatch] = useState(null);
+    const [isTerrorChecking, setIsTerrorChecking] = useState(false);
+
     // Проверка доступа к страницам
     const hasTransactionsAccess = canAccessTransactions();
     const hasAccountOperationsAccess = canAccessAccountOperations();
@@ -221,6 +225,49 @@ export default function ABSClientSearch() {
         setDocumentPreviewVariant("default");
         sessionStorage.removeItem("absClientSearchState");
     };
+
+    // Функция для проверки клиента по базе террористов
+    const checkTerrorist = async (client) => {
+        if (!client) return;
+        setIsTerrorChecking(true);
+        setTerrorMatch(null);
+        try {
+            const token = localStorage.getItem("access_token");
+            const backendUrl = import.meta.env.VITE_BACKEND_URL;
+            const fullName = `${client.surname || ''} ${client.name || ''} ${client.patronymic || ''}`.trim();
+
+            const response = await fetch(`${backendUrl}/terror-list/check`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: fullName,
+                    bday: "" // If we have birth date from ABS, we could add it here
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setTerrorMatch(data.is_match);
+            } else {
+                console.error("Ошибка при проверке террористов:", response.status);
+            }
+        } catch (error) {
+            console.error("Ошибка сети при проверке террористов:", error);
+        } finally {
+            setIsTerrorChecking(false);
+        }
+    };
+
+    useEffect(() => {
+        if (clientsData.length > 0 && clientsData[selectedClientIndex]) {
+            checkTerrorist(clientsData[selectedClientIndex]);
+        } else {
+            setTerrorMatch(null);
+        }
+    }, [clientsData, selectedClientIndex]);
 
     // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
@@ -796,6 +843,48 @@ export default function ABSClientSearch() {
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
 
     useEffect(() => {
+        const checkTerror = async () => {
+            if (!selectedClient) {
+                setTerrorMatch(null);
+                return;
+            }
+            const nameToCheck = selectedClient.ltn_name || selectedClient.name;
+            const surnameToCheck = selectedClient.ltn_surname || selectedClient.surname;
+            const fullName = `${surnameToCheck || ""} ${nameToCheck || ""} ${selectedClient.patronymic || ""}`.trim();
+            if (fullName.length < 2) return;
+
+            setIsTerrorChecking(true);
+            try {
+                const token = localStorage.getItem("access_token");
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name: fullName,
+                        bday: "",
+                    }),
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    setTerrorMatch(result.is_match);
+                } else if (response.status === 404) {
+                    setTerrorMatch(false);
+                }
+            } catch (error) {
+                console.error("Error checking terror list:", error);
+            } finally {
+                setIsTerrorChecking(false);
+            }
+        };
+
+        checkTerror();
+    }, [selectedClient]);
+
+    useEffect(() => {
         let cancelled = false;
 
         if (!selectedClientINN) {
@@ -1064,6 +1153,18 @@ export default function ABSClientSearch() {
                             documentsCount={clientDocuments.length}
                             selectedClientINN={selectedClientINN}
                         />
+
+                        {selectedClient && (
+                            <div style={{ marginBottom: 16 }}>
+                                {isTerrorChecking ? (
+                                    <div style={{ color: "#1890ff" }}>Идет проверка в базе террористов...</div>
+                                ) : terrorMatch === true ? (
+                                    <div style={{ color: "red", fontWeight: "bold", fontSize: 16, padding: 8, border: "1px solid red", borderRadius: 4, backgroundColor: "#fff2f0" }}>Обслуживание запрещено, обратитесь в Комплайнс</div>
+                                ) : terrorMatch === false ? (
+                                    <div style={{ color: "green", fontWeight: "bold", fontSize: 16, padding: 8, border: "1px solid green", borderRadius: 4, backgroundColor: "#f6ffed" }}>✓ Клиент проверен</div>
+                                ) : null}
+                            </div>
+                        )}
 
                         <ClientPersonalInfo
                             clientsData={clientsData}

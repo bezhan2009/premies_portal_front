@@ -180,14 +180,14 @@ const CardCashbackTable = () => {
                 dataIndex: "amount",
                 key: "amount",
                 sorter: (a, b) => a.amount - b.amount,
-                render: (val, record) => `${val || record.cashback_amount} ${getCurrencyCode(String(record.currency || ""))}`,
+                render: (val, record) => `${Number(val || record.cashback_amount || 0).toFixed(2)} TJS`,
             },
             {
                 title: "Сумма операции",
                 dataIndex: "transaction_amount",
                 key: "transaction_amount",
                 sorter: (a, b) => a.transaction_amount - b.transaction_amount,
-                render: (val, record) => `${val || record.amount} ${getCurrencyCode(String(record.currency || ""))}`,
+                render: (val, record) => `${Number((val || record.amount || 0) / 100).toFixed(2)} TJS`,
             },
             {
                 title: "Сумма списания",
@@ -222,9 +222,9 @@ const CardCashbackTable = () => {
             },
             {
                 title: "ФИО",
-                dataIndex: "fio",
-                key: "fio",
-                render: (_, record) => fios[record.card_id] || "-",
+                dataIndex: "client_full_name",
+                key: "client_full_name",
+                render: (_, record) => record.client_full_name || fios[record.card_id] || "-",
             },
             {
                 title: "Номер счета",
@@ -311,7 +311,6 @@ const CardCashbackTable = () => {
                                 danger
                                 size="small"
                                 onClick={() => handleReturn(record.utrno)}
-                                disabled={isReturned}
                             >
                                 {isReturned ? "Возвращено" : "Вернуть"}
                             </Button>
@@ -329,7 +328,7 @@ const CardCashbackTable = () => {
             .map((col) => ({ key: col.dataIndex, label: col.title }));
         const mappedItems = items.map((item) => ({
             ...item,
-            fio: fios[item.card_id] || "-",
+            fio: item.client_full_name || fios[item.card_id] || "-",
             payId: item.payId == "216" ? "GooglePay" : item.payId || "",
             created_at: item.created_at ? new Date(item.created_at).toLocaleString("ru-RU") : "-",
             updated_at: item.updated_at ? new Date(item.updated_at).toLocaleString("ru-RU") : "-",

@@ -835,6 +835,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "compliance_settings",
                         icon: Sliders
                     },
+                    {
+                        name: "Заявки на проверку",
+                        href: "/compliance/requests",
+                        key: "compliance_requests",
+                        icon: FileText
+                    },
                 ],
             });
         }
