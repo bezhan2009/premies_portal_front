@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { Upload, Select, Switch, Button, Input, Form, Card } from "antd";
 import { InboxOutlined, SendOutlined } from "@ant-design/icons";
@@ -12,6 +12,45 @@ export default function MailAgentPage() {
   const [fileList, setFileList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: "", type: "success" });
+  const [userOptions, setUserOptions] = useState([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const baseUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await fetch(`${baseUrl}/users/emails`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && Array.isArray(data.users)) {
+            const options = data.users.map(u => {
+              const namePart = u.full_name || u.username || "";
+              const label = namePart ? `${namePart} (${u.email})` : u.email;
+              return {
+                value: u.email,
+                label: label,
+                searchLabel: `${namePart} ${u.email}`.toLowerCase()
+              };
+            });
+            setUserOptions(options);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch users for autocomplete", err);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const filterOption = (input, option) => {
+    if (!option) return false;
+    const searchVal = option.searchLabel || (option.label ?? "").toLowerCase();
+    return searchVal.includes(input.toLowerCase());
+  };
 
   const showAlert = (message, type = "success") => {
     setAlert({ show: true, message, type });
@@ -146,6 +185,8 @@ export default function MailAgentPage() {
                 placeholder="Введите email или логин и нажмите Enter"
                 size="large"
                 tokenSeparators={[",", " "]}
+                options={userOptions}
+                filterOption={filterOption}
               />
             </Form.Item>
 
@@ -157,6 +198,8 @@ export default function MailAgentPage() {
                   placeholder="Копия"
                   size="large"
                   tokenSeparators={[",", " "]}
+                  options={userOptions}
+                  filterOption={filterOption}
                 />
               </Form.Item>
 
@@ -167,6 +210,8 @@ export default function MailAgentPage() {
                   placeholder="Скрытая копия"
                   size="large"
                   tokenSeparators={[",", " "]}
+                  options={userOptions}
+                  filterOption={filterOption}
                 />
               </Form.Item>
             </div>
