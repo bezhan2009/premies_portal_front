@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import AlertMessage from "../../../components/general/AlertMessage.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
-import { useTableSort } from "../../../hooks/useTableSort.js";
-import SortIcon from "../../../components/general/SortIcon.jsx";
+import { Table } from "../../../components/table/FlexibleAntTable.jsx";
+import { Input as AntInput, Space, Button } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import CustomDateInput from "../../../components/elements/CustomDateInput.jsx";
 
 export default function DashboardAccountOperations() {
@@ -21,17 +22,8 @@ export default function DashboardAccountOperations() {
     message: "",
     type: "success",
   });
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [otpError, setOtpError] = useState("");
 
   const { exportToExcel } = useExcelExport();
-  const {
-    items: sortedTransactions,
-    requestSort,
-    sortConfig,
-  } = useTableSort(transactions);
 
   // Функция для форматирования суммы
   const formatAmount = (amount) => {
@@ -184,93 +176,9 @@ export default function DashboardAccountOperations() {
     setToDate(today);
   };
 
-  // Функция для отправки OTP
-  const sendOtp = async () => {
-    if (!accountNumber.trim()) {
-      showAlert("Введите номер счета", "warning");
-      return;
-    }
-
-    try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL;
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(`${baseUrl}/otp/send`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          account: accountNumber.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Ошибка при отправке OTP");
-      }
-
-      showAlert("Код отправлен на ваш номер телефона", "success");
-      setShowOtpModal(true);
-      setOtpCode("");
-      setOtpError("");
-    } catch (error) {
-      showAlert("Ошибка при отправке OTP: " + error.message, "error");
-    }
-  };
-
-  // Функция для проверки OTP и экспорта
-  const verifyOtpAndExport = async (e) => {
-    e.preventDefault();
-    if (!otpCode.trim()) {
-      setOtpError("Введите код подтверждения");
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-    setOtpError("");
-    try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL;
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(`${baseUrl}/otp/check`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          otp_code: otpCode.trim(),
-          account: accountNumber.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Ошибка при проверке кода");
-      }
-
-      const data = await response.json();
-
-      // Проверяем поле message в ответе
-      if (data.message === false) {
-        throw new Error("Неверный код подтверждения");
-      }
-
-      showAlert("Код подтвержден, начинаем экспорт", "success");
-      setShowOtpModal(false);
-      setOtpCode("");
-      setOtpError("");
-
-      // Выполняем экспорт
-      handleExport();
-    } catch (error) {
-      setOtpError(error.message || "Неверный код подтверждения");
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
   // Функция экспорта в Excel
   const handleExport = () => {
-    const columns = [
+    const columnsToExport = [
       { key: "DOCDOPER", label: "Дата документа" },
       { key: "EXECDT", label: "Время" },
       { key: "TXTDSCR", label: "Назначение" },
@@ -284,16 +192,130 @@ export default function DashboardAccountOperations() {
       { key: "doper", label: "Дата операции" },
     ];
     exportToExcel(
-      sortedTransactions,
-      columns,
+      transactions,
+      columnsToExport,
       `Операции_${accountNumber}_${fromDate}_${toDate}`,
     );
   };
 
-  // Обработчик для кнопки экспорта
+  // Обработчик для кнопки экспорта - теперь экспортирует сразу без СМС OTP
   const handleExportClick = () => {
-    sendOtp();
+    handleExport();
   };
+
+  const getColumnSearchProps = (dataIndex, label) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <AntInput
+          placeholder={`Поиск ${label}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => confirm()}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Поиск
+          </Button>
+          <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+            Сброс
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex]
+        ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+        : false,
+  });
+
+  const columns = React.useMemo(() => [
+    {
+      title: "Дата документа",
+      key: "docDate",
+      width: 180,
+      render: (_, tx) => (
+        <span className="default-value">
+          {tx.DOCDOPER || "N/A"} {tx.EXECDT || "N/A"}
+        </span>
+      ),
+      ...getColumnSearchProps("DOCDOPER", "даты документа"),
+    },
+    {
+      title: "Назначение",
+      dataIndex: "TXTDSCR",
+      key: "TXTDSCR",
+      width: 250,
+      render: (value) => value || "N/A",
+      ...getColumnSearchProps("TXTDSCR", "назначения"),
+    },
+    {
+      title: "Дебет",
+      dataIndex: "MOVD",
+      key: "MOVD",
+      width: 130,
+      render: (value) => formatAmount(value),
+    },
+    {
+      title: "Кредит",
+      dataIndex: "MOVC",
+      key: "MOVC",
+      width: 130,
+      render: (value) => formatAmount(value),
+    },
+    {
+      title: "Клиент корреспондент",
+      dataIndex: "CLIENTCOR",
+      key: "CLIENTCOR",
+      width: 200,
+      render: (value) => value || "N/A",
+      ...getColumnSearchProps("CLIENTCOR", "клиента"),
+    },
+    {
+      title: "Счет корреспондент",
+      dataIndex: "ACCCOR",
+      key: "ACCCOR",
+      width: 180,
+      render: (value) => value || "N/A",
+      ...getColumnSearchProps("ACCCOR", "счета"),
+    },
+    {
+      title: "Банк корреспондент",
+      dataIndex: "NAMEBCR",
+      key: "NAMEBCR",
+      width: 180,
+      render: (value) => value || "N/A",
+      ...getColumnSearchProps("NAMEBCR", "банка"),
+    },
+    {
+      title: "Оборот по дебету",
+      dataIndex: "MOVDN",
+      key: "MOVDN",
+      width: 150,
+      render: (value) => formatAmount(value),
+    },
+    {
+      title: "Оборот по кредиту",
+      dataIndex: "MOVCN",
+      key: "MOVCN",
+      width: 150,
+      render: (value) => formatAmount(value),
+    },
+    {
+      title: "Дата операции",
+      dataIndex: "doper",
+      key: "doper",
+      width: 130,
+      render: (value) => value || "N/A",
+    },
+  ], []);
 
   return (
     <>
@@ -306,375 +328,157 @@ export default function DashboardAccountOperations() {
         />
       )}
 
-      {/* OTP Modal - стиль как в Sidebar */}
-      {showOtpModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Подтверждение экспорта</h3>
-            <p style={{ marginBottom: "15px", color: "#666" }}>
-              Введите код подтверждения из SMS
-            </p>
-            <form onSubmit={verifyOtpAndExport}>
-              <label>
-                Код подтверждения:
-                <input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="Введите код"
-                  maxLength={6}
-                  required
-                  autoFocus
-                />
-              </label>
-              {otpError && <div className="modal-error">{otpError}</div>}
-              <div className="modal-buttons">
-                <button type="submit" disabled={isVerifyingOtp}>
-                  {isVerifyingOtp ? "Проверка..." : "Подтвердить"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOtpModal(false);
-                    setOtpCode("");
-                    setOtpError("");
-                  }}
-                  disabled={isVerifyingOtp}
-                >
-                  Отмена
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-        <div className="block_info_prems content-page" align="center">
-          <div className="processing-integration">
-            <div className="processing-integration__container">
-              {/* Блок поиска с датами */}
-              <div className="processing-integration__search-card">
-                <div className="search-card">
-                  <div className="search-card__content">
-                    {/* Номер счета */}
-                    <div className="search-card__input-group">
+      <div className="block_info_prems content-page" align="center">
+        <div className="processing-integration">
+          <div className="processing-integration__container">
+            {/* Блок поиска с датами */}
+            <div className="processing-integration__search-card">
+              <div className="search-card">
+                <div className="search-card__content">
+                  {/* Номер счета */}
+                  <div className="search-card__input-group">
+                    <label
+                      htmlFor="accountNumber"
+                      className="search-card__label"
+                    >
+                      Номер счета
+                    </label>
+                    <input
+                      type="text"
+                      id="accountNumber"
+                      value={displayAccountNumber}
+                      onChange={handleAccountNumberChange}
+                      onKeyPress={handleKeyPress}
+                      className="search-card__input"
+                      disabled={isLoading || !!initialAccount}
+                      placeholder="Введите номер счета"
+                    />
+                  </div>
+                  {/* Блок дат */}
+                  <div className="search-card__date-group">
+                    <div className="date-input-group">
                       <label
-                        htmlFor="accountNumber"
+                        htmlFor="fromDate"
                         className="search-card__label"
                       >
-                        Номер счета
+                        С даты
                       </label>
-                      <input
-                        type="text"
-                        id="accountNumber"
-                        value={displayAccountNumber}
-                        onChange={handleAccountNumberChange}
-                        onKeyPress={handleKeyPress}
-                        className="search-card__input"
-                        disabled={isLoading || !!initialAccount}
-                        placeholder="Введите номер счета"
+                      <CustomDateInput
+                        id="fromDate"
+                        type="date"
+                        value={fromDate}
+                        onChange={(value) =>
+                          handleDateChange({
+                            target: { name: "fromDate", value },
+                          })
+                        }
+                        disabled={isLoading}
                       />
                     </div>
-                    {/* Блок дат */}
-                    <div className="search-card__date-group">
-                      <div className="date-input-group">
-                        <label
-                          htmlFor="fromDate"
-                          className="search-card__label"
-                        >
-                          С даты
-                        </label>
-                        <CustomDateInput
-                          id="fromDate"
-                          type="date"
-                          value={fromDate}
-                          onChange={(value) =>
-                            handleDateChange({
-                              target: { name: "fromDate", value },
-                            })
-                          }
-                          disabled={isLoading}
-                        />
-                      </div>
-                      <div className="date-separator">—</div>
-                      <div className="date-input-group">
-                        <label htmlFor="toDate" className="search-card__label">
-                          По дату
-                        </label>
-                        <CustomDateInput
-                          id="toDate"
-                          type="date"
-                          value={toDate}
-                          onChange={(value) =>
-                            handleDateChange({
-                              target: { name: "toDate", value },
-                            })
-                          }
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    {/* Кнопки */}
-                    <div className="search-card__buttons">
-                      <button
-                        onClick={() => handleAccountNumberSearch()}
-                        disabled={
-                          (!accountNumber.trim() && !initialAccount) ||
-                          isLoading ||
-                          !!initialAccount
+                    <div className="date-separator">—</div>
+                    <div className="date-input-group">
+                      <label htmlFor="toDate" className="search-card__label">
+                        По дату
+                      </label>
+                      <CustomDateInput
+                        id="toDate"
+                        type="date"
+                        value={toDate}
+                        onChange={(value) =>
+                          handleDateChange({
+                            target: { name: "toDate", value },
+                          })
                         }
-                        className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
-                      >
-                        {isLoading ? "Поиск..." : "Найти"}
-                      </button>
-                      <button
-                        onClick={clearFilters}
                         disabled={isLoading}
-                        className="search-card__button search-card__button--secondary"
-                      >
-                        Очистить даты
-                      </button>
-                      {transactions.length > 0 && (
-                        <button
-                          onClick={handleExportClick}
-                          disabled={isLoading}
-                          className="search-card__button search-card__button--export"
-                        >
-                          Экспорт в Excel
-                        </button>
-                      )}
+                      />
                     </div>
+                  </div>
+                  {/* Кнопки */}
+                  <div className="search-card__buttons">
+                    <button
+                      onClick={() => handleAccountNumberSearch()}
+                      disabled={
+                        (!accountNumber.trim() && !initialAccount) ||
+                        isLoading ||
+                        !!initialAccount
+                      }
+                      className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
+                    >
+                      {isLoading ? "Поиск..." : "Найти"}
+                    </button>
+                    <button
+                      onClick={clearFilters}
+                      disabled={isLoading}
+                      className="search-card__button search-card__button--secondary"
+                    >
+                      Очистить даты
+                    </button>
+                    {transactions.length > 0 && (
+                      <button
+                        onClick={handleExportClick}
+                        disabled={isLoading}
+                        className="search-card__button search-card__button--export"
+                      >
+                        Экспорт в Excel
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-            {/* Таблица операций */}
-            {transactions.length > 0 && (
-              <div className="processing-integration__limits-table">
-                <div className="limits-table">
-                  <div className="limits-table__header">
-                    <h2 className="limits-table__title">
-                      Операции по счету{" "}
-                      {formatAccountNumber(displayAccountNumber)}
-                      {fromDate && toDate && (
-                        <span className="date-range">
-                          ({fromDate} — {toDate})
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-                  <div className="limits-table__container">
-                    <div className="limits-table__wrapper">
-                      <table className="limits-table__content">
-                        <thead className="limits-table__head">
-                          <tr>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("DOCDOPER")}
-                            >
-                              Дата документа{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="DOCDOPER"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("TXTDSCR")}
-                            >
-                              Назначение{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="TXTDSCR"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("MOVD")}
-                            >
-                              Дебет{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="MOVD"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("MOVC")}
-                            >
-                              Кредит{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="MOVC"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("CLIENTCOR")}
-                            >
-                              Клиент корреспондент{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="CLIENTCOR"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("ACCCOR")}
-                            >
-                              Счет корреспондент{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="ACCCOR"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("NAMEBCR")}
-                            >
-                              Банк корреспондент{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="NAMEBCR"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("MOVDN")}
-                            >
-                              Оборот по дебету{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="MOVDN"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("MOVCN")}
-                            >
-                              Оборот по кредиту{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="MOVCN"
-                              />
-                            </th>
-                            <th
-                              className="limits-table__th sortable-header"
-                              onClick={() => requestSort("doper")}
-                            >
-                              Дата операции{" "}
-                              <SortIcon
-                                sortConfig={sortConfig}
-                                sortKey="doper"
-                              />
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="limits-table__body">
-                          {sortedTransactions.map((transaction, index) => (
-                            <tr
-                              key={`${transaction.PID}-${index}`}
-                              className="limits-table__row transaction-row"
-                            >
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.DOCDOPER || "N/A"}{" "}
-                                  {transaction.EXECDT || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.TXTDSCR || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.MOVD)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.MOVC)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.CLIENTCOR || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.ACCCOR || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.NAMEBCR || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.MOVDN)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.MOVCN)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.doper || "N/A"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="limits-table__footer">
-                      <div className="limits-table__stats">
-                        <span className="limits-table__stat">
-                          Всего записей: {transactions.length}
-                        </span>
-                        <span className="limits-table__stat">
-                          Показано: {sortedTransactions.length}
-                        </span>
-                        <span className="limits-table__stat">
-                          Счет: {formatAccountNumber(displayAccountNumber)}
-                        </span>
-                        {fromDate && toDate && (
-                          <span className="limits-table__stat">
-                            Период: {fromDate} — {toDate}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {isLoading && (
-              <div className="processing-integration__loading">
-                <div className="spinner"></div>
-              </div>
-            )}
-            {!isLoading &&
-              transactions.length === 0 &&
-              accountNumber.length > 0 && (
-                <div className="processing-integration__no-data">
-                  <div className="no-data">
-                    <h3>Данные не найдены</h3>
-                    <p>
-                      Для счета {formatAccountNumber(displayAccountNumber)} не
-                      найдено операций за выбранный период.
-                    </p>
-                  </div>
-                </div>
-              )}
           </div>
+          {/* Таблица операций */}
+          {transactions.length > 0 && (
+            <div className="processing-integration__limits-table">
+              <div className="limits-table">
+                <div className="limits-table__header">
+                  <h2 className="limits-table__title">
+                    Операции по счету{" "}
+                    {formatAccountNumber(displayAccountNumber)}
+                    {fromDate && toDate && (
+                      <span className="date-range">
+                        ({fromDate} — {toDate})
+                      </span>
+                    )}
+                  </h2>
+                </div>
+                <div className="limits-table__container">
+                  <div className="limits-table__wrapper">
+                    <Table
+                      tableId="account-operations-table"
+                      rowKey={(record, index) => `${record.PID || record.DOCDOPER}-${index}`}
+                      columns={columns}
+                      dataSource={transactions}
+                      pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
+                      sticky
+                      bordered
+                      scroll={{ x: "max-content" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {isLoading && (
+            <div className="processing-integration__loading">
+              <div className="spinner"></div>
+            </div>
+          )}
+          {!isLoading &&
+            transactions.length === 0 &&
+            accountNumber.length > 0 && (
+              <div className="processing-integration__no-data">
+                <div className="no-data">
+                  <h3>Данные не найдены</h3>
+                  <p>
+                    Для счета {formatAccountNumber(displayAccountNumber)} не
+                    найдено операций за выбранный период.
+                  </p>
+                </div>
+              </div>
+            )}
         </div>
-
+      </div>
 
       <style jsx>{`
         .search-card__button--export {
@@ -684,13 +488,6 @@ export default function DashboardAccountOperations() {
         .search-card__button--export:hover:not(:disabled) {
           background-color: #0b7dda;
         }
-
-        .sortable-header {
-          cursor: pointer;
-          user-select: none;
-        }
-
-/* .sortable-header:hover удален */
       `}</style>
     </>
   );

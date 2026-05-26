@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Input as AntInput, Space, Button } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import Select from "../../../elements/Select";
 import AlertMessage from "../../../general/AlertMessage.jsx";
 import {
@@ -50,6 +52,39 @@ export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { exportToExcel } = useExcelExport();
+
+  const getColumnSearchProps = (dataIndex, label) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <AntInput
+          placeholder={`Поиск ${label}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => confirm()}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Поиск
+          </Button>
+          <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+            Сброс
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex]
+        ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+        : false,
+  });
 
   // Проверка доступа
   const hasAccess = canAccessTransactions();
@@ -538,6 +573,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: "cardNumber",
         width: 180,
         render: (value) => (value ? formatCardNumber(value) : "N/A"),
+        ...getColumnSearchProps("cardNumber", "номера карты"),
       },
       {
         title: "ID карты",
@@ -545,6 +581,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: "cardId",
         width: 150,
         render: (value) => value || "N/A",
+        ...getColumnSearchProps("cardId", "ID карты"),
       },
       {
         title: "Тип операции",
@@ -602,6 +639,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: "utrnno",
         width: 160,
         render: (value) => value || "N/A",
+        ...getColumnSearchProps("utrnno", "UTRNNO"),
       },
       {
         title: "ID терминала",
@@ -616,6 +654,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: "atmId",
         width: 150,
         render: (value) => value || "N/A",
+        ...getColumnSearchProps("atmId", "ID ATM"),
       },
       {
         title: "Запрошенная сумма",
@@ -654,6 +693,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: "account",
         width: 200,
         render: (value) => value || "N/A",
+        ...getColumnSearchProps("account", "номера счета"),
       },
       {
         title: "Сумма в нац. валюте",
@@ -1253,7 +1293,8 @@ export default function DashboardOperatorProcessingTransactions() {
                       dataSource={transactionTableData}
                       pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
                       sticky
-                      scroll={{ y: 620 }}
+                      bordered
+                      scroll={{ x: "max-content" }}
                     />
                     {false && (
                     <table className="limits-table__content">

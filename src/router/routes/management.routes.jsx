@@ -15,6 +15,7 @@ import DashboardClientDocuments from "../../pages/dashboard/dashboard_client_doc
 import CardBalance from "../../pages/dashboard/dashboard_card_balance/CardBalance.jsx";
 import LogsPage from "../../pages/dashboard/LogsPage.jsx";
 import DailyTasksPage from "../../pages/dashboard/DailyTasksPage.jsx";
+import MailAgentPage from "../../pages/dashboard/dashboard_mail_agent/MailAgentPage.jsx";
 
 const managementRoutes = (
   <>
@@ -156,6 +157,17 @@ const managementRoutes = (
           }
       >
           <Route path="/admin/daily-tasks" element={<DailyTasksPage />} />
+      </Route>
+
+      {/* Mail Agent (Role 34) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[34]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/mail-agent" element={<MailAgentPage />} />
       </Route>
   </>
 );

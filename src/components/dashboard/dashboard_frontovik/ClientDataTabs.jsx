@@ -1,5 +1,7 @@
 import React from "react";
-import SortIcon from "../../general/SortIcon.jsx";
+import { Table } from "../../table/FlexibleAntTable.jsx";
+import { Input as AntInput, Space, Button } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 
 const ClientDataTabs = ({
   cardsData,
@@ -37,7 +39,566 @@ const ClientDataTabs = ({
   hasBlockCardAccess,
   hasChangePinAccess,
 }) => {
-  // if (!selectedClient) return null;
+
+  const getColumnSearchProps = (dataIndex, label) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <AntInput
+          placeholder={`Поиск ${label}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => confirm()}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Поиск
+          </Button>
+          <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+            Сброс
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+    onFilter: (value, record) => {
+      const getNestedVal = (obj, path) => {
+        if (typeof path === "string" && path.includes(".")) {
+          return path.split('.').reduce((acc, part) => acc?.[part], obj);
+        }
+        return obj?.[path];
+      };
+      const val = getNestedVal(record, dataIndex);
+      return val ? val.toString().toLowerCase().includes(value.toLowerCase()) : false;
+    }
+  });
+
+  const cardColumns = React.useMemo(() => [
+    {
+      title: "ID Карты",
+      dataIndex: "cardId",
+      key: "cardId",
+      width: 120,
+      ...getColumnSearchProps("cardId", "ID карты"),
+    },
+    {
+      title: "Карта",
+      key: "cardNumber",
+      width: 180,
+      render: (_, card) => card.CardNumber || card.details?.cardNumberMask || card.cardId || "-",
+      ...getColumnSearchProps("CardNumber", "карты"),
+    },
+    {
+      title: "Тип",
+      key: "cardType",
+      width: 150,
+      render: (_, card) => card.CardTypeName || card.details?.cardTypeName || card.type || "-",
+    },
+    {
+      title: "Статус АБС",
+      dataIndex: "statusName",
+      key: "statusName",
+      width: 130,
+    },
+    {
+      title: "Статус ПЦ",
+      key: "pcStatus",
+      width: 180,
+      render: (_, card) => (
+        <span
+          style={{
+            color: card.details?.statusDescription
+              ?.toLowerCase()
+              ?.includes("valid")
+              ? "#27ae60"
+              : "inherit",
+          }}
+        >
+          {card.details?.statusDescription || "-"} ({card.details?.hotCardStatus || "-"})
+        </span>
+      ),
+    },
+    {
+      title: "Счета карты",
+      key: "cardAccounts",
+      width: 200,
+      render: (_, card) => card.details?.accounts?.map((acc, aIdx) => (
+        <div
+          key={aIdx}
+          style={{
+            whiteSpace: "nowrap",
+            borderBottom:
+              aIdx < card.details.accounts.length - 1
+                ? "1px solid #eee"
+                : "none",
+            padding: "2px 0",
+          }}
+        >
+          {acc.number}
+        </div>
+      )),
+    },
+    {
+      title: "Остатки в АБС",
+      key: "absBalances",
+      width: 180,
+      render: (_, card) => card.details?.accounts?.map((acc, aIdx) => {
+        const absAcc = accountsData?.find(
+          (a) => a.Number === acc.number,
+        );
+        return (
+          <div
+            key={aIdx}
+            style={{
+              whiteSpace: "nowrap",
+              borderBottom:
+                aIdx < card.details.accounts.length - 1
+                  ? "1px solid #eee"
+                  : "none",
+              padding: "2px 0",
+            }}
+          >
+            {absAcc
+              ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ""}`
+              : "-"}
+          </div>
+        );
+      }),
+    },
+    {
+      title: "Остатки в ПЦ",
+      key: "pcBalances",
+      width: 180,
+      render: (_, card) => card.details?.accounts?.map((acc, aIdx) => (
+        <div
+          key={aIdx}
+          style={{
+            whiteSpace: "nowrap",
+            borderBottom:
+              aIdx < card.details.accounts.length - 1
+                ? "1px solid #eee"
+                : "none",
+            padding: "2px 0",
+          }}
+        >
+          <b>{Number(acc.balance).toFixed(2)}</b>{" "}
+          {acc.currency === "972"
+            ? "TJS"
+            : acc.currency === "840"
+              ? "USD"
+              : acc.currency === "978"
+                ? "EUR"
+                : acc.currency}
+        </div>
+      )),
+    },
+    {
+      title: "PIN",
+      key: "pinCounter",
+      width: 80,
+      render: (_, card) => {
+        const pinError = Number(card.details?.pinDenialCounter || 0) >= 3;
+        return (
+          <div
+            style={{
+              color: pinError ? "red" : "inherit",
+              fontWeight: pinError ? "bold" : "normal",
+            }}
+          >
+            {card.details?.pinDenialCounter || "0"}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Уведомления",
+      key: "notifications",
+      width: 160,
+      render: (_, card) => {
+        const rendered = card.services?.map((s, sIdx) => {
+          const type =
+            s.identification?.serviceId === "300"
+              ? "SMS"
+              : s.identification?.serviceId === "330"
+                ? "3DS"
+                : null;
+          if (!type) return null;
+          return (
+            <div key={sIdx} style={{ whiteSpace: "nowrap" }}>
+              {s.extNumber} {type}
+            </div>
+          );
+        });
+        const hasServices = card.services && card.services.filter(s => s.identification?.serviceId === "300" || s.identification?.serviceId === "330").length > 0;
+        return hasServices ? rendered : "-";
+      },
+    },
+    {
+      title: "Действия",
+      key: "actions",
+      width: 280,
+      render: (_, card) => {
+        const pinError = Number(card.details?.pinDenialCounter || 0) >= 3;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <button
+              className="button"
+              style={{
+                background: "#059669",
+                color: "white",
+                width: "100%",
+              }}
+              onClick={() =>
+                onManageServices(card.cardId, card.services || [])
+              }
+            >
+              Уведомления
+            </button>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+              }}
+            >
+              <button
+                className="button"
+                style={{ flex: 1 }}
+                onClick={() =>
+                  handleNavigateToTransactions(card.cardId)
+                }
+                disabled={!hasTransactionsAccess}
+                title={
+                  !hasTransactionsAccess
+                    ? "У вас нет доступа"
+                    : "Просмотр истории транзакций"
+                }
+              >
+                История
+              </button>
+
+              <button
+                className="button"
+                style={{
+                  background: "#374151",
+                  color: "white",
+                  flex: 1,
+                }}
+                onClick={() =>
+                  window.open(
+                    "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
+                      card.cardId,
+                    "_blank",
+                  )
+                }
+              >
+                Тариф
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+              }}
+            >
+              {hasChangePinAccess && (
+                <button
+                  className="button"
+                  style={{
+                    background: "#4b5563",
+                    color: "white",
+                    flex: 1,
+                  }}
+                  onClick={() => onChangePin(card.cardId)}
+                >
+                  Сменить ПИН
+                </button>
+              )}
+
+              {pinError && (
+                <button
+                  className="button"
+                  style={{
+                    background: "#f59e0b",
+                    color: "white",
+                    flex: 1,
+                  }}
+                  onClick={() => onResetPin(card.cardId)}
+                >
+                  Сброс ПИН
+                </button>
+              )}
+            </div>
+
+            {hasBlockCardAccess && (
+              card.details?.hotCardStatus === "0" ? (
+                <button
+                  className="button"
+                  style={{
+                    background: "#e11d48",
+                    color: "white",
+                    width: "100%",
+                  }}
+                  onClick={() => onBlockCard(card.cardId)}
+                >
+                  Заблокировать
+                </button>
+              ) : (
+                <button
+                  className="button"
+                  style={{
+                    background: "#10b981",
+                    color: "white",
+                    width: "100%",
+                  }}
+                  onClick={() => onUnblockCard(card.cardId)}
+                >
+                  Разблокировать
+                </button>
+              )
+            )}
+
+            <button
+              className="button"
+              style={{
+                background: "#3b82f6",
+                color: "white",
+                width: "100%",
+              }}
+              onClick={() => onOpenLimits(card.cardId)}
+            >
+              Лимиты
+            </button>
+          </div>
+        );
+      },
+    },
+  ], [accountsData, hasTransactionsAccess, hasChangePinAccess, hasBlockCardAccess, onManageServices, handleNavigateToTransactions, onChangePin, onResetPin, onBlockCard, onUnblockCard, onOpenLimits]);
+
+  const accountColumns = React.useMemo(() => [
+    {
+      title: "Номер счета",
+      dataIndex: "Number",
+      key: "Number",
+      width: 200,
+      ...getColumnSearchProps("Number", "номера счета"),
+    },
+    {
+      title: "Баланс",
+      key: "Balance",
+      width: 150,
+      render: (_, acc) => `${acc.Balance} ${acc.Currency?.Code || ""}`,
+    },
+    {
+      title: "Статус",
+      dataIndex: ["Status", "Name"],
+      key: "statusName",
+      width: 150,
+    },
+    {
+      title: "Дата открытия",
+      dataIndex: "DateOpened",
+      key: "DateOpened",
+      width: 150,
+    },
+    {
+      title: "Филиал",
+      dataIndex: ["Branch", "Name"],
+      key: "branchName",
+      width: 200,
+    },
+    {
+      title: "Действия",
+      key: "actions",
+      width: 180,
+      render: (_, acc) => (
+        <button
+          className="button"
+          onClick={() =>
+            handleNavigateToAccountOperations(acc.Number)
+          }
+          disabled={!hasAccountOperationsAccess}
+          title={
+            !hasAccountOperationsAccess
+              ? "У вас нет доступа"
+              : "Просмотр выписки счета"
+          }
+        >
+          Выписки счета
+        </button>
+      ),
+    },
+  ], [hasAccountOperationsAccess, handleNavigateToAccountOperations]);
+
+  const creditColumns = React.useMemo(() => [
+    {
+      title: "Номер договора",
+      dataIndex: "contractNumber",
+      key: "contractNumber",
+      width: 160,
+      ...getColumnSearchProps("contractNumber", "номера договора"),
+    },
+    {
+      title: "Идентификатор ссылки",
+      dataIndex: "referenceId",
+      key: "referenceId",
+      width: 180,
+      ...getColumnSearchProps("referenceId", "идентификатора ссылки"),
+    },
+    {
+      title: "Статус",
+      dataIndex: "statusName",
+      key: "statusName",
+      width: 120,
+    },
+    {
+      title: "Сумма",
+      key: "amount",
+      width: 150,
+      render: (_, card) => `${card.amount} ${card.currency || ""}`,
+    },
+    {
+      title: "Дата документа",
+      dataIndex: "documentDate",
+      key: "documentDate",
+      width: 130,
+    },
+    {
+      title: "Клиент Код",
+      dataIndex: "clientCode",
+      key: "clientCode",
+      width: 130,
+    },
+    {
+      title: "Код продукта",
+      dataIndex: "productCode",
+      key: "productCode",
+      width: 130,
+    },
+    {
+      title: "Название продукта",
+      dataIndex: "productName",
+      key: "productName",
+      width: 180,
+    },
+    {
+      title: "Отдел",
+      key: "department",
+      width: 120,
+      render: (_, card) => card.department || "-",
+    },
+    {
+      title: "Действия",
+      key: "actions",
+      width: 250,
+      render: (_, card) => (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            className="button"
+            onClick={() => handleOpenGraph(card.referenceId)}
+            disabled={!card.referenceId}
+          >
+            График
+          </button>
+          <button
+            className="button"
+            style={{
+              background: "#2980b9",
+            }}
+            onClick={() => handleOpenDetails(card.referenceId)}
+            disabled={!card.referenceId}
+          >
+            Детали
+          </button>
+          {String(card.statusName || "")
+            .trim()
+            .toLowerCase() !== "погашен" && (
+            <button
+              className="button"
+              style={{
+                background: "#27ae60",
+              }}
+              onClick={() => handleOpenRepayModal(card)}
+            >
+              Погасить
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ], [handleOpenGraph, handleOpenDetails, handleOpenRepayModal]);
+
+  const depositColumns = React.useMemo(() => [
+    {
+      title: "Номер договора",
+      dataIndex: ["AgreementData", "Code"],
+      key: "agreementCode",
+      width: 160,
+      ...getColumnSearchProps("AgreementData.Code", "номера договора"),
+    },
+    {
+      title: "Референс",
+      dataIndex: ["AgreementData", "ColvirReferenceId"],
+      key: "colvirReferenceId",
+      width: 160,
+      ...getColumnSearchProps("AgreementData.ColvirReferenceId", "референса"),
+    },
+    {
+      title: "Статус",
+      dataIndex: ["AgreementData", "Status", "Name"],
+      key: "statusName",
+      width: 120,
+    },
+    {
+      title: "Остаток депозита",
+      key: "balance",
+      width: 150,
+      render: (_, item) => item.BalanceAccounts?.[0]?.Balance || "-",
+    },
+    {
+      title: "Дата начала",
+      dataIndex: ["AgreementData", "DateFrom"],
+      key: "dateFrom",
+      width: 130,
+    },
+    {
+      title: "Дата окончания",
+      dataIndex: ["AgreementData", "DateTo"],
+      key: "dateTo",
+      width: 130,
+    },
+    {
+      title: "Продукт",
+      dataIndex: ["AgreementData", "Product", "Name"],
+      key: "productName",
+      width: 180,
+    },
+    {
+      title: "Срок",
+      key: "term",
+      width: 100,
+      render: (_, item) => `${item.AgreementData?.DepoTermTU || ""} ${item.AgreementData?.DepoTermTimeType || ""}`,
+    },
+    {
+      title: "Отдел",
+      dataIndex: ["AgreementData", "Department", "Code"],
+      key: "departmentCode",
+      width: 120,
+    },
+    {
+      title: "Сумма договора",
+      key: "amount",
+      width: 150,
+      render: (_, item) => `${item.AgreementData?.Amount || ""} ${item.AgreementData?.Currency || ""}`,
+    },
+  ], [accountsData]);
 
   return (
     <>
@@ -67,318 +628,19 @@ const ClientDataTabs = ({
               </div>
             </div>
 
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th className="limits-table__th">ID Карты</th>
-                    <th className="limits-table__th">Карта</th>
-                    <th className="limits-table__th">Тип</th>
-                    <th className="limits-table__th">Статус АБС</th>
-                    <th className="limits-table__th">Статус ПЦ</th>
-                    <th className="limits-table__th">Счета карты</th>
-                    <th className="limits-table__th">Остатки в АБС</th>
-                    <th
-                      className="limits-table__th"
-                      style={{ color: "#27ae60" }}
-                    >
-                      Остатки в ПЦ
-                    </th>
-                    <th className="limits-table__th">PIN</th>
-                    <th className="limits-table__th">Уведомления</th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedCards?.map((card, idx) => {
-                    const pinError =
-                      Number(card.details?.pinDenialCounter || 0) >= 3;
-                    return (
-                      <tr
-                        key={idx}
-                        className="limits-table__row"
-                        style={{
-                          backgroundColor: pinError
-                            ? "rgba(225, 29, 72, 0.1)"
-                            : "inherit",
-                        }}
-                      >
-                        <td
-                          className="limits-table__td"
-                          style={{ fontSize: "11px", color: "#666" }}
-                        >
-                          {card.cardId}
-                        </td>
-                        <td className="limits-table__td">
-                          {card.CardNumber ||
-                            card.details?.cardNumberMask ||
-                            card.cardId ||
-                            "-"}
-                        </td>
-                        <td className="limits-table__td">
-                          {card.CardTypeName ||
-                            card.details?.cardTypeName ||
-                            card.type ||
-                            "-"}
-                        </td>
-                        <td className="limits-table__td">
-                          {card.statusName || "-"}
-                        </td>
-                        <td className="limits-table__td">
-                          <span
-                            style={{
-                              color: card.details?.statusDescription
-                                ?.toLowerCase()
-                                ?.includes("valid")
-                                ? "#27ae60"
-                                : "inherit",
-                            }}
-                          >
-                            {card.details?.statusDescription || "-"} (
-                            {card.details?.hotCardStatus || "-"})
-                          </span>
-                        </td>
-                        <td className="limits-table__td">
-                          {card.details?.accounts?.map((acc, aIdx) => (
-                            <div
-                              key={aIdx}
-                              style={{
-                                whiteSpace: "nowrap",
-                                borderBottom:
-                                  aIdx < card.details.accounts.length - 1
-                                    ? "1px solid #eee"
-                                    : "none",
-                                padding: "2px 0",
-                              }}
-                            >
-                              {acc.number}
-                            </div>
-                          ))}
-                        </td>
-                        <td className="limits-table__td">
-                          {card.details?.accounts?.map((acc, aIdx) => {
-                            const absAcc = accountsData?.find(
-                              (a) => a.Number === acc.number,
-                            );
-                            return (
-                              <div
-                                key={aIdx}
-                                style={{
-                                  whiteSpace: "nowrap",
-                                  borderBottom:
-                                    aIdx < card.details.accounts.length - 1
-                                      ? "1px solid #eee"
-                                      : "none",
-                                  padding: "2px 0",
-                                }}
-                              >
-                                {absAcc
-                                  ? `${Number(absAcc.Balance).toFixed(2)} ${absAcc.Currency?.Code || ""}`
-                                  : "-"}
-                              </div>
-                            );
-                          })}
-                        </td>
-                        <td
-                          className="limits-table__td"
-                          style={{ color: "#27ae60" }}
-                        >
-                          {card.details?.accounts?.map((acc, aIdx) => (
-                            <div
-                              key={aIdx}
-                              style={{
-                                whiteSpace: "nowrap",
-                                borderBottom:
-                                  aIdx < card.details.accounts.length - 1
-                                    ? "1px solid #eee"
-                                    : "none",
-                                padding: "2px 0",
-                              }}
-                            >
-                              <b>{Number(acc.balance).toFixed(2)}</b>{" "}
-                              {acc.currency === "972"
-                                ? "TJS"
-                                : acc.currency === "840"
-                                  ? "USD"
-                                  : acc.currency === "978"
-                                    ? "EUR"
-                                    : acc.currency}
-                            </div>
-                          ))}
-                        </td>
-                        <td className="limits-table__td">
-                          <div
-                            style={{
-                              color: pinError ? "red" : "inherit",
-                              fontWeight: pinError ? "bold" : "normal",
-                            }}
-                          >
-                            {card.details?.pinDenialCounter || "0"}
-                          </div>
-                        </td>
-                        <td className="limits-table__td">
-                          {card.services?.map((s, sIdx) => {
-                            const type =
-                              s.identification?.serviceId === "300"
-                                ? "SMS"
-                                : s.identification?.serviceId === "330"
-                                  ? "3DS"
-                                  : null;
-                            if (!type) return null;
-                            return (
-                              <div key={sIdx} style={{ whiteSpace: "nowrap" }}>
-                                {s.extNumber} {type}
-                              </div>
-                            );
-                          })}
-                          {(!card.services || card.services.length === 0) &&
-                            "-"}
-                        </td>
-                        <td className="limits-table__td">
-                          <button
-                            className="button"
-                            style={{
-                              background: "#059669",
-                              color: "white",
-                              width: "100%",
-                              marginBottom: "4px",
-                            }}
-                            onClick={() =>
-                              onManageServices(card.cardId, card.services || [])
-                            }
-                          >
-                            Уведомления
-                          </button>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "4px",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <button
-                              className="button"
-                              style={{ flex: 1, minWidth: "80px" }}
-                              onClick={() =>
-                                handleNavigateToTransactions(card.cardId)
-                              }
-                              title={
-                                !hasTransactionsAccess
-                                  ? "У вас нет доступа"
-                                  : "Просмотр истории транзакций"
-                              }
-                            >
-                              История
-                            </button>
-
-                            <button
-                              className="button"
-                              style={{
-                                background: "#374151",
-                                color: "white",
-                                flex: 1,
-                                minWidth: "80px",
-                              }}
-                              onClick={() =>
-                                window.open(
-                                  "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                                    card.cardId,
-                                  "_blank",
-                                )
-                              }
-                            >
-                              Тариф
-                            </button>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "4px",
-                              flexWrap: "wrap",
-                              marginTop: "4px",
-                            }}
-                          >
-                            {hasChangePinAccess && (
-                              <button
-                                className="button"
-                                style={{
-                                  background: "#4b5563",
-                                  color: "white",
-                                  flex: 1,
-                                  minWidth: "80px",
-                                }}
-                                onClick={() => onChangePin(card.cardId)}
-                              >
-                                Сменить ПИН
-                              </button>
-                            )}
-
-                            {pinError && (
-                              <button
-                                className="button"
-                                style={{
-                                  background: "#f59e0b",
-                                  color: "white",
-                                  flex: 1,
-                                  minWidth: "80px",
-                                }}
-                                onClick={() => onResetPin(card.cardId)}
-                              >
-                                Сброс ПИН
-                              </button>
-                            )}
-                          </div>
-
-                          {hasBlockCardAccess && (
-                            card.details?.hotCardStatus === "0" ? (
-                              <button
-                                className="button"
-                                style={{
-                                  background: "#e11d48",
-                                  color: "white",
-                                  marginTop: 4,
-                                  width: "100%",
-                                }}
-                                onClick={() => onBlockCard(card.cardId)}
-                              >
-                                Заблокировать
-                              </button>
-                            ) : (
-                              <button
-                                className="button"
-                                style={{
-                                  background: "#10b981",
-                                  color: "white",
-                                  marginTop: 4,
-                                  width: "100%",
-                                }}
-                                onClick={() => onUnblockCard(card.cardId)}
-                              >
-                                Разблокировать
-                              </button>
-                            )
-                          )}
-
-                          <button
-                            className="button"
-                            style={{
-                              background: "#3b82f6",
-                              color: "white",
-                              marginTop: 4,
-                              width: "100%",
-                            }}
-                            onClick={() => onOpenLimits(card.cardId)}
-                          >
-                            Лимиты
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="limits-table__container">
+              <div className="limits-table__wrapper">
+                <Table
+                  tableId="frontovik-cards"
+                  rowKey="cardId"
+                  columns={cardColumns}
+                  dataSource={sortedCards}
+                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} карт` }}
+                  sticky
+                  bordered
+                  scroll={{ x: "max-content" }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -400,92 +662,19 @@ const ClientDataTabs = ({
               </div>
             </div>
 
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortAccounts("Number")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Номер счета{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Number"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Balance")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Баланс{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Balance"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Status.Name")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Status.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("DateOpened")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата открытия{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="DateOpened"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortAccounts("Branch.Name")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Филиал{" "}
-                      <SortIcon
-                        sortConfig={sortAccountsConfig}
-                        sortKey="Branch.Name"
-                      />
-                    </th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedAccounts?.map((acc, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">{acc.Number}</td>
-                      <td className="limits-table__td">
-                        {acc.Balance} {acc.Currency?.Code}
-                      </td>
-                      <td className="limits-table__td">{acc.Status?.Name}</td>
-                      <td className="limits-table__td">{acc.DateOpened}</td>
-                      <td className="limits-table__td">{acc.Branch?.Name}</td>
-                      <td className="limits-table__td">
-                        <button
-                          className="button"
-                          onClick={() =>
-                            handleNavigateToAccountOperations(acc.Number)
-                          }
-                          title={
-                            !hasAccountOperationsAccess
-                              ? "У вас нет доступа"
-                              : "Просмотр выписки счета"
-                          }
-                        >
-                          Выписки счета
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="limits-table__container">
+              <div className="limits-table__wrapper">
+                <Table
+                  tableId="frontovik-accounts"
+                  rowKey="Number"
+                  columns={accountColumns}
+                  dataSource={sortedAccounts}
+                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} счетов` }}
+                  sticky
+                  bordered
+                  scroll={{ x: "max-content" }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -507,162 +696,19 @@ const ClientDataTabs = ({
               </div>
             </div>
 
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortCredits("contractNumber")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Номер договора{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="contractNumber"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("referenceId")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Идентификатор ссылки{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="referenceId"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("statusName")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="statusName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("amount")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Сумма{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="amount"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("documentDate")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата документа{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="documentDate"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("clientCode")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Клиент Код{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="clientCode"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("productCode")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Код продукта{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="productCode"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("productName")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Название продукта{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="productName"
-                      />
-                    </th>
-                    <th
-                      onClick={() => requestSortCredits("department")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Отдел{" "}
-                      <SortIcon
-                        sortConfig={sortCreditsConfig}
-                        sortKey="department"
-                      />
-                    </th>
-                    <th className="limits-table__th">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedCredits?.map((card, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">
-                        {card.contractNumber}
-                      </td>
-                      <td className="limits-table__td">{card.referenceId}</td>
-                      <td className="limits-table__td">{card.statusName}</td>
-                      <td className="limits-table__td">
-                        {card.amount} {card.currency}
-                      </td>
-                      <td className="limits-table__td">{card.documentDate}</td>
-                      <td className="limits-table__td">{card.clientCode}</td>
-                      <td className="limits-table__td">{card.productCode}</td>
-                      <td className="limits-table__td">{card.productName}</td>
-                      <td className="limits-table__td">
-                        {card.department || "-"}
-                      </td>
-                      <td
-                        className="limits-table__td"
-                        style={{ display: "flex" }}
-                      >
-                        <button
-                          className="button"
-                          onClick={() => handleOpenGraph(card.referenceId)}
-                          disabled={!card.referenceId}
-                        >
-                          График
-                        </button>
-                        <button
-                          className="button"
-                          style={{
-                            marginLeft: 10,
-                            background: "#2980b9",
-                          }}
-                          onClick={() => handleOpenDetails(card.referenceId)}
-                          disabled={!card.referenceId}
-                        >
-                          Детали
-                        </button>
-                        {String(card.statusName || "")
-                          .trim()
-                          .toLowerCase() !== "погашен" && (
-                          <button
-                            className="button"
-                            style={{
-                              marginLeft: 10,
-                              background: "#27ae60",
-                            }}
-                            onClick={() => handleOpenRepayModal(card)}
-                          >
-                            Погасить
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="limits-table__container">
+              <div className="limits-table__wrapper">
+                <Table
+                  tableId="frontovik-credits"
+                  rowKey="referenceId"
+                  columns={creditColumns}
+                  dataSource={sortedCredits}
+                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} кредитов` }}
+                  sticky
+                  bordered
+                  scroll={{ x: "max-content" }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -684,169 +730,19 @@ const ClientDataTabs = ({
               </div>
             </div>
 
-            <div className="limits-table__wrapper">
-              <table className="limits-table">
-                <thead className="limits-table__head">
-                  <tr>
-                    <th
-                      onClick={() => requestSortDeposits("AgreementData.Code")}
-                      className="limits-table__th sortable-header"
-                    >
-                      Номер договора{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Code"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.ColvirReferenceId")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Референс{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.ColvirReferenceId"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Status.Name")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Статус{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Status.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("BalanceAccounts.0.Balance")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Остаток депозита{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="BalanceAccounts.0.Balance"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DateFrom")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата начала{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DateFrom"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DateTo")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Дата окончания{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DateTo"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Product.Name")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Продукт{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Product.Name"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.DepoTermTU")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Срок{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.DepoTermTU"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Department.Code")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Отдел{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Department.Code"
-                      />
-                    </th>
-                    <th
-                      onClick={() =>
-                        requestSortDeposits("AgreementData.Amount")
-                      }
-                      className="limits-table__th sortable-header"
-                    >
-                      Сумма договора{" "}
-                      <SortIcon
-                        sortConfig={sortDepositsConfig}
-                        sortKey="AgreementData.Amount"
-                      />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="limits-table__body">
-                  {sortedDeposits?.map((item, idx) => (
-                    <tr key={idx} className="limits-table__row">
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Code}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.ColvirReferenceId}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Status?.Name}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.BalanceAccounts?.[0]?.Balance || "-"}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DateFrom}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DateTo}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Product?.Name}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.DepoTermTU}{" "}
-                        {item.AgreementData?.DepoTermTimeType}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Department?.Code}
-                      </td>
-                      <td className="limits-table__td">
-                        {item.AgreementData?.Amount}{" "}
-                        {item.AgreementData?.Currency}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="limits-table__container">
+              <div className="limits-table__wrapper">
+                <Table
+                  tableId="frontovik-deposits"
+                  rowKey={(record) => record.AgreementData?.ColvirReferenceId || record.AgreementData?.Code}
+                  columns={depositColumns}
+                  dataSource={sortedDeposits}
+                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} депозитов` }}
+                  sticky
+                  bordered
+                  scroll={{ x: "max-content" }}
+                />
+              </div>
             </div>
           </div>
         </div>

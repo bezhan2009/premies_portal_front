@@ -187,7 +187,7 @@ const CardCashbackTable = () => {
                 dataIndex: "transaction_amount",
                 key: "transaction_amount",
                 sorter: (a, b) => a.transaction_amount - b.transaction_amount,
-                render: (val, record) => `${Number((val || record.amount || 0) / 100).toFixed(2)} TJS`,
+                render: (val, record) => `${Number((val || record.amount || 0) / 100).toFixed(2)} ${getCurrencyCode(String(record.currency || "").padStart(3, "0"))}`,
             },
             {
                 title: "Сумма списания",

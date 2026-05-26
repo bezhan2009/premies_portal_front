@@ -845,6 +845,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(34)) {
+            additionalLinks.push({
+                name: "Почтовый агент",
+                key: "mail_agent",
+                icon: Send,
+                children: [
+                    {
+                        name: "Отправка почты",
+                        href: "/mail-agent",
+                        key: "mail_agent_send",
+                        icon: Send
+                    },
+                ],
+            });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 
