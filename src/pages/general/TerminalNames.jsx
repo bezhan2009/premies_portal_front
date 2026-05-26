@@ -1,7 +1,6 @@
-import Input from "../../components/elements/Input.jsx";
-import { useEffect, useMemo, useState } from "react";
-import { BsArrowUp, BsArrowDown, BsArrowDownUp } from "react-icons/bs";
-import Select from "../../components/elements/Select.jsx";
+import React, { useEffect, useMemo, useState } from "react";
+import { Input, Button, Space } from "antd";
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useFormStore } from "../../hooks/useFormState.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,8 +12,9 @@ import {
 } from "../../api/transactions/api.js";
 import {
     getCurrencyCode,
-    getCurrenciesCode,
 } from "../../api/utils/getCurrencyCode.js";
+import { Table } from "../../components/table/FlexibleAntTable.jsx";
+import Spinner from "../../components/Spinner.jsx";
 
 const ValidData = {
     transactionType: { required: true },
@@ -22,26 +22,10 @@ const ValidData = {
     atmId: { required: true },
 };
 
-import { tableDataDef } from "../../const/defConst";
-
-// Создаем массив опций для Select компонента (только для создания)
-const currencyOptions = Object.entries(getCurrenciesCode()).map(
-    ([numericCode, alphabeticCode]) => ({
-        value: numericCode,
-        label: `${alphabeticCode} (${numericCode})`,
-    }),
-);
-
-// Добавляем опцию для null/пустого значения
-currencyOptions.unshift({
-    value: "",
-    label: "Не указана",
-});
-
 export default function TerminalNames() {
     const { data, errors, setData, validate } = useFormStore();
     const [loading, setLoading] = useState(false);
-    const [tableData, setTableData] = useState(tableDataDef);
+    const [tableData, setTableData] = useState([]);
     const [edit, setEdit] = useState(null);
     const [filters, setFilters] = useState({
         transactionType: "",
@@ -50,8 +34,6 @@ export default function TerminalNames() {
         id: "",
         currency: "",
     });
-    const [sortField, setSortField] = useState("id");
-    const [sortDirection, setSortDirection] = useState("asc");
 
     const upDateItem = async () => {
         const isValid = validate(ValidData);
@@ -62,10 +44,8 @@ export default function TerminalNames() {
 
         setLoading(true);
         try {
-            // Подготавливаем данные для отправки
             const requestData = {
                 ...data,
-                // Отправляем числовой код валюты (если есть)
                 currency: data.currency || null,
             };
 
@@ -88,12 +68,15 @@ export default function TerminalNames() {
     };
 
     const createItem = async () => {
+        if (!filters.transactionType || !filters.description || !filters.atmId) {
+            toast.error("Пожалуйста, заполните Тип транзакции, Описание и ATM ID!");
+            return;
+        }
+
         setLoading(true);
         try {
-            // Подготавливаем данные для создания
             const requestData = {
                 ...filters,
-                // Отправляем числовой код валюты (если есть)
                 currency: filters.currency || null,
             };
 
@@ -148,342 +131,332 @@ export default function TerminalNames() {
     };
 
     const getItems = async () => {
+        setLoading(true);
         try {
             const response = await getTerminalNames();
-
             setTableData(
                 response.data.map((item) => ({
                     transactionType: String(item.transactionType),
                     description: item.description,
                     atmId: String(item.atmId),
                     id: String(item.id),
-                    currency: item.currency ? String(item.currency) : null, // Добавляем валюту
+                    currency: item.currency ? String(item.currency) : null,
                 })),
             );
         } catch (e) {
             console.error("Ошибка при загрузке данных:", e);
+            toast.error("Не удалось загрузить данные");
+        } finally {
+            setLoading(false);
         }
     };
-
-    const applyFilters = (data, currentFilters) => {
-        if (!Array.isArray(data)) return [];
-
-        return data.filter((row) => {
-            // Для валюты делаем отдельную проверку, так как она может быть null
-            const currencyFilter = currentFilters.currency;
-            let currencyMatch = true;
-
-            if (currencyFilter) {
-                if (row.currency) {
-                    currencyMatch =
-                        row.currency.includes(currencyFilter) ||
-                        getCurrencyCode(row.currency).includes(currencyFilter);
-                } else {
-                    currencyMatch = false; // Если фильтр задан, а валюта null - не показываем
-                }
-            }
-
-            return (
-                row?.transactionType?.includes(currentFilters?.transactionType || "") &&
-                row?.description?.includes(currentFilters?.description || "") &&
-                row?.atmId?.includes(currentFilters?.atmId || "") &&
-                row?.id?.includes(currentFilters?.id || "") &&
-                currencyMatch
-            );
-        });
-    };
-
-    const filteredData = applyFilters(tableData, filters);
-
-    const handleSort = (field) => {
-        if (sortField === field) {
-            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-        } else {
-            setSortField(field);
-            setSortDirection("asc");
-        }
-    };
-
-    const sortedData = useMemo(() => {
-        const arr = [...filteredData];
-        arr.sort((a, b) => {
-            const aVal = a[sortField];
-            const bVal = b[sortField];
-            if (aVal == null && bVal == null) return 0;
-            if (aVal == null) return 1;
-            if (bVal == null) return -1;
-            const cmp = String(aVal).localeCompare(String(bVal), "ru", {
-                numeric: true,
-            });
-            return sortDirection === "asc" ? cmp : -cmp;
-        });
-        return arr;
-    }, [filteredData, sortField, sortDirection]);
 
     useEffect(() => {
         getItems();
     }, []);
 
-    // Функция для форматированного отображения валюты
     const formatCurrencyDisplay = (currencyCode) => {
         if (!currencyCode) return "Не указана";
-
         const alphabeticCode = getCurrencyCode(currencyCode);
         return `${alphabeticCode} (${currencyCode})`;
     };
 
-    return (
-        <>
-            <div className="my-applications content-page">
-                <main>
-                    <div className="filters animate-slideIn">
-                        <input
-                            style={{
-                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                            }}
-                            placeholder="Тип транзакции"
-                            value={filters.transactionType}
-                            onChange={(e) =>
-                                handleFilterChange("transactionType", e.target.value)
-                            }
-                        />
-                        <input
-                            style={{
-                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                            }}
-                            placeholder="Описание"
-                            value={filters.description}
-                            onChange={(e) =>
-                                handleFilterChange("description", e.target.value)
-                            }
-                        />
-                        <input
-                            style={{
-                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                            }}
-                            placeholder="ATM ID"
-                            value={filters.atmId}
-                            onChange={(e) => handleFilterChange("atmId", e.target.value)}
-                        />
-
-                        {/* Фильтр по валюте */}
-                        <input
-                            style={{
-                                backgroundColor: edit?.type === "create" ? "#ffbebf" : "",
-                            }}
-                            placeholder="Валюта (код или номер)"
-                            value={filters.currency}
-                            onChange={(e) => handleFilterChange("currency", e.target.value)}
-                        />
-
-                        {edit?.type !== "create" && (
-                            <input
-                                placeholder="id"
-                                value={filters.id}
-                                onChange={(e) => handleFilterChange("id", e.target.value)}
-                            />
-                        )}
-
-                        <button
-                            className="button-edit-roles"
-                            disabled={loading}
-                            onClick={() => {
-                                if (edit?.type === "create") {
-                                    createItem();
-                                } else {
-                                    setEdit({
-                                        type: "create",
-                                        id: null,
-                                    });
-                                }
-                            }}
-                        >
-                            {edit?.type === "create" ? "Сохранить" : "Создать"}
-                        </button>
-                    </div>
-
-                    <div className="my-applications-content">
-                        <div className="sort-table-scroll">
-                            <table className="sort-table">
-                                <thead>
-                                <tr>
-                                    {[
-                                        { key: "transactionType", label: "Тип транзакции" },
-                                        { key: "description", label: "Описание" },
-                                        { key: "atmId", label: "ATM ID" },
-                                        { key: "currency", label: "Валюта" },
-                                        { key: "id", label: "id" },
-                                        { key: "actions", label: "Действия", noSort: true },
-                                    ].map((col) => (
-                                        <th
-                                            key={col.key}
-                                            className={
-                                                col.noSort ? "sort-th sort-th--no-sort" : "sort-th"
-                                            }
-                                            onClick={() => !col.noSort && handleSort(col.key)}
-                                        >
-                                            <span>{col.label}</span>
-                                            {!col.noSort && (
-                                                <span className="sort-icon">
-                            {sortField === col.key ? (
-                                sortDirection === "asc" ? (
-                                    <BsArrowUp />
-                                ) : (
-                                    <BsArrowDown />
-                                )
-                            ) : (
-                                <BsArrowDownUp className="sort-icon--idle" />
-                            )}
-                          </span>
-                                            )}
-                                        </th>
-                                    ))}
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {sortedData.map((row, rowIndex) => (
-                                    <tr
-                                        key={rowIndex}
-                                        style={{
-                                            backgroundColor:
-                                                rowIndex % 2 === 0 ? "#fff" : "#f9f9f9",
-                                        }}
-                                    >
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {edit?.type === "update" && edit?.id === row.id ? (
-                                                <Input
-                                                    type="text"
-                                                    onChange={(e) => setData("transactionType", e)}
-                                                    value={data?.transactionType || ""}
-                                                    onEnter={upDateItem}
-                                                />
-                                            ) : (
-                                                row.transactionType
-                                            )}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                            onClick={() => {
-                                                setEdit({
-                                                    type: "update",
-                                                    id: row.id,
-                                                });
-
-                                                setData("transactionType", row.transactionType);
-                                                setData("description", row.description);
-                                                setData("atmId", row.atmId);
-                                                setData("id", row.id);
-                                                setData("currency", row.currency || "");
-                                            }}
-                                        >
-                                            {edit?.type === "update" && edit?.id === row.id ? (
-                                                <Input
-                                                    type="text"
-                                                    onChange={(e) => setData("description", e)}
-                                                    value={data?.description || ""}
-                                                    onEnter={upDateItem}
-                                                />
-                                            ) : (
-                                                row.description
-                                            )}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {edit?.type === "update" && edit?.id === row.id ? (
-                                                <Input
-                                                    type="text"
-                                                    onChange={(e) => setData("atmId", e)}
-                                                    value={data?.atmId || ""}
-                                                    onEnter={upDateItem}
-                                                />
-                                            ) : (
-                                                row.atmId
-                                            )}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {edit?.type === "update" && edit?.id === row.id ? (
-                                                // Заменяем Select на Input для ручного ввода
-                                                <Input
-                                                    type="text"
-                                                    onChange={(e) => setData("currency", e)}
-                                                    value={data?.currency || ""}
-                                                    onEnter={upDateItem}
-                                                    placeholder="Введите код валюты (например: 643 или RUB)"
-                                                />
-                                            ) : (
-                                                formatCurrencyDisplay(row.currency)
-                                            )}
-                                        </td>
-                                        <td
-                                            style={{ border: "1px solid #ddd", padding: "8px" }}
-                                        >
-                                            {row.id}
-                                        </td>
-                                        {edit?.type === "update" && edit?.id === row.id ? (
-                                            <td>
-                                                <button
-                                                    className="button-edit-roles small-size"
-                                                    onClick={() => {
-                                                        upDateItem();
-                                                    }}
-                                                >
-                                                    Сохранить
-                                                </button>
-                                                <button
-                                                    className="button-edit-roles small-size"
-                                                    onClick={() => setEdit(null)}
-                                                    style={{
-                                                        marginLeft: "5px",
-                                                        backgroundColor: "#6c757d",
-                                                    }}
-                                                >
-                                                    Отмена
-                                                </button>
-                                            </td>
-                                        ) : (
-                                            <td>
-                                                <button
-                                                    className="button-edit-roles small-size"
-                                                    onClick={() => {
-                                                        setEdit({
-                                                            type: "update",
-                                                            id: row.id,
-                                                        });
-                                                        setData("transactionType", row.transactionType);
-                                                        setData("description", row.description);
-                                                        setData("atmId", row.atmId);
-                                                        setData("id", row.id);
-                                                        setData("currency", row.currency || "");
-                                                    }}
-                                                >
-                                                    Редактировать
-                                                </button>
-                                                <button
-                                                    className="button-edit-roles small-size"
-                                                    disabled={loading}
-                                                    onClick={() => deleteItem(row.id)}
-                                                    style={{
-                                                        marginLeft: "5px",
-                                                        backgroundColor: "#dc3545",
-                                                    }}
-                                                >
-                                                    Удалить
-                                                </button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </main>
+    const getColumnSearchProps = (dataIndex, label) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    placeholder={`Поиск ${label}`}
+                    value={selectedKeys[0]}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => confirm()}
+                    style={{ marginBottom: 8, display: "block" }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => confirm()}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Поиск
+                    </Button>
+                    <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+                        Сброс
+                    </Button>
+                </Space>
             </div>
-        </>
+        ),
+        filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />,
+        onFilter: (value, record) => {
+            if (!record[dataIndex]) return false;
+            if (dataIndex === "currency") {
+                const formatted = formatCurrencyDisplay(record[dataIndex]);
+                return formatted.toLowerCase().includes(value.toLowerCase());
+            }
+            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
+        },
+    });
+
+    const columns = useMemo(
+        () => [
+            {
+                title: "Тип транзакции",
+                dataIndex: "transactionType",
+                key: "transactionType",
+                sorter: (a, b) => String(a.transactionType).localeCompare(String(b.transactionType), "ru", { numeric: true }),
+                ...getColumnSearchProps("transactionType", "Тип транзакции"),
+                render: (val, record) => {
+                    if (edit?.type === "update" && edit?.id === record.id) {
+                        return (
+                            <Input
+                                value={data?.transactionType || ""}
+                                onChange={(e) => setData("transactionType", e.target.value)}
+                                onPressEnter={upDateItem}
+                            />
+                        );
+                    }
+                    return val;
+                },
+            },
+            {
+                title: "Описание",
+                dataIndex: "description",
+                key: "description",
+                sorter: (a, b) => a.description.localeCompare(b.description, "ru"),
+                ...getColumnSearchProps("description", "Описание"),
+                render: (val, record) => {
+                    if (edit?.type === "update" && edit?.id === record.id) {
+                        return (
+                            <Input
+                                value={data?.description || ""}
+                                onChange={(e) => setData("description", e.target.value)}
+                                onPressEnter={upDateItem}
+                            />
+                        );
+                    }
+                    return (
+                        <span
+                            onClick={() => {
+                                setEdit({
+                                    type: "update",
+                                    id: record.id,
+                                });
+                                setData("transactionType", record.transactionType);
+                                setData("description", record.description);
+                                setData("atmId", record.atmId);
+                                setData("id", record.id);
+                                setData("currency", record.currency || "");
+                            }}
+                            style={{ cursor: "pointer", textDecoration: "underline" }}
+                        >
+                            {val}
+                        </span>
+                    );
+                },
+            },
+            {
+                title: "ATM ID",
+                dataIndex: "atmId",
+                key: "atmId",
+                sorter: (a, b) => a.atmId.localeCompare(b.atmId, "ru", { numeric: true }),
+                ...getColumnSearchProps("atmId", "ATM ID"),
+                render: (val, record) => {
+                    if (edit?.type === "update" && edit?.id === record.id) {
+                        return (
+                            <Input
+                                value={data?.atmId || ""}
+                                onChange={(e) => setData("atmId", e.target.value)}
+                                onPressEnter={upDateItem}
+                            />
+                        );
+                    }
+                    return val;
+                },
+            },
+            {
+                title: "Валюта",
+                dataIndex: "currency",
+                key: "currency",
+                sorter: (a, b) => String(a.currency || "").localeCompare(String(b.currency || ""), "ru", { numeric: true }),
+                ...getColumnSearchProps("currency", "Валюта"),
+                render: (val, record) => {
+                    if (edit?.type === "update" && edit?.id === record.id) {
+                        return (
+                            <Input
+                                value={data?.currency || ""}
+                                onChange={(e) => setData("currency", e.target.value)}
+                                onPressEnter={upDateItem}
+                                placeholder="Код валюты (например: 643)"
+                            />
+                        );
+                    }
+                    return formatCurrencyDisplay(val);
+                },
+            },
+            {
+                title: "id",
+                dataIndex: "id",
+                key: "id",
+                sorter: (a, b) => String(a.id).localeCompare(String(b.id), "ru", { numeric: true }),
+                ...getColumnSearchProps("id", "id"),
+            },
+            {
+                title: "Действия",
+                key: "actions",
+                render: (_, record) => {
+                    if (edit?.type === "update" && edit?.id === record.id) {
+                        return (
+                            <Space>
+                                <Button type="primary" size="small" onClick={upDateItem} loading={loading}>
+                                    Сохранить
+                                </Button>
+                                <Button size="small" onClick={() => setEdit(null)}>
+                                    Отмена
+                                </Button>
+                            </Space>
+                        );
+                    }
+                    return (
+                        <Space>
+                            <Button
+                                size="small"
+                                onClick={() => {
+                                    setEdit({
+                                        type: "update",
+                                        id: record.id,
+                                    });
+                                    setData("transactionType", record.transactionType);
+                                    setData("description", record.description);
+                                    setData("atmId", record.atmId);
+                                    setData("id", record.id);
+                                    setData("currency", record.currency || "");
+                                }}
+                            >
+                                Редактировать
+                            </Button>
+                            <Button
+                                danger
+                                size="small"
+                                onClick={() => {
+                                    if (window.confirm("Вы уверены, что хотите удалить эту запись?")) {
+                                        deleteItem(record.id);
+                                    }
+                                }}
+                                loading={loading}
+                            >
+                                Удалить
+                            </Button>
+                        </Space>
+                    );
+                },
+            },
+        ],
+        [edit, data, loading]
+    );
+
+    return (
+        <div className="block_info_prems content-page">
+            <div className="table-header-actions" style={{ margin: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <h2 style={{ margin: 0 }}>Имена терминалов</h2>
+                </div>
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            if (edit?.type === "create") {
+                                setEdit(null);
+                            } else {
+                                setEdit({ type: "create", id: null });
+                                setFilters({
+                                    transactionType: "",
+                                    description: "",
+                                    atmId: "",
+                                    id: "",
+                                    currency: "",
+                                });
+                            }
+                        }}
+                    >
+                        {edit?.type === "create" ? "Скрыть форму" : "Создать запись"}
+                    </Button>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={getItems}
+                        loading={loading}
+                    >
+                        Обновить
+                    </Button>
+                </Space>
+            </div>
+
+            {edit?.type === "create" && (
+                <div className="filters animate-slideIn" style={{ margin: "16px", padding: "16px", backgroundColor: "#f9f9f9", borderRadius: "8px", border: "1px solid #eee" }}>
+                    <h4 style={{ marginTop: 0, marginBottom: "12px" }}>Новая запись</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "flex-end" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontSize: "12px", color: "#666" }}>Тип транзакции *</span>
+                            <Input
+                                placeholder="Например: 774"
+                                value={filters.transactionType}
+                                onChange={(e) => handleFilterChange("transactionType", e.target.value)}
+                                style={{ width: "150px" }}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontSize: "12px", color: "#666" }}>Описание *</span>
+                            <Input
+                                placeholder="Например: Dushanbe Kassa 1"
+                                value={filters.description}
+                                onChange={(e) => handleFilterChange("description", e.target.value)}
+                                style={{ width: "250px" }}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontSize: "12px", color: "#666" }}>ATM ID *</span>
+                            <Input
+                                placeholder="Например: J526026"
+                                value={filters.atmId}
+                                onChange={(e) => handleFilterChange("atmId", e.target.value)}
+                                style={{ width: "150px" }}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontSize: "12px", color: "#666" }}>Валюта (номерной код)</span>
+                            <Input
+                                placeholder="Например: 972"
+                                value={filters.currency}
+                                onChange={(e) => handleFilterChange("currency", e.target.value)}
+                                style={{ width: "150px" }}
+                            />
+                        </div>
+                        <Space style={{ alignSelf: "flex-end" }}>
+                            <Button type="primary" onClick={createItem} loading={loading}>
+                                Сохранить
+                            </Button>
+                            <Button onClick={() => setEdit(null)}>
+                                Отмена
+                            </Button>
+                        </Space>
+                    </div>
+                </div>
+            )}
+
+            <Table
+                tableId="terminal-names-list"
+                columns={columns}
+                dataSource={tableData}
+                rowKey={(record) => record.id}
+                loading={{
+                    spinning: loading,
+                    indicator: <Spinner size="small" />,
+                }}
+                pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
+                bordered
+                scroll={{ x: "max-content" }}
+                locale={{ emptyText: "Нет данных" }}
+            />
+        </div>
     );
 }
