@@ -3,6 +3,7 @@ import { Input, Button, Space, Tag } from "antd";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
+import { fetchCardFios } from "../../../api/processing/transactions.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
@@ -14,6 +15,7 @@ const CardCashbackTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [balance, setBalance] = useState(null);
+    const [fios, setFios] = useState({});
     const [sortedInfo, setSortedInfo] = useState({
         columnKey: "created_at",
         order: "descend",
@@ -22,6 +24,19 @@ const CardCashbackTable = () => {
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
 
+    const fetchFios = async (dataList) => {
+        try {
+            const cardIds = [...new Set(dataList.map((item) => item.card_id).filter(Boolean))];
+            if (cardIds.length === 0) return;
+            const fiosData = await fetchCardFios(cardIds);
+            if (fiosData && fiosData.data) {
+                setFios(fiosData.data);
+            }
+        } catch (e) {
+            console.error("Ошибка при получении ФИО:", e);
+        }
+    };
+
     const fetchItems = useCallback(async () => {
         try {
             setLoading(true);
@@ -29,8 +44,10 @@ const CardCashbackTable = () => {
             const data = response.data;
             if (Array.isArray(data)) {
                 setItems(data);
+                fetchFios(data);
             } else if (data && Array.isArray(data.data)) {
                 setItems(data.data);
+                fetchFios(data.data);
             } else {
                 setItems([]);
             }
@@ -160,17 +177,17 @@ const CardCashbackTable = () => {
             },
             {
                 title: "Сумма кэшбэка",
-                dataIndex: "cashback_amount",
-                key: "cashback_amount",
-                sorter: (a, b) => (a.cashback_amount || a.amount) - (b.cashback_amount || b.amount),
-                render: (val, record) => `${val || record.amount} ${getCurrencyCode(String(record.currency || ""))}`,
-            },
-            {
-                title: "Сумма операции",
                 dataIndex: "amount",
                 key: "amount",
                 sorter: (a, b) => a.amount - b.amount,
-                render: (val, record) => `${val} ${getCurrencyCode(String(record.currency || ""))}`,
+                render: (val, record) => `${val || record.cashback_amount} ${getCurrencyCode(String(record.currency || ""))}`,
+            },
+            {
+                title: "Сумма операции",
+                dataIndex: "transaction_amount",
+                key: "transaction_amount",
+                sorter: (a, b) => a.transaction_amount - b.transaction_amount,
+                render: (val, record) => `${val || record.amount} ${getCurrencyCode(String(record.currency || ""))}`,
             },
             {
                 title: "Сумма списания",
@@ -202,6 +219,12 @@ const CardCashbackTable = () => {
                 dataIndex: "card_id",
                 key: "card_id",
                 ...getColumnSearchProps("card_id", "ID карты"),
+            },
+            {
+                title: "ФИО",
+                dataIndex: "fio",
+                key: "fio",
+                render: (_, record) => fios[record.card_id] || "-",
             },
             {
                 title: "Номер счета",
@@ -297,14 +320,21 @@ const CardCashbackTable = () => {
                 },
             },
         ],
-        [handlePay, handleResetStatus, handleReturn, sortedInfo],
+        [handlePay, handleResetStatus, handleReturn, sortedInfo, fios],
     );
 
     const handleExport = () => {
         const exportColumns = columns
             .filter((col) => col.key !== "actions")
             .map((col) => ({ key: col.dataIndex, label: col.title }));
-        exportToExcel(items, exportColumns, "Кэшбэк по картам");
+        const mappedItems = items.map((item) => ({
+            ...item,
+            fio: fios[item.card_id] || "-",
+            payId: item.payId == "216" ? "GooglePay" : item.payId || "",
+            created_at: item.created_at ? new Date(item.created_at).toLocaleString("ru-RU") : "-",
+            updated_at: item.updated_at ? new Date(item.updated_at).toLocaleString("ru-RU") : "-",
+        }));
+        exportToExcel(mappedItems, exportColumns, "Кэшбэк по картам");
     };
 
     return (
