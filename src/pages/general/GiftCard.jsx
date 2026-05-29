@@ -587,7 +587,12 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    const onSend = async (isForPoll = false, isForOffer = false) => {
+    const onSend = async (isForPoll = false, isForOffer = false, statusId = null, skipNavigate = false) => {
+        if (data.application_status_id === 7 && statusId !== 7) {
+            showAlert("Нельзя изменять/сохранять заявку со статусом 'Не одобрено'. Дождитесь решения комплаенса.", "error", 5000);
+            return false;
+        }
+
         const isValid = validate(ValidData);
         if (!isValid) return false;
 
@@ -717,6 +722,10 @@ export default function GiftCard({ edit = false }) {
                 data.message_type = "nosms";
             }
 
+            if (statusId) {
+                fieldsToAppend.push({ key: "application_status_id", value: String(statusId) });
+            }
+
             fieldsToAppend.forEach(({ key, value }) => {
                 formData.append(key, value);
             });
@@ -743,10 +752,10 @@ export default function GiftCard({ edit = false }) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
                     downloadOffer(applicationId);
-                } else if (!isForPoll && !isForOffer) {
+                } else if (!isForPoll && !isForOffer && !skipNavigate) {
                     showAlert("Данные успешно сохранены!", "success", 4000);
                 }
-                return true;
+                return applicationId;
             } else {
                 const response = await fetch(`${backendUrl}/applications`, {
                     method: "POST",
@@ -769,10 +778,12 @@ export default function GiftCard({ edit = false }) {
                 } else if (isForOffer && applicationId) {
                     downloadOffer(applicationId);
                 } else {
-                    navigate(0);
-                    showAlert("Данные успешно сохранены!", "success", 4000);
+                    if (!skipNavigate) {
+                        navigate(0);
+                        showAlert("Данные успешно сохранены!", "success", 4000);
+                    }
                 }
-                return true;
+                return applicationId;
             }
         } catch (error) {
             console.error("Ошибка отправки:", error);
@@ -794,6 +805,13 @@ export default function GiftCard({ edit = false }) {
     const handleSendToCompliance = async () => {
         try {
             setLoading(true);
+            
+            // Сначала сохраняем/обновляем заявку со статусом 7 ("Не одобрено")
+            const savedAppId = await onSend(false, false, 7, true);
+            if (!savedAppId) {
+                return;
+            }
+
             const backendUrl = import.meta.env.VITE_BACKEND_URL;
             const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
             
@@ -801,11 +819,11 @@ export default function GiftCard({ edit = false }) {
                 method: "POST",
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
-                    application_id: data.ID || 0,
+                    application_id: savedAppId,
                     client_full_name: fullName,
                     client_phone: data.phone_number || "",
                     client_birth_date: data.birth_date || "",
-                    match_similarity: 100.0, // Should be actual similarity from backend if available
+                    match_similarity: 100.0,
                     client_occupation: data.client_occupation || "",
                     net_worth: data.net_worth || "",
                     monthly_income: data.monthly_income || "",
@@ -817,14 +835,16 @@ export default function GiftCard({ edit = false }) {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errResult = await response.json().catch(() => ({}));
+                const errMsg = errResult.error || `HTTP error! status: ${response.status}`;
+                throw new Error(errMsg);
             }
 
             showAlert("Заявка успешно отправлена в Комплаенс", "success", 5000);
             navigate(0);
         } catch (error) {
             console.error("Ошибка при отправке в комплаенс:", error);
-            showAlert("Ошибка при отправке в комплаенс", "error", 5000);
+            showAlert(`Ошибка при отправке в комплаенс: ${error.message || error}`, "error", 5000);
         } finally {
             setLoading(false);
         }

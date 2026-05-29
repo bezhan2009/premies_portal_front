@@ -303,6 +303,8 @@ export const status = [
   { value: 4, label: "Карта активирована" },
   { value: 5, label: "Недостоверные данные" },
   { value: 6, label: "Отказано в карте" },
+  { value: 7, label: "Не одобрено" },
+  { value: 8, label: "Одобрено" },
 ];
 export const applicationsList = [
   {

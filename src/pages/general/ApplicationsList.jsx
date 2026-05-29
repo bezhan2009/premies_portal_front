@@ -246,6 +246,19 @@ export default function ApplicationsList() {
     const filteredData = applyFilters(tableData, filters);
 
     const upDateStatusApplications = async (status) => {
+        // Проверяем, есть ли среди выбранных заявок те, у которых статус "Не одобрено" (7)
+        const unapprovedSelected = tableData.filter(
+            (row) => selectedRows.includes(row.ID) && row.application_status_id === 7
+        );
+        if (unapprovedSelected.length > 0) {
+            setAlert({
+                show: true,
+                message: "Нельзя изменить статус для заявок, которые не одобрены комплаенсом",
+                type: "error",
+            });
+            return;
+        }
+
         try {
             // 🔐 Выполняем запросы с токеном
             await Promise.all(

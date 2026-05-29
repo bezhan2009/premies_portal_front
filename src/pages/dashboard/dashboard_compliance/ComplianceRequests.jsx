@@ -51,14 +51,19 @@ export default function ComplianceRequests() {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to update status");
+                let errMsg = "Failed to update status";
+                try {
+                    const errData = await response.json();
+                    errMsg = errData.error || errData.message || errMsg;
+                } catch (_) {}
+                throw new Error(errMsg);
             }
 
             message.success(`Заявка успешно ${status === 'approved' ? 'принята' : 'отклонена'}`);
             fetchRequests(); // refresh data
         } catch (error) {
             console.error("Error updating status:", error);
-            message.error("Ошибка при обновлении статуса");
+            message.error(`Ошибка: ${error.message || "при обновлении статуса"}`);
         }
     };
 
