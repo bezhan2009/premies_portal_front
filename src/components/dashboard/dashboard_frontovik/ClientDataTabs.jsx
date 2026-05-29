@@ -273,12 +273,7 @@ const ClientDataTabs = ({
                 onClick={() =>
                   handleNavigateToTransactions(card.cardId)
                 }
-                disabled={!hasTransactionsAccess}
-                title={
-                  !hasTransactionsAccess
-                    ? "У вас нет доступа"
-                    : "Просмотр истории транзакций"
-                }
+                title="Просмотр истории транзакций"
               >
                 История
               </button>
@@ -337,31 +332,45 @@ const ClientDataTabs = ({
               )}
             </div>
 
-            {hasBlockCardAccess && (
-              card.details?.hotCardStatus === "0" ? (
-                <button
-                  className="button"
-                  style={{
-                    background: "#e11d48",
-                    color: "white",
-                    width: "100%",
-                  }}
-                  onClick={() => onBlockCard(card.cardId)}
-                >
-                  Заблокировать
-                </button>
-              ) : (
-                <button
-                  className="button"
-                  style={{
-                    background: "#10b981",
-                    color: "white",
-                    width: "100%",
-                  }}
-                  onClick={() => onUnblockCard(card.cardId)}
-                >
-                  Разблокировать
-                </button>
+            {card.details?.hotCardStatus && String(card.details.hotCardStatus) === "17" ? (
+              <button
+                className="button"
+                style={{
+                  background: "#10b981",
+                  color: "white",
+                  width: "100%",
+                }}
+                onClick={() => onUnblockCard(card.cardId)}
+              >
+                Активировать
+              </button>
+            ) : (
+              hasBlockCardAccess && (
+                card.details?.hotCardStatus === "0" ? (
+                  <button
+                    className="button"
+                    style={{
+                      background: "#e11d48",
+                      color: "white",
+                      width: "100%",
+                    }}
+                    onClick={() => onBlockCard(card.cardId)}
+                  >
+                    Заблокировать
+                  </button>
+                ) : (
+                  <button
+                    className="button"
+                    style={{
+                      background: "#10b981",
+                      color: "white",
+                      width: "100%",
+                    }}
+                    onClick={() => onUnblockCard(card.cardId)}
+                  >
+                    Разблокировать
+                  </button>
+                )
               )
             )}
 
@@ -424,12 +433,7 @@ const ClientDataTabs = ({
           onClick={() =>
             handleNavigateToAccountOperations(acc.Number)
           }
-          disabled={!hasAccountOperationsAccess}
-          title={
-            !hasAccountOperationsAccess
-              ? "У вас нет доступа"
-              : "Просмотр выписки счета"
-          }
+          title="Просмотр выписки счета"
         >
           Выписки счета
         </button>
@@ -615,7 +619,6 @@ const ClientDataTabs = ({
                   }
                   className="export-excel-btn"
                   style={{ marginRight: 10, background: "#2ecc71" }}
-                  disabled={!hasTransactionsAccess}
                 >
                   Посмотреть историю
                 </button>
