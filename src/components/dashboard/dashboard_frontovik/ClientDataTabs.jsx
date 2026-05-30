@@ -1,7 +1,9 @@
 import React from "react";
 import { Table } from "../../table/FlexibleAntTable.jsx";
-import { Input as AntInput, Space, Button } from "antd";
+import { Input as AntInput, Space, Button, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
+import RequisitesModal from "./RequisitesModal.jsx";
+import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 
 const ClientDataTabs = ({
   cardsData,
@@ -38,7 +40,49 @@ const ClientDataTabs = ({
   onOpenLimits,
   hasBlockCardAccess,
   hasChangePinAccess,
+  selectedClient,
 }) => {
+  const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
+  const [requisitesCard, setRequisitesCard] = React.useState(null);
+  const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
+
+  const handleOpenRequisitesModal = (card) => {
+    setRequisitesCard(card);
+    setIsRequisitesModalOpen(true);
+  };
+
+  const handleGenerateRequisites = async (values) => {
+    if (!requisitesCard || !selectedClient) return;
+    
+    setIsRequisitesLoading(true);
+    try {
+      let engName = "";
+      if (selectedClient.surname_eng) engName += selectedClient.surname_eng;
+      if (selectedClient.name_eng) engName += " " + selectedClient.name_eng;
+      engName = engName.trim();
+      
+      let fio = `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
+      if (engName) {
+        fio += ` (${engName})`;
+      }
+
+      await generateCardRequisites({
+        account: values.account,
+        fio: fio,
+        currency: values.currency,
+        cardNumber: requisitesCard.details?.cardNumberMask || requisitesCard.cardNumber || requisitesCard.cardId,
+        engName: engName,
+        language: values.language,
+      });
+      message.success("Реквизиты успешно скачаны");
+      setIsRequisitesModalOpen(false);
+    } catch (e) {
+      message.error("Ошибка при скачивании реквизитов");
+    } finally {
+      setIsRequisitesLoading(false);
+    }
+  };
+
 
   const getColumnSearchProps = (dataIndex, label) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
@@ -384,6 +428,18 @@ const ClientDataTabs = ({
               onClick={() => onOpenLimits(card.cardId)}
             >
               Лимиты
+            </button>
+
+            <button
+              className="button"
+              style={{
+                background: "#8b5cf6",
+                color: "white",
+                width: "100%",
+              }}
+              onClick={() => handleOpenRequisitesModal(card)}
+            >
+              Скачать реквизиты
             </button>
           </div>
         );
@@ -750,6 +806,14 @@ const ClientDataTabs = ({
           </div>
         </div>
       )}
+
+      <RequisitesModal
+        open={isRequisitesModalOpen}
+        onClose={() => setIsRequisitesModalOpen(false)}
+        onGenerate={handleGenerateRequisites}
+        accountsData={accountsData}
+        isLoading={isRequisitesLoading}
+      />
     </>
   );
 };
