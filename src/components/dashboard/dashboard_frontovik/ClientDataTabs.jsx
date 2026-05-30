@@ -57,8 +57,10 @@ const ClientDataTabs = ({
     setIsRequisitesLoading(true);
     try {
       let engName = "";
-      if (selectedClient.surname_eng) engName += selectedClient.surname_eng;
-      if (selectedClient.name_eng) engName += " " + selectedClient.name_eng;
+      const ltnSurname = selectedClient.ltn_surname || selectedClient.surname_eng || "";
+      const ltnName = selectedClient.ltn_name || selectedClient.name_eng || "";
+      if (ltnSurname) engName += ltnSurname;
+      if (ltnName) engName += (engName ? " " : "") + ltnName;
       engName = engName.trim();
       
       let fio = `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
