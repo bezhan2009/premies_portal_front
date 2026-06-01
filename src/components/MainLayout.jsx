@@ -29,6 +29,8 @@ const MainLayout = () => {
     if (pathname.includes("/operator/data")) return "data";
     if (pathname.includes("/operator/knowledge-base")) return "kb_operator";
     if (pathname.includes("/operator/tests")) return "tests_operator";
+    if (pathname.includes("/operator/users")) return "users_operator";
+    if (pathname.includes("/operator/access-requests")) return "access_requests_operator";
 
     // Worker pages
     if (pathname.includes("/worker/premies")) return "worker_premies";
@@ -100,6 +102,8 @@ const MainLayout = () => {
 
     // Compliance
     if (pathname.includes("/compliance/requests")) return "compliance_requests";
+    if (pathname.includes("/compliance/score-options")) return "compliance_score_options";
+    if (pathname.includes("/compliance/settings")) return "compliance_settings";
 
     // Audit Logs
     if (pathname.includes("admin/audit-logs")) return "audit_logs_viewer";

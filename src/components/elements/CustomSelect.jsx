@@ -17,14 +17,23 @@ const CustomSelect = ({
   style = {},
   disabled = false,
   dropdownPosition = "auto",
+  searchable = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
+  const filteredOptions = searchable
+    ? options.filter((option) =>
+        String(option.label || option.value || "")
+          .toLowerCase()
+          .includes(searchTerm.trim().toLowerCase()),
+      )
+    : options;
 
   useEffect(() => {
     if (disabled || options.length === 0) {
@@ -115,6 +124,7 @@ const CustomSelect = ({
   const handleToggle = () => {
     if (!disabled) {
       setIsOpen((previous) => !previous);
+      setSearchTerm("");
     }
   };
 
@@ -135,9 +145,20 @@ const CustomSelect = ({
           className={`custom-select-dropdown ${openUpward ? "top" : "bottom"}`}
           style={dropdownStyle}
         >
+          {searchable && (
+            <div className="custom-select-search">
+              <input
+                autoFocus
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onKeyDown={(event) => event.stopPropagation()}
+                placeholder="РџРѕРёСЃРє..."
+              />
+            </div>
+          )}
           <div className="options-list">
-            {options.length > 0 ? (
-              options.map((option, index) => (
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option, index) => (
                 <Motion.div
                   key={option.value || index}
                   className={`option-item ${String(option.value) === String(value) ? "selected" : ""}`}

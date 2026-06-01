@@ -61,14 +61,18 @@ import {
     Eye,
     Gift,
     Wrench,
-    Clock
+    Clock,
+    User
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
+import ProfileModal from "./ProfileModal.jsx";
 import { Tooltip, Dropdown, Menu } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
-    const username = localStorage.getItem("username") || "Неизвестное имя";
+    const [displayName, setDisplayName] = useState(
+        localStorage.getItem("full_name") || localStorage.getItem("username") || "Неизвестное имя"
+    );
     const [hasNewApplications, setHasNewApplications] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPassword, setNewPassword] = useState("");
@@ -86,6 +90,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [ws, setWs] = useState(null);
     const [forcePasswordChange, setForcePasswordChange] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     // Функция для проверки необходимости смены пароля
     const checkPasswordChangeRequired = useCallback(() => {
@@ -436,6 +441,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         name: "Заявки на доступы",
                         href: "/operator/access-requests",
                         key: "access_requests_operator",
+                        icon: Users
+                    },
+                    {
+                        name: "Управление пользователями",
+                        href: "/operator/users",
+                        key: "users_operator",
                         icon: Users
                     },
                 ],
@@ -836,6 +847,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: Sliders
                     },
                     {
+                        name: "Справочник баллов",
+                        href: "/compliance/score-options",
+                        key: "compliance_score_options",
+                        icon: Table
+                    },
+                    {
                         name: "Заявки на проверку",
                         href: "/compliance/requests",
                         key: "compliance_requests",
@@ -1146,8 +1163,18 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>
                     <div className="username-wrapper">
             <span>
-              Пользователь: <strong>{username}</strong>
+              Пользователь: <strong>{displayName}</strong>
             </span>
+                        <button
+                            className="change-password-btn"
+                            onClick={() => setIsProfileOpen(true)}
+                        >
+                            <User
+                                className="settings-icon"
+                                size={27}
+                                title="Мой профиль"
+                            />
+                        </button>
                         <button
                             className="change-password-btn"
                             onClick={() => setIsSettingsOpen(true)}
@@ -1251,6 +1278,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
+            />
+
+            <ProfileModal
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
+                onProfileUpdated={(newName) => {
+                    if (newName) {
+                        setDisplayName(newName);
+                    }
+                }}
             />
         </>
     );

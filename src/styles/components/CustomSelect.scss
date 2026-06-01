@@ -119,6 +119,27 @@
   }
 }
 
+.custom-select-dropdown .custom-select-search {
+  padding: 8px 8px 4px;
+
+  input {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-color);
+    font: inherit;
+    outline: none;
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+    }
+  }
+}
+
 .custom-select-dropdown .option-item {
   padding: 10px 12px;
   border-radius: 8px;

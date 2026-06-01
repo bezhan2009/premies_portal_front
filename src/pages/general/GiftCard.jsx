@@ -146,6 +146,16 @@ const expectedCashCountOptions = [
   { value: "> 10", label: "> 10 (5)" }
 ];
 
+const complianceOptionFallbacks = {
+    client_occupation: occupationOptions,
+    net_worth: netWorthOptions,
+    monthly_income: accountOpeningOptions,
+    total_outgoing_transactions_amount: expectedTransactionAmountOptions,
+    total_outgoing_transactions_count: expectedTransactionCountOptions,
+    total_cash_transactions_amount: expectedCashAmountOptions,
+    total_cash_transactions_count: expectedCashCountOptions,
+};
+
 const extractSection = (text, startKeywords, endKeywords) => {
     const lowerText = text.toLowerCase();
     let startIdx = -1;
@@ -330,6 +340,8 @@ export default function GiftCard({ edit = false }) {
         { value: "rejected", label: "Заявка отклонена" },
         { value: "card_opened", label: "Карта успешно открыта" },
     ]);
+    const [complianceOptions, setComplianceOptions] = useState(complianceOptionFallbacks);
+    const [complianceScoreByValue, setComplianceScoreByValue] = useState(complianceScores);
 
     const ValidData = {
         surname: { required: true },
@@ -1277,6 +1289,57 @@ export default function GiftCard({ edit = false }) {
     }, []);
 
     useEffect(() => {
+        const fetchComplianceOptions = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/compliance/score-options`, {
+                    headers: getAuthHeaders(),
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const options = await response.json();
+                if (!Array.isArray(options) || options.length === 0) {
+                    return;
+                }
+
+                const grouped = Object.keys(complianceOptionFallbacks).reduce((acc, category) => {
+                    acc[category] = [];
+                    return acc;
+                }, {});
+                const scores = {};
+
+                options.forEach((option) => {
+                    const category = option.category;
+                    if (!grouped[category]) {
+                        grouped[category] = [];
+                    }
+                    grouped[category].push({
+                        value: option.value,
+                        label: option.label || `${option.value} (${option.score || 0})`,
+                        sortOrder: option.sort_order || 0,
+                    });
+                    scores[option.value] = Number(option.score) || 0;
+                });
+
+                Object.keys(grouped).forEach((category) => {
+                    grouped[category].sort((a, b) => a.sortOrder - b.sortOrder);
+                    grouped[category] = grouped[category].map(({ sortOrder, ...option }) => option);
+                    if (grouped[category].length === 0) {
+                        grouped[category] = complianceOptionFallbacks[category] || [];
+                    }
+                });
+
+                setComplianceOptions(grouped);
+                setComplianceScoreByValue({ ...complianceScores, ...scores });
+            } catch (error) {
+                console.error("Ошибка загрузки справочников комплаенса:", error);
+            }
+        };
+
+        fetchComplianceOptions();
+    }, []);
+
+    useEffect(() => {
         return () => {
             Object.values(terrorCheckTimeoutRefs).forEach(ref => {
                 if (ref.current) {
@@ -1289,7 +1352,7 @@ export default function GiftCard({ edit = false }) {
     const hasTerrorMatch = terrorCheckResults.fullName === true || terrorCheckResults.cardName === true;
 
     const getScore = (val) => {
-        return complianceScores[val] || 0;
+        return complianceScoreByValue[val] || 0;
     };
 
     const totalComplianceScore = 
@@ -1981,7 +2044,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите сферу деятельности"
                                 onChange={(val) => setData("client_occupation", val)}
                                 value={data.client_occupation}
-                                options={occupationOptions}
+                                options={complianceOptions.client_occupation}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -1991,7 +2055,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите сумму"
                                 onChange={(val) => setData("net_worth", val)}
                                 value={data.net_worth}
-                                options={netWorthOptions}
+                                options={complianceOptions.net_worth}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -2001,7 +2066,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите метод"
                                 onChange={(val) => setData("monthly_income", val)}
                                 value={data.monthly_income}
-                                options={accountOpeningOptions}
+                                options={complianceOptions.monthly_income}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -2011,7 +2077,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите сумму"
                                 onChange={(val) => setData("total_outgoing_transactions_amount", val)}
                                 value={data.total_outgoing_transactions_amount}
-                                options={expectedTransactionAmountOptions}
+                                options={complianceOptions.total_outgoing_transactions_amount}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -2021,7 +2088,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите количество"
                                 onChange={(val) => setData("total_outgoing_transactions_count", val)}
                                 value={data.total_outgoing_transactions_count}
-                                options={expectedTransactionCountOptions}
+                                options={complianceOptions.total_outgoing_transactions_count}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -2031,7 +2099,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите сумму"
                                 onChange={(val) => setData("total_cash_transactions_amount", val)}
                                 value={data.total_cash_transactions_amount}
-                                options={expectedCashAmountOptions}
+                                options={complianceOptions.total_cash_transactions_amount}
+                                searchable
                                 error={errors}
                             />
                             <Select
@@ -2041,7 +2110,8 @@ export default function GiftCard({ edit = false }) {
                                 placeholder="Выберите количество"
                                 onChange={(val) => setData("total_cash_transactions_count", val)}
                                 value={data.total_cash_transactions_count}
-                                options={expectedCashCountOptions}
+                                options={complianceOptions.total_cash_transactions_count}
+                                searchable
                                 error={errors}
                             />
                             <Input

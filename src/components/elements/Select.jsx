@@ -13,6 +13,7 @@ export default function Select({
   disabled,
   dropdownPosition,
   required,
+  searchable,
 }) {
   const errorMessage = typeof error === 'object' ? error?.[id] : error;
 
@@ -30,6 +31,7 @@ export default function Select({
       disabled={disabled}
       dropdownPosition={dropdownPosition}
       required={required}
+      searchable={searchable}
     />
   );
 }
