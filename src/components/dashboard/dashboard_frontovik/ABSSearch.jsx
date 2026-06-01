@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import AlertMessage from "../../general/AlertMessage.jsx";
+import { logAuditAction } from "../../../utils/auditLogger.js";
 import {
     getUserCards,
     getUserAccounts,
@@ -335,6 +336,12 @@ export default function ABSClientSearch() {
 
         let formattedPhone = phoneNumber.trim();
 
+        // Log audit action
+        logAuditAction({
+            action: "Поиск клиента",
+            details: `Поиск клиента по типу '${selectTypeSearchClient}' со значением '${formattedPhone}'`
+        });
+
         try {
             setIsLoading(true);
             const token = localStorage.getItem("access_token");
@@ -437,6 +444,17 @@ export default function ABSClientSearch() {
 
         try {
             const clientCode = clientsData[selectedClientIndex]?.client_code;
+            const client = clientsData[selectedClientIndex];
+
+            // Log audit action
+            logAuditAction({
+                action: "Просмотр данных клиента",
+                client_name: `${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}`.trim(),
+                client_phone: client.phone || "",
+                client_inn: client.tax_code || "",
+                details: `Загрузка подробных данных клиента (карты, счета, кредиты, депозиты) для ${client.surname} ${client.name} (Код клиента: ${client.client_code})`
+            });
+
             const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
                 getUserCards(clientCode),
                 getUserAccounts(clientCode),
@@ -554,6 +572,17 @@ export default function ABSClientSearch() {
         setIsBlockingLoading(true);
         try {
             await changeCardStatus(blockingCardId, status);
+
+            // Log audit action
+            logAuditAction({
+                action: "Блокировка карты",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(blockingCardId),
+                details: `Блокировка карты ${blockingCardId} со статусом ${status}`
+            });
+
             showAlert("Карта успешно заблокирована", "success");
             setIsBlockModalOpen(false);
             handleGetDataUser();
@@ -572,6 +601,17 @@ export default function ABSClientSearch() {
     const handleResetPin = async (cardId) => {
         try {
             await resetPinCounter(cardId);
+
+            // Log audit action
+            logAuditAction({
+                action: "Сброс счетчика PIN-кода",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(cardId),
+                details: `Сброс счетчика неверных попыток ввода PIN-кода для карты ${cardId}`
+            });
+
             showAlert("Счетчик ПИН-кода успешно сброшен", "success");
             handleGetDataUser();
         } catch (e) {
@@ -582,6 +622,17 @@ export default function ABSClientSearch() {
     const handleUnblockCard = async (cardId) => {
         try {
             await unblockCard(cardId);
+
+            // Log audit action
+            logAuditAction({
+                action: "Разблокировка карты",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(cardId),
+                details: `Разблокировка карты ${cardId}`
+            });
+
             showAlert("Карта успешно разблокирована", "success");
             handleGetDataUser();
         } catch (e) {
@@ -607,6 +658,16 @@ export default function ABSClientSearch() {
             const res = await generatePin(activeCardId, phone, pin);
             console.log("Pin change response:", res);
 
+            // Log audit action
+            logAuditAction({
+                action: "Смена PIN-кода",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(activeCardId),
+                details: `Запрос на смену PIN-кода для карты ${activeCardId} (телефон доставки: ${phone})`
+            });
+
             showAlert("Запрос на смену ПИН выполнен", "success");
             setIsPinModalOpen(false);
             handleGetDataUser();
@@ -626,6 +687,17 @@ export default function ABSClientSearch() {
                 const res = await manageCardService(action);
                 console.log("Service update response:", res);
             }
+
+            // Log audit action
+            logAuditAction({
+                action: "Управление сервисами карты",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(activeCardId),
+                details: `Изменение услуг (SMS/3DS) для карты ${activeCardId}`
+            });
+
             showAlert("Сервисы успешно обновлены", "success");
             setIsServicesModalOpen(false);
             handleGetDataUser();
@@ -644,6 +716,16 @@ export default function ABSClientSearch() {
         try {
             const limits = await fetchCardLimits(cardId);
             setCardLimits(limits);
+
+            // Log audit action
+            logAuditAction({
+                action: "Просмотр лимитов карты",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(cardId),
+                details: `Просмотр лимитов для карты ${cardId}`
+            });
         } catch (e) {
             console.error("Error fetching limits:", e);
             showAlert("Ошибка при загрузке лимитов", "error");
@@ -714,6 +796,16 @@ export default function ABSClientSearch() {
         setGraphModalOpen(true);
         setIsGraphLoading(true);
 
+        // Log audit action
+        logAuditAction({
+            action: "Просмотр графика кредита",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            credit_id: String(referenceId),
+            details: `Просмотр графика платежей для кредита с референсом ${referenceId}`
+        });
+
         try {
             const token = localStorage.getItem("access_token");
             const response = await fetch(
@@ -750,6 +842,17 @@ export default function ABSClientSearch() {
     const handleOpenDetails = async (referenceId) => {
         setDetailsModalOpen(true);
         setIsDetailsLoading(true);
+
+        // Log audit action
+        logAuditAction({
+            action: "Просмотр деталей кредита",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            credit_id: String(referenceId),
+            details: `Просмотр детальной информации по кредиту с референсом ${referenceId}`
+        });
+
         try {
             const data = await fetchLoanDetails(referenceId);
             if (data) {
@@ -796,10 +899,28 @@ export default function ABSClientSearch() {
             return;
         }
 
+        // Log audit action
+        logAuditAction({
+            action: "Просмотр фото клиента",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            details: "Просмотр селфи-фотографии клиента"
+        });
+
         openDocumentPreview(selectedClientSelfie, "oval");
     };
 
     const handleOpenClientDocuments = () => {
+        // Log audit action
+        logAuditAction({
+            action: "Просмотр документов клиента",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            details: "Просмотр списка документов клиента"
+        });
+
         setClientDocumentsModalOpen(true);
     };
 
@@ -807,6 +928,18 @@ export default function ABSClientSearch() {
         try {
             setIsRepayLoading(true);
             await repayLoanSoap(repayData);
+
+            // Log audit action
+            logAuditAction({
+                action: "Погашение кредита",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                credit_id: String(repayData.refContract),
+                account_number: String(repayData.refAccount),
+                details: `Погашение кредита (контракт: ${repayData.refContract}) на сумму ${repayData.amount} со счета ${repayData.refAccount}`
+            });
+
             showAlert("Запрос на погашение кредита успешно отправлен", "success");
             handleCloseRepayModal();
             handleGetDataUser();
@@ -819,6 +952,16 @@ export default function ABSClientSearch() {
     };
 
     const handleNavigateToTransactions = (cardId) => {
+        // Log audit action
+        logAuditAction({
+            action: "Переход к транзакциям карты",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            card_number: String(cardId),
+            details: `Переход к списку транзакций по карте ${cardId}`
+        });
+
         sessionStorage.setItem("allowedCardId", cardId);
         navigate("/processing/transactions/" + cardId);
     };
@@ -826,10 +969,30 @@ export default function ABSClientSearch() {
     const handleNavigateToAllCardsTransactions = (cards) => {
         if (!cards || cards.length === 0) return;
         const cardIds = cards.map((c) => c.cardId).join(",") + ",";
+
+        // Log audit action
+        logAuditAction({
+            action: "Переход к транзакциям всех карт",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            details: `Переход к списку транзакций по всем картам: ${cardIds}`
+        });
+
         navigate("/processing/transactions/" + cardIds);
     };
 
     const handleNavigateToAccountOperations = (accountNumber) => {
+        // Log audit action
+        logAuditAction({
+            action: "Переход к выписке счета",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            account_number: String(accountNumber),
+            details: `Переход к выписке по счету ${accountNumber}`
+        });
+
         sessionStorage.setItem("allowedAccountNumber", accountNumber);
         navigate("/accounts/account-operations?account=" + accountNumber);
     };

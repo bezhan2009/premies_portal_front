@@ -861,6 +861,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(35)) {
+            additionalLinks.push({
+                name: "Аудит",
+                key: "audit",
+                icon: ClipboardList,
+                children: [
+                    {
+                        name: "Логи фронтовиков",
+                        href: "/admin/audit-logs",
+                        key: "audit_logs_viewer",
+                        icon: List
+                    },
+                ],
+            });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 

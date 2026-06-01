@@ -4,6 +4,7 @@ import { Input as AntInput, Space, Button, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
+import { logAuditAction } from "../../../utils/auditLogger.js";
 
 const ClientDataTabs = ({
   cardsData,
@@ -76,6 +77,18 @@ const ClientDataTabs = ({
         engName: engName,
         language: values.language,
       });
+
+      // Log action to ES
+      logAuditAction({
+        action: "Скачивание реквизитов",
+        client_name: `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim(),
+        client_phone: selectedClient.phone || "",
+        client_inn: selectedClient.tax_code || "",
+        card_number: requisitesCard.details?.cardNumberMask || requisitesCard.cardNumber || requisitesCard.cardId,
+        account_number: values.account,
+        details: `Скачивание реквизитов на языке '${values.language}' для карты ${requisitesCard.details?.cardNumberMask || requisitesCard.cardNumber} и счета ${values.account} (валюта ${values.currency})`
+      });
+
       message.success("Реквизиты успешно скачаны");
       setIsRequisitesModalOpen(false);
     } catch (e) {

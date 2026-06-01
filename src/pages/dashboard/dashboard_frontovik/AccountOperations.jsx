@@ -6,6 +6,7 @@ import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { Input as AntInput, Space, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import CustomDateInput from "../../../components/elements/CustomDateInput.jsx";
+import { logAuditAction } from "../../../utils/auditLogger.js";
 
 export default function DashboardAccountOperations() {
   const [displayAccountNumber, setDisplayAccountNumber] = useState("");
@@ -93,6 +94,14 @@ export default function DashboardAccountOperations() {
           showAlert('Дата "С" не может быть больше даты "По"', "error");
           return;
         }
+
+        // Log audit action
+        logAuditAction({
+          action: "Просмотр операций по счету",
+          account_number: targetAccount,
+          details: `Просмотр выписки по счету ${targetAccount} за период с ${fromDate} по ${toDate}`
+        });
+
         setIsLoading(true);
         try {
           const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
@@ -178,6 +187,13 @@ export default function DashboardAccountOperations() {
 
   // Функция экспорта в Excel
   const handleExport = () => {
+    // Log audit action
+    logAuditAction({
+      action: "Экспорт операций в Excel",
+      account_number: accountNumber,
+      details: `Экспорт выписки по счету ${accountNumber} в Excel за период с ${fromDate} по ${toDate}`
+    });
+
     const columnsToExport = [
       { key: "DOCDOPER", label: "Дата документа" },
       { key: "EXECDT", label: "Время" },

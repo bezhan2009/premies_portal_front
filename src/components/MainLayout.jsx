@@ -101,6 +101,9 @@ const MainLayout = () => {
     // Compliance
     if (pathname.includes("/compliance/requests")) return "compliance_requests";
 
+    // Audit Logs
+    if (pathname.includes("admin/audit-logs")) return "audit_logs_viewer";
+
     return "";
   };
 

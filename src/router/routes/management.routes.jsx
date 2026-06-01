@@ -16,6 +16,7 @@ import CardBalance from "../../pages/dashboard/dashboard_card_balance/CardBalanc
 import LogsPage from "../../pages/dashboard/LogsPage.jsx";
 import DailyTasksPage from "../../pages/dashboard/DailyTasksPage.jsx";
 import MailAgentPage from "../../pages/dashboard/dashboard_mail_agent/MailAgentPage.jsx";
+import AuditLogsPage from "../../pages/dashboard/AuditLogsPage.jsx";
 
 const managementRoutes = (
   <>
@@ -168,6 +169,17 @@ const managementRoutes = (
           }
       >
           <Route path="/mail-agent" element={<MailAgentPage />} />
+      </Route>
+
+      {/* Audit logs (Role 35) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[35]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
       </Route>
   </>
 );
