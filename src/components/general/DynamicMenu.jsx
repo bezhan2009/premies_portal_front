@@ -139,7 +139,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        username: username,
+                        username: localStorage.getItem("username") || "",
                         password: defaultPassword,
                     }),
                 },
@@ -159,7 +159,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             localStorage.setItem("password_check_done", "true");
             return false;
         }
-    }, [username]);
+    }, []);
 
     // Проверка при монтировании компонента
     useEffect(() => {
