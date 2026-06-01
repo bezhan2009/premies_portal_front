@@ -40,7 +40,7 @@ import CreditDetailsModal from "./CreditDetailsModal.jsx";
 import RepayModal from "./RepayModal.jsx";
 import SearchForm from "./SearchForm.jsx";
 import ClientPersonalInfo from "./ClientPersonalInfo.jsx";
-import ClientAuditLogs from "./ClientAuditLogs.jsx";
+import ClientAuditLogsModal from "./ClientAuditLogsModal.jsx";
 import ClientDataTabs from "./ClientDataTabs.jsx";
 import BlockCardModal from "./BlockCardModal.jsx";
 import ServicesModal from "./ServicesModal.jsx";
@@ -117,6 +117,7 @@ export default function ABSClientSearch() {
     // Audit logs states
     const [auditLogs, setAuditLogs] = useState([]);
     const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+    const [isAuditLogsModalOpen, setIsAuditLogsModalOpen] = useState(false);
 
     // Проверка доступа к страницам
     const hasTransactionsAccess = canAccessTransactions();
@@ -1377,11 +1378,16 @@ export default function ABSClientSearch() {
                             handleExportClientInfo={handleExportClientInfo}
                             copySelectedClientToClipboard={copySelectedClientToClipboard}
                             copyAllClientsToClipboard={copyAllClientsToClipboard}
+                            showAuditLogsBtn={hasRole(35)}
+                            onOpenAuditLogs={() => setIsAuditLogsModalOpen(true)}
                         />
 
-                        {selectedClient && hasRole(35) && (
-                            <ClientAuditLogs logs={auditLogs} loading={auditLogsLoading} />
-                        )}
+                        <ClientAuditLogsModal
+                            isOpen={isAuditLogsModalOpen}
+                            onClose={() => setIsAuditLogsModalOpen(false)}
+                            logs={auditLogs}
+                            loading={auditLogsLoading}
+                        />
 
                         <ClientDataTabs
                             selectedClient={selectedClient}

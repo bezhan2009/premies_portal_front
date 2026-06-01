@@ -146,6 +146,65 @@ const expectedCashCountOptions = [
   { value: "> 10", label: "> 10 (5)" }
 ];
 
+const extractSection = (text, startKeywords, endKeywords) => {
+    const lowerText = text.toLowerCase();
+    let startIdx = -1;
+    for (const kw of startKeywords) {
+        const idx = lowerText.indexOf(kw.toLowerCase());
+        if (idx !== -1 && (startIdx === -1 || idx < startIdx)) {
+            startIdx = idx + kw.length;
+        }
+    }
+    if (startIdx === -1) return "";
+
+    let endIdx = -1;
+    for (const kw of endKeywords) {
+        const idx = lowerText.indexOf(kw.toLowerCase(), startIdx);
+        if (idx !== -1 && (endIdx === -1 || idx < endIdx)) {
+            endIdx = idx;
+        }
+    }
+    
+    return endIdx !== -1 ? text.substring(startIdx, endIdx) : text.substring(startIdx);
+};
+
+const findDateNearKeyword = (text, keywords) => {
+    const dateRegex = /\b(\d{2})\.(\d{2})\.(\d{4})\b/g;
+    let match;
+    let bestMatch = null;
+    let minDistance = Infinity;
+
+    const keywordPositions = [];
+    keywords.forEach(kw => {
+        let index = -1;
+        const lowerText = text.toLowerCase();
+        const lowerKw = kw.toLowerCase();
+        while ((index = lowerText.indexOf(lowerKw, index + 1)) !== -1) {
+            keywordPositions.push(index);
+        }
+    });
+
+    dateRegex.lastIndex = 0;
+    while ((match = dateRegex.exec(text)) !== null) {
+        const dateIndex = match.index;
+        
+        if (keywordPositions.length > 0) {
+            keywordPositions.forEach(kwPos => {
+                const distance = Math.abs(dateIndex - kwPos);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    bestMatch = `${match[3]}-${match[2]}-${match[1]}`;
+                }
+            });
+        } else {
+            if (minDistance === Infinity) {
+                bestMatch = `${match[3]}-${match[2]}-${match[1]}`;
+            }
+        }
+    }
+    return bestMatch;
+};
+
 export default function GiftCard({ edit = false }) {
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
@@ -496,13 +555,205 @@ export default function GiftCard({ edit = false }) {
             showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
         } catch (error) {
             console.error("Ошибка при загрузке деталей клиента:", error);
-            showAlert(
-                "Основные данные загружены, но не удалось загрузить детали клиента",
-                "warning",
-                5000
-            );
+            showAlert("Основные данные загружены, но не удалось загрузить детали клиента", "warning", 5000);
         } finally {
             setSearching(false);
+        }
+    };
+    
+    const parsePassportText = (text) => {
+        const getCyrillicWord = (secText) => {
+            if (!secText) return "";
+            const match = secText.match(/[А-ЯЁҶӢҲӮҚҒ]{2,}/);
+            return match ? match[0] : "";
+        };
+
+        const getLatinWord = (secText) => {
+            if (!secText) return "";
+            const match = secText.match(/[A-Z]{2,}/);
+            return match ? match[0] : "";
+        };
+
+        const surnameSec = extractSection(text, ["Насаб", "Surname"], ["Ном", "Name"]);
+        const nameSec = extractSection(text, ["Ном / Name", "Name", "Ном"], ["Номи падар", "Father's name", "Father's naте", "Father's", "Father"]);
+        const patronymicSec = extractSection(text, ["Номи падар", "Father's name", "Father's naте", "Father's", "Father"], ["Ҷинс", "Sex", "Nationality", "Шаҳрвандӣ"]);
+
+        const surnameCyr = getCyrillicWord(surnameSec);
+        const surnameLat = getLatinWord(surnameSec);
+
+        const nameCyr = getCyrillicWord(nameSec);
+        const nameLat = getLatinWord(nameSec);
+
+        const patronymicCyr = getCyrillicWord(patronymicSec);
+
+        let series = "";
+        let docNum = "";
+        const passportMatch = text.match(/\b([A-Z]{1,2})(\d{7,8})\b/);
+        if (passportMatch) {
+            series = passportMatch[1];
+            docNum = passportMatch[2];
+        } else {
+            const docNoSec = extractSection(text, ["Document No.", "Рақами шиноснома"], ["Sex", "Ҷинс", "Nationality"]);
+            const cleanedDocNo = docNoSec.replace(/[^A-Z0-9]/g, '');
+            const fallbackMatch = cleanedDocNo.match(/([A-Z]{1,2})(\d{7,8})/);
+            if (fallbackMatch) {
+                series = fallbackMatch[1];
+                docNum = fallbackMatch[2];
+            }
+        }
+
+        let inn = "";
+        const innMatch = text.match(/\b\d{13}\b/) || text.match(/\b\d{9}\b/);
+        if (innMatch) {
+            inn = innMatch[0];
+        } else {
+            const innSec = extractSection(text, ["National ID No.", "Рақами ягонаи миллӣ", "National ID", "Рақами ягона"], ["---", "\n\n"]);
+            const innDigits = innSec.replace(/\D/g, '');
+            if (innDigits.length === 13 || innDigits.length === 9) {
+                inn = innDigits;
+            }
+        }
+
+        let placeOfBirth = "";
+        const birthPlaceSec = extractSection(text, ["Place of birth", "Ҷои таваллуд"], ["Рақами ягона", "National ID", "ИНН", "National ID No."]);
+        if (birthPlaceSec) {
+            placeOfBirth = birthPlaceSec.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+            placeOfBirth = placeOfBirth.replace(/[^А-ЯЁҶӢҲӮҚҒA-Z\s]/gi, '').trim();
+        }
+
+        const birthDate = findDateNearKeyword(text, ['birth', 'таваллуд', 'bday', 'род']);
+        const issuedAt = findDateNearKeyword(text, ['issue', 'выдач', 'эътибор', 'оғоз', 'огоз']);
+        const expiryDate = findDateNearKeyword(text, ['expiry', 'deadline', 'анҷом', 'анжом', 'истеъмол', 'действ']);
+
+        let gender = true;
+        const sexSec = extractSection(text, ["Sex", "Ҷинс"], ["Date of issue", "Огози эътибор"]);
+        if (sexSec) {
+            const lowerSex = sexSec.toLowerCase();
+            if (lowerSex.includes('f') || lowerSex.includes('з') || lowerSex.includes('ж')) {
+                gender = false;
+            }
+        }
+
+        let cardName = "";
+        if (nameLat && surnameLat) {
+            cardName = `${nameLat} ${surnameLat}`.toUpperCase();
+        } else if (nameCyr && surnameCyr) {
+            cardName = `${nameCyr} ${surnameCyr}`.toUpperCase();
+        }
+
+        if (surnameCyr) setData("surname", surnameCyr);
+        if (nameCyr) setData("name", nameCyr);
+        if (patronymicCyr) setData("patronymic", patronymicCyr);
+        if (cardName) setData("card_name", cardName);
+        if (series) setData("documents_series", series);
+        if (docNum) setData("document_number", docNum);
+        if (inn) setData("inn", inn);
+        if (birthDate) setData("birth_date", birthDate);
+        if (issuedAt) setData("passport_issued_at", issuedAt);
+        if (expiryDate) setData("passport_deadline", expiryDate);
+        if (placeOfBirth) setData("place_of_birth", placeOfBirth);
+        setData("gender", gender);
+
+        setData("type_of_certificate", 58);
+        setData("is_resident", true);
+        setData("citizenship", "Таджикистан");
+        setData("nationality", "Таджик");
+        setData("country", "Таджикистан");
+    };
+
+    const handleRecognizePassport = async () => {
+        if (!data.front_side_of_the_passport_file && !data.back_side_of_the_passport_file) {
+            showAlert("Пожалуйста, загрузите хотя бы одну сторону паспорта (лицевую или оборотную)", "warning");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const loginResponse = await fetch("http://10.65.10.22:5220/api/Auth/login", {
+                method: "POST",
+                headers: {
+                    "accept": "text/plain",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: "admin",
+                    password: "Asdf112#"
+                })
+            });
+
+            if (!loginResponse.ok) {
+                throw new Error(`Ошибка авторизации в сервисе распознавания: ${loginResponse.status}`);
+            }
+
+            const loginResult = await loginResponse.json();
+            const jwtToken = loginResult.data;
+            if (!jwtToken) {
+                throw new Error("Не удалось получить токен авторизации");
+            }
+
+            let combinedText = "";
+
+            if (data.front_side_of_the_passport_file) {
+                const frontFormData = new FormData();
+                frontFormData.append("DepartmentId", "2");
+                frontFormData.append("CreatedAt", new Date().toISOString());
+                frontFormData.append("File", data.front_side_of_the_passport_file);
+
+                const frontResponse = await fetch("http://10.65.10.22:5220/api/Passport", {
+                    method: "POST",
+                    headers: {
+                        "accept": "text/plain",
+                        "Authorization": `Bearer ${jwtToken}`
+                    },
+                    body: frontFormData
+                });
+
+                if (frontResponse.ok) {
+                    const frontResult = await frontResponse.json();
+                    if (frontResult.data && frontResult.data.data) {
+                        combinedText += "\n--- FRONT SIDE ---\n" + frontResult.data.data;
+                    }
+                } else {
+                    console.error("Ошибка распознавания лицевой стороны:", frontResponse.status);
+                }
+            }
+
+            if (data.back_side_of_the_passport_file) {
+                const backFormData = new FormData();
+                backFormData.append("DepartmentId", "2");
+                backFormData.append("CreatedAt", new Date().toISOString());
+                backFormData.append("File", data.back_side_of_the_passport_file);
+
+                const backResponse = await fetch("http://10.65.10.22:5220/api/Passport", {
+                    method: "POST",
+                    headers: {
+                        "accept": "text/plain",
+                        "Authorization": `Bearer ${jwtToken}`
+                    },
+                    body: backFormData
+                });
+
+                if (backResponse.ok) {
+                    const backResult = await backResponse.json();
+                    if (backResult.data && backResult.data.data) {
+                        combinedText += "\n--- BACK SIDE ---\n" + backResult.data.data;
+                    }
+                } else {
+                    console.error("Ошибка распознавания обратной стороны:", backResponse.status);
+                }
+            }
+
+            if (!combinedText.trim()) {
+                throw new Error("Не удалось получить текст распознавания ни с одной стороны");
+            }
+
+            parsePassportText(combinedText);
+            showAlert("Данные паспорта успешно распознаны и заполнены", "success");
+        } catch (error) {
+            console.error("Ошибка при распознавании паспорта:", error);
+            showAlert(`Ошибка распознавания: ${error.message || error}`, "error");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1217,6 +1468,32 @@ export default function GiftCard({ edit = false }) {
                                     value={data.is_new_client}
                                     onChange={handleSMSChange}
                                 />
+                            </div>
+
+                            <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "15px", gridColumn: "span 3" }}>
+                                <button
+                                    onClick={handleRecognizePassport}
+                                    disabled={loading || (!data.front_side_of_the_passport_file && !data.back_side_of_the_passport_file)}
+                                    type="button"
+                                    style={{
+                                        padding: "10px 24px",
+                                        backgroundColor: (data.front_side_of_the_passport_file || data.back_side_of_the_passport_file) ? "#10b981" : "#cccccc",
+                                        color: "white",
+                                        border: "none",
+                                        borderRadius: "6px",
+                                        cursor: (data.front_side_of_the_passport_file || data.back_side_of_the_passport_file) ? "pointer" : "not-allowed",
+                                        fontWeight: "600",
+                                        fontSize: "14px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "8px",
+                                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                        transition: "all 0.2s"
+                                    }}
+                                >
+                                    🔍 <span>Распознать данные паспорта</span>
+                                </button>
                             </div>
                         </div>
 

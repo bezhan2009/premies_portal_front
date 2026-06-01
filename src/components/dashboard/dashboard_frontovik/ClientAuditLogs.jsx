@@ -1,6 +1,6 @@
 import React from "react";
 
-const ClientAuditLogs = ({ logs, loading }) => {
+const ClientAuditLogs = ({ logs, loading, isModalMode = false }) => {
   const formatTimestamp = (ts) => {
     if (!ts) return "-";
     try {
@@ -12,16 +12,18 @@ const ClientAuditLogs = ({ logs, loading }) => {
   };
 
   return (
-    <div className="processing-integration__limits-table" style={{ marginTop: 24 }}>
-      <div className="limits-table">
-        <div className="limits-table__header">
-          <h2 className="limits-table__title">
-            Журнал аудита по клиенту
-            <span style={{ fontSize: "14px", fontWeight: "normal", marginLeft: 10, color: "var(--text-muted, #888)" }}>
-              (показывает кто просматривал и какие действия совершал)
-            </span>
-          </h2>
-        </div>
+    <div className={isModalMode ? "" : "processing-integration__limits-table"} style={isModalMode ? {} : { marginTop: 24 }}>
+      <div className={isModalMode ? "" : "limits-table"}>
+        {!isModalMode && (
+          <div className="limits-table__header">
+            <h2 className="limits-table__title">
+              Журнал аудита по клиенту
+              <span style={{ fontSize: "14px", fontWeight: "normal", marginLeft: 10, color: "var(--text-muted, #888)" }}>
+                (показывает кто просматривал и какие действия совершал)
+              </span>
+            </h2>
+          </div>
+        )}
 
         <div className="limits-table__wrapper" style={{ maxHeight: "400px", overflowY: "auto" }}>
           {loading ? (

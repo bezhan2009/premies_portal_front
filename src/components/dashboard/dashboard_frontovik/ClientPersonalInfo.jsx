@@ -9,6 +9,8 @@ const ClientPersonalInfo = ({
   handleExportClientInfo,
   copySelectedClientToClipboard,
   copyAllClientsToClipboard,
+  showAuditLogsBtn,
+  onOpenAuditLogs,
 }) => {
   if (!selectedClient) return null;
 
@@ -75,6 +77,15 @@ const ClientPersonalInfo = ({
               )}
             </h2>
             <div className="limits-table__actions">
+              {showAuditLogsBtn && (
+                <button
+                  onClick={onOpenAuditLogs}
+                  className="limits-table__action-btn limits-table__action-btn--secondary"
+                  style={{ marginRight: 10, backgroundColor: '#1890ff', color: 'white', border: '1px solid #1890ff' }}
+                >
+                  Журнал действий
+                </button>
+              )}
               <button
                 onClick={handleExportClientInfo}
                 className="export-excel-btn"
@@ -85,6 +96,7 @@ const ClientPersonalInfo = ({
               <button
                 onClick={copySelectedClientToClipboard}
                 className="limits-table__action-btn limits-table__action-btn--secondary"
+                style={{ marginRight: clientsData.length > 1 ? 10 : 0 }}
               >
                 Скопировать JSON клиента
               </button>
