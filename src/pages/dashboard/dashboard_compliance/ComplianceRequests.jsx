@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Typography, Card, Tag, message } from "antd";
+import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin } from "antd";
 
 const { Text } = Typography;
 
 export default function ComplianceRequests() {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [selectedApp, setSelectedApp] = useState(null);
+    const [appModalVisible, setAppModalVisible] = useState(false);
+    const [appLoading, setAppLoading] = useState(false);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -30,6 +33,37 @@ export default function ComplianceRequests() {
             message.error("Ошибка при загрузке заявок комплаенса");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleViewApplication = async (record) => {
+        if (!record.application_id) {
+            message.warning("ID заявки отсутствует");
+            return;
+        }
+        setAppLoading(true);
+        setAppModalVisible(true);
+        try {
+            const token = localStorage.getItem("access_token");
+            const backendAppUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+            const response = await fetch(`${backendAppUrl}/applications/${record.application_id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Не удалось загрузить данные заявки");
+            }
+
+            const appData = await response.json();
+            setSelectedApp(appData);
+        } catch (error) {
+            console.error("Error fetching application details:", error);
+            message.error("Ошибка при загрузке деталей заявки");
+        } finally {
+            setAppLoading(false);
         }
     };
 
@@ -128,29 +162,122 @@ export default function ComplianceRequests() {
             title: "Действия",
             key: "actions",
             render: (_, record) => (
-                record.status === "pending" && (
-                    <Space>
-                        <Button type="primary" onClick={() => confirmAction(record.id, "approved")}>
-                            Принять
-                        </Button>
-                        <Button danger onClick={() => confirmAction(record.id, "rejected")}>
-                            Отклонить
-                        </Button>
-                    </Space>
-                )
+                <Space direction="vertical" size="small">
+                    <Button onClick={() => handleViewApplication(record)}>
+                        Просмотр
+                    </Button>
+                    {record.status === "pending" && (
+                        <Space>
+                            <Button type="primary" onClick={() => confirmAction(record.id, "approved")}>
+                                Принять
+                            </Button>
+                            <Button danger onClick={() => confirmAction(record.id, "rejected")}>
+                                Отклонить
+                            </Button>
+                        </Space>
+                    )}
+                </Space>
             ),
         },
     ];
 
     return (
-        <Card title="Заявки на проверку Комплайнс" style={{ margin: "20px" }}>
-            <Table
-                dataSource={requests}
-                columns={columns}
-                rowKey="id"
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-            />
-        </Card>
+        <>
+            <Card title="Заявки на проверку Комплайнс" style={{ margin: "20px" }}>
+                <Table
+                    dataSource={requests}
+                    columns={columns}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                />
+            </Card>
+
+            <Modal
+                title={`Детали заявки #${selectedApp?.ID || ""}`}
+                open={appModalVisible}
+                onCancel={() => {
+                    setAppModalVisible(false);
+                    setSelectedApp(null);
+                }}
+                footer={[
+                    <Button key="close" onClick={() => {
+                        setAppModalVisible(false);
+                        setSelectedApp(null);
+                    }}>
+                        Закрыть
+                    </Button>
+                ]}
+                width={800}
+            >
+                {appLoading ? (
+                    <div style={{ textAlign: "center", padding: "40px" }}>
+                        <Spin size="large" />
+                    </div>
+                ) : selectedApp ? (
+                    <div>
+                        <Card title="Персональные данные" size="small" style={{ marginBottom: 15 }}>
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                                <Text><b>ФИО:</b> {`${selectedApp.surname || ""} ${selectedApp.name || ""} ${selectedApp.patronymic || ""}`}</Text>
+                                <Text><b>Телефон:</b> {selectedApp.phone_number || "-"}</Text>
+                                <Text><b>ИНН:</b> {selectedApp.inn || "-"}</Text>
+                                <Text><b>Пол:</b> {selectedApp.gender || "-"}</Text>
+                                <Text><b>Резидент:</b> {selectedApp.is_resident ? "Да" : "Нет"}</Text>
+                            </Space>
+                        </Card>
+
+                        <Card title="Детали Карты" size="small" style={{ marginBottom: 15 }}>
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                                <Text><b>Тип карты:</b> {selectedApp.card_type || "-"}</Text>
+                                <Text><b>Название карты:</b> {selectedApp.card_name || "-"}</Text>
+                                <Text><b>Кодовое слово:</b> {selectedApp.secret_word || "-"}</Text>
+                                <Text><b>Адрес доставки:</b> {selectedApp.delivery_address || "-"}</Text>
+                                <Text><b>Офис получения:</b> {selectedApp.receiving_office || "-"}</Text>
+                            </Space>
+                        </Card>
+
+                        <Card title="Скан-копии документов" size="small">
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
+                                <div>
+                                    <div style={{ marginBottom: 5 }}><b>Лицевая сторона</b></div>
+                                    {selectedApp.front_side_of_the_passport ? (
+                                        <img
+                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.front_side_of_the_passport.replace(/\\/g, "/")}`}
+                                            alt="Лицевая сторона"
+                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
+                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.front_side_of_the_passport.replace(/\\/g, "/")}`, "_blank")}
+                                        />
+                                    ) : <Text type="secondary">Нет файла</Text>}
+                                </div>
+                                <div>
+                                    <div style={{ marginBottom: 5 }}><b>Задняя сторона</b></div>
+                                    {selectedApp.back_side_of_the_passport ? (
+                                        <img
+                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.back_side_of_the_passport.replace(/\\/g, "/")}`}
+                                            alt="Задняя сторона"
+                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
+                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.back_side_of_the_passport.replace(/\\/g, "/")}`, "_blank")}
+                                        />
+                                    ) : <Text type="secondary">Нет файла</Text>}
+                                </div>
+                                <div>
+                                    <div style={{ marginBottom: 5 }}><b>Селфи с паспортом</b></div>
+                                    {selectedApp.selfie_with_passport ? (
+                                        <img
+                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.selfie_with_passport.replace(/\\/g, "/")}`}
+                                            alt="Селфи"
+                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
+                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.selfie_with_passport.replace(/\\/g, "/")}`, "_blank")}
+                                        />
+                                    ) : <Text type="secondary">Нет файла</Text>}
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                ) : (
+                    <Text type="secondary">Не удалось загрузить данные</Text>
+                )}
+            </Modal>
+        </>
     );
 }
