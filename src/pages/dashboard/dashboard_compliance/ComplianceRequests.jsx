@@ -71,8 +71,9 @@ export default function ComplianceRequests() {
         fetchRequests();
     }, []);
 
-    const handleStatusUpdate = async (id, status) => {
+    const handleStatusUpdate = async (record, status) => {
         try {
+            const id = record.id;
             const token = localStorage.getItem("access_token");
             const backendUrl = import.meta.env.VITE_BACKEND_URL;
             const response = await fetch(`${backendUrl}/compliance/requests/${id}/status`, {
@@ -93,6 +94,41 @@ export default function ComplianceRequests() {
                 throw new Error(errMsg);
             }
 
+            const contentType = response.headers.get("Content-Type");
+            if (contentType && contentType.includes("application/octet-stream")) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = url;
+                // Get filename from Content-Disposition header if possible
+                let filename = "compliance_report.docx";
+                const disposition = response.headers.get("Content-Disposition");
+                if (disposition && disposition.indexOf("filename=") !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
+
+            if (status === 'rejected' && record.application_id) {
+                const backendAppUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
+                await fetch(`${backendAppUrl}/applications/${record.application_id}`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ application_status_id: 7 }),
+                });
+            }
+
             message.success(`Заявка успешно ${status === 'approved' ? 'принята' : 'отклонена'}`);
             fetchRequests(); // refresh data
         } catch (error) {
@@ -101,11 +137,11 @@ export default function ComplianceRequests() {
         }
     };
 
-    const confirmAction = (id, status) => {
+    const confirmAction = (record, status) => {
         const actionText = status === 'approved' ? 'принять' : 'отклонить';
         Modal.confirm({
             title: `Вы уверены, что хотите ${actionText} эту заявку?`,
-            onOk: () => handleStatusUpdate(id, status),
+            onOk: () => handleStatusUpdate(record, status),
             okText: "Да",
             cancelText: "Отмена"
         });
@@ -175,10 +211,10 @@ export default function ComplianceRequests() {
                     </Button>
                     {record.status === "pending" && (
                         <Space>
-                            <Button type="primary" onClick={() => confirmAction(record.id, "approved")}>
+                            <Button type="primary" onClick={() => confirmAction(record, "approved")}>
                                 Принять
                             </Button>
-                            <Button danger onClick={() => confirmAction(record.id, "rejected")}>
+                            <Button danger onClick={() => confirmAction(record, "rejected")}>
                                 Отклонить
                             </Button>
                         </Space>
@@ -196,7 +232,7 @@ export default function ComplianceRequests() {
                     columns={columns}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, showSizeChanger: true }}
                 />
             </Card>
 

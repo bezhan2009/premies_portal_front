@@ -39,12 +39,12 @@ const complianceScores = {
   "Первичная торговля автомобилями (новые автомашины)": 2, "Владелец магазина (розничная торговля)": 2, "Бизнес-агентство": 2, "Мелкая торговля (Годовой оборот менее 5 миллионов сомони)": 2, "Само-занятый профессионал/индивидуальный предприниматель": 2, "Корпоративный клиент": 2, "Торговля строительной техникой/материалами": 2, "Торговля компьютерным оборудованием/мобильными телефонами": 2, "Деятельность в области программного обеспечения": 2, "Производство (кроме оружия)": 2,
   "Транспортный оператор": 3, "Торговля автомашинами (Восстановленные машины/вторичный рынок)": 3, "Финансовая/Лизинговая компания": 3, "Агентство фрахтования/отправки/грузоперевозок": 3, "Страховое/брокерское агентство": 3, "Религиозное учреждение /Организация": 3, "Парк/Организация развлечений": 3, "Торговля запасными частями автомобилей": 3, "Табачный и сигаретный бизнес": 3, "Прочее: Работники частных компаний": 3, "Аудиторская деятельность": 3,
   "Торговля ювелирными изделиями/драгоценностями": 5, "Обмен валюты/Курьерская служба": 5, "Агентство недвижимости": 5, "Промоутер строительных проектов": 5, "Оффшорная корпорация": 5, "Влиятельные политические деятели (отечественные)": 5, "Влиятельные политические деятели (иностранные)": 5, "Торговля предметами искусства/антиквариата": 5, "Владелец ресторана/бара/ночного клуба/гостиницы": 5, "Агентство по экспорту/импорту": 5, "Инвестор денежных средств (Ежемесячные денежные инвестиции> 2 миллиона сомони)": 5, "Брокер акций/фондовый брокер": 5, "Бизнес по экспорту рабочей силы": 5, "Операции в нескольких местах": 5, "Продюсерское агентство/распространение кинофильмов": 5, "Торговля оружием": 5, "Оператор мобильной связи": 5, "Торговля (Годовой оборот более 10 миллионов сомони)": 5, "Туристическое агентство": 5, "Работники иностранных компаний": 5,
-  "0-5 млн.": 0, "5-20 млн.": 1, "> 20 млн.": 3,
-  "Со стороны менеджера по связям / руководителя филиала": 0, "Агентом по прямым продажам": 1, "Через интернет": 3, "Личное посещение / по собственной инициативе": 3,
-  "0-10 млн.": 0, "10-50 млн.": 1, "> 50 млн.": 3,
-  "0-100": 0, "0-20": 0, "101-250": 1, "21-50": 1, "> 250": 3, "> 50": 3,
-  "0-2 млн.": 0, "10-25 млн.": 1, "2-7 млн.": 1, "> 25 млн.": 3, "> 7 млн.": 3,
-  "0-15": 0, "0-5": 0, "16-30": 1, "6-10": 1, "> 30": 3, "> 10": 3
+  "0-5 млн.": 0, "5-20 млн.": 1, "> 20 млн.": 5,
+  "Со стороны менеджера по связям / руководителя филиала": 0, "Агентом по прямым продажам": 1, "Через интернет": 3, "Личное посещение / по собственной инициативе": 5,
+  "0-10 млн.": 0, "10-50 млн.": 1, "> 50 млн.": 5,
+  "0-100": 0, "0-20": 0, "101-250": 1, "21-50": 1, "> 250": 5, "> 50": 5,
+  "0-2 млн.": 0, "10-25 млн.": 1, "2-7 млн.": 1, "> 25 млн.": 5, "> 7 млн.": 5,
+  "0-15": 0, "0-5": 0, "16-30": 1, "6-10": 1, "> 30": 5, "> 10": 5
 };
 
 const occupationOptions = [
@@ -100,14 +100,14 @@ const occupationOptions = [
 const netWorthOptions = [
   { value: "0-5 млн.", label: "0-5 млн. (0)" },
   { value: "5-20 млн.", label: "5-20 млн. (1)" },
-  { value: "> 20 млн.", label: "> 20 млн. (3)" }
+  { value: "> 20 млн.", label: "> 20 млн. (5)" }
 ];
 
 const accountOpeningOptions = [
   { value: "Со стороны менеджера по связям / руководителя филиала", label: "Со стороны менеджера по связям / руководителя филиала (0)" },
   { value: "Агентом по прямым продажам", label: "Агентом по прямым продажам (1)" },
   { value: "Через интернет", label: "Через интернет (3)" },
-  { value: "Личное посещение / по собственной инициативе", label: "Личное посещение / по собственной инициативе (3)" }
+  { value: "Личное посещение / по собственной инициативе", label: "Личное посещение / по собственной инициативе (5)" }
 ];
 
 const expectedTransactionAmountOptions = [
@@ -115,8 +115,8 @@ const expectedTransactionAmountOptions = [
   { value: "0-5 млн.", label: "0-5 млн. (0)" },
   { value: "10-50 млн.", label: "10-50 млн. (1)" },
   { value: "5-20 млн.", label: "5-20 млн. (1)" },
-  { value: "> 50 млн.", label: "> 50 млн. (3)" },
-  { value: "> 20 млн.", label: "> 20 млн. (3)" }
+  { value: "> 50 млн.", label: "> 50 млн. (5)" },
+  { value: "> 20 млн.", label: "> 20 млн. (5)" }
 ];
 
 const expectedTransactionCountOptions = [
@@ -124,8 +124,8 @@ const expectedTransactionCountOptions = [
   { value: "0-20", label: "0-20 (0)" },
   { value: "101-250", label: "101-250 (1)" },
   { value: "21-50", label: "21-50 (1)" },
-  { value: "> 250", label: "> 250 (3)" },
-  { value: "> 50", label: "> 50 (3)" }
+  { value: "> 250", label: "> 250 (5)" },
+  { value: "> 50", label: "> 50 (5)" }
 ];
 
 const expectedCashAmountOptions = [
@@ -133,8 +133,8 @@ const expectedCashAmountOptions = [
   { value: "0-2 млн.", label: "0-2 млн. (0)" },
   { value: "10-25 млн.", label: "10-25 млн. (1)" },
   { value: "2-7 млн.", label: "2-7 млн. (1)" },
-  { value: "> 25 млн.", label: "> 25 млн. (3)" },
-  { value: "> 7 млн.", label: "> 7 млн. (3)" }
+  { value: "> 25 млн.", label: "> 25 млн. (5)" },
+  { value: "> 7 млн.", label: "> 7 млн. (5)" }
 ];
 
 const expectedCashCountOptions = [
@@ -142,8 +142,8 @@ const expectedCashCountOptions = [
   { value: "0-5", label: "0-5 (0)" },
   { value: "16-30", label: "16-30 (1)" },
   { value: "6-10", label: "6-10 (1)" },
-  { value: "> 30", label: "> 30 (3)" },
-  { value: "> 10", label: "> 10 (3)" }
+  { value: "> 30", label: "> 30 (5)" },
+  { value: "> 10", label: "> 10 (5)" }
 ];
 
 export default function GiftCard({ edit = false }) {
@@ -813,6 +813,16 @@ export default function GiftCard({ edit = false }) {
                 { key: "nationality", value: safeTrim(data.nationality) },
                 { key: "place_of_birth", value: safeTrim(data.place_of_birth) },
                 { key: "passport_deadline", value: formatDateForBackend(data.passport_deadline) },
+                { key: "client_occupation", value: safeTrim(data.client_occupation) },
+                { key: "net_worth", value: safeTrim(data.net_worth) },
+                { key: "monthly_income", value: safeTrim(data.monthly_income) },
+                { key: "total_outgoing_transactions_amount", value: safeTrim(data.total_outgoing_transactions_amount) },
+                { key: "total_outgoing_transactions_count", value: safeTrim(data.total_outgoing_transactions_count) },
+                { key: "total_cash_transactions_amount", value: safeTrim(data.total_cash_transactions_amount) },
+                { key: "total_cash_transactions_count", value: safeTrim(data.total_cash_transactions_count) },
+                { key: "compliance_score", value: String(totalComplianceScore) },
+                { key: "fatca", value: String(!!data.fatca) },
+                { key: "apl_pzl", value: String(!!data.apl_pzl) },
             ];
 
             if (
@@ -1763,6 +1773,22 @@ export default function GiftCard({ edit = false }) {
                                 title="Рассчитанный балл комплаенса"
                                 value={totalComplianceScore}
                                 disabled
+                            />
+                            <CheckBox
+                                id="fatca"
+                                className="div76"
+                                title="Признак FATCA"
+                                value={data.fatca}
+                                onChange={(val) => setData("fatca", val)}
+                                error={errors}
+                            />
+                            <CheckBox
+                                id="apl_pzl"
+                                className="div77"
+                                title="Признак АПЛ/ПЗЛ"
+                                value={data.apl_pzl}
+                                onChange={(val) => setData("apl_pzl", val)}
+                                error={errors}
                             />
 
                             {edit && (
