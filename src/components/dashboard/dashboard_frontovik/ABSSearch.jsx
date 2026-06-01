@@ -21,6 +21,7 @@ import {
     canAccessAccountOperations,
     canBlockCard,
     canChangePin,
+    hasRole,
 } from "../../../api/roleHelper.js";
 import {
     fetchCardDetails,
@@ -39,6 +40,7 @@ import CreditDetailsModal from "./CreditDetailsModal.jsx";
 import RepayModal from "./RepayModal.jsx";
 import SearchForm from "./SearchForm.jsx";
 import ClientPersonalInfo from "./ClientPersonalInfo.jsx";
+import ClientAuditLogs from "./ClientAuditLogs.jsx";
 import ClientDataTabs from "./ClientDataTabs.jsx";
 import BlockCardModal from "./BlockCardModal.jsx";
 import ServicesModal from "./ServicesModal.jsx";
@@ -111,6 +113,10 @@ export default function ABSClientSearch() {
     // Terrorist check states
     const [terrorMatch, setTerrorMatch] = useState(null);
     const [isTerrorChecking, setIsTerrorChecking] = useState(false);
+
+    // Audit logs states
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [auditLogsLoading, setAuditLogsLoading] = useState(false);
 
     // Проверка доступа к страницам
     const hasTransactionsAccess = canAccessTransactions();
@@ -1086,6 +1092,39 @@ export default function ABSClientSearch() {
         };
     }, [selectedClientINN]);
 
+    useEffect(() => {
+        if (!selectedClient || !hasRole(35)) {
+            setAuditLogs([]);
+            return;
+        }
+
+        const fetchClientAuditLogs = async () => {
+            setAuditLogsLoading(true);
+            try {
+                const token = localStorage.getItem("access_token");
+                const backendUrl = import.meta.env.VITE_BACKEND_URL;
+                const param = selectedClientINN ? `client_inn=${selectedClientINN}` : `client_phone=${selectedClient.phone || ""}`;
+                const response = await fetch(`${backendUrl}/audit/logs?${param}&size=200`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setAuditLogs(data.logs || []);
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке логов аудита клиента:", error);
+            } finally {
+                setAuditLogsLoading(false);
+            }
+        };
+
+        fetchClientAuditLogs();
+    }, [selectedClient, selectedClientINN]);
+
     const tableData = selectedClient
         ? [
             { label: "Телефон", key: "phone", value: selectedClient.phone },
@@ -1339,6 +1378,10 @@ export default function ABSClientSearch() {
                             copySelectedClientToClipboard={copySelectedClientToClipboard}
                             copyAllClientsToClipboard={copyAllClientsToClipboard}
                         />
+
+                        {selectedClient && hasRole(35) && (
+                            <ClientAuditLogs logs={auditLogs} loading={auditLogsLoading} />
+                        )}
 
                         <ClientDataTabs
                             selectedClient={selectedClient}
