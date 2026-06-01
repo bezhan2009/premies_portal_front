@@ -134,6 +134,12 @@ export default function ComplianceRequests() {
             render: (val) => <Text type="danger">{val}%</Text>
         },
         {
+            title: "Балл комплаенса",
+            dataIndex: "compliance_score",
+            key: "compliance_score",
+            render: (val) => <strong style={{ fontSize: "16px", color: "#1890ff" }}>{val || 0}</strong>
+        },
+        {
             title: "Статус",
             dataIndex: "status",
             key: "status",
@@ -152,9 +158,10 @@ export default function ComplianceRequests() {
                 <Space direction="vertical" size="small">
                     <Text>Занятость: {record.client_occupation}</Text>
                     <Text>Оборот: {record.net_worth}</Text>
-                    <Text>Доход: {record.monthly_income}</Text>
+                    <Text>Метод открытия: {record.monthly_income}</Text>
                     <Text>Транзакции (Сумма/Кол-во): {record.total_outgoing_transactions_amount} / {record.total_outgoing_transactions_count}</Text>
                     <Text>Касса (Сумма/Кол-во): {record.total_cash_transactions_amount} / {record.total_cash_transactions_count}</Text>
+                    <Text><b>Балл комплаенса: {record.compliance_score || 0}</b></Text>
                 </Space>
             )
         },

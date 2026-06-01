@@ -34,6 +34,118 @@ import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
 
+const complianceScores = {
+  "Пенсионер": 0, "Обслуживание": 0, "Студент": 0, "Домохозяйка/безработный": 0, "Фермер": 0, "Работники государственных учреждений/предприятий": 0,
+  "Первичная торговля автомобилями (новые автомашины)": 2, "Владелец магазина (розничная торговля)": 2, "Бизнес-агентство": 2, "Мелкая торговля (Годовой оборот менее 5 миллионов сомони)": 2, "Само-занятый профессионал/индивидуальный предприниматель": 2, "Корпоративный клиент": 2, "Торговля строительной техникой/материалами": 2, "Торговля компьютерным оборудованием/мобильными телефонами": 2, "Деятельность в области программного обеспечения": 2, "Производство (кроме оружия)": 2,
+  "Транспортный оператор": 3, "Торговля автомашинами (Восстановленные машины/вторичный рынок)": 3, "Финансовая/Лизинговая компания": 3, "Агентство фрахтования/отправки/грузоперевозок": 3, "Страховое/брокерское агентство": 3, "Религиозное учреждение /Организация": 3, "Парк/Организация развлечений": 3, "Торговля запасными частями автомобилей": 3, "Табачный и сигаретный бизнес": 3, "Прочее: Работники частных компаний": 3, "Аудиторская деятельность": 3,
+  "Торговля ювелирными изделиями/драгоценностями": 5, "Обмен валюты/Курьерская служба": 5, "Агентство недвижимости": 5, "Промоутер строительных проектов": 5, "Оффшорная корпорация": 5, "Влиятельные политические деятели (отечественные)": 5, "Влиятельные политические деятели (иностранные)": 5, "Торговля предметами искусства/антиквариата": 5, "Владелец ресторана/бара/ночного клуба/гостиницы": 5, "Агентство по экспорту/импорту": 5, "Инвестор денежных средств (Ежемесячные денежные инвестиции> 2 миллиона сомони)": 5, "Брокер акций/фондовый брокер": 5, "Бизнес по экспорту рабочей силы": 5, "Операции в нескольких местах": 5, "Продюсерское агентство/распространение кинофильмов": 5, "Торговля оружием": 5, "Оператор мобильной связи": 5, "Торговля (Годовой оборот более 10 миллионов сомони)": 5, "Туристическое агентство": 5, "Работники иностранных компаний": 5,
+  "0-5 млн.": 0, "5-20 млн.": 1, "> 20 млн.": 3,
+  "Со стороны менеджера по связям / руководителя филиала": 0, "Агентом по прямым продажам": 1, "Через интернет": 3, "Личное посещение / по собственной инициативе": 3,
+  "0-10 млн.": 0, "10-50 млн.": 1, "> 50 млн.": 3,
+  "0-100": 0, "0-20": 0, "101-250": 1, "21-50": 1, "> 250": 3, "> 50": 3,
+  "0-2 млн.": 0, "10-25 млн.": 1, "2-7 млн.": 1, "> 25 млн.": 3, "> 7 млн.": 3,
+  "0-15": 0, "0-5": 0, "16-30": 1, "6-10": 1, "> 30": 3, "> 10": 3
+};
+
+const occupationOptions = [
+  { value: "Пенсионер", label: "Пенсионер (0)" },
+  { value: "Обслуживание", label: "Обслуживание (0)" },
+  { value: "Студент", label: "Студент (0)" },
+  { value: "Домохозяйка/безработный", label: "Домохозяйка/безработный (0)" },
+  { value: "Фермер", label: "Фермер (0)" },
+  { value: "Работники государственных учреждений/предприятий", label: "Работники государственных учреждений/предприятий (0)" },
+  { value: "Первичная торговля автомобилями (новые автомашины)", label: "Первичная торговля автомобилями (новые автомашины) (2)" },
+  { value: "Владелец магазина (розничная торговля)", label: "Владелец магазина (розничная торговля) (2)" },
+  { value: "Бизнес-агентство", label: "Бизнес-агентство (2)" },
+  { value: "Мелкая торговля (Годовой оборот менее 5 миллионов сомони)", label: "Мелкая торговля (Годовой оборот менее 5 миллионов сомони) (2)" },
+  { value: "Само-занятый профессионал/индивидуальный предприниматель", label: "Само-занятый профессионал/индивидуальный предприниматель (2)" },
+  { value: "Корпоративный клиент", label: "Корпоративный клиент (2)" },
+  { value: "Торговля строительной техникой/материалами", label: "Торговля строительной техникой/материалами (2)" },
+  { value: "Торговля компьютерным оборудованием/мобильными телефонами", label: "Торговля компьютерным оборудованием/мобильными телефонами (2)" },
+  { value: "Деятельность в области программного обеспечения", label: "Деятельность в области программного обеспечения (2)" },
+  { value: "Производство (кроме оружия)", label: "Производство (кроме оружия) (2)" },
+  { value: "Транспортный оператор", label: "Транспортный оператор (3)" },
+  { value: "Торговля автомашинами (Восстановленные машины/вторичный рынок)", label: "Торговля автомашинами (Восстановленные машины/вторичный рынок) (3)" },
+  { value: "Финансовая/Лизинговая компания", label: "Финансовая/Лизинговая компания (3)" },
+  { value: "Агентство фрахтования/отправки/грузоперевозок", label: "Агентство фрахтования/отправки/грузоперевозок (3)" },
+  { value: "Страховое/брокерское агентство", label: "Страховое/брокерское агентство (3)" },
+  { value: "Религиозное учреждение /Организация", label: "Религиозное учреждение /Организация (3)" },
+  { value: "Парк/Организация развлечений", label: "Парк/Организация развлечений (3)" },
+  { value: "Торговля запасными частями автомобилей", label: "Торговля запасными частями автомобилей (3)" },
+  { value: "Табачный и сигаретный бизнес", label: "Табачный и сигаретный бизнес (3)" },
+  { value: "Прочее: Работники частных компаний", label: "Прочее: Работники частных компаний (3)" },
+  { value: "Аудиторская деятельность", label: "Аудиторская деятельность (3)" },
+  { value: "Торговля ювелирными изделиями/драгоценностями", label: "Торговля ювелирными изделиями/драгоценностями (5)" },
+  { value: "Обмен валюты/Курьерская служба", label: "Обмен валюты/Курьерская служба (5)" },
+  { value: "Агентство недвижимости", label: "Агентство недвижимости (5)" },
+  { value: "Промоутер строительных проектов", label: "Промоутер строительных проектов (5)" },
+  { value: "Оффшорная корпорация", label: "Оффшорная корпорация (5)" },
+  { value: "Влиятельные политические деятели (отечественные)", label: "Влиятельные политические деятели (отечественные) (5)" },
+  { value: "Влиятельные политические деятели (иностранные)", label: "Влиятельные политические деятели (иностранные) (5)" },
+  { value: "Торговля предметами искусства/антиквариата", label: "Торговля предметами искусства/антиквариата (5)" },
+  { value: "Владелец ресторана/бара/ночного клуба/гостиницы", label: "Владелец ресторана/бара/ночного клуба/гостиницы (5)" },
+  { value: "Агентство по экспорту/импорту", label: "Агентство по экспорту/импорту (5)" },
+  { value: "Инвестор денежных средств (Ежемесячные денежные инвестиции> 2 миллиона сомони)", label: "Инвестор денежных средств (Ежемесячные денежные инвестиции> 2 миллиона сомони) (5)" },
+  { value: "Брокер акций/фондовый брокер", label: "Брокер акций/фондовый брокер (5)" },
+  { value: "Бизнес по экспорту рабочей силы", label: "Бизнес по экспорту рабочей силы (5)" },
+  { value: "Операции в нескольких местах", label: "Операции в нескольких местах (5)" },
+  { value: "Продюсерское агентство/распространение кинофильмов", label: "Продюсерское агентство/распространение кинофильмов (5)" },
+  { value: "Торговля оружием", label: "Торговля оружием (5)" },
+  { value: "Оператор мобильной связи", label: "Оператор мобильной связи (5)" },
+  { value: "Торговля (Годовой оборот более 10 миллионов сомони)", label: "Торговля (Годовой оборот более 10 миллионов сомони) (5)" },
+  { value: "Туристическое агентство", label: "Туристическое агентство (5)" },
+  { value: "Работники иностранных компаний", label: "Работники иностранных компаний (5)" }
+];
+
+const netWorthOptions = [
+  { value: "0-5 млн.", label: "0-5 млн. (0)" },
+  { value: "5-20 млн.", label: "5-20 млн. (1)" },
+  { value: "> 20 млн.", label: "> 20 млн. (3)" }
+];
+
+const accountOpeningOptions = [
+  { value: "Со стороны менеджера по связям / руководителя филиала", label: "Со стороны менеджера по связям / руководителя филиала (0)" },
+  { value: "Агентом по прямым продажам", label: "Агентом по прямым продажам (1)" },
+  { value: "Через интернет", label: "Через интернет (3)" },
+  { value: "Личное посещение / по собственной инициативе", label: "Личное посещение / по собственной инициативе (3)" }
+];
+
+const expectedTransactionAmountOptions = [
+  { value: "0-10 млн.", label: "0-10 млн. (0)" },
+  { value: "0-5 млн.", label: "0-5 млн. (0)" },
+  { value: "10-50 млн.", label: "10-50 млн. (1)" },
+  { value: "5-20 млн.", label: "5-20 млн. (1)" },
+  { value: "> 50 млн.", label: "> 50 млн. (3)" },
+  { value: "> 20 млн.", label: "> 20 млн. (3)" }
+];
+
+const expectedTransactionCountOptions = [
+  { value: "0-100", label: "0-100 (0)" },
+  { value: "0-20", label: "0-20 (0)" },
+  { value: "101-250", label: "101-250 (1)" },
+  { value: "21-50", label: "21-50 (1)" },
+  { value: "> 250", label: "> 250 (3)" },
+  { value: "> 50", label: "> 50 (3)" }
+];
+
+const expectedCashAmountOptions = [
+  { value: "0-10 млн.", label: "0-10 млн. (0)" },
+  { value: "0-2 млн.", label: "0-2 млн. (0)" },
+  { value: "10-25 млн.", label: "10-25 млн. (1)" },
+  { value: "2-7 млн.", label: "2-7 млн. (1)" },
+  { value: "> 25 млн.", label: "> 25 млн. (3)" },
+  { value: "> 7 млн.", label: "> 7 млн. (3)" }
+];
+
+const expectedCashCountOptions = [
+  { value: "0-15", label: "0-15 (0)" },
+  { value: "0-5", label: "0-5 (0)" },
+  { value: "16-30", label: "16-30 (1)" },
+  { value: "6-10", label: "6-10 (1)" },
+  { value: "> 30", label: "> 30 (3)" },
+  { value: "> 10", label: "> 10 (3)" }
+];
+
 export default function GiftCard({ edit = false }) {
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
@@ -831,6 +943,7 @@ export default function GiftCard({ edit = false }) {
                     total_outgoing_transactions_count: data.total_outgoing_transactions_count || "",
                     total_cash_transactions_amount: data.total_cash_transactions_amount || "",
                     total_cash_transactions_count: data.total_cash_transactions_count || "",
+                    compliance_score: totalComplianceScore,
                 }),
             });
 
@@ -913,6 +1026,19 @@ export default function GiftCard({ edit = false }) {
     }, []);
 
     const hasTerrorMatch = terrorCheckResults.fullName === true || terrorCheckResults.cardName === true;
+
+    const getScore = (val) => {
+        return complianceScores[val] || 0;
+    };
+
+    const totalComplianceScore = 
+        getScore(data.client_occupation) +
+        getScore(data.net_worth) +
+        getScore(data.monthly_income) +
+        getScore(data.total_outgoing_transactions_amount) +
+        getScore(data.total_outgoing_transactions_count) +
+        getScore(data.total_cash_transactions_amount) +
+        getScore(data.total_cash_transactions_count);
 
     return (
         <>
@@ -1561,68 +1687,82 @@ export default function GiftCard({ edit = false }) {
                             />
                             
                             {/* Compliance Fields */}
-                            <Input
+                            <Select
                                 id="client_occupation"
                                 className="div68"
                                 title="Чем занимается клиент"
-                                placeholder="Сфера деятельности"
+                                placeholder="Выберите сферу деятельности"
                                 onChange={(val) => setData("client_occupation", val)}
                                 value={data.client_occupation}
+                                options={occupationOptions}
                                 error={errors}
                             />
-                            <Input
+                            <Select
                                 id="net_worth"
                                 className="div69"
-                                title="Чистая стоимость/оборот"
-                                placeholder="Сумма"
+                                title="Какова чистая стоимость / торговый оборот Клиента"
+                                placeholder="Выберите сумму"
                                 onChange={(val) => setData("net_worth", val)}
                                 value={data.net_worth}
+                                options={netWorthOptions}
                                 error={errors}
                             />
-                            <Input
+                            <Select
                                 id="monthly_income"
                                 className="div70"
-                                title="Доход в месяц"
-                                placeholder="Сумма"
+                                title="Метод открытия счета"
+                                placeholder="Выберите метод"
                                 onChange={(val) => setData("monthly_income", val)}
                                 value={data.monthly_income}
+                                options={accountOpeningOptions}
                                 error={errors}
                             />
-                            <Input
+                            <Select
                                 id="total_outgoing_transactions_amount"
                                 className="div71"
-                                title="Общая сумма исходящих транзакций"
-                                placeholder="Сумма"
+                                title="Общая ожидаемая сумма ежемесячных транзакций"
+                                placeholder="Выберите сумму"
                                 onChange={(val) => setData("total_outgoing_transactions_amount", val)}
                                 value={data.total_outgoing_transactions_amount}
+                                options={expectedTransactionAmountOptions}
                                 error={errors}
                             />
-                            <Input
+                            <Select
                                 id="total_outgoing_transactions_count"
                                 className="div72"
-                                title="Кол-во исходящих транзакций"
-                                placeholder="Количество"
+                                title="Ожидаемое общее количество ежемесячных транзакций"
+                                placeholder="Выберите количество"
                                 onChange={(val) => setData("total_outgoing_transactions_count", val)}
                                 value={data.total_outgoing_transactions_count}
+                                options={expectedTransactionCountOptions}
                                 error={errors}
                             />
-                            <Input
+                            <Select
                                 id="total_cash_transactions_amount"
                                 className="div73"
-                                title="Общая сумма кассовых сделок"
-                                placeholder="Сумма"
+                                title="Ожидаемая общая сумма кассовых сделок"
+                                placeholder="Выберите сумму"
                                 onChange={(val) => setData("total_cash_transactions_amount", val)}
                                 value={data.total_cash_transactions_amount}
+                                options={expectedCashAmountOptions}
+                                error={errors}
+                            />
+                            <Select
+                                id="total_cash_transactions_count"
+                                className="div74"
+                                title="Ожидаемое общее количество кассовых сделок"
+                                placeholder="Выберите количество"
+                                onChange={(val) => setData("total_cash_transactions_count", val)}
+                                value={data.total_cash_transactions_count}
+                                options={expectedCashCountOptions}
                                 error={errors}
                             />
                             <Input
-                                id="total_cash_transactions_count"
-                                className="div74"
-                                title="Кол-во кассовых сделок"
-                                placeholder="Количество"
-                                onChange={(val) => setData("total_cash_transactions_count", val)}
-                                value={data.total_cash_transactions_count}
-                                error={errors}
+                                id="compliance_score"
+                                className="div75"
+                                title="Рассчитанный балл комплаенса"
+                                value={totalComplianceScore}
+                                disabled
                             />
 
                             {edit && (
