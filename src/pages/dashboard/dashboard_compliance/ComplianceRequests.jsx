@@ -139,12 +139,9 @@ export default function ComplianceRequests() {
 
     const confirmAction = (record, status) => {
         const actionText = status === 'approved' ? 'принять' : 'отклонить';
-        Modal.confirm({
-            title: `Вы уверены, что хотите ${actionText} эту заявку?`,
-            onOk: () => handleStatusUpdate(record, status),
-            okText: "Да",
-            cancelText: "Отмена"
-        });
+        if (window.confirm(`Вы уверены, что хотите ${actionText} эту заявку?`)) {
+            handleStatusUpdate(record, status);
+        }
     };
 
     const columns = [
@@ -209,7 +206,7 @@ export default function ComplianceRequests() {
                     <Button onClick={() => handleViewApplication(record)}>
                         Просмотр
                     </Button>
-                    {record.status === "pending" && (
+                    {(!record.status || record.status.toLowerCase() === "pending") && (
                         <Space>
                             <Button type="primary" onClick={() => confirmAction(record, "approved")}>
                                 Принять
