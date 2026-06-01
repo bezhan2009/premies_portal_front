@@ -10,6 +10,8 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
   const [success, setSuccess] = useState("");
 
   const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [complianceCode, setComplianceCode] = useState("");
@@ -35,6 +37,8 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
       if (!response.ok) throw new Error("Не удалось загрузить данные профиля");
       const data = await response.json();
       setFullName(data.full_name || "");
+      setFirstName(data.first_name || "");
+      setLastName(data.last_name || "");
       setEmail(data.email || "");
       setPhone(data.phone || "");
       setComplianceCode(data.compliance_code || "");
@@ -61,6 +65,8 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
         },
         body: JSON.stringify({
           full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
           email: email,
           phone: phone,
           compliance_code: complianceCode,
@@ -213,6 +219,34 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Иванов Иван Иванович"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="profile-field">
+            <label><User size={16} /> Имя</label>
+            <div className="profile-input-wrapper">
+              <User size={18} />
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Иван"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="profile-field">
+            <label><User size={16} /> Фамилия</label>
+            <div className="profile-input-wrapper">
+              <User size={18} />
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Иванов"
                 required
               />
             </div>
