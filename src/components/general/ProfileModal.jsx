@@ -9,7 +9,6 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [fullName, setFullName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +35,6 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
       });
       if (!response.ok) throw new Error("Не удалось загрузить данные профиля");
       const data = await response.json();
-      setFullName(data.full_name || "");
       setFirstName(data.first_name || "");
       setLastName(data.last_name || "");
       setEmail(data.email || "");
@@ -57,6 +55,7 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
     setSaving(true);
 
     try {
+      const fullName = `${lastName} ${firstName}`.trim();
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, {
         method: "PUT",
         headers: {
@@ -80,13 +79,13 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
 
       setSuccess("Профиль успешно обновлен");
       // Update local storage full name if it's cached there
-      if (fullName) {
-        // Find if they store full_name/fio in localStorage
-        localStorage.setItem("full_name", fullName);
+      const fullName2 = `${lastName} ${firstName}`.trim();
+      if (fullName2) {
+        localStorage.setItem("full_name", fullName2);
       }
       
       if (onProfileUpdated) {
-        onProfileUpdated(fullName);
+        onProfileUpdated(fullName2);
       }
       
       setTimeout(() => {
@@ -147,6 +146,13 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
           border-color: #ef4444;
           outline: none;
           box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+        .profile-name-row {
+          display: flex;
+          gap: 12px;
+        }
+        .profile-name-row > div {
+          flex: 1;
         }
         .profile-buttons {
           display: flex;
@@ -210,45 +216,33 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
           {error && <div className="profile-alert profile-alert-error">{error}</div>}
           {success && <div className="profile-alert profile-alert-success">{success}</div>}
 
-          <div className="profile-field">
-            <label><User size={16} /> ФИО сотрудника</label>
-            <div className="profile-input-wrapper">
-              <User size={18} />
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Иванов Иван Иванович"
-                required
-              />
+          <div className="profile-name-row">
+            <div className="profile-field">
+              <label><User size={16} /> Фамилия</label>
+              <div className="profile-input-wrapper">
+                <User size={18} />
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Иванов"
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="profile-field">
-            <label><User size={16} /> Имя</label>
-            <div className="profile-input-wrapper">
-              <User size={18} />
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Иван"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="profile-field">
-            <label><User size={16} /> Фамилия</label>
-            <div className="profile-input-wrapper">
-              <User size={18} />
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Иванов"
-                required
-              />
+            <div className="profile-field">
+              <label><User size={16} /> Имя</label>
+              <div className="profile-input-wrapper">
+                <User size={18} />
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Иван"
+                  required
+                />
+              </div>
             </div>
           </div>
 
