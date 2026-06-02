@@ -229,7 +229,9 @@ export default function GiftCard({ edit = false }) {
         fullName: false,
         cardName: false
     });
-    const { data, errors, setData, validate, setDataMore } = useFormStore();
+    const [appOffices, setAppOffices] = useState([]);
+    const [showComplianceSection, setShowComplianceSection] = useState(true);
+    const { data, errors, setData, validate, setDataMore, setDataClear } = useFormStore();
     const navigate = useNavigate();
     const { id } = useParams();
 
@@ -341,7 +343,7 @@ export default function GiftCard({ edit = false }) {
         { value: "card_opened", label: "Карта успешно открыта" },
     ]);
     const [complianceOptions, setComplianceOptions] = useState(complianceOptionFallbacks);
-    const [complianceScoreByValue, setComplianceScoreByValue] = useState(complianceScores);
+    const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
 
     const ValidData = {
         surname: { required: true },
@@ -919,6 +921,24 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
+    // Генерация файла комплаенса в фоновом режиме (без блокировки UI)
+    const generateComplianceDocx = (applicationId) => {
+        const automationUrl = import.meta.env.VITE_BACKEND_URL;
+        fetch(`${automationUrl}/automation/compliance`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ application_id: applicationId }),
+        }).then(res => {
+            if (res.ok) {
+                console.log(`[compliance] DOCX сгенерирован для заявки ${applicationId}`);
+            } else {
+                console.warn(`[compliance] Не удалось сгенерировать DOCX: статус ${res.status}`);
+            }
+        }).catch(err => {
+            console.warn(`[compliance] Ошибка генерации DOCX:`, err);
+        });
+    };
+
     const validateOfferFields = () => {
         const requiredFields = [
             { field: "product", label: "Продукт" },
@@ -1133,6 +1153,11 @@ export default function GiftCard({ edit = false }) {
                 const result = await response.json();
                 console.log("Успешно обновлено:", result);
 
+                // Генерируем файл комплаенса в фоне (при каждом сохранении)
+                if (applicationId && !isForPoll && !isForOffer) {
+                    generateComplianceDocx(applicationId);
+                }
+
                 if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
@@ -1157,6 +1182,11 @@ export default function GiftCard({ edit = false }) {
                 console.log("Успешно создано:", result);
 
                 applicationId = result.ID || result.id;
+
+                // Генерируем файл комплаенса в фоне (при каждом сохранении)
+                if (applicationId && !isForPoll && !isForOffer) {
+                    generateComplianceDocx(applicationId);
+                }
 
                 if (isForPoll && applicationId) {
                     downloadPoll(applicationId);
@@ -1299,6 +1329,8 @@ export default function GiftCard({ edit = false }) {
                 }
                 const options = await response.json();
                 if (!Array.isArray(options) || options.length === 0) {
+                    // fallback to hardcoded
+                    setComplianceScoreByValue(complianceScores);
                     return;
                 }
 
@@ -1318,7 +1350,8 @@ export default function GiftCard({ edit = false }) {
                         label: option.label || `${option.value} (${option.score || 0})`,
                         sortOrder: option.sort_order || 0,
                     });
-                    scores[option.value] = Number(option.score) || 0;
+                    // DB score always wins
+                    scores[option.value] = Number(option.score) ?? 0;
                 });
 
                 Object.keys(grouped).forEach((category) => {
@@ -1330,13 +1363,32 @@ export default function GiftCard({ edit = false }) {
                 });
 
                 setComplianceOptions(grouped);
+                // DB scores override hardcoded ones
                 setComplianceScoreByValue({ ...complianceScores, ...scores });
             } catch (error) {
                 console.error("Ошибка загрузки справочников комплаенса:", error);
+                setComplianceScoreByValue(complianceScores);
+            }
+        };
+
+        const fetchAppOffices = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/application-offices`, {
+                    headers: getAuthHeaders(),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        setAppOffices(data.map((o) => ({ value: o.title || o.Title || '', label: o.title || o.Title || '' })).filter(o => o.value));
+                    }
+                }
+            } catch (error) {
+                console.error("Ошибка загрузки офисов:", error);
             }
         };
 
         fetchComplianceOptions();
+        fetchAppOffices();
     }, []);
 
     useEffect(() => {
@@ -1352,7 +1404,16 @@ export default function GiftCard({ edit = false }) {
     const hasTerrorMatch = terrorCheckResults.fullName === true || terrorCheckResults.cardName === true;
 
     const getScore = (val) => {
-        return complianceScoreByValue[val] || 0;
+        if (!val) return 0;
+        const score = complianceScoreByValue[val];
+        return score !== undefined ? score : (complianceScores[val] ?? 0);
+    };
+
+    const handleClearAll = () => {
+        if (window.confirm("Очистить все поля формы?")) {
+            setDataClear();
+            setTerrorCheckResults({ fullName: null, cardName: null });
+        }
     };
 
     const totalComplianceScore = 
@@ -1702,13 +1763,14 @@ export default function GiftCard({ edit = false }) {
                                 error={errors}
                             />
 
-                            <Input
+                            <Select
                                 id="receiving_office"
                                 className="div9"
                                 title="Офис получения"
-                                placeholder="Выберите офис"
+                                placeholder="Выберите офис получения"
                                 onChange={(val) => setData("receiving_office", val)}
                                 value={data.receiving_office}
+                                options={appOffices}
                                 error={errors}
                             />
 
@@ -2036,107 +2098,148 @@ export default function GiftCard({ edit = false }) {
                                 required
                             />
                             
-                            {/* Compliance Fields */}
-                            <Select
-                                id="client_occupation"
-                                className="div68"
-                                title="Чем занимается клиент"
-                                placeholder="Выберите сферу деятельности"
-                                onChange={(val) => setData("client_occupation", val)}
-                                value={data.client_occupation}
-                                options={complianceOptions.client_occupation}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="net_worth"
-                                className="div69"
-                                title="Какова чистая стоимость / торговый оборот Клиента"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("net_worth", val)}
-                                value={data.net_worth}
-                                options={complianceOptions.net_worth}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="monthly_income"
-                                className="div70"
-                                title="Метод открытия счета"
-                                placeholder="Выберите метод"
-                                onChange={(val) => setData("monthly_income", val)}
-                                value={data.monthly_income}
-                                options={complianceOptions.monthly_income}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_outgoing_transactions_amount"
-                                className="div71"
-                                title="Общая ожидаемая сумма ежемесячных транзакций"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("total_outgoing_transactions_amount", val)}
-                                value={data.total_outgoing_transactions_amount}
-                                options={complianceOptions.total_outgoing_transactions_amount}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_outgoing_transactions_count"
-                                className="div72"
-                                title="Ожидаемое общее количество ежемесячных транзакций"
-                                placeholder="Выберите количество"
-                                onChange={(val) => setData("total_outgoing_transactions_count", val)}
-                                value={data.total_outgoing_transactions_count}
-                                options={complianceOptions.total_outgoing_transactions_count}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_cash_transactions_amount"
-                                className="div73"
-                                title="Ожидаемая общая сумма кассовых сделок"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("total_cash_transactions_amount", val)}
-                                value={data.total_cash_transactions_amount}
-                                options={complianceOptions.total_cash_transactions_amount}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_cash_transactions_count"
-                                className="div74"
-                                title="Ожидаемое общее количество кассовых сделок"
-                                placeholder="Выберите количество"
-                                onChange={(val) => setData("total_cash_transactions_count", val)}
-                                value={data.total_cash_transactions_count}
-                                options={complianceOptions.total_cash_transactions_count}
-                                searchable
-                                error={errors}
-                            />
-                            <Input
-                                id="compliance_score"
-                                className="div75"
-                                title="Рассчитанный балл комплаенса"
-                                value={totalComplianceScore}
-                                disabled
-                            />
-                            <CheckBox
-                                id="fatca"
-                                className="div76"
-                                title="Признак FATCA"
-                                value={data.fatca}
-                                onChange={(val) => setData("fatca", val)}
-                                error={errors}
-                            />
-                            <CheckBox
-                                id="apl_pzl"
-                                className="div77"
-                                title="Признак АПЛ/ПЗЛ"
-                                value={data.apl_pzl}
-                                onChange={(val) => setData("apl_pzl", val)}
-                                error={errors}
-                            />
+                            {/* === СКОРРИНГ (Compliance) === */}
+                            <div className="compliance-section-wrapper" style={{ gridColumn: "1 / -1" }}>
+                                <div
+                                    className="compliance-section-header"
+                                    onClick={() => setShowComplianceSection(!showComplianceSection)}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        cursor: "pointer",
+                                        background: "linear-gradient(135deg, rgba(220,53,69,0.12) 0%, rgba(220,53,69,0.04) 100%)",
+                                        border: "1px solid rgba(220,53,69,0.25)",
+                                        borderRadius: 12,
+                                        padding: "14px 20px",
+                                        marginBottom: showComplianceSection ? 16 : 0,
+                                        userSelect: "none",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                        <span style={{ fontSize: 20 }}>📊</span>
+                                        <strong style={{ color: "#dc3545", fontSize: 16 }}>Скорринг (Комплаенс)</strong>
+                                        {totalComplianceScore > 0 && (
+                                            <span style={{
+                                                background: totalComplianceScore >= 20 ? "#dc3545" : totalComplianceScore >= 12 ? "#fd7e14" : "#198754",
+                                                color: "#fff",
+                                                borderRadius: 20,
+                                                padding: "2px 12px",
+                                                fontSize: 13,
+                                                fontWeight: 700,
+                                            }}>
+                                                Балл: {totalComplianceScore}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span style={{ color: "#dc3545", fontSize: 20, transform: showComplianceSection ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>▼</span>
+                                </div>
+
+                                {showComplianceSection && (
+                                    <div className="content-form" style={{ marginBottom: 24 }}>
+                                        <Select
+                                            id="client_occupation"
+                                            className="div68"
+                                            title="Чем занимается клиент"
+                                            placeholder="Выберите сферу деятельности"
+                                            onChange={(val) => setData("client_occupation", val)}
+                                            value={data.client_occupation}
+                                            options={complianceOptions.client_occupation}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="net_worth"
+                                            className="div69"
+                                            title="Чистая стоимость / торговый оборот"
+                                            placeholder="Выберите сумму"
+                                            onChange={(val) => setData("net_worth", val)}
+                                            value={data.net_worth}
+                                            options={complianceOptions.net_worth}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="monthly_income"
+                                            className="div70"
+                                            title="Метод открытия счета"
+                                            placeholder="Выберите метод"
+                                            onChange={(val) => setData("monthly_income", val)}
+                                            value={data.monthly_income}
+                                            options={complianceOptions.monthly_income}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="total_outgoing_transactions_amount"
+                                            className="div71"
+                                            title="Сумма ежемесячных транзакций"
+                                            placeholder="Выберите сумму"
+                                            onChange={(val) => setData("total_outgoing_transactions_amount", val)}
+                                            value={data.total_outgoing_transactions_amount}
+                                            options={complianceOptions.total_outgoing_transactions_amount}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="total_outgoing_transactions_count"
+                                            className="div72"
+                                            title="Кол-во ежемесячных транзакций"
+                                            placeholder="Выберите количество"
+                                            onChange={(val) => setData("total_outgoing_transactions_count", val)}
+                                            value={data.total_outgoing_transactions_count}
+                                            options={complianceOptions.total_outgoing_transactions_count}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="total_cash_transactions_amount"
+                                            className="div73"
+                                            title="Сумма кассовых сделок"
+                                            placeholder="Выберите сумму"
+                                            onChange={(val) => setData("total_cash_transactions_amount", val)}
+                                            value={data.total_cash_transactions_amount}
+                                            options={complianceOptions.total_cash_transactions_amount}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Select
+                                            id="total_cash_transactions_count"
+                                            className="div74"
+                                            title="Кол-во кассовых сделок"
+                                            placeholder="Выберите количество"
+                                            onChange={(val) => setData("total_cash_transactions_count", val)}
+                                            value={data.total_cash_transactions_count}
+                                            options={complianceOptions.total_cash_transactions_count}
+                                            searchable
+                                            error={errors}
+                                        />
+                                        <Input
+                                            id="compliance_score"
+                                            className="div75"
+                                            title="Рассчитанный балл комплаенса"
+                                            value={totalComplianceScore}
+                                            disabled
+                                        />
+                                        <CheckBox
+                                            id="fatca"
+                                            className="div76"
+                                            title="Признак FATCA"
+                                            value={data.fatca}
+                                            onChange={(val) => setData("fatca", val)}
+                                            error={errors}
+                                        />
+                                        <CheckBox
+                                            id="apl_pzl"
+                                            className="div77"
+                                            title="Признак АПЛ/ПЗЛ"
+                                            value={data.apl_pzl}
+                                            onChange={(val) => setData("apl_pzl", val)}
+                                            error={errors}
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
                             {edit && (
                                 <>
@@ -2159,6 +2262,14 @@ export default function GiftCard({ edit = false }) {
                             )}
                         </div>
                         <footer>
+                            <button
+                                onClick={handleClearAll}
+                                type="button"
+                                style={{ background: "rgba(220,53,69,0.08)", color: "#dc3545", border: "1px solid rgba(220,53,69,0.3)" }}
+                                title="Очистить все поля формы"
+                            >
+                                <span>🗑 Очистить всё</span>
+                            </button>
                             {hasTerrorMatch ? (
                                 <button
                                     onClick={handleSendToCompliance}
