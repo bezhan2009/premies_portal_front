@@ -521,9 +521,9 @@ export const TYPE_SEARCH_CLIENT = [
         apiType: "ATM"
     },
     {
-        label: "Поиск по Фамилии и Имени",
+        label: "Поиск по ФИО",
         value: "byName",
-        inputLabel: "Фамилия и Имя (через пробел)",
+        inputLabel: "ФИО (или название)",
         apiType: "ATM"
     },
     {
