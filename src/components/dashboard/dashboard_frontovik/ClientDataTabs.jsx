@@ -42,10 +42,12 @@ const ClientDataTabs = ({
   hasBlockCardAccess,
   hasChangePinAccess,
   selectedClient,
+  tableData,
 }) => {
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
   const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("accounts");
 
   const handleOpenRequisitesModal = (card) => {
     setRequisitesCard(card);
@@ -97,7 +99,6 @@ const ClientDataTabs = ({
       setIsRequisitesLoading(false);
     }
   };
-
 
   const getColumnSearchProps = (dataIndex, label) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
@@ -676,67 +677,57 @@ const ClientDataTabs = ({
   ], [accountsData]);
 
   return (
-    <>
-      {/* Карты */}
-      {cardsData?.length > 0 && (
-        <div className="processing-integration__limits-table">
-          <div className="limits-table">
-            <div className="limits-table__header">
-              <h2 className="limits-table__title">Данные карт</h2>
-              <div className="limits-table__actions">
-                <button
-                  onClick={() =>
-                    handleNavigateToAllCardsTransactions(sortedCards)
-                  }
-                  className="export-excel-btn"
-                  style={{ marginRight: 10, background: "#2ecc71" }}
-                >
-                  Посмотреть историю
-                </button>
-                <button
-                  onClick={handleExportCards}
-                  className="export-excel-btn"
-                >
+    <div className="client-data-tabs-container">
+      
+      {/* ── TABS NAVIGATION BAR ── */}
+      <div className="abs-tabs-navigation">
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "accounts" ? "active" : ""}`}
+          onClick={() => setActiveTab("accounts")}
+        >
+          Счета ({accountsData?.length || 0})
+        </button>
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "cards" ? "active" : ""}`}
+          onClick={() => setActiveTab("cards")}
+        >
+          Карты ({cardsData?.length || 0})
+        </button>
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "credits" ? "active" : ""}`}
+          onClick={() => setActiveTab("credits")}
+        >
+          Кредиты ({creditsData?.length || 0})
+        </button>
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "deposits" ? "active" : ""}`}
+          onClick={() => setActiveTab("deposits")}
+        >
+          Депозиты ({depositsData?.length || 0})
+        </button>
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "info" ? "active" : ""}`}
+          onClick={() => setActiveTab("info")}
+        >
+          Информация
+        </button>
+      </div>
+
+      {/* ── TABS CONTENT WINDOW ── */}
+      <div className="abs-tab-content-window">
+        
+        {/* Accounts Tab */}
+        {activeTab === "accounts" && (
+          <div className="tab-pane-fade">
+            <div className="tab-pane-header">
+              <h3>Счета клиента в АБС</h3>
+              {accountsData?.length > 0 && (
+                <button onClick={handleExportAccounts} className="btn-tab-export">
                   Экспорт в Excel
                 </button>
-              </div>
+              )}
             </div>
-
-            <div className="limits-table__container">
-              <div className="limits-table__wrapper">
-                <Table
-                  tableId="frontovik-cards"
-                  rowKey="cardId"
-                  columns={cardColumns}
-                  dataSource={sortedCards}
-                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} карт` }}
-                  sticky
-                  bordered
-                  scroll={{ x: "max-content" }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Счета */}
-      {accountsData?.length > 0 && (
-        <div className="processing-integration__limits-table">
-          <div className="limits-table">
-            <div className="limits-table__header">
-              <h2 className="limits-table__title">Данные счетов</h2>
-              <div className="limits-table__actions">
-                <button
-                  onClick={handleExportAccounts}
-                  className="export-excel-btn"
-                >
-                  Экспорт в Excel
-                </button>
-              </div>
-            </div>
-
-            <div className="limits-table__container">
+            {accountsData?.length > 0 ? (
               <div className="limits-table__wrapper">
                 <Table
                   tableId="frontovik-accounts"
@@ -749,28 +740,62 @@ const ClientDataTabs = ({
                   scroll={{ x: "max-content" }}
                 />
               </div>
-            </div>
+            ) : (
+              <div className="empty-tab-state">Счета отсутствуют</div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Кредиты */}
-      {creditsData?.length > 0 && (
-        <div className="processing-integration__limits-table">
-          <div className="limits-table">
-            <div className="limits-table__header">
-              <h2 className="limits-table__title">Данные кредитов</h2>
-              <div className="limits-table__actions">
-                <button
-                  onClick={handleExportCredits}
-                  className="export-excel-btn"
-                >
+        {/* Cards Tab */}
+        {activeTab === "cards" && (
+          <div className="tab-pane-fade">
+            <div className="tab-pane-header">
+              <h3>Карты клиента</h3>
+              {cardsData?.length > 0 && (
+                <div className="tab-header-btn-row">
+                  <button
+                    onClick={() => handleNavigateToAllCardsTransactions(sortedCards)}
+                    className="btn-tab-export btn-tab-history"
+                  >
+                    Посмотреть историю
+                  </button>
+                  <button onClick={handleExportCards} className="btn-tab-export">
+                    Экспорт в Excel
+                  </button>
+                </div>
+              )}
+            </div>
+            {cardsData?.length > 0 ? (
+              <div className="limits-table__wrapper">
+                <Table
+                  tableId="frontovik-cards"
+                  rowKey="cardId"
+                  columns={cardColumns}
+                  dataSource={sortedCards}
+                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} карт` }}
+                  sticky
+                  bordered
+                  scroll={{ x: "max-content" }}
+                />
+              </div>
+            ) : (
+              <div className="empty-tab-state">Карты отсутствуют</div>
+            )}
+          </div>
+        )}
+
+        {/* Credits Tab */}
+        {activeTab === "credits" && (
+          <div className="tab-pane-fade">
+            <div className="tab-pane-header">
+              <h3>Договоры кредитования</h3>
+              {creditsData?.length > 0 && (
+                <button onClick={handleExportCredits} className="btn-tab-export">
                   Экспорт в Excel
                 </button>
-              </div>
+              )}
             </div>
-
-            <div className="limits-table__container">
+            {creditsData?.length > 0 ? (
               <div className="limits-table__wrapper">
                 <Table
                   tableId="frontovik-credits"
@@ -783,28 +808,24 @@ const ClientDataTabs = ({
                   scroll={{ x: "max-content" }}
                 />
               </div>
-            </div>
+            ) : (
+              <div className="empty-tab-state">Кредиты отсутствуют</div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Депозиты */}
-      {depositsData?.length > 0 && (
-        <div className="processing-integration__limits-table">
-          <div className="limits-table">
-            <div className="limits-table__header">
-              <h2 className="limits-table__title">Данные депозитов</h2>
-              <div className="limits-table__actions">
-                <button
-                  onClick={handleExportDeposits}
-                  className="export-excel-btn"
-                >
+        {/* Deposits Tab */}
+        {activeTab === "deposits" && (
+          <div className="tab-pane-fade">
+            <div className="tab-pane-header">
+              <h3>Договоры депозитов</h3>
+              {depositsData?.length > 0 && (
+                <button onClick={handleExportDeposits} className="btn-tab-export">
                   Экспорт в Excel
                 </button>
-              </div>
+              )}
             </div>
-
-            <div className="limits-table__container">
+            {depositsData?.length > 0 ? (
               <div className="limits-table__wrapper">
                 <Table
                   tableId="frontovik-deposits"
@@ -817,10 +838,34 @@ const ClientDataTabs = ({
                   scroll={{ x: "max-content" }}
                 />
               </div>
-            </div>
+            ) : (
+              <div className="empty-tab-state">Депозиты отсутствуют</div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Client Info Detailed Tab */}
+        {activeTab === "info" && (
+          <div className="tab-pane-fade">
+            <div className="tab-pane-header">
+              <h3>Персональная информация (АБС)</h3>
+            </div>
+            {tableData && tableData.length > 0 ? (
+              <div className="client-info-grid-container">
+                {tableData.map((item, idx) => (
+                  <div key={idx} className="client-info-grid-item">
+                    <span className="info-label">{item.label}</span>
+                    <span className="info-value font-mono">{item.value || (item.value === 0 ? 0 : "Не указано")}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-tab-state">Данные клиента отсутствуют</div>
+            )}
+          </div>
+        )}
+
+      </div>
 
       <RequisitesModal
         open={isRequisitesModalOpen}
@@ -829,7 +874,7 @@ const ClientDataTabs = ({
         accountsData={accountsData}
         isLoading={isRequisitesLoading}
       />
-    </>
+    </div>
   );
 };
 

@@ -1,166 +1,226 @@
 import React from "react";
+import {
+  FaUser,
+  FaPhoneAlt,
+  FaIdCard,
+  FaMobileAlt,
+  FaTelegramPlane,
+  FaTrash,
+  FaRegFolderOpen,
+  FaSpinner,
+  FaCopy,
+  FaShieldAlt,
+  FaHistory
+} from "react-icons/fa";
 
 const ClientPersonalInfo = ({
   clientsData,
   selectedClientIndex,
   setSelectedClientIndex,
   selectedClient,
-  tableData,
   handleExportClientInfo,
   copySelectedClientToClipboard,
   copyAllClientsToClipboard,
   showAuditLogsBtn,
   onOpenAuditLogs,
+  isMobile,
+  telegramLoading,
+  telegramData,
+  handleDeleteTelegram,
+  telegramDeleteLoading,
+  clientPhotoUrl,
+  clientPhotoLoading,
+  onOpenClientPhoto,
+  onOpenClientDocuments,
+  documentsCount = 0,
+  selectedClientINN,
 }) => {
   if (!selectedClient) return null;
 
+  const name = selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
+  const code = selectedClient.client_code || "Не указан";
+  const phone = selectedClient.phone || "Не указан";
+  const inn = selectedClient.tax_code || "Не указан";
+  const clientTypeName = selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо");
+
   return (
-    <>
+    <div className="client-results-section">
+      {/* ── MULTIPLE CLIENTS SELECTOR ── */}
       {clientsData.length > 1 && (
-        <div className="processing-integration__client-selector">
-          <div className="client-selector">
-            <h3 className="client-selector__title">
-              Найдено клиентов: {clientsData.length}
-            </h3>
-            <div className="client-selector__controls">
-              <select
-                value={selectedClientIndex}
-                onChange={(e) =>
-                  setSelectedClientIndex(parseInt(e.target.value))
-                }
-                className="client-selector__select"
+        <div className="client-selector-card">
+          <span className="client-selector-label">Найдено несколько клиентов ({clientsData.length}):</span>
+          <div className="client-selector-buttons">
+            {clientsData.map((client, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setSelectedClientIndex(index)}
+                className={`client-selector-btn ${
+                  selectedClientIndex === index ? "active" : ""
+                }`}
               >
-                {clientsData.map((client, index) => (
-                  <option key={index} value={index}>
-                    {index + 1}. {client.long_name || `${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}`.trim()}
-                    {client.tax_code && ` (ИНН: ${client.tax_code})`}
-                  </option>
-                ))}
-              </select>
-              <div className="client-selector__navigation">
-                <button
-                  onClick={() =>
-                    setSelectedClientIndex((prev) => Math.max(0, prev - 1))
-                  }
-                  disabled={selectedClientIndex === 0}
-                  className="client-selector__nav-btn client-selector__nav-btn--prev"
-                >
-                  ← Предыдущий
-                </button>
-                <button
-                  onClick={() =>
-                    setSelectedClientIndex((prev) =>
-                      Math.min(clientsData.length - 1, prev + 1),
-                    )
-                  }
-                  disabled={selectedClientIndex === clientsData.length - 1}
-                  className="client-selector__nav-btn client-selector__nav-btn--next"
-                >
-                  Следующий →
-                </button>
-              </div>
-            </div>
+                {index + 1}. {client.long_name || `${client.surname || ""} ${client.name || ""}`}
+                {client.tax_code && ` (ИНН: ${client.tax_code})`}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      <div className="processing-integration__limits-table">
-        <div className="limits-table">
-          <div className="limits-table__header">
-            <h2 className="limits-table__title">
-              Данные клиента из АБС
-              {clientsData.length > 1 && (
-                <span className="limits-table__client-counter">
-                  (Клиент {selectedClientIndex + 1} из {clientsData.length})
-                </span>
+      {/* ── CLIENT SUMMARY DASHBOARD CARD ── */}
+      <div className="abs-client-summary-card">
+        
+        {/* Upper row: Avatar/Selfie, Name, Actions, Telegram Status */}
+        <div className="summary-card-header">
+          
+          {/* 1. Selfie Photo Box */}
+          <div className="summary-selfie-box">
+            <button
+              type="button"
+              className="summary-photo-btn"
+              onClick={onOpenClientPhoto}
+              disabled={!clientPhotoUrl}
+              title={clientPhotoUrl ? "Посмотреть фото клиента" : "Фото клиента не найдено"}
+            >
+              {clientPhotoLoading ? (
+                <div className="photo-placeholder"><FaSpinner className="spin" /></div>
+              ) : clientPhotoUrl ? (
+                <img src={clientPhotoUrl} alt="Фото клиента" className="summary-photo-img" />
+              ) : (
+                <div className="photo-placeholder"><FaUser size={24} /></div>
               )}
-            </h2>
-            <div className="limits-table__actions">
-              {showAuditLogsBtn && (
-                <button
-                  onClick={onOpenAuditLogs}
-                  className="limits-table__action-btn limits-table__action-btn--secondary"
-                  style={{ marginRight: 10, backgroundColor: '#1890ff', color: 'white', border: '1px solid #1890ff' }}
-                >
-                  Журнал действий
-                </button>
-              )}
+            </button>
+            <div className="selfie-info">
+              <span className="selfie-title">Лицо клиента</span>
               <button
-                onClick={handleExportClientInfo}
-                className="export-excel-btn"
-                style={{ marginRight: 10 }}
+                type="button"
+                className="btn-selfie-action"
+                onClick={onOpenClientDocuments}
+                disabled={clientPhotoLoading && !documentsCount}
               >
-                Экспорт в Excel
+                <FaRegFolderOpen />
+                <span>Документы ({documentsCount})</span>
               </button>
-              <button
-                onClick={copySelectedClientToClipboard}
-                className="limits-table__action-btn limits-table__action-btn--secondary"
-                style={{ marginRight: clientsData.length > 1 ? 10 : 0 }}
-              >
-                Скопировать JSON клиента
-              </button>
-              {clientsData.length > 1 && (
-                <button
-                  onClick={copyAllClientsToClipboard}
-                  className="limits-table__action-btn limits-table__action-btn--secondary"
-                >
-                  Скопировать JSON всех клиентов
-                </button>
-              )}
             </div>
           </div>
 
-          <div className="limits-table__wrapper">
-            <table className="limits-table">
-              <thead className="limits-table__head">
-                <tr>
-                  {tableData &&
-                    tableData.map((item, i) => (
-                      <th
-                        key={i}
-                        className="limits-table__th limits-table__th--field"
-                      >
-                        {item.label}
-                      </th>
-                    ))}
-                </tr>
-              </thead>
-              <tbody className="limits-table__body">
-                <tr className="limits-table__row">
-                  {tableData.map((item) => (
-                    <td
-                      key={item.key}
-                      className="limits-table__td limits-table__td--value"
-                    >
-                      <span className="current-value">
-                        {item.value || (item.value === 0 ? 0 : "Не указано")}
-                      </span>
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
+          {/* 2. Client Identity Metadata */}
+          <div className="summary-identity-info">
+            <div className="summary-identity-fio">
+              <FaUser className="fio-icon" />
+              <h2>{name}</h2>
+            </div>
+            <div className="summary-identity-code font-mono">
+              Код ABS: <span>{code}</span>
+            </div>
           </div>
 
-          <div className="limits-table__footer">
-            <div className="limits-table__stats">
-              <span className="limits-table__stat">
-                ФИО: {selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim()}
-              </span>
-              <span className="limits-table__stat">
-                Телефон: {selectedClient.phone}
-              </span>
-              <span className="limits-table__stat">
-                ИНН: {selectedClient.tax_code}
-              </span>
-              <span className="limits-table__stat">
-                Код клиента: {selectedClient.client_code}
-              </span>
+          {/* 3. Telegram Link Status Card */}
+          <div className="summary-telegram-status-card">
+            <div className="tg-header">
+              <FaTelegramPlane className="tg-icon" />
+              <span className="tg-label">Telegram Status</span>
+            </div>
+            <div className="tg-body">
+              {telegramLoading ? (
+                <span className="tg-status-text italic">Проверка...</span>
+              ) : telegramData?.userTelegramId ? (
+                <div className="tg-linked-container">
+                  <span className="tg-status-badge active font-mono">
+                    ID: {telegramData.userTelegramId}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-tg-unlink"
+                    onClick={() => handleDeleteTelegram(phone)}
+                    disabled={telegramDeleteLoading}
+                    title="Отвязать Telegram ID"
+                  >
+                    {telegramDeleteLoading ? <FaSpinner className="spin" /> : <FaTrash />}
+                  </button>
+                </div>
+              ) : (
+                <span className="tg-status-badge inactive">Не привязан</span>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Middle row: Metadata fields Grid */}
+        <div className="summary-metadata-grid">
+          <div className="metadata-field">
+            <div className="field-icon-label">
+              <FaIdCard />
+              <span>ИНН</span>
+            </div>
+            <span className="field-value font-mono">{inn}</span>
+          </div>
+
+          <div className="metadata-field">
+            <div className="field-icon-label">
+              <FaPhoneAlt />
+              <span>Телефон</span>
+            </div>
+            <span className="field-value font-mono">{phone}</span>
+          </div>
+
+          <div className="metadata-field">
+            <div className="field-icon-label">
+              <FaUser />
+              <span>Тип клиента</span>
+            </div>
+            <span className="field-value">{clientTypeName}</span>
+          </div>
+
+          <div className="metadata-field">
+            <div className="field-icon-label">
+              <FaMobileAlt />
+              <span>Мобильный банкинг</span>
+            </div>
+            <span className="field-value">
+              {isMobile ? (
+                <span className="mobile-status-connected">
+                  Подключен (IBAN: {isMobile?.Iban || "-"})
+                </span>
+              ) : isMobile !== null ? (
+                <span className="mobile-status-disconnected">Не подключен</span>
+              ) : (
+                <span className="mobile-status-checking">Неизвестно</span>
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Lower row: Action Toolbar */}
+        <div className="summary-actions-toolbar">
+          <div className="actions-left-group">
+            {showAuditLogsBtn && (
+              <button onClick={onOpenAuditLogs} className="btn-toolbar-action btn-toolbar-audit">
+                <FaHistory />
+                <span>Журнал действий</span>
+              </button>
+            )}
+            <button onClick={handleExportClientInfo} className="btn-toolbar-action btn-toolbar-excel">
+              <span>Экспорт клиента в Excel</span>
+            </button>
+          </div>
+          
+          <div className="actions-right-group">
+            <button onClick={copySelectedClientToClipboard} className="btn-toolbar-action btn-toolbar-copy">
+              <FaCopy />
+              <span>Копировать JSON клиента</span>
+            </button>
+            {clientsData.length > 1 && (
+              <button onClick={copyAllClientsToClipboard} className="btn-toolbar-action btn-toolbar-copy-all">
+                <FaCopy />
+                <span>Копировать JSON всех ({clientsData.length})</span>
+              </button>
+            )}
+          </div>
+        </div>
+
       </div>
-    </>
+    </div>
   );
 };
 

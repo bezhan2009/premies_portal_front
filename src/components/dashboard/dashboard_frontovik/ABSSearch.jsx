@@ -1337,27 +1337,16 @@ export default function ABSClientSearch() {
                             handleSearchClient={handleSearchClient}
                             handleClear={handleClear}
                             phoneNumber={phoneNumber}
-                            isMobile={isMobile}
-                            telegramLoading={telegramLoading}
-                            telegramData={telegramData}
-                            handleDeleteTelegram={handleDeleteTelegram}
-                            telegramDeleteLoading={telegramDeleteLoading}
-                            clientPhotoUrl={selectedClientPhotoUrl}
-                            clientPhotoLoading={clientDocumentsLoading}
-                            onOpenClientPhoto={handleOpenClientPhoto}
-                            onOpenClientDocuments={handleOpenClientDocuments}
-                            documentsCount={clientDocuments.length}
-                            selectedClientINN={selectedClientINN}
                         />
 
                         {selectedClient && (
-                            <div style={{ marginBottom: 16 }}>
+                            <div className="terror-check-banner-wrapper">
                                 {isTerrorChecking ? (
-                                    <div style={{ color: "#1890ff" }}>Идет проверка в базе террористов...</div>
+                                    <div className="terror-banner terror-checking">Идет проверка в базе террористов...</div>
                                 ) : terrorMatch === true ? (
-                                    <div style={{ color: "red", fontWeight: "bold", fontSize: 16, padding: 8, border: "1px solid red", borderRadius: 4, backgroundColor: "#fff2f0" }}>Обслуживание запрещено, обратитесь в Комплайнс</div>
+                                    <div className="terror-banner terror-danger">Обслуживание запрещено, обратитесь в Комплайнс</div>
                                 ) : terrorMatch === false ? (
-                                    <div style={{ color: "green", fontWeight: "bold", fontSize: 16, padding: 8, border: "1px solid green", borderRadius: 4, backgroundColor: "#f6ffed" }}>✓ Клиент проверен</div>
+                                    <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
                                 ) : null}
                             </div>
                         )}
@@ -1373,6 +1362,17 @@ export default function ABSClientSearch() {
                             copyAllClientsToClipboard={copyAllClientsToClipboard}
                             showAuditLogsBtn={hasRole(35)}
                             onOpenAuditLogs={() => setIsAuditLogsModalOpen(true)}
+                            isMobile={isMobile}
+                            telegramLoading={telegramLoading}
+                            telegramData={telegramData}
+                            handleDeleteTelegram={handleDeleteTelegram}
+                            telegramDeleteLoading={telegramDeleteLoading}
+                            clientPhotoUrl={selectedClientPhotoUrl}
+                            clientPhotoLoading={clientDocumentsLoading}
+                            onOpenClientPhoto={handleOpenClientPhoto}
+                            onOpenClientDocuments={handleOpenClientDocuments}
+                            documentsCount={clientDocuments.length}
+                            selectedClientINN={selectedClientINN}
                         />
 
                         <ClientAuditLogsModal
@@ -1424,6 +1424,7 @@ export default function ABSClientSearch() {
                             onOpenLimits={handleOpenLimits}
                             hasBlockCardAccess={hasBlockCardAccess}
                             hasChangePinAccess={hasChangePinAccess}
+                            tableData={tableData}
                         />
                     </div>
                 </div>
