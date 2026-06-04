@@ -230,32 +230,36 @@ textarea:focus {
 /* Стили для всех скроллбаров (Firefox) */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--primary-color) transparent;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 /* Стили для всех скроллбаров (Webkit) */
 ::-webkit-scrollbar {
-  width: 12px;
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--primary-color);
-  border-radius: 6px;
-  border: 3px solid var(--bg-color);
-  transition: background-color 0.3s ease;
+  background-color: var(--border-color);
+  border-radius: 10px;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--text-muted);
 }
 
-/* Исправленный селектор (без пробела!) */
+/* Настройки при скроллинге */
 body.scrolling::-webkit-scrollbar-thumb {
-  background-color: var(--primary-color);
+  background-color: var(--text-muted);
 }
 
 div.scrolling::-webkit-scrollbar-thumb {
-  background-color: var(--primary-color);
+  background-color: var(--text-muted);
 }
 
 table {

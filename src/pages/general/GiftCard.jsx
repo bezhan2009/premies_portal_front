@@ -2036,107 +2036,7 @@ export default function GiftCard({ edit = false }) {
                                 required
                             />
                             
-                            {/* Compliance Fields */}
-                            <Select
-                                id="client_occupation"
-                                className="div68"
-                                title="Чем занимается клиент"
-                                placeholder="Выберите сферу деятельности"
-                                onChange={(val) => setData("client_occupation", val)}
-                                value={data.client_occupation}
-                                options={complianceOptions.client_occupation}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="net_worth"
-                                className="div69"
-                                title="Какова чистая стоимость / торговый оборот Клиента"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("net_worth", val)}
-                                value={data.net_worth}
-                                options={complianceOptions.net_worth}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="monthly_income"
-                                className="div70"
-                                title="Метод открытия счета"
-                                placeholder="Выберите метод"
-                                onChange={(val) => setData("monthly_income", val)}
-                                value={data.monthly_income}
-                                options={complianceOptions.monthly_income}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_outgoing_transactions_amount"
-                                className="div71"
-                                title="Общая ожидаемая сумма ежемесячных транзакций"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("total_outgoing_transactions_amount", val)}
-                                value={data.total_outgoing_transactions_amount}
-                                options={complianceOptions.total_outgoing_transactions_amount}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_outgoing_transactions_count"
-                                className="div72"
-                                title="Ожидаемое общее количество ежемесячных транзакций"
-                                placeholder="Выберите количество"
-                                onChange={(val) => setData("total_outgoing_transactions_count", val)}
-                                value={data.total_outgoing_transactions_count}
-                                options={complianceOptions.total_outgoing_transactions_count}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_cash_transactions_amount"
-                                className="div73"
-                                title="Ожидаемая общая сумма кассовых сделок"
-                                placeholder="Выберите сумму"
-                                onChange={(val) => setData("total_cash_transactions_amount", val)}
-                                value={data.total_cash_transactions_amount}
-                                options={complianceOptions.total_cash_transactions_amount}
-                                searchable
-                                error={errors}
-                            />
-                            <Select
-                                id="total_cash_transactions_count"
-                                className="div74"
-                                title="Ожидаемое общее количество кассовых сделок"
-                                placeholder="Выберите количество"
-                                onChange={(val) => setData("total_cash_transactions_count", val)}
-                                value={data.total_cash_transactions_count}
-                                options={complianceOptions.total_cash_transactions_count}
-                                searchable
-                                error={errors}
-                            />
-                            <Input
-                                id="compliance_score"
-                                className="div75"
-                                title="Рассчитанный балл комплаенса"
-                                value={totalComplianceScore}
-                                disabled
-                            />
-                            <CheckBox
-                                id="fatca"
-                                className="div76"
-                                title="Признак FATCA"
-                                value={data.fatca}
-                                onChange={(val) => setData("fatca", val)}
-                                error={errors}
-                            />
-                            <CheckBox
-                                id="apl_pzl"
-                                className="div77"
-                                title="Признак АПЛ/ПЗЛ"
-                                value={data.apl_pzl}
-                                onChange={(val) => setData("apl_pzl", val)}
-                                error={errors}
-                            />
+
 
                             {edit && (
                                 <>
@@ -2157,6 +2057,107 @@ export default function GiftCard({ edit = false }) {
                                     />
                                 </>
                             )}
+                        </div>
+                        {/* Compliance Section */}
+                        <div className="compliance-section">
+                            <div className="compliance-header">
+                                <div className="compliance-title-group">
+                                    <span className="compliance-icon">🛡️</span>
+                                    <h3>Параметры комплаенса</h3>
+                                </div>
+                                <div className={`compliance-score-badge ${totalComplianceScore > 15 ? 'high-risk' : totalComplianceScore > 5 ? 'medium-risk' : 'low-risk'}`}>
+                                    Балл комплаенса: <strong>{totalComplianceScore}</strong>
+                                </div>
+                            </div>
+                            <div className="compliance-grid">
+                                <Select
+                                    id="client_occupation"
+                                    title="Чем занимается клиент"
+                                    placeholder="Выберите сферу деятельности"
+                                    onChange={(val) => setData("client_occupation", val)}
+                                    value={data.client_occupation}
+                                    options={complianceOptions.client_occupation}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="net_worth"
+                                    title="Какова чистая стоимость / торговый оборот Клиента"
+                                    placeholder="Выберите сумму"
+                                    onChange={(val) => setData("net_worth", val)}
+                                    value={data.net_worth}
+                                    options={complianceOptions.net_worth}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="monthly_income"
+                                    title="Метод открытия счета"
+                                    placeholder="Выберите метод"
+                                    onChange={(val) => setData("monthly_income", val)}
+                                    value={data.monthly_income}
+                                    options={complianceOptions.monthly_income}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="total_outgoing_transactions_amount"
+                                    title="Общая ожидаемая сумма ежемесячных транзакций"
+                                    placeholder="Выберите сумму"
+                                    onChange={(val) => setData("total_outgoing_transactions_amount", val)}
+                                    value={data.total_outgoing_transactions_amount}
+                                    options={complianceOptions.total_outgoing_transactions_amount}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="total_outgoing_transactions_count"
+                                    title="Ожидаемое общее количество ежемесячных транзакций"
+                                    placeholder="Выберите количество"
+                                    onChange={(val) => setData("total_outgoing_transactions_count", val)}
+                                    value={data.total_outgoing_transactions_count}
+                                    options={complianceOptions.total_outgoing_transactions_count}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="total_cash_transactions_amount"
+                                    title="Ожидаемая общая сумма кассовых сделок"
+                                    placeholder="Выберите сумму"
+                                    onChange={(val) => setData("total_cash_transactions_amount", val)}
+                                    value={data.total_cash_transactions_amount}
+                                    options={complianceOptions.total_cash_transactions_amount}
+                                    searchable
+                                    error={errors}
+                                />
+                                <Select
+                                    id="total_cash_transactions_count"
+                                    title="Ожидаемое общее количество кассовых сделок"
+                                    placeholder="Выберите количество"
+                                    onChange={(val) => setData("total_cash_transactions_count", val)}
+                                    value={data.total_cash_transactions_count}
+                                    options={complianceOptions.total_cash_transactions_count}
+                                    searchable
+                                    error={errors}
+                                />
+                                
+                                <div className="compliance-checkbox-group">
+                                    <CheckBox
+                                        id="fatca"
+                                        title="Признак FATCA"
+                                        value={data.fatca}
+                                        onChange={(val) => setData("fatca", val)}
+                                        error={errors}
+                                    />
+                                    <CheckBox
+                                        id="apl_pzl"
+                                        title="Признак АПЛ/ПЗЛ"
+                                        value={data.apl_pzl}
+                                        onChange={(val) => setData("apl_pzl", val)}
+                                        error={errors}
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <footer>
                             {hasTerrorMatch ? (

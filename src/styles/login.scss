@@ -1,189 +1,265 @@
-
-body {
-  margin: 0;
-  padding: 0;
-}
-
 .login-container {
-  @include flex-center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
-  padding: 2rem 0;
+  padding: 2rem 1rem;
+  background-color: var(--bg-color);
+  animation: fadeIn 0.5s ease-out;
 
-  .restoring-session {
+  .login-card-wrapper {
+    width: 100%;
+    max-width: 440px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-
-    p {
-      margin-top: 20px;
-      font-size: 16px;
-      color: var(--text-secondary);
-    }
   }
-}
 
-.login-form {
-  background: rgba(var(--bg-rgb), 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
-  width: 320px;
-  max-height: 80vh;
-  overflow-y: auto;
+  /* Branding Styles */
+  .login-branding {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    text-align: center;
 
-  label {
-    display: block;
-    margin-bottom: 1.25rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 0.75rem 1rem;
-      padding-right: 40px;
-      margin-top: 0.45rem;
-      border: 1.5px solid var(--border-color);
-      border-radius: 8px;
-      outline: none;
-      background: var(--bg-secondary);
-      height: 44px;
-      font-size: 0.95rem;
-      color: var(--text-color);
-      transition: all 0.25s ease;
-
-      &::placeholder {
-        color: var(--text-muted);
-        font-weight: 500;
-      }
-
-      &:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(226, 26, 28, 0.15);
-        background: var(--bg-surface, #fff);
-      }
-    }
-
-    .toggle-password-visibility {
-      position: absolute;
-      right: 12px;
-      top: calc(50% + 4px);
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-secondary);
-      font-size: 1.15rem;
-      line-height: 1;
-      width: auto;
-      height: auto;
+    .logo-badge-container {
       display: flex;
       align-items: center;
       justify-content: center;
-
-      &:hover {
-        background: none;
-        color: var(--primary-color);
+      width: 76px;
+      height: 76px;
+      background: var(--primary-color);
+      border-radius: 20px;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 8px 16px rgba(var(--primary-rgb), 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-width: 50px;
+        filter: brightness(0) invert(1); /* make it white on red background */
       }
     }
-  }
 
-  .image-logo-login {
-    margin-bottom: 1.5rem;
-  }
-
-  button {
-    width: 100%;
-    padding: 0.85rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 1.05rem;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: var(--primary-color);
-    }
-  }
-
-  .roles-selection {
-    margin: 1.5rem 0 1.2rem;
-
-    p {
-      font-size: 0.95rem;
-      font-weight: 600;
+    .login-title {
+      font-size: 26px;
+      font-weight: 800;
       color: var(--text-color);
-      margin-bottom: 0.8rem;
-      text-align: left;
+      margin: 0;
+      letter-spacing: -0.5px;
     }
 
-    // Обёртка для каждой строки чекбокса
-    > div {
-      display: flex;
-      align-items: center; // идеальное вертикальное центрирование
-      justify-content: flex-start;
-      margin-bottom: 0.75rem;
-      padding: 0.4rem 0;
-      transition: 0.2s ease;
+    .login-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 6px 0 0;
+      font-weight: 500;
+    }
+  }
 
-      &:hover {
-        background: rgba(var(--primary-rgb), 0.04);
-        border-radius: 6px;
-        padding-left: 0.4rem;
+  /* Card Styles */
+  .login-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 2.5rem;
+    width: 100%;
+    box-shadow: var(--shadow-lg), 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+
+    .login-card-header {
+      text-align: center;
+      margin-bottom: 2rem;
+
+      h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-color);
+        margin: 0 0 8px;
+        letter-spacing: -0.3px;
       }
 
-      // Сам чекбокс
-      input[type="checkbox"] {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 22px;
-        height: 22px;
-        border: 2px solid var(--border-color);
-        border-radius: 6px;
-        margin-right: 12px;
-        position: relative;
-        cursor: pointer;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
+      p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  /* Form Styles */
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .form-group-login {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .form-label-login {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+
+      input {
+        width: 100%;
+        background-color: var(--bg-secondary);
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 15px;
+        color: var(--text-color);
+        transition: all 0.25s ease;
+        height: 46px;
+
+        &::placeholder {
+          color: var(--text-muted);
+        }
 
         &:hover {
-          border-color: var(--primary-color);
-          background: rgba(var(--primary-rgb), 0.07);
+          border-color: var(--primary-hover);
         }
 
-        &:checked {
-          background: var(--primary-color);
+        &:focus {
           border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+          background-color: var(--bg-surface);
+          outline: none;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       }
+    }
 
-      // Текст роли
-      label {
-        font-size: 0.95rem;
-        color: var(--text-color);
+    /* Password Input Visibility toggle */
+    .password-input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      input {
+        padding-right: 48px;
+      }
+
+      .toggle-password-visibility {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
         cursor: pointer;
-        user-select: none;
-        margin: 0;
-        font-weight: 500;
-        line-height: 1.4;
-        width: 100%;
+        color: var(--text-secondary);
+        font-size: 18px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+        padding: 0;
+
+        &:hover {
+          color: var(--primary-color);
+          background-color: rgba(var(--primary-rgb), 0.05);
+        }
+
+        &:focus {
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+        }
       }
+    }
+
+    /* Submit Button */
+    .login-submit-btn {
+      width: 100%;
+      height: 46px;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.5rem;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.35);
+        filter: brightness(1.05);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .spin {
+        font-size: 18px;
+      }
+    }
+  }
+
+  /* Error messages */
+  .error-message {
+    background-color: rgba(var(--primary-rgb), 0.08);
+    border: 1px solid rgba(var(--primary-rgb), 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    animation: shake 0.3s ease-in-out;
+  }
+
+  /* Footer copyright notice */
+  .login-card-footer {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
     }
   }
 }
 
-.error {
-  color: var(--primary-color);
-  font-weight: bold;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  font-family: sans-serif;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import LogoImageComponent from "../../components/Logo";
 import Spinner from "../../components/Spinner";
 import { login } from "../../api/auth";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaSpinner } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { getV2Token } from "../../api/getV2Token";
 
@@ -186,72 +186,93 @@ export default function LoginPage() {
                 <title>Логин</title>
             </Helmet>
             <div className="login-container">
-                <form
-                    className="login-form"
-                    onSubmit={handleSubmit}
-                    autoComplete="off"
-                >
-                    {/* Скрытое поле для обхода автозаполнения */}
-                    <input
-                        type="text"
-                        style={{ display: 'none' }}
-                        autoComplete="new-password"
-                    />
-
-                    <div align="center" className="image-logo-login">
-                        <LogoImageComponent width={125} height={105} />
+                <div className="login-card-wrapper">
+                    {/* Bank branding */}
+                    <div className="login-branding">
+                        <div className="logo-badge-container">
+                            <LogoImageComponent width={76} height={68} />
+                        </div>
+                        <h1 className="login-title">Active Daily</h1>
+                        <p className="login-subtitle">ActivBank — Банковский портал</p>
                     </div>
 
-                    <label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Логин"
-                            required
-                            disabled={loading}
-                            autoComplete="username"
-                            name="username"
-                        />
-                    </label>
-
-                    <label style={{ position: "relative" }}>
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Пароль такой же как и у вашего компьютера"
-                            required
-                            disabled={loading}
-                            autoComplete="current-password"
-                            name="current-password"
-                        />
-                        <button
-                            type="button"
-                            className="toggle-password-visibility"
-                            onClick={togglePasswordVisibility}
-                            disabled={loading}
-                        >
-                            {showPassword ? <FaEyeSlash /> : <FaEye />}
-                        </button>
-                    </label>
-
-                    {error && (
-                        <div align="center" className="error">
-                            {error}
+                    <div className="login-card">
+                        <div className="login-card-header">
+                            <h2>Вход в систему</h2>
+                            <p>Введите учётные данные для доступа к порталу</p>
                         </div>
-                    )}
 
-                    <button type="submit" disabled={loading}>
-                        {loading ? (
-                            <div align="center">
-                                <Spinner />
+                        <form
+                            className="login-form"
+                            onSubmit={handleSubmit}
+                            autoComplete="off"
+                        >
+                            {/* Скрытое поле для обхода автозаполнения */}
+                            <input
+                                type="text"
+                                style={{ display: 'none' }}
+                                autoComplete="new-password"
+                            />
+
+                            <div className="form-group-login">
+                                <label className="form-label-login">Имя пользователя</label>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Введите логин"
+                                    required
+                                    disabled={loading}
+                                    autoComplete="username"
+                                    name="username"
+                                />
                             </div>
-                        ) : (
-                            "Войти"
-                        )}
-                    </button>
-                </form>
+
+                            <div className="form-group-login">
+                                <label className="form-label-login">Пароль</label>
+                                <div className="password-input-container">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Введите пароль"
+                                        required
+                                        disabled={loading}
+                                        autoComplete="current-password"
+                                        name="current-password"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="toggle-password-visibility"
+                                        onClick={togglePasswordVisibility}
+                                        disabled={loading}
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="error-message">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button type="submit" className="login-submit-btn" disabled={loading}>
+                                {loading ? (
+                                    <FaSpinner className="pulse-animation spin" style={{ margin: "0 auto", animation: "spin 1s linear infinite" }} />
+                                ) : (
+                                    "Войти"
+                                )}
+                            </button>
+                        </form>
+                        
+                        <div className="login-card-footer">
+                            <p>© {new Date().getFullYear()} ActivBank. Все права защищены.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </>
     );

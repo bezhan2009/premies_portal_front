@@ -152,7 +152,7 @@ const CustomSelect = ({
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 onKeyDown={(event) => event.stopPropagation()}
-                placeholder="РџРѕРёСЃРє..."
+                placeholder="Поиск..."
               />
             </div>
           )}

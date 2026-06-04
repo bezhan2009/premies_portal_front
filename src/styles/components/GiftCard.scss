@@ -472,3 +472,127 @@
     transform: translateY(0);
   }
 }
+
+.compliance-section {
+  margin: 24px 0;
+  padding: 24px;
+  background: linear-gradient(145deg, #1d2736, #25344a);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.4s ease-out;
+
+  .compliance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .compliance-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .compliance-icon {
+        font-size: 24px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #e2e8f0;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .compliance-score-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+      padding: 6px 14px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+
+      strong {
+        font-size: 16px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+      }
+
+      &.low-risk strong {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.15);
+      }
+
+      &.medium-risk strong {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.15);
+      }
+
+      &.high-risk strong {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  .compliance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: end;
+
+    .select, .input, .custom-select-container {
+      margin-bottom: 0;
+    }
+
+    .compliance-checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      height: fit-content;
+      align-self: end;
+
+      .check-box {
+        margin: 0;
+        padding: 4px 8px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .compliance-section {
+    padding: 16px;
+
+    .compliance-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      
+      .compliance-score-badge {
+        align-self: flex-start;
+      }
+    }
+
+    .compliance-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

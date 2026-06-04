@@ -387,21 +387,21 @@ export default function UsersPage() {
         </div>
 
         {error && (
-          <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid #ef4444", borderRadius: 14, padding: 16, color: "#fca5a5", marginBottom: 24, textAlign: "center", fontSize: 14, fontWeight: 600 }}>
+          <div className="admin-alert admin-alert-danger">
             {error}
           </div>
         )}
         {success && (
-          <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid #10b981", borderRadius: 14, padding: 16, color: "#a7f3d0", marginBottom: 24, textAlign: "center", fontSize: 14, fontWeight: 600 }}>
+          <div className="admin-alert admin-alert-success">
             {success}
           </div>
         )}
 
         {/* --- USERS TAB --- */}
         {activeTab === "users" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="admin-tab-content">
             {loadingUsers ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
+              <div className="admin-loading-spinner">
                 <Spinner size="large" label="Загрузка списка пользователей..." />
               </div>
             ) : users.length === 0 ? (
@@ -413,19 +413,19 @@ export default function UsersPage() {
               <>
                 <div className="requests-grid">
                   {users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((u) => (
-                    <div key={u.id} className="request-list-card" style={{ opacity: u.is_active === false ? 0.6 : 1 }}>
+                    <div key={u.id} className={`request-list-card ${u.is_active === false ? "inactive-user" : ""}`}>
                       <div className="req-info-block">
                         <div className="req-user-row">
                           <span className="req-name">{u.full_name || "Без ФИО"}</span>
                           <span className="req-username">@{u.username}</span>
                           {u.is_active === false && (
-                            <span style={{ fontSize: 11, background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                            <span className="status-badge status-blocked">
                               Заблокирован
                             </span>
                           )}
                         </div>
                         <div className="req-details-row">
-                          <span><FaPhoneAlt style={{ color: "#ef4444" }} /> {u.phone || "Без телефона"}</span>
+                          <span><FaPhoneAlt /> {u.phone || "Без телефона"}</span>
                           {u.email && <span>Email: {u.email}</span>}
                           {u.compliance_code && <span>Комплаенс код: {u.compliance_code}</span>}
                         </div>
@@ -450,58 +450,28 @@ export default function UsersPage() {
 
                 {/* Pagination */}
                 {Math.ceil(users.length / itemsPerPage) > 1 && (
-                  <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", marginTop: 24, flexWrap: "wrap" }}>
+                  <div className="admin-pagination">
                     <button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
-                      style={{
-                        padding: "8px 14px",
-                        background: currentPage === 1 ? "rgba(239, 68, 68, 0.15)" : "#ef4444",
-                        color: currentPage === 1 ? "#999" : "#fff",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        borderRadius: 8,
-                        cursor: currentPage === 1 ? "default" : "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
+                      className="pagination-btn"
                     >
                       ← Первая
                     </button>
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      style={{
-                        padding: "8px 14px",
-                        background: currentPage === 1 ? "rgba(239, 68, 68, 0.15)" : "#ef4444",
-                        color: currentPage === 1 ? "#999" : "#fff",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        borderRadius: 8,
-                        cursor: currentPage === 1 ? "default" : "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
+                      className="pagination-btn"
                     >
                       ← Предыдущая
                     </button>
 
-                    <div style={{ display: "flex", gap: 4, alignItems: "center", margin: "0 12px" }}>
+                    <div className="pagination-pages">
                       {Array.from({ length: Math.ceil(users.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            padding: 0,
-                            background: currentPage === page ? "#ef4444" : "rgba(239, 68, 68, 0.1)",
-                            color: currentPage === page ? "#fff" : "#fca5a5",
-                            border: `1px solid ${currentPage === page ? "#ef4444" : "rgba(239, 68, 68, 0.3)"}`,
-                            borderRadius: 6,
-                            cursor: "pointer",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            transition: "all 0.2s ease",
-                          }}
+                          className={`page-num-btn ${currentPage === page ? "active" : ""}`}
                         >
                           {page}
                         </button>
@@ -511,37 +481,19 @@ export default function UsersPage() {
                     <button
                       onClick={() => setCurrentPage(Math.min(Math.ceil(users.length / itemsPerPage), currentPage + 1))}
                       disabled={currentPage === Math.ceil(users.length / itemsPerPage)}
-                      style={{
-                        padding: "8px 14px",
-                        background: currentPage === Math.ceil(users.length / itemsPerPage) ? "rgba(239, 68, 68, 0.15)" : "#ef4444",
-                        color: currentPage === Math.ceil(users.length / itemsPerPage) ? "#999" : "#fff",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        borderRadius: 8,
-                        cursor: currentPage === Math.ceil(users.length / itemsPerPage) ? "default" : "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
+                      className="pagination-btn"
                     >
                       Следующая →
                     </button>
                     <button
                       onClick={() => setCurrentPage(Math.ceil(users.length / itemsPerPage))}
                       disabled={currentPage === Math.ceil(users.length / itemsPerPage)}
-                      style={{
-                        padding: "8px 14px",
-                        background: currentPage === Math.ceil(users.length / itemsPerPage) ? "rgba(239, 68, 68, 0.15)" : "#ef4444",
-                        color: currentPage === Math.ceil(users.length / itemsPerPage) ? "#999" : "#fff",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        borderRadius: 8,
-                        cursor: currentPage === Math.ceil(users.length / itemsPerPage) ? "default" : "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
+                      className="pagination-btn"
                     >
                       Последняя →
                     </button>
 
-                    <div style={{ color: "#999", fontSize: 12, marginLeft: 12, fontWeight: 600 }}>
+                    <div className="pagination-info">
                       Стр. {currentPage} из {Math.ceil(users.length / itemsPerPage)} • Всего: {users.length}
                     </div>
                   </div>
@@ -553,27 +505,26 @@ export default function UsersPage() {
 
         {/* --- OFFICES TAB --- */}
         {activeTab === "offices" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+          <div className="admin-tab-content" style={{ gap: 30 }}>
             {/* Create Office Form */}
-            <form onSubmit={handleAddAppOffice} style={{ display: "flex", gap: 12, background: "#140b0b", border: "1px solid rgba(239, 68, 68, 0.25)", padding: 24, borderRadius: 20 }}>
-              <div className="form-group" style={{ flex: 1 }}>
+            <form onSubmit={handleAddAppOffice} className="admin-card-form">
+              <div className="form-group">
                 <input
                   type="text"
                   value={newOfficeTitle}
                   onChange={(e) => setNewOfficeTitle(e.target.value)}
                   placeholder="Введите название нового офиса приема заявок"
                   required
-                  style={{ background: "rgba(15, 10, 10, 0.6)" }}
                 />
               </div>
-              <button type="submit" className="btn-action btn-approve" disabled={actionLoading} style={{ height: "100%", alignSelf: "flex-end" }}>
+              <button type="submit" className="btn-action btn-approve" disabled={actionLoading}>
                 <FaPlus />
                 <span>Добавить офис</span>
               </button>
             </form>
 
             {loadingOffices ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+              <div className="admin-loading-spinner" style={{ padding: 40 }}>
                 <Spinner size="medium" label="Загрузка списка офисов..." />
               </div>
             ) : appOffices.length === 0 ? (
@@ -584,22 +535,22 @@ export default function UsersPage() {
             ) : (
               <div className="requests-grid">
                 {appOffices.map((office) => (
-                  <div key={office.ID} className="request-list-card" style={{ padding: "16px 28px" }}>
-                    <div style={{ flex: 1 }}>
+                  <div key={office.ID} className="request-list-card office-card">
+                    <div className="office-card-content">
                       {editingAppOffice && editingAppOffice.ID === office.ID ? (
-                        <form onSubmit={handleUpdateAppOffice} style={{ display: "flex", gap: 12, width: "100%" }}>
+                        <form onSubmit={handleUpdateAppOffice} className="office-edit-inline-form">
                           <input
                             type="text"
                             value={editOfficeTitle}
                             onChange={(e) => setEditOfficeTitle(e.target.value)}
                             required
-                            style={{ flex: 1, padding: "8px 12px", background: "rgba(15, 10, 10, 0.6)", border: "1px solid #ef4444", borderRadius: 8, color: "#fff" }}
+                            className="admin-edit-inline-input"
                           />
-                          <button type="submit" className="btn-action btn-approve" style={{ padding: "8px 16px" }}>ОК</button>
-                          <button type="button" className="btn-action btn-reject" onClick={() => setEditingAppOffice(null)} style={{ padding: "8px 16px" }}>Отмена</button>
+                          <button type="submit" className="btn-action btn-approve">ОК</button>
+                          <button type="button" className="btn-action btn-reject" onClick={() => setEditingAppOffice(null)}>Отмена</button>
                         </form>
                       ) : (
-                        <span style={{ fontSize: 18, color: "#fff", fontWeight: 700 }}>
+                        <span className="office-title">
                           {office.title}
                         </span>
                       )}
@@ -608,15 +559,13 @@ export default function UsersPage() {
                     {!editingAppOffice && (
                       <div className="action-btn-group">
                         <button
-                          className="btn-action btn-edit"
-                          style={{ padding: "8px 16px" }}
+                          className="btn-action btn-edit btn-small"
                           onClick={() => { setEditingAppOffice(office); setEditOfficeTitle(office.title); }}
                         >
                           <FaEdit />
                         </button>
                         <button
-                          className="btn-action btn-reject"
-                          style={{ padding: "8px 16px" }}
+                          className="btn-action btn-reject btn-small"
                           onClick={() => handleDeleteAppOffice(office.ID)}
                         >
                           <FaTrash />
@@ -642,12 +591,12 @@ export default function UsersPage() {
               </div>
 
               {error && (
-                <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid #ef4444", borderRadius: 14, padding: 16, color: "#fca5a5", marginBottom: 24, textAlign: "center", fontSize: 14, fontWeight: 600 }}>
+                <div className="admin-alert admin-alert-danger">
                   {error}
                 </div>
               )}
 
-              <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 16, marginBottom: 16, borderLeft: "3px solid #ef4444", paddingLeft: 10 }}>
+              <div className="modal-section-title">
                 1. Учетные данные сотрудника
               </div>
               <div className="form-grid">
@@ -659,7 +608,7 @@ export default function UsersPage() {
                   <label>Имя</label>
                   <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                 </div>
-                <div className="form-group" style={{ gridColumn: "span 2" }}>
+                <div className="form-group span-2">
                   <label>ФИО (полное имя)</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Автозаполнение из Фамилии и Имени" />
                 </div>
@@ -679,21 +628,20 @@ export default function UsersPage() {
                   <label>Код комплаенса</label>
                   <input type="text" value={complianceCode} onChange={(e) => setComplianceCode(e.target.value)} />
                 </div>
-                <div className="form-group" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 12, marginTop: 24 }}>
+                <div className="form-group-checkbox">
                   <input
                     type="checkbox"
                     id="edit-isactive"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    style={{ width: 20, height: 20, cursor: "pointer", accentColor: "#ef4444" }}
                   />
-                  <label htmlFor="edit-isactive" style={{ cursor: "pointer", fontSize: 14, color: "#fff" }}>
+                  <label htmlFor="edit-isactive">
                     Активный аккаунт (сотрудник разблокирован)
                   </label>
                 </div>
               </div>
 
-              <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 16, marginBottom: 16, marginTop: 28, borderLeft: "3px solid #ef4444", paddingLeft: 10 }}>
+              <div className="modal-section-title">
                 2. Роли сотрудника
               </div>
               <div className="roles-checklist">
@@ -710,7 +658,7 @@ export default function UsersPage() {
                 ))}
               </div>
 
-              <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 16, marginBottom: 16, marginTop: 28, borderLeft: "3px solid #ef4444", paddingLeft: 10 }}>
+              <div className="modal-section-title">
                 3. Офисы приема заявок (для карточного/кредитного фронта)
               </div>
               <div className="roles-checklist">
@@ -729,9 +677,9 @@ export default function UsersPage() {
 
               {/* Conditional Worker Details */}
               {selectedRoles.some((r) => [6, 8].includes(r)) && (
-                <div style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "rgba(239, 68, 68, 0.03)", padding: 28, borderRadius: 20, marginBottom: 28, marginTop: 28 }}>
-                  <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15, marginBottom: 18, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>💼 Рабочие сведение для карточного/кредитного отдела</span>
+                <div className="conditional-details-block">
+                  <div className="block-title">
+                    <span>💼 Рабочие сведения для карточного/кредитного отдела</span>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -750,7 +698,7 @@ export default function UsersPage() {
                       <label>ЗП проект *</label>
                       <input type="number" value={salaryProject} onChange={(e) => setSalaryProject(e.target.value)} required />
                     </div>
-                    <div className="form-group" style={{ gridColumn: "span 2" }}>
+                    <div className="form-group span-2">
                       <label>Обслуживающий офис *</label>
                       <Select
                         value={placeWork}
@@ -767,8 +715,8 @@ export default function UsersPage() {
 
               {/* Conditional Director Office Details */}
               {selectedRoles.includes(5) && (
-                <div style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "rgba(239, 68, 68, 0.03)", padding: 28, borderRadius: 20, marginBottom: 28, marginTop: 28 }}>
-                  <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15, marginBottom: 18, display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="conditional-details-block">
+                  <div className="block-title">
                     <span>🏢 Сведения о филиале (директор филиала)</span>
                   </div>
                   <div className="form-grid">
@@ -780,7 +728,7 @@ export default function UsersPage() {
                       <label>Код филиала *</label>
                       <input type="text" value={officeCode} onChange={(e) => setOfficeCode(e.target.value)} required />
                     </div>
-                    <div className="form-group" style={{ gridColumn: "span 2" }}>
+                    <div className="form-group span-2">
                       <label>Описание и адрес филиала *</label>
                       <textarea
                         value={officeDesc}
@@ -793,7 +741,7 @@ export default function UsersPage() {
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 14, justifyContent: "flex-end", marginTop: 36 }}>
+              <div className="modal-actions">
                 <button type="button" className="btn-action btn-reject" onClick={() => setEditingUser(null)} disabled={actionLoading}>
                   Отмена
                 </button>
