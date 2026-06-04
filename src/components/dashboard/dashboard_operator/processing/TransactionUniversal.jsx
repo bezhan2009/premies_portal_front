@@ -191,7 +191,10 @@ const CatalogSelectModal = ({
   );
 };
 
-const getTransactionTypeValue = (transactionType) => {
+const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
+  if (transactionTypeNumber !== undefined && transactionTypeNumber !== null) {
+    return transactionTypeNumber;
+  }
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
   const found = dataTrans.find((e) => e.label === transactionType);
   return found?.value;
@@ -578,9 +581,17 @@ export default function DashboardOperatorTransactionSearch() {
     setCardNumber(raw.replace(/\s/g, ""));
   };
 
-  const formatAmount = (amount) => {
+  const formatAmount = (amount, transactionTypeValue) => {
     if (amount === null || amount === undefined || amount === "") return "N/A";
-    const absAmount = Math.abs(Number(amount));
+    let amountVal = Number(amount);
+    if (isNaN(amountVal)) {
+      return amount.toString();
+    }
+
+    const isPositiveType = transactionTypeValue === 1;
+    const isNegativeType = transactionTypeValue === 2;
+
+    const absAmount = Math.abs(amountVal);
     const amountStr = absAmount.toString();
     let formattedAmount;
     if (amountStr.length <= 2) {
@@ -589,6 +600,16 @@ export default function DashboardOperatorTransactionSearch() {
       const integerPart = amountStr.slice(0, -2);
       const decimalPart = amountStr.slice(-2);
       formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
+    }
+
+    if (isPositiveType) {
+      return `+${formattedAmount}`;
+    } else if (isNegativeType) {
+      return `-${formattedAmount}`;
+    }
+
+    if (amountVal < 0) {
+      return `-${formattedAmount}`;
     }
     return formattedAmount;
   };
@@ -859,7 +880,7 @@ export default function DashboardOperatorTransactionSearch() {
       const val = parseFloat(tx.conamt || 0);
       const nationalValue = getNationalAmount(tx, exchangeRates);
       const type =
-        getTransactionTypeValue(tx.transactionType) || tx.transactionTypeNumber;
+        getTransactionTypeValue(tx.transactionType, tx.transactionTypeNumber);
       if (type === 2) {
         total -= val;
         totalTJS -= nationalValue;
@@ -953,23 +974,29 @@ export default function DashboardOperatorTransactionSearch() {
         dataIndex: "amount",
         key: "amount",
         width: 180,
-        render: (_, transaction) => (
-          <span className="amount-value">
-            {formatAmount(transaction.amount)} {getCurrencyCode(transaction.currency)}
-          </span>
-        ),
+        render: (_, transaction) => {
+          const transactionTypeValue = getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.amount, transactionTypeValue)} {getCurrencyCode(transaction.currency)}
+            </span>
+          );
+        },
       },
       {
         title: "Сумма в валюте карты",
         dataIndex: "conamt",
         key: "conamt",
         width: 220,
-        render: (_, transaction) => (
-          <span className="amount-value">
-            {formatAmount(transaction.conamt)}{" "}
-            {getCurrencyCode(transaction.conCurrency)}
-          </span>
-        ),
+        render: (_, transaction) => {
+          const transactionTypeValue = getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.conamt, transactionTypeValue)}{" "}
+              {getCurrencyCode(transaction.conCurrency)}
+            </span>
+          );
+        },
       },
       {
         title: "Доступный баланс",
@@ -1006,7 +1033,14 @@ export default function DashboardOperatorTransactionSearch() {
         dataIndex: "reqamt",
         key: "reqamt",
         width: 190,
-        render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
+        render: (_, transaction) => {
+          const transactionTypeValue = getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
+          return (
+            <span className="amount-value">
+              {formatAmount(transaction.reqamt, transactionTypeValue)}
+            </span>
+          );
+        },
       },
       {
         title: "Адрес терминала",
@@ -1062,14 +1096,20 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "transactionTypeName", label: "Тип операции" },
       {
         key: (row) => {
-          const amountFormatted = formatAmount(row.amount);
+          const amountFormatted = formatAmount(
+            row.amount,
+            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber)
+          );
           return `${amountFormatted} ${getCurrencyCode(row.currency)}`;
         },
         label: "Сумма (валюта)",
       },
       {
         key: (row) => {
-          const conamtFormatted = formatAmount(row.conamt);
+          const conamtFormatted = formatAmount(
+            row.conamt,
+            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber)
+          );
           return `${conamtFormatted} ${getCurrencyCode(row.conCurrency)}`;
         },
         label: "Сумма в валюте карты (валюта)",
@@ -1079,7 +1119,10 @@ export default function DashboardOperatorTransactionSearch() {
       { key: "terminalId", label: "ID терминала" },
       { key: "atmId", label: "ID АТМ" },
       {
-        key: (row) => formatAmount(row.reqamt),
+        key: (row) => formatAmount(
+          row.reqamt,
+          getTransactionTypeValue(row.transactionType, row.transactionTypeNumber)
+        ),
         label: "Запрошенная сумма",
       },
       { key: "terminalAddress", label: "Адрес терминала" },
@@ -1841,6 +1884,10 @@ export default function DashboardOperatorTransactionSearch() {
                       </thead>
                       <tbody className="limits-table__body">
                         {sortedTransactions.map((transaction) => {
+                          const transactionTypeValue = getTransactionTypeValue(
+                            transaction.transactionType,
+                            transaction.transactionTypeNumber,
+                          );
                           return (
                             <tr
                               key={transaction.id}
@@ -1877,13 +1924,13 @@ export default function DashboardOperatorTransactionSearch() {
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(transaction.amount)}{" "}
+                                  {formatAmount(transaction.amount, transactionTypeValue)}{" "}
                                   {getCurrencyCode(transaction.currency)}
                                 </span>
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(transaction.conamt)}{" "}
+                                  {formatAmount(transaction.conamt, transactionTypeValue)}{" "}
                                   {getCurrencyCode(transaction.conCurrency)}
                                 </span>
                               </td>
@@ -1909,7 +1956,7 @@ export default function DashboardOperatorTransactionSearch() {
                               </td>
                               <td className="limits-table__td limits-table__td--value">
                                 <span className="amount-value">
-                                  {formatAmount(transaction.reqamt)}
+                                  {formatAmount(transaction.reqamt, transactionTypeValue)}
                                 </span>
                               </td>
                               <td className="limits-table__td limits-table__td--value">

@@ -25,7 +25,10 @@ import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 
 // Безопасная функция для получения значения из dataTrans
-const getTransactionTypeValue = (transactionType) => {
+const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
+  if (transactionTypeNumber !== undefined && transactionTypeNumber !== null) {
+    return transactionTypeNumber;
+  }
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
   const found = dataTrans.find((e) => e.label === transactionType);
   return found?.value;
@@ -157,7 +160,16 @@ export default function DashboardOperatorProcessingTransactions() {
   const formatAmount = (amount, transactionTypeValue) => {
     if (amount === null || amount === undefined || amount === "") return "N/A";
 
-    const amountStr = amount.toString();
+    let amountVal = Number(amount);
+    if (isNaN(amountVal)) {
+      return amount.toString();
+    }
+
+    const isPositiveType = transactionTypeValue === 1;
+    const isNegativeType = transactionTypeValue === 2;
+
+    let absAmount = Math.abs(amountVal);
+    const amountStr = absAmount.toString();
     let formattedAmount;
 
     if (amountStr.length <= 2) {
@@ -168,10 +180,15 @@ export default function DashboardOperatorProcessingTransactions() {
       formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
     }
 
-    if (transactionTypeValue === 2) {
+    if (isPositiveType) {
+      return `+${formattedAmount}`;
+    } else if (isNegativeType) {
       return `-${formattedAmount}`;
     }
 
+    if (amountVal < 0) {
+      return `-${formattedAmount}`;
+    }
     return formattedAmount;
   };
 
@@ -597,8 +614,7 @@ export default function DashboardOperatorProcessingTransactions() {
         width: 180,
         render: (_, transaction) => {
           const transactionTypeValue =
-            getTransactionTypeValue(transaction.transactionType) ||
-            transaction.transactionTypeNumber;
+            getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
 
           return (
             <span className="amount-value">
@@ -615,8 +631,7 @@ export default function DashboardOperatorProcessingTransactions() {
         width: 220,
         render: (_, transaction) => {
           const transactionTypeValue =
-            getTransactionTypeValue(transaction.transactionType) ||
-            transaction.transactionTypeNumber;
+            getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
 
           return (
             <span className="amount-value">
@@ -663,8 +678,7 @@ export default function DashboardOperatorProcessingTransactions() {
         width: 190,
         render: (_, transaction) => {
           const transactionTypeValue =
-            getTransactionTypeValue(transaction.transactionType) ||
-            transaction.transactionTypeNumber;
+            getTransactionTypeValue(transaction.transactionType, transaction.transactionTypeNumber);
 
           return (
             <span className="amount-value">
@@ -728,8 +742,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) => {
           const amountFormatted = formatAmount(
             row.amount,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
+            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
           );
           const currencyCode = getCurrencyCode(row.currency);
           return `${amountFormatted} ${currencyCode}`;
@@ -740,8 +753,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) => {
           const conamtFormatted = formatAmount(
             row.conamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
+            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
           );
           const conCurrencyCode = getCurrencyCode(row.conCurrency);
           return `${conamtFormatted} ${conCurrencyCode}`;
@@ -756,8 +768,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) =>
           formatAmount(
             row.reqamt,
-            getTransactionTypeValue(row.transactionType) ||
-              row.transactionTypeNumber,
+            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
           ),
         label: "Запрошенная сумма",
       },
@@ -1462,6 +1473,7 @@ export default function DashboardOperatorProcessingTransactions() {
                         {sortedTransactions.map((transaction) => {
                           const transactionTypeValue = getTransactionTypeValue(
                             transaction.transactionType,
+                            transaction.transactionTypeNumber,
                           );
                           return (
                             <tr
@@ -1502,8 +1514,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                 <span className="amount-value">
                                   {formatAmount(
                                     transaction.amount,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
+                                    transactionTypeValue,
                                   )}{" "}
                                   {getCurrencyCode(transaction.currency)}
                                 </span>
@@ -1513,8 +1524,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                 <span className="amount-value">
                                   {formatAmount(
                                     transaction.conamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
+                                    transactionTypeValue,
                                   )}{" "}
                                   {getCurrencyCode(transaction.conCurrency)}
                                 </span>
@@ -1543,8 +1553,7 @@ export default function DashboardOperatorProcessingTransactions() {
                                 <span className="amount-value">
                                   {formatAmount(
                                     transaction.reqamt,
-                                    transactionTypeValue ||
-                                      transaction.transactionTypeNumber,
+                                    transactionTypeValue,
                                   )}
                                 </span>
                               </td>

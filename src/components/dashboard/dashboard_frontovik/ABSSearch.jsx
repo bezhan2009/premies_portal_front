@@ -416,7 +416,9 @@ export default function ABSClientSearch() {
                 let normalizedData = [];
 
                 if (searchTypeIndex === 0) {
-                    normalizedData = Array.isArray(data) ? data : [data];
+                    normalizedData = (Array.isArray(data) ? data : [data]).map((client) =>
+                        normalizeClientData(client, TYPE_SEARCH_CLIENT[0].value)
+                    );
                 } else if (searchTypeIndex === 1) {
                     normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
                 } else if (searchTypeIndex === 2) {
@@ -1017,9 +1019,7 @@ export default function ABSClientSearch() {
                 setTerrorMatch(null);
                 return;
             }
-            const nameToCheck = selectedClient.ltn_name || selectedClient.name;
-            const surnameToCheck = selectedClient.ltn_surname || selectedClient.surname;
-            const fullName = `${surnameToCheck || ""} ${nameToCheck || ""} ${selectedClient.patronymic || ""}`.trim();
+            const fullName = selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
             if (fullName.length < 2) return;
 
             setIsTerrorChecking(true);
@@ -1131,7 +1131,7 @@ export default function ABSClientSearch() {
             {
                 label: "Тип клиента",
                 key: "client_type_name",
-                value: selectedClient.client_type_name,
+                value: selectedClient.client_type === "corporate" ? "Юридическое лицо" : "Физическое лицо",
             },
             {
                 label: "Код департамента",
@@ -1143,13 +1143,7 @@ export default function ABSClientSearch() {
                 key: "client_code",
                 value: selectedClient.client_code,
             },
-            { label: "Фамилия", key: "surname", value: selectedClient.surname },
-            { label: "Имя", key: "name", value: selectedClient.name },
-            {
-                label: "Отчество",
-                key: "patronymic",
-                value: selectedClient.patronymic,
-            },
+            { label: "ФИО", key: "long_name", value: selectedClient.long_name },
             {
                 label: "Фамилия (латиница)",
                 key: "ltn_surname",

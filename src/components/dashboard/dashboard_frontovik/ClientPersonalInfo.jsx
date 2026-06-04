@@ -32,8 +32,7 @@ const ClientPersonalInfo = ({
               >
                 {clientsData.map((client, index) => (
                   <option key={index} value={index}>
-                    {index + 1}. {client.surname} {client.name}{" "}
-                    {client.patronymic}
+                    {index + 1}. {client.long_name || `${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}`.trim()}
                     {client.tax_code && ` (ИНН: ${client.tax_code})`}
                   </option>
                 ))}
@@ -146,8 +145,7 @@ const ClientPersonalInfo = ({
           <div className="limits-table__footer">
             <div className="limits-table__stats">
               <span className="limits-table__stat">
-                ФИО: {selectedClient.surname} {selectedClient.name}{" "}
-                {selectedClient.patronymic}
+                ФИО: {selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim()}
               </span>
               <span className="limits-table__stat">
                 Телефон: {selectedClient.phone}

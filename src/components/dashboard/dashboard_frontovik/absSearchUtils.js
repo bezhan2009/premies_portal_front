@@ -7,12 +7,21 @@ import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
  * @returns {Object} Нормализованные данные
  */
 export const normalizeClientData = (client, searchType) => {
-  // Если это поиск по телефону - данные уже в нужном формате
-  if (searchType === TYPE_SEARCH_CLIENT[0].value) {
-    return client;
+  const isPhoneSearch = searchType === TYPE_SEARCH_CLIENT[0].value;
+
+  if (isPhoneSearch) {
+    const rawLongName = client.long_name || client.LongName || `${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}`.trim();
+    const rawType = client.client_type || client.Type || (client.client_type_name?.toLowerCase().includes("юр") ? "corporate" : "individual");
+    return {
+      ...client,
+      long_name: rawLongName,
+      client_type: rawType,
+    };
   }
 
-  // Для поиска по ИНН и коду клиента - преобразуем формат
+  const rawLongName = client.LongName || client.long_name || `${client.LastName || ""} ${client.FirstName || ""} ${client.MiddleName || ""}`.trim();
+  const rawType = client.Type || client.client_type || (client.TypeExt?.Name?.toLowerCase().includes("юр") ? "corporate" : "individual");
+
   return {
     phone: client.ContactData?.[0]?.Value || "",
     arc_flag: "",
@@ -36,6 +45,8 @@ export const normalizeClientData = (client, searchType) => {
       client.ExternalSystemCodes?.ExternalCode?.find(
         (c) => c.System?.Code === "SVPC",
       )?.Code || "",
+    long_name: rawLongName,
+    client_type: rawType,
   };
 };
 
