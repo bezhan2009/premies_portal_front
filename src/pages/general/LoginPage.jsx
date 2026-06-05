@@ -185,12 +185,12 @@ export default function LoginPage() {
             <Helmet>
                 <title>Логин</title>
             </Helmet>
-            <div className="login-container">
-                <div className="login-card-wrapper">
+            <div className="login-wrapper">
+                <div className="login-content">
                     {/* Bank branding */}
-                    <div className="login-branding">
-                        <div className="logo-badge-container">
-                            <LogoImageComponent width={76} height={68} />
+                    <div className="login-header">
+                        <div className="login-logo">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-shield text-white"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
                         </div>
                         <h1 className="login-title">Active Daily</h1>
                         <p className="login-subtitle">ActivBank — Банковский портал</p>
@@ -198,78 +198,90 @@ export default function LoginPage() {
 
                     <div className="login-card">
                         <div className="login-card-header">
-                            <h2>Вход в систему</h2>
-                            <p>Введите учётные данные для доступа к порталу</p>
+                            <h3 className="login-card-title">Вход в систему</h3>
+                            <p className="login-card-description">
+                                Введите учётные данные для доступа к порталу
+                            </p>
                         </div>
-
-                        <form
-                            className="login-form"
-                            onSubmit={handleSubmit}
-                            autoComplete="off"
-                        >
-                            {/* Скрытое поле для обхода автозаполнения */}
-                            <input
-                                type="text"
-                                style={{ display: 'none' }}
-                                autoComplete="new-password"
-                            />
-
-                            <div className="form-group-login">
-                                <label className="form-label-login">Имя пользователя</label>
+                        
+                        <div className="login-card-content">
+                            <form
+                                className="login-form"
+                                onSubmit={handleSubmit}
+                                autoComplete="off"
+                            >
+                                {/* Скрытое поле для обхода автозаполнения */}
                                 <input
                                     type="text"
-                                    value={username}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Введите логин"
-                                    required
-                                    disabled={loading}
-                                    autoComplete="username"
-                                    name="username"
+                                    style={{ display: 'none' }}
+                                    autoComplete="new-password"
                                 />
-                            </div>
 
-                            <div className="form-group-login">
-                                <label className="form-label-login">Пароль</label>
-                                <div className="password-input-container">
+                                <div className="form-group">
+                                    <label className="form-label">Имя пользователя</label>
                                     <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Введите пароль"
+                                        type="text"
+                                        className="form-input"
+                                        value={username}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Введите логин"
                                         required
                                         disabled={loading}
-                                        autoComplete="current-password"
-                                        name="current-password"
+                                        autoComplete="username"
+                                        name="username"
                                     />
-                                    <button
-                                        type="button"
-                                        className="toggle-password-visibility"
-                                        onClick={togglePasswordVisibility}
-                                        disabled={loading}
-                                        tabIndex={-1}
-                                    >
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                    </button>
                                 </div>
-                            </div>
 
-                            {error && (
-                                <div className="error-message">
-                                    {error}
+                                <div className="form-group">
+                                    <label className="form-label">Пароль</label>
+                                    <div className="password-input-wrapper">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            className="form-input password-input"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Введите пароль"
+                                            required
+                                            disabled={loading}
+                                            autoComplete="current-password"
+                                            name="current-password"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="password-toggle"
+                                            onClick={togglePasswordVisibility}
+                                            disabled={loading}
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
 
-                            <button type="submit" className="login-submit-btn" disabled={loading}>
-                                {loading ? (
-                                    <FaSpinner className="pulse-animation spin" style={{ margin: "0 auto", animation: "spin 1s linear infinite" }} />
-                                ) : (
-                                    "Войти"
+                                {error && (
+                                    <div className="login-error">
+                                        {error}
+                                    </div>
                                 )}
-                            </button>
-                        </form>
-                        
-                        <div className="login-card-footer">
-                            <p>© {new Date().getFullYear()} ActivBank. Все права защищены.</p>
+
+                                <button type="submit" className="login-submit" disabled={loading}>
+                                    {loading ? (
+                                        <>
+                                            <FaSpinner className="spin" /> Вход...
+                                        </>
+                                    ) : (
+                                        "Войти"
+                                    )}
+                                </button>
+                            </form>
+
+                            <div className="login-footer">
+                                <p>© {new Date().getFullYear()} ActivBank. Все права защищены.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

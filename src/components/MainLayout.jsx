@@ -107,6 +107,13 @@ const MainLayout = () => {
 
     // Audit Logs
     if (pathname.includes("admin/audit-logs")) return "audit_logs_viewer";
+    
+    // Missing additions
+    if (pathname.includes("/client-documents")) return "client_documents";
+    if (pathname.includes("/card-balance")) return "card_balance";
+    if (pathname.includes("/admin/logs")) return "logs_viewer";
+    if (pathname.includes("/admin/daily-tasks")) return "dt_management";
+    if (pathname.includes("/mail-agent")) return "mail_agent_send";
 
     return "";
   };

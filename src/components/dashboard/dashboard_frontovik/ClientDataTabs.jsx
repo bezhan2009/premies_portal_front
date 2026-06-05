@@ -796,17 +796,47 @@ const ClientDataTabs = ({
               )}
             </div>
             {creditsData?.length > 0 ? (
-              <div className="limits-table__wrapper">
-                <Table
-                  tableId="frontovik-credits"
-                  rowKey="referenceId"
-                  columns={creditColumns}
-                  dataSource={sortedCredits}
-                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} кредитов` }}
-                  sticky
-                  bordered
-                  scroll={{ x: "max-content" }}
-                />
+              <div className="abs-cards-grid">
+                {sortedCredits.map((card, idx) => {
+                  return (
+                    <details key={card.referenceId || idx} className="abs-expandable-card">
+                      <summary className="abs-expandable-card-summary">
+                        <div className="card-summary-header">
+                          <span className="card-title">{card.productName || "Кредит"}</span>
+                          <span className="card-status badge-active">{card.statusName || "-"}</span>
+                        </div>
+                        <div className="card-summary-amount">
+                          <span className="amount-val">{card.amount} {card.currency || ""}</span>
+                        </div>
+                        <div className="card-progress-wrapper">
+                          <div className="progress-labels">
+                            <span>Использовано</span>
+                            <span>Лимит: {card.amount}</span>
+                          </div>
+                          <div className="progress-bar-bg">
+                            <div className="progress-bar-fill" style={{ width: "100%", background: "#27ae60" }}></div>
+                          </div>
+                        </div>
+                      </summary>
+                      <div className="abs-expandable-card-content">
+                        <div className="card-detail-grid">
+                          <div className="detail-item"><span>Договор</span><strong>{card.contractNumber || "-"}</strong></div>
+                          <div className="detail-item"><span>Референс</span><strong>{card.referenceId || "-"}</strong></div>
+                          <div className="detail-item"><span>Дата</span><strong>{card.documentDate || "-"}</strong></div>
+                          <div className="detail-item"><span>Продукт Код</span><strong>{card.productCode || "-"}</strong></div>
+                          <div className="detail-item"><span>Отдел</span><strong>{card.department || "-"}</strong></div>
+                        </div>
+                        <div className="card-actions-row" style={{ marginTop: "16px", display: "flex", gap: "8px" }}>
+                          <button className="button" onClick={() => handleOpenGraph(card.referenceId)} disabled={!card.referenceId}>График</button>
+                          <button className="button" style={{ background: "#2980b9" }} onClick={() => handleOpenDetails(card.referenceId)} disabled={!card.referenceId}>Детали</button>
+                          {String(card.statusName || "").trim().toLowerCase() !== "погашен" && (
+                            <button className="button" style={{ background: "#27ae60" }} onClick={() => handleOpenRepayModal(card)}>Погасить</button>
+                          )}
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-tab-state">Кредиты отсутствуют</div>
@@ -826,17 +856,47 @@ const ClientDataTabs = ({
               )}
             </div>
             {depositsData?.length > 0 ? (
-              <div className="limits-table__wrapper">
-                <Table
-                  tableId="frontovik-deposits"
-                  rowKey={(record) => record.AgreementData?.ColvirReferenceId || record.AgreementData?.Code}
-                  columns={depositColumns}
-                  dataSource={sortedDeposits}
-                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} депозитов` }}
-                  sticky
-                  bordered
-                  scroll={{ x: "max-content" }}
-                />
+              <div className="abs-cards-grid">
+                {sortedDeposits.map((item, idx) => {
+                  const agreement = item.AgreementData || {};
+                  const balance = item.BalanceAccounts?.[0]?.Balance || 0;
+                  const total = agreement.Amount || 0;
+                  const percentage = total > 0 ? Math.min((balance / total) * 100, 100) : 0;
+                  
+                  return (
+                    <details key={agreement.ColvirReferenceId || agreement.Code || idx} className="abs-expandable-card">
+                      <summary className="abs-expandable-card-summary">
+                        <div className="card-summary-header">
+                          <span className="card-title">{agreement.Product?.Name || "Депозит"}</span>
+                          <span className="card-status badge-active">{agreement.Status?.Name || "-"}</span>
+                        </div>
+                        <div className="card-summary-amount">
+                          <span className="amount-val">{balance} {agreement.Currency || ""}</span>
+                          <span className="amount-label">Текущий остаток</span>
+                        </div>
+                        <div className="card-progress-wrapper">
+                          <div className="progress-labels">
+                            <span>Накоплено</span>
+                            <span>Сумма: {total} {agreement.Currency}</span>
+                          </div>
+                          <div className="progress-bar-bg">
+                            <div className="progress-bar-fill" style={{ width: `${percentage}%`, background: "#3b82f6" }}></div>
+                          </div>
+                        </div>
+                      </summary>
+                      <div className="abs-expandable-card-content">
+                        <div className="card-detail-grid">
+                          <div className="detail-item"><span>Договор</span><strong>{agreement.Code || "-"}</strong></div>
+                          <div className="detail-item"><span>Референс</span><strong>{agreement.ColvirReferenceId || "-"}</strong></div>
+                          <div className="detail-item"><span>Срок</span><strong>{agreement.DepoTermTU} {agreement.DepoTermTimeType}</strong></div>
+                          <div className="detail-item"><span>Дата начала</span><strong>{agreement.DateFrom || "-"}</strong></div>
+                          <div className="detail-item"><span>Дата окончания</span><strong>{agreement.DateTo || "-"}</strong></div>
+                          <div className="detail-item"><span>Отдел</span><strong>{agreement.Department?.Code || "-"}</strong></div>
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-tab-state">Депозиты отсутствуют</div>

@@ -24,14 +24,16 @@ import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 
-// Безопасная функция для получения значения из dataTrans
 const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
+  if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
+  const found = dataTrans.find((e) => e.label === transactionType);
+  if (found) {
+    return found.value;
+  }
   if (transactionTypeNumber !== undefined && transactionTypeNumber !== null) {
     return transactionTypeNumber;
   }
-  if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
-  const found = dataTrans.find((e) => e.label === transactionType);
-  return found?.value;
+  return undefined;
 };
 
 const getExchangeRate = (conCurrency, exchangeRates) => {

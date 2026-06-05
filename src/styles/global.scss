@@ -2438,3 +2438,243 @@ input:checked + .slider:before {
 .execute-btn:hover:not(:disabled) {
   opacity: 0.9;
 }
+@import "tailwindcss";
+/* @import "tw-animate-css"; */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   Active Daily — ActivBank Design System
+   ============================================ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+
+  /* Sidebar */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  /* Charts */
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  /* Base */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Custom portal colors */
+  --color-bank-red: var(--bank-red);
+  --color-bank-red-light: var(--bank-red-light);
+  --color-bank-red-dark: var(--bank-red-dark);
+  --color-bank-coal: var(--bank-coal);
+  --color-bank-surface: var(--bank-surface);
+  --color-bank-bg: var(--bank-bg);
+  --color-bank-active: var(--bank-active);
+  --color-bank-success: var(--bank-success);
+  --color-bank-warning: var(--bank-warning);
+  --color-bank-info: var(--bank-info);
+
+  /* Collapsible */
+  --animate-collapsible-down: collapsible-down 0.2s ease-out;
+  --animate-collapsible-up: collapsible-up 0.2s ease-out;
+
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
+  }
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* ActivBank Palette */
+  --bank-red: #c8102e;
+  --bank-red-light: #e8354f;
+  --bank-red-dark: #a00d24;
+  --bank-coal: #1a1a1a;
+  --bank-surface: #ffffff;
+  --bank-bg: #f8f9fa;
+  --bank-active: #ffe5ea;
+  --bank-success: #16a34a;
+  --bank-warning: #f59e0b;
+  --bank-info: #0ea5e9;
+
+  /* Radius — 8px base for banking UI */
+  --radius: 0.5rem;
+
+  /* Background & Foreground */
+  --background: #f8f9fa;
+  --foreground: #1a1a1a;
+
+  /* Card */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+
+  /* Popover */
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+
+  /* Primary — Bank Red */
+  --primary: #c8102e;
+  --primary-foreground: #ffffff;
+
+  /* Secondary — Coal */
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+
+  /* Muted */
+  --muted: #f1f3f5;
+  --muted-foreground: #6c757d;
+
+  /* Accent — Active State Pink */
+  --accent: #ffe5ea;
+  --accent-foreground: #c8102e;
+
+  /* Destructive */
+  --destructive: #dc2626;
+
+  /* Border & Input */
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+
+  /* Ring */
+  --ring: #c8102e;
+
+  /* Charts — Bank-themed */
+  --chart-1: #c8102e;
+  --chart-2: #1a1a1a;
+  --chart-3: #f59e0b;
+  --chart-4: #0ea5e9;
+  --chart-5: #16a34a;
+
+  /* Sidebar — White on gray */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #c8102e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffe5ea;
+  --sidebar-accent-foreground: #c8102e;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #c8102e;
+}
+
+.dark {
+  --background: #0f0f0f;
+  --foreground: #f1f3f5;
+  --card: #1a1a1a;
+  --card-foreground: #f1f3f5;
+  --popover: #1a1a1a;
+  --popover-foreground: #f1f3f5;
+  --primary: #e8354f;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f3f5;
+  --secondary-foreground: #1a1a1a;
+  --muted: #2a2a2a;
+  --muted-foreground: #9ca3af;
+  --accent: #3d1520;
+  --accent-foreground: #e8354f;
+  --destructive: #ef4444;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #e8354f;
+  --chart-1: #e8354f;
+  --chart-2: #f1f3f5;
+  --chart-3: #fbbf24;
+  --chart-4: #38bdf8;
+  --chart-5: #4ade80;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #f1f3f5;
+  --sidebar-primary: #e8354f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #3d1520;
+  --sidebar-accent-foreground: #e8354f;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #e8354f;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
+  /* Specific scrollbar for Sidebar and main content if needed */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(200, 16, 46, 0.1);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 16, 46, 0.3);
+  }
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}

@@ -1,4 +1,4 @@
-import RadioSelect from "../../components/elements/RadioSelect";
+﻿import RadioSelect from "../../components/elements/RadioSelect";
 import { depositCurrency } from "../../const/defConst";
 import card from "../../assets/card.jpg";
 import download from "../../assets/download.jpg";
