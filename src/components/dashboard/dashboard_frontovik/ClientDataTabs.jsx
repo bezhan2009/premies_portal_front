@@ -29,7 +29,8 @@ const getPcStatusData = (code) => {
     "18": { text: "ОЖИДАНИЕ ПЕРСОНИФИКАЦИИ ИНСТАНТ-КАРТЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
     "19": { text: "ПРОФИЛАКТИКА МОШЕННИЧЕСТВА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
     "20": { text: "ЗАБЛОКИРОВАНА КЛИЕНТОМ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
-    "21": { text: "ЗАКРЫТА", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" }
+    "21": { text: "ЗАКРЫТА", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" },
+    "24": { text: "ЗАБЛОКИРОВАНА КЛИЕНТОМ", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" }
   };
   const strCode = String(code);
   return statusMap[strCode] || { text: "НЕИЗВЕСТНЫЙ СТАТУС", color: "#64748b", bg: "rgba(100, 116, 139, 0.1)" };
@@ -878,8 +879,14 @@ const ClientDataTabs = ({
                   const pinColor = pinCount < 3 ? "#27ae60" : "#e11d48";
                   const pinBg = pinCount < 3 ? "rgba(39, 174, 96, 0.1)" : "rgba(225, 29, 72, 0.1)";
 
+                  const isBlocked = (() => {
+                    if (pcStatusCode === undefined || pcStatusCode === null) return false;
+                    const codeNum = Number(pcStatusCode);
+                    return (codeNum >= 1 && codeNum <= 16) || (codeNum >= 18 && codeNum <= 20);
+                  })();
+
                   return (
-                    <div key={card.cardId || idx} className="frontovik-card-ui">
+                    <div key={card.cardId || idx} className={`frontovik-card-ui ${isBlocked ? "pc-status-blocked" : ""}`}>
                       <div className="card-top-badges">
                         <span style={{ color: absStyle.color, background: absStyle.bg }}>
                           {absStatus} (АБС)
@@ -1021,13 +1028,13 @@ const ClientDataTabs = ({
 
                       <div className="card-actions-bar">
                         {card.details?.hotCardStatus && String(card.details.hotCardStatus) === "17" ? (
-                          <button className="card-action-btn primary" onClick={() => onUnblockCard(card.cardId)}>Активировать</button>
+                          <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>Активировать</button>
                         ) : (
                           hasBlockCardAccess && (
                             card.details?.hotCardStatus === "0" ? (
                               <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>Заблокировать</button>
                             ) : (
-                              <button className="card-action-btn primary" onClick={() => onUnblockCard(card.cardId)}>Разблокировать</button>
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>Разблокировать</button>
                             )
                           )
                         )}

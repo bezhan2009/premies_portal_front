@@ -202,9 +202,65 @@ export default function ABSClientSearch() {
         "byName", // поиск по имени (ATM)
     ];
 
+    const detectSearchType = (val) => {
+        if (!val) return null;
+        
+        // а) Если есть русские/английские буквы -> поиск по ФИО (byName)
+        if (/[a-zA-Zа-яА-ЯёЁ]/.test(val)) {
+            return "byName";
+        }
+        
+        // е) Код клиента - 11 символов и есть точка (например, 5100.045870)
+        if (val.includes(".")) {
+            const clean = val.replace(/[^\d.]/g, "");
+            if (clean.includes(".") && clean.length === 11) {
+                return "client/info/client-index?clientIndex=";
+            }
+        }
+        
+        // Оставляем только цифры для числовых поисков
+        const digits = val.replace(/\D/g, "");
+        
+        // б) 4 цифры -> последние 4 цифры карты
+        if (digits.length === 4) {
+            return "byLast4";
+        }
+        
+        // в) 9 цифр -> ИНН
+        if (digits.length === 9) {
+            return "client/info/inn?inn=";
+        }
+        
+        // г) 20 цифр -> номер счета
+        if (digits.length === 20) {
+            return "byAccount";
+        }
+        
+        // д) 12 цифр и первая '1' -> id карты
+        if (digits.length === 12 && digits.startsWith("1")) {
+            return "byCardId";
+        }
+        
+        // а) от 11 до 13 цифр -> номер телефона
+        if (digits.length >= 11 && digits.length <= 13) {
+            return "client/info?phoneNumber=";
+        }
+        
+        return null;
+    };
+
     const handlePhoneChange = (e) => {
         const value = e.target.value;
-        const isLetterType = TYPES_ALLOW_LETTERS.includes(selectTypeSearchClient);
+        
+        // Автоматически определяем тип поиска по вводимому значению
+        const detectedType = detectSearchType(value);
+        let activeType = selectTypeSearchClient;
+        if (detectedType) {
+            activeType = detectedType;
+            setSelectTypeSearchClient(detectedType);
+        }
+
+        const isLetterType = TYPES_ALLOW_LETTERS.includes(activeType) || activeType === "byName";
 
         if (isLetterType) {
             setPhoneNumber(value);
@@ -212,7 +268,11 @@ export default function ABSClientSearch() {
         } else {
             const digitsOnly = value.replace(/\D/g, "");
             setPhoneNumber(digitsOnly);
-            setDisplayPhone(formatPhoneNumber(digitsOnly));
+            if (activeType === "client/info?phoneNumber=") {
+                setDisplayPhone(formatPhoneNumber(digitsOnly));
+            } else {
+                setDisplayPhone(digitsOnly);
+            }
         }
     };
 
@@ -1316,7 +1376,7 @@ export default function ABSClientSearch() {
 
     return (
         <>
-            <div className="block_info_prems content-page" align="center">
+            <div className="block_info_prems content-page" style={{ textAlign: "left" }}>
                 {alert.show && (
                     <AlertMessage
                         message={alert.message}

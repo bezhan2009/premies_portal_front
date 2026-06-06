@@ -5,6 +5,7 @@
   margin: 0 auto;
   padding: 10px 0;
   animation: fadeIn 0.4s ease-in-out;
+  text-align: left;
 }
 
 .processing-integration__container {
@@ -1442,5 +1443,57 @@
 .card-action-btn:hover {
   background: #f1f5f9;
   border-color: #cbd5e1;
+}
+
+/* ── BLOCKED PC CARD STATE BLUR AND HIGHLIGHT ── */
+.frontovik-card-ui.pc-status-blocked {
+  border-color: #fecdd3 !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.08) !important;
+
+  .card-main-info, 
+  .card-accounts-table {
+    filter: blur(2px);
+    opacity: 0.65;
+    transition: filter 0.25s ease, opacity 0.25s ease;
+    
+    &:hover {
+      filter: blur(0px);
+      opacity: 1;
+    }
+  }
+
+  // Highlight unlock button
+  .card-action-btn.btn-unlock-highlight {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5) !important;
+    font-weight: 800;
+    animation: pulseGlowGreen 2s infinite alternate;
+    opacity: 1 !important;
+    filter: none !important;
+
+    &:hover {
+      background: #059669 !important;
+      border-color: #059669 !important;
+    }
+  }
+
+  // Subdue other buttons
+  .card-action-btn:not(.btn-unlock-highlight) {
+    opacity: 0.5;
+    filter: blur(0.5px);
+    transition: opacity 0.25s ease, filter 0.25s ease;
+
+    &:hover {
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+}
+
+@keyframes pulseGlowGreen {
+  from { box-shadow: 0 0 4px rgba(16, 185, 129, 0.3); }
+  to { box-shadow: 0 0 16px rgba(16, 185, 129, 0.7); }
 }
 
