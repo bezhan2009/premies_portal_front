@@ -43,13 +43,63 @@ const getAbsStatusStyle = (statusName) => {
   return { color: "#334155", bg: "#f1f5f9" };
 };
 
+// Eagerly load all assets to perform dynamic fuzzy matching
+const cardImages = import.meta.glob("../../../assets/*.{png,jpg,jpeg,svg}", { eager: true });
+
 const getCardImageUrl = (type) => {
   if (!type) return activeLogoImg;
-  try {
-    return new URL(`../../../assets/${type}.png`, import.meta.url).href;
-  } catch(e) {
-    return activeLogoImg;
+  
+  const cleanType = String(type)
+    .toLowerCase()
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+    
+  // Normalize "standard" to "standart" since the files use "STANDART"
+  const normalizedCleanType = cleanType.replace("standard", "standart");
+
+  let bestMatchUrl = null;
+  let maxScore = 0;
+
+  for (const path in cardImages) {
+    const parts = path.split("/");
+    const filenameWithExt = parts[parts.length - 1];
+    const filename = filenameWithExt.substring(0, filenameWithExt.lastIndexOf("."));
+    
+    const cleanFilename = filename
+      .toLowerCase()
+      .replace(/[-_]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleanFilename === normalizedCleanType || cleanFilename === cleanType) {
+      return cardImages[path].default || cardImages[path];
+    }
+    
+    // Fuzzy matching score: Jaccard-like word overlap
+    const typeWords = normalizedCleanType.split(" ");
+    const fileWords = cleanFilename.split(" ");
+    
+    let matches = 0;
+    typeWords.forEach(w => {
+      if (fileWords.includes(w) || cleanFilename.includes(w)) {
+        matches++;
+      }
+    });
+
+    const score = matches / Math.max(typeWords.length, fileWords.length);
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatchUrl = cardImages[path].default || cardImages[path];
+    }
   }
+
+  // Use fuzzy match if score is at least 0.5 (representing high similarity)
+  if (maxScore >= 0.5 && bestMatchUrl) {
+    return bestMatchUrl;
+  }
+
+  return activeLogoImg;
 };
 const ClientDataTabs = ({
   cardsData,
@@ -868,10 +918,10 @@ const ClientDataTabs = ({
                           <div className="card-type-name">{card.type || card.CardTypeName || card.details?.cardTypeName || "Unknown Card"}</div>
                           <div className="card-number-mask">{card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "-"}</div>
                           <div className="card-dates">
-                            <div className="exp-date">{card.details?.expirationDate || "-"}</div>
+                            <div className="exp-date">{card.details?.expirationDate || card.expirationDate || "-"}</div>
                             <div className="right-dates">
                               <span style={{ display: 'block' }}>IDN: {card.cardId || "-"}</span>
-                              <span style={{ display: 'block' }}>Дата выдачи: {card.details?.requestDate || "-"}</span>
+                              <span style={{ display: 'block' }}>Дата выдачи: {card.details?.requestDate || card.requestDate || "-"}</span>
                             </div>
                           </div>
                         </div>
@@ -884,47 +934,89 @@ const ClientDataTabs = ({
                           <div style={{ flex: 1 }}>Баланс в ПЦ</div>
                           <div style={{ width: '120px' }}></div>
                         </div>
-                        {card.details?.accounts?.map((acc, aIdx) => {
-                          const absAcc = accountsData?.find((a) => a.Number === acc.number);
-                          return (
-                            <div className="account-row" key={aIdx}>
-                              <div style={{ flex: 1.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span className="acc-number">{acc.number}</span>
-                                <button className="copy-btn-small" onClick={() => {
-                                  navigator.clipboard.writeText(acc.number);
-                                  message.success("Счет скопирован");
-                                }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                  </svg>
-                                </button>
+                        {(() => {
+                          // Combine accounts from PC details and ABS card info
+                          const mergedAccounts = [];
+                          const seenNumbers = new Set();
+                          
+                          if (card.details?.accounts && Array.isArray(card.details.accounts)) {
+                            card.details.accounts.forEach(acc => {
+                              const num = acc.number || acc.accountNumber;
+                              if (num && !seenNumbers.has(num)) {
+                                seenNumbers.add(num);
+                                mergedAccounts.push({
+                                  number: num,
+                                  balance: acc.balance,
+                                  currency: acc.currency
+                                });
+                              }
+                            });
+                          }
+                          
+                          if (card.accounts && Array.isArray(card.accounts)) {
+                            card.accounts.forEach(acc => {
+                              const num = acc.accountNumber || acc.number;
+                              if (num && !seenNumbers.has(num)) {
+                                seenNumbers.add(num);
+                                mergedAccounts.push({
+                                  number: num,
+                                  balance: undefined,
+                                  currency: undefined
+                                });
+                              }
+                            });
+                          }
+
+                          if (mergedAccounts.length === 0) {
+                            return <div className="empty-accounts-message" style={{ padding: '8px 0', color: '#64748b', fontSize: '13px', fontStyle: 'italic' }}>Связанные счета отсутствуют</div>;
+                          }
+
+                          return mergedAccounts.map((acc, aIdx) => {
+                            const absAcc = accountsData?.find((a) => a.Number === acc.number);
+                            return (
+                              <div className="account-row" key={aIdx}>
+                                <div style={{ flex: 1.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span className="acc-number">{acc.number}</span>
+                                  <button className="copy-btn-small" onClick={() => {
+                                    navigator.clipboard.writeText(acc.number);
+                                    message.success("Счет скопирован");
+                                  }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div style={{ flex: 1, fontWeight: '600' }}>
+                                  {absAcc ? (
+                                    <>
+                                      <span>{Number(absAcc.Balance).toFixed(2)}</span>
+                                      <span style={{ color: absAcc.Currency?.Code === 'TJS' ? '#27ae60' : absAcc.Currency?.Code === 'USD' ? '#e11d48' : '#3b82f6', marginLeft: '4px' }}>
+                                        {absAcc.Currency?.Code}
+                                      </span>
+                                    </>
+                                  ) : "-"}
+                                </div>
+                                <div style={{ flex: 1, fontWeight: '600' }}>
+                                  {acc.balance !== undefined ? (
+                                    <>
+                                      <span>{Number(acc.balance).toFixed(2)}</span>
+                                      <span style={{ 
+                                        color: acc.currency === '972' ? '#27ae60' : acc.currency === '840' ? '#e11d48' : '#3b82f6', 
+                                        marginLeft: '4px' 
+                                      }}>
+                                        {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
+                                      </span>
+                                    </>
+                                  ) : "-"}
+                                </div>
+                                <div style={{ width: '120px', textAlign: 'right' }}>
+                                  <button className="btn-tab-export" style={{ padding: '4px 10px', fontSize: '11px', background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }} onClick={() => handleNavigateToAccountOperations(acc.number)}>Перейти к счету</button>
+                                </div>
                               </div>
-                              <div style={{ flex: 1, fontWeight: '600' }}>
-                                {absAcc ? (
-                                  <>
-                                    <span>{Number(absAcc.Balance).toFixed(2)}</span>
-                                    <span style={{ color: absAcc.Currency?.Code === 'TJS' ? '#27ae60' : absAcc.Currency?.Code === 'USD' ? '#e11d48' : '#3b82f6', marginLeft: '4px' }}>
-                                      {absAcc.Currency?.Code}
-                                    </span>
-                                  </>
-                                ) : "-"}
-                              </div>
-                              <div style={{ flex: 1, fontWeight: '600' }}>
-                                <span>{Number(acc.balance).toFixed(2)}</span>
-                                <span style={{ 
-                                  color: acc.currency === '972' ? '#27ae60' : acc.currency === '840' ? '#e11d48' : '#3b82f6', 
-                                  marginLeft: '4px' 
-                                }}>
-                                  {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
-                                </span>
-                              </div>
-                              <div style={{ width: '120px', textAlign: 'right' }}>
-                                <button className="btn-tab-export" style={{ padding: '4px 10px', fontSize: '11px', background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }} onClick={() => handleNavigateToAccountOperations(acc.number)}>Перейти к счету</button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
 
                       <div className="card-actions-bar">
