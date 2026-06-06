@@ -33,7 +33,9 @@ const ClientPersonalInfo = ({
   const code = selectedClient.client_code || "Не указан";
   const phone = selectedClient.phone || "Не указан";
   const inn = selectedClient.tax_code || "Не указан";
-  const clientTypeName = selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо");
+  
+  const typeVal = selectedClient.client_type?.toLowerCase();
+  const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
 
   return (
     <div className="client-results-section">
@@ -82,9 +84,6 @@ const ClientPersonalInfo = ({
                 <div className="photo-placeholder">Фото</div>
               )}
             </button>
-            <div className="selfie-info">
-              <span className="selfie-title">Лицо клиента</span>
-            </div>
           </div>
 
           {/* 2. Client Identity Metadata */}
@@ -95,74 +94,72 @@ const ClientPersonalInfo = ({
             <div className="summary-identity-code font-mono">
               Код ABS: <span>{code}</span>
             </div>
-          </div>
 
-        </div>
-
-        {/* Middle row: Metadata fields Grid */}
-        <div className="summary-metadata-grid">
-          <div className="metadata-field">
-            <div className="field-icon-label">
-              <span>ИНН</span>
-            </div>
-            <span className="field-value font-mono">{inn}</span>
-          </div>
-
-          <div className="metadata-field">
-            <div className="field-icon-label">
-              <span>Телефон</span>
-            </div>
-            <span className="field-value font-mono">{phone}</span>
-          </div>
-
-          <div className="metadata-field">
-            <div className="field-icon-label">
-              <span>Тип клиента</span>
-            </div>
-            <span className="field-value">{clientTypeName}</span>
-          </div>
-
-          <div className="metadata-field">
-            <div className="field-icon-label">
-              <span>Мобильный банкинг</span>
-            </div>
-            <span className="field-value">
-              {isMobile ? (
-                <span className="mobile-status-connected">
-                  Подключен (IBAN: {isMobile?.Iban || "-"})
-                </span>
-              ) : isMobile !== null ? (
-                <span className="mobile-status-disconnected">Не подключен</span>
-              ) : (
-                <span className="mobile-status-checking">Неизвестно</span>
-              )}
-            </span>
-          </div>
-
-          <div className="metadata-field">
-            <div className="field-icon-label">
-              <span>Телеграмм бот</span>
-            </div>
-            <span className="field-value">
-              {telegramLoading ? (
-                <span className="tg-status-text italic">Проверка...</span>
-              ) : telegramData?.userTelegramId ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="mobile-status-connected">Подключен</span>
-                  <button 
-                    onClick={() => handleDeleteTelegram(phone)}
-                    disabled={telegramDeleteLoading}
-                    style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    {telegramDeleteLoading ? <FaSpinner className="spin" /> : "Отключить"}
-                  </button>
+            {/* Metadata fields Grid inside Identity info to align with FIO */}
+            <div className="summary-metadata-grid">
+              <div className="metadata-field">
+                <div className="field-icon-label">
+                  <span>ИНН:</span>
                 </div>
-              ) : (
-                <span className="mobile-status-disconnected">Не подключен</span>
-              )}
-            </span>
-          </div>
+                <span className="field-value font-mono">{inn}</span>
+              </div>
 
+              <div className="metadata-field">
+                <div className="field-icon-label">
+                  <span>Телефон:</span>
+                </div>
+                <span className="field-value font-mono">{phone}</span>
+              </div>
+
+              <div className="metadata-field">
+                <div className="field-icon-label">
+                  <span>Тип клиента:</span>
+                </div>
+                <span className="field-value">{clientTypeName}</span>
+              </div>
+
+              <div className="metadata-field">
+                <div className="field-icon-label">
+                  <span>Мобильный банкинг:</span>
+                </div>
+                <span className="field-value">
+                  {isMobile ? (
+                    <span className="mobile-status-connected">
+                      Подключен (IBAN: {isMobile?.Iban || "-"})
+                    </span>
+                  ) : isMobile !== null ? (
+                    <span className="mobile-status-disconnected">Не подключен</span>
+                  ) : (
+                    <span className="mobile-status-checking">Неизвестно</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="metadata-field">
+                <div className="field-icon-label">
+                  <span>Телеграмм бот:</span>
+                </div>
+                <span className="field-value">
+                  {telegramLoading ? (
+                    <span className="tg-status-text italic">Проверка...</span>
+                  ) : telegramData?.userTelegramId ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="mobile-status-connected">Подключен</span>
+                      <button 
+                        onClick={() => handleDeleteTelegram(phone)}
+                        disabled={telegramDeleteLoading}
+                        style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        {telegramDeleteLoading ? <FaSpinner className="spin" /> : "Отключить"}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="mobile-status-disconnected">Не подключен</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Lower row: Action Toolbar */}

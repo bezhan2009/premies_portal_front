@@ -266,12 +266,12 @@ export default function ABSClientSearch() {
             setPhoneNumber(value);
             setDisplayPhone(value);
         } else {
-            const digitsOnly = value.replace(/\D/g, "");
-            setPhoneNumber(digitsOnly);
+            const digitsAndDots = value.replace(/[^\d.]/g, "");
+            setPhoneNumber(digitsAndDots);
             if (activeType === "client/info?phoneNumber=") {
-                setDisplayPhone(formatPhoneNumber(digitsOnly));
+                setDisplayPhone(formatPhoneNumber(digitsAndDots));
             } else {
-                setDisplayPhone(digitsOnly);
+                setDisplayPhone(digitsAndDots);
             }
         }
     };
