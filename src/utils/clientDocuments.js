@@ -98,6 +98,7 @@ export const normalizeClientDocumentRecord = (document) => ({
   ),
   sourceLabel: getClientDocumentSourceLabel(document?.source),
   createdAtLabel: formatClientDocumentDate(document?.CreatedAt || document?.created_at),
+  expirationDate: document?.expiration_date || document?.ExpirationDate || document?.expirationDate,
   url: resolveClientDocumentUrl(document),
 });
 

@@ -1,15 +1,7 @@
 import React from "react";
 import {
-  FaUser,
-  FaPhoneAlt,
-  FaIdCard,
-  FaMobileAlt,
-  FaTelegramPlane,
-  FaTrash,
-  FaRegFolderOpen,
   FaSpinner,
   FaCopy,
-  FaShieldAlt,
   FaHistory
 } from "react-icons/fa";
 
@@ -41,7 +33,7 @@ const ClientPersonalInfo = ({
   const code = selectedClient.client_code || "Не указан";
   const phone = selectedClient.phone || "Не указан";
   const inn = selectedClient.tax_code || "Не указан";
-  const clientTypeName = selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо");
+  const clientTypeName = selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо");
 
   return (
     <div className="client-results-section">
@@ -70,7 +62,7 @@ const ClientPersonalInfo = ({
       {/* ── CLIENT SUMMARY DASHBOARD CARD ── */}
       <div className="abs-client-summary-card">
         
-        {/* Upper row: Avatar/Selfie, Name, Actions, Telegram Status */}
+        {/* Upper row: Avatar/Selfie, Name, Actions */}
         <div className="summary-card-header">
           
           {/* 1. Selfie Photo Box */}
@@ -87,27 +79,17 @@ const ClientPersonalInfo = ({
               ) : clientPhotoUrl ? (
                 <img src={clientPhotoUrl} alt="Фото клиента" className="summary-photo-img" />
               ) : (
-                <div className="photo-placeholder"><FaUser size={24} /></div>
+                <div className="photo-placeholder">Фото</div>
               )}
             </button>
             <div className="selfie-info">
               <span className="selfie-title">Лицо клиента</span>
-              <button
-                type="button"
-                className="btn-selfie-action"
-                onClick={onOpenClientDocuments}
-                disabled={clientPhotoLoading && !documentsCount}
-              >
-                <FaRegFolderOpen />
-                <span>Документы ({documentsCount})</span>
-              </button>
             </div>
           </div>
 
           {/* 2. Client Identity Metadata */}
           <div className="summary-identity-info">
             <div className="summary-identity-fio">
-              <FaUser className="fio-icon" />
               <h2>{name}</h2>
             </div>
             <div className="summary-identity-code font-mono">
@@ -115,42 +97,12 @@ const ClientPersonalInfo = ({
             </div>
           </div>
 
-          {/* 3. Telegram Link Status Card */}
-          <div className="summary-telegram-status-card">
-            <div className="tg-header">
-              <FaTelegramPlane className="tg-icon" />
-              <span className="tg-label">Telegram Status</span>
-            </div>
-            <div className="tg-body">
-              {telegramLoading ? (
-                <span className="tg-status-text italic">Проверка...</span>
-              ) : telegramData?.userTelegramId ? (
-                <div className="tg-linked-container">
-                  <span className="tg-status-badge active font-mono">
-                    ID: {telegramData.userTelegramId}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn-tg-unlink"
-                    onClick={() => handleDeleteTelegram(phone)}
-                    disabled={telegramDeleteLoading}
-                    title="Отвязать Telegram ID"
-                  >
-                    {telegramDeleteLoading ? <FaSpinner className="spin" /> : <FaTrash />}
-                  </button>
-                </div>
-              ) : (
-                <span className="tg-status-badge inactive">Не привязан</span>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Middle row: Metadata fields Grid */}
         <div className="summary-metadata-grid">
           <div className="metadata-field">
             <div className="field-icon-label">
-              <FaIdCard />
               <span>ИНН</span>
             </div>
             <span className="field-value font-mono">{inn}</span>
@@ -158,7 +110,6 @@ const ClientPersonalInfo = ({
 
           <div className="metadata-field">
             <div className="field-icon-label">
-              <FaPhoneAlt />
               <span>Телефон</span>
             </div>
             <span className="field-value font-mono">{phone}</span>
@@ -166,7 +117,6 @@ const ClientPersonalInfo = ({
 
           <div className="metadata-field">
             <div className="field-icon-label">
-              <FaUser />
               <span>Тип клиента</span>
             </div>
             <span className="field-value">{clientTypeName}</span>
@@ -174,7 +124,6 @@ const ClientPersonalInfo = ({
 
           <div className="metadata-field">
             <div className="field-icon-label">
-              <FaMobileAlt />
               <span>Мобильный банкинг</span>
             </div>
             <span className="field-value">
@@ -189,6 +138,31 @@ const ClientPersonalInfo = ({
               )}
             </span>
           </div>
+
+          <div className="metadata-field">
+            <div className="field-icon-label">
+              <span>Телеграмм бот</span>
+            </div>
+            <span className="field-value">
+              {telegramLoading ? (
+                <span className="tg-status-text italic">Проверка...</span>
+              ) : telegramData?.userTelegramId ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="mobile-status-connected">Подключен</span>
+                  <button 
+                    onClick={() => handleDeleteTelegram(phone)}
+                    disabled={telegramDeleteLoading}
+                    style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    {telegramDeleteLoading ? <FaSpinner className="spin" /> : "Отключить"}
+                  </button>
+                </div>
+              ) : (
+                <span className="mobile-status-disconnected">Не подключен</span>
+              )}
+            </span>
+          </div>
+
         </div>
 
         {/* Lower row: Action Toolbar */}
@@ -202,6 +176,13 @@ const ClientPersonalInfo = ({
             )}
             <button onClick={handleExportClientInfo} className="btn-toolbar-action btn-toolbar-excel">
               <span>Экспорт клиента в Excel</span>
+            </button>
+            <button 
+              onClick={onOpenClientDocuments} 
+              className="btn-toolbar-action btn-toolbar-documents"
+              disabled={clientPhotoLoading && !documentsCount}
+            >
+              <span>Документы ({documentsCount})</span>
             </button>
           </div>
           
@@ -225,3 +206,4 @@ const ClientPersonalInfo = ({
 };
 
 export default ClientPersonalInfo;
+

@@ -127,6 +127,12 @@ export default function ClientDocumentsTable({
       }
       scroll={{ y: scrollY }}
       locale={{ emptyText: "Документы не найдены" }}
+      rowClassName={(record) => {
+        if (!record.expirationDate) return "";
+        const expDate = new Date(record.expirationDate);
+        if (Number.isNaN(expDate.getTime())) return "";
+        return expDate < new Date() ? "expired-document-row" : "";
+      }}
     />
   );
 }

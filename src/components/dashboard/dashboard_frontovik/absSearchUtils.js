@@ -47,6 +47,7 @@ export const normalizeClientData = (client, searchType) => {
       )?.Code || "",
     long_name: rawLongName,
     client_type: rawType,
+    ClientTypeName: client.ClientTypeName || "",
   };
 };
 
