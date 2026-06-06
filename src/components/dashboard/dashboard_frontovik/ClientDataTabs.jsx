@@ -44,6 +44,23 @@ const getAbsStatusStyle = (statusName) => {
   return { color: "#334155", bg: "#f1f5f9" };
 };
 
+const getAccountStatusData = (code, name) => {
+  if (code === "OPENED") return { text: "Открыт", bg: "#27ae60", color: "#fff" };
+  return { text: name || code || "-", bg: "#f59e0b", color: "#fff" };
+};
+
+const getAccountTypeData = (type) => {
+  switch (type) {
+    case "CCUR": return { text: "Карточный счет", bg: "#eab308", color: "#fff" }; // yellow
+    case "CURR": return { text: "Текущий счет", bg: "#3b82f6", color: "#fff" }; // blue
+    case "LLINE": return { text: "% счет по кредиту", bg: "#8b5cf6", color: "#fff" }; // purple
+    case "TEDP": return { text: "Депозитный счет", bg: "#14b8a6", color: "#fff" }; // teal
+    case "LOAN": return { text: "Кредитный счет", bg: "#f43f5e", color: "#fff" }; // rose
+    case "OTHERS": return { text: "% счет по депозиту", bg: "#64748b", color: "#fff" }; // slate
+    default: return { text: type || "Счет", bg: "#94a3b8", color: "#fff" };
+  }
+};
+
 // Eagerly load all assets to perform dynamic fuzzy matching
 const cardImages = import.meta.glob("../../../assets/*.{png,jpg,jpeg,svg}", { eager: true });
 
@@ -139,6 +156,7 @@ const ClientDataTabs = ({
   hasChangePinAccess,
   selectedClient,
   tableData,
+  isMobile,
 }) => {
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
@@ -824,17 +842,127 @@ const ClientDataTabs = ({
               )}
             </div>
             {accountsData?.length > 0 ? (
-              <div className="limits-table__wrapper">
-                <Table
-                  tableId="frontovik-accounts"
-                  rowKey="Number"
-                  columns={accountColumns}
-                  dataSource={sortedAccounts}
-                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} счетов` }}
-                  sticky
-                  bordered
-                  scroll={{ x: "max-content" }}
-                />
+              <div className="abs-cards-grid">
+                {sortedAccounts.map((acc, idx) => {
+                  const statusData = getAccountStatusData(acc.Status?.Code, acc.Status?.Name);
+                  const typeData = getAccountTypeData(acc.Type);
+                  
+                  // Card connection
+                  let pcBalance = null;
+                  let cardMask = null;
+                  if (acc.Type === "CCUR") {
+                    const matchingCard = cardsData?.find(c => 
+                      c.details?.accounts?.some(a => (a.number === acc.Number || a.accountNumber === acc.Number)) ||
+                      c.accounts?.some(a => (a.number === acc.Number || a.accountNumber === acc.Number))
+                    );
+                    if (matchingCard) {
+                      cardMask = matchingCard.details?.cardNumberMask || matchingCard.CardNumber || matchingCard.cardNumber;
+                      const cardAcc = matchingCard.details?.accounts?.find(a => (a.number === acc.Number || a.accountNumber === acc.Number));
+                      if (cardAcc && cardAcc.balance !== undefined) {
+                        const balNum = Number(cardAcc.balance) / 100;
+                        pcBalance = balNum.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      }
+                    }
+                  }
+
+                  // Loan connection
+                  let loanText = null;
+                  const matchingCredit = creditsData?.find(c => 
+                    c.loanDetails?.paymentOptions?.some(p => p.account === acc.Number)
+                  );
+                  if (matchingCredit) {
+                    const pOpts = matchingCredit.loanDetails?.paymentOptions || [];
+                    const pIdx = pOpts.findIndex(p => p.account === acc.Number);
+                    if (pIdx !== -1) {
+                      const contractNum = matchingCredit.contractNumber || matchingCredit.referenceId || "Неизвестно";
+                      loanText = `Кредит: ${contractNum} (${pIdx + 1})`;
+                    }
+                  }
+
+                  // Mobile connection
+                  const isMobileAcc = isMobile && isMobile.Iban === acc.Number;
+
+                  return (
+                    <div key={acc.Number || idx} className="frontovik-card-ui account-card-ui">
+                      <div className="card-top-badges">
+                        <span style={{ color: statusData.color, background: statusData.bg }}>
+                          {statusData.text}
+                        </span>
+                        <span style={{ color: typeData.color, background: typeData.bg }}>
+                          {typeData.text}
+                        </span>
+                        {cardMask && (
+                          <span style={{ color: "#fff", background: "#f59e0b" }}>
+                            Карта: {cardMask}
+                          </span>
+                        )}
+                        {loanText && (
+                          <span style={{ color: "#fff", background: "#0284c7" }}>
+                            {loanText}
+                          </span>
+                        )}
+                        {isMobileAcc && (
+                          <span style={{ color: "#0f172a", background: "#6ee7b7", fontWeight: 700 }}>
+                            Основной счет в МП
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="card-main-info" style={{ marginTop: "16px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                          <div className="account-balance-block">
+                            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток</div>
+                            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
+                              {Number(acc.Balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {acc.Currency?.Code || ""}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#64748b", marginTop: "8px" }}>
+                              {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
+                            </div>
+                          </div>
+                          
+                          {pcBalance !== null && (
+                            <div className="account-pc-balance-block" style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток в ПЦ</div>
+                              <div style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
+                                {pcBalance}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="account-details-block" style={{ paddingTop: "16px" }}>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+                          Дата открытия: {acc.DateOpened || "-"}
+                        </div>
+                        <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>Номер счета</div>
+                            <div style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", fontFamily: "monospace" }}>{acc.Number}</div>
+                          </div>
+                          <button 
+                            className="copy-btn-large" 
+                            style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "8px", borderRadius: "6px", cursor: "pointer", color: "#475569" }}
+                            onClick={() => {
+                              navigator.clipboard.writeText(acc.Number);
+                              message.success("Счет скопирован");
+                            }}
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="card-actions-bar" style={{ marginTop: "20px" }}>
+                        <button className="card-action-btn outline-danger" onClick={() => handleNavigateToAccountOperations(acc.Number)}>Выписка (АБС)</button>
+                        <button className="card-action-btn neutral" onClick={() => setIsRequisitesModalOpen(true)}>Скачать реквизиты</button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-tab-state">Счета отсутствуют</div>

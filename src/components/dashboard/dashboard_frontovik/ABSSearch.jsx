@@ -531,7 +531,24 @@ export default function ABSClientSearch() {
             ]);
 
             setAccountsData(resAcc || []);
-            setCreditsData(resCredits || []);
+            if (resCredits && resCredits.length > 0) {
+                const enrichedCredits = await Promise.all(
+                    resCredits.map(async (credit) => {
+                        try {
+                            if (credit.referenceId) {
+                                const details = await fetchLoanDetails(credit.referenceId);
+                                return { ...credit, loanDetails: details };
+                            }
+                            return credit;
+                        } catch (e) {
+                            return credit;
+                        }
+                    })
+                );
+                setCreditsData(enrichedCredits);
+            } else {
+                setCreditsData(resCredits || []);
+            }
             setDepositsData(resDeposits || []);
 
             if (resCards && resCards.length > 0) {
@@ -1485,6 +1502,7 @@ export default function ABSClientSearch() {
                             hasBlockCardAccess={hasBlockCardAccess}
                             hasChangePinAccess={hasChangePinAccess}
                             tableData={tableData}
+                            isMobile={isMobile}
                         />
                     </div>
                 </div>
