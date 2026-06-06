@@ -5,7 +5,52 @@ import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 import { logAuditAction } from "../../../utils/auditLogger.js";
+import activeLogoImg from "../../../assets/active_logo.png";
 
+const getPcStatusData = (code) => {
+  const statusMap = {
+    "0": { text: "АКТИВИРОВАНА", color: "#27ae60", bg: "rgba(39, 174, 96, 0.1)" },
+    "1": { text: "ПОЗВОНИТЕ В БАНК-ЭМИТЕНТ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "2": { text: "КАРТА ПОД КОНТРОЛЕМ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "3": { text: "ОПЕРАЦИИ ЗАПРЕЩЕНЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "4": { text: "ОПЕРАЦИИ ЗАПРЕЩЕНЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "5": { text: "ОПЕРАЦИИ ЗАПРЕЩЕНЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "6": { text: "КАРТА УТЕРЯНА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "7": { text: "КАРТА УКРАДЕНА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "8": { text: "ОПЕРАЦИИ ЗАПРЕЩЕНЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "9": { text: "НЕВЕРНАЯ КАРТА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "10": { text: "ИЗЪЯТЬ КАРТУ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "11": { text: "ОПЕРАЦИИ ЗАПРЕЩЕНЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "12": { text: "КАРТА НЕ АКТИВИРОВАНА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "13": { text: "ПРЕВЫШЕНО КОЛИЧЕСТВО ПОПЫТОК PIN", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "14": { text: "ПРИНУДИТЕЛЬНАЯ СМЕНА PIN", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "15": { text: "ЗАДОЛЖЕННОСТЬ ПО КРЕДИТУ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "17": { text: "ТРЕБУЕТ АКТИВАЦИИ", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
+    "18": { text: "ОЖИДАНИЕ ПЕРСОНИФИКАЦИИ ИНСТАНТ-КАРТЫ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "19": { text: "ПРОФИЛАКТИКА МОШЕННИЧЕСТВА", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "20": { text: "ЗАБЛОКИРОВАНА КЛИЕНТОМ", color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" },
+    "21": { text: "ЗАКРЫТА", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" }
+  };
+  const strCode = String(code);
+  return statusMap[strCode] || { text: "НЕИЗВЕСТНЫЙ СТАТУС", color: "#64748b", bg: "rgba(100, 116, 139, 0.1)" };
+};
+
+const getAbsStatusStyle = (statusName) => {
+  const name = String(statusName || "").toLowerCase();
+  if (name.includes("активирована")) return { color: "#27ae60", bg: "rgba(39, 174, 96, 0.1)" };
+  if (name.includes("закрыта")) return { color: "#e11d48", bg: "rgba(225, 29, 72, 0.1)" };
+  if (name.includes("выпущена")) return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" };
+  return { color: "#334155", bg: "#f1f5f9" };
+};
+
+const getCardImageUrl = (type) => {
+  if (!type) return activeLogoImg;
+  try {
+    return new URL(`../../../assets/${type}.png`, import.meta.url).href;
+  } catch(e) {
+    return activeLogoImg;
+  }
+};
 const ClientDataTabs = ({
   cardsData,
   sortedCards,
@@ -766,17 +811,144 @@ const ClientDataTabs = ({
               )}
             </div>
             {cardsData?.length > 0 ? (
-              <div className="limits-table__wrapper">
-                <Table
-                  tableId="frontovik-cards"
-                  rowKey="cardId"
-                  columns={cardColumns}
-                  dataSource={sortedCards}
-                  pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} карт` }}
-                  sticky
-                  bordered
-                  scroll={{ x: "max-content" }}
-                />
+              <div className="abs-cards-grid">
+                {sortedCards.map((card, idx) => {
+                  const absStatus = card.statusName || "-";
+                  const absStyle = getAbsStatusStyle(absStatus);
+                  
+                  const pcStatusCode = card.details?.hotCardStatus;
+                  const pcStatusData = getPcStatusData(pcStatusCode);
+                  
+                  // SMS & 3DS
+                  const smsService = card.services?.find(s => s.identification?.serviceId === "300");
+                  const tdsService = card.services?.find(s => s.identification?.serviceId === "330");
+                  
+                  // PIN
+                  const pinCount = Number(card.details?.pinDenialCounter || 0);
+                  const pinColor = pinCount < 3 ? "#27ae60" : "#e11d48";
+                  const pinBg = pinCount < 3 ? "rgba(39, 174, 96, 0.1)" : "rgba(225, 29, 72, 0.1)";
+
+                  return (
+                    <div key={card.cardId || idx} className="frontovik-card-ui">
+                      <div className="card-top-badges">
+                        <span style={{ color: absStyle.color, background: absStyle.bg }}>
+                          {absStatus} (АБС)
+                        </span>
+                        {pcStatusCode !== undefined && (
+                          <span style={{ color: pcStatusData.color, background: pcStatusData.bg }}>
+                            {pcStatusData.text} ({pcStatusCode}) (ПЦ)
+                          </span>
+                        )}
+                        <span style={{ 
+                          color: smsService ? "#27ae60" : "#f59e0b", 
+                          background: smsService ? "rgba(39, 174, 96, 0.1)" : "rgba(245, 158, 11, 0.1)" 
+                        }}>
+                          СМС- {smsService ? smsService.extNumber : "не подключен"}
+                        </span>
+                        <span style={{ 
+                          color: tdsService ? "#27ae60" : "#f59e0b", 
+                          background: tdsService ? "rgba(39, 174, 96, 0.1)" : "rgba(245, 158, 11, 0.1)" 
+                        }}>
+                          3DS- {tdsService ? tdsService.extNumber : "не подключен"}
+                        </span>
+                        <span style={{ color: pinColor, background: pinBg }}>
+                          PIN- {pinCount}
+                        </span>
+                      </div>
+                      
+                      <div className="card-main-info">
+                        <div className="card-img-container">
+                          <img 
+                            src={getCardImageUrl(card.type || card.CardTypeName)} 
+                            alt={card.type || "Card"} 
+                            onError={(e) => { e.target.src = activeLogoImg; }}
+                          />
+                        </div>
+                        <div className="card-details-text">
+                          <div className="card-type-name">{card.type || card.CardTypeName || card.details?.cardTypeName || "Unknown Card"}</div>
+                          <div className="card-number-mask">{card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "-"}</div>
+                          <div className="card-dates">
+                            <div className="exp-date">{card.details?.expirationDate || "-"}</div>
+                            <div className="right-dates">
+                              <span style={{ display: 'block' }}>IDN: {card.cardId || "-"}</span>
+                              <span style={{ display: 'block' }}>Дата выдачи: {card.details?.requestDate || "-"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card-accounts-table">
+                        <div className="account-row-header">
+                          <div style={{ flex: 1.5 }}>Счета:</div>
+                          <div style={{ flex: 1 }}>Баланс в АБС</div>
+                          <div style={{ flex: 1 }}>Баланс в ПЦ</div>
+                          <div style={{ width: '120px' }}></div>
+                        </div>
+                        {card.details?.accounts?.map((acc, aIdx) => {
+                          const absAcc = accountsData?.find((a) => a.Number === acc.number);
+                          return (
+                            <div className="account-row" key={aIdx}>
+                              <div style={{ flex: 1.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="acc-number">{acc.number}</span>
+                                <button className="copy-btn-small" onClick={() => {
+                                  navigator.clipboard.writeText(acc.number);
+                                  message.success("Счет скопирован");
+                                }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                  </svg>
+                                </button>
+                              </div>
+                              <div style={{ flex: 1, fontWeight: '600' }}>
+                                {absAcc ? (
+                                  <>
+                                    <span>{Number(absAcc.Balance).toFixed(2)}</span>
+                                    <span style={{ color: absAcc.Currency?.Code === 'TJS' ? '#27ae60' : absAcc.Currency?.Code === 'USD' ? '#e11d48' : '#3b82f6', marginLeft: '4px' }}>
+                                      {absAcc.Currency?.Code}
+                                    </span>
+                                  </>
+                                ) : "-"}
+                              </div>
+                              <div style={{ flex: 1, fontWeight: '600' }}>
+                                <span>{Number(acc.balance).toFixed(2)}</span>
+                                <span style={{ 
+                                  color: acc.currency === '972' ? '#27ae60' : acc.currency === '840' ? '#e11d48' : '#3b82f6', 
+                                  marginLeft: '4px' 
+                                }}>
+                                  {acc.currency === "972" ? "TJS" : acc.currency === "840" ? "USD" : acc.currency === "978" ? "EUR" : acc.currency}
+                                </span>
+                              </div>
+                              <div style={{ width: '120px', textAlign: 'right' }}>
+                                <button className="btn-tab-export" style={{ padding: '4px 10px', fontSize: '11px', background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }} onClick={() => handleNavigateToAccountOperations(acc.number)}>Перейти к счету</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="card-actions-bar">
+                        {card.details?.hotCardStatus && String(card.details.hotCardStatus) === "17" ? (
+                          <button className="card-action-btn primary" onClick={() => onUnblockCard(card.cardId)}>Активировать</button>
+                        ) : (
+                          hasBlockCardAccess && (
+                            card.details?.hotCardStatus === "0" ? (
+                              <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>Заблокировать</button>
+                            ) : (
+                              <button className="card-action-btn primary" onClick={() => onUnblockCard(card.cardId)}>Разблокировать</button>
+                            )
+                          )
+                        )}
+                        {hasChangePinAccess && (
+                          <button className="card-action-btn outline-danger" onClick={() => onChangePin(card.cardId)}>Сменить ПИН</button>
+                        )}
+                        <button className="card-action-btn neutral" onClick={() => onOpenLimits(card.cardId)}>Лимиты</button>
+                        <button className="card-action-btn neutral" onClick={() => window.open(`http://10.64.1.10/services/tariff_by_idn.php?idn=${card.cardId}`, "_blank")}>Тарифы</button>
+                        <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-tab-state">Карты отсутствуют</div>
