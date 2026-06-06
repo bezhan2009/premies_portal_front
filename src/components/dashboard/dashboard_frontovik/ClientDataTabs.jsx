@@ -143,7 +143,7 @@ const ClientDataTabs = ({
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
   const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("accounts");
+  const [activeTab, setActiveTab] = React.useState("cards");
 
   const handleOpenRequisitesModal = (card) => {
     setRequisitesCard(card);
@@ -778,16 +778,16 @@ const ClientDataTabs = ({
       {/* ── TABS NAVIGATION BAR ── */}
       <div className="abs-tabs-navigation">
         <button
-          className={`abs-tab-trigger-btn ${activeTab === "accounts" ? "active" : ""}`}
-          onClick={() => setActiveTab("accounts")}
-        >
-          Счета ({accountsData?.length || 0})
-        </button>
-        <button
           className={`abs-tab-trigger-btn ${activeTab === "cards" ? "active" : ""}`}
           onClick={() => setActiveTab("cards")}
         >
           Карты ({cardsData?.length || 0})
+        </button>
+        <button
+          className={`abs-tab-trigger-btn ${activeTab === "accounts" ? "active" : ""}`}
+          onClick={() => setActiveTab("accounts")}
+        >
+          Счета ({accountsData?.length || 0})
         </button>
         <button
           className={`abs-tab-trigger-btn ${activeTab === "credits" ? "active" : ""}`}
@@ -1044,6 +1044,8 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => onOpenLimits(card.cardId)}>Лимиты</button>
                         <button className="card-action-btn neutral" onClick={() => window.open(`http://10.64.1.10/services/tariff_by_idn.php?idn=${card.cardId}`, "_blank")}>Тарифы</button>
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
+                        <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
+                        <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
                       </div>
                     </div>
                   );
