@@ -1,7 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import "../../styles/ABSSearch.scss";
+import "../../../styles/ABSSearch.scss";
 
 const CreditDetails = ({ credit, onBack }) => {
   const details = credit.loanDetails || {};
