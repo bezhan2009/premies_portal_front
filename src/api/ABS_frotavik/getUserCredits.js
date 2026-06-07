@@ -62,3 +62,15 @@ export const repayLoanEarly = async (repayData) => {
     throw err;
   }
 };
+
+export const fetchCreditGraphs = async (referenceId) => {
+  try {
+    const res = await apiClientABS_Frontovik(
+      "/credits/graphs?referenceId=" + referenceId
+    );
+    return res.data;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
+};

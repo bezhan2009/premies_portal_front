@@ -67,6 +67,7 @@ function parseLoanDetailsSoapResponse(xmlText) {
     statusName: getElementValue(findElement(agreementDataElem, "status"), "name"),
     productName: getElementValue(findElement(agreementDataElem, "product"), "name"),
     creditPurpose: getElementValue(findElement(agreementDataElem, "purpose"), "name"),
+    creditPurposeCode: getElementValue(findElement(agreementDataElem, "purpose"), "code"),
     amount: getElementValue(agreementDataElem, "amount"),
     currency: getElementValue(agreementDataElem, "currency"),
     documentDate: getElementValue(agreementDataElem, "documentDate"),
@@ -77,6 +78,33 @@ function parseLoanDetailsSoapResponse(xmlText) {
     clientDea: getElementValue(findElement(agreementDataElem, "deaClient"), "code"),
     // Add other fields if needed, but these are most important
   };
+
+  // Helper to extract nested values
+  const extractPcnByName = (nameToFind) => {
+    const names = xmlDoc.getElementsByTagName("*");
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].localName === "name" && names[i].textContent === nameToFind) {
+        const parent = names[i].parentNode;
+        return getElementValue(parent, "pcn");
+      }
+    }
+    return "0";
+  };
+
+  const extractValueByCode = (codeToFind) => {
+    const codes = xmlDoc.getElementsByTagName("*");
+    for (let i = 0; i < codes.length; i++) {
+      if (codes[i].localName === "code" && codes[i].textContent === codeToFind) {
+        const parent = codes[i].parentNode;
+        return getElementValue(parent, "value");
+      }
+    }
+    return "";
+  };
+
+  params.interestRate = extractPcnByName("Проценты по кредиту");
+  params.penaltyRate = extractPcnByName("Штраф за просрочку основного долга");
+  params.expert = extractValueByCode("Z_342_LOAN_EXP");
 
   // Extract Balances (Balance accounts)
   const balanceAccountsRoot = findElement(loanElem, "balanceAccounts");

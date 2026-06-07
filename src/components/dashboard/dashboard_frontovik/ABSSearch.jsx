@@ -7,6 +7,7 @@ import {
     getUserCredits,
     getUserDeposits,
     getUserInfoPhone,
+    fetchCreditGraphs,
 } from "../../../api/ABS_frotavik/getUserCredits";
 import {
     fetchLoanDetails,
@@ -536,8 +537,11 @@ export default function ABSClientSearch() {
                     resCredits.map(async (credit) => {
                         try {
                             if (credit.referenceId) {
-                                const details = await fetchLoanDetails(credit.referenceId);
-                                return { ...credit, loanDetails: details };
+                                const [details, graphs] = await Promise.all([
+                                    fetchLoanDetails(credit.referenceId),
+                                    fetchCreditGraphs(credit.referenceId).catch(() => [])
+                                ]);
+                                return { ...credit, loanDetails: details, graphs };
                             }
                             return credit;
                         } catch (e) {

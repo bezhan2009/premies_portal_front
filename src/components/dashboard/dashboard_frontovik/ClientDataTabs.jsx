@@ -3,6 +3,7 @@ import { Table } from "../../table/FlexibleAntTable.jsx";
 import { Input as AntInput, Space, Button, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
+import CreditDetails from "./CreditDetails.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 import { logAuditAction } from "../../../utils/auditLogger.js";
 import activeLogoImg from "../../../assets/active_logo.png";
@@ -161,7 +162,71 @@ const ClientDataTabs = ({
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
   const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("cards");
+  const [activeTab, setActiveTab] = React.useState("accounts");
+  const [activeDepositCategory, setActiveDepositCategory] = React.useState("all");
+  const [activeCreditCategory, setActiveCreditCategory] = React.useState("all");
+  const [selectedCredit, setSelectedCredit] = React.useState(null);
+
+  const openAndHighlightTab = (tabName, elementId) => {
+    setActiveTab(tabName);
+    setTimeout(() => {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'box-shadow 0.3s ease';
+        el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5)';
+        setTimeout(() => { el.style.boxShadow = ''; }, 2000);
+        // Expand details element if applicable
+        if (el.tagName.toLowerCase() === 'details') {
+          el.open = true;
+        }
+      }
+    }, 100);
+  };
+
+  const handleCloseRequisitesModal = () => {
+    setIsRequisitesModalOpen(false);
+    setRequisitesCard(null);
+  };
+
+  const depositCategories = React.useMemo(() => {
+    if (!depositsData) return [];
+    const categories = new Map();
+    depositsData.forEach(item => {
+      const code = item.AgreementData?.Status?.Code || item.Status?.Code;
+      const name = item.AgreementData?.Status?.Name || item.Status?.Name || "Неизвестно";
+      if (code) {
+        categories.set(code, name);
+      }
+    });
+    return Array.from(categories.entries()).map(([code, name]) => ({ code, name }));
+  }, [depositsData]);
+
+  const creditCategories = React.useMemo(() => {
+    if (!creditsData) return [];
+    const categories = new Map();
+    creditsData.forEach(item => {
+      const name = item.statusName || "Неизвестно";
+      if (name) categories.set(name, name);
+    });
+    return Array.from(categories.keys());
+  }, [creditsData]);
+
+  const filteredDeposits = React.useMemo(() => {
+    if (activeDepositCategory === "all") return sortedDeposits;
+    return sortedDeposits.filter(item => {
+      const code = item.AgreementData?.Status?.Code || item.Status?.Code;
+      return code === activeDepositCategory;
+    });
+  }, [sortedDeposits, activeDepositCategory]);
+
+  const filteredCredits = React.useMemo(() => {
+    if (activeCreditCategory === "all") return sortedCredits;
+    return sortedCredits.filter(item => {
+      const name = item.statusName || "Неизвестно";
+      return name === activeCreditCategory;
+    });
+  }, [sortedCredits, activeCreditCategory]);
 
   const handleOpenRequisitesModal = (card) => {
     setRequisitesCard(card);
@@ -860,13 +925,14 @@ const ClientDataTabs = ({
                       const cardAcc = matchingCard.details?.accounts?.find(a => (a.number === acc.Number || a.accountNumber === acc.Number));
                       if (cardAcc && cardAcc.balance !== undefined) {
                         const balNum = Number(cardAcc.balance) / 100;
-                        pcBalance = balNum.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        pcBalance = balNum.toLocaleString('ru-RU', { maximumFractionDigits: 0 });
                       }
                     }
                   }
 
                   // Loan connection
                   let loanText = null;
+                  let loanRefId = null;
                   const matchingCredit = creditsData?.find(c => 
                     c.loanDetails?.paymentOptions?.some(p => p.account === acc.Number)
                   );
@@ -876,83 +942,106 @@ const ClientDataTabs = ({
                     if (pIdx !== -1) {
                       const contractNum = matchingCredit.contractNumber || matchingCredit.referenceId || "Неизвестно";
                       loanText = `Кредит: ${contractNum} (${pIdx + 1})`;
+                      loanRefId = matchingCredit.referenceId;
                     }
                   }
 
                   // Mobile connection
                   const isMobileAcc = isMobile && isMobile.Iban === acc.Number;
 
-                  return (
-                    <div key={acc.Number || idx} className="frontovik-card-ui account-card-ui">
-                      <div className="card-top-badges">
-                        <span style={{ color: statusData.color, background: statusData.bg }}>
-                          {statusData.text}
-                        </span>
-                        <span style={{ color: typeData.color, background: typeData.bg }}>
-                          {typeData.text}
-                        </span>
-                        {cardMask && (
-                          <span style={{ color: "#fff", background: "#f59e0b" }}>
-                            Карта: {cardMask}
-                          </span>
-                        )}
-                        {loanText && (
-                          <span style={{ color: "#fff", background: "#0284c7" }}>
-                            {loanText}
-                          </span>
-                        )}
-                        {isMobileAcc && (
-                          <span style={{ color: "#0f172a", background: "#6ee7b7", fontWeight: 700 }}>
-                            Основной счет в МП
-                          </span>
-                        )}
-                      </div>
+                  const badgeStyle = { 
+                    fontSize: "12px", 
+                    fontWeight: 600, 
+                    padding: "4px 8px", 
+                    borderRadius: "6px",
+                    display: "inline-block"
+                  };
 
-                      <div className="card-main-info" style={{ marginTop: "16px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                          <div className="account-balance-block">
-                            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток</div>
-                            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
-                              {Number(acc.Balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {acc.Currency?.Code || ""}
-                            </div>
-                            <div style={{ fontSize: "13px", color: "#64748b", marginTop: "8px" }}>
-                              {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
-                            </div>
-                          </div>
-                          
-                          {pcBalance !== null && (
-                            <div className="account-pc-balance-block" style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток в ПЦ</div>
-                              <div style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
-                                {pcBalance}
-                              </div>
-                            </div>
+                  return (
+                    <div key={acc.Number || idx} className="frontovik-card-ui account-card-ui" style={{ height: "100%", justifyContent: "space-between" }}>
+                      <div>
+                        <div className="card-top-badges" style={{ alignItems: "center" }}>
+                          <span style={{ ...badgeStyle, color: statusData.color, background: statusData.bg }}>
+                            {statusData.text}
+                          </span>
+                          <span style={{ ...badgeStyle, color: typeData.color, background: typeData.bg }}>
+                            {typeData.text}
+                          </span>
+                          {cardMask && (
+                            <span 
+                              style={{ ...badgeStyle, color: "#fff", background: "#f59e0b", cursor: "pointer", transition: "opacity 0.2s" }}
+                              onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                              onMouseLeave={(e) => e.target.style.opacity = 1}
+                              onClick={() => openAndHighlightTab("cards", `card-${matchingCard?.cardId}`)}
+                              title="Перейти к карте"
+                            >
+                              Карта: {cardMask}
+                            </span>
+                          )}
+                          {loanText && (
+                            <span 
+                              style={{ ...badgeStyle, color: "#fff", background: "#0284c7", cursor: "pointer", transition: "opacity 0.2s" }}
+                              onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                              onMouseLeave={(e) => e.target.style.opacity = 1}
+                              onClick={() => loanRefId && openAndHighlightTab("credits", `credit-${loanRefId}`)}
+                              title="Перейти к кредиту"
+                            >
+                              {loanText}
+                            </span>
+                          )}
+                          {isMobileAcc && (
+                            <span style={{ ...badgeStyle, color: "#0f172a", background: "#6ee7b7", fontWeight: 700 }}>
+                              Основной счет в МП
+                            </span>
                           )}
                         </div>
-                      </div>
 
-                      <div className="account-details-block" style={{ paddingTop: "16px" }}>
-                        <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
-                          Дата открытия: {acc.DateOpened || "-"}
-                        </div>
-                        <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <div style={{ fontSize: "12px", color: "#64748b" }}>Номер счета</div>
-                            <div style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", fontFamily: "monospace" }}>{acc.Number}</div>
+                        <div className="card-main-info" style={{ marginTop: "16px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "80px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                            <div className="account-balance-block">
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток</div>
+                              <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
+                                {Number(acc.Balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {acc.Currency?.Code || ""}
+                              </div>
+                              <div style={{ fontSize: "13px", color: "#64748b", marginTop: "8px" }}>
+                                {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
+                              </div>
+                            </div>
+                            
+                            {pcBalance !== null && (
+                              <div className="account-pc-balance-block" style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток в ПЦ</div>
+                                <div style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
+                                  {pcBalance}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <button 
-                            className="copy-btn-large" 
-                            style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "8px", borderRadius: "6px", cursor: "pointer", color: "#475569" }}
-                            onClick={() => {
-                              navigator.clipboard.writeText(acc.Number);
-                              message.success("Счет скопирован");
-                            }}
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                          </button>
+                        </div>
+
+                        <div className="account-details-block" style={{ paddingTop: "16px", flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+                            Дата открытия: {acc.DateOpened || "-"}
+                          </div>
+                          <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b" }}>Номер счета</div>
+                              <div style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", fontFamily: "monospace" }}>{acc.Number}</div>
+                            </div>
+                            <button 
+                              className="copy-btn-large" 
+                              style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "8px", borderRadius: "6px", cursor: "pointer", color: "#475569" }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(acc.Number);
+                                message.success("Счет скопирован");
+                              }}
+                            >
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -1188,59 +1277,208 @@ const ClientDataTabs = ({
         {/* Credits Tab */}
         {activeTab === "credits" && (
           <div className="tab-pane-fade">
-            <div className="tab-pane-header">
-              <h3>Договоры кредитования</h3>
-              {creditsData?.length > 0 && (
-                <button onClick={handleExportCredits} className="btn-tab-export">
-                  Экспорт в Excel
-                </button>
-              )}
-            </div>
-            {creditsData?.length > 0 ? (
-              <div className="abs-cards-grid">
-                {sortedCredits.map((card, idx) => {
-                  return (
-                    <details key={card.referenceId || idx} className="abs-expandable-card">
-                      <summary className="abs-expandable-card-summary">
-                        <div className="card-summary-header">
-                          <span className="card-title">{card.productName || "Кредит"}</span>
-                          <span className="card-status badge-active">{card.statusName || "-"}</span>
-                        </div>
-                        <div className="card-summary-amount">
-                          <span className="amount-val">{card.amount} {card.currency || ""}</span>
-                        </div>
-                        <div className="card-progress-wrapper">
-                          <div className="progress-labels">
-                            <span>Использовано</span>
-                            <span>Лимит: {card.amount}</span>
-                          </div>
-                          <div className="progress-bar-bg">
-                            <div className="progress-bar-fill" style={{ width: "100%", background: "#27ae60" }}></div>
-                          </div>
-                        </div>
-                      </summary>
-                      <div className="abs-expandable-card-content">
-                        <div className="card-detail-grid">
-                          <div className="detail-item"><span>Договор</span><strong>{card.contractNumber || "-"}</strong></div>
-                          <div className="detail-item"><span>Референс</span><strong>{card.referenceId || "-"}</strong></div>
-                          <div className="detail-item"><span>Дата</span><strong>{card.documentDate || "-"}</strong></div>
-                          <div className="detail-item"><span>Продукт Код</span><strong>{card.productCode || "-"}</strong></div>
-                          <div className="detail-item"><span>Отдел</span><strong>{card.department || "-"}</strong></div>
-                        </div>
-                        <div className="card-actions-row" style={{ marginTop: "16px", display: "flex", gap: "8px" }}>
-                          <button className="button" onClick={() => handleOpenGraph(card.referenceId)} disabled={!card.referenceId}>График</button>
-                          <button className="button" style={{ background: "#2980b9" }} onClick={() => handleOpenDetails(card.referenceId)} disabled={!card.referenceId}>Детали</button>
-                          {String(card.statusName || "").trim().toLowerCase() !== "погашен" && (
-                            <button className="button" style={{ background: "#27ae60" }} onClick={() => handleOpenRepayModal(card)}>Погасить</button>
-                          )}
-                        </div>
-                      </div>
-                    </details>
-                  );
-                })}
-              </div>
+            {selectedCredit ? (
+              <CreditDetails credit={selectedCredit} onBack={() => setSelectedCredit(null)} />
             ) : (
-              <div className="empty-tab-state">Кредиты отсутствуют</div>
+              <>
+                <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                    <h3>Договоры кредитования</h3>
+                    {creditsData?.length > 0 && (
+                      <button onClick={handleExportCredits} className="btn-tab-export">
+                        Экспорт в Excel
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Category Filters */}
+                  {creditCategories.length > 0 && (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", width: "100%" }}>
+                      <button 
+                        style={{
+                          padding: "6px 14px", 
+                          borderRadius: "20px", 
+                          fontSize: "13px", 
+                          fontWeight: 600,
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          background: activeCreditCategory === "all" ? "#0f172a" : "#f1f5f9",
+                          color: activeCreditCategory === "all" ? "#fff" : "#475569"
+                        }}
+                        onClick={() => setActiveCreditCategory("all")}
+                      >
+                        Все
+                      </button>
+                      {creditCategories.map(cat => (
+                        <button 
+                          key={cat}
+                          style={{
+                            padding: "6px 14px", 
+                            borderRadius: "20px", 
+                            fontSize: "13px", 
+                            fontWeight: 600,
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                            background: activeCreditCategory === cat ? "#0f172a" : "#f1f5f9",
+                            color: activeCreditCategory === cat ? "#fff" : "#475569"
+                          }}
+                          onClick={() => setActiveCreditCategory(cat)}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {filteredCredits?.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {filteredCredits.map((card, idx) => {
+                      const details = card.loanDetails || {};
+                      const params = details.params || {};
+                      const balances = details.balances || [];
+                      const graphs = card.graphs || [];
+
+                      const statusName = params.statusName || card.statusName || "Неизвестно";
+                      let statusColor = { bg: "rgba(245, 158, 11, 0.1)", text: "#f59e0b" };
+                      if (statusName === "Актуален") {
+                        statusColor = { bg: "rgba(39, 174, 96, 0.1)", text: "#27ae60" };
+                      } else if (statusName === "Закрыт" || statusName === "Закрыт досрочно") {
+                        statusColor = { bg: "rgba(225, 29, 72, 0.1)", text: "#e11d48" };
+                      }
+
+                      const amount = params.amount || card.amount || "0";
+                      const currency = params.currency || card.currency || "TJS";
+                      const term = params.term || "-";
+                      const startDate = params.startDate || card.startDate || "-";
+                      const endDate = params.endDate || card.endDate || "-";
+                      const department = params.department || card.department || "Неизвестно";
+                      const interestRate = params.interestRate || "0";
+
+                      // Debt Balance
+                      const debtAccounts = balances.filter(b => b.currCode === "TJS" && b.activeFl === "dt");
+                      const debtBalance = debtAccounts.reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
+                      const repaid = Math.max(0, Number(amount) - debtBalance);
+
+                      // Progress Bar
+                      const percentage = Number(amount) > 0 ? Math.min((repaid / Number(amount)) * 100, 100) : 0;
+
+                      // Next Payment
+                      let nextPaymentAmount = 0;
+                      let nextPaymentDate = "-";
+                      if (graphs && graphs.length > 0) {
+                        const now = new Date();
+                        const nextMonth = new Date();
+                        nextMonth.setDate(now.getDate() + 31);
+                        
+                        const upcoming = graphs.filter(g => {
+                          if (!g.PaymentDate) return false;
+                          const pDate = new Date(g.PaymentDate);
+                          return pDate >= now && pDate <= nextMonth;
+                        });
+
+                        if (upcoming.length > 0) {
+                          const targetDate = upcoming[0].PaymentDate;
+                          nextPaymentDate = targetDate.split(" ")[0];
+                          upcoming.forEach(g => {
+                            if (g.PaymentDate === targetDate && (g.Code === "CR_PD" || g.Code === "CR_INTER")) {
+                              nextPaymentAmount += Number(g.Amount || 0);
+                            }
+                          });
+                        }
+                      }
+
+                      return (
+                        <div id={`credit-${card.referenceId}`} key={card.referenceId || idx} className="frontovik-card-ui" style={{ width: "100%", padding: "20px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px", marginBottom: "16px" }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                                <div style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
+                                  {params.productName || card.productName || "Кредит"}
+                                </div>
+                                <span style={{ 
+                                  fontSize: "12px", 
+                                  fontWeight: 600, 
+                                  padding: "4px 8px", 
+                                  borderRadius: "6px", 
+                                  backgroundColor: statusColor.bg, 
+                                  color: statusColor.text 
+                                }}>
+                                  {statusName}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                                Дата получения: {startDate} | Дата окончания: {endDate} | Обслуживается: {department}
+                              </div>
+                            </div>
+                            
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток задолженности</div>
+                              <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
+                                {debtBalance.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {currency}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: "20px" }}>
+                            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Погашено: {repaid.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {currency}</div>
+                            <div style={{ width: "100%", height: "6px", backgroundColor: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
+                              <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: "#e11d48" }}></div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px", marginBottom: "20px" }}>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Сумма кредита</div>
+                              <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>
+                                {Number(amount).toLocaleString('ru-RU')} {currency}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>% Ставка</div>
+                              <div style={{ fontSize: "16px", fontWeight: "700", color: "#27ae60" }}>{interestRate} %</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Срок</div>
+                              <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>{term} Мес</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Ежемесячный платеж</div>
+                              <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>
+                                {nextPaymentAmount.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {currency}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Дата след платежа</div>
+                              <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>{nextPaymentDate}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: "12px" }}>
+                            <button 
+                              className="card-action-btn outline-danger" 
+                              onClick={() => handleOpenRepayModal(card)}
+                              disabled={statusName === "Погашен"}
+                            >
+                              Погасить досрочно
+                            </button>
+                            <button 
+                              className="card-action-btn neutral"
+                              onClick={() => setSelectedCredit(card)}
+                            >
+                              Подробнее
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="empty-tab-state">Кредиты отсутствуют</div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -1248,54 +1486,182 @@ const ClientDataTabs = ({
         {/* Deposits Tab */}
         {activeTab === "deposits" && (
           <div className="tab-pane-fade">
-            <div className="tab-pane-header">
-              <h3>Договоры депозитов</h3>
-              {depositsData?.length > 0 && (
-                <button onClick={handleExportDeposits} className="btn-tab-export">
-                  Экспорт в Excel
-                </button>
+            <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                <h3>Договоры депозитов</h3>
+                {depositsData?.length > 0 && (
+                  <button onClick={handleExportDeposits} className="btn-tab-export">
+                    Экспорт в Excel
+                  </button>
+                )}
+              </div>
+              
+              {/* Category Filters */}
+              {depositCategories.length > 0 && (
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", width: "100%" }}>
+                  <button 
+                    style={{
+                      padding: "6px 14px", 
+                      borderRadius: "20px", 
+                      fontSize: "13px", 
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      background: activeDepositCategory === "all" ? "#0f172a" : "#f1f5f9",
+                      color: activeDepositCategory === "all" ? "#fff" : "#475569"
+                    }}
+                    onClick={() => setActiveDepositCategory("all")}
+                  >
+                    Все
+                  </button>
+                  {depositCategories.map(cat => (
+                    <button 
+                      key={cat.code}
+                      style={{
+                        padding: "6px 14px", 
+                        borderRadius: "20px", 
+                        fontSize: "13px", 
+                        fontWeight: 600,
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        background: activeDepositCategory === cat.code ? "#0f172a" : "#f1f5f9",
+                        color: activeDepositCategory === cat.code ? "#fff" : "#475569"
+                      }}
+                      onClick={() => setActiveDepositCategory(cat.code)}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-            {depositsData?.length > 0 ? (
-              <div className="abs-cards-grid">
-                {sortedDeposits.map((item, idx) => {
+
+            {filteredDeposits?.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {filteredDeposits.map((item, idx) => {
                   const agreement = item.AgreementData || {};
-                  const balance = item.BalanceAccounts?.[0]?.Balance || 0;
-                  const total = agreement.Amount || 0;
-                  const percentage = total > 0 ? Math.min((balance / total) * 100, 100) : 0;
+                  const statusName = agreement.Status?.Name || item.Status?.Name || "Неизвестно";
                   
+                  // Calculate Status Color
+                  let statusColor = { bg: "rgba(245, 158, 11, 0.1)", text: "#f59e0b" };
+                  if (statusName === "Актуален") {
+                    statusColor = { bg: "rgba(39, 174, 96, 0.1)", text: "#27ae60" };
+                  } else if (statusName === "Закрыт") {
+                    statusColor = { bg: "rgba(225, 29, 72, 0.1)", text: "#e11d48" };
+                  }
+
+                  // Find Deposit Account
+                  const depoAcc = item.BalanceAccounts?.find(a => a.RuleCode === "DEPOACC") || {};
+                  const depoBalance = depoAcc.Balance || "0.00";
+                  const currency = agreement.Currency || depoAcc.CurrCode || "TJS";
+
+                  // Find Income Account
+                  const incomeAcc = item.BalanceAccounts?.find(a => a.RuleCode === "CLIACC") || {};
+                  const incomeBalance = incomeAcc.Balance || "0.00";
+                  const incomeCurr = incomeAcc.CurrCode || currency;
+                  
+                  // Extract Rates
+                  const allRates = item.Rates || item.Conditions || agreement.Rates || agreement.Conditions || [];
+                  const bonusRate = allRates.find(r => r.Code === "DEP_BONUS")?.Pcn || "0";
+                  const penaltyRate = allRates.find(r => r.Code === "DEP_PNLTY")?.Pcn || "0";
+                  const taxRate = allRates.find(r => r.Code === "DEP_TAX")?.Pcn || "0";
+
+                  // Calculate Progress
+                  const dateFromStr = agreement.DateFrom || item.DateFrom;
+                  const dateToStr = agreement.DateTo || item.DateTo;
+                  let progressPercent = 0;
+                  
+                  if (dateFromStr && dateToStr) {
+                    const fromTime = new Date(dateFromStr.split('.').reverse().join('-')).getTime() || new Date(dateFromStr).getTime();
+                    const toTime = new Date(dateToStr.split('.').reverse().join('-')).getTime() || new Date(dateToStr).getTime();
+                    const now = new Date().getTime();
+                    
+                    if (fromTime && toTime && toTime > fromTime) {
+                      if (now >= toTime) {
+                        progressPercent = 100;
+                      } else if (now > fromTime) {
+                        progressPercent = ((now - fromTime) / (toTime - fromTime)) * 100;
+                      }
+                    }
+                  }
+
                   return (
-                    <details key={agreement.ColvirReferenceId || agreement.Code || idx} className="abs-expandable-card">
-                      <summary className="abs-expandable-card-summary">
-                        <div className="card-summary-header">
-                          <span className="card-title">{agreement.Product?.Name || "Депозит"}</span>
-                          <span className="card-status badge-active">{agreement.Status?.Name || "-"}</span>
-                        </div>
-                        <div className="card-summary-amount">
-                          <span className="amount-val">{balance} {agreement.Currency || ""}</span>
-                          <span className="amount-label">Текущий остаток</span>
-                        </div>
-                        <div className="card-progress-wrapper">
-                          <div className="progress-labels">
-                            <span>Накоплено</span>
-                            <span>Сумма: {total} {agreement.Currency}</span>
+                    <div key={agreement.ColvirReferenceId || agreement.Code || idx} className="frontovik-card-ui" style={{ width: "100%", padding: "20px" }}>
+                      {/* Header Row */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px", marginBottom: "16px" }}>
+                        <div>
+                          <div style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
+                            {agreement.Product?.Name || agreement.Name || item.Name || "Депозит"}
                           </div>
-                          <div className="progress-bar-bg">
-                            <div className="progress-bar-fill" style={{ width: `${percentage}%`, background: "#3b82f6" }}></div>
-                          </div>
+                          <span style={{ 
+                            fontSize: "12px", 
+                            fontWeight: 600, 
+                            padding: "4px 8px", 
+                            borderRadius: "6px", 
+                            backgroundColor: statusColor.bg, 
+                            color: statusColor.text 
+                          }}>
+                            {statusName}
+                          </span>
                         </div>
-                      </summary>
-                      <div className="abs-expandable-card-content">
-                        <div className="card-detail-grid">
-                          <div className="detail-item"><span>Договор</span><strong>{agreement.Code || "-"}</strong></div>
-                          <div className="detail-item"><span>Референс</span><strong>{agreement.ColvirReferenceId || "-"}</strong></div>
-                          <div className="detail-item"><span>Срок</span><strong>{agreement.DepoTermTU} {agreement.DepoTermTimeType}</strong></div>
-                          <div className="detail-item"><span>Дата начала</span><strong>{agreement.DateFrom || "-"}</strong></div>
-                          <div className="detail-item"><span>Дата окончания</span><strong>{agreement.DateTo || "-"}</strong></div>
-                          <div className="detail-item"><span>Отдел</span><strong>{agreement.Department?.Code || "-"}</strong></div>
+                        
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Сумма депозита</div>
+                          <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
+                            {Number(depoBalance).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {currency}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                            Счет: <span style={{ fontFamily: "monospace", color: "#334155" }}>{depoAcc.AccCode || "-"}</span>
+                          </div>
                         </div>
                       </div>
-                    </details>
+
+                      {/* Main Info Grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "20px" }}>
+                        
+                        {/* Dates & Progress */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{ fontSize: "13px", color: "#475569", fontWeight: 600 }}>Срок депозита</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#64748b" }}>
+                            <span>От: {dateFromStr || "-"}</span>
+                            <span>До: {dateToStr || "-"}</span>
+                          </div>
+                          <div style={{ width: "100%", height: "6px", backgroundColor: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
+                            <div style={{ width: `${progressPercent}%`, height: "100%", backgroundColor: "#ef4444" }}></div>
+                          </div>
+                        </div>
+
+                        {/* Income */}
+                        <div>
+                          <div style={{ fontSize: "13px", color: "#475569", fontWeight: 600, marginBottom: "8px" }}>Ожидаемый доход</div>
+                          <div style={{ fontSize: "18px", fontWeight: "700", color: "#27ae60" }}>
+                            {Number(incomeBalance).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {incomeCurr}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                            Счет %: <span style={{ fontFamily: "monospace", color: "#334155" }}>{incomeAcc.AccCode || "-"}</span>
+                          </div>
+                        </div>
+
+                        {/* Rates Grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>Ставка</div>
+                            <div style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>{bonusRate}%</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>Налог</div>
+                            <div style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>{taxRate}%</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>При расторжении</div>
+                            <div style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>{penaltyRate}%</div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
                   );
                 })}
               </div>
