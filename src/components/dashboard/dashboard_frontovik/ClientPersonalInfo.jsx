@@ -4,6 +4,7 @@ import {
   FaCopy,
   FaHistory
 } from "react-icons/fa";
+import { serviceCodes } from "../../../utils/serviceCodes";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -36,6 +37,9 @@ const ClientPersonalInfo = ({
   
   const typeVal = selectedClient.client_type?.toLowerCase();
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
+
+  const branchCode = code !== "Не указан" ? code.split('.')[0] : null;
+  const serviceText = branchCode && serviceCodes[branchCode] ? serviceCodes[branchCode] : "";
 
   return (
     <div className="client-results-section">
@@ -87,74 +91,70 @@ const ClientPersonalInfo = ({
           </div>
 
           {/* 2. Client Identity Metadata */}
-          <div className="summary-identity-info">
+          <div className="summary-identity-info" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
             <div className="summary-identity-fio">
-              <h2>{name}</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{name}</h2>
             </div>
-            <div className="summary-identity-code font-mono">
-              Код ABS: <span>{code}</span>
+            <div className="summary-identity-code" style={{ display: 'flex', gap: '20px', color: '#888', fontSize: '14px' }}>
+              <span>Код клиента: {code}</span>
+              {serviceText && <span>Обслуживается: {serviceText}</span>}
             </div>
 
             {/* Metadata fields Grid inside Identity info to align with FIO */}
-            <div className="summary-metadata-grid">
-              <div className="metadata-field">
-                <div className="field-icon-label">
-                  <span>ИНН:</span>
-                </div>
-                <span className="field-value font-mono">{inn}</span>
+            <div className="summary-metadata-grid" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(5, 1fr)', 
+              gap: '15px', 
+              marginTop: '10px' 
+            }}>
+              <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#888' }}>ИНН</span>
+                <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{inn}</span>
               </div>
 
-              <div className="metadata-field">
-                <div className="field-icon-label">
-                  <span>Телефон:</span>
-                </div>
-                <span className="field-value font-mono">{phone}</span>
+              <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#888' }}>Телефон</span>
+                <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{phone}</span>
               </div>
 
-              <div className="metadata-field">
-                <div className="field-icon-label">
-                  <span>Тип клиента:</span>
-                </div>
-                <span className="field-value">{clientTypeName}</span>
+              <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#888' }}>Тип клиента</span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>{clientTypeName}</span>
               </div>
 
-              <div className="metadata-field">
-                <div className="field-icon-label">
-                  <span>Мобильный банкинг:</span>
-                </div>
-                <span className="field-value">
-                  {isMobile ? (
-                    <span className="mobile-status-connected">
-                      Подключен (IBAN: {isMobile?.Iban || "-"})
+              <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#888' }}>Мобильный банкинг</span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {isMobile === null ? (
+                    <span className="mobile-status-checking" style={{ color: '#888' }}>Неизвестно</span>
+                  ) : (isMobile && (typeof isMobile === 'string' || isMobile?.Iban || isMobile?.account)) ? (
+                    <span className="mobile-status-connected" style={{ color: '#333' }}>
+                      Подключен IBAN:<br/>{typeof isMobile === 'string' ? isMobile : (isMobile?.Iban || isMobile?.account || "-")}
                     </span>
-                  ) : isMobile !== null ? (
-                    <span className="mobile-status-disconnected">Не подключен</span>
                   ) : (
-                    <span className="mobile-status-checking">Неизвестно</span>
+                    <span className="mobile-status-disconnected" style={{ color: 'red' }}>Не подключен</span>
                   )}
                 </span>
               </div>
 
-              <div className="metadata-field">
-                <div className="field-icon-label">
-                  <span>Телеграмм бот:</span>
-                </div>
-                <span className="field-value">
+              <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#888' }}>Telegram бот</span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
                   {telegramLoading ? (
-                    <span className="tg-status-text italic">Проверка...</span>
+                    <span className="tg-status-text italic" style={{ color: '#888' }}>Проверка...</span>
                   ) : telegramData?.userTelegramId ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="mobile-status-connected">Подключен</span>
+                      <span className="mobile-status-connected" style={{ color: '#333' }}>Подключен</span>
                       <button 
                         onClick={() => handleDeleteTelegram(phone)}
                         disabled={telegramDeleteLoading}
-                        style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                        style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                       >
                         {telegramDeleteLoading ? <FaSpinner className="spin" /> : "Отключить"}
                       </button>
                     </div>
                   ) : (
-                    <span className="mobile-status-disconnected">Не подключен</span>
+                    <span className="mobile-status-disconnected" style={{ color: '#333' }}>Не подключен</span>
                   )}
                 </span>
               </div>
