@@ -7,6 +7,8 @@ import CreditDetails from "./CreditDetails.jsx";
 import DepositDetails from "./DepositDetails.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 import { logAuditAction } from "../../../utils/auditLogger.js";
+import { serviceCodes } from "../../../utils/serviceCodes.js";
+import { formatDateDisplay } from "../../../utils/dateFormatter.js";
 import activeLogoImg from "../../../assets/active_logo.png";
 
 const getPcStatusData = (code) => {
@@ -163,7 +165,7 @@ const ClientDataTabs = ({
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
   const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("accounts");
+  const [activeTab, setActiveTab] = React.useState("cards");
   const [activeDepositCategory, setActiveDepositCategory] = React.useState("all");
   const [activeCreditCategory, setActiveCreditCategory] = React.useState("all");
   const [selectedCredit, setSelectedCredit] = React.useState(null);
@@ -669,6 +671,7 @@ const ClientDataTabs = ({
       dataIndex: "DateOpened",
       key: "DateOpened",
       width: 150,
+      render: (date) => formatDateDisplay(date),
     },
     {
       title: "Филиал",
@@ -726,6 +729,7 @@ const ClientDataTabs = ({
       dataIndex: "documentDate",
       key: "documentDate",
       width: 130,
+      render: (date) => formatDateDisplay(date),
     },
     {
       title: "Клиент Код",
@@ -824,12 +828,14 @@ const ClientDataTabs = ({
       dataIndex: ["AgreementData", "DateFrom"],
       key: "dateFrom",
       width: 130,
+      render: (date) => formatDateDisplay(date),
     },
     {
       title: "Дата окончания",
       dataIndex: ["AgreementData", "DateTo"],
       key: "dateTo",
       width: 130,
+      render: (date) => formatDateDisplay(date),
     },
     {
       title: "Продукт",
@@ -935,7 +941,8 @@ const ClientDataTabs = ({
                   let loanText = null;
                   let loanRefId = null;
                   const matchingCredit = creditsData?.find(c => 
-                    c.loanDetails?.paymentOptions?.some(p => p.account === acc.Number)
+                    c.loanDetails?.paymentOptions?.some(p => p.account === acc.Number) &&
+                    c.statusName === "Актуален"
                   );
                   if (matchingCredit) {
                     const pOpts = matchingCredit.loanDetails?.paymentOptions || [];
@@ -1004,9 +1011,6 @@ const ClientDataTabs = ({
                               <div style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>
                                 {Number(acc.Balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {acc.Currency?.Code || ""}
                               </div>
-                              <div style={{ fontSize: "13px", color: "#64748b", marginTop: "8px" }}>
-                                {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
-                              </div>
                             </div>
                             
                             {pcBalance !== null && (
@@ -1021,8 +1025,14 @@ const ClientDataTabs = ({
                         </div>
 
                         <div className="account-details-block" style={{ paddingTop: "16px", flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-                          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
-                            Дата открытия: {acc.DateOpened || "-"}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                            <div style={{ fontSize: "13px", color: "#64748b" }}>
+                              {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
+                              {acc.Department && serviceCodes[acc.Department] ? ` · Обслуживание: ${serviceCodes[acc.Department]}` : ""}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#64748b" }}>
+                              Дата открытия: {formatDateDisplay(acc.DateOpened) || "-"}
+                            </div>
                           </div>
                           <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
@@ -1103,31 +1113,41 @@ const ClientDataTabs = ({
                     return (codeNum >= 1 && codeNum <= 16) || (codeNum >= 18 && codeNum <= 20);
                   })();
 
+                  const agreementStr = card.details?.agreement || card.agreement || "";
+                  const cardBranchCode = agreementStr.length >= 4 ? agreementStr.substring(0, 4) : null;
+                  const cardBranchName = cardBranchCode && serviceCodes[cardBranchCode] ? serviceCodes[cardBranchCode] : null;
+
                   return (
-                    <div key={card.cardId || idx} className={`frontovik-card-ui ${isBlocked ? "pc-status-blocked" : ""}`}>
-                      <div className="card-top-badges">
-                        <span style={{ color: absStyle.color, background: absStyle.bg }}>
+                    <div id={`card-${card.cardId}`} key={card.cardId || idx} className={`frontovik-card-ui ${isBlocked ? "pc-status-blocked" : ""}`}>
+                      <div className="card-top-badges" style={{ alignItems: "center" }}>
+                        <span style={{ color: absStyle.color, background: absStyle.bg, fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" }}>
                           {absStatus} (АБС)
                         </span>
                         {pcStatusCode !== undefined && (
-                          <span style={{ color: pcStatusData.color, background: pcStatusData.bg }}>
+                          <span style={{ color: pcStatusData.color, background: pcStatusData.bg, fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" }}>
                             {pcStatusData.text} ({pcStatusCode}) (ПЦ)
                           </span>
                         )}
                         <span style={{ 
-                          color: smsService ? "#27ae60" : "#f59e0b", 
-                          background: smsService ? "rgba(39, 174, 96, 0.1)" : "rgba(245, 158, 11, 0.1)" 
+                          color: smsService ? "#166534" : "#92400e", 
+                          background: smsService ? "#dcfce7" : "#fef3c7",
+                          fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" 
                         }}>
-                          СМС- {smsService ? smsService.extNumber : "не подключен"}
+                          СМС: {smsService ? smsService.extNumber : "не подключен"}
                         </span>
                         <span style={{ 
-                          color: tdsService ? "#27ae60" : "#f59e0b", 
-                          background: tdsService ? "rgba(39, 174, 96, 0.1)" : "rgba(245, 158, 11, 0.1)" 
+                          color: tdsService ? "#166534" : "#92400e", 
+                          background: tdsService ? "#dcfce7" : "#fef3c7",
+                          fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" 
                         }}>
-                          3DS- {tdsService ? tdsService.extNumber : "не подключен"}
+                          3DS: {tdsService ? tdsService.extNumber : "не подключен"}
                         </span>
-                        <span style={{ color: pinColor, background: pinBg }}>
-                          PIN- {pinCount}
+                        <span style={{ 
+                          color: pinColor, 
+                          background: pinBg,
+                          fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" 
+                        }}>
+                          PIN: {pinCount}
                         </span>
                       </div>
                       
@@ -1143,10 +1163,11 @@ const ClientDataTabs = ({
                           <div className="card-type-name">{card.type || card.CardTypeName || card.details?.cardTypeName || "Unknown Card"}</div>
                           <div className="card-number-mask">{card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "-"}</div>
                           <div className="card-dates">
-                            <div className="exp-date">{card.details?.expirationDate || card.expirationDate || "-"}</div>
+                            <div className="exp-date">{formatDateDisplay(card.details?.expirationDate || card.expirationDate || "-")}</div>
                             <div className="right-dates">
                               <span style={{ display: 'block' }}>IDN: {card.cardId || "-"}</span>
-                              <span style={{ display: 'block' }}>Дата выдачи: {card.details?.requestDate || card.requestDate || "-"}</span>
+                              {cardBranchName && <span style={{ display: 'block', color: '#64748b' }}>Обслуживается: {cardBranchName}</span>}
+                              <span style={{ display: 'block', color: '#64748b' }}>Дата выдачи: {formatDateDisplay(card.details?.requestDate || card.requestDate || "-")}</span>
                             </div>
                           </div>
                         </div>
@@ -1411,7 +1432,7 @@ const ClientDataTabs = ({
                                 </span>
                               </div>
                               <div style={{ fontSize: "12px", color: "#64748b" }}>
-                                Дата получения: {startDate} | Дата окончания: {endDate} | Обслуживается: {department}
+                                Дата получения: {formatDateDisplay(startDate)} | Дата окончания: {formatDateDisplay(endDate)} | Обслуживается: {department && serviceCodes[department] ? serviceCodes[department] : department}
                               </div>
                             </div>
                             
@@ -1620,7 +1641,7 @@ const ClientDataTabs = ({
                                 </span>
                               </div>
                               <div style={{ fontSize: "12px", color: "#64748b" }}>
-                                Дата открытия: {dateFromStr} | Дата окончания: {dateToStr} | Обслуживается: {department}
+                                Дата открытия: {formatDateDisplay(dateFromStr)} | Дата окончания: {formatDateDisplay(dateToStr)} | Обслуживается: {department && serviceCodes[department] ? serviceCodes[department] : department}
                               </div>
                             </div>
                             
