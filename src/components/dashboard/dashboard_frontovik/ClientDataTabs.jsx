@@ -161,11 +161,15 @@ const ClientDataTabs = ({
   selectedClient,
   tableData,
   isMobile,
+  activeTab: propActiveTab,
+  setActiveTab: propSetActiveTab,
 }) => {
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
   const [isRequisitesLoading, setIsRequisitesLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("cards");
+  const [activeTabState, setActiveTabState] = React.useState("cards");
+  const activeTab = propActiveTab !== undefined ? propActiveTab : activeTabState;
+  const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : setActiveTabState;
   const [activeDepositCategory, setActiveDepositCategory] = React.useState("all");
   const [activeCreditCategory, setActiveCreditCategory] = React.useState("all");
   const [selectedCredit, setSelectedCredit] = React.useState(null);
@@ -173,19 +177,27 @@ const ClientDataTabs = ({
 
   const openAndHighlightTab = (tabName, elementId) => {
     setActiveTab(tabName);
-    setTimeout(() => {
+    let attempts = 0;
+    const findAndHighlight = () => {
       const el = document.getElementById(elementId);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.style.transition = 'box-shadow 0.3s ease';
-        el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5)';
-        setTimeout(() => { el.style.boxShadow = ''; }, 2000);
-        // Expand details element if applicable
+        el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+        el.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.6)';
+        el.style.borderColor = '#f59e0b';
+        setTimeout(() => {
+          el.style.boxShadow = '';
+          el.style.borderColor = '';
+        }, 2000);
         if (el.tagName.toLowerCase() === 'details') {
           el.open = true;
         }
+      } else if (attempts < 20) {
+        attempts++;
+        setTimeout(findAndHighlight, 50);
       }
-    }, 100);
+    };
+    setTimeout(findAndHighlight, 50);
   };
 
   const handleCloseRequisitesModal = () => {
@@ -923,14 +935,25 @@ const ClientDataTabs = ({
                   // Card connection
                   let pcBalance = null;
                   let cardMask = null;
+                  let matchingCard = null;
                   if (acc.Type === "CCUR") {
-                    const matchingCard = cardsData?.find(c => 
-                      c.details?.accounts?.some(a => (a.number === acc.Number || a.accountNumber === acc.Number)) ||
-                      c.accounts?.some(a => (a.number === acc.Number || a.accountNumber === acc.Number))
-                    );
+                    matchingCard = cardsData?.find(c => {
+                      const detailsAccounts = c.details?.accounts || [];
+                      const cAccounts = c.accounts || [];
+                      return detailsAccounts.some(a => {
+                        const num = a.number || a.accountNumber;
+                        return num && String(num).trim() === String(acc.Number).trim();
+                      }) || cAccounts.some(a => {
+                        const num = a.number || a.accountNumber;
+                        return num && String(num).trim() === String(acc.Number).trim();
+                      });
+                    });
                     if (matchingCard) {
                       cardMask = matchingCard.details?.cardNumberMask || matchingCard.CardNumber || matchingCard.cardNumber;
-                      const cardAcc = matchingCard.details?.accounts?.find(a => (a.number === acc.Number || a.accountNumber === acc.Number));
+                      const cardAcc = matchingCard.details?.accounts?.find(a => {
+                        const num = a.number || a.accountNumber;
+                        return num && String(num).trim() === String(acc.Number).trim();
+                      });
                       if (cardAcc && cardAcc.balance !== undefined) {
                         pcBalance = Number(cardAcc.balance).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (acc.Currency?.Code || "");
                       }
@@ -983,7 +1006,7 @@ const ClientDataTabs = ({
                               onClick={() => openAndHighlightTab("cards", `card-${matchingCard?.cardId}`)}
                               title="Перейти к карте"
                             >
-                              Карта: {cardMask}
+                              КАРТА: {cardMask}
                             </span>
                           )}
                           {loanText && (
@@ -1004,7 +1027,7 @@ const ClientDataTabs = ({
                           )}
                         </div>
 
-                        <div className="card-main-info" style={{ marginTop: "16px", borderBottom: "1px dashed #e2e8f0", paddingBottom: "16px", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "80px" }}>
+                        <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
                             <div className="account-balance-block">
                               <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Остаток</div>
@@ -1022,10 +1045,10 @@ const ClientDataTabs = ({
                               </div>
                             )}
                           </div>
-                        </div>
 
-                        <div className="account-details-block" style={{ paddingTop: "16px", flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                          <div style={{ borderBottom: "1px dashed #e2e8f0" }}></div>
+
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                             <div style={{ fontSize: "13px", color: "#64748b" }}>
                               {acc.Branch?.Name || "Мудирияти амалиёти ш. Душанбе"}
                               {acc.Department && serviceCodes[acc.Department] ? ` · Обслуживание: ${serviceCodes[acc.Department]}` : ""}
@@ -1034,20 +1057,21 @@ const ClientDataTabs = ({
                               Дата открытия: {formatDateDisplay(acc.DateOpened) || "-"}
                             </div>
                           </div>
-                          <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+                          <div className="account-number-copy-box" style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid #f1f5f9" }}>
                             <div>
-                              <div style={{ fontSize: "12px", color: "#64748b" }}>Номер счета</div>
-                              <div style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", fontFamily: "monospace" }}>{acc.Number}</div>
+                              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Номер счета</div>
+                              <div style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", fontFamily: "monospace", letterSpacing: "0.5px" }}>{acc.Number}</div>
                             </div>
                             <button 
                               className="copy-btn-large" 
-                              style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "8px", borderRadius: "6px", cursor: "pointer", color: "#475569" }}
+                              style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "8px", borderRadius: "6px", cursor: "pointer", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center" }}
                               onClick={() => {
                                 navigator.clipboard.writeText(acc.Number);
                                 message.success("Счет скопирован");
                               }}
                             >
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                               </svg>
@@ -1056,9 +1080,9 @@ const ClientDataTabs = ({
                         </div>
                       </div>
 
-                      <div className="card-actions-bar" style={{ marginTop: "20px" }}>
+                      <div className="card-actions-bar" style={{ marginTop: "auto" }}>
                         <button className="card-action-btn outline-danger" onClick={() => handleNavigateToAccountOperations(acc.Number)}>Выписка (АБС)</button>
-                        <button className="card-action-btn neutral" onClick={() => setIsRequisitesModalOpen(true)}>Скачать реквизиты</button>
+                        <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(matchingCard || { cardId: "", details: { cardNumberMask: "" } })}>Скачать реквизиты</button>
                       </div>
                     </div>
                   );
@@ -1285,6 +1309,9 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
                         <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
+                        {pinCount > 3 && (
+                          <button className="card-action-btn danger btn-reset-pin-highlight" onClick={() => onResetPin(card.cardId)}>Сбросить счетчик пин-а</button>
+                        )}
                       </div>
                     </div>
                   );

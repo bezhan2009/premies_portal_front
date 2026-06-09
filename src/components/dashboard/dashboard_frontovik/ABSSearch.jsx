@@ -76,6 +76,7 @@ const convertDiramToSomoni = (value) => {
 export default function ABSClientSearch() {
     const { exportToExcel } = useExcelExport();
     const [isMobile, setIsMobile] = useState(null);
+    const [activeTab, setActiveTab] = useState("cards");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [displayPhone, setDisplayPhone] = useState("");
     const [clientsData, setClientsData] = useState([]);
@@ -1302,10 +1303,14 @@ export default function ABSClientSearch() {
 
             isMobile = await getUserInfoPhone(phone);
 
-            setIsMobile(isMobile);
+            if (isMobile && (typeof isMobile === 'string' || isMobile.Iban || isMobile.iban || isMobile.account)) {
+                setIsMobile(isMobile);
+            } else {
+                setIsMobile(false);
+            }
         } catch (e) {
             console.error(e);
-            setIsMobile(null);
+            setIsMobile(false);
         }
     };
 
@@ -1345,6 +1350,7 @@ export default function ABSClientSearch() {
             userInfoPhone(selectedClient.phone);
             fetchTelegramUser(selectedClient.phone);
         }
+        setActiveTab("cards");
     }, [selectedClient]);
 
     const fetchTelegramUser = async (phone) => {
@@ -1507,6 +1513,8 @@ export default function ABSClientSearch() {
                             hasChangePinAccess={hasChangePinAccess}
                             tableData={tableData}
                             isMobile={isMobile}
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
                         />
                     </div>
                 </div>

@@ -38,7 +38,7 @@ const ClientPersonalInfo = ({
   const typeVal = selectedClient.client_type?.toLowerCase();
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
 
-  const branchCode = code !== "Не указан" ? code.split('.')[0] : null;
+  const branchCode = code && code !== "Не указан" ? code.replace(/[^0-9]/g, "").substring(0, 4) : null;
   const serviceText = branchCode && serviceCodes[branchCode] ? serviceCodes[branchCode] : "";
 
   return (
@@ -127,12 +127,12 @@ const ClientPersonalInfo = ({
                 <span style={{ fontSize: '14px', fontWeight: '500' }}>
                   {isMobile === null ? (
                     <span className="mobile-status-checking" style={{ color: '#888' }}>Неизвестно</span>
-                  ) : (isMobile && (typeof isMobile === 'string' || isMobile?.Iban || isMobile?.account)) ? (
+                  ) : (isMobile && (typeof isMobile === 'string' || isMobile?.Iban || isMobile?.iban || isMobile?.account)) ? (
                     <span className="mobile-status-connected" style={{ color: '#333' }}>
-                      Подключен IBAN:<br/>{typeof isMobile === 'string' ? isMobile : (isMobile?.Iban || isMobile?.account || "-")}
+                      Подключен IBAN:<br/>{typeof isMobile === 'string' ? isMobile : (isMobile?.Iban || isMobile?.iban || isMobile?.account || "-")}
                     </span>
                   ) : (
-                    <span className="mobile-status-disconnected" style={{ color: 'red' }}>Не подключен</span>
+                    <span className="mobile-status-disconnected" style={{ color: '#e11d48', fontWeight: 600 }}>Не подключен</span>
                   )}
                 </span>
               </div>

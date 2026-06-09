@@ -1497,3 +1497,24 @@
   to { box-shadow: 0 0 16px rgba(16, 185, 129, 0.7); }
 }
 
+.card-action-btn.btn-reset-pin-highlight {
+  background: #e11d48 !important;
+  color: white !important;
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 12px rgba(225, 29, 72, 0.5) !important;
+  font-weight: 800;
+  animation: pulseGlowRed 2s infinite alternate;
+  opacity: 1 !important;
+  filter: none !important;
+
+  &:hover {
+    background: #be123c !important;
+    border-color: #be123c !important;
+  }
+}
+
+@keyframes pulseGlowRed {
+  from { box-shadow: 0 0 4px rgba(225, 29, 72, 0.3); }
+  to { box-shadow: 0 0 16px rgba(225, 29, 72, 0.7); }
+}
+
