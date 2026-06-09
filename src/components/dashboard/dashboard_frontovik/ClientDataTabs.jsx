@@ -5,6 +5,7 @@ import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import CreditDetails from "./CreditDetails.jsx";
 import DepositDetails from "./DepositDetails.jsx";
+import UniversalClientCard from "./UniversalClientCard.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 import { logAuditAction } from "../../../utils/auditLogger.js";
 import { serviceCodes } from "../../../utils/serviceCodes.js";
@@ -1756,18 +1757,7 @@ const ClientDataTabs = ({
             <div className="tab-pane-header">
               <h3>Персональная информация (АБС)</h3>
             </div>
-            {tableData && tableData.length > 0 ? (
-              <div className="client-info-grid-container">
-                {tableData.map((item, idx) => (
-                  <div key={idx} className="client-info-grid-item">
-                    <span className="info-label">{item.label}</span>
-                    <span className="info-value font-mono">{item.value || (item.value === 0 ? 0 : "Не указано")}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-tab-state">Данные клиента отсутствуют</div>
-            )}
+            <UniversalClientCard client={selectedClient} />
           </div>
         )}
 

@@ -23,6 +23,7 @@ export const normalizeClientData = (client, searchType) => {
   const rawType = client.Type || client.client_type || (client.TypeExt?.Name?.toLowerCase().includes("юр") ? "corporate" : "individual");
 
   return {
+    ...client,
     phone: client.ContactData?.[0]?.Value || "",
     arc_flag: "",
     client_type_name: client.TypeExt?.Name || "",
