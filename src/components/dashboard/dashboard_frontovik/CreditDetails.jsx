@@ -25,7 +25,7 @@ const CreditDetails = ({ credit, onBack }) => {
   const purposeName = params.creditPurpose || "Не указана";
 
   // Compute Debt Balance
-  const debtAccounts = balances.filter(b => b.currCode === "TJS" && b.activeFl === "dt");
+  const debtAccounts = balances.filter(b => b.nps && (String(b.nps).startsWith("1753") || String(b.nps).startsWith("1091")));
   const debtBalance = debtAccounts.reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
 
   // Compute Progress

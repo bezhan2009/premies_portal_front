@@ -37,6 +37,7 @@ export default function TransactionsQR() {
 
   const [isUsOnThem, setIsUsOnThem] = useState(false);
   const [isThemOnUs, setIsThemOnUs] = useState(true);
+  const [isUsOnUs, setIsUsOnUs] = useState(false);
   const [isLoans, setIsLoans] = useState(false);
 
   // States for loans functionality
@@ -71,7 +72,7 @@ export default function TransactionsQR() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [showChart, setShowChart] = useState(true);
+  const [showChart, setShowChart] = useState(false);
   const [showMerchantTranslator, setShowMerchantTranslator] = useState(false);
   const [merchantSearch, setMerchantSearch] = useState("");
 
@@ -130,27 +131,39 @@ export default function TransactionsQR() {
     (row) => {
       if (isUsOnThem) {
         return `${row.id || 0}-${row.trnId || 0}`;
+      } else if (isUsOnUs) {
+        return `${row.id || 0}-${row.trn_acc_code || 0}`;
       } else {
         return `${row.id || 0}-${row.tx_id || row.partner_trn_id || ""}`;
       }
     },
-    [isUsOnThem],
+    [isUsOnThem, isUsOnUs],
   );
 
   const fetchData = useCallback(
     async (type = "themOnUs", pageNum = 1) => {
       try {
         setLoading(true);
-        const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
+        const startDate = data?.start_date || "2025-09-25T00:00";
+        const endDate = data?.end_date || "2025-10-01T23:59";
 
-        const startDate = data?.start_date ?? "2025-09-25";
-        const endDate = data?.end_date ?? "2025-10-01";
-
-        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
+        let url = "";
+        if (type === "usOnUs") {
+          const sd = startDate.split("T")[0];
+          const ed = endDate.split("T")[0];
+          url = `http://10.64.1.10/services/stmnt.php?acc=17507972690808713012&dt1=${sd}&dt2=${ed}&descr=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20QR%20%D0%BA%D0%BE%D0%B4%D1%83%20%D0%BA%D0%BE%D0%BC%D0%BC%D0%B5%D1%80%D1%81%D0%B0%D0%BD%D1%82%D0%B0`;
+        } else {
+          const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
+          url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=10000`;
+        }
 
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
-        const json = await resp.json();
+        let json = await resp.json();
+
+        if (type === "usOnUs" && Array.isArray(json)) {
+          json = json.filter(r => r.trn_acc_code !== "26202972590810637954" && r.txt_ben !== "ЧСП \"АКТИВ БОНК\"");
+        }
         
         if (Array.isArray(json)) {
             if (pageNum === 1) {
@@ -158,7 +171,7 @@ export default function TransactionsQR() {
             } else {
                 setTableData(prev => [...prev, ...json]);
             }
-            setHasMore(json.length === PAGE_SIZE);
+            setHasMore(false);
             showAlert(`Загружено ${json.length} записей`, "success");
         } else {
             setHasMore(false);
@@ -284,7 +297,8 @@ export default function TransactionsQR() {
     setPage(1);
     if (isUsOnThem) fetchData("usOnThem", 1);
     else if (isThemOnUs) fetchData("themOnUs", 1);
-  }, [isUsOnThem, isThemOnUs, fetchData]);
+    else if (isUsOnUs) fetchData("usOnUs", 1);
+  }, [isUsOnThem, isThemOnUs, isUsOnUs, fetchData]);
 
   // Handle loan search
   const handleSearchLoans = async () => {
@@ -419,8 +433,9 @@ export default function TransactionsQR() {
       setPage(1);
       if (isUsOnThem) fetchData("usOnThem", 1);
       else if (isThemOnUs) fetchData("themOnUs", 1);
+      else if (isUsOnUs) fetchData("usOnUs", 1);
     }
-  }, [data.start_date, data.end_date, fetchData, isUsOnThem, isThemOnUs]);
+  }, [data.start_date, data.end_date, fetchData, isUsOnThem, isThemOnUs, isUsOnUs]);
 
   useEffect(() => {
     if (selectAll) {
@@ -542,7 +557,7 @@ export default function TransactionsQR() {
     <>
       <div
         className="applications-list content-page"
-        style={{ flexDirection: "column", gap: "20px", height: "auto" }}
+        style={{ flexDirection: "column", gap: "20px", height: "auto", width: "100%", maxWidth: "100%", padding: "10px" }}
       >
         <main>
           {showChart && (
@@ -551,17 +566,6 @@ export default function TransactionsQR() {
               endDate={data?.end_date}
             />
           )}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              padding: "10px",
-            }}
-          >
-            <button className="button" onClick={() => setShowChart(!showChart)}>
-              {showChart ? "Скрыть график" : "Показать график"}
-            </button>
-          </div>
         </main>
         <main className="transactions-main-content">
           <div className="header-with-balance">
@@ -576,6 +580,7 @@ export default function TransactionsQR() {
               onClick={() => {
                 setIsUsOnThem(true);
                 setIsThemOnUs(false);
+                setIsUsOnUs(false);
                 setSelectedRows([]);
                 setSelectAll(false);
               }}
@@ -588,12 +593,27 @@ export default function TransactionsQR() {
               onClick={() => {
                 setIsThemOnUs(true);
                 setIsUsOnThem(false);
+                setIsUsOnUs(false);
                 setIsLoans(false);
                 setSelectedRows([]);
                 setSelectAll(false);
               }}
             >
               Наш QR — чужой клиент
+            </button>
+
+            <button
+              className={`button ${isUsOnUs ? "active" : ""}`}
+              onClick={() => {
+                setIsUsOnUs(true);
+                setIsUsOnThem(false);
+                setIsThemOnUs(false);
+                setIsLoans(false);
+                setSelectedRows([]);
+                setSelectAll(false);
+              }}
+            >
+              Внутрибанковские QR (US on US)
             </button>
 
             <button
@@ -616,6 +636,9 @@ export default function TransactionsQR() {
               onClick={toggleSelectAll}
             >
               {selectAll ? "Снять выделение" : "Выбрать все"}
+            </button>
+            <button className="button" onClick={() => setShowChart(!showChart)}>
+              {showChart ? "Скрыть график" : "Показать график"}
             </button>
 
             <div className="activebank-balance">
@@ -1042,7 +1065,7 @@ export default function TransactionsQR() {
                 tableId="qr-transactions-table"
                 dataSource={sortedData}
                 rowKey={getRowKey}
-                pagination={{ pageSize: 20 }}
+                pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
                 loading={loading}
                 scroll={{ x: "max-content", y: 600 }}
               >
@@ -1075,6 +1098,35 @@ export default function TransactionsQR() {
                   width={100}
                   render={(_, row) => row.id || "-"}
                 />
+
+                {isUsOnUs && (
+                  <>
+                    <Table.Column title="ФИО Плательщика" dataIndex="txt_pay" key="txt_pay" render={(val) => val || "-"} />
+                    <Table.Column title="Получатель" dataIndex="txt_ben" key="txt_ben" render={(val) => val || "-"} />
+                    <Table.Column title="Описание" dataIndex="dscr" key="dscr" render={(val) => val || "-"} />
+                    <Table.Column title="Номер счета получателя" dataIndex="trn_acc_code" key="trn_acc_code" render={(val) => val || "-"} />
+                    <Table.Column
+                      title="Статус"
+                      key="status_us"
+                      render={() => (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcOk style={{ fontSize: 22 }} />
+                          <span style={{ color: "green" }}>Успешно</span>
+                        </div>
+                      )}
+                    />
+                    <Table.Column
+                      title="Сумма"
+                      key="amount_us"
+                      render={(_, row) => {
+                         const rawSum = Number(row.sdok || 0);
+                         const realSum = rawSum > 0 ? (rawSum / 0.99).toFixed(2) : 0;
+                         return <span style={{ fontWeight: "600" }}>{Number(realSum).toLocaleString("ru-RU")} с.</span>;
+                      }}
+                      sortValue={(row) => Number(row.sdok || 0) / 0.99}
+                    />
+                  </>
+                )}
 
                 {/* ⚡️ Исправлено: каждое условие отдельно, без фрагментов */}
                 {isUsOnThem && (
@@ -1112,94 +1164,98 @@ export default function TransactionsQR() {
                   <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
                 )}
 
-                <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
+                {!isUsOnUs && (
+                  <>
+                    <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
 
-                {/* ⚡️ Исправлено: раздельные условия вместо тернарника с фрагментом */}
-                {isThemOnUs && (
-                  <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
-                )}
-                {!isThemOnUs && (
-                  <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
-                )}
-                {!isThemOnUs && (
-                  <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
-                )}
+                    {/* ⚡️ Исправлено: раздельные условия вместо тернарника с фрагментом */}
+                    {isThemOnUs && (
+                      <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
+                    )}
+                    {!isThemOnUs && (
+                      <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                    )}
+                    {!isThemOnUs && (
+                      <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                    )}
 
-                <Table.Column
-                  title="Статус"
-                  dataIndex="status"
-                  key="status"
-                  render={(status) => {
-                    if (status === "success") {
-                      return (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcOk style={{ fontSize: 22 }} />
-                          <span style={{ color: "green" }}>Успешно</span>
-                        </div>
-                      );
-                    } else if (status === "process") {
-                      return (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcProcess style={{ fontSize: 22 }} />
-                          <span style={{ color: "orange" }}>В процессе</span>
-                        </div>
-                      );
-                    } else if (status === "cancel") {
-                      return (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcCancel style={{ fontSize: 22 }} />
-                          <span style={{ color: "red" }}>Отменено</span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <FcHighPriority style={{ fontSize: 22 }} />
-                        <span style={{ color: "red" }}>Ошибка</span>
-                      </div>
-                    );
-                  }}
-                />
-                <Table.Column
-                  title="Банк отправителя"
-                  key="bank_sender"
-                  render={(_, row) => {
-                    const bankId = isUsOnThem ? row.sender_bank : row.sender;
-                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }}
-                />
-                <Table.Column
-                  title="Банк получателя"
-                  key="bank_receiver"
-                  render={(_, row) => {
-                    const bankId = row.receiver;
-                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }}
-                />
-                <Table.Column
-                  title="Сумма"
-                  key="amount"
-                  render={(_, row) => (
-                    <span style={{ fontWeight: "600" }}>
-                      {Number(row.amount).toLocaleString("ru-RU")} с.
-                    </span>
-                  )}
-                  sortValue={(row) => Number(row.amount)}
-                />
-                <Table.Column
-                  title="Дата создания"
-                  key="date"
-                  render={(_, row) => {
-                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
-                    return formatDateForDisplay(d);
-                  }}
-                  sortValue={(row) => {
-                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
-                    return new Date(d).getTime();
-                  }}
-                />
+                    <Table.Column
+                      title="Статус"
+                      dataIndex="status"
+                      key="status"
+                      render={(status) => {
+                        if (status === "success") {
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <FcOk style={{ fontSize: 22 }} />
+                              <span style={{ color: "green" }}>Успешно</span>
+                            </div>
+                          );
+                        } else if (status === "process") {
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <FcProcess style={{ fontSize: 22 }} />
+                              <span style={{ color: "orange" }}>В процессе</span>
+                            </div>
+                          );
+                        } else if (status === "cancel") {
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <FcCancel style={{ fontSize: 22 }} />
+                              <span style={{ color: "red" }}>Отменено</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <FcHighPriority style={{ fontSize: 22 }} />
+                            <span style={{ color: "red" }}>Ошибка</span>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Table.Column
+                      title="Банк отправителя"
+                      key="bank_sender"
+                      render={(_, row) => {
+                        const bankId = isUsOnThem ? row.sender_bank : row.sender;
+                        const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                        return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                      }}
+                    />
+                    <Table.Column
+                      title="Банк получателя"
+                      key="bank_receiver"
+                      render={(_, row) => {
+                        const bankId = row.receiver;
+                        const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                        return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                      }}
+                    />
+                    <Table.Column
+                      title="Сумма"
+                      key="amount"
+                      render={(_, row) => (
+                        <span style={{ fontWeight: "600" }}>
+                          {Number(row.amount).toLocaleString("ru-RU")} с.
+                        </span>
+                      )}
+                      sortValue={(row) => Number(row.amount)}
+                    />
+                    <Table.Column
+                      title="Дата создания"
+                      key="date"
+                      render={(_, row) => {
+                        const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                        return formatDateForDisplay(d);
+                      }}
+                      sortValue={(row) => {
+                        const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                        return new Date(d).getTime();
+                      }}
+                    />
+                  </>
+                )}
               </Table>
             )}
           </div>
