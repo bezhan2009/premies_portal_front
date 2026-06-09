@@ -1099,54 +1099,53 @@ export default function TransactionsQR() {
                   render={(_, row) => row.id || "-"}
                 />
 
-                {isUsOnUs && (
-                  <>
-                    <Table.Column title="ФИО Плательщика" dataIndex="txt_pay" key="txt_pay" render={(val) => val || "-"} />
-                    <Table.Column title="Получатель" dataIndex="txt_ben" key="txt_ben" render={(val) => val || "-"} />
-                    <Table.Column title="Описание" dataIndex="dscr" key="dscr" render={(val) => val || "-"} />
-                    <Table.Column title="Номер счета получателя" dataIndex="trn_acc_code" key="trn_acc_code" render={(val) => val || "-"} />
-                    <Table.Column
-                      title="Статус"
-                      key="status_us"
-                      render={() => (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcOk style={{ fontSize: 22 }} />
-                          <span style={{ color: "green" }}>Успешно</span>
-                        </div>
-                      )}
-                    />
-                    <Table.Column
-                      title="Сумма"
-                      key="amount_us"
-                      render={(_, row) => {
-                         const rawSum = Number(row.sdok || 0);
-                         const realSum = rawSum > 0 ? (rawSum / 0.99).toFixed(2) : 0;
-                         return <span style={{ fontWeight: "600" }}>{Number(realSum).toLocaleString("ru-RU")} с.</span>;
-                      }}
-                      sortValue={(row) => Number(row.sdok || 0) / 0.99}
-                    />
-                  </>
-                )}
+                {isUsOnUs ? <Table.Column title="ФИО Плательщика" dataIndex="txt_pay" key="txt_pay" render={(val) => val || "-"} /> : null}
+                {isUsOnUs ? <Table.Column title="Получатель" dataIndex="txt_ben" key="txt_ben" render={(val) => val || "-"} /> : null}
+                {isUsOnUs ? <Table.Column title="Описание" dataIndex="dscr" key="dscr" render={(val) => val || "-"} /> : null}
+                {isUsOnUs ? <Table.Column title="Номер счета получателя" dataIndex="trn_acc_code" key="trn_acc_code" render={(val) => val || "-"} /> : null}
+                {isUsOnUs ? (
+                  <Table.Column
+                    title="Статус"
+                    key="status_us"
+                    render={() => (
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <FcOk style={{ fontSize: 22 }} />
+                        <span style={{ color: "green" }}>Успешно</span>
+                      </div>
+                    )}
+                  />
+                ) : null}
+                {isUsOnUs ? (
+                  <Table.Column
+                    title="Сумма"
+                    key="amount_us"
+                    render={(_, row) => {
+                       const rawSum = Number(row.sdok || 0);
+                       const realSum = rawSum > 0 ? (rawSum / 0.99).toFixed(2) : 0;
+                       return <span style={{ fontWeight: "600" }}>{Number(realSum).toLocaleString("ru-RU")} с.</span>;
+                    }}
+                    sortValue={(row) => Number(row.sdok || 0) / 0.99}
+                  />
+                ) : null}
 
-                {/* ⚡️ Исправлено: каждое условие отдельно, без фрагментов */}
-                {isUsOnThem && (
+                {isUsOnThem ? (
                   <Table.Column
                     title="ФИО"
                     dataIndex="sender_name"
                     key="sender_name"
                     render={(val) => val || "-"}
                   />
-                )}
-                {isUsOnThem && (
+                ) : null}
+                {isUsOnThem ? (
                   <Table.Column
                     title="Телефон"
                     dataIndex="sender_phone"
                     key="sender_phone"
                     render={(val) => val || "-"}
                   />
-                )}
+                ) : null}
 
-                {isThemOnUs && (
+                {isThemOnUs ? (
                   <Table.Column
                     title="Мерчант"
                     key="merchant"
@@ -1156,106 +1155,111 @@ export default function TransactionsQR() {
                       return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
                     }}
                   />
-                )}
-                {isThemOnUs && (
+                ) : null}
+                {isThemOnUs ? (
                   <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
-                )}
-                {isThemOnUs && (
+                ) : null}
+                {isThemOnUs ? (
                   <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
-                )}
+                ) : null}
 
-                {!isUsOnUs && (
-                  <>
-                    <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
-
-                    {/* ⚡️ Исправлено: раздельные условия вместо тернарника с фрагментом */}
-                    {isThemOnUs && (
-                      <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
-                    )}
-                    {!isThemOnUs && (
-                      <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
-                    )}
-                    {!isThemOnUs && (
-                      <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
-                    )}
-
-                    <Table.Column
-                      title="Статус"
-                      dataIndex="status"
-                      key="status"
-                      render={(status) => {
-                        if (status === "success") {
-                          return (
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                              <FcOk style={{ fontSize: 22 }} />
-                              <span style={{ color: "green" }}>Успешно</span>
-                            </div>
-                          );
-                        } else if (status === "process") {
-                          return (
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                              <FcProcess style={{ fontSize: 22 }} />
-                              <span style={{ color: "orange" }}>В процессе</span>
-                            </div>
-                          );
-                        } else if (status === "cancel") {
-                          return (
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                              <FcCancel style={{ fontSize: 22 }} />
-                              <span style={{ color: "red" }}>Отменено</span>
-                            </div>
-                          );
-                        }
+                {!isUsOnUs ? (
+                  <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
+                ) : null}
+                {(!isUsOnUs && isThemOnUs) ? (
+                  <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
+                ) : null}
+                {(!isUsOnUs && !isThemOnUs) ? (
+                  <Table.Column title="Номер в АРМ" dataIndex="trnId" key="trnId" render={(val) => val || "-"} />
+                ) : null}
+                {(!isUsOnUs && !isThemOnUs) ? (
+                  <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
+                ) : null}
+                {!isUsOnUs ? (
+                  <Table.Column
+                    title="Статус"
+                    dataIndex="status"
+                    key="status"
+                    render={(status) => {
+                      if (status === "success") {
                         return (
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <FcHighPriority style={{ fontSize: 22 }} />
-                            <span style={{ color: "red" }}>Ошибка</span>
+                            <FcOk style={{ fontSize: 22 }} />
+                            <span style={{ color: "green" }}>Успешно</span>
                           </div>
                         );
-                      }}
-                    />
-                    <Table.Column
-                      title="Банк отправителя"
-                      key="bank_sender"
-                      render={(_, row) => {
-                        const bankId = isUsOnThem ? row.sender_bank : row.sender;
-                        const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                        return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                      }}
-                    />
-                    <Table.Column
-                      title="Банк получателя"
-                      key="bank_receiver"
-                      render={(_, row) => {
-                        const bankId = row.receiver;
-                        const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                        return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                      }}
-                    />
-                    <Table.Column
-                      title="Сумма"
-                      key="amount"
-                      render={(_, row) => (
-                        <span style={{ fontWeight: "600" }}>
-                          {Number(row.amount).toLocaleString("ru-RU")} с.
-                        </span>
-                      )}
-                      sortValue={(row) => Number(row.amount)}
-                    />
-                    <Table.Column
-                      title="Дата создания"
-                      key="date"
-                      render={(_, row) => {
-                        const d = isUsOnThem ? row.created_at : row.creation_datetime;
-                        return formatDateForDisplay(d);
-                      }}
-                      sortValue={(row) => {
-                        const d = isUsOnThem ? row.created_at : row.creation_datetime;
-                        return new Date(d).getTime();
-                      }}
-                    />
-                  </>
-                )}
+                      } else if (status === "process") {
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <FcProcess style={{ fontSize: 22 }} />
+                            <span style={{ color: "orange" }}>В процессе</span>
+                          </div>
+                        );
+                      } else if (status === "cancel") {
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <FcCancel style={{ fontSize: 22 }} />
+                            <span style={{ color: "red" }}>Отменено</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <FcHighPriority style={{ fontSize: 22 }} />
+                          <span style={{ color: "red" }}>Ошибка</span>
+                        </div>
+                      );
+                    }}
+                  />
+                ) : null}
+                {!isUsOnUs ? (
+                  <Table.Column
+                    title="Банк отправителя"
+                    key="bank_sender"
+                    render={(_, row) => {
+                      const bankId = isUsOnThem ? row.sender_bank : row.sender;
+                      const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                      return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                    }}
+                  />
+                ) : null}
+                {!isUsOnUs ? (
+                  <Table.Column
+                    title="Банк получателя"
+                    key="bank_receiver"
+                    render={(_, row) => {
+                      const bankId = row.receiver;
+                      const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                      return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                    }}
+                  />
+                ) : null}
+                {!isUsOnUs ? (
+                  <Table.Column
+                    title="Сумма"
+                    key="amount"
+                    render={(_, row) => (
+                      <span style={{ fontWeight: "600" }}>
+                        {Number(row.amount).toLocaleString("ru-RU")} с.
+                      </span>
+                    )}
+                    sortValue={(row) => Number(row.amount)}
+                  />
+                ) : null}
+                {!isUsOnUs ? (
+                  <Table.Column
+                    title="Дата создания"
+                    key="date"
+                    render={(_, row) => {
+                      const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                      return formatDateForDisplay(d);
+                    }}
+                    sortValue={(row) => {
+                      const d = isUsOnThem ? row.created_at : row.creation_datetime;
+                      return new Date(d).getTime();
+                    }}
+                  />
+                ) : null}
               </Table>
             )}
           </div>
