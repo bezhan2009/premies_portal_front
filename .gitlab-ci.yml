@@ -1,0 +1,105 @@
+stages:
+  - deploy
+  - notify
+
+variables:
+  DOCKER_BUILDKIT: "1"
+  BUILDKIT_STEP_LOG_MAX_SIZE: "10485760"
+  BUILDKIT_STEP_LOG_MAX_SPEED: "10485760"
+  TELEGRAM_BOT_TOKEN: "7701650916:AAG78Lu0rG7XTeD3Nw-mZoEkKfcyzJAjH8k"
+  TELEGRAM_CHAT_IDS: "8144443377 913005799 6364646491"
+  PROJECT_DIR: "/home/tech/activ_daily"
+  SERVICE_DIR: "/home/tech/activ_daily/premies_portal_front"
+  CONTAINER_NAME: "frontend"
+
+.deploy_template: &deploy_template
+  stage: deploy
+  timeout: 24h
+  tags:
+    - shell-runner
+  before_script:
+    - |
+      cat > /tmp/buildkitd.toml <<EOF
+      [worker.oci]
+        max-parallelism = 1
+      EOF
+    - export BUILDKITD_CONFIG=/tmp/buildkitd.toml
+  artifacts:
+    reports:
+      dotenv: deploy_status.env
+    expire_in: 1 hour
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" = "success" ]; then
+        echo "DEPLOY_STATUS=success" > deploy_status.env
+      else
+        echo "DEPLOY_STATUS=failed" > deploy_status.env
+      fi
+
+deploy:
+  <<: *deploy_template
+  only:
+    - main
+    - master
+  script:
+    - echo "📁 Copying fresh code to working directory..."
+    - sudo rsync -av --delete --exclude '.git' --exclude '.env' $CI_PROJECT_DIR/ $SERVICE_DIR
+    - cd $PROJECT_DIR
+    - echo "🚀 Rebuilding and starting the service $CONTAINER_NAME..."
+    - docker-compose up --build -d $CONTAINER_NAME
+    - echo "🧹 Cleaning up old images..."
+    - docker image prune -f || true
+    - echo "📊 Container status:"
+    - docker-compose ps $CONTAINER_NAME
+    - echo "✅ Deploy completed successfully!"
+
+.notify_template: &notify_template
+  stage: notify
+  tags:
+    - shell-runner
+  when: always
+  needs:
+    - job: deploy
+      optional: false
+      artifacts: true
+  variables:
+    DEPLOY_STATUS: ""
+  before_script:
+    - |
+      if [ -f deploy_status.env ]; then
+        source deploy_status.env
+      fi
+  script:
+    - ESCAPED_AUTHOR=$(echo "$CI_COMMIT_AUTHOR" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    - ESCAPED_MESSAGE=$(echo "$CI_COMMIT_MESSAGE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    - |
+      if [ "$DEPLOY_STATUS" = "success" ]; then
+        STATUS_TITLE="Deploy of ${CONTAINER_NAME} is successful"
+        STATUS_ICON="✅"
+      else
+        STATUS_TITLE="Deploy of ${CONTAINER_NAME} is unsuccessful"
+        STATUS_ICON="❌"
+      fi
+    - |
+      MESSAGE="$STATUS_ICON <b>$STATUS_TITLE</b>
+
+      <b>Service:</b> ${CONTAINER_NAME}
+      <b>Author:</b> $ESCAPED_AUTHOR
+      <b>Commit:</b> $ESCAPED_MESSAGE
+      <b>Commit ID:</b> <code>$CI_COMMIT_SHORT_SHA</code>
+      <b>Time:</b> $(date '+%Y-%m-%d %H:%M:%S')
+
+      <a href=\"$CI_PROJECT_URL/-/commit/$CI_COMMIT_SHA\">View Details on GitLab</a>"
+    - |
+      for CHAT_ID in $TELEGRAM_CHAT_IDS; do
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -d "chat_id=$CHAT_ID" \
+          -d "parse_mode=HTML" \
+          --data-urlencode "text=$MESSAGE"
+      done
+
+notify:
+  <<: *notify_template
+  only:
+    - main
+    - master
