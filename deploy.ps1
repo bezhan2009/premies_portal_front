@@ -2,7 +2,7 @@
 # On first run, it will request password and save it encrypted
 
 # ===== SETTINGS =====
-$GITLAB_BRANCH = "master" # for premies_portal_frontend it is master
+$GITLAB_BRANCH = "master"
 
 # SSH Connection
 $SERVER_USER = "bkarimov"
@@ -53,51 +53,27 @@ $PASSWORD = Get-ServerPassword
 # ===== ESTABLISH SSH SESSION =====
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
-# Create remote commands script for server
-$remoteScript = @'
-#!/bin/bash
-set -e
+# Create remote commands sequence for server (evaluated client-side via double-quoted string)
+$remoteScript = "cd `"$SERVICE_DIR`" && git pull gitlab `"$GITLAB_BRANCH`" && cd `"$PROJECT_DIR`" && docker-compose up --build -d `"$CONTAINER_NAME`" && sleep 5 && docker-compose ps `"$CONTAINER_NAME`" && docker image prune -f"
 
-echo "[Git] Pulling latest code from GitLab for branch $GITLAB_BRANCH..."
-cd '"$SERVICE_DIR"'
-git pull gitlab '"$GITLAB_BRANCH"'
-
-echo "[Docker] Rebuilding and starting container..."
-cd '"$PROJECT_DIR"'
-docker-compose up --build -d '"$CONTAINER_NAME"'
-
-echo "[Docker] Checking container status..."
-sleep 5
-docker-compose ps '"$CONTAINER_NAME"'
-
-echo "[Docker] Cleaning up..."
-docker image prune -f || true
-
-echo "[OK] Deploy completed!"
-'@
-
-# Function for connecting via SSH with password
+# Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
     param($Command)
     
-    # Strip carriage returns to prevent bash syntax errors on Linux
     $cleanCommand = $Command -replace "`r", ""
     
     # Try using sshpass (if installed)
     $sshpassPath = Get-Command sshpass -ErrorAction SilentlyContinue
     if ($sshpassPath) {
-        $result = & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $cleanCommand 2>&1
-        return $result
+        & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $cleanCommand
+        return
     }
     
     # Alternative: use plink from Putty
     $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
     if ($plinkPath) {
-        $tempFile = [System.IO.Path]::GetTempFileName()
-        $cleanCommand | Out-File -FilePath $tempFile -Encoding ASCII
-        $result = & echo y | plink -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" -m $tempFile 2>&1
-        Remove-Item $tempFile
-        return $result
+        & echo y | plink -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" $cleanCommand
+        return
     }
     
     # Ask user to install tools if missing
@@ -109,10 +85,8 @@ function Invoke-SSHWithPassword {
 
 # Run deploy
 try {
-    $output = Invoke-SSHWithPassword -Command $remoteScript
-    Write-Host $output
-    
-    $DEPLOY_SUCCESS = $LASTEXITCODE -eq 0
+    Invoke-SSHWithPassword -Command $remoteScript
+    $DEPLOY_SUCCESS = ($LASTEXITCODE -eq 0)
     
     if ($DEPLOY_SUCCESS) {
         Write-Host "[OK] Deploy successful!" -ForegroundColor Green
@@ -129,9 +103,9 @@ Write-Host "[Telegram] Sending notification..." -ForegroundColor Yellow
 
 $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 if ($DEPLOY_SUCCESS) {
-    $message = "вњ… Deploy of $CONTAINER_NAME is successful`n<b>Time:</b> $time"
+    $message = "$([char]0x2705) Deploy of $CONTAINER_NAME is successful`n<b>Time:</b> $time"
 } else {
-    $message = "вќЊ Deploy of $CONTAINER_NAME is failed`n<b>Time:</b> $time"
+    $message = "$([char]0x274C) Deploy of $CONTAINER_NAME is failed`n<b>Time:</b> $time"
 }
 
 $telegramUrl = "https://api.telegram.org/bot7701650916:AAG78Lu0rG7XTeD3Nw-mZoEkKfcyzJAjH8k/sendMessage"
@@ -144,7 +118,9 @@ foreach ($chatId in $chatIds) {
             parse_mode = "HTML"
             text       = $message
         }
-        $response = Invoke-RestMethod -Uri $telegramUrl -Method Post -Body $body
+        $jsonBody = $body | ConvertTo-Json -Compress
+        # Force UTF-8 encoding for proper emojis and Cyrillic character handling
+        $response = Invoke-RestMethod -Uri $telegramUrl -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($jsonBody)) -ContentType "application/json; charset=utf-8" -TimeoutSec 5
         Write-Host "[Telegram] Message sent to $chatId" -ForegroundColor Green
     } catch {
         Write-Host "[Telegram] [ERROR] Failed to send message to ${chatId}: $_" -ForegroundColor Red
