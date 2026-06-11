@@ -1,125 +1,125 @@
-# deploy.ps1
-# При первом запуске запросит пароль и сохранит его в зашифрованном виде
+﻿# deploy.ps1
+# On first run, it will request password and save it encrypted
 
-# ===== НАСТРОЙКИ =====
+# ===== SETTINGS =====
 $GITLAB_PRIVATE_TOKEN = "glpat-sa-a6Dzmy6pvrbW8Ju2e"  
-$GITLAB_PROJECT_ID = "11"                     # ID проекта
+$GITLAB_PROJECT_ID = "11"                     # Project ID
 $GITLAB_SERVER = "http://gl.abank.tj.tajikistan.tj"
-$GITLAB_BRANCH = "master" # для premies_portal_frontend это master
+$GITLAB_BRANCH = "master" # for premies_portal_frontend it is master
 
-# SSH подключение
+# SSH Connection
 $SERVER_USER = "bkarimov"
 $SERVER_IP = "10.65.10.20"
 $SERVER_PORT = "42587"
 
-# Пути на сервере
+# Paths on Server
 $PROJECT_DIR = "/home/bkarimov/daily_activ"
 $SERVICE_DIR = "/home/bkarimov/daily_activ/premies_portal_front"
 $CONTAINER_NAME = "frontend"
 
-# Файл для хранения пароля
+# Password Storage File
 $PasswordFile = "$env:USERPROFILE\.deploy_passwd"
 
-# ===== ПОЛУЧЕНИЕ ПАРОЛЯ =====
+# ===== GET PASSWORD =====
 function Get-ServerPassword {
-    # Проверяем, есть ли сохраненный пароль
+    # Check if saved password exists
     if (Test-Path $PasswordFile) {
         try {
             $SecurePassword = Get-Content $PasswordFile | ConvertTo-SecureString
             $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
                 [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
             )
-            Write-Host "✅ Using saved password" -ForegroundColor Green
+            Write-Host "[OK] Using saved password" -ForegroundColor Green
             return $Password
         } catch {
-            Write-Host "❌ Saved password is corrupted, requesting new one" -ForegroundColor Yellow
+            Write-Host "[WARN] Saved password is corrupted, requesting new one" -ForegroundColor Yellow
         }
     }
     
-    # Запрашиваем пароль
-    $SecurePassword = Read-Host "🔑 Enter SSH password for $SERVER_USER@$SERVER_IP" -AsSecureString
+    # Request password
+    $SecurePassword = Read-Host "SSH Password for $SERVER_USER@$SERVER_IP" -AsSecureString
     
-    # Сохраняем пароль в зашифрованном виде
+    # Save password encrypted
     $SecurePassword | ConvertFrom-SecureString | Set-Content $PasswordFile
-    Write-Host "✅ Password saved encrypted to $PasswordFile" -ForegroundColor Green
+    Write-Host "[OK] Password saved encrypted to $PasswordFile" -ForegroundColor Green
     
-    # Расшифровываем для использования
+    # Decrypt for use
     $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
         [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
     )
     return $Password
 }
 
-# Получаем пароль
+# Get password
 $PASSWORD = Get-ServerPassword
 
-# ===== УСТАНОВКА SSH СЕССИИ =====
-Write-Host "🚀 Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
+# ===== ESTABLISH SSH SESSION =====
+Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
-# Создаем скрипт команд для сервера
+# Create remote commands script for server
 $remoteScript = @'
 #!/bin/bash
 set -e
 
-echo "📡 Testing GitLab connection..."
+echo "[GitLab] Testing GitLab connection..."
 if ! curl -s --header "PRIVATE-TOKEN: '"$GITLAB_PRIVATE_TOKEN"'" \
   "'"$GITLAB_SERVER"'/api/v4/projects/'"$GITLAB_PROJECT_ID"'" | grep -q "id"; then
-    echo "❌ Cannot connect to GitLab!"
+    echo "[ERROR] Cannot connect to GitLab!"
     exit 1
 fi
-echo "✅ GitLab connection OK"
+echo "[OK] GitLab connection OK"
 
-echo "📥 Downloading repository archive..."
+echo "[GitLab] Downloading repository archive..."
 curl -s --header "PRIVATE-TOKEN: '"$GITLAB_PRIVATE_TOKEN"'" \
   "'"$GITLAB_SERVER"'/api/v4/projects/'"$GITLAB_PROJECT_ID"'/repository/archive.tar.gz?sha='"$GITLAB_BRANCH"'" \
   -o /tmp/repo.tar.gz
 
 if [ ! -s /tmp/repo.tar.gz ]; then
-    echo "❌ Failed to download repository!"
+    echo "[ERROR] Failed to download repository!"
     exit 1
 fi
-echo "✅ Archive downloaded"
+echo "[OK] Archive downloaded"
 
-echo "📦 Extracting archive..."
+echo "[TAR] Extracting archive..."
 sudo rm -rf /tmp/repo_extracted
 mkdir -p /tmp/repo_extracted
 tar -xzf /tmp/repo.tar.gz -C /tmp/repo_extracted --strip-components=1
-echo "✅ Archive extracted"
+echo "[OK] Archive extracted"
 
-echo "📁 Copying files to '"$SERVICE_DIR"'..."
+echo "[Rsync] Copying files to '"$SERVICE_DIR"'..."
 sudo rsync -av --delete \
   --exclude ".git" \
   --exclude ".env" \
   /tmp/repo_extracted/ '"$SERVICE_DIR"'/
-echo "✅ Files copied"
+echo "[OK] Files copied"
 
-echo "🚀 Rebuilding and starting container..."
+echo "[Docker] Rebuilding and starting container..."
 cd '"$PROJECT_DIR"'
 docker-compose up --build -d '"$CONTAINER_NAME"'
 
-echo "📊 Checking container status..."
+echo "[Docker] Checking container status..."
 sleep 5
 docker-compose ps '"$CONTAINER_NAME"'
 
-echo "🧹 Cleaning up..."
+echo "[Docker] Cleaning up..."
 docker image prune -f || true
 rm -rf /tmp/repo.tar.gz /tmp/repo_extracted
 
-echo "✅ Deploy completed!"
+echo "[OK] Deploy completed!"
 '@
 
-# Функция для подключения с паролем через SSH
+# Function for connecting via SSH with password
 function Invoke-SSHWithPassword {
     param($Command)
     
-    # Пробуем через sshpass (если установлен)
+    # Try using sshpass (if installed)
     $sshpassPath = Get-Command sshpass -ErrorAction SilentlyContinue
     if ($sshpassPath) {
         $result = & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $Command 2>&1
         return $result
     }
     
-    # Альтернатива: используем plink из Putty
+    # Alternative: use plink from Putty
     $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
     if ($plinkPath) {
         $tempFile = [System.IO.Path]::GetTempFileName()
@@ -129,14 +129,14 @@ function Invoke-SSHWithPassword {
         return $result
     }
     
-    # Если ничего нет - просим установить
-    Write-Host "❌ No SSH automation tool found!" -ForegroundColor Red
+    # Ask user to install tools if missing
+    Write-Host "[ERROR] No SSH automation tool found!" -ForegroundColor Red
     Write-Host "Please install one of: sshpass, putty/plink, or use SSH keys" -ForegroundColor Yellow
     Write-Host "For now, using interactive SSH (you'll need to enter password manually)" -ForegroundColor Yellow
     ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" $Command
 }
 
-# Выполняем деплой
+# Run deploy
 try {
     $output = Invoke-SSHWithPassword -Command $remoteScript
     Write-Host $output
@@ -144,26 +144,25 @@ try {
     $DEPLOY_SUCCESS = $LASTEXITCODE -eq 0
     
     if ($DEPLOY_SUCCESS) {
-        Write-Host "✅ Deploy successful!" -ForegroundColor Green
+        Write-Host "[OK] Deploy successful!" -ForegroundColor Green
     } else {
-        Write-Host "❌ Deploy failed!" -ForegroundColor Red
+        Write-Host "[ERROR] Deploy failed!" -ForegroundColor Red
     }
 } catch {
-    Write-Host "❌ Error: $_" -ForegroundColor Red
+    Write-Host "[ERROR] Error: $_" -ForegroundColor Red
     $DEPLOY_SUCCESS = $false
 }
 
-# Отправляем уведомление в Telegram (простой вариант)
-Write-Host "📤 Sending notification..." -ForegroundColor Yellow
+# Send Telegram notification
+Write-Host "[Telegram] Sending notification..." -ForegroundColor Yellow
 
 $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 if ($DEPLOY_SUCCESS) {
-    $message = "✅ Deploy of $CONTAINER_NAME is successful%0A<b>Time:</b> $time"
+    $message = "%E2%9C%85 Deploy of $CONTAINER_NAME is successful%0A<b>Time:</b> $time"
 } else {
-    $message = "❌ Deploy of $CONTAINER_NAME is failed%0A<b>Time:</b> $time"
+    $message = "%E2%9D%8C Deploy of $CONTAINER_NAME is failed%0A<b>Time:</b> $time"
 }
 
-# Отправка через curl (обычно есть в Windows 10+)
 $telegramUrl = "https://api.telegram.org/bot7701650916:AAG78Lu0rG7XTeD3Nw-mZoEkKfcyzJAjH8k/sendMessage"
 $chatIds = @("8144443377", "913005799", "6364646491")
 
@@ -174,4 +173,4 @@ foreach ($chatId in $chatIds) {
         -d "text=$message" > $null
 }
 
-Write-Host "✅ Done!" -ForegroundColor Green
+Write-Host "[OK] Done!" -ForegroundColor Green
