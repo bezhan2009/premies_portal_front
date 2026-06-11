@@ -2,9 +2,6 @@
 # On first run, it will request password and save it encrypted
 
 # ===== SETTINGS =====
-$GITLAB_PRIVATE_TOKEN = "glpat-sa-a6Dzmy6pvrbW8Ju2e"  
-$GITLAB_PROJECT_ID = "11"                     # Project ID
-$GITLAB_SERVER = "http://gl.abank.tj.tajikistan.tj"
 $GITLAB_BRANCH = "master" # for premies_portal_frontend it is master
 
 # SSH Connection
@@ -61,37 +58,9 @@ $remoteScript = @'
 #!/bin/bash
 set -e
 
-echo "[GitLab] Testing GitLab connection..."
-if ! curl -s --header "PRIVATE-TOKEN: '"$GITLAB_PRIVATE_TOKEN"'" \
-  "'"$GITLAB_SERVER"'/api/v4/projects/'"$GITLAB_PROJECT_ID"'" | grep -q "id"; then
-    echo "[ERROR] Cannot connect to GitLab!"
-    exit 1
-fi
-echo "[OK] GitLab connection OK"
-
-echo "[GitLab] Downloading repository archive..."
-curl -s --header "PRIVATE-TOKEN: '"$GITLAB_PRIVATE_TOKEN"'" \
-  "'"$GITLAB_SERVER"'/api/v4/projects/'"$GITLAB_PROJECT_ID"'/repository/archive.tar.gz?sha='"$GITLAB_BRANCH"'" \
-  -o /tmp/repo.tar.gz
-
-if [ ! -s /tmp/repo.tar.gz ]; then
-    echo "[ERROR] Failed to download repository!"
-    exit 1
-fi
-echo "[OK] Archive downloaded"
-
-echo "[TAR] Extracting archive..."
-sudo rm -rf /tmp/repo_extracted
-mkdir -p /tmp/repo_extracted
-tar -xzf /tmp/repo.tar.gz -C /tmp/repo_extracted --strip-components=1
-echo "[OK] Archive extracted"
-
-echo "[Rsync] Copying files to '"$SERVICE_DIR"'..."
-sudo rsync -av --delete \
-  --exclude ".git" \
-  --exclude ".env" \
-  /tmp/repo_extracted/ '"$SERVICE_DIR"'/
-echo "[OK] Files copied"
+echo "[Git] Pulling latest code from GitLab for branch $GITLAB_BRANCH..."
+cd '"$SERVICE_DIR"'
+git pull gitlab '"$GITLAB_BRANCH"'
 
 echo "[Docker] Rebuilding and starting container..."
 cd '"$PROJECT_DIR"'
@@ -103,7 +72,6 @@ docker-compose ps '"$CONTAINER_NAME"'
 
 echo "[Docker] Cleaning up..."
 docker image prune -f || true
-rm -rf /tmp/repo.tar.gz /tmp/repo_extracted
 
 echo "[OK] Deploy completed!"
 '@
