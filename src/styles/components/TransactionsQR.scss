@@ -83,11 +83,17 @@
 }
 
 /* Responsive fixes for TransactionsQR page */
-.applications-list.content-page {
+.transactions-qr-container.content-page {
   padding: 20px;
+  display: flex;
+  animation: fadeIn 0.3s ease-out;
   
   @media (max-width: 768px) {
     padding: 10px;
+  }
+
+  > main {
+    max-width: none !important;
   }
 }
 

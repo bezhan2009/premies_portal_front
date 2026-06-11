@@ -556,7 +556,7 @@ export default function TransactionsQR() {
   return (
     <>
       <div
-        className="applications-list content-page"
+        className="transactions-qr-container content-page"
         style={{ flexDirection: "column", gap: "20px", height: "auto", width: "100%", maxWidth: "100%", padding: "10px" }}
       >
         <main>

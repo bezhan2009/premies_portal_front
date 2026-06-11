@@ -27,6 +27,7 @@ const ClientPersonalInfo = ({
   onOpenClientDocuments,
   documentsCount = 0,
   selectedClientINN,
+  isSalaryClient,
 }) => {
   if (!selectedClient) return null;
 
@@ -95,9 +96,23 @@ const ClientPersonalInfo = ({
             <div className="summary-identity-fio">
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{name}</h2>
             </div>
-            <div className="summary-identity-code" style={{ display: 'flex', gap: '20px', color: '#888', fontSize: '14px' }}>
+            <div className="summary-identity-code" style={{ display: 'flex', gap: '20px', color: '#888', fontSize: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
               <span>Код клиента: {code}</span>
               {serviceText && <span>Обслуживается: {serviceText}</span>}
+              {isSalaryClient && (
+                <span className="salary-client-badge" style={{ 
+                  backgroundColor: 'var(--primary-color)', 
+                  color: 'white', 
+                  padding: '3px 10px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px', 
+                  fontWeight: '600',
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 2px 4px rgba(var(--primary-rgb), 0.2)'
+                }}>
+                  Зарплатный клиент
+                </span>
+              )}
             </div>
 
             {/* Metadata fields Grid inside Identity info to align with FIO */}
