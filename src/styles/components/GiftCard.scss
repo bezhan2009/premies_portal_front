@@ -476,10 +476,10 @@
 .compliance-section {
   margin: 24px 0;
   padding: 24px;
-  background: linear-gradient(145deg, #1d2736, #25344a);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-md);
   animation: fadeIn 0.4s ease-out;
 
   .compliance-header {
@@ -488,7 +488,7 @@
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
 
     .compliance-title-group {
       display: flex;
@@ -497,14 +497,14 @@
 
       .compliance-icon {
         font-size: 24px;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
       }
 
       h3 {
         margin: 0;
         font-size: 18px;
         font-weight: 700;
-        color: #e2e8f0;
+        color: var(--text-color);
         letter-spacing: 0.5px;
       }
     }
@@ -515,11 +515,11 @@
       gap: 8px;
       font-size: 14px;
       font-weight: 500;
-      color: #94a3b8;
+      color: var(--text-secondary);
       padding: 6px 14px;
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--bg-color);
       border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
 
       strong {
         font-size: 16px;
@@ -563,9 +563,9 @@
       flex-direction: column;
       gap: 12px;
       padding: 16px;
-      background: rgba(0, 0, 0, 0.12);
+      background: var(--bg-color);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
       height: fit-content;
       align-self: end;
 
