@@ -83,17 +83,32 @@ function Invoke-SSHWithPassword {
         return
     }
     
-    # Alternative: use plink from Putty
+    # Try using plink (if installed or downloaded)
+    $localPlinkPath = "$env:USERPROFILE\plink.exe"
     $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
+    if (-not $plinkPath -and (Test-Path $localPlinkPath)) {
+        $plinkPath = $localPlinkPath
+    }
+    
+    if (-not $plinkPath) {
+        Write-Host "[DEPLOY] plink.exe not found. Downloading PuTTY Link (plink.exe) to automate password entry..." -ForegroundColor Yellow
+        try {
+            $webClient = New-Object System.Net.WebClient
+            $webClient.DownloadFile("https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe", $localPlinkPath)
+            $plinkPath = $localPlinkPath
+            Write-Host "[DEPLOY] plink.exe successfully downloaded!" -ForegroundColor Green
+        } catch {
+            Write-Host "[ERROR] Failed to download plink.exe: $_" -ForegroundColor Red
+        }
+    }
+    
     if ($plinkPath) {
-        & echo y | plink -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" $cleanCommand
+        & echo y | & $plinkPath -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" $cleanCommand
         return
     }
     
-    # Ask user to install tools if missing
-    Write-Host "[ERROR] No SSH automation tool found!" -ForegroundColor Red
-    Write-Host "Please install one of: sshpass, putty/plink, or use SSH keys" -ForegroundColor Yellow
-    Write-Host "For now, using interactive SSH (you'll need to enter password manually)" -ForegroundColor Yellow
+    # Fallback to interactive SSH
+    Write-Host "[WARN] Using fallback interactive SSH (manual password entry needed)" -ForegroundColor Yellow
     ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" $cleanCommand
 }
 
