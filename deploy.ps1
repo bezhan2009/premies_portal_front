@@ -67,8 +67,8 @@ $PASSWORD = Get-ServerPassword
 # ===== ESTABLISH SSH SESSION =====
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
-# Create remote commands sequence for server (evaluated client-side via double-quoted string)
-$remoteScript = "cd `"$SERVICE_DIR`" && git pull gitlab `"$GITLAB_BRANCH`" && cd `"$PROJECT_DIR`" && docker-compose up --build -d --no-deps `"$CONTAINER_NAME`" && sleep 5 && docker-compose ps `"$CONTAINER_NAME`" && docker image prune -f"
+# Create remote commands sequence for server (evaluated client-side via formatting operator)
+$remoteScript = 'cd "{0}" && git pull gitlab "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME
 
 # Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
