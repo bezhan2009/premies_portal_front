@@ -343,6 +343,44 @@ export default function GiftCard({ edit = false }) {
     const [complianceOptions, setComplianceOptions] = useState(complianceOptionFallbacks);
     const [complianceScoreByValue, setComplianceScoreByValue] = useState(complianceScores);
 
+    // --- NEW STATES FOR REFACTORING ---
+    const [appOffices, setAppOffices] = useState([]);
+    
+    useEffect(() => {
+        const fetchOffices = async () => {
+            try {
+                const token = localStorage.getItem("access_token");
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/application-offices`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const officesData = await res.json();
+                    setAppOffices(Array.isArray(officesData) ? officesData : []);
+                }
+            } catch (err) {
+                console.error("Ошибка загрузки офисов:", err);
+            }
+        };
+        fetchOffices();
+    }, []);
+
+    useEffect(() => {
+        if (data.passport_issued_at) {
+            const issued = new Date(data.passport_issued_at);
+            if (!isNaN(issued)) {
+                const deadline = new Date(issued);
+                deadline.setFullYear(deadline.getFullYear() + 10);
+                deadline.setDate(deadline.getDate() - 1);
+                const formatted = deadline.toISOString().split("T")[0];
+                if (data.passport_deadline !== formatted) {
+                    setData("passport_deadline", formatted);
+                }
+            }
+        }
+    }, [data.passport_issued_at]);
+    // ----------------------------------
+
+
     const ValidData = {
         surname: { required: true },
         name: { required: true },
@@ -1625,7 +1663,14 @@ export default function GiftCard({ edit = false }) {
                                 )}
                             </div>
                         )}
-                        <div className="content-form">
+                        <div className="compliance-section" style={{marginBottom: "24px"}}>
+                            <div className="compliance-header">
+                                <div className="compliance-title-group">
+                                    <span className="compliance-icon">👤</span>
+                                    <h3>Личные данные</h3>
+                                </div>
+                            </div>
+                            <div className="content-form" style={{marginTop: 0}}>
                             <div className="div1 input-with-check">
                                 <Input
                                     id="surname"
@@ -1702,13 +1747,17 @@ export default function GiftCard({ edit = false }) {
                                 error={errors}
                             />
 
-                            <Input
+                            <Select
                                 id="receiving_office"
                                 className="div9"
                                 title="Офис получения"
                                 placeholder="Выберите офис"
                                 onChange={(val) => setData("receiving_office", val)}
                                 value={data.receiving_office}
+                                options={[
+                                    { value: "", label: "Выберите офис" },
+                                    ...appOffices.map((o) => ({ value: o.title, label: o.title }))
+                                ]}
                                 error={errors}
                             />
 
@@ -1758,14 +1807,6 @@ export default function GiftCard({ edit = false }) {
                                 error={errors}
                             />
 
-                            <CheckBox
-                                id="is_resident"
-                                className="div10"
-                                title="Резидент"
-                                value={data.is_resident}
-                                onChange={(val) => setData("is_resident", val)}
-                                error={errors}
-                            />
                             <Select
                                 id="type_of_certificate"
                                 className="div11"
@@ -1831,6 +1872,52 @@ export default function GiftCard({ edit = false }) {
                                 value={data.inn}
                                 error={errors}
                             />
+</div>
+                        </div>
+
+                        <div className="compliance-section" style={{marginBottom: "24px"}}>
+                            <div className="compliance-header">
+                                <div className="compliance-title-group">
+                                    <span className="compliance-icon">📍</span>
+                                    <h3>Адрес</h3>
+                                </div>
+                            </div>
+                            <div className="content-form" style={{marginTop: 0}}>
+                            <CheckBox
+                                id="is_resident"
+                                className="div10"
+                                title="Резидент"
+                                value={data.is_resident}
+                                onChange={(val) => setData("is_resident", val)}
+                                error={errors}
+                            />
+                            <Input
+                                id="citizenship"
+                                className="div65"
+                                title="Гражданство"
+                                placeholder="Гражданство"
+                                onChange={(val) => setData("citizenship", val)}
+                                value={data.citizenship}
+                                error={errors}
+                            />
+                            <Input
+                                id="nationality"
+                                className="div66"
+                                title="Национальность"
+                                placeholder="Национальность"
+                                onChange={(val) => setData("nationality", val)}
+                                value={data.nationality}
+                                error={errors}
+                            />
+                            <Input
+                                id="place_of_birth"
+                                className="div67"
+                                title="Место рождения"
+                                placeholder="Место рождения"
+                                onChange={(val) => setData("place_of_birth", val)}
+                                value={data.place_of_birth}
+                                error={errors}
+                            />
                             <Input
                                 id="country"
                                 className="div57"
@@ -1894,33 +1981,6 @@ export default function GiftCard({ edit = false }) {
                                 value={data.district}
                                 error={errors}
                             />
-                            <Input
-                                id="citizenship"
-                                className="div65"
-                                title="Гражданство"
-                                placeholder="Гражданство"
-                                onChange={(val) => setData("citizenship", val)}
-                                value={data.citizenship}
-                                error={errors}
-                            />
-                            <Input
-                                id="nationality"
-                                className="div66"
-                                title="Национальность"
-                                placeholder="Национальность"
-                                onChange={(val) => setData("nationality", val)}
-                                value={data.nationality}
-                                error={errors}
-                            />
-                            <Input
-                                id="place_of_birth"
-                                className="div67"
-                                title="Место рождения"
-                                placeholder="Место рождения"
-                                onChange={(val) => setData("place_of_birth", val)}
-                                value={data.place_of_birth}
-                                error={errors}
-                            />
                             <Select
                                 id="street_type"
                                 className="div24"
@@ -1975,6 +2035,17 @@ export default function GiftCard({ edit = false }) {
                                 value={data.client_index}
                                 error={errors}
                             />
+</div>
+                        </div>
+
+                        <div className="compliance-section" style={{marginBottom: "24px"}}>
+                            <div className="compliance-header">
+                                <div className="compliance-title-group">
+                                    <span className="compliance-icon">💳</span>
+                                    <h3>Данные выпущенной карты</h3>
+                                </div>
+                            </div>
+                            <div className="content-form" style={{marginTop: 0}}>
                             <Input
                                 id="product"
                                 className="div36"
@@ -2057,6 +2128,7 @@ export default function GiftCard({ edit = false }) {
                                     />
                                 </>
                             )}
+                        </div>
                         </div>
                         {/* Compliance Section */}
                         <div className="compliance-section">

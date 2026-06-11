@@ -46,6 +46,20 @@ function Get-ServerPassword {
     )
     return $Password
 }
+# ===== LOCAL GIT SYNC =====
+Write-Host "[GIT] Pulling latest changes from origin ($GITLAB_BRANCH)..." -ForegroundColor Yellow
+git -C "$PSScriptRoot" pull origin "$GITLAB_BRANCH"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Local git pull origin failed! Aborting deploy." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "[GIT] Pushing changes to gitlab ($GITLAB_BRANCH)..." -ForegroundColor Yellow
+git -C "$PSScriptRoot" push gitlab "$GITLAB_BRANCH"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Local git push gitlab failed! Aborting deploy." -ForegroundColor Red
+    exit 1
+}
 
 # Get password
 $PASSWORD = Get-ServerPassword
@@ -54,7 +68,7 @@ $PASSWORD = Get-ServerPassword
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
 # Create remote commands sequence for server (evaluated client-side via double-quoted string)
-$remoteScript = "cd `"$SERVICE_DIR`" && git pull gitlab `"$GITLAB_BRANCH`" && cd `"$PROJECT_DIR`" && docker-compose up --build -d `"$CONTAINER_NAME`" && sleep 5 && docker-compose ps `"$CONTAINER_NAME`" && docker image prune -f"
+$remoteScript = "cd `"$SERVICE_DIR`" && git pull gitlab `"$GITLAB_BRANCH`" && cd `"$PROJECT_DIR`" && docker-compose up --build -d --no-deps `"$CONTAINER_NAME`" && sleep 5 && docker-compose ps `"$CONTAINER_NAME`" && docker image prune -f"
 
 # Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
