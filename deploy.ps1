@@ -112,10 +112,13 @@ echo "[OK] Deploy completed!"
 function Invoke-SSHWithPassword {
     param($Command)
     
+    # Strip carriage returns to prevent bash syntax errors on Linux
+    $cleanCommand = $Command -replace "`r", ""
+    
     # Try using sshpass (if installed)
     $sshpassPath = Get-Command sshpass -ErrorAction SilentlyContinue
     if ($sshpassPath) {
-        $result = & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $Command 2>&1
+        $result = & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $cleanCommand 2>&1
         return $result
     }
     
@@ -123,7 +126,7 @@ function Invoke-SSHWithPassword {
     $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
     if ($plinkPath) {
         $tempFile = [System.IO.Path]::GetTempFileName()
-        $Command | Out-File -FilePath $tempFile -Encoding ASCII
+        $cleanCommand | Out-File -FilePath $tempFile -Encoding ASCII
         $result = & echo y | plink -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" -m $tempFile 2>&1
         Remove-Item $tempFile
         return $result
@@ -133,7 +136,7 @@ function Invoke-SSHWithPassword {
     Write-Host "[ERROR] No SSH automation tool found!" -ForegroundColor Red
     Write-Host "Please install one of: sshpass, putty/plink, or use SSH keys" -ForegroundColor Yellow
     Write-Host "For now, using interactive SSH (you'll need to enter password manually)" -ForegroundColor Yellow
-    ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" $Command
+    ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" $cleanCommand
 }
 
 # Run deploy
@@ -158,19 +161,26 @@ Write-Host "[Telegram] Sending notification..." -ForegroundColor Yellow
 
 $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 if ($DEPLOY_SUCCESS) {
-    $message = "%E2%9C%85 Deploy of $CONTAINER_NAME is successful%0A<b>Time:</b> $time"
+    $message = "вњ… Deploy of $CONTAINER_NAME is successful`n<b>Time:</b> $time"
 } else {
-    $message = "%E2%9D%8C Deploy of $CONTAINER_NAME is failed%0A<b>Time:</b> $time"
+    $message = "вќЊ Deploy of $CONTAINER_NAME is failed`n<b>Time:</b> $time"
 }
 
 $telegramUrl = "https://api.telegram.org/bot7701650916:AAG78Lu0rG7XTeD3Nw-mZoEkKfcyzJAjH8k/sendMessage"
 $chatIds = @("8144443377", "913005799", "6364646491")
 
 foreach ($chatId in $chatIds) {
-    curl.exe -s -X POST $telegramUrl `
-        -d "chat_id=$chatId" `
-        -d "parse_mode=HTML" `
-        -d "text=$message" > $null
+    try {
+        $body = @{
+            chat_id    = $chatId
+            parse_mode = "HTML"
+            text       = $message
+        }
+        $response = Invoke-RestMethod -Uri $telegramUrl -Method Post -Body $body
+        Write-Host "[Telegram] Message sent to $chatId" -ForegroundColor Green
+    } catch {
+        Write-Host "[Telegram] [ERROR] Failed to send message to ${chatId}: $_" -ForegroundColor Red
+    }
 }
 
 Write-Host "[OK] Done!" -ForegroundColor Green
