@@ -1123,7 +1123,7 @@ export default function TransactionsQR() {
                        Экспорт в Excel
                      </Button>
                      {!(isUsOnUs) && <span style={{ marginLeft: "10px", fontSize: "14px", color: "gray" }}>
-                       (Всего: {totalRecords})
+                       (Всего: {sortedData.length})
                      </span>}
                    </Space>
                 </div>
