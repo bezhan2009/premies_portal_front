@@ -147,9 +147,6 @@ export default function TransactionsQR() {
         const startDate = data?.start_date || "2025-09-25T00:00";
         const endDate = data?.end_date || "2025-10-01T23:59";
 
-        const startDate = data?.start_date ?? "2025-09-25";
-        const endDate = data?.end_date ?? "2025-10-01";
-
         if (type === "usOnUs") {
           const formatToDDMMYYYY = (dateStr) => {
             const [y, m, d] = dateStr.split("T")[0].split("-");
@@ -1185,15 +1182,15 @@ export default function TransactionsQR() {
                     key="sender_name"
                     render={(val) => val || "-"}
                   />
-                ) : null}
-                {isUsOnThem ? (
+                )}
+                {isUsOnThem && (
                   <Table.Column
                     title="Телефон"
                     dataIndex="sender_phone"
                     key="sender_phone"
                     render={(val) => val || "-"}
                   />
-                ) : null}
+                )}
 
                 {isUsOnUs && (
                   <Table.Column
@@ -1214,18 +1211,18 @@ export default function TransactionsQR() {
                       return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
                     }}
                   />
-                ) : null}
-                {isThemOnUs ? (
+                )}
+                {isThemOnUs && (
                   <Table.Column title="TX ID" dataIndex="tx_id" key="tx_id" render={(val) => val || "-"} />
-                ) : null}
-                {isThemOnUs ? (
+                )}
+                {isThemOnUs && (
                   <Table.Column title="Partner TRN ID" dataIndex="partner_trn_id" key="partner_trn_id" render={(val) => val || "-"} />
-                ) : null}
+                )}
 
-                {!isUsOnUs ? (
+                {!isUsOnUs && (
                   <Table.Column title="Описание" dataIndex="description" key="description" render={(val) => val || "-"} />
-                ) : null}
-                {(!isUsOnUs && isThemOnUs) ? (
+                )}
+                {(!isUsOnUs && isThemOnUs) && (
                   <Table.Column title="Код терминала" dataIndex="terminal_code" key="terminal_code" render={(val) => val || "-"} />
                 )}
                 {(!isThemOnUs && !isUsOnUs) && (
@@ -1233,8 +1230,8 @@ export default function TransactionsQR() {
                 )}
                 {(!isThemOnUs && !isUsOnUs) && (
                   <Table.Column title="qrId" dataIndex="qrId" key="qrId" render={(val) => val || "-"} />
-                ) : null}
-                {!isUsOnUs ? (
+                )}
+                {!isUsOnUs && (
                   <Table.Column
                     title="Статус"
                     dataIndex="status"
@@ -1268,29 +1265,9 @@ export default function TransactionsQR() {
                           <span style={{ color: "red" }}>Ошибка</span>
                         </div>
                       );
-                    } else if (status === "process") {
-                      return (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcProcess style={{ fontSize: 22 }} />
-                          <span style={{ color: "orange" }}>В процессе</span>
-                        </div>
-                      );
-                    } else if (status === "cancel") {
-                      return (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcCancel style={{ fontSize: 22 }} />
-                          <span style={{ color: "red" }}>Отменено</span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <FcHighPriority style={{ fontSize: 22 }} />
-                        <span style={{ color: "red" }}>Ошибка</span>
-                      </div>
-                    );
-                  }}
+                    }}
                 />
+                )}
                 <Table.Column
                   title="Банк отправителя"
                   key="bank_sender"
