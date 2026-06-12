@@ -192,6 +192,7 @@ export default function TransactionsQR() {
           return;
         }
 
+        const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
         const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
 
         const resp = await fetch(url);
