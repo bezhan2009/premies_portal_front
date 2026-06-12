@@ -1,4 +1,4 @@
-﻿import RadioSelect from "../../components/elements/RadioSelect";
+import RadioSelect from "../../components/elements/RadioSelect";
 import {
     districtTypes,
     docTypes, genders,
@@ -1883,14 +1883,6 @@ export default function GiftCard({ edit = false }) {
                                 </div>
                             </div>
                             <div className="content-form" style={{marginTop: 0}}>
-                            <CheckBox
-                                id="is_resident"
-                                className="div10"
-                                title="Резидент"
-                                value={data.is_resident}
-                                onChange={(val) => setData("is_resident", val)}
-                                error={errors}
-                            />
                             <Input
                                 id="citizenship"
                                 className="div65"
@@ -2214,6 +2206,13 @@ export default function GiftCard({ edit = false }) {
                                 />
                                 
                                 <div className="compliance-checkbox-group">
+                                    <CheckBox
+                                        id="is_resident"
+                                        title="Резидент"
+                                        value={data.is_resident}
+                                        onChange={(val) => setData("is_resident", val)}
+                                        error={errors}
+                                    />
                                     <CheckBox
                                         id="fatca"
                                         title="Признак FATCA"

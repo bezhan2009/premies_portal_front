@@ -7,6 +7,7 @@ import { fetchCardFios } from "../../../api/processing/transactions.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
+import CardCashbackStatistics from "./CardCashbackStatistics.jsx";
 
 const STATUS_PAID = "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E";
 
@@ -20,6 +21,7 @@ const CardCashbackTable = () => {
         columnKey: "created_at",
         order: "descend",
     });
+    const [showChart, setShowChart] = useState(false);
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -348,6 +350,9 @@ const CardCashbackTable = () => {
                     )}
                 </div>
                 <Space>
+                    <Button onClick={() => setShowChart(!showChart)}>
+                        {showChart ? "Скрыть график" : "Показать график"}
+                    </Button>
                     <Button
                         icon={<ReloadOutlined />}
                         onClick={handleRefresh}
@@ -360,6 +365,8 @@ const CardCashbackTable = () => {
                     </Button>
                 </Space>
             </div>
+
+            {showChart && <CardCashbackStatistics data={items} />}
 
             {error ? (
                 <p style={{ color: "red", margin: "16px" }}>{error}</p>

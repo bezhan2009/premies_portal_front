@@ -1067,7 +1067,7 @@ export default function TransactionsQR() {
                 rowKey={getRowKey}
                 pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
                 loading={loading}
-                scroll={{ x: "max-content", y: 600 }}
+                scroll={{ x: "max-content" }}
               >
                 <Table.Column
                   title={
@@ -1103,6 +1103,7 @@ export default function TransactionsQR() {
                 {isUsOnUs ? <Table.Column title="Получатель" dataIndex="txt_ben" key="txt_ben" render={(val) => val || "-"} /> : null}
                 {isUsOnUs ? <Table.Column title="Описание" dataIndex="dscr" key="dscr" render={(val) => val || "-"} /> : null}
                 {isUsOnUs ? <Table.Column title="Номер счета получателя" dataIndex="trn_acc_code" key="trn_acc_code" render={(val) => val || "-"} /> : null}
+                {isUsOnUs ? <Table.Column title="Дата" dataIndex="doper" key="doper" render={(val) => val || "-"} /> : null}
                 {isUsOnUs ? (
                   <Table.Column
                     title="Статус"
