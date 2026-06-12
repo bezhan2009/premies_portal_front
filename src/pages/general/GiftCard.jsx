@@ -1,4 +1,4 @@
-import RadioSelect from "../../components/elements/RadioSelect";
+﻿import RadioSelect from "../../components/elements/RadioSelect";
 import {
     districtTypes,
     docTypes, genders,
@@ -634,103 +634,169 @@ export default function GiftCard({ edit = false }) {
     };
     
     const parsePassportText = (text) => {
+        // ─── MRZ PARSING (most reliable source) ──────────────────────────────
+        // Tajik ID card MRZ format:
+        //   Line 1: IDTJK<series><docnum8><check><INN13><<
+        //   Line 2: YYMMDD<check><sex><YYMMDD><check><nationality><<<<<<<<<
+        //   Line 3: SURNAME<<FIRSTNAME<<<<<<<<<<<<<<<<<<
+
+        let mrzSurname = "", mrzName = "";
+        let mrzDocSeries = "", mrzDocNum = "", mrzINN = "";
+        let mrzBirthDate = null, mrzExpiryDate = null, mrzGender = null;
+
+        // MRZ line 3: SURNAME<<NAME<<<...
+        const mrzLine3Match = text.match(/([A-Z]{2,})<<+([A-Z]{2,})/);
+        if (mrzLine3Match) {
+            mrzSurname = mrzLine3Match[1];
+            mrzName    = mrzLine3Match[2];
+        }
+
+        // MRZ line 2: 7-digit DOB + sex + 7-digit expiry + country code
+        const mrzLine2Match = text.match(/\b(\d{7})([MF])(\d{7})(TJK|UZB|KGZ|KAZ|RUS|UKR)\b/);
+        if (mrzLine2Match) {
+            const parseMrzDate = (yymmdd) => {
+                const yy = parseInt(yymmdd.substring(0, 2), 10);
+                const mm = yymmdd.substring(2, 4);
+                const dd = yymmdd.substring(4, 6);
+                const fullYear = yy > 30 ? 1900 + yy : 2000 + yy;
+                return `${fullYear}-${mm}-${dd}`;
+            };
+            mrzBirthDate  = parseMrzDate(mrzLine2Match[1].substring(0, 6));
+            mrzGender     = mrzLine2Match[2] === "F"; // true = female
+            mrzExpiryDate = parseMrzDate(mrzLine2Match[3].substring(0, 6));
+        }
+
+        // MRZ line 1: IDTJK + series(1) + docnum(8) + INN(13)
+        const mrzLine1Match = text.match(/IDTJK([A-Z])(\d{8})\d?(\d{13})/);
+        if (mrzLine1Match) {
+            mrzDocSeries = mrzLine1Match[1];
+            mrzDocNum    = mrzLine1Match[2];
+            mrzINN       = mrzLine1Match[3];
+        }
+
+        // ─── CYRILLIC NAMES from text sections ────────────────────────────────
         const getCyrillicWord = (secText) => {
             if (!secText) return "";
             const match = secText.match(/[А-ЯЁҶӢҲӮҚҒ]{2,}/);
             return match ? match[0] : "";
         };
 
-        const getLatinWord = (secText) => {
-            if (!secText) return "";
-            const match = secText.match(/[A-Z]{2,}/);
-            return match ? match[0] : "";
-        };
-
-        const surnameSec = extractSection(text, ["Насаб", "Surname"], ["Ном", "Name"]);
-        const nameSec = extractSection(text, ["Ном / Name", "Name", "Ном"], ["Номи падар", "Father's name", "Father's naте", "Father's", "Father"]);
-        const patronymicSec = extractSection(text, ["Номи падар", "Father's name", "Father's naте", "Father's", "Father"], ["Ҷинс", "Sex", "Nationality", "Шаҳрвандӣ"]);
-
+        // Surname: section from "Насаб / Surname" up to "Ном /" or the Latin surname
+        // Use long boundary keywords to avoid "Ном" matching inside "Шиноснома"
+        const stopForSurname = ["Ном /", "/ Name", "\nKARIMOV", "\nBEZHAN"];
+        if (mrzSurname) stopForSurname.push("\n" + mrzSurname);
+        const surnameSec = extractSection(text,
+            ["Насаб /", "Haca6 /", "Насаб/", "Surname\n"],
+            stopForSurname
+        );
         const surnameCyr = getCyrillicWord(surnameSec);
-        const surnameLat = getLatinWord(surnameSec);
 
-        const nameCyr = getCyrillicWord(nameSec);
-        const nameLat = getLatinWord(nameSec);
+        // Name: section from "/ Name\n\n" to "Номи падар"
+        // The Cyrillic name appears after the Latin surname on its own line
+        const nameSec = extractSection(text,
+            ["/ Name\n\n", "Name\n\n"],
+            ["Номи падар", "Father's name", "Document No", "Раками шиноснома"]
+        );
+        let nameCyr = getCyrillicWord(nameSec);
 
+        // Patronymic: between "Номи падар" and gender/nationality
+        const patronymicSec = extractSection(text,
+            ["Номи падар", "Father's name", "Father's naте"],
+            ["Ҷинс", "Sex\n", "Nationality", "Шаҳрвандӣ"]
+        );
         const patronymicCyr = getCyrillicWord(patronymicSec);
 
-        let series = "";
-        let docNum = "";
-        const passportMatch = text.match(/\b([A-Z]{1,2})(\d{7,8})\b/);
-        if (passportMatch) {
-            series = passportMatch[1];
-            docNum = passportMatch[2];
+        // ─── DOCUMENT NUMBER ─────────────────────────────────────────────────
+        let series = mrzDocSeries, docNum = mrzDocNum;
+        if (!series || !docNum) {
+            const passportMatch = text.match(/\b([A-Z]{1})(\d{7,8})\b/);
+            if (passportMatch) { series = passportMatch[1]; docNum = passportMatch[2]; }
+        }
+
+        // ─── INN ──────────────────────────────────────────────────────────────
+        let inn = mrzINN;
+        if (!inn) {
+            const taxMatch = text.match(/Tax Payer ID number\s+(\d{9,13})/i);
+            if (taxMatch) inn = taxMatch[1];
+            else { const m13 = text.match(/\b(\d{13})\b/); if (m13) inn = m13[1]; }
+        }
+
+        // ─── DATES ────────────────────────────────────────────────────────────
+        // MRZ dates are unambiguous; use keyword proximity only as fallback
+        const birthDate  = mrzBirthDate  || findDateNearKeyword(text, ['date of birth', 'санаи таваллуд']);
+        const issuedAt   = findDateNearKeyword(text, ['date of issue', 'огози эътибор', 'оғози эътибор']);
+        const expiryDate = mrzExpiryDate || findDateNearKeyword(text, ['date of expiry', 'анҷоми эътибор']);
+
+        // ─── GENDER ───────────────────────────────────────────────────────────
+        let gender = true; // default male
+        if (mrzGender !== null) {
+            gender = !mrzGender; // mrzGender true=female → gender false=female
         } else {
-            const docNoSec = extractSection(text, ["Document No.", "Рақами шиноснома"], ["Sex", "Ҷинс", "Nationality"]);
-            const cleanedDocNo = docNoSec.replace(/[^A-Z0-9]/g, '');
-            const fallbackMatch = cleanedDocNo.match(/([A-Z]{1,2})(\d{7,8})/);
-            if (fallbackMatch) {
-                series = fallbackMatch[1];
-                docNum = fallbackMatch[2];
+            const sexSec = extractSection(text, ["Sex\n", "Ҷинс /"], ["Date of issue", "Огози"]);
+            if (sexSec) {
+                const ls = sexSec.toLowerCase();
+                gender = !(ls.includes('f') || ls.includes('з') || ls.includes('ж'));
             }
         }
 
-        let inn = "";
-        const innMatch = text.match(/\b\d{13}\b/) || text.match(/\b\d{9}\b/);
-        if (innMatch) {
-            inn = innMatch[0];
-        } else {
-            const innSec = extractSection(text, ["National ID No.", "Рақами ягонаи миллӣ", "National ID", "Рақами ягона"], ["---", "\n\n"]);
-            const innDigits = innSec.replace(/\D/g, '');
-            if (innDigits.length === 13 || innDigits.length === 9) {
-                inn = innDigits;
-            }
-        }
-
+        // ─── PLACE OF BIRTH ───────────────────────────────────────────────────
         let placeOfBirth = "";
-        const birthPlaceSec = extractSection(text, ["Place of birth", "Ҷои таваллуд"], ["Рақами ягона", "National ID", "ИНН", "National ID No."]);
+        const birthPlaceSec = extractSection(text,
+            ["Place of birth\n", "Ҷои таваллуд /\n", "Ҷои таваллуд\n"],
+            ["Раками ягонаи", "National ID", "ИНН"]
+        );
         if (birthPlaceSec) {
             placeOfBirth = birthPlaceSec.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
-            placeOfBirth = placeOfBirth.replace(/[^А-ЯЁҶӢҲӮҚҒA-Z\s]/gi, '').trim();
+            placeOfBirth = placeOfBirth.replace(/[^А-ЯЁҶӢҲӮқғA-Z\s]/gi, '').trim();
         }
 
-        const birthDate = findDateNearKeyword(text, ['birth', 'таваллуд', 'bday', 'род']);
-        const issuedAt = findDateNearKeyword(text, ['issue', 'выдач', 'эътибор', 'оғоз', 'огоз']);
-        const expiryDate = findDateNearKeyword(text, ['expiry', 'deadline', 'анҷом', 'анжом', 'истеъмол', 'действ']);
-
-        let gender = true;
-        const sexSec = extractSection(text, ["Sex", "Ҷинс"], ["Date of issue", "Огози эътибор"]);
-        if (sexSec) {
-            const lowerSex = sexSec.toLowerCase();
-            if (lowerSex.includes('f') || lowerSex.includes('з') || lowerSex.includes('ж')) {
-                gender = false;
-            }
+        // ─── CITY FROM ADDRESS (back side) ───────────────────────────────────
+        const addrSec = extractSection(text,
+            ["Address\n\n", "Нишони /\n\nAddress\n\n"],
+            ["Вазъи оилавй", "Marital status"]
+        );
+        if (addrSec) {
+            const cityMatch = addrSec.match(/ШАҲРИ\s+([А-ЯЁҶӢҲӮҚҒ]+)/i);
+            if (cityMatch) setData("city", cityMatch[1]);
         }
 
+        // ─── ISSUING AUTHORITY (back side) ───────────────────────────────────
+        const issuingSec = extractSection(text,
+            ["Issuing Authority\n\n", "Мақоми шиносномадиҳанда /\n\n"],
+            ["Tax Payer", "ШВКД", "DMIA"]
+        );
+        if (issuingSec) {
+            const issuingTrimmed = issuingSec.replace(/[\r\n]+/g, ' ').trim();
+            if (issuingTrimmed) setData("issued_by", issuingTrimmed);
+        }
+
+        // ─── CARD NAME ────────────────────────────────────────────────────────
         let cardName = "";
-        if (nameLat && surnameLat) {
-            cardName = `${nameLat} ${surnameLat}`.toUpperCase();
+        if (mrzName && mrzSurname) {
+            cardName = `${mrzName} ${mrzSurname}`.toUpperCase();
         } else if (nameCyr && surnameCyr) {
             cardName = `${nameCyr} ${surnameCyr}`.toUpperCase();
         }
 
-        if (surnameCyr) setData("surname", surnameCyr);
-        if (nameCyr) setData("name", nameCyr);
-        if (patronymicCyr) setData("patronymic", patronymicCyr);
-        if (cardName) setData("card_name", cardName);
-        if (series) setData("documents_series", series);
-        if (docNum) setData("document_number", docNum);
-        if (inn) setData("inn", inn);
-        if (birthDate) setData("birth_date", birthDate);
-        if (issuedAt) setData("passport_issued_at", issuedAt);
-        if (expiryDate) setData("passport_deadline", expiryDate);
-        if (placeOfBirth) setData("place_of_birth", placeOfBirth);
+        // ─── APPLY TO FORM ────────────────────────────────────────────────────
+        if (surnameCyr)     setData("surname",            surnameCyr);
+        if (nameCyr)        setData("name",               nameCyr);
+        if (patronymicCyr)  setData("patronymic",         patronymicCyr);
+        if (cardName)       setData("card_name",          cardName);
+        if (series)         setData("documents_series",   series);
+        if (docNum)         setData("document_number",    docNum);
+        if (inn)            setData("inn",                inn);
+        if (birthDate)      setData("birth_date",         birthDate);
+        if (issuedAt)       setData("passport_issued_at", issuedAt);
+        if (expiryDate)     setData("passport_deadline",  expiryDate);
+        if (placeOfBirth)   setData("place_of_birth",     placeOfBirth);
         setData("gender", gender);
 
         setData("type_of_certificate", 58);
-        setData("is_resident", true);
-        setData("citizenship", "Таджикистан");
-        setData("nationality", "Таджик");
-        setData("country", "Таджикистан");
+        setData("is_resident",  true);
+        setData("citizenship",  "Таджикистан");
+        setData("nationality",  "Таджик");
+        setData("country",      "Таджикистан");
     };
 
     const handleRecognizePassport = async () => {
@@ -1023,7 +1089,7 @@ export default function GiftCard({ edit = false }) {
             }
 
             const blob = await response.blob();
-            const filename = `offer_${applicationId}.zip`;
+            const filename = `offer_${applicationId}.docx`;
             downloadFile(blob, filename);
 
             showAlert("Оферта успешно скачана!", "success", 4000);
@@ -1053,7 +1119,7 @@ export default function GiftCard({ edit = false }) {
             }
 
             const blob = await response.blob();
-            const filename = `compliance_${applicationId}.zip`;
+            const filename = `compliance_${applicationId}.docx`;
             downloadFile(blob, filename);
 
             showAlert("Анкета комплаенс успешно скачана!", "success", 4000);
