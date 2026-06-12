@@ -255,6 +255,12 @@ export default function GiftCard({ edit = false }) {
             return;
         }
 
+        if (data.application_status_id === 8) {
+            setTerrorCheckResults(prev => ({ ...prev, [type]: false }));
+            setCheckingTerror(prev => ({ ...prev, [type]: false }));
+            return;
+        }
+
         try {
             setCheckingTerror(prev => ({ ...prev, [type]: true }));
             const token = localStorage.getItem("access_token");
@@ -289,7 +295,7 @@ export default function GiftCard({ edit = false }) {
         } finally {
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
         }
-    }, []);
+    }, [data.application_status_id]);
 
     // Debounced проверка для полного имени (ФИО)
     const debouncedCheckFullName = useCallback((fullName, birthDate) => {
@@ -316,6 +322,8 @@ export default function GiftCard({ edit = false }) {
     // НОВЫЙ обработчик для изменения даты рождения
     const handleBirthDateChange = (value) => {
         setData("birth_date", value);
+
+        if (data.application_status_id === 8) return;
 
         // Собираем полное ФИО
         const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
@@ -422,6 +430,8 @@ export default function GiftCard({ edit = false }) {
     const handleNameChange = (field, value) => {
         setData(field, value);
 
+        if (data.application_status_id === 8) return;
+
         // Получаем текущие значения всех полей ФИО
         const surname = field === 'surname' ? value : data.surname || '';
         const name = field === 'name' ? value : data.name || '';
@@ -439,6 +449,8 @@ export default function GiftCard({ edit = false }) {
 
     const handleCardNameChange = (value) => {
         setData("card_name", value);
+
+        if (data.application_status_id === 8) return;
 
         if (value && value.trim().length >= 2) {
             debouncedCheckCardName(value.trim());
@@ -597,14 +609,18 @@ export default function GiftCard({ edit = false }) {
             const fullName = `${clientDetails.last_name || ""} ${clientDetails.first_name || ""} ${clientDetails.middle_name || ""}`.trim();
             const birthDate = clientDetails.birth_date ? new Date(clientDetails.birth_date).toISOString().split("T")[0] : null;
 
-            if (fullName.length >= 2) {
-                debouncedCheckFullName(fullName, birthDate);
-            }
+            if (data.application_status_id !== 8) {
+                if (fullName.length >= 2) {
+                    debouncedCheckFullName(fullName, birthDate);
+                }
 
-            const cardNameForCheck = clientDetails.swift_name ||
-                `${clientDetails.latin_first_name || ""} ${clientDetails.latin_last_name || ""}`.trim();
-            if (cardNameForCheck.length >= 2) {
-                await checkTerrorList(cardNameForCheck, birthDate, "cardName");
+                const cardNameForCheck = clientDetails.swift_name ||
+                    `${clientDetails.latin_first_name || ""} ${clientDetails.latin_last_name || ""}`.trim();
+                if (cardNameForCheck.length >= 2) {
+                    await checkTerrorList(cardNameForCheck, birthDate, "cardName");
+                }
+            } else {
+                setTerrorCheckResults({ fullName: false, cardName: false });
             }
 
             showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
@@ -1366,17 +1382,21 @@ export default function GiftCard({ edit = false }) {
                     setShowSMSType(true);
                 }
 
-                if (responseData.name && responseData.surname) {
-                    const fullName = `${responseData.surname} ${responseData.name} ${responseData.patronymic || ''}`.trim();
-                    if (fullName.length >= 2) {
-                        debouncedCheckFullName(fullName, birthDate);
+                if (responseData.application_status_id !== 8) {
+                    if (responseData.name && responseData.surname) {
+                        const fullName = `${responseData.surname} ${responseData.name} ${responseData.patronymic || ''}`.trim();
+                        if (fullName.length >= 2) {
+                            debouncedCheckFullName(fullName, birthDate);
+                        }
                     }
-                }
 
-                if (responseData.card_name) {
-                    if (responseData.card_name.trim().length >= 2) {
-                        await checkTerrorList(responseData.card_name.trim(), birthDate, "cardName");
+                    if (responseData.card_name) {
+                        if (responseData.card_name.trim().length >= 2) {
+                            await checkTerrorList(responseData.card_name.trim(), birthDate, "cardName");
+                        }
                     }
+                } else {
+                    setTerrorCheckResults({ fullName: false, cardName: false });
                 }
             } catch (e) {
                 console.error(e);
@@ -1459,8 +1479,9 @@ export default function GiftCard({ edit = false }) {
     
     // Check if application is already approved by compliance to not block them
     const isComplianceApproved = data.compliance_status === 'approved' || data.is_compliance_approved === true;
+    const isApprovedStatus = data.application_status_id === 8;
     
-    const requiresCompliance = (hasTerrorMatch || isNonResident || hasFatca || hasAplPzl) && !isComplianceApproved;
+    const requiresCompliance = (hasTerrorMatch || isNonResident || hasFatca || hasAplPzl) && !isComplianceApproved && !isApprovedStatus;
 
     const getScore = (val) => {
         return complianceScoreByValue[val] || 0;
