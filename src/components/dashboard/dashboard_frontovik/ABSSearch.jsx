@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import AlertMessage from "../../general/AlertMessage.jsx";
+import Spinner from "../../Spinner.jsx";
 import { logAuditAction } from "../../../utils/auditLogger.js";
 import {
     getUserCards,
@@ -111,6 +112,12 @@ export default function ABSClientSearch() {
     const [isLimitsModalOpen, setIsLimitsModalOpen] = useState(false);
     const [cardLimits, setCardLimits] = useState([]);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // Agent client pin states
+    const [pinModalClient, setPinModalClient] = useState(null);
+    const [clientPin, setClientPin] = useState("");
+    const [verifyingPin, setVerifyingPin] = useState(false);
+    const [verifiedClientCodes, setVerifiedClientCodes] = useState([]);
 
     // Terrorist check states
     const [terrorMatch, setTerrorMatch] = useState(null);
@@ -293,6 +300,8 @@ export default function ABSClientSearch() {
         setClientDocumentsModalOpen(false);
         setDocumentPreview(null);
         setDocumentPreviewVariant("default");
+        setPinModalClient(null);
+        setClientPin("");
         sessionStorage.removeItem("absClientSearchState");
     };
 
@@ -1271,11 +1280,74 @@ export default function ABSClientSearch() {
         ]
         : [];
 
-    useEffect(() => {
-        if (selectedClient?.client_code) {
-            handleGetDataUser();
+    const checkPinRequired = async (clientCode) => {
+        try {
+            const token = localStorage.getItem("access_token");
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/agent-client-pin/check?clientCode=${clientCode}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const result = await response.json();
+                return result.requires_pin;
+            }
+        } catch (error) {
+            console.error("Error checking PIN requirement", error);
         }
-    }, [selectedClient?.client_code, handleGetDataUser]);
+        return false;
+    };
+
+    const handleVerifyPin = async () => {
+        if (!clientPin || clientPin.length !== 5) {
+            showAlert("Введите 5-значный PIN", "error");
+            return;
+        }
+        setVerifyingPin(true);
+        try {
+            const token = localStorage.getItem("access_token");
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/agent-client-pin/verify`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ client_code: pinModalClient.client_code, pin: clientPin })
+            });
+            if (response.ok) {
+                setVerifiedClientCodes(prev => [...prev, pinModalClient.client_code]);
+                setPinModalClient(null);
+                setClientPin("");
+                showAlert("Доступ разрешен", "success");
+            } else {
+                showAlert("Неверный PIN-код", "error");
+            }
+        } catch (error) {
+            showAlert("Ошибка проверки PIN", "error");
+        } finally {
+            setVerifyingPin(false);
+        }
+    };
+
+    useEffect(() => {
+        const checkAndGetData = async () => {
+            const clientCode = selectedClient?.client_code;
+            if (!clientCode) return;
+
+            if (verifiedClientCodes.includes(clientCode)) {
+                handleGetDataUser();
+                return;
+            }
+
+            const requiresPin = await checkPinRequired(clientCode);
+            if (requiresPin) {
+                setCardsData([]);
+                setAccountsData([]);
+                setCreditsData([]);
+                setDepositsData([]);
+                setPinModalClient(selectedClient);
+            } else {
+                handleGetDataUser();
+            }
+        };
+
+        checkAndGetData();
+    }, [selectedClient?.client_code, verifiedClientCodes, handleGetDataUser]);
 
     // Восстановление состояния
     useEffect(() => {
@@ -1606,6 +1678,80 @@ export default function ABSClientSearch() {
                 isLoading={modalLoading}
                 cardId={activeCardId}
             />
+
+            {pinModalClient && (
+                <div className="graph-modal-overlay graph-modal-overlay--open">
+                    <div className="graph-modal-container" style={{ maxWidth: '400px', borderRadius: '12px', overflow: 'hidden' }}>
+                        <div className="graph-modal-header" style={{ background: '#e11d48', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none' }}>
+                            <h2 style={{ color: 'white', margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Требуется PIN-код</h2>
+                            <button className="graph-modal-close" onClick={handleClear} style={{ color: 'white', fontSize: '24px', opacity: 1 }}>
+                                &times;
+                            </button>
+                        </div>
+
+                        <div className="graph-modal-content" style={{ padding: '30px 25px', background: 'white', textAlign: 'center' }}>
+                            {verifyingPin ? (
+                                <div className="graph-modal-loading">
+                                    <Spinner center />
+                                    <p>Проверка PIN-кода...</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <p style={{ color: '#4b5563', fontSize: '15px', margin: 0 }}>
+                                        Этот клиент привязан к агенту по клиентам. Введите 5-значный PIN-код для продолжения.
+                                    </p>
+                                    <div>
+                                        <input 
+                                            type="password" 
+                                            maxLength={5}
+                                            value={clientPin}
+                                            onChange={(e) => setClientPin(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                                            placeholder="*****"
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', textAlign: 'center', fontSize: '24px', letterSpacing: '10px' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button 
+                                            onClick={handleClear}
+                                            style={{ 
+                                                flex: 1,
+                                                background: '#f3f4f6', 
+                                                padding: '14px', 
+                                                borderRadius: '10px', 
+                                                fontSize: '16px', 
+                                                border: 'none',
+                                                color: '#374151',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Отмена
+                                        </button>
+                                        <button 
+                                            className="selectAll-toggle" 
+                                            onClick={handleVerifyPin}
+                                            disabled={clientPin.length !== 5 || verifyingPin}
+                                            style={{ 
+                                                flex: 2,
+                                                background: '#e11d48', 
+                                                padding: '14px', 
+                                                borderRadius: '10px', 
+                                                fontSize: '16px', 
+                                                fontWeight: 'bold', 
+                                                border: 'none',
+                                                color: 'white',
+                                                cursor: (clientPin.length === 5 && !verifyingPin) ? 'pointer' : 'not-allowed',
+                                                opacity: (clientPin.length === 5 && !verifyingPin) ? 1 : 0.6
+                                            }}
+                                        >
+                                            Подтвердить
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

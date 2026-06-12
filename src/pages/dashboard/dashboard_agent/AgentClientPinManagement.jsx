@@ -7,10 +7,10 @@ import Input from "../../../components/elements/Input.jsx";
 import Spinner from "../../../components/Spinner.jsx";
 
 const TABLE_COLUMNS = [
-  { key: "ID", label: "ID" },
+  { key: "id", label: "ID" },
   { key: "client_code", label: "Код клиента" },
   { key: "pin", label: "PIN-код" },
-  { key: "CreatedAt", label: "Дата создания" },
+  { key: "created_at", label: "Дата создания" },
 ];
 
 const EMPTY_FORM = {
@@ -78,7 +78,7 @@ const PinFormModal = ({ isOpen, onClose, form, setForm, onSave, title }) => {
             Отмена
           </button>
           <button onClick={onSave} className="action-buttons__btn">
-            Создать
+            {form.id ? "Сохранить" : "Создать"}
           </button>
         </div>
       </div>
@@ -194,7 +194,7 @@ const AgentClientPinManagement = () => {
     ].some((value) => value && String(value).toLowerCase().includes(query));
   });
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!createForm.client_code) {
       showAlert("Код клиента обязателен", "error");
       return;
@@ -204,19 +204,40 @@ const AgentClientPinManagement = () => {
       return;
     }
 
+    const isEdit = !!createForm.id;
     try {
-      await request("/agent-client-pin", {
-        method: "POST",
-        body: JSON.stringify(createForm),
-      });
-      showAlert("PIN-код успешно создан");
+      if (isEdit) {
+        await request(`/agent-client-pin/${createForm.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            client_code: createForm.client_code,
+            pin: createForm.pin,
+          }),
+        });
+        showAlert("PIN-код успешно обновлен");
+      } else {
+        await request("/agent-client-pin", {
+          method: "POST",
+          body: JSON.stringify(createForm),
+        });
+        showAlert("PIN-код успешно создан");
+      }
       setShowCreate(false);
       setCreateForm(EMPTY_FORM);
       fetchItems();
     } catch (e) {
       console.error(e);
-      showAlert(e.message || "Ошибка при создании PIN-кода", "error");
+      showAlert(e.message || "Ошибка при сохранении PIN-кода", "error");
     }
+  };
+
+  const openEdit = (item) => {
+    setCreateForm({
+      id: item.id || item.ID,
+      client_code: item.client_code,
+      pin: item.pin,
+    });
+    setShowCreate(true);
   };
 
   const openDelete = (item) => {
@@ -228,7 +249,7 @@ const AgentClientPinManagement = () => {
     if (!deleteTarget) return;
 
     try {
-      await request(`/agent-client-pin/${deleteTarget.ID}`, { method: "DELETE" });
+      await request(`/agent-client-pin/${deleteTarget.id || deleteTarget.ID}`, { method: "DELETE" });
       showAlert("PIN-код удален");
       setShowDelete(false);
       setDeleteTarget(null);
@@ -325,6 +346,13 @@ const AgentClientPinManagement = () => {
                           <div style={{ display: "flex", gap: 8 }}>
                             <button
                               className="action-buttons__btn"
+                              style={{ padding: "4px 12px", fontSize: 13, backgroundColor: "#007bff", color: "#fff" }}
+                              onClick={() => openEdit(item)}
+                            >
+                              Изменить
+                            </button>
+                            <button
+                              className="action-buttons__btn"
                               style={{ padding: "4px 12px", fontSize: 13, backgroundColor: "#dc3545", color: "#fff" }}
                               onClick={() => openDelete(item)}
                             >
@@ -353,8 +381,8 @@ const AgentClientPinManagement = () => {
         onClose={() => setShowCreate(false)}
         form={createForm}
         setForm={setCreateForm}
-        onSave={handleCreate}
-        title="Новый PIN-код клиента"
+        onSave={handleSave}
+        title={createForm.id ? "Редактирование PIN-кода клиента" : "Новый PIN-код клиента"}
       />
 
       <DeleteConfirmModal
