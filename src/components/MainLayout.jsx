@@ -115,6 +115,7 @@ const MainLayout = () => {
     if (pathname.includes("/admin/daily-tasks")) return "dt_management";
     if (pathname.includes("/mail-agent")) return "mail_agent_send";
 
+    if (pathname.includes("/agent/client-pins")) return "client_pins_list";
     return "";
   };
 

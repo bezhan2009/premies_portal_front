@@ -2,6 +2,7 @@ import { Route, Outlet } from "react-router-dom";
 import RequireRole from "../../middlewares/RequireRole.jsx";
 
 import GiftCard from "../../pages/general/GiftCard.jsx";
+import AgentClientPinManagement from "../../pages/dashboard/dashboard_agent/AgentClientPinManagement.jsx";
 import MyApplications from "../../pages/general/MyApplications.jsx";
 import ApplicationsList from "../../pages/general/ApplicationsList.jsx";
 import DashboardAgentKB from "../../pages/dashboard/dashboard_agent/KBAgentPage.jsx";
@@ -210,6 +211,17 @@ const agentRoutes = (
     >
       <Route path="accounts-qr/operations" element={<AbsWithdrawsList />} />
       <Route path="accounts-qr/settings" element={<AbsWithdrawSettings />} />
+    </Route>
+
+    {/* Agent Client Pins (Role 36) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[36]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="/agent/client-pins" element={<AgentClientPinManagement />} />
     </Route>
   </>
 );

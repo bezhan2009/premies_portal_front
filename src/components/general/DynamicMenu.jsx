@@ -894,6 +894,22 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(36)) {
+            additionalLinks.push({
+                name: "Управление PIN-кодами",
+                key: "agent_client_pins",
+                icon: ShieldAlert,
+                children: [
+                    {
+                        name: "Список PIN-кодов",
+                        href: "/agent/client-pins",
+                        key: "client_pins_list",
+                        icon: List
+                    },
+                ],
+            });
+        }
+
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications]);
 
