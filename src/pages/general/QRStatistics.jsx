@@ -49,17 +49,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-function convertDoperToDate(doper) {
-  if (!doper || typeof doper !== "string") return "";
-  const parts = doper.split(".");
-  if (parts.length !== 3) return "";
-  const dd = parts[0];
-  const MM = parts[1];
-  const yy = parts[2];
-  const yyyy = yy.length === 2 ? `20${yy}` : yy;
-  return `${yyyy}-${MM}-${dd}`;
-}
-
 export default function QRStatistics({ startDate, endDate }) {
   const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
   const [metric, setMetric] = useState("count");
@@ -80,36 +69,69 @@ export default function QRStatistics({ startDate, endDate }) {
     async (type = "themOnUs") => {
       try {
         setLoading(true);
-        let url = "";
         if (type === "usOnUs") {
-          const sd = startDate.split("T")[0];
-          const ed = endDate.split("T")[0];
-          url = `http://10.64.1.10/services/stmnt.php?acc=17507972690808713012&dt1=${sd}&dt2=${ed}&descr=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20QR%20%D0%BA%D0%BE%D0%B4%D1%83%20%D0%BA%D0%BE%D0%BC%D0%BC%D0%B5%D1%80%D1%81%D0%B0%D0%BD%D1%82%D0%B0`;
-        } else {
-          const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-          url = `${backendUrl}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
+          const formatToDDMMYYYY = (dateStr) => {
+            const [y, m, d] = dateStr.split("T")[0].split("-");
+            return `${d}.${m}.${y}`;
+          };
+          const absUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+          const params = new URLSearchParams();
+          params.append("startDate", formatToDDMMYYYY(startDate || "2025-09-25"));
+          params.append("endDate", formatToDDMMYYYY(endDate || "2025-10-01"));
+          params.append("accountNumber", "17507972690808713012");
+          
+          const token = localStorage.getItem("access_token");
+          const response = await fetch(`${absUrl}/account/operations?${params.toString()}`, {
+              headers: { Authorization: "Bearer " + token }
+          });
+          if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
+          const result = await response.json();
+          
+          let flatData = [];
+          if (Array.isArray(result)) {
+              flatData = result.flatMap((day) => 
+                 day.Transactions.map(tx => ({
+                     date: day.DOPER ? day.DOPER.split('.').reverse().join('-') : "",
+                     amount: tx.SUMN || tx.AMNT || 0,
+                     description: tx.TXTDSCR
+                 }))
+              ).filter(tx => tx.description && tx.description.toLowerCase().includes("qr"));
+              // Fix DOPER DD.MM.YY to YYYY-MM-DD
+              flatData = flatData.map(tx => {
+                 if (!tx.date) return tx;
+                 const parts = tx.date.split('-');
+                 if (parts.length === 3) {
+                     return { ...tx, date: `20${parts[0]}-${parts[1]}-${parts[2]}` };
+                 }
+                 return tx;
+              });
+          }
+
+          const grouped = flatData.reduce((acc, curr) => {
+            if (!acc[curr.date]) acc[curr.date] = { date: curr.date, count: 0, sum: 0 };
+            acc[curr.date].count += 1;
+            acc[curr.date].sum += curr.amount;
+            return acc;
+          }, {});
+
+          const finalResult = Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+          setDate3(finalResult);
+          showAlert(`Загружено ${flatData.length} записей Us on Us`, "success");
+          setLoading(false);
+          return;
         }
+
+        const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
+        const url = `${backendUrl}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
 
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
 
         let result = await response.json();
 
-        if (type === "usOnUs" && Array.isArray(result)) {
-          result = result.filter(r => r.trn_acc_code !== "26202972590810637954" && r.txt_ben !== "ЧСП \"АКТИВ БОНК\"");
-        }
-
         const mapped = result.map((item) => {
-          let dateStr = "";
-          let sumVal = 0;
-          if (type === "usOnUs") {
-            dateStr = convertDoperToDate(item.doper);
-            const rawSum = Number(item.sdok || 0);
-            sumVal = rawSum > 0 ? (rawSum / 0.99) : 0;
-          } else {
-            dateStr = item.created_at?.split("T")[0] || item.creation_datetime?.split("T")[0];
-            sumVal = item.amount || 0;
-          }
+          const dateStr = item.created_at?.split("T")[0] || item.creation_datetime?.split("T")[0];
+          const sumVal = item.amount || 0;
           return {
             date: dateStr,
             count: 1,
@@ -167,22 +189,18 @@ export default function QRStatistics({ startDate, endDate }) {
     if (!date.length && !date2.length && !date3.length) return;
 
     const allDates = Array.from(
-      new Set([
-        ...date.map((d) => d.date),
-        ...date2.map((d) => d.date),
-        ...date3.map((d) => d.date),
-      ]),
+      new Set([...date.map((d) => d.date), ...date2.map((d) => d.date), ...date3.map((d) => d.date)]),
     ).sort((a, b) => new Date(a) - new Date(b));
 
     const merged = allDates.map((d) => {
       const us = date.find((x) => x.date === d);
       const them = date2.find((x) => x.date === d);
-      const usus = date3.find((x) => x.date === d);
+      const usOnUs = date3.find((x) => x.date === d);
       return {
         date: d,
         usOnThem: us ? us[metric] : 0,
         themOnUs: them ? them[metric] : 0,
-        usOnUs: usus ? usus[metric] : 0,
+        usOnUs: usOnUs ? usOnUs[metric] : 0,
       };
     });
 
@@ -229,8 +247,8 @@ export default function QRStatistics({ startDate, endDate }) {
                   <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
                 </linearGradient>
                 <linearGradient id="usOnUs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#9b59b6" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#9b59b6" stopOpacity={0.1} />
+                  <stop offset="0%" stopColor="#ffc658" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#ffc658" stopOpacity={0.1} />
                 </linearGradient>
               </defs>
 
@@ -261,8 +279,8 @@ export default function QRStatistics({ startDate, endDate }) {
               <Area
                 type="monotone"
                 dataKey="usOnUs"
-                name="Внутрибанковские QR (US on US)"
-                stroke="#9b59b6"
+                name="Наш клиент — Наш QR"
+                stroke="#ffc658"
                 fill="url(#usOnUs)"
                 strokeWidth={2.5}
                 dot={{ r: 2 }}

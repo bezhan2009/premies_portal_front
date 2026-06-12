@@ -1807,6 +1807,7 @@ export default function GiftCard({ edit = false }) {
                                 error={errors}
                             />
 
+
                             <Select
                                 id="type_of_certificate"
                                 className="div11"
@@ -2134,6 +2135,14 @@ export default function GiftCard({ edit = false }) {
                                 </div>
                             </div>
                             <div className="compliance-grid">
+                                <CheckBox
+                                    id="is_resident"
+                                    className="compliance-checkbox-item"
+                                    title="Резидент"
+                                    value={data.is_resident}
+                                    onChange={(val) => setData("is_resident", val)}
+                                    error={errors}
+                                />
                                 <Select
                                     id="client_occupation"
                                     title="Чем занимается клиент"
