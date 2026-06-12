@@ -453,7 +453,8 @@ export default function ABSClientSearch() {
                     normalizeClientData(client, TYPE_SEARCH_CLIENT[1].value),
                 );
 
-                setClientsData(normalizedData);
+                const enrichedData = await enrichClientsWithPin(normalizedData);
+                setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 
                 if (normalizedData.length === 0) {
@@ -500,7 +501,8 @@ export default function ABSClientSearch() {
                         : [normalizeClientData(data, selectTypeSearchClient)];
                 }
 
-                setClientsData(normalizedData);
+                const enrichedData = await enrichClientsWithPin(normalizedData);
+                setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 
                 if (normalizedData.length === 0) {
@@ -1100,6 +1102,8 @@ export default function ABSClientSearch() {
 
     const selectedClient =
         clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+    const isSelectedClientPinRequired =
+        selectedClient?.requires_pin && !verifiedClientCodes.includes(selectedClient.client_code);
     const selectedClientINN = selectedClient?.tax_code?.trim() || "";
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
@@ -1294,6 +1298,16 @@ export default function ABSClientSearch() {
             console.error("Error checking PIN requirement", error);
         }
         return false;
+    };
+
+    const enrichClientsWithPin = async (clients) => {
+        return await Promise.all(
+            clients.map(async (client) => {
+                if (!client?.client_code) return { ...client, requires_pin: false };
+                const reqPin = await checkPinRequired(client.client_code);
+                return { ...client, requires_pin: reqPin };
+            })
+        );
     };
 
     const handleVerifyPin = async () => {
@@ -1498,7 +1512,7 @@ export default function ABSClientSearch() {
                             phoneNumber={phoneNumber}
                         />
 
-                        {selectedClient && (
+                        {!isSelectedClientPinRequired && selectedClient && (
                             <div className="terror-check-banner-wrapper">
                                 {isTerrorChecking ? (
                                     <div className="terror-banner terror-checking">Идет проверка в базе террористов...</div>
@@ -1536,6 +1550,8 @@ export default function ABSClientSearch() {
                                 acc?.Name === "Договора СКС зарплатные карты" || 
                                 acc?.AddInfo?.ScaDeaProduct?.Name === "Договора СКС зарплатные карты"
                             )}
+                            verifiedClientCodes={verifiedClientCodes}
+                            onPromptPin={setPinModalClient}
                         />
 
                         <ClientAuditLogsModal
@@ -1545,53 +1561,55 @@ export default function ABSClientSearch() {
                             loading={auditLogsLoading}
                         />
 
-                        <ClientDataTabs
-                            selectedClient={selectedClient}
-                            cardsData={cardsData}
-                            sortedCards={sortedCards}
-                            requestSortCards={requestSortCards}
-                            sortCardsConfig={sortCardsConfig}
-                            handleExportCards={handleExportCards}
-                            handleNavigateToTransactions={handleNavigateToTransactions}
-                            handleNavigateToAllCardsTransactions={
-                                handleNavigateToAllCardsTransactions
-                            }
-                            hasTransactionsAccess={hasTransactionsAccess}
-                            accountsData={accountsData}
-                            sortedAccounts={sortedAccounts}
-                            requestSortAccounts={requestSortAccounts}
-                            sortAccountsConfig={sortAccountsConfig}
-                            handleExportAccounts={handleExportAccounts}
-                            handleNavigateToAccountOperations={
-                                handleNavigateToAccountOperations
-                            }
-                            hasAccountOperationsAccess={hasAccountOperationsAccess}
-                            creditsData={creditsData}
-                            sortedCredits={sortedCredits}
-                            requestSortCredits={requestSortCredits}
-                            sortCreditsConfig={sortCreditsConfig}
-                            handleExportCredits={handleExportCredits}
-                            handleOpenGraph={handleOpenGraph}
-                            handleOpenDetails={handleOpenDetails}
-                            handleOpenRepayModal={handleOpenRepayModal}
-                            depositsData={depositsData}
-                            sortedDeposits={sortedDeposits}
-                            requestSortDeposits={requestSortDeposits}
-                            sortDepositsConfig={sortDepositsConfig}
-                            handleExportDeposits={handleExportDeposits}
-                            onBlockCard={openBlockModal}
-                            onUnblockCard={handleUnblockCard}
-                            onResetPin={handleResetPin}
-                            onChangePin={openPinModal}
-                            onManageServices={openServicesModal}
-                            onOpenLimits={handleOpenLimits}
-                            hasBlockCardAccess={hasBlockCardAccess}
-                            hasChangePinAccess={hasChangePinAccess}
-                            tableData={tableData}
-                            isMobile={isMobile}
-                            activeTab={activeTab}
-                            setActiveTab={setActiveTab}
-                        />
+                        {!isSelectedClientPinRequired && (
+                            <ClientDataTabs
+                                selectedClient={selectedClient}
+                                cardsData={cardsData}
+                                sortedCards={sortedCards}
+                                requestSortCards={requestSortCards}
+                                sortCardsConfig={sortCardsConfig}
+                                handleExportCards={handleExportCards}
+                                handleNavigateToTransactions={handleNavigateToTransactions}
+                                handleNavigateToAllCardsTransactions={
+                                    handleNavigateToAllCardsTransactions
+                                }
+                                hasTransactionsAccess={hasTransactionsAccess}
+                                accountsData={accountsData}
+                                sortedAccounts={sortedAccounts}
+                                requestSortAccounts={requestSortAccounts}
+                                sortAccountsConfig={sortAccountsConfig}
+                                handleExportAccounts={handleExportAccounts}
+                                handleNavigateToAccountOperations={
+                                    handleNavigateToAccountOperations
+                                }
+                                hasAccountOperationsAccess={hasAccountOperationsAccess}
+                                creditsData={creditsData}
+                                sortedCredits={sortedCredits}
+                                requestSortCredits={requestSortCredits}
+                                sortCreditsConfig={sortCreditsConfig}
+                                handleExportCredits={handleExportCredits}
+                                handleOpenGraph={handleOpenGraph}
+                                handleOpenDetails={handleOpenDetails}
+                                handleOpenRepayModal={handleOpenRepayModal}
+                                depositsData={depositsData}
+                                sortedDeposits={sortedDeposits}
+                                requestSortDeposits={requestSortDeposits}
+                                sortDepositsConfig={sortDepositsConfig}
+                                handleExportDeposits={handleExportDeposits}
+                                onBlockCard={openBlockModal}
+                                onUnblockCard={handleUnblockCard}
+                                onResetPin={handleResetPin}
+                                onChangePin={openPinModal}
+                                onManageServices={openServicesModal}
+                                onOpenLimits={handleOpenLimits}
+                                hasBlockCardAccess={hasBlockCardAccess}
+                                hasChangePinAccess={hasChangePinAccess}
+                                tableData={tableData}
+                                isMobile={isMobile}
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

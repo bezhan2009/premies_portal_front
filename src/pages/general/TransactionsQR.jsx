@@ -7,6 +7,8 @@ import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import QRStatistics from "./QRStatistics.jsx";
+import { Button, Space } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 
 // New imports for loan integration
 import RepayModal from "../../components/dashboard/dashboard_frontovik/RepayModal.jsx";

@@ -219,6 +219,7 @@ export default function GiftCard({ edit = false }) {
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [downloadingOffer, setDownloadingOffer] = useState(false);
+    const [downloadingCompliance, setDownloadingCompliance] = useState(false);
     const [searching, setSearching] = useState(false);
     const [alert, setAlert] = useState(null);
     const [terrorCheckResults, setTerrorCheckResults] = useState({
@@ -1034,6 +1035,43 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
+    const downloadCompliance = async (applicationId) => {
+        try {
+            setDownloadingCompliance(true);
+            const automationUrl = import.meta.env.VITE_BACKEND_URL;
+
+            const response = await fetch(`${automationUrl}/automation/compliance`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    application_ids: [applicationId],
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = `compliance_${applicationId}.zip`;
+            downloadFile(blob, filename);
+
+            showAlert("Анкета комплаенс успешно скачана!", "success", 4000);
+        } catch (error) {
+            console.error("Ошибка скачивания анкеты комплаенс:", error);
+            showAlert("Произошла ошибка при скачивании анкеты комплаенс", "error", 5000);
+        } finally {
+            setDownloadingCompliance(false);
+        }
+    };
+
+    const handleSaveAndDownloadCompliance = async () => {
+        const saved = await onSend(false, false, null, true, true);
+        if (!saved) {
+            return;
+        }
+    };
+
     const validateOfferFields = () => {
         const requiredFields = [
             { field: "product", label: "Продукт" },
@@ -1077,7 +1115,7 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
-    const onSend = async (isForPoll = false, isForOffer = false, statusId = null, skipNavigate = false) => {
+    const onSend = async (isForPoll = false, isForOffer = false, statusId = null, skipNavigate = false, isForCompliance = false) => {
         if (data.application_status_id === 7 && statusId !== 7) {
             showAlert("Нельзя изменять/сохранять заявку со статусом 'Не одобрено'. Дождитесь решения комплаенса.", "error", 5000);
             return false;
@@ -1253,7 +1291,9 @@ export default function GiftCard({ edit = false }) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
                     downloadOffer(applicationId);
-                } else if (!isForPoll && !isForOffer && !skipNavigate) {
+                } else if (isForCompliance && applicationId) {
+                    downloadCompliance(applicationId);
+                } else if (!isForPoll && !isForOffer && !isForCompliance && !skipNavigate) {
                     showAlert("Данные успешно сохранены!", "success", 4000);
                 }
                 return applicationId;
@@ -1278,6 +1318,8 @@ export default function GiftCard({ edit = false }) {
                     downloadPoll(applicationId);
                 } else if (isForOffer && applicationId) {
                     downloadOffer(applicationId);
+                } else if (isForCompliance && applicationId) {
+                    downloadCompliance(applicationId);
                 } else {
                     if (!skipNavigate) {
                         navigate(0);
@@ -2361,14 +2403,14 @@ export default function GiftCard({ edit = false }) {
                                 <>
                                     <button
                                         onClick={() => onSend(false, false)}
-                                        disabled={downloading || downloadingOffer}
+                                        disabled={downloading || downloadingOffer || downloadingCompliance}
                                     >
                                         <img src={save} alt="" />
                                         <span>Сохранить</span>
                                     </button>
                             <button
                                 onClick={handleSaveAndDownloadOffer}
-                                disabled={downloading || downloadingOffer}
+                                disabled={downloading || downloadingOffer || downloadingCompliance}
                             >
                                 <img src={offer} alt="" />
                                 <span>
@@ -2377,14 +2419,23 @@ export default function GiftCard({ edit = false }) {
                             </button>
                             <button
                                 onClick={handleSaveAndDownload}
-                                disabled={downloading || downloadingOffer}
+                                disabled={downloading || downloadingOffer || downloadingCompliance}
                             >
                                 <img src={download} alt="" />
                                 <span>
                                     {downloading ? "Скачивание..." : "Скачать анкету"}
                                 </span>
                             </button>
-                            <button>
+                            <button
+                                onClick={handleSaveAndDownloadCompliance}
+                                disabled={downloading || downloadingOffer || downloadingCompliance}
+                            >
+                                <img src={download} alt="" />
+                                <span>
+                                    {downloadingCompliance ? "Скачивание..." : "Скачать анкету комплайнс"}
+                                </span>
+                            </button>
+                            <button disabled={downloading || downloadingOffer || downloadingCompliance}>
                                 <img src={share} alt="" />
                                 <span>Загрузить анкету</span>
                             </button>
