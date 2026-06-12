@@ -55,6 +55,7 @@ export default function QRStatistics({ startDate, endDate }) {
   // const [selectedRange, setSelectedRange] = useState(null);
   const [date, setDate] = useState([]);
   const [date2, setDate2] = useState([]);
+  const [date3, setDate3] = useState([]);
   const [mergedData, setMergedData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
@@ -68,6 +69,58 @@ export default function QRStatistics({ startDate, endDate }) {
     async (type = "themOnUs") => {
       try {
         setLoading(true);
+        if (type === "usOnUs") {
+          const formatToDDMMYYYY = (dateStr) => {
+            const [y, m, d] = dateStr.split("T")[0].split("-");
+            return `${d}.${m}.${y}`;
+          };
+          const absUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+          const params = new URLSearchParams();
+          params.append("startDate", formatToDDMMYYYY(startDate || "2025-09-25"));
+          params.append("endDate", formatToDDMMYYYY(endDate || "2025-10-01"));
+          params.append("accountNumber", "17507972690808713012");
+          
+          const token = localStorage.getItem("access_token");
+          const response = await fetch(`${absUrl}/account/operations?${params.toString()}`, {
+              headers: { Authorization: "Bearer " + token }
+          });
+          if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
+          const result = await response.json();
+          
+          let flatData = [];
+          if (Array.isArray(result)) {
+              flatData = result.flatMap((day) => 
+                 day.Transactions.map(tx => ({
+                     date: day.DOPER ? day.DOPER.split('.').reverse().join('-') : "", // DD.MM.YY -> YY-MM-DD (rough, let's fix below)
+                     amount: tx.SUMN || tx.AMNT || 0,
+                     description: tx.TXTDSCR
+                 }))
+              ).filter(tx => tx.description && tx.description.toLowerCase().includes("qr"));
+              // Fix DOPER DD.MM.YY to YYYY-MM-DD
+              flatData = flatData.map(tx => {
+                 if (!tx.date) return tx;
+                 const parts = tx.date.split('-');
+                 if (parts.length === 3) {
+                     return { ...tx, date: `20${parts[0]}-${parts[1]}-${parts[2]}` };
+                 }
+                 return tx;
+              });
+          }
+
+          const grouped = flatData.reduce((acc, curr) => {
+            if (!acc[curr.date]) acc[curr.date] = { date: curr.date, count: 0, sum: 0 };
+            acc[curr.date].count += 1;
+            acc[curr.date].sum += curr.amount;
+            return acc;
+          }, {});
+
+          const finalResult = Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+          setDate3(finalResult);
+          showAlert(`Загружено ${flatData.length} записей Us on Us`, "success");
+          setLoading(false);
+          return;
+        }
+
         const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
 
         // динамическая подстановка диапазона дат
@@ -123,6 +176,7 @@ export default function QRStatistics({ startDate, endDate }) {
     if (startDate && endDate) {
       fetchData("usOnThem");
       fetchData("themOnUs");
+      fetchData("usOnUs");
     }
   }, [fetchData]);
 
@@ -131,29 +185,32 @@ export default function QRStatistics({ startDate, endDate }) {
     if (startDate && endDate) {
       fetchData("usOnThem");
       fetchData("themOnUs");
+      fetchData("usOnUs");
     }
   }, [fetchData]);
 
   // объединяем данные для графика
   useEffect(() => {
-    if (!date.length && !date2.length) return;
+    if (!date.length && !date2.length && !date3.length) return;
 
     const allDates = Array.from(
-      new Set([...date.map((d) => d.date), ...date2.map((d) => d.date)]),
+      new Set([...date.map((d) => d.date), ...date2.map((d) => d.date), ...date3.map((d) => d.date)]),
     ).sort((a, b) => new Date(a) - new Date(b));
 
     const merged = allDates.map((d) => {
       const us = date.find((x) => x.date === d);
       const them = date2.find((x) => x.date === d);
+      const usOnUs = date3.find((x) => x.date === d);
       return {
         date: d,
         usOnThem: us ? us[metric] : 0,
         themOnUs: them ? them[metric] : 0,
+        usOnUs: usOnUs ? usOnUs[metric] : 0,
       };
     });
 
     setMergedData(merged);
-  }, [date, date2, metric]);
+  }, [date, date2, date3, metric]);
 
   return (
     <div className="p-6">
@@ -194,6 +251,10 @@ export default function QRStatistics({ startDate, endDate }) {
                   <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
                   <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
                 </linearGradient>
+                <linearGradient id="usOnUs" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ffc658" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#ffc658" stopOpacity={0.1} />
+                </linearGradient>
               </defs>
 
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -217,6 +278,15 @@ export default function QRStatistics({ startDate, endDate }) {
                 name="Наш QR — чужой клиент"
                 stroke="#82ca9d"
                 fill="url(#themOnUs)"
+                strokeWidth={2.5}
+                dot={{ r: 2 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="usOnUs"
+                name="Наш клиент — Наш QR"
+                stroke="#ffc658"
+                fill="url(#usOnUs)"
                 strokeWidth={2.5}
                 dot={{ r: 2 }}
               />

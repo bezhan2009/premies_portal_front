@@ -7,6 +7,7 @@ import { fetchCardFios } from "../../../api/processing/transactions.js";
 import Spinner from "../../../components/Spinner.jsx";
 import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
+import CashbackStatistics from "./CashbackStatistics.jsx";
 
 const STATUS_PAID = "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E";
 
@@ -364,6 +365,8 @@ const CardCashbackTable = () => {
             {error ? (
                 <p style={{ color: "red", margin: "16px" }}>{error}</p>
             ) : (
+                <>
+                <CashbackStatistics items={items} />
                 <Table
                     tableId="cashback-card-list"
                     columns={columns}
@@ -380,6 +383,7 @@ const CardCashbackTable = () => {
                     onChange={handleTableChange}
                     defaultSortOrder="descend"
                 />
+                </>
             )}
         </div>
     );
