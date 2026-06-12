@@ -343,6 +343,11 @@ export default function GiftCard({ edit = false }) {
     const [complianceOptions, setComplianceOptions] = useState(complianceOptionFallbacks);
     const [complianceScoreByValue, setComplianceScoreByValue] = useState(complianceScores);
 
+    // PIN states
+    const [pinModalClient, setPinModalClient] = useState(null);
+    const [clientPin, setClientPin] = useState("");
+    const [verifyingPin, setVerifyingPin] = useState(false);
+
     // --- NEW STATES FOR REFACTORING ---
     const [appOffices, setAppOffices] = useState([]);
     
@@ -807,6 +812,50 @@ export default function GiftCard({ edit = false }) {
         }
     };
 
+    const checkPinRequired = async (clientCode) => {
+        try {
+            const token = localStorage.getItem("access_token");
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/agent-client-pin/check?clientCode=${clientCode}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const result = await response.json();
+                return result.requires_pin;
+            }
+        } catch (error) {
+            console.error("Error checking PIN requirement", error);
+        }
+        return false;
+    };
+
+    const handleVerifyPin = async () => {
+        if (!clientPin || clientPin.length !== 5) {
+            showAlert("Введите 5-значный PIN", "error", 3000);
+            return;
+        }
+        setVerifyingPin(true);
+        try {
+            const token = localStorage.getItem("access_token");
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/agent-client-pin/verify`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ client_code: pinModalClient.client_code, pin: clientPin })
+            });
+            if (response.ok) {
+                await fillFormWithClientData(pinModalClient);
+                setPinModalClient(null);
+                setClientPin("");
+                showAlert("Данные клиента успешно загружены", "success", 5000);
+            } else {
+                showAlert("Неверный PIN-код", "error", 5000);
+            }
+        } catch (error) {
+            showAlert("Ошибка проверки PIN", "error", 5000);
+        } finally {
+            setVerifyingPin(false);
+        }
+    };
+
     const handleSearchClient = async () => {
         if (!data.phone_number) {
             showAlert("Пожалуйста, заполните поле 'Телефон'", "error", 5000);
@@ -849,8 +898,14 @@ export default function GiftCard({ edit = false }) {
             setFoundClients(clientsData);
 
             if (clientsData.length === 1) {
-                await fillFormWithClientData(clientsData[0]);
-                showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+                const client = clientsData[0];
+                const needsPin = await checkPinRequired(client.client_code);
+                if (needsPin) {
+                    setPinModalClient(client);
+                } else {
+                    await fillFormWithClientData(client);
+                    showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
+                }
             } else {
                 setSelectedClientIndex(0);
                 setShowClientSelector(true);
@@ -870,14 +925,20 @@ export default function GiftCard({ edit = false }) {
     };
 
     const handleSelectClient = async (clientIndex) => {
-        if (foundClients[clientIndex]) {
-            await fillFormWithClientData(foundClients[clientIndex]);
+        const client = foundClients[clientIndex];
+        if (client) {
             setShowClientSelector(false);
-            showAlert(
-                `Данные клиента ${clientIndex + 1} успешно загружены`,
-                "success",
-                5000
-            );
+            const needsPin = await checkPinRequired(client.client_code);
+            if (needsPin) {
+                setPinModalClient(client);
+            } else {
+                await fillFormWithClientData(client);
+                showAlert(
+                    `Данные клиента ${clientIndex + 1} успешно загружены`,
+                    "success",
+                    5000
+                );
+            }
         }
     };
 
@@ -1091,6 +1152,7 @@ export default function GiftCard({ edit = false }) {
                 { key: "is_resident", value: String(!!data.is_resident) },
                 { key: "is_new_client", value: String(!!data.is_new_client) },
                 { key: "identity_verified", value: String(!!data.identity_verified) },
+                { key: "virtual", value: String(!!data.virtual) },
                 { key: "receiving_office", value: safeTrim(data.receiving_office) },
                 {
                     key: "delivery_address",
@@ -1255,6 +1317,9 @@ export default function GiftCard({ edit = false }) {
                     total_cash_transactions_amount: data.total_cash_transactions_amount || "",
                     total_cash_transactions_count: data.total_cash_transactions_count || "",
                     compliance_score: totalComplianceScore,
+                    is_resident: data.is_resident !== false,
+                    fatca: !!data.fatca,
+                    apl_pzl: !!data.apl_pzl,
                 }),
             });
 
@@ -1388,19 +1453,37 @@ export default function GiftCard({ edit = false }) {
     }, []);
 
     const hasTerrorMatch = terrorCheckResults.fullName === true || terrorCheckResults.cardName === true;
+    const isNonResident = data.is_resident === false;
+    const hasFatca = data.fatca === true;
+    const hasAplPzl = data.apl_pzl === true;
+    
+    // Check if application is already approved by compliance to not block them
+    const isComplianceApproved = data.compliance_status === 'approved' || data.is_compliance_approved === true;
+    
+    const requiresCompliance = (hasTerrorMatch || isNonResident || hasFatca || hasAplPzl) && !isComplianceApproved;
 
     const getScore = (val) => {
         return complianceScoreByValue[val] || 0;
     };
 
-    const totalComplianceScore = 
+    const getBooleanScore = (isTrue) => isTrue ? 5 : 0;
+    const getResidentScore = (isResident) => isResident === false ? 5 : 0;
+
+    const totalComplianceScoreSum = 
         getScore(data.client_occupation) +
         getScore(data.net_worth) +
         getScore(data.monthly_income) +
         getScore(data.total_outgoing_transactions_amount) +
         getScore(data.total_outgoing_transactions_count) +
         getScore(data.total_cash_transactions_amount) +
-        getScore(data.total_cash_transactions_count);
+        getScore(data.total_cash_transactions_count) +
+        getResidentScore(data.is_resident) +
+        getBooleanScore(data.fatca) +
+        getBooleanScore(data.apl_pzl);
+
+    // Get average score from 1 to 5
+    const totalComplianceScore = Math.max(1, Math.round(totalComplianceScoreSum / 9));
+
 
     return (
         <>
@@ -1479,7 +1562,7 @@ export default function GiftCard({ edit = false }) {
                             </div>
                         </div>
 
-                        {hasTerrorMatch && (
+                        {requiresCompliance && (
                             <div className="terror-warning">
                                 <div className="terror-warning-header">
                                     <span className="terror-warning-icon">⚠</span>
@@ -1568,6 +1651,11 @@ export default function GiftCard({ edit = false }) {
                                     title={"Отправить СМС?"}
                                     value={data.is_new_client}
                                     onChange={handleSMSChange}
+                                />
+                                <CheckBox
+                                    title={"Виртуальная карта"}
+                                    value={data.virtual}
+                                    onChange={(e) => setData("virtual", e)}
                                 />
                             </div>
 
@@ -2240,7 +2328,7 @@ export default function GiftCard({ edit = false }) {
                             </div>
                         </div>
                         <footer>
-                            {hasTerrorMatch ? (
+                            {requiresCompliance ? (
                                 <button
                                     onClick={handleSendToCompliance}
                                     disabled={loading}
@@ -2287,6 +2375,27 @@ export default function GiftCard({ edit = false }) {
                             </button>
                         </footer>
                     </main>
+                )}
+
+                {pinModalClient && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+                            <h3>Требуется PIN-код</h3>
+                            <p>Этот клиент привязан к агенту по клиентам. Введите 5-значный PIN-код для продолжения.</p>
+                            <input
+                                type="password"
+                                maxLength="5"
+                                value={clientPin}
+                                onChange={(e) => setClientPin(e.target.value.replace(/\D/g, ''))}
+                                placeholder="*****"
+                                style={{ fontSize: '24px', letterSpacing: '5px', textAlign: 'center', margin: '20px 0', padding: '10px', width: '100%', boxSizing: 'border-box' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                                <button onClick={() => { setPinModalClient(null); setClientPin(""); }} disabled={verifyingPin} style={{ padding: '10px 20px', cursor: 'pointer' }}>Отмена</button>
+                                <button onClick={handleVerifyPin} disabled={verifyingPin} style={{ padding: '10px 20px', cursor: 'pointer', background: '#0056b3', color: 'white' }}>{verifyingPin ? 'Проверка...' : 'Подтвердить'}</button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </>
