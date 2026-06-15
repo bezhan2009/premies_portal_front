@@ -141,7 +141,7 @@ const ServicesModal = ({
         <div className="graph-modal-header">
           <h2 className="graph-modal-title">Уведомления</h2>
           <button className="graph-modal-close" onClick={onClose}>
-            &times;
+            X
           </button>
         </div>
 
@@ -158,7 +158,7 @@ const ServicesModal = ({
                   className={`tab-item ${activeTab === "sms" ? "active" : ""}`}
                   onClick={() => setActiveTab("sms")}
                 >
-                  СМС
+                  SMS
                 </button>
                 <button
                   className={`tab-item ${activeTab === "tds" ? "active" : ""}`}
@@ -170,8 +170,8 @@ const ServicesModal = ({
 
               <div className="service-description">
                 {activeTab === "sms"
-                  ? "СМС - уведомление об операциях"
-                  : "3DS - уведомление об операциях"}
+                  ? "SMS - Уведомление об операциях"
+                  : "3DS - Подтверждение операций в интернете"}
               </div>
 
               <div className="service-action-row">
@@ -180,12 +180,9 @@ const ServicesModal = ({
                   type="text"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="992XXXXXXXXX"
+                  placeholder="Введите значение"
                   className="phone-input"
                 />
-                <button className="edit-action" onClick={handleEditClick}>
-                  Изменить
-                </button>
                 <label className="switch">
                   <input
                     type="checkbox"
