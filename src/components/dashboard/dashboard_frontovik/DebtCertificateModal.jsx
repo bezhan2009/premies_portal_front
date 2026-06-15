@@ -10,7 +10,7 @@ const DebtCertificateModal = ({ open, handleClose, clientData }) => {
     setIsLoading(true);
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
 
       // Helper to safely extract client name from complex objects
       let clientName = "";
