@@ -1,4 +1,6 @@
+import React, { useState, useEffect } from "react";
 import { LIMIT_NAMES_MAPPING } from "../../../const/defConst.js";
+import { changeCardLimit } from "../../../api/processing/transactions.js";
 import Spinner from "../../Spinner.jsx";
 
 const getCycleTypeName = (type) => {
@@ -77,7 +79,53 @@ const getPercentage = (currentValue, value) => {
   return Math.min((curNum / valNum) * 100, 100);
 };
 
-const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId }) => {
+const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId = "" }) => {
+  const [hasEditRole, setHasEditRole] = useState(false);
+  const [editingLimitIdx, setEditingLimitIdx] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      const roles = JSON.parse(localStorage.getItem("role_ids") || "[]");
+      setHasEditRole(roles.map(String).includes("37"));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const handleAction = async (limit, actionType) => {
+    setIsSubmitting(true);
+    try {
+      let finalValue = limit.value;
+      if (actionType === "set") {
+        if (!editValue) return;
+        finalValue = editValue;
+      } else if (actionType === "reset") {
+        finalValue = "0";
+      }
+
+      const payload = {
+        cardId: String(cardId),
+        cardExId: String(cardExId || cardId),
+        name: String(limit.name),
+        value: String(finalValue),
+        action: actionType,
+        currency: String(limit.currency)
+      };
+
+      await changeCardLimit(payload);
+      alert("Лимит успешно изменен! Пожалуйста, закройте и откройте заново окно для обновления данных.");
+      setEditingLimitIdx(null);
+      setEditValue("");
+    } catch (error) {
+      console.error(error);
+      alert("Ошибка при изменении лимита");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -185,7 +233,10 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId }) => {
                   <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: "35%" }}>Тип лимита</th>
                   <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: "12%" }}>Период</th>
                   <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: "10%" }}>Валюта</th>
-                  <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: "43%" }}>Значение</th>
+                  <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: hasEditRole ? "25%" : "43%" }}>Значение</th>
+                  {hasEditRole && (
+                    <th style={{ padding: "12px 16px", color: "#4b5563", fontSize: "13px", fontWeight: "600", width: "18%" }}>Действия</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -283,13 +334,62 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId }) => {
                             </div>
                           </div>
                         </td>
+                        {hasEditRole && (
+                          <td style={{ padding: "14px 16px" }}>
+                            {editingLimitIdx === idx ? (
+                              <div style={{ display: "flex", gap: "4px" }}>
+                                <input
+                                  type="number"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  placeholder="Значение"
+                                  style={{ width: "80px", padding: "4px", fontSize: "12px", border: "1px solid #d1d5db", borderRadius: "4px" }}
+                                  disabled={isSubmitting}
+                                />
+                                <button
+                                  onClick={() => handleAction(limit, "set")}
+                                  disabled={isSubmitting || !editValue}
+                                  style={{ background: "#10b981", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={() => setEditingLimitIdx(null)}
+                                  disabled={isSubmitting}
+                                  style={{ background: "#ef4444", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button
+                                  onClick={() => { setEditingLimitIdx(idx); setEditValue(""); }}
+                                  disabled={isSubmitting}
+                                  style={{ background: "#3b82f6", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  Изменить
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if(window.confirm("Сбросить этот лимит до нуля?")) handleAction(limit, "reset");
+                                  }}
+                                  disabled={isSubmitting}
+                                  style={{ background: "#6b7280", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  Сбросить
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
                     <td
-                      colSpan="4"
+                      colSpan={hasEditRole ? "5" : "4"}
                       style={{ textAlign: "center", padding: "40px", color: "#6b7280", fontSize: "14px" }}
                     >
                       Лимиты не найдены

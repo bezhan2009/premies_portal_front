@@ -1316,7 +1316,7 @@ const ClientDataTabs = ({
                         {hasChangePinAccess && (
                           <button className="card-action-btn outline-danger" onClick={() => onChangePin(card.cardId)}>Сменить ПИН</button>
                         )}
-                        <button className="card-action-btn neutral" onClick={() => onOpenLimits(card.cardId)}>Лимиты</button>
+                        <button className="card-action-btn neutral" onClick={() => onOpenLimits(card.cardId, card.exId || card.cardExId || "")}>Лимиты</button>
                         <button className="card-action-btn neutral" onClick={() => window.open(`http://10.64.1.10/services/tariff_by_idn.php?idn=${card.cardId}`, "_blank")}>Тарифы</button>
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
