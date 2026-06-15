@@ -83,6 +83,7 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
   const [hasEditRole, setHasEditRole] = useState(false);
   const [editingLimitIdx, setEditingLimitIdx] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [editCycleLength, setEditCycleLength] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -94,23 +95,52 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
     }
   }, []);
 
+  const startEditing = (idx, limit) => {
+    setEditingLimitIdx(idx);
+    const displayName = LIMIT_NAMES_MAPPING[limit.name] || limit.name || "";
+    const isQuantity = isQuantityLimit(limit.name, displayName);
+    const num = Number(limit.value);
+    
+    let initialValue = "";
+    if (!isNaN(num) && limit.value !== "999999999" && limit.value !== "999999999999") {
+      initialValue = String(isQuantity ? num : num / 100);
+    } else if (limit.value === "999999999" || limit.value === "999999999999") {
+      initialValue = limit.value;
+    }
+    setEditValue(initialValue);
+    setEditCycleLength(String(limit.cycleLength || "1"));
+  };
+
   const handleAction = async (limit, actionType) => {
     setIsSubmitting(true);
     try {
-      let finalValue = limit.value;
+      let finalLimitValue = "0";
+      let finalCycleLength = String(limit.cycleLength || "1");
+
       if (actionType === "set") {
         if (!editValue) return;
-        finalValue = editValue;
+        
+        if (editValue === "999999999999" || editValue === "999999999") {
+          finalLimitValue = editValue;
+        } else {
+          const numVal = Number(editValue);
+          if (!isNaN(numVal)) {
+            finalLimitValue = String(Math.round(numVal * 100));
+          } else {
+            finalLimitValue = editValue + "00";
+          }
+        }
+        finalCycleLength = String(editCycleLength || "1");
       } else if (actionType === "reset") {
-        finalValue = "0";
+        finalLimitValue = "0";
       }
 
       const payload = {
         cardId: String(cardId),
-        cardExId: String(cardExId || cardId),
-        name: String(limit.name),
-        value: String(finalValue),
-        action: actionType,
+        cycleType: String(limit.cycleType || "0"),
+        limitName: String(limit.name),
+        limitValue: String(finalLimitValue),
+        cycleLength: String(finalCycleLength),
         currency: String(limit.currency)
       };
 
@@ -118,6 +148,7 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
       alert("Лимит успешно изменен! Пожалуйста, закройте и откройте заново окно для обновления данных.");
       setEditingLimitIdx(null);
       setEditValue("");
+      setEditCycleLength("1");
     } catch (error) {
       console.error(error);
       alert("Ошибка при изменении лимита");
@@ -310,16 +341,38 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
                         key={idx} 
                         style={{ 
                           borderBottom: "1px solid #f3f4f6",
-                          transition: "background-color 0.2s"
+                          transition: "background-color 0.2s",
+                          cursor: hasEditRole ? "pointer" : "default"
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        onDoubleClick={() => {
+                          if (hasEditRole && editingLimitIdx !== idx) {
+                            startEditing(idx, limit);
+                          }
+                        }}
                       >
                         <td style={{ padding: "14px 16px", fontSize: "14px", color: "#1f2937", fontWeight: "500" }}>
                           {displayName}
                         </td>
                         <td style={{ padding: "14px 16px", fontSize: "14px", color: "#1f2937" }}>
-                          {getCycleTypeName(limit.cycleType)}
+                          {editingLimitIdx === idx ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="number"
+                                value={editCycleLength}
+                                onChange={(e) => setEditCycleLength(e.target.value)}
+                                placeholder="Длина"
+                                style={{ width: "50px", padding: "4px", fontSize: "12px", border: "1px solid #d1d5db", borderRadius: "4px" }}
+                                disabled={isSubmitting}
+                              />
+                              <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                                {getCycleTypeName(limit.cycleType)}
+                              </span>
+                            </div>
+                          ) : (
+                            `${limit.cycleLength || "1"} ${getCycleTypeName(limit.cycleType)}`
+                          )}
                         </td>
                         <td style={{ padding: "14px 16px", fontSize: "14px", color: "#1f2937" }}>
                           {getCurrencyName(limit.currency)}
@@ -337,7 +390,7 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
                         {hasEditRole && (
                           <td style={{ padding: "14px 16px" }}>
                             {editingLimitIdx === idx ? (
-                              <div style={{ display: "flex", gap: "4px" }}>
+                              <div style={{ display: "flex", gap: "4px" }} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="number"
                                   value={editValue}
@@ -362,9 +415,9 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
                                 </button>
                               </div>
                             ) : (
-                              <div style={{ display: "flex", gap: "8px" }}>
+                              <div style={{ display: "flex", gap: "8px" }} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                 <button
-                                  onClick={() => { setEditingLimitIdx(idx); setEditValue(""); }}
+                                  onClick={() => startEditing(idx, limit)}
                                   disabled={isSubmitting}
                                   style={{ background: "#3b82f6", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
                                 >
