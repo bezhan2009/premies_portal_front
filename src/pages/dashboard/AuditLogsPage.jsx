@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, Space, Typography, Tag, Row, Col, DatePicker } from 'antd';
 import FlexibleAntTable from '../../components/table/FlexibleAntTable';
 import { apiClient } from '../../api/utils/apiClient';
-import { RefreshCw, Filter, Search } from 'lucide-react';
+import { RefreshCw, Filter, Search, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -140,13 +141,73 @@ const AuditLogsPage = () => {
         setDateRange(null);
     };
 
+    const handleExport = async () => {
+        setLoading(true);
+        try {
+            const params = {
+                size: 10000,
+                from: 0,
+            };
+            if (actionFilter) params.action = actionFilter;
+            if (userFilter) params.username = userFilter;
+            if (clientPhoneFilter) params.client_phone = clientPhoneFilter;
+            if (clientInnFilter) params.client_inn = clientInnFilter;
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                params.startDate = dateRange[0].toISOString();
+                params.endDate = dateRange[1].toISOString();
+            }
+
+            const response = await apiClient.get('/audit/logs', { params });
+            const dataToExport = response.data.logs || [];
+
+            if (dataToExport.length === 0) {
+                return;
+            }
+
+            const exportData = dataToExport.map(log => ({
+                'Время': new Date(log.timestamp).toLocaleString(),
+                'Пользователь': log.username,
+                'Действие': log.action,
+                'ФИО клиента': log.client_name || '-',
+                'Телефон клиента': log.client_phone || '-',
+                'ИНН клиента': log.client_inn || '-',
+                'Номер карты': log.card_number || '-',
+                'Номер счета': log.account_number || '-',
+                'Кредит ID': log.credit_id || '-',
+                'Депозит ID': log.deposit_id || '-',
+                'Подробности': log.details || '-'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Журнал действий");
+            
+            // Auto width columns
+            const colWidths = Object.keys(exportData[0]).map(key => ({
+                wch: Math.max(key.length, ...exportData.map(row => String(row[key] || '').length)) + 2
+            }));
+            worksheet['!cols'] = colWidths;
+
+            XLSX.writeFile(workbook, `audit_logs_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        } catch (error) {
+            console.error('Failed to export audit logs:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div style={{ padding: '24px' }}>
             <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Title level={2}>Журнал действий фронтовиков (ElasticSearch)</Title>
-                <Button icon={<RefreshCw size={16} />} onClick={() => fetchAuditLogs(pagination.current, pagination.pageSize)} loading={loading}>
-                    Обновить
-                </Button>
+                <Space>
+                    <Button icon={<Download size={16} />} onClick={handleExport} loading={loading} type="primary">
+                        Экспорт в Excel
+                    </Button>
+                    <Button icon={<RefreshCw size={16} />} onClick={() => fetchAuditLogs(pagination.current, pagination.pageSize)} loading={loading}>
+                        Обновить
+                    </Button>
+                </Space>
             </div>
 
             <Row gutter={[16, 16]}>

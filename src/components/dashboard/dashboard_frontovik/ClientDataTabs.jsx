@@ -1,6 +1,6 @@
 import React from "react";
 import { Table } from "../../table/FlexibleAntTable.jsx";
-import { Input as AntInput, Space, Button, message } from "antd";
+import { Input as AntInput, Space, Button, message, Pagination } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import DebtCertificateModal from "./DebtCertificateModal.jsx";
@@ -251,6 +251,47 @@ const ClientDataTabs = ({
     setRequisitesCard(card);
     setIsRequisitesModalOpen(true);
   };
+
+  const ITEMS_PER_PAGE = 6;
+  const [currentPage, setCurrentPage] = React.useState({
+    cards: 1,
+    accounts: 1,
+    credits: 1,
+    deposits: 1
+  });
+
+  const handlePageChange = (tab, page) => {
+    setCurrentPage(prev => ({ ...prev, [tab]: page }));
+  };
+
+  // Reset pagination when data changes
+  React.useEffect(() => {
+    setCurrentPage({ cards: 1, accounts: 1, credits: 1, deposits: 1 });
+  }, [selectedClient]);
+
+  const paginatedCards = React.useMemo(() => {
+    if (!sortedCards) return [];
+    const start = (currentPage.cards - 1) * ITEMS_PER_PAGE;
+    return sortedCards.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedCards, currentPage.cards]);
+
+  const paginatedAccounts = React.useMemo(() => {
+    if (!sortedAccounts) return [];
+    const start = (currentPage.accounts - 1) * ITEMS_PER_PAGE;
+    return sortedAccounts.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedAccounts, currentPage.accounts]);
+
+  const paginatedCredits = React.useMemo(() => {
+    if (!filteredCredits) return [];
+    const start = (currentPage.credits - 1) * ITEMS_PER_PAGE;
+    return filteredCredits.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCredits, currentPage.credits]);
+
+  const paginatedDeposits = React.useMemo(() => {
+    if (!filteredDeposits) return [];
+    const start = (currentPage.deposits - 1) * ITEMS_PER_PAGE;
+    return filteredDeposits.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredDeposits, currentPage.deposits]);
 
   const isEligibleForDebtCertificate = React.useMemo(() => {
     if (!creditsData || creditsData.length === 0) return true;
@@ -938,8 +979,9 @@ const ClientDataTabs = ({
               )}
             </div>
             {accountsData?.length > 0 ? (
-              <div className="abs-cards-grid">
-                {sortedAccounts.map((acc, idx) => {
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div className="abs-cards-grid">
+                  {paginatedAccounts.map((acc, idx) => {
                   const statusData = getAccountStatusData(acc.Status?.Code, acc.Status?.Name);
                   const typeData = getAccountTypeData(acc.Type);
                   
@@ -1099,6 +1141,18 @@ const ClientDataTabs = ({
                   );
                 })}
               </div>
+              {sortedAccounts.length > ITEMS_PER_PAGE && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                  <Pagination 
+                    current={currentPage.accounts} 
+                    total={sortedAccounts.length} 
+                    pageSize={ITEMS_PER_PAGE} 
+                    onChange={(page) => handlePageChange('accounts', page)} 
+                    showSizeChanger={false}
+                  />
+                </div>
+              )}
+              </div>
             ) : (
               <div className="empty-tab-state">Счета отсутствуют</div>
             )}
@@ -1116,7 +1170,7 @@ const ClientDataTabs = ({
                     onClick={() => handleNavigateToAllCardsTransactions(sortedCards)}
                     className="btn-tab-export btn-tab-history"
                   >
-                    Посмотреть историю
+                    Посмотреть историю всех карт
                   </button>
                   <button onClick={handleExportCards} className="btn-tab-export">
                     Экспорт в Excel
@@ -1125,8 +1179,9 @@ const ClientDataTabs = ({
               )}
             </div>
             {cardsData?.length > 0 ? (
-              <div className="abs-cards-grid">
-                {sortedCards.map((card, idx) => {
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div className="abs-cards-grid">
+                  {paginatedCards.map((card, idx) => {
                   const absStatus = card.statusName || "-";
                   const absStyle = getAbsStatusStyle(absStatus);
                   
@@ -1333,6 +1388,18 @@ const ClientDataTabs = ({
                   );
                 })}
               </div>
+              {sortedCards.length > ITEMS_PER_PAGE && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                  <Pagination 
+                    current={currentPage.cards} 
+                    total={sortedCards.length} 
+                    pageSize={ITEMS_PER_PAGE} 
+                    onChange={(page) => handlePageChange('cards', page)} 
+                    showSizeChanger={false}
+                  />
+                </div>
+              )}
+              </div>
             ) : (
               <div className="empty-tab-state">Карты отсутствуют</div>
             )}
@@ -1408,7 +1475,7 @@ const ClientDataTabs = ({
 
                 {filteredCredits?.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {filteredCredits.map((card, idx) => {
+                    {paginatedCredits.map((card, idx) => {
                       const details = card.loanDetails || {};
                       const params = details.params || {};
                       const balances = details.balances || [];
@@ -1544,6 +1611,17 @@ const ClientDataTabs = ({
                       );
                     })}
                   </div>
+                  {filteredCredits.length > ITEMS_PER_PAGE && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                      <Pagination 
+                        current={currentPage.credits} 
+                        total={filteredCredits.length} 
+                        pageSize={ITEMS_PER_PAGE} 
+                        onChange={(page) => handlePageChange('credits', page)} 
+                        showSizeChanger={false}
+                      />
+                    </div>
+                  )}
                 ) : (
                   <div className="empty-tab-state">Кредиты отсутствуют</div>
                 )}
@@ -1613,7 +1691,7 @@ const ClientDataTabs = ({
 
                 {filteredDeposits?.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {filteredDeposits.map((item, idx) => {
+                    {paginatedDeposits.map((item, idx) => {
                       const agreement = item.AgreementData || {};
                       const statusName = agreement.Status?.Name || item.Status?.Name || "Неизвестно";
                       
@@ -1752,6 +1830,17 @@ const ClientDataTabs = ({
                       );
                     })}
                   </div>
+                  {filteredDeposits.length > ITEMS_PER_PAGE && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                      <Pagination 
+                        current={currentPage.deposits} 
+                        total={filteredDeposits.length} 
+                        pageSize={ITEMS_PER_PAGE} 
+                        onChange={(page) => handlePageChange('deposits', page)} 
+                        showSizeChanger={false}
+                      />
+                    </div>
+                  )}
                 ) : (
                   <div className="empty-tab-state">Депозиты отсутствуют</div>
                 )}

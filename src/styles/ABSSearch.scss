@@ -615,28 +615,7 @@
     border-color: var(--text-color);
   }
 
-  &.btn-toolbar-audit {
-    background: rgba(200, 16, 46, 0.05);
-    color: #c8102e;
-    border-color: rgba(200, 16, 46, 0.15);
 
-    &:hover {
-      background: #c8102e;
-      color: white;
-      border-color: #c8102e;
-    }
-  }
-
-  &.btn-toolbar-excel {
-    background: #16a34a;
-    color: white;
-    border: none;
-
-    &:hover {
-      background: #15803d;
-      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
-    }
-  }
 
   &.btn-toolbar-copy, &.btn-toolbar-copy-all {
     color: var(--text-color);

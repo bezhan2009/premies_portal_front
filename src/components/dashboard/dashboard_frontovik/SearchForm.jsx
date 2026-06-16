@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 
@@ -12,10 +12,34 @@ const SearchForm = ({
   handleClear,
   phoneNumber,
 }) => {
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("frontovik_search_history");
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch (e) {}
+    }
+  }, []);
+
+  const saveToHistory = () => {
+    if (!displayPhone) return;
+    const newHistory = [displayPhone, ...history.filter((h) => h !== displayPhone)].slice(0, 8);
+    setHistory(newHistory);
+    localStorage.setItem("frontovik_search_history", JSON.stringify(newHistory));
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && phoneNumber) {
+      saveToHistory();
       handleSearchClient();
     }
+  };
+
+  const onSearchClick = () => {
+    saveToHistory();
+    handleSearchClient();
   };
 
   return (
@@ -56,11 +80,17 @@ const SearchForm = ({
             maxLength={100}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
+            list="frontovik-search-history"
           />
+          <datalist id="frontovik-search-history">
+            {history.map((h, idx) => (
+              <option key={idx} value={h} />
+            ))}
+          </datalist>
         </div>
         <div className="search-action-btns">
           <button
-            onClick={handleSearchClient}
+            onClick={onSearchClick}
             disabled={!phoneNumber || isLoading}
             className={`btn-search-action btn-search-submit ${
               isLoading ? "btn-search-submit--loading" : ""

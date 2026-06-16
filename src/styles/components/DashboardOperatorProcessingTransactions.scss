@@ -481,6 +481,34 @@ $gray-900: var(--text-color);
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     margin-bottom: 16px;
+
+    /* Custom styles for Antd Table to match the old limits-table design */
+    .ant-table {
+      .ant-table-thead > tr > th {
+        padding: 1rem 1.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $gray-600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        background: $gray-50;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .ant-table-tbody > tr > td {
+        padding: 1.25rem 1.5rem;
+        font-size: 0.875rem;
+      }
+      
+      .ant-table-tbody > tr {
+        transition: all 0.3s ease;
+        
+        &:hover > td {
+          background: transparent;
+        }
+      }
+    }
   }
 
   &__content {

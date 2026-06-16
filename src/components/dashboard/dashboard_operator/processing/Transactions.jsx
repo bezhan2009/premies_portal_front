@@ -23,6 +23,7 @@ import { canAccessTransactions } from "../../../../api/roleHelper.js";
 import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
+import TransactionsChart from "../../../graph/graph.jsx";
 
 const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
@@ -1195,7 +1196,8 @@ export default function DashboardOperatorProcessingTransactions() {
       )}
       <div className="block_info_prems content-page" align="center">
         <div className="processing-integration">
-          <div className="processing-integration__container">
+          {!id && (
+            <div className="processing-integration__container">
             <div className="processing-integration__search-card">
               <div className="search-card">
                 <div className="search-card__content">
@@ -1275,8 +1277,15 @@ export default function DashboardOperatorProcessingTransactions() {
                   </div>
                 </div>
               </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {!!id && transactions.length > 0 && (
+            <div className="txn-stats__chart" style={{ marginBottom: "20px", width: "100%" }}>
+              <TransactionsChart transactions={transactionTableData} />
+            </div>
+          )}
 
           {transactions.length > 0 && (
             <div className="processing-integration__limits-table">
@@ -1298,312 +1307,21 @@ export default function DashboardOperatorProcessingTransactions() {
                 </div>
 
                 <div className="limits-table__container">
-                  <div className="limits-table__wrapper">
                     <Table
                       tableId="processing-transactions"
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
+                      pagination={id ? { pageSize: 10 } : { pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
                       sticky
                       bordered
                       scroll={{ x: "max-content" }}
+                      rowClassName={(record) => {
+                        const val = getTransactionTypeValue(record.transactionType, record.transactionTypeNumber);
+                        return val ? `transaction-row transaction-row--type-${val}` : "transaction-row";
+                      }}
                     />
-                    {false && (
-                    <table className="limits-table__content">
-                      <thead className="limits-table__head">
-                        <tr>
-                          <th
-                            onClick={() => requestSort("localTransactionDate")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Дата{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="localTransactionDate"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("responseDescription")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Статус{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="responseDescription"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("cardNumber")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Номер карты{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="cardNumber"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("cardId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID карты{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="cardId"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("transactionTypeName")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Тип операции{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="transactionTypeName"
-                            />
-                          </th>
-                          {/* Combined Amount + Currency column */}
-                          <th
-                            onClick={() => requestSort("amount")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Сумма (валюта){" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="amount"
-                            />
-                          </th>
-                          {/* Combined Converted Amount + Currency column */}
-                          <th
-                            onClick={() => requestSort("conamt")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Сумма в валюте карты (валюта){" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="conamt"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("acctbal")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Доступный баланс{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="acctbal"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("utrnno")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Номер операции в ПЦ{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="utrnno"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("terminalId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID терминала{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="terminalId"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("atmId")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID АТМ{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="atmId" />
-                          </th>
-                          <th
-                            onClick={() => requestSort("reqamt")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Запрошенная сумма{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="reqamt"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("terminalAddress")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Адрес терминала{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="terminalAddress"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("mcc")}
-                            className="limits-table__th sortable-header"
-                          >
-                            MCC код{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="mcc" />
-                          </th>
-                          <th
-                            onClick={() => requestSort("account")}
-                            className="limits-table__th sortable-header"
-                          >
-                            Счет{" "}
-                            <SortIcon
-                              sortConfig={sortConfig}
-                              sortKey="account"
-                            />
-                          </th>
-                          <th
-                            onClick={() => requestSort("id")}
-                            className="limits-table__th sortable-header"
-                          >
-                            ID транзакции{" "}
-                            <SortIcon sortConfig={sortConfig} sortKey="id" />
-                          </th>
-                          <th className="limits-table__th">
-                            Сумма в нац. валуте
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="limits-table__body">
-                        {sortedTransactions.map((transaction) => {
-                          const transactionTypeValue = getTransactionTypeValue(
-                            transaction.transactionType,
-                            transaction.transactionTypeNumber,
-                          );
-                          return (
-                            <tr
-                              key={transaction.id}
-                              className="limits-table__row transaction-row"
-                            >
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.localTransactionDate || "N/A"}{" "}
-                                  {transaction.localTransactionTime || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                {getStatusBadge(
-                                  transaction.responseCode,
-                                  transaction.reversal,
-                                  transaction.responseDescription,
-                                )}
-                              </td>
-                              <td
-                                className="limits-table__td limits-table__td--info"
-                                style={{ minWidth: "150px" }}
-                              >
-                                {transaction.cardNumber
-                                  ? formatCardNumber(transaction.cardNumber)
-                                  : "N/A"}
-                              </td>
-                              <td className="limits-table__td limits-table__td--info">
-                                {transaction.cardId || "N/A"}
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.transactionTypeName || "N/A"}
-                                </span>
-                              </td>
-                              {/* Combined amount + currency */}
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.amount,
-                                    transactionTypeValue,
-                                  )}{" "}
-                                  {getCurrencyCode(transaction.currency)}
-                                </span>
-                              </td>
-                              {/* Combined conamt + conCurrency */}
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.conamt,
-                                    transactionTypeValue,
-                                  )}{" "}
-                                  {getCurrencyCode(transaction.conCurrency)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(transaction.acctbal)}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.utrnno || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalId || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.atmId || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="amount-value">
-                                  {formatAmount(
-                                    transaction.reqamt,
-                                    transactionTypeValue,
-                                  )}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.terminalAddress || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.mcc || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span className="default-value">
-                                  {transaction.account || "N/A"}
-                                </span>
-                              </td>
-                              <td className="limits-table__td limits-table__td--info">
-                                {transaction.id}
-                              </td>
-                              <td className="limits-table__td limits-table__td--value">
-                                <span
-                                  className="amount-value"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {(() => {
-                                    const rate =
-                                      transaction.conCurrency === 840
-                                        ? exchangeRates.USD
-                                        : transaction.conCurrency === 978
-                                          ? exchangeRates.EUR
-                                          : 1;
-                                    const amountTJS = Math.abs(
-                                      Math.round(
-                                        (transaction.conamt || 0) * rate,
-                                      ),
-                                    );
-                                    return formatAmount(amountTJS);
-                                  })()}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    )}
+
                   </div>
 
                   <div className="limits-table__footer">
