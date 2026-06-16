@@ -1320,8 +1320,13 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
                         <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
-                        {pinCount > 3 && (
-                          <button className="card-action-btn danger btn-reset-pin-highlight" onClick={() => onResetPin(card.cardId)}>Сбросить счетчик пин-а</button>
+                        {pinCount >= 1 && (
+                          <button 
+                            className={`card-action-btn ${pinCount >= 3 ? "danger btn-reset-pin-highlight" : "warning btn-reset-pin-warning"}`} 
+                            onClick={() => onResetPin(card.cardId)}
+                          >
+                            Сбросить PIN-код
+                          </button>
                         )}
                       </div>
                     </div>

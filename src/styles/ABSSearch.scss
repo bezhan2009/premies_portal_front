@@ -1518,6 +1518,27 @@
   to { box-shadow: 0 0 16px rgba(225, 29, 72, 0.7); }
 }
 
+.card-action-btn.btn-reset-pin-warning {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5) !important;
+  font-weight: 800;
+  animation: pulseGlowYellow 2s infinite alternate;
+  opacity: 1 !important;
+  filter: none !important;
+
+  &:hover {
+    background: #d97706 !important;
+    border-color: #d97706 !important;
+  }
+}
+
+@keyframes pulseGlowYellow {
+  from { box-shadow: 0 0 4px rgba(245, 158, 11, 0.3); }
+  to { box-shadow: 0 0 16px rgba(245, 158, 11, 0.7); }
+}
+
 /* ── UNIVERSAL CLIENT CARD VIEW ── */
 .universal-client-card-container {
   display: flex;

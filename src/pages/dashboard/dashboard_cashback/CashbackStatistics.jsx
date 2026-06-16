@@ -124,26 +124,15 @@ export default function CashbackStatistics({ items }) {
                 dot={{ r: 2 }}
               />
             ) : (
-              <>
-                <Area
-                  type="monotone"
-                  dataKey="transactionSum"
-                  name="Сумма транзакций (TJS)"
-                  stroke="#ffc658"
-                  fill="url(#colorTransaction)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cashbackSum"
-                  name="Сумма кэшбэка (TJS)"
-                  stroke="#82ca9d"
-                  fill="url(#colorCashback)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                />
-              </>
+              <Area
+                type="monotone"
+                dataKey="cashbackSum"
+                name="Сумма кэшбэка (TJS)"
+                stroke="#82ca9d"
+                fill="url(#colorCashback)"
+                strokeWidth={2.5}
+                dot={{ r: 2 }}
+              />
             )}
           </AreaChart>
         </ResponsiveContainer>
