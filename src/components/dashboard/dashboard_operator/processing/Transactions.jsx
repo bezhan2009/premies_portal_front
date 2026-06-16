@@ -1277,9 +1277,9 @@ export default function DashboardOperatorProcessingTransactions() {
                   </div>
                 </div>
               </div>
-              </div>
             </div>
-          )}
+          </div>
+        )}
 
           {!!id && transactions.length > 0 && (
             <div className="txn-stats__chart" style={{ marginBottom: "20px", width: "100%" }}>
@@ -1348,7 +1348,6 @@ export default function DashboardOperatorProcessingTransactions() {
                   </div>
                 </div>
               </div>
-            </div>
           )}
 
           {isLoading && (

@@ -1474,7 +1474,8 @@ const ClientDataTabs = ({
                 </div>
 
                 {filteredCredits?.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     {paginatedCredits.map((card, idx) => {
                       const details = card.loanDetails || {};
                       const params = details.params || {};
@@ -1622,6 +1623,7 @@ const ClientDataTabs = ({
                       />
                     </div>
                   )}
+                  </>
                 ) : (
                   <div className="empty-tab-state">Кредиты отсутствуют</div>
                 )}
@@ -1690,7 +1692,8 @@ const ClientDataTabs = ({
                 </div>
 
                 {filteredDeposits?.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     {paginatedDeposits.map((item, idx) => {
                       const agreement = item.AgreementData || {};
                       const statusName = agreement.Status?.Name || item.Status?.Name || "Неизвестно";
@@ -1841,6 +1844,7 @@ const ClientDataTabs = ({
                       />
                     </div>
                   )}
+                  </>
                 ) : (
                   <div className="empty-tab-state">Депозиты отсутствуют</div>
                 )}
