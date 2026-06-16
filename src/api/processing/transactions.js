@@ -5,7 +5,13 @@ const BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL || 'http://10.64.20
 // Поиск по идентификатору карты
 export const fetchTransactionsByCardId = async (cardID, fromDate = null, toDate = null) => {
     const url = new URL(`${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-cards`);
-    url.searchParams.append('cardIds', cardID);
+    
+    // Поддержка нескольких ID, разделенных запятыми
+    const cardIdsArray = String(cardID).split(',').filter(id => id.trim() !== '');
+    cardIdsArray.forEach(id => {
+        url.searchParams.append('cardIds', id.trim());
+    });
+
     if (fromDate) {
         url.searchParams.append('fromDate', fromDate);
     }

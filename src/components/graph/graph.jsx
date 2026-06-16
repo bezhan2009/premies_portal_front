@@ -182,19 +182,14 @@ export default function TransactionsChart({ transactions = [] }) {
     <div className="chart-card">
       <div className="chart-content">
         <div className="chart-header">
-          <div className="header-left">
-            <h2 className="chart-title">Транзакции банкомата</h2>
-            <div className="chart-subtitle">Адрес: {atmAddress}</div>
-          </div>
-
-          <div className="header-right">
-            <div className="stats-chips">
+          <div className="header-right" style={{ width: "100%" }}>
+            <div className="stats-chips" style={{ justifyContent: "flex-start" }}>
               <span className="stats-chip">Кол-во операций: {totalCount}</span>
               <span className="stats-chip">
-                Общая сумма: {formatIntWithDots(totalSum)}
+                Общая сумма (в нац. валюте): {formatIntWithDots(totalSum)}
               </span>
               <span className="stats-chip">
-                Средний чек: {formatIntWithDots(avgAmount)}
+                Средний чек (в нац. валюте): {formatIntWithDots(avgAmount)}
               </span>
               <span className="stats-chip">
                 Среднее операций/день: {avgOpsPerDay}
@@ -202,7 +197,7 @@ export default function TransactionsChart({ transactions = [] }) {
 
               {/* ✅ НОВОЕ ПОЛЕ */}
               <span className="stats-chip">
-                Средний чек/день: {formatIntWithDots(avgSumPerDay)}
+                Средний чек/день (в нац. валюте): {formatIntWithDots(avgSumPerDay)}
               </span>
             </div>
           </div>
@@ -214,7 +209,7 @@ export default function TransactionsChart({ transactions = [] }) {
             onChange={(val) => setMetric(val)}
             options={[
               { value: "count", label: "Количество" },
-              { value: "sum", label: "Сумма" },
+              { value: "sum", label: "Сумма (в нац. валюте)" },
             ]}
           />
         </div>

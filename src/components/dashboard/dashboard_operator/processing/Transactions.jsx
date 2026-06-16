@@ -116,6 +116,7 @@ export default function DashboardOperatorProcessingTransactions() {
   const [mcc, setMcc] = useState("");
   const [cardBin, setCardBin] = useState("");
   const [searchTransactionType, setSearchTransactionType] = useState("");
+  const [globalSearchText, setGlobalSearchText] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
@@ -552,12 +553,24 @@ export default function DashboardOperatorProcessingTransactions() {
   );
 
   const transactionTableData = useMemo(
-    () =>
-      transactions.map((transaction) => ({
+    () => {
+      let data = transactions.map((transaction) => ({
         ...transaction,
         nationalAmount: getNationalAmount(transaction, exchangeRates),
-      })),
-    [transactions, exchangeRates],
+      }));
+
+      if (globalSearchText) {
+        const lowerSearch = globalSearchText.toLowerCase();
+        data = data.filter((item) => {
+          return Object.values(item).some(
+            (val) => val && String(val).toLowerCase().includes(lowerSearch)
+          );
+        });
+      }
+
+      return data;
+    },
+    [transactions, exchangeRates, globalSearchText],
   );
 
   const transactionColumns = useMemo(
@@ -599,6 +612,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID карты",
         dataIndex: "cardId",
         key: "cardId",
+        fixed: "left",
         width: 150,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("cardId", "ID карты"),
@@ -607,6 +621,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Тип операции",
         dataIndex: "transactionTypeName",
         key: "transactionTypeName",
+        fixed: "left",
         width: 220,
         render: (value) => value || "N/A",
       },
@@ -614,6 +629,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма (валюта)",
         dataIndex: "amount",
         key: "amount",
+        fixed: "left",
         width: 180,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -631,6 +647,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма в валюте карты",
         dataIndex: "conamt",
         key: "conamt",
+        fixed: "left",
         width: 220,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -648,6 +665,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Доступный баланс",
         dataIndex: "acctbal",
         key: "acctbal",
+        fixed: "left",
         width: 180,
         render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
       },
@@ -655,6 +673,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "UTRNNO",
         dataIndex: "utrnno",
         key: "utrnno",
+        fixed: "left",
         width: 160,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("utrnno", "UTRNNO"),
@@ -663,6 +682,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID терминала",
         dataIndex: "terminalId",
         key: "terminalId",
+        fixed: "left",
         width: 170,
         render: (value) => value || "N/A",
       },
@@ -670,6 +690,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID ATM",
         dataIndex: "atmId",
         key: "atmId",
+        fixed: "left",
         width: 150,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("atmId", "ID ATM"),
@@ -678,6 +699,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Запрошенная сумма",
         dataIndex: "reqamt",
         key: "reqamt",
+        fixed: "left",
         width: 190,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -694,6 +716,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Адрес терминала",
         dataIndex: "terminalAddress",
         key: "terminalAddress",
+        fixed: "left",
         width: 260,
         render: (value) => value || "N/A",
       },
@@ -701,6 +724,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "MCC",
         dataIndex: "mcc",
         key: "mcc",
+        fixed: "left",
         width: 130,
         render: (value) => value || "N/A",
       },
@@ -708,6 +732,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Счет",
         dataIndex: "account",
         key: "account",
+        fixed: "left",
         width: 200,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("account", "номера счета"),
@@ -716,6 +741,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма в нац. валюте",
         dataIndex: "nationalAmount",
         key: "nationalAmount",
+        fixed: "left",
         width: 190,
         render: (value) => (
           <span className="amount-value" style={{ fontWeight: "bold" }}>
@@ -727,6 +753,7 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID транзакции",
         dataIndex: "id",
         key: "id",
+        fixed: "left",
         width: 150,
       },
     ],
@@ -1132,14 +1159,13 @@ export default function DashboardOperatorProcessingTransactions() {
   };
 
   const getTableTitle = () => {
+    if (id) return "История транзакций";
     const baseTitle = "Найденные транзакции";
     let searchInfo = "";
 
     switch (searchType) {
       case "cardId":
-        searchInfo = displayCardId.includes(",")
-          ? `по картам с id ${displayCardId}`
-          : `по карте с id ${displayCardId}`;
+        searchInfo = "";
         break;
       case "atmId":
         searchInfo = `по терминалу ${atmId}`;
@@ -1194,11 +1220,11 @@ export default function DashboardOperatorProcessingTransactions() {
           duration={3000}
         />
       )}
-      <div className="block_info_prems content-page" align="center">
-        <div className="processing-integration">
+      <div className="block_info_prems" align="center">
+        <div className="processing-integration" style={{ width: "100%" }}>
           {!id && (
-            <div className="processing-integration__container">
-            <div className="processing-integration__search-card">
+            <div className="processing-integration__container" style={{ width: "100%", maxWidth: "100%" }}>
+            <div className="processing-integration__search-card" style={{ maxWidth: "100%" }}>
               <div className="search-card">
                 <div className="search-card__content">
                   <div className="search-card__input-group search-card__select-group">
@@ -1280,6 +1306,51 @@ export default function DashboardOperatorProcessingTransactions() {
             </div>
           </div>
         )}
+
+          {!!id && (
+            <div className="search-card__date-group" style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap", width: "100%", padding: "0 1.5rem" }}>
+              <div className="date-input-group">
+                <label className="search-card__label" style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.45rem", display: "block" }}>С даты</label>
+                <CustomDateInput
+                  id="historyFromDate"
+                  type="date"
+                  value={fromDate}
+                  onChange={(value) => handleDateChange({ target: { name: "fromDate", value } })}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="date-input-group">
+                <label className="search-card__label" style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.45rem", display: "block" }}>По дату</label>
+                <CustomDateInput
+                  id="historyToDate"
+                  type="date"
+                  value={toDate}
+                  onChange={(value) => handleDateChange({ target: { name: "toDate", value } })}
+                  disabled={isLoading}
+                />
+              </div>
+              <button
+                onClick={() => handleSearch(id)}
+                disabled={isLoading}
+                className={`search-card__button ${isLoading ? "search-card__button--loading" : ""}`}
+                style={{ height: "42px", padding: "0 20px" }}
+              >
+                {isLoading ? "Загрузка..." : "Применить"}
+              </button>
+              
+              <div className="search-card__input-group" style={{ marginLeft: "auto" }}>
+                <label className="search-card__label" style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.45rem", display: "block" }}>Глобальный поиск</label>
+                <AntInput
+                  placeholder="Поиск по всем полям"
+                  value={globalSearchText}
+                  onChange={(e) => setGlobalSearchText(e.target.value)}
+                  style={{ width: "250px", height: "42px", borderRadius: "0.75rem" }}
+                  prefix={<SearchOutlined />}
+                  allowClear
+                />
+              </div>
+            </div>
+          )}
 
           {!!id && transactions.length > 0 && (
             <div className="txn-stats__chart" style={{ marginBottom: "20px", width: "100%" }}>
