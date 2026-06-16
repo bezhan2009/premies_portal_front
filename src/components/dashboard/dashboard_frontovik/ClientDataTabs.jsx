@@ -154,6 +154,7 @@ const ClientDataTabs = ({
   handleExportDeposits,
   onBlockCard,
   onUnblockCard,
+  onActivateCard,
   onResetPin,
   onChangePin,
   onManageServices,
@@ -603,28 +604,47 @@ const ClientDataTabs = ({
               )}
             </div>
 
-            {card.details?.hotCardStatus && String(card.details.hotCardStatus) === "17" ? (
-              <button
-                className="button"
-                style={{
-                  background: "#10b981",
-                  color: "white",
-                  width: "100%",
-                }}
-                onClick={() => onUnblockCard(card.cardId)}
-              >
-                Активировать
-              </button>
-            ) : (
-              hasBlockCardAccess && (
-                card.details?.hotCardStatus === "0" ? (
+            {(() => {
+              const absStatus = card.statusName;
+              const pcStatus = String(card.details?.hotCardStatus);
+              
+              const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
+              const isScenarioB = absStatus === "Активирована" && pcStatus === "17";
+              const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
+              const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
+
+              if (isScenarioA || isScenarioB || isScenarioC) {
+                return (
                   <button
                     className="button"
-                    style={{
-                      background: "#e11d48",
-                      color: "white",
-                      width: "100%",
-                    }}
+                    style={{ background: "#10b981", color: "white", width: "100%" }}
+                    onClick={() => onActivateCard(card, isScenarioA ? 'A' : isScenarioB ? 'B' : 'C')}
+                  >
+                    Активировать
+                  </button>
+                );
+              }
+
+              if (isScenarioD) {
+                if (hasBlockCardAccess) {
+                  return (
+                    <button
+                      className="button"
+                      style={{ background: "#e11d48", color: "white", width: "100%" }}
+                      onClick={() => onBlockCard(card.cardId)}
+                    >
+                      Заблокировать
+                    </button>
+                  );
+                }
+                return null;
+              }
+
+              if (hasBlockCardAccess) {
+                return pcStatus === "0" ? (
+                  <button
+                    className="button"
+                    style={{ background: "#e11d48", color: "white", width: "100%" }}
                     onClick={() => onBlockCard(card.cardId)}
                   >
                     Заблокировать
@@ -632,18 +652,15 @@ const ClientDataTabs = ({
                 ) : (
                   <button
                     className="button"
-                    style={{
-                      background: "#10b981",
-                      color: "white",
-                      width: "100%",
-                    }}
+                    style={{ background: "#10b981", color: "white", width: "100%" }}
                     onClick={() => onUnblockCard(card.cardId)}
                   >
                     Разблокировать
                   </button>
-                )
-              )
-            )}
+                );
+              }
+              return null;
+            })()}
 
             <button
               className="button"

@@ -34,6 +34,7 @@ import {
     generatePin,
     manageCardService,
     fetchCardLimits,
+    activateCardSoap,
 } from "../../../api/processing/transactions.js";
 
 // Extracted Components
@@ -738,6 +739,38 @@ export default function ABSClientSearch() {
             handleGetDataUser();
         } catch (e) {
             showAlert("Ошибка при разблокировке карты", "error");
+        }
+    };
+
+    const handleActivateCard = async (card, scenario) => {
+        setModalLoading(true);
+        try {
+            logAuditAction({
+                action: "Активация карты",
+                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+                client_phone: selectedClient?.phone || "",
+                client_inn: selectedClient?.tax_code || "",
+                card_number: String(card.cardId),
+                details: `Сценарий активации ${scenario} для карты ${card.cardId}`
+            });
+
+            if (scenario === 'A') {
+                await activateCardSoap(card.agreement, card.cardId);
+            } else if (scenario === 'B') {
+                await unblockCard(card.cardId);
+            } else if (scenario === 'C') {
+                await changeCardStatus(card.cardId, "24");
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                await activateCardSoap(card.agreement, card.cardId);
+            }
+
+            showAlert("Карта успешно активирована", "success");
+            handleGetDataUser();
+        } catch (error) {
+            console.error("Ошибка при активации карты", error);
+            showAlert("Ошибка при активации карты", "error");
+        } finally {
+            setModalLoading(false);
         }
     };
 
@@ -1598,6 +1631,7 @@ export default function ABSClientSearch() {
                                 handleExportDeposits={handleExportDeposits}
                                 onBlockCard={openBlockModal}
                                 onUnblockCard={handleUnblockCard}
+                                onActivateCard={handleActivateCard}
                                 onResetPin={handleResetPin}
                                 onChangePin={openPinModal}
                                 onManageServices={openServicesModal}

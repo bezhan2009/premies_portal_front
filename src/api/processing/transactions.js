@@ -400,3 +400,47 @@ export const changeCardLimit = async (payload) => {
         throw error;
     }
 };
+
+export const activateCardSoap = async (contractId, cardId) => {
+    const url = 'http://10.64.1.55:8180/cxf/cards/v1';
+    
+    const xml = `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <cr:CardGiveoutRequest 
+            xmlns:cr="http://bus.colvir.com/service/cards/v1"
+            xmlns:s="http://bus.colvir.com/common/support/v1"
+            xmlns:dm="http://bus.colvir.com/common/domain/v1">
+            
+            <s:head>
+                <s:params>
+                    <s:clientType>CBS</s:clientType>
+                    <s:interfaceVersion>1.0</s:interfaceVersion>
+                    <s:language>ru</s:language>
+                    <s:operationalDate>2026-06-16T08:00:00</s:operationalDate>
+                </s:params>
+            </s:head>
+            
+            <cr:contractId>${contractId}</cr:contractId>
+            <cr:cardId>${cardId}</cr:cardId>
+            
+            <cr:contractParam>
+                <dm:code>AUTO_ACTIVATE_FL</dm:code>
+                <dm:value>true</dm:value>
+            </cr:contractParam>
+
+        </cr:CardGiveoutRequest>
+    </soap:Body>
+</soap:Envelope>`;
+
+    try {
+        const response = await axios.post(url, xml, {
+            headers: {
+                'Content-Type': 'text/xml;charset=UTF-8'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error activating card (SOAP):', error);
+        throw error;
+    }
+};

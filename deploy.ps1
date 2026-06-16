@@ -46,6 +46,20 @@ function Get-ServerPassword {
     )
     return $Password
 }
+# ===== AUTO-AUTHENTICATION FOR GITLAB =====
+$GITLAB_URL = "https://bkarimov%40activban.tj:Y%21E0lc3%7D0%7Er9e6%40%23%29s@gl.abank.tj.tajikistan.tj/Bejan/activ_daily_frontend.git"
+$remotes = git -C "$PSScriptRoot" remote 2>$null
+if ($remotes -contains "gitlab") {
+    $currentUrl = git -C "$PSScriptRoot" remote get-url gitlab 2>$null
+    if ($currentUrl -ne $GITLAB_URL) {
+        Write-Host "[GIT] Updating gitlab remote URL to HTTPS..." -ForegroundColor Yellow
+        git -C "$PSScriptRoot" remote set-url gitlab $GITLAB_URL 2>$null
+    }
+} else {
+    Write-Host "[GIT] Adding gitlab remote URL..." -ForegroundColor Yellow
+    git -C "$PSScriptRoot" remote add gitlab $GITLAB_URL 2>$null
+}
+
 # ===== LOCAL GIT SYNC =====
 Write-Host "[GIT] Pulling latest changes from origin ($GITLAB_BRANCH)..." -ForegroundColor Yellow
 git -C "$PSScriptRoot" pull origin "$GITLAB_BRANCH"
