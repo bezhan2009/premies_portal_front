@@ -242,7 +242,7 @@ const ClientDataTabs = ({
   const filteredDeposits = React.useMemo(() => {
     if (!depositsRows || !Array.isArray(depositsRows)) return [];
     if (activeDepositCategory === "all") return depositsRows;
-    return depositsRows.filter(item => {
+    return depositsRows.filter(item => { if(!item) return false;
       const code = item.AgreementData?.Status?.Code || item.Status?.Code;
       return code === activeDepositCategory;
     });
@@ -1680,7 +1680,7 @@ const ClientDataTabs = ({
                 {filteredDeposits?.length > 0 ? (
                   <>
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {filteredDeposits.map((item, idx) => {
+                    {filteredDeposits.map((item, idx) => { if(!item) return null;
                       const agreement = item.AgreementData || {};
                       const statusName = agreement.Status?.Name || item.Status?.Name || "Неизвестно";
                       
@@ -1706,8 +1706,8 @@ const ClientDataTabs = ({
                       const penaltyRate = allRates.find(r => r.Code === "DEP_PNLTY")?.Pcn || "0";
                       const taxRate = allRates.find(r => r.Code === "DEP_TAX")?.Pcn || "0";
 
-                      const dateFromStr = agreement.DateFrom || item.DateFrom || "-";
-                      const dateToStr = agreement.DateTo || item.DateTo || "-";
+                      const dateFromStr = String(agreement.DateFrom || item.DateFrom || "-");
+                      const dateToStr = String(agreement.DateTo || item.DateTo || "-");
                       const department = agreement.Department?.Code || item.Department?.Code || "Неизвестно";
                       const amount = agreement.Amount || item.Amount || "0";
 

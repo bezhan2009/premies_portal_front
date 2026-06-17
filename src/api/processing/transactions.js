@@ -410,19 +410,20 @@ export const changeCardLimit = async (payload) => {
 export const activateCardSoap = async (contractId, cardId) => {
     const url = 'http://10.64.1.55:8180/cxf/cards/v1';
     
-    const xml = `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-    <soap:Body>
-        <cr:CardGiveoutRequest 
-            xmlns:cr="http://bus.colvir.com/service/cards/v1"
-            xmlns:s="http://bus.colvir.com/common/support/v1"
-            xmlns:dm="http://bus.colvir.com/common/domain/v1">
-            
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:cr="http://bus.colvir.com/service/cards/v1" 
+                  xmlns:s="http://bus.colvir.com/common/support/v1" 
+                  xmlns:dm="http://bus.colvir.com/common/domain/v1">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <cr:CardGiveoutRequest>
             <s:head>
                 <s:params>
                     <s:clientType>CBS</s:clientType>
                     <s:interfaceVersion>1.0</s:interfaceVersion>
                     <s:language>ru</s:language>
-                    <s:operationalDate>2026-06-16T08:00:00</s:operationalDate>
+                    <s:operationalDate>${new Date().toISOString().split('T')[0]}T08:00:00</s:operationalDate>
                 </s:params>
             </s:head>
             
@@ -434,9 +435,9 @@ export const activateCardSoap = async (contractId, cardId) => {
                 <dm:value>true</dm:value>
             </cr:contractParam>
 
-        </cr:CardGiveoutRequest>
-    </soap:Body>
-</soap:Envelope>`;
+      </cr:CardGiveoutRequest>
+   </soapenv:Body>
+</soapenv:Envelope>`;
 
     try {
         const response = await axios.post(url, xml, {
