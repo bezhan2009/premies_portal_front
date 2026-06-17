@@ -625,30 +625,22 @@ $gray-900: var(--text-color);
   }
 }
 
-// Стили для строк с разными типами транзакций
+// Стили для строк с разными типами транзакций и статусами
 .transaction-row {
-  &.transaction-row--type-1 {
-    background-color: rgba(76, 175, 80, 0.08);
-
-    // &:hover удален
+  &.transaction-row--success > td {
+    background-color: rgba(76, 175, 80, 0.08) !important;
   }
 
-  &.transaction-row--type-2 {
-    background-color: rgba(244, 67, 54, 0.08);
-
-// &:hover удален
+  &.transaction-row--error > td {
+    background-color: rgba(244, 67, 54, 0.08) !important;
   }
 
-  &.transaction-row--type-3 {
-    background-color: rgba(255, 193, 7, 0.08);
-
-// &:hover удален
+  &.transaction-row--warning > td {
+    background-color: rgba(255, 193, 7, 0.08) !important;
   }
 
-  &.transaction-row--type-4 {
-    background-color: rgba(33, 150, 243, 0.08);
-
-// &:hover удален
+  &.transaction-row--reversed > td {
+    background-color: rgba(158, 158, 158, 0.08) !important;
   }
 }
 
