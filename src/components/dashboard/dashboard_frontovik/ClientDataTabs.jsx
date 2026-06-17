@@ -1327,17 +1327,47 @@ const ClientDataTabs = ({
                       </div>
 
                       <div className="card-actions-bar">
-                        {card.details?.hotCardStatus && String(card.details.hotCardStatus) === "17" ? (
-                          <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>Активировать</button>
-                        ) : (
-                          hasBlockCardAccess && (
-                            card.details?.hotCardStatus === "0" ? (
-                              <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>Заблокировать</button>
+                        {(() => {
+                          const absStatus = card.statusName;
+                          const pcStatus = String(card.details?.hotCardStatus);
+                          
+                          const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
+                          const isScenarioB = absStatus === "Активирована" && pcStatus === "17";
+                          const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
+                          const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
+
+                          if (isScenarioA || isScenarioB || isScenarioC) {
+                            return (
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onActivateCard(card, isScenarioA ? 'A' : isScenarioB ? 'B' : 'C')}>
+                                Активировать
+                              </button>
+                            );
+                          }
+
+                          if (isScenarioD) {
+                            if (hasBlockCardAccess) {
+                              return (
+                                <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>
+                                  Заблокировать
+                                </button>
+                              );
+                            }
+                            return null;
+                          }
+
+                          if (hasBlockCardAccess) {
+                            return pcStatus === "0" ? (
+                              <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>
+                                Заблокировать
+                              </button>
                             ) : (
-                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>Разблокировать</button>
-                            )
-                          )
-                        )}
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>
+                                Разблокировать
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                         {hasChangePinAccess && (
                           <button className="card-action-btn outline-danger" onClick={() => onChangePin(card.cardId)}>Сменить ПИН</button>
                         )}
