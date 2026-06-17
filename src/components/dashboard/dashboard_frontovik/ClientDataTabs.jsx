@@ -167,6 +167,13 @@ const ClientDataTabs = ({
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
 }) => {
+  const depositsRows =
+    Array.isArray(sortedDeposits) && sortedDeposits.length > 0
+      ? sortedDeposits
+      : Array.isArray(depositsData)
+        ? depositsData
+        : [];
+
   const [isRequisitesModalOpen, setIsRequisitesModalOpen] = React.useState(false);
   const [isDebtCertificateModalOpen, setIsDebtCertificateModalOpen] = React.useState(false);
   const [requisitesCard, setRequisitesCard] = React.useState(null);
@@ -233,13 +240,13 @@ const ClientDataTabs = ({
   }, [creditsData]);
 
   const filteredDeposits = React.useMemo(() => {
-    if (!sortedDeposits || !Array.isArray(sortedDeposits)) return [];
-    if (activeDepositCategory === "all") return sortedDeposits;
-    return sortedDeposits.filter(item => {
+    if (!depositsRows || !Array.isArray(depositsRows)) return [];
+    if (activeDepositCategory === "all") return depositsRows;
+    return depositsRows.filter(item => {
       const code = item.AgreementData?.Status?.Code || item.Status?.Code;
       return code === activeDepositCategory;
     });
-  }, [sortedDeposits, activeDepositCategory]);
+  }, [depositsRows, activeDepositCategory]);
 
   const filteredCredits = React.useMemo(() => {
     if (activeCreditCategory === "all") return sortedCredits;
@@ -1621,7 +1628,7 @@ const ClientDataTabs = ({
                 <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                     <h3>Договоры депозитов</h3>
-                    {depositsData?.length > 0 && (
+                    {depositsRows.length > 0 && (
                       <button onClick={handleExportDeposits} className="btn-tab-export">
                         Экспорт в Excel
                       </button>

@@ -544,10 +544,23 @@ export default function ABSClientSearch() {
                 getUserDeposits(clientCode),
             ]);
 
-            setAccountsData(resAcc || []);
-            if (resCredits && resCredits.length > 0) {
+            const normalizeArrayResponse = (response) => {
+                if (Array.isArray(response)) return response;
+                if (Array.isArray(response?.data)) return response.data;
+                if (Array.isArray(response?.items)) return response.items;
+                if (Array.isArray(response?.result)) return response.result;
+                return [];
+            };
+
+            const normalizedAcc = normalizeArrayResponse(resAcc);
+            const normalizedCredits = normalizeArrayResponse(resCredits);
+            const normalizedDeposits = normalizeArrayResponse(resDeposits);
+
+            setAccountsData(normalizedAcc);
+            
+            if (normalizedCredits.length > 0) {
                 const enrichedCredits = await Promise.all(
-                    resCredits.map(async (credit) => {
+                    normalizedCredits.map(async (credit) => {
                         try {
                             if (credit.referenceId) {
                                 const [details, graphs] = await Promise.all([
@@ -564,9 +577,9 @@ export default function ABSClientSearch() {
                 );
                 setCreditsData(enrichedCredits);
             } else {
-                setCreditsData(resCredits || []);
+                setCreditsData([]);
             }
-            setDepositsData(resDeposits || []);
+            setDepositsData(normalizedDeposits);
 
             if (resCards && resCards.length > 0) {
                 const enrichedCards = await Promise.all(
