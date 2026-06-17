@@ -7,7 +7,7 @@ import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select";
 import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
-import { AiFillDelete, AiFillEdit } from "react-icons/ai";
+import { AiFillDelete, AiFillEdit, AiOutlineEye, AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
@@ -434,7 +434,7 @@ export default function ApplicationsList() {
                     </div>
 
                     <div
-                        className="my-applications-content"
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6"
                         onScroll={scrollHandler}
                         style={{ position: "relative" }}
                     >
@@ -443,93 +443,150 @@ export default function ApplicationsList() {
                                 Нет данных для отображения
                             </div>
                         ) : (
-                            <table>
-                                <thead>
-                                <tr>
-                                    <th>Выбрать</th>
-                                    <th>ID</th>
-                                    <th>ФИО</th>
-                                    <th>Телефон</th>
-                                    <th>Карта</th>
-                                    <th>Адрес</th>
-                                    <th>Скан паспорта (лицевая)</th>
-                                    <th>Скан паспорта (задняя)</th>
-                                    <th>Скан паспорта (с лицом)</th>
-                                    <th>Получаемый оффис</th>
-                                    {headers.map((e, i) => (
-                                        <th key={i}>{e}</th>
-                                    ))}
-                                    <th>Заявка создана в</th>
-                                    <th>Заявка обновлена в</th>
-                                    <th>Последние цифры карты</th>
-                                    <th>Тип карты</th>
-                                    <th>Действия</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {filteredData
-                                    ?.slice(0, data?.limit || filteredData?.length)
-                                    ?.map((row, index) => (
-                                        <tr key={index}>
-                                            <td>
-                                                <input
-                                                    type="checkbox"
-                                                    className="custom-checkbox"
-                                                    checked={selectedRows.includes(row.ID)}
-                                                    onChange={(e) => {
-                                                        setSelectedRows(
-                                                            e.target.checked
-                                                                ? [...selectedRows, row.ID]
-                                                                : selectedRows.filter((id) => id !== row.ID),
-                                                        );
-                                                    }}
-                                                />
-                                            </td>
-                                            <td>{row.ID}</td>
-                                            <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                                            <td>{row.phone_number}</td>
-                                            <td>{row.card_name}</td>
-                                            <td>{row.delivery_address}</td>
-                                            <td>{renderFileIcon(row.front_side_of_the_passport)}</td>
-                                            <td>{renderFileIcon(row.back_side_of_the_passport)}</td>
-                                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                                            <td>{row.receiving_office}</td>
-                                            <td>{row.phone_number}</td>
-                                            <td>{row.secret_word}</td>
-                                            <td>{row.card_name}</td>
-                                            <td>{row.gender}</td>
-                                            <td>{row.is_resident ? "Да" : "Нет"}</td>
-                                            <td>{row.type_of_certificate}</td>
-                                            <td>{row.inn}</td>
-                                            <td>{row.delivery_address}</td>
-                                            <td>{row.card_code}</td>
-                                            <td>{formatDate(row.CreatedAt)}</td>
-                                            <td>{formatDate(row.UpdatedAt)}</td>
-                                            <td>{row.last_card_numbers}</td>
-                                            <td>{row.card_type}</td>
-                                            <td className="active-table">
-                                                <AiFillEdit
-                                                    onClick={() => navigate(`/agent/card/${row.ID}`)}
-                                                    style={{
-                                                        fontSize: 35,
-                                                        color: "green",
-                                                        cursor: "pointer",
-                                                        marginBottom: "10px",
-                                                    }}
-                                                />
-                                                <AiFillDelete
-                                                    onClick={() => deleteApplication(row.ID)}
-                                                    style={{
-                                                        fontSize: 35,
-                                                        color: "#c31414",
-                                                        cursor: "pointer",
-                                                    }}
-                                                />
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                    <thead className="bg-transparent border-b border-gray-100">
+                                    <tr>
+                                        <th className="px-6 py-4">
+                                            <input 
+                                                type="checkbox" 
+                                                className="custom-checkbox rounded-full border-gray-300 w-5 h-5 text-red-600 focus:ring-red-500" 
+                                                checked={selectAll}
+                                                onChange={(e) => {
+                                                    const nextSelectAll = e.target.checked;
+                                                    setSelectAll(nextSelectAll);
+                                                    if (nextSelectAll) {
+                                                        setSelectedRows(filteredData.map((e) => e.ID));
+                                                    } else {
+                                                        setSelectedRows([]);
+                                                    }
+                                                }}
+                                            />
+                                        </th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ID</th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КЛИЕНТ</th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КАРТА</th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ОФИС ПОЛУЧЕНИЯ</th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">СТАТУС</th>
+                                        <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ДЕЙСТВИЯ</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {filteredData
+                                        ?.slice(0, data?.limit || filteredData?.length)
+                                        ?.map((row, index) => {
+                                            let badgeBg = "bg-red-50";
+                                            let badgeText = "text-red-600";
+                                            let dotColor = "bg-red-500";
+                                            let statusText = "Новая";
+
+                                            const statusObj = status.find(s => s.value === row.application_status_id && s.label !== "Статус");
+                                            const label = statusObj ? statusObj.label.toLowerCase() : "";
+
+                                            if (label.includes("одобрен") && !label.includes("не одобрен")) {
+                                              statusText = "Одобрена";
+                                              badgeBg = "bg-green-50";
+                                              badgeText = "text-green-600";
+                                              dotColor = "bg-green-500";
+                                            } else if (label.includes("отказано") || label.includes("не одобрен") || label.includes("недостоверные")) {
+                                              statusText = "Отклонена";
+                                              badgeBg = "bg-rose-100";
+                                              badgeText = "text-rose-700";
+                                              dotColor = "bg-rose-600";
+                                            } else if (label.includes("обработан") || label.includes("проверк")) {
+                                              statusText = "На проверке";
+                                              badgeBg = "bg-yellow-50";
+                                              badgeText = "text-yellow-600";
+                                              dotColor = "bg-yellow-500";
+                                            } else {
+                                              statusText = "Новая";
+                                              badgeBg = "bg-red-50";
+                                              badgeText = "text-red-500";
+                                              dotColor = "bg-red-400";
+                                            }
+
+                                            const initials = `${row.surname?.[0] || ""}${row.name?.[0] || ""}`.toUpperCase();
+                                            const fullName = `${row.surname || ""} ${row.name || ""} ${row.patronymic || ""}`.trim();
+
+                                            return (
+                                                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors items-center">
+                                                    <td className="px-6 py-4">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="custom-checkbox rounded-full border-gray-300 w-5 h-5 text-red-600 focus:ring-red-500"
+                                                            checked={selectedRows.includes(row.ID)}
+                                                            onChange={(e) => {
+                                                                setSelectedRows(
+                                                                    e.target.checked
+                                                                        ? [...selectedRows, row.ID]
+                                                                        : selectedRows.filter((id) => id !== row.ID),
+                                                                );
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-500 font-medium">#{row.ID}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold shrink-0">
+                                                                {initials || "КЛ"}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-semibold text-gray-900">{fullName}</span>
+                                                                <span className="text-xs text-gray-400">{row.phone_number}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-semibold text-sm text-gray-900 uppercase">{row.card_name || "Неизвестно"}</span>
+                                                            <span className="text-xs text-gray-400">{row.delivery_address || "-"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-normal max-w-[200px]">
+                                                        {row.receiving_office || "-"}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badgeBg} ${badgeText}`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                                                            {statusText}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <button 
+                                                            onClick={() => navigate(`/agent/card/${row.ID}`)}
+                                                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 flex items-center gap-1 bg-white hover:bg-gray-50 transition-colors"
+                                                        >
+                                                            <AiOutlineEye size={16} />
+                                                            Открыть
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        {filteredData.length > 0 && (
+                            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-white">
+                                <div className="text-sm text-gray-500">
+                                    Показано {filteredData.length} из {filteredData.length} заявок
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-300 cursor-not-allowed">
+                                        <AiOutlineLeft size={14} />
+                                    </button>
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 text-white font-medium text-sm">
+                                        1
+                                    </button>
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 font-medium text-sm hover:bg-gray-50 transition-colors">
+                                        2
+                                    </button>
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+                                        <AiOutlineRight size={14} />
+                                    </button>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </main>
