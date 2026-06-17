@@ -19,39 +19,70 @@ dayjs.extend(isBetween);
 
 const { RangePicker } = DatePicker;
 
+const STATUS_OPTIONS = [
+    { ID: 1, name: "Заявка принята" },
+    { ID: 2, name: "Заявка обработана" },
+    { ID: 3, name: "Карта открыта" },
+    { ID: 4, name: "Карта активирована" },
+    { ID: 5, name: "Недостоверные данные" },
+    { ID: 6, name: "Отказано в карте" },
+    { ID: 7, name: "Не одобрено" },
+    { ID: 8, name: "Одобрено" }
+];
+
 function ImagePreviewModal({ imageUrl, onClose }) {
     if (!imageUrl) return null;
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80" onClick={onClose}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="relative bg-white rounded-2xl overflow-hidden animate-scaleIn max-w-4xl w-full mx-4"
+                className="relative bg-transparent rounded-2xl overflow-hidden max-w-5xl w-full mx-4 flex flex-col items-center"
                 onClick={(e) => e.stopPropagation()}
             >
-                <button className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center transition-colors" onClick={onClose}>
-                    ×
+                <button className="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/90 rounded-full w-10 h-10 flex items-center justify-center transition-colors text-2xl z-10 font-bold" onClick={onClose}>
+                    x
                 </button>
                 <img
                     src={imageUrl}
                     alt="Предпросмотр"
-                    className="w-full max-h-[80vh] object-contain"
+                    className="w-auto max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl bg-white/5 p-2 transition-transform duration-300"
                 />
             </div>
         </div>
     );
 }
 
-function ApplicationDetailsModal({ application, onClose, onNavigate, onPreviewImage }) {
+function ApplicationDetailsModal({ application, onClose, onNavigate, onPreviewImage, onUpdateStatus, onDelete }) {
     if (!application) return null;
+
+    const renderDetailCard = (icon, label, value, isSensitive = false) => {
+        return (
+            <div className={`p-4 rounded-2xl border transition-all ${
+                isSensitive 
+                    ? "bg-rose-50/40 border-rose-100 hover:bg-rose-50/60" 
+                    : "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
+            } flex items-start gap-3`}>
+                <div className={`p-2 rounded-xl shrink-0 ${isSensitive ? "bg-rose-100 text-rose-600" : "bg-gray-50 text-gray-500"}`}>
+                    {icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</div>
+                    <div className={`text-sm font-semibold truncate ${isSensitive ? "text-rose-700 font-mono" : "text-gray-900"}`} title={value || "-"}>
+                        {value || "-"}
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderScan = (path, label) => {
         if (!path) {
             return (
-                <div className="flex flex-col items-center justify-center bg-gray-50 border border-gray-100 rounded-2xl p-6 h-48">
+                <div className="flex flex-col items-center justify-center bg-gray-50 border border-gray-200 border-dashed rounded-2xl p-6 h-44">
                     <div className="text-gray-300 mb-2">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                     </div>
-                    <span className="text-sm text-gray-400">Нет файла</span>
-                    <span className="text-xs text-gray-400 mt-4">{label}</span>
+                    <span className="text-xs font-semibold text-gray-400">Нет файла</span>
+                    <span className="text-[10px] text-gray-400 mt-1">{label}</span>
                 </div>
             );
         }
@@ -60,14 +91,40 @@ function ApplicationDetailsModal({ application, onClose, onNavigate, onPreviewIm
         const fullUrl = `${backendUrl}/uploads/${path.replace(/\\/g, "/")}`;
         
         return (
-            <div className="flex flex-col relative group">
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl h-48 overflow-hidden cursor-pointer relative" onClick={() => onPreviewImage(fullUrl)}>
-                    <img src={fullUrl} alt={label} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <AiOutlineEye className="text-white opacity-0 group-hover:opacity-100 text-3xl" />
+            <div className="flex flex-col relative group border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all">
+                <div className="h-40 overflow-hidden cursor-pointer relative" onClick={() => onPreviewImage(fullUrl)}>
+                    <img 
+                        src={fullUrl} 
+                        alt={label} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPreviewImage(fullUrl);
+                            }}
+                            className="w-10 h-10 rounded-full bg-white/95 text-gray-800 flex items-center justify-center hover:bg-white hover:scale-105 transition-all shadow-md"
+                            title="Увеличить"
+                        >
+                            <AiOutlineEye size={20} />
+                        </button>
+                        <a 
+                            href={fullUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-10 h-10 rounded-full bg-white/95 text-gray-800 flex items-center justify-center hover:bg-white hover:scale-105 transition-all shadow-md"
+                            title="Открыть оригинал"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </a>
                     </div>
                 </div>
-                <div className="text-center mt-3 text-sm font-medium text-gray-500">{label}</div>
+                <div className="px-4 py-2.5 bg-white border-t border-gray-50 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-700">{label}</span>
+                    <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Загружен</span>
+                </div>
             </div>
         );
     };
@@ -95,73 +152,168 @@ function ApplicationDetailsModal({ application, onClose, onNavigate, onPreviewIm
     if (application.selfie_with_passport) uploadedCount++;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4" onClick={onClose}>
-            <div className="bg-white rounded-3xl w-full max-w-3xl shadow-xl flex flex-col overflow-hidden animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 overflow-y-auto" onClick={onClose}>
+            <div className="bg-white rounded-3xl w-full max-w-6xl shadow-2xl flex flex-col overflow-hidden animate-scaleIn max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
-                <div className="px-8 pt-8 pb-6 relative">
-                    <button onClick={onClose} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                        ×
-                    </button>
-                    <div className="flex items-center gap-4 mb-2">
-                        <h2 className="text-2xl font-bold text-gray-900">Заявка #{application.ID}</h2>
-                        <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badgeBg}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                            {statusLabel}
+                <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between relative">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3.5 flex-wrap">
+                            <h2 className="text-2xl font-bold text-gray-900">Заявка #{application.ID}</h2>
+                            <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${badgeBg}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                                {statusLabel}
+                            </div>
+                        </div>
+                        <p className="text-lg font-semibold text-gray-600">{fullName}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 pr-10">
+                        {/* Quick Status Select */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Статус:</span>
+                            <select 
+                                value={application.application_status_id || application.application_status?.ID || ""}
+                                onChange={async (e) => {
+                                    if (onUpdateStatus) {
+                                        await onUpdateStatus(application.ID, e.target.value);
+                                    }
+                                }}
+                                className="bg-gray-50 border border-gray-250 text-gray-700 text-xs rounded-xl px-3 py-2 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                            >
+                                {STATUS_OPTIONS.map(s => (
+                                    <option key={s.ID} value={s.ID}>{s.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                    <p className="text-gray-500 text-lg">{fullName}</p>
+                    
+                    <button onClick={onClose} className="absolute top-6 right-6 w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all font-bold text-xl">
+                        x
+                    </button>
                 </div>
 
                 {/* Body */}
-                <div className="px-8 pb-8 flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> Телефон</span>
-                            <span className="font-semibold text-gray-900">{application.phone_number || "-"}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Карта</span>
-                            <span className="font-semibold text-gray-900">{application.card_name || "-"}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Адрес</span>
-                            <span className="font-semibold text-gray-900">{application.delivery_address || "-"}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Офис получения</span>
-                            <span className="font-semibold text-gray-900">{application.receiving_office || "-"}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1">ИНН</span>
-                            <span className="font-semibold text-gray-900">{application.inn || "-"}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-4 flex flex-col justify-center">
-                            <span className="text-sm text-gray-500 flex items-center gap-2 mb-1">Канал (создатель)</span>
-                            <span className="font-semibold text-gray-900">{application.request_сreator || "-"}</span>
-                        </div>
-                    </div>
+                <div className="p-8 flex-1 overflow-y-auto">
+                    {/* Grid side-by-side */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Left Column: Client Details */}
+                        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <span className="w-1 h-4 bg-red-600 rounded-full"></span>
+                                    Информация о клиенте
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>,
+                                        "Телефон",
+                                        application.phone_number
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+                                        "ИНН",
+                                        application.inn
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+                                        "Кодовое слово",
+                                        application.secret_word,
+                                        true
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>,
+                                        "Резидент",
+                                        application.is_resident ? "Да" : "Нет"
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-500"><circle cx="12" cy="10" r="8"></circle><path d="M12 18v6"></path><path d="M9 21h6"></path></svg>,
+                                        "Пол",
+                                        application.gender === 0 || application.gender === "0" ? "Мужской" : application.gender === 1 || application.gender === "1" ? "Женский" : application.gender
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>,
+                                        "Документ",
+                                        application.type_of_certificate
+                                    )}
+                                </div>
+                            </div>
 
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">Сканы паспорта</h3>
-                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
-                            Загружено {uploadedCount} из 3
-                        </span>
-                    </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <span className="w-1 h-4 bg-red-600 rounded-full"></span>
+                                    Доставка и получение
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
+                                        "Карта",
+                                        `${application.card_name || ""} ${application.card_code ? `(${application.card_code})` : ""}`
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+                                        "Адрес доставки",
+                                        application.delivery_address
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+                                        "Офис получения",
+                                        application.receiving_office
+                                    )}
+                                    {renderDetailCard(
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>,
+                                        "Создатель (оператор)",
+                                        `${application.request_сreator || ""} ${application.operator_fio ? `/ ${application.operator_fio}` : ""}`
+                                    )}
+                                </div>
+                            </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        {renderScan(application.front_side_of_the_passport, "Лицевая сторона")}
-                        {renderScan(application.back_side_of_the_passport, "Задняя сторона")}
-                        {renderScan(application.selfie_with_passport, "Скан с лицом")}
+                        {/* Right Column: Passport Scans */}
+                        <div className="lg:col-span-5 xl:col-span-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 flex flex-col">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <span className="w-1.5 h-5 bg-blue-600 rounded-full"></span>
+                                    Документы
+                                </h3>
+                                <span className="bg-gray-200/60 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                    Загружено {uploadedCount} из 3
+                                </span>
+                            </div>
+                            <div className="space-y-4 flex-1 overflow-y-auto max-h-[50vh] pr-1">
+                                {renderScan(application.front_side_of_the_passport, "Лицевая сторона паспорта")}
+                                {renderScan(application.back_side_of_the_passport, "Обратная сторона паспорта")}
+                                {renderScan(application.selfie_with_passport, "Селфи с паспортом")}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Footer Actions */}
                 <div className="px-8 py-5 border-t border-gray-100 bg-white flex items-center justify-end gap-3">
+                    <button 
+                        onClick={() => {
+                            if (window.confirm(`Вы уверены, что хотите удалить заявку #${application.ID}?`)) {
+                                onClose();
+                                onDelete(application.ID);
+                            }
+                        }}
+                        className="px-6 py-2.5 rounded-xl border border-rose-200 text-rose-600 bg-rose-50 font-medium hover:bg-rose-100 transition-colors flex items-center gap-2"
+                    >
+                        <AiFillDelete size={16} />
+                        <span>Удалить заявку</span>
+                    </button>
                     <button onClick={onClose} className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
                         Закрыть
                     </button>
-                    <button onClick={() => { onClose(); onNavigate(application.ID); }} className="px-6 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors">
-                        Перейти к заявке
+                    <button 
+                        onClick={() => { 
+                            onClose(); 
+                            onNavigate(application.ID); 
+                        }} 
+                        className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                        <AiFillEdit size={16} />
+                        <span>Изменить</span>
                     </button>
                 </div>
             </div>
@@ -381,7 +533,7 @@ export default function ApplicationsList() {
     const upDateStatusApplications = async (status) => {
         // Проверяем, есть ли среди выбранных заявок те, у которых статус "Не одобрено" (7)
         const unapprovedSelected = tableData.filter(
-            (row) => selectedRows.includes(row.ID) && row.application_status_id === 7
+            (row) => selectedRows.includes(row.ID) && (row.application_status_id === 7 || row.application_status?.ID === 7)
         );
         if (unapprovedSelected.length > 0) {
             setAlert({
@@ -408,8 +560,53 @@ export default function ApplicationsList() {
             fetchData(null, true);
             setSelectedRows([]);
             setSelectAll(false);
+            setAlert({
+                show: true,
+                message: `Статус выбранных заявок (${selectedRows.length} шт.) успешно обновлен`,
+                type: "success",
+            });
         } catch (e) {
             console.error(e);
+            setAlert({
+                show: true,
+                message: "Не удалось обновить статус некоторых заявок",
+                type: "error",
+            });
+        }
+    };
+
+    const handleUpdateSingleStatus = async (id, statusId) => {
+        try {
+            await apiClientApplication.patch(
+                `/applications/${id}`,
+                { application_status_id: +statusId },
+                { headers: getAuthHeaders() }
+            );
+
+            setSelectedApplication(prev => {
+                if (prev && prev.ID === id) {
+                    return {
+                        ...prev,
+                        application_status_id: +statusId,
+                        application_status: STATUS_OPTIONS.find(s => s.ID === +statusId) || prev.application_status
+                    };
+                }
+                return prev;
+            });
+
+            fetchData(null, true);
+            setAlert({
+                show: true,
+                message: `Статус заявки #${id} успешно изменен`,
+                type: "success",
+            });
+        } catch (e) {
+            console.error("Failed to update status:", e);
+            setAlert({
+                show: true,
+                message: "Не удалось обновить статус заявки",
+                type: "error",
+            });
         }
     };
 
@@ -443,6 +640,14 @@ export default function ApplicationsList() {
         if (savedYear) setData("year", savedYear);
     }, [setData]);
 
+    useEffect(() => {
+        if (filteredData.length > 0 && selectedRows.length === filteredData.length) {
+            setSelectAll(true);
+        } else {
+            setSelectAll(false);
+        }
+    }, [selectedRows, filteredData]);
+
     return (
         <>
             <div className="applications-list bg-[#F8F9FB] min-h-screen p-6 font-sans">
@@ -454,6 +659,22 @@ export default function ApplicationsList() {
                             onClose={() => setAlert({ ...alert, show: false })}
                             duration={5000}
                         />
+                    )}
+
+                    {/* Selected Rows Helper Banner */}
+                    {selectedRows.length > 0 && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl text-sm font-medium flex items-center justify-between shadow-sm animate-fadeIn">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping shrink-0"></span>
+                                Выделено <strong>{selectedRows.length}</strong> заявок. Выберите статус в панели ниже, чтобы изменить их статус.
+                            </span>
+                            <button 
+                                onClick={() => { setSelectedRows([]); setSelectAll(false); }}
+                                className="text-xs underline hover:text-red-950 transition-colors"
+                            >
+                                Сбросить выделение
+                            </button>
+                        </div>
                     )}
 
                     {/* Stats Header */}
@@ -502,7 +723,9 @@ export default function ApplicationsList() {
                     </div>
 
                     {/* Status Tabs */}
-                    <div className="bg-white rounded-full p-2 shadow-sm border border-gray-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+                    <div className={`bg-white rounded-full p-2 shadow-sm border flex items-center gap-2 overflow-x-auto whitespace-nowrap transition-all duration-300 ${
+                        selectedRows.length > 0 ? "border-red-500 ring-2 ring-red-100" : "border-gray-100"
+                    }`}>
                         {[
                             { id: "", label: "Все", count: stats.total },
                             { id: "1", label: "Заявка принята", count: stats.new },
@@ -518,7 +741,13 @@ export default function ApplicationsList() {
                             return (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setData("status", tab.id)}
+                                    onClick={() => {
+                                        if (selectedRows.length > 0 && tab.id !== "") {
+                                            upDateStatusApplications(tab.id);
+                                        } else {
+                                            setData("status", tab.id);
+                                        }
+                                    }}
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
                                         isActive ? "bg-red-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"
                                     }`}
@@ -654,29 +883,35 @@ export default function ApplicationsList() {
                                         ?.map((row, index) => {
                                             const statusObj = row.application_status;
                                             const statusLabel = statusObj?.name || "Новая";
-                                            let badgeBg = "bg-red-50";
-                                            let badgeText = "text-red-600";
-                                            let dotColor = "bg-red-500";
+                                             let badgeBg = "bg-gray-50";
+                                             let badgeText = "text-gray-600";
 
-                                            if (statusLabel.toLowerCase().includes("одобрен") && !statusLabel.toLowerCase().includes("не одобрен")) {
-                                              badgeBg = "bg-green-50";
-                                              badgeText = "text-green-600";
-                                              dotColor = "bg-green-500";
-                                            } else if (statusLabel.toLowerCase().includes("отказано") || statusLabel.toLowerCase().includes("не одобрен") || statusLabel.toLowerCase().includes("недостоверные")) {
-                                              badgeBg = "bg-rose-100";
-                                              badgeText = "text-rose-700";
-                                              dotColor = "bg-rose-600";
-                                            } else if (statusLabel.toLowerCase().includes("обработан") || statusLabel.toLowerCase().includes("проверк")) {
-                                              badgeBg = "bg-yellow-50";
-                                              badgeText = "text-yellow-600";
-                                              dotColor = "bg-yellow-500";
-                                            }
-
+                                             if (statusLabel.toLowerCase().includes("одобрен") && !statusLabel.toLowerCase().includes("не одобрен")) {
+                                                 badgeBg = "bg-green-50";
+                                                 badgeText = "text-green-700";
+                                             } else if (statusLabel.toLowerCase().includes("отказано") || statusLabel.toLowerCase().includes("не одобрен") || statusLabel.toLowerCase().includes("недостоверные")) {
+                                                 badgeBg = "bg-rose-50";
+                                                 badgeText = "text-rose-700";
+                                             } else if (statusLabel.toLowerCase().includes("обработан") || statusLabel.toLowerCase().includes("проверк")) {
+                                                 badgeBg = "bg-amber-50";
+                                                 badgeText = "text-amber-700";
+                                             } else if (statusLabel.toLowerCase().includes("открыта") || statusLabel.toLowerCase().includes("активирована")) {
+                                                 badgeBg = "bg-emerald-50";
+                                                 badgeText = "text-emerald-700";
+                                             } else if (statusLabel.toLowerCase().includes("принята")) {
+                                                 badgeBg = "bg-blue-50";
+                                                 badgeText = "text-blue-700";
+                                             }
+                                            const isSelected = selectedRows.includes(row.ID);
                                             const initials = `${row.surname?.[0] || ""}${row.name?.[0] || ""}`.toUpperCase();
                                             const fullName = `${row.surname || ""} ${row.name || ""} ${row.patronymic || ""}`.trim();
-
                                             return (
-                                                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors items-center h-20">
+                                                <tr 
+                                                    key={index} 
+                                                    className={`border-b border-gray-100 hover:bg-gray-50/80 transition-colors items-center h-20 ${
+                                                        isSelected ? "bg-red-50/20 hover:bg-red-50/45" : ""
+                                                    }`}
+                                                >
                                                     <td className="px-6 py-4">
                                                         <input
                                                             type="checkbox"
@@ -713,10 +948,17 @@ export default function ApplicationsList() {
                                                         {row.receiving_office || "-"}
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badgeBg} ${badgeText}`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                                                            {statusLabel}
-                                                        </div>
+                                                        <select
+                                                            className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 focus:ring-0 ${badgeBg} ${badgeText} cursor-pointer`}
+                                                            value={row.application_status_id || row.application_status?.ID || ""}
+                                                            onChange={async (e) => {
+                                                                await handleUpdateSingleStatus(row.ID, e.target.value);
+                                                            }}
+                                                        >
+                                                            {STATUS_OPTIONS.map(s => (
+                                                                <option key={s.ID} value={s.ID}>{s.name}</option>
+                                                            ))}
+                                                        </select>
                                                     </td>
                                                     <td className="px-4 py-4 text-sm text-gray-700 whitespace-normal">
                                                         {row.operator_fio || "-"}
@@ -725,9 +967,10 @@ export default function ApplicationsList() {
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button 
                                                                 onClick={() => setSelectedApplication(row)}
-                                                                className="border border-gray-200 rounded-full px-4 py-2 text-xs font-medium text-gray-700 flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors"
+                                                                className="border border-gray-250 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors"
+                                                                title="Подробнее"
                                                             >
-                                                                <AiOutlineEye size={16} />
+                                                                <AiOutlineEye size={14} />
                                                                 Открыть
                                                             </button>
                                                             <button 
@@ -746,9 +989,23 @@ export default function ApplicationsList() {
                                                                     }
                                                                     navigate(`/agent/card/${row.ID}`);
                                                                 }}
-                                                                className="bg-red-600 rounded-full px-4 py-2 text-xs font-medium text-white flex items-center gap-1.5 hover:bg-red-700 transition-colors"
+                                                                className="bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 hover:bg-blue-100 transition-colors"
+                                                                title="Изменить"
                                                             >
-                                                                Перейти к заявке
+                                                                <AiFillEdit size={14} />
+                                                                Изменить
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    if (window.confirm(`Вы уверены, что хотите удалить заявку #${row.ID}?`)) {
+                                                                        deleteApplication(row.ID);
+                                                                    }
+                                                                }}
+                                                                className="border border-rose-200 text-rose-600 rounded-full px-3 py-1.5 text-xs font-medium flex items-center gap-1 bg-rose-50 hover:bg-rose-100 transition-colors"
+                                                                title="Удалить"
+                                                            >
+                                                                <AiFillDelete size={14} />
+                                                                Удалить
                                                             </button>
                                                         </div>
                                                     </td>
@@ -802,7 +1059,77 @@ export default function ApplicationsList() {
                     navigate(`/agent/card/${id}`);
                 }}
                 onPreviewImage={(url) => setPreviewImage(url)}
+                onUpdateStatus={handleUpdateSingleStatus}
+                onDelete={deleteApplication}
             />
+
+            {selectedRows.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-800 animate-slideUp z-50">
+                    <span className="text-sm font-semibold flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+                        Выбрано: <strong className="text-red-400">{selectedRows.length}</strong> {selectedRows.length === 1 ? "заявка" : [2, 3, 4].includes(selectedRows.length % 10) && ![12, 13, 14].includes(selectedRows.length % 100) ? "заявки" : "заявок"}
+                    </span>
+                    
+                    <div className="flex items-center gap-3">
+                        <select
+                            className="bg-slate-800 border border-slate-700 text-white text-xs rounded-xl px-3 py-2 font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500"
+                            defaultValue=""
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    upDateStatusApplications(e.target.value);
+                                    e.target.value = "";
+                                }
+                            }}
+                        >
+                            <option value="" disabled>Сменить статус...</option>
+                            {STATUS_OPTIONS.map((s) => (
+                                <option key={s.ID} value={s.ID} className="bg-slate-900 text-white">{s.name}</option>
+                            ))}
+                        </select>
+
+                        <button
+                            onClick={async () => {
+                                if (window.confirm(`Вы уверены, что хотите удалить выбранные заявки (${selectedRows.length} шт.)?`)) {
+                                    try {
+                                        await Promise.all(selectedRows.map(id => 
+                                            apiClientApplication.delete(`/applications/${id}`, { headers: getAuthHeaders() })
+                                        ));
+                                        setSelectedRows([]);
+                                        setSelectAll(false);
+                                        fetchData(null, true);
+                                        setAlert({
+                                            show: true,
+                                            message: "Выбранные заявки успешно удалены",
+                                            type: "success"
+                                        });
+                                    } catch (e) {
+                                        console.error(e);
+                                        setAlert({
+                                            show: true,
+                                            message: "Не удалось удалить некоторые заявки",
+                                            type: "error"
+                                        });
+                                    }
+                                }
+                            }}
+                            className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1"
+                        >
+                            <AiFillDelete size={14} />
+                            <span>Удалить</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setSelectedRows([]);
+                                setSelectAll(false);
+                            }}
+                            className="text-slate-400 hover:text-white transition-colors text-xs font-semibold px-2"
+                        >
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+            )}
             
             <ImagePreviewModal
                 imageUrl={previewImage}
