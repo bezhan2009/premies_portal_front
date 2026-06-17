@@ -2,21 +2,26 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL || 'http://10.64.20.84:5003';
 
-// Поиск по идентификатору карты
-export const fetchTransactionsByCardId = async (cardID, fromDate = null, toDate = null) => {
-    const url = new URL(`${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-cards`);
-    
-    // Поддержка нескольких ID, разделенных запятыми
-    const cardIdsArray = String(cardID).split(',').filter(id => id.trim() !== '');
-    cardIdsArray.forEach(id => {
-        url.searchParams.append('cardIds', id.trim());
-    });
+export const fetchTransactionsByCardId = async (
+    cardID,
+    fromDate = null,
+    toDate = null
+) => {
+    const url = new URL(
+        `${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-cards`
+    );
+
+    // Remove trailing comma if present
+    const cardIds = String(cardID).replace(/,+$/, "");
+
+    url.searchParams.append("cardIds", cardIds);
 
     if (fromDate) {
-        url.searchParams.append('fromDate', fromDate);
+        url.searchParams.append("fromDate", fromDate);
     }
+
     if (toDate) {
-        url.searchParams.append('toDate', toDate);
+        url.searchParams.append("toDate", toDate);
     }
 
     const response = await fetch(url);
@@ -26,8 +31,9 @@ export const fetchTransactionsByCardId = async (cardID, fromDate = null, toDate 
     }
 
     const data = await response.json();
+
     return data.transactions || data;
-}
+};
 
 
 // Поиск по номеру терминала (ATM ID)
