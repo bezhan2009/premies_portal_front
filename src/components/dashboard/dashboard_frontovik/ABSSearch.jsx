@@ -772,7 +772,7 @@ export default function ABSClientSearch() {
             } else if (scenario === 'B') {
                 await unblockCard(card.cardId);
             } else if (scenario === 'C') {
-                await changeCardStatus(card.cardId, "24");
+                await changeCardStatus(card.cardId, "05");
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 await activateCardSoap(card.agreement, card.cardId);
             }
