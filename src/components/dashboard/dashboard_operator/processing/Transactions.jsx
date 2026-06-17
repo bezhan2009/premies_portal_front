@@ -1385,11 +1385,13 @@ export default function DashboardOperatorProcessingTransactions() {
                       pagination={
                         transactionTableData.length > 10
                           ? {
-                              pageSize: 10,
+                              defaultPageSize: 10,
+                              showSizeChanger: true,
+                              pageSizeOptions: ['10', '20', '50', '100', '500'],
                             }
                           : false
                       }
-                      scroll={{ x: "max-content", y: 620 }}
+                      scroll={{ x: "max-content" }}
                       rowClassName={(record) => {
                         if (record.reversal) return "transaction-row--reversed";
 

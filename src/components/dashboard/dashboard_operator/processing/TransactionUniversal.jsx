@@ -1797,7 +1797,15 @@ export default function DashboardOperatorTransactionSearch() {
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={{ pageSize: 20 }}
+                      pagination={
+                        transactionTableData.length > 20
+                          ? {
+                              defaultPageSize: 20,
+                              showSizeChanger: true,
+                              pageSizeOptions: ['10', '20', '50', '100', '500'],
+                            }
+                          : false
+                      }
                       bordered
                       scroll={{ x: "max-content" }}
                     />

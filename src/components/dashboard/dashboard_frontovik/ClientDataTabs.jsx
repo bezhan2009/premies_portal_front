@@ -1684,15 +1684,17 @@ const ClientDataTabs = ({
                         statusColor = { bg: "rgba(225, 29, 72, 0.1)", text: "#e11d48" };
                       }
 
-                      const depoAcc = item.BalanceAccounts?.find(a => a.RuleCode === "DEPOACC") || {};
+                      const balanceAccounts = Array.isArray(item.BalanceAccounts) ? item.BalanceAccounts : [];
+                      const depoAcc = balanceAccounts.find(a => a.RuleCode === "DEPOACC") || {};
                       const depoBalance = depoAcc.Balance || "0.00";
                       const currency = agreement.Currency || depoAcc.CurrCode || "TJS";
 
-                      const incomeAcc = item.BalanceAccounts?.find(a => a.RuleCode === "CLIACC") || {};
+                      const incomeAcc = balanceAccounts.find(a => a.RuleCode === "CLIACC") || {};
                       const incomeBalance = incomeAcc.Balance || "0.00";
                       const incomeCurr = incomeAcc.CurrCode || currency;
                       
-                      const allRates = item.SumTypes || item.sumTypes || item.Rates || item.Conditions || agreement.Rates || agreement.Conditions || [];
+                      const allRatesRaw = item.SumTypes || item.sumTypes || item.Rates || item.Conditions || agreement.Rates || agreement.Conditions;
+                      const allRates = Array.isArray(allRatesRaw) ? allRatesRaw : [];
                       const bonusRate = allRates.find(r => r.Code === "DEP_BONUS")?.Pcn || "0";
                       const penaltyRate = allRates.find(r => r.Code === "DEP_PNLTY")?.Pcn || "0";
                       const taxRate = allRates.find(r => r.Code === "DEP_TAX")?.Pcn || "0";
