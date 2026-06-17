@@ -446,7 +446,7 @@ export default function ApplicationsList() {
     return (
         <>
             <div className="applications-list content-page bg-[#F8F9FB] min-h-screen p-6 font-sans">
-                <main className="max-w-7xl mx-auto space-y-6">
+                <main className="w-full space-y-6">
                     {alert.show && (
                         <AlertMessage
                             message={alert.message}
@@ -644,7 +644,6 @@ export default function ApplicationsList() {
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КЛИЕНТ</th>
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КАРТА</th>
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ОФИС ПОЛУЧЕНИЯ</th>
-                                        <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КАНАЛ / ОПЕРАТОР</th>
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">СТАТУС</th>
                                         <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase text-right">ДЕЙСТВИЯ</th>
                                     </tr>
@@ -713,12 +712,6 @@ export default function ApplicationsList() {
                                                     <td className="px-4 py-4 text-sm text-gray-700 whitespace-normal max-w-[180px]">
                                                         {row.receiving_office || "-"}
                                                     </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-700">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium text-gray-900">{row.request_сreator || "Не указан"}</span>
-                                                            <span className="text-xs text-gray-400">Опер: {row.operator_fio || "-"}</span>
-                                                        </div>
-                                                    </td>
                                                     <td className="px-4 py-4">
                                                         <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badgeBg} ${badgeText}`}>
                                                             <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
@@ -729,10 +722,10 @@ export default function ApplicationsList() {
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button 
                                                                 onClick={() => setSelectedApplication(row)}
-                                                                className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-medium text-gray-700 flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors"
+                                                                className="border border-gray-200 rounded-full px-4 py-2 text-xs font-medium text-gray-700 flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors"
                                                             >
                                                                 <AiOutlineEye size={16} />
-                                                                Подробнее
+                                                                Открыть
                                                             </button>
                                                         </div>
                                                     </td>
