@@ -1383,11 +1383,14 @@ export default function DashboardOperatorProcessingTransactions() {
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={{
-                        pageSize: 15,
-                        showSizeChanger: true,
-                      }}
                       sticky
+                      pagination={
+                        transactionTableData.length > 10
+                          ? {
+                              pageSize: 10,
+                            }
+                          : false
+                      }
                       scroll={{ y: 620 }}
                       rowClassName={(record) => {
                         if (record.reversal) return "transaction-row--reversed";
