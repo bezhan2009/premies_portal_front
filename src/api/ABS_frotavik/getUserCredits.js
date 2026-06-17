@@ -38,9 +38,22 @@ export const getUserDeposits = async (clientIndex) => {
     const res = await apiClientABS_Frontovik(
       "/deposits?clientIndex=" + clientIndex,
     );
-    return res.data;
+    if (Array.isArray(res.data)) {
+      return res.data;
+    }
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    if (res.data && Array.isArray(res.data.deposits)) {
+      return res.data.deposits;
+    }
+    if (res.data && typeof res.data === "object" && Object.keys(res.data).length > 0) {
+      return [res.data];
+    }
+    return [];
   } catch (err) {
     console.log(err);
+    return [];
   }
 };
 

@@ -123,6 +123,7 @@ export default function DashboardOperatorProcessingTransactions() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showChart, setShowChart] = useState(false);
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, EUR: 1 });
   const [alert, setAlert] = useState({
     show: false,
@@ -1338,21 +1339,32 @@ export default function DashboardOperatorProcessingTransactions() {
                 {isLoading ? "Загрузка..." : "Применить"}
               </button>
               
-              <div className="search-card__input-group" style={{ marginLeft: "auto" }}>
-                <label className="search-card__label" style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.45rem", display: "block" }}>Глобальный поиск</label>
-                <AntInput
-                  placeholder="Поиск по всем полям"
-                  value={globalSearchText}
-                  onChange={(e) => setGlobalSearchText(e.target.value)}
-                  style={{ width: "250px", height: "42px", borderRadius: "0.75rem" }}
-                  prefix={<SearchOutlined />}
-                  allowClear
-                />
+              <div className="search-card__input-group" style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "flex-end" }}>
+                {transactions.length > 0 && (
+                  <button
+                    onClick={() => setShowChart(!showChart)}
+                    className="search-card__button"
+                    style={{ height: "42px", padding: "0 20px" }}
+                  >
+                    {showChart ? "Скрыть график" : "Отобразить график"}
+                  </button>
+                )}
+                <div>
+                  <label className="search-card__label" style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.45rem", display: "block" }}>Глобальный поиск</label>
+                  <AntInput
+                    placeholder="Поиск по всем полям"
+                    value={globalSearchText}
+                    onChange={(e) => setGlobalSearchText(e.target.value)}
+                    style={{ width: "250px", height: "42px", borderRadius: "0.75rem" }}
+                    prefix={<SearchOutlined />}
+                    allowClear
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {!!id && transactions.length > 0 && (
+          {!!id && transactions.length > 0 && showChart && (
             <div className="txn-stats__chart" style={{ marginBottom: "20px", width: "100%" }}>
               <TransactionsChart transactions={transactionTableData} />
             </div>
@@ -1387,11 +1399,13 @@ export default function DashboardOperatorProcessingTransactions() {
                       pagination={
                         transactionTableData.length > 10
                           ? {
-                              pageSize: 10,
+                              defaultPageSize: 10,
+                              showSizeChanger: true,
+                              pageSizeOptions: ['10', '20', '50', '100', '500'],
                             }
                           : false
                       }
-                      scroll={{ y: 620 }}
+                      scroll={{ x: 'max-content' }}
                       rowClassName={(record) => {
                         if (record.reversal) return "transaction-row--reversed";
 

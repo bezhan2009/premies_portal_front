@@ -210,7 +210,7 @@ const ClientDataTabs = ({
   };
 
   const depositCategories = React.useMemo(() => {
-    if (!depositsData) return [];
+    if (!depositsData || !Array.isArray(depositsData)) return [];
     const categories = new Map();
     depositsData.forEach(item => {
       const code = item.AgreementData?.Status?.Code || item.Status?.Code;
@@ -233,6 +233,7 @@ const ClientDataTabs = ({
   }, [creditsData]);
 
   const filteredDeposits = React.useMemo(() => {
+    if (!sortedDeposits || !Array.isArray(sortedDeposits)) return [];
     if (activeDepositCategory === "all") return sortedDeposits;
     return sortedDeposits.filter(item => {
       const code = item.AgreementData?.Status?.Code || item.Status?.Code;
