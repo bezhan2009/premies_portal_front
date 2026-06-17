@@ -1383,13 +1383,24 @@ export default function DashboardOperatorProcessingTransactions() {
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={id ? { pageSize: 10 } : { pageSize: 10, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
+                      pagination={false}
                       sticky
-                      bordered
-                      scroll={{ x: "max-content" }}
+                      scroll={{ y: 620 }}
                       rowClassName={(record) => {
-                        const val = getTransactionTypeValue(record.transactionType, record.transactionTypeNumber);
-                        return val ? `transaction-row transaction-row--type-${val}` : "transaction-row";
+                        if (record.reversal) {
+                          return "transaction-row--reversed";
+                        }
+
+                        switch (record.responseCode) {
+                          case "-1":
+                            return "transaction-row--success";
+
+                          case "02":
+                            return "transaction-row--error";
+
+                          default:
+                            return "transaction-row--warning";
+                        }
                       }}
                     />
 
