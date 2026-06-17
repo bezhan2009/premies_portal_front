@@ -1,3 +1,15 @@
+.applications-list {
+  background-color: #F8F9FB !important;
+
+  > main {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+}
+
 .my-applications-content table {
   border-collapse: separate;
   border-spacing: 0;

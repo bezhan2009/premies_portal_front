@@ -1821,17 +1821,6 @@ const ClientDataTabs = ({
                       );
                     })}
                   </div>
-                  {filteredDeposits.length > ITEMS_PER_PAGE && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-                      <Pagination 
-                        current={currentPage.deposits} 
-                        total={filteredDeposits.length} 
-                        pageSize={ITEMS_PER_PAGE} 
-                        onChange={(page) => handlePageChange('deposits', page)} 
-                        showSizeChanger={false}
-                      />
-                    </div>
-                  )}
                   </>
                 ) : (
                   <div className="empty-tab-state">Депозиты отсутствуют</div>

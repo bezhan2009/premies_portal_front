@@ -445,7 +445,7 @@ export default function ApplicationsList() {
 
     return (
         <>
-            <div className="applications-list-modern bg-[#F8F9FB] min-h-screen p-6 font-sans">
+            <div className="applications-list bg-[#F8F9FB] min-h-screen p-6 font-sans">
                 <main className="w-full space-y-6">
                     {alert.show && (
                         <AlertMessage
