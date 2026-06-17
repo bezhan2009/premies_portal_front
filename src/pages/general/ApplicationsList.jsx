@@ -312,8 +312,8 @@ export default function ApplicationsList() {
 
     return (
         <>
-            <div className="applications-list content-page">
-                <main>
+            <div className="applications-list content-page bg-[#F8F9FB] min-h-screen p-6 font-sans">
+                <main className="max-w-7xl mx-auto space-y-6">
                     {alert.show && (
                         <AlertMessage
                             message={alert.message}
@@ -323,114 +323,142 @@ export default function ApplicationsList() {
                         />
                     )}
 
-                    <div className="my-applications-header">
-                        <Select
-                            style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
-                            id={"status"}
-                            value={data?.status}
-                            onChange={(e) => {
-                                if (!selectedRows.length) setData("status", e);
-                                else upDateStatusApplications(e);
-                            }}
-                            options={status}
-                            error={errors}
-                        />
-                        <button className="Unloading" onClick={handleExport}>
-                            Выгрузка для карт
-                        </button>
-                        <button
-                            className="filter-toggle"
-                            onClick={() => setShowFilters(!showFilters)}
-                        >
-                            Фильтры
-                        </button>
-                        <button
-                            className={archive ? "archive-toggle active" : "archive-toggle"}
-                            onClick={() => setArchive(!archive)}
-                        >
-                            Архив
-                        </button>
-                        <button
-                            className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
-                            onClick={() => {
-                                const nextSelectAll = !selectAll;
-                                setSelectAll(nextSelectAll);
-                                if (nextSelectAll) {
-                                    setSelectedRows(filteredData.map((e) => e.ID));
-                                } else {
-                                    setSelectedRows([]);
-                                }
-                            }}
-                        >
-                            Выбрать все
-                        </button>
-                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-5">
+                        {/* Top row actions */}
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex-1 min-w-[200px] max-w-xs">
+                                <Select
+                                    style={{ border: selectedRows.length ? "2px solid #ff1a1a" : undefined }}
+                                    id={"status"}
+                                    value={data?.status}
+                                    onChange={(e) => {
+                                        if (!selectedRows.length) setData("status", e);
+                                        else upDateStatusApplications(e);
+                                    }}
+                                    options={status}
+                                    error={errors}
+                                />
+                            </div>
+                            <button
+                                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors text-sm"
+                                onClick={handleExport}
+                            >
+                                Выгрузка для карт
+                            </button>
+                            <button
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium transition-colors text-sm"
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                Фильтры
+                            </button>
+                            <button
+                                className={`px-5 py-2.5 rounded-xl font-medium transition-colors text-sm ${archive ? "bg-gray-800 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
+                                onClick={() => setArchive(!archive)}
+                            >
+                                Архив
+                            </button>
+                            <button
+                                className={`px-5 py-2.5 rounded-xl font-medium transition-colors text-sm ${selectAll ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
+                                onClick={() => {
+                                    const nextSelectAll = !selectAll;
+                                    setSelectAll(nextSelectAll);
+                                    if (nextSelectAll) {
+                                        setSelectedRows(filteredData.map((e) => e.ID));
+                                    } else {
+                                        setSelectedRows([]);
+                                    }
+                                }}
+                            >
+                                Выбрать все
+                            </button>
+                        </div>
 
-                    {showFilters && (
-                        <div className="filters animate-slideIn">
-                            <input
-                                placeholder="ФИО"
-                                value={filters.fullName}
-                                onChange={(e) => handleFilterChange("fullName", e.target.value)}
-                            />
-                            <input
-                                placeholder="Телефон"
-                                value={filters.phone}
-                                onChange={(e) => handleFilterChange("phone", e.target.value)}
-                            />
-                            <Select
-                                value={filters.resident}
-                                onChange={(val) => handleFilterChange("resident", val)}
-                                options={[
-                                    { value: "", label: "Резидент" },
-                                    { value: "Да", label: "Да" },
-                                    { value: "Нет", label: "Нет" },
-                                ]}
-                            />
-                            <input
-                                placeholder="Карта"
-                                value={filters.card}
-                                onChange={(e) => handleFilterChange("card", e.target.value)}
-                            />
-                        </div>
-                    )}
-
-                    <div className="my-applications-sub-header">
-                        <div>
-                            Поиск по месяцам
-                            <Input
-                                type="number"
-                                placeholder={""}
-                                onChange={(e) => setData("month", e)}
-                                value={data?.month}
-                                id={"month"}
-                            />
-                        </div>
-                        <div>
-                            Поиск по годам
-                            <Input
-                                type="number"
-                                placeholder={""}
-                                onChange={(e) => setData("year", e)}
-                                value={data?.year}
-                                id={"year"}
-                            />
-                        </div>
-                        {loading ? (
-                            <Spinner />
-                        ) : (
-                            <div>
-                                Показать{" "}
-                                <Input
-                                    type="number"
-                                    placeholder={""}
-                                    onChange={(e) => setData("limit", e)}
-                                    value={data?.limit}
-                                    id={"limit"}
-                                />{" "}
-                                записей
+                        {/* Expandable filters */}
+                        {showFilters && (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slideIn">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-medium text-gray-500">ФИО</label>
+                                    <input
+                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                                        placeholder="Введите ФИО"
+                                        value={filters.fullName}
+                                        onChange={(e) => handleFilterChange("fullName", e.target.value)}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-medium text-gray-500">Телефон</label>
+                                    <input
+                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                                        placeholder="Введите телефон"
+                                        value={filters.phone}
+                                        onChange={(e) => handleFilterChange("phone", e.target.value)}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-medium text-gray-500">Резидент</label>
+                                    <div className="h-[42px]">
+                                        <Select
+                                            value={filters.resident}
+                                            onChange={(val) => handleFilterChange("resident", val)}
+                                            options={[
+                                                { value: "", label: "Все" },
+                                                { value: "Да", label: "Да" },
+                                                { value: "Нет", label: "Нет" },
+                                            ]}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-medium text-gray-500">Карта</label>
+                                    <input
+                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                                        placeholder="Название карты"
+                                        value={filters.card}
+                                        onChange={(e) => handleFilterChange("card", e.target.value)}
+                                    />
+                                </div>
                             </div>
                         )}
+
+                        {/* Pagination limits and dates */}
+                        <div className="flex flex-wrap items-center gap-6 pt-5 border-t border-gray-100">
+                            <div className="flex flex-col gap-1.5 min-w-[150px]">
+                                <label className="text-xs font-medium text-gray-500">Поиск по месяцам</label>
+                                <Input
+                                    type="number"
+                                    placeholder="Месяц"
+                                    onChange={(e) => setData("month", e)}
+                                    value={data?.month}
+                                    id={"month"}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5 min-w-[150px]">
+                                <label className="text-xs font-medium text-gray-500">Поиск по годам</label>
+                                <Input
+                                    type="number"
+                                    placeholder="Год"
+                                    onChange={(e) => setData("year", e)}
+                                    value={data?.year}
+                                    id={"year"}
+                                />
+                            </div>
+                            {loading ? (
+                                <div className="flex items-center justify-center mt-5">
+                                    <Spinner />
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-1.5 min-w-[150px]">
+                                    <label className="text-xs font-medium text-gray-500">Показать записей</label>
+                                    <Input
+                                        type="number"
+                                        placeholder="Кол-во записей"
+                                        onChange={(e) => setData("limit", e)}
+                                        value={data?.limit}
+                                        id={"limit"}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div
