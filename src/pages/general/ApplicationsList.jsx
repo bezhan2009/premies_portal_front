@@ -645,6 +645,7 @@ export default function ApplicationsList() {
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">КАРТА</th>
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ОФИС ПОЛУЧЕНИЯ</th>
                                         <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">СТАТУС</th>
+                                        <th className="px-4 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">ОПЕРАТОР</th>
                                         <th className="px-6 py-4 text-xs font-semibold tracking-wider text-gray-400 uppercase text-right">ДЕЙСТВИЯ</th>
                                     </tr>
                                     </thead>
@@ -706,7 +707,7 @@ export default function ApplicationsList() {
                                                     <td className="px-4 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="font-semibold text-sm text-gray-900 uppercase">{row.card_name || "Неизвестно"}</span>
-                                                            <span className="text-xs text-gray-400 max-w-[180px] truncate" title={row.delivery_address}>{row.delivery_address || "-"}</span>
+                                                            <span className="text-xs text-gray-400 max-w-[180px] truncate" title={row.request_сreator || row.delivery_address}>{row.request_сreator || row.delivery_address || "-"}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-sm text-gray-700 whitespace-normal max-w-[180px]">
@@ -718,6 +719,9 @@ export default function ApplicationsList() {
                                                             {statusLabel}
                                                         </div>
                                                     </td>
+                                                    <td className="px-4 py-4 text-sm text-gray-700 whitespace-normal">
+                                                        {row.operator_fio || "-"}
+                                                    </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button 
@@ -726,6 +730,26 @@ export default function ApplicationsList() {
                                                             >
                                                                 <AiOutlineEye size={16} />
                                                                 Открыть
+                                                            </button>
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    const username = localStorage.getItem("username");
+                                                                    if (username) {
+                                                                        try {
+                                                                            await apiClientApplication.patch(
+                                                                                `/applications/${row.ID}`,
+                                                                                { operator_fio: username },
+                                                                                { headers: getAuthHeaders() }
+                                                                            );
+                                                                        } catch (e) {
+                                                                            console.error("Failed to update operator FIO:", e);
+                                                                        }
+                                                                    }
+                                                                    navigate(`/agent/card/${row.ID}`);
+                                                                }}
+                                                                className="bg-red-600 rounded-full px-4 py-2 text-xs font-medium text-white flex items-center gap-1.5 hover:bg-red-700 transition-colors"
+                                                            >
+                                                                Перейти к заявке
                                                             </button>
                                                         </div>
                                                     </td>
@@ -764,7 +788,21 @@ export default function ApplicationsList() {
             <ApplicationDetailsModal 
                 application={selectedApplication} 
                 onClose={() => setSelectedApplication(null)}
-                onNavigate={(id) => navigate(`/agent/card/${id}`)}
+                onNavigate={async (id) => {
+                    const username = localStorage.getItem("username");
+                    if (username) {
+                        try {
+                            await apiClientApplication.patch(
+                                `/applications/${id}`,
+                                { operator_fio: username },
+                                { headers: getAuthHeaders() }
+                            );
+                        } catch (e) {
+                            console.error("Failed to update operator FIO:", e);
+                        }
+                    }
+                    navigate(`/agent/card/${id}`);
+                }}
                 onPreviewImage={(url) => setPreviewImage(url)}
             />
             
