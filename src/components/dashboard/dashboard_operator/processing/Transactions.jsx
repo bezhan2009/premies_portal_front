@@ -613,7 +613,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID карты",
         dataIndex: "cardId",
         key: "cardId",
-        fixed: "left",
         width: 150,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("cardId", "ID карты"),
@@ -622,7 +621,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Тип операции",
         dataIndex: "transactionTypeName",
         key: "transactionTypeName",
-        fixed: "left",
         width: 220,
         render: (value) => value || "N/A",
       },
@@ -630,7 +628,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма (валюта)",
         dataIndex: "amount",
         key: "amount",
-        fixed: "left",
         width: 180,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -648,7 +645,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма в валюте карты",
         dataIndex: "conamt",
         key: "conamt",
-        fixed: "left",
         width: 220,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -666,7 +662,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Доступный баланс",
         dataIndex: "acctbal",
         key: "acctbal",
-        fixed: "left",
         width: 180,
         render: (value) => <span className="amount-value">{formatAmount(value)}</span>,
       },
@@ -674,7 +669,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "UTRNNO",
         dataIndex: "utrnno",
         key: "utrnno",
-        fixed: "left",
         width: 160,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("utrnno", "UTRNNO"),
@@ -683,7 +677,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID терминала",
         dataIndex: "terminalId",
         key: "terminalId",
-        fixed: "left",
         width: 170,
         render: (value) => value || "N/A",
       },
@@ -691,7 +684,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID ATM",
         dataIndex: "atmId",
         key: "atmId",
-        fixed: "left",
         width: 150,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("atmId", "ID ATM"),
@@ -700,7 +692,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Запрошенная сумма",
         dataIndex: "reqamt",
         key: "reqamt",
-        fixed: "left",
         width: 190,
         render: (_, transaction) => {
           const transactionTypeValue =
@@ -717,7 +708,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Адрес терминала",
         dataIndex: "terminalAddress",
         key: "terminalAddress",
-        fixed: "left",
         width: 260,
         render: (value) => value || "N/A",
       },
@@ -725,7 +715,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "MCC",
         dataIndex: "mcc",
         key: "mcc",
-        fixed: "left",
         width: 130,
         render: (value) => value || "N/A",
       },
@@ -733,7 +722,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Счет",
         dataIndex: "account",
         key: "account",
-        fixed: "left",
         width: 200,
         render: (value) => value || "N/A",
         ...getColumnSearchProps("account", "номера счета"),
@@ -742,7 +730,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "Сумма в нац. валюте",
         dataIndex: "nationalAmount",
         key: "nationalAmount",
-        fixed: "left",
         width: 190,
         render: (value) => (
           <span className="amount-value" style={{ fontWeight: "bold" }}>
@@ -754,7 +741,6 @@ export default function DashboardOperatorProcessingTransactions() {
         title: "ID транзакции",
         dataIndex: "id",
         key: "id",
-        fixed: "left",
         width: 150,
       },
     ],
