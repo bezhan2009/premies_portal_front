@@ -728,7 +728,7 @@ export const Table = ({
           }
           scroll={{
             ...restProps.scroll,
-            x: Math.max(totalWidth, containerWidth || 0),
+            x: restProps.scroll?.x ?? Math.max(totalWidth, containerWidth || 0),
           }}
         />
       </div>
