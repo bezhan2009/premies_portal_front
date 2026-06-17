@@ -21,6 +21,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/loans/, "/cxf/loans/v1"),
       },
+      "/api/cards": {
+        target: "http://10.64.1.55:8180",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/cards/, "/cxf/cards/v1"),
+      },
     },
   },
 });

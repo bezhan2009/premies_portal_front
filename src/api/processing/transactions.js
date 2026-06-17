@@ -408,7 +408,7 @@ export const changeCardLimit = async (payload) => {
 };
 
 export const activateCardSoap = async (contractId, cardId) => {
-    const url = 'http://10.64.1.55:8180/cxf/cards/v1';
+    const url = '/api/cards';
     
     const xml = `<?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 

@@ -445,7 +445,7 @@ export default function ApplicationsList() {
 
     return (
         <>
-            <div className="applications-list content-page bg-[#F8F9FB] min-h-screen p-6 font-sans">
+            <div className="applications-list-modern bg-[#F8F9FB] min-h-screen p-6 font-sans">
                 <main className="w-full space-y-6">
                     {alert.show && (
                         <AlertMessage
@@ -611,17 +611,16 @@ export default function ApplicationsList() {
 
                     {/* Table */}
                     <div
-                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6"
+                        className="my-applications-content bg-white rounded-2xl shadow-sm border border-gray-100 overflow-auto mb-6"
                         onScroll={scrollHandler}
-                        style={{ position: "relative" }}
+                        style={{ position: "relative", maxHeight: "calc(100vh - 360px)" }}
                     >
                         {filteredData.length === 0 ? (
                             <div style={{ textAlign: "center", padding: "4rem", color: "gray" }}>
                                 {loading ? <Spinner /> : "Нет данных для отображения"}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm whitespace-nowrap">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
                                     <thead className="bg-transparent border-b border-gray-100">
                                     <tr>
                                         <th className="px-6 py-4 w-14">
@@ -758,7 +757,6 @@ export default function ApplicationsList() {
                                         })}
                                     </tbody>
                                 </table>
-                            </div>
                         )}
                         {filteredData.length > 0 && (
                             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-white">
