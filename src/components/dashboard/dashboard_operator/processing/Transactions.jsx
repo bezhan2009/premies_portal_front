@@ -1383,21 +1383,20 @@ export default function DashboardOperatorProcessingTransactions() {
                       rowKey="id"
                       columns={transactionColumns}
                       dataSource={transactionTableData}
-                      pagination={false}
+                      pagination={{
+                        pageSize: 15,
+                        showSizeChanger: true,
+                      }}
                       sticky
                       scroll={{ y: 620 }}
                       rowClassName={(record) => {
-                        if (record.reversal) {
-                          return "transaction-row--reversed";
-                        }
+                        if (record.reversal) return "transaction-row--reversed";
 
                         switch (record.responseCode) {
                           case "-1":
                             return "transaction-row--success";
-
                           case "02":
                             return "transaction-row--error";
-
                           default:
                             return "transaction-row--warning";
                         }
