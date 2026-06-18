@@ -385,3 +385,12 @@ $info: #0c5460;
     break-inside: avoid;
   }
 }
+
+.block_info_prems {
+  .search-card__content {
+    @media (min-width: 1024px) {
+      align-items: flex-end;
+    }
+  }
+}
+

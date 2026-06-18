@@ -230,16 +230,24 @@ export default function DashboardAccountOperations() {
                 if (formattedTransactions.length > 0) {
 
                     const parseTxDate = (tx) => {
-                        let d = tx.DOCDOPER ? tx.DOCDOPER.trim() : "";
-                        let t = tx.EXECDT ? tx.EXECDT.trim() : "00:00:00";
+                        let d = tx.DOCDOPER ? String(tx.DOCDOPER).trim() : "";
+                        let t = tx.EXECDT && String(tx.EXECDT).trim() ? String(tx.EXECDT).trim() : "00:00:00";
                         if (!d) return 0;
-                        if (d.includes(".")) {
-                            const parts = d.split(".");
-                            let year = parts[2];
+
+                        const dotParts = d.split(".");
+                        if (dotParts.length === 3) {
+                            let day = dotParts[0];
+                            let month = dotParts[1];
+                            let year = dotParts[2];
                             if (year.length === 2) year = `20${year}`;
-                            d = `${year}-${parts[1]}-${parts[0]}`;
+                            d = `${year}-${month}-${day}`;
                         }
-                        const timeVal = new Date(`${d}T${t}`).getTime();
+
+                        let dateTimeStr = d;
+                        if (!d.includes("T") && !d.includes(" ")) {
+                            dateTimeStr = `${d}T${t}`;
+                        }
+                        const timeVal = Date.parse(dateTimeStr);
                         return isNaN(timeVal) ? 0 : timeVal;
                     };
 
@@ -399,7 +407,7 @@ export default function DashboardAccountOperations() {
                                             </div>
                                         </div>
                                         {/* Поиск по всей таблице */}
-                                        <div className="search-card__input-group" style={{ marginLeft: "1rem" }}>
+                                        <div className="search-card__input-group">
                                             <label className="search-card__label">Поиск по таблице</label>
                                             <input
                                                 type="text"
