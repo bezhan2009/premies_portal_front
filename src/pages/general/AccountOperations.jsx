@@ -196,27 +196,55 @@ export default function DashboardAccountOperations() {
                     throw new Error("Ошибка при загрузке данных");
                 }
                 const data = await response.json();
-                if (data && Array.isArray(data)) {
-                    let formattedTransactions = data.flatMap((day) =>
-                        day.Transactions.map((tx) => ({
-                            ...tx,
-                            doper: day.DOPER,
-                            kurs: day.Kurs,
-                            sumBalOut: day.SumBalOut,
-                            sumMovD: day.SumMovD,
-                            sumMovC: day.SumMovC,
-                            sumMovDN: day.SumMovDN,
-                            sumMovCN: day.SumMovCN,
-                            transactionsCount: day.TransactionsCount,
-                        })),
-                    );
+                let formattedTransactions = [];
+                if (data) {
+                    // 1. Array of Day Groups (old structure)
+                    if (Array.isArray(data) && data.length > 0 && data[0].Transactions) {
+                        formattedTransactions = data.flatMap((day) =>
+                            day.Transactions.map((tx) => ({
+                                ...tx,
+                                doper: day.DOPER,
+                                kurs: day.Kurs,
+                                sumBalOut: day.SumBalOut,
+                                sumMovD: day.SumMovD,
+                                sumMovC: day.SumMovC,
+                                sumMovDN: day.SumMovDN,
+                                sumMovCN: day.SumMovCN,
+                                transactionsCount: day.TransactionsCount,
+                            })),
+                        );
+                    } 
+                    // 2. Flat Array of Transactions
+                    else if (Array.isArray(data)) {
+                        formattedTransactions = [...data];
+                    } 
+                    // 3. Object with transactions array inside
+                    else {
+                        const txArray = data.Transactions || data.transactions || data.Operations || data.operations || data.data || data.items;
+                        if (Array.isArray(txArray)) {
+                            formattedTransactions = [...txArray];
+                        }
+                    }
+                }
+
+                if (formattedTransactions.length > 0) {
+
+                    const parseTxDate = (tx) => {
+                        let d = tx.DOCDOPER ? tx.DOCDOPER.trim() : "";
+                        let t = tx.EXECDT ? tx.EXECDT.trim() : "00:00:00";
+                        if (!d) return 0;
+                        if (d.includes(".")) {
+                            const parts = d.split(".");
+                            let year = parts[2];
+                            if (year.length === 2) year = `20${year}`;
+                            d = `${year}-${parts[1]}-${parts[0]}`;
+                        }
+                        const timeVal = new Date(`${d}T${t}`).getTime();
+                        return isNaN(timeVal) ? 0 : timeVal;
+                    };
 
                     formattedTransactions.sort((a, b) => {
-                        const dateAStr = a.DOCDOPER ? `${a.DOCDOPER}T${a.EXECDT || "00:00:00"}` : "1970-01-01T00:00:00";
-                        const dateBStr = b.DOCDOPER ? `${b.DOCDOPER}T${b.EXECDT || "00:00:00"}` : "1970-01-01T00:00:00";
-                        const dateA = new Date(dateAStr).getTime();
-                        const dateB = new Date(dateBStr).getTime();
-                        return dateB - dateA;
+                        return parseTxDate(b) - parseTxDate(a);
                     });
 
                     setTransactions(formattedTransactions);
