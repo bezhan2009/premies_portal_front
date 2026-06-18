@@ -11,6 +11,7 @@ export default function DashboardAccountOperations() {
     const [toDate, setToDate] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [transactions, setTransactions] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [alert, setAlert] = useState({
         show: false,
         message: "",
@@ -196,7 +197,7 @@ export default function DashboardAccountOperations() {
                 }
                 const data = await response.json();
                 if (data && Array.isArray(data)) {
-                    const formattedTransactions = data.flatMap((day) =>
+                    let formattedTransactions = data.flatMap((day) =>
                         day.Transactions.map((tx) => ({
                             ...tx,
                             doper: day.DOPER,
@@ -209,6 +210,15 @@ export default function DashboardAccountOperations() {
                             transactionsCount: day.TransactionsCount,
                         })),
                     );
+
+                    formattedTransactions.sort((a, b) => {
+                        const dateAStr = a.DOCDOPER ? `${a.DOCDOPER}T${a.EXECDT || "00:00:00"}` : "1970-01-01T00:00:00";
+                        const dateBStr = b.DOCDOPER ? `${b.DOCDOPER}T${b.EXECDT || "00:00:00"}` : "1970-01-01T00:00:00";
+                        const dateA = new Date(dateAStr).getTime();
+                        const dateB = new Date(dateBStr).getTime();
+                        return dateB - dateA;
+                    });
+
                     setTransactions(formattedTransactions);
                     showAlert(
                         `Загружено ${formattedTransactions.length} операций`,
@@ -260,6 +270,14 @@ export default function DashboardAccountOperations() {
             showAlert("Вы можете просматривать выписки только этого счета. Максимальный период: 31 день", "info");
         }
     }, [isLimitedAccess]);
+
+    const filteredTransactions = transactions.filter(tx => {
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+        return Object.values(tx).some(val => 
+            val !== null && val !== undefined && String(val).toLowerCase().includes(query)
+        );
+    });
 
     return (
         <>
@@ -352,6 +370,18 @@ export default function DashboardAccountOperations() {
                                                 />
                                             </div>
                                         </div>
+                                        {/* Поиск по всей таблице */}
+                                        <div className="search-card__input-group" style={{ marginLeft: "1rem" }}>
+                                            <label className="search-card__label">Поиск по таблице</label>
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="search-card__input"
+                                                placeholder="Введите для поиска..."
+                                                disabled={isLoading}
+                                            />
+                                        </div>
                                         {/* Кнопки */}
                                         <div className="search-card__buttons">
                                             <button
@@ -374,7 +404,7 @@ export default function DashboardAccountOperations() {
                             </div>
                         </div>
                         {/* Таблица операций */}
-                        {transactions.length > 0 && (
+                        {filteredTransactions.length > 0 && (
                             <div className="processing-integration__limits-table">
                                 <div className="limits-table">
                                     <div className="limits-table__header">
@@ -446,7 +476,7 @@ export default function DashboardAccountOperations() {
                                                 </tr>
                                                 </thead>
                                                 <tbody className="limits-table__body">
-                                                {transactions.map((transaction, index) => (
+                                                {filteredTransactions.map((transaction, index) => (
                                                     <tr
                                                         key={`${transaction.PID}-${index}`}
                                                         className="limits-table__row transaction-row"
@@ -612,7 +642,7 @@ export default function DashboardAccountOperations() {
                           Всего записей: {transactions.length}
                         </span>
                                                 <span className="limits-table__stat">
-                          Показано: {transactions.length}
+                          Показано: {filteredTransactions.length}
                         </span>
                                                 <span className="limits-table__stat">
                           Счет: {formatAccountNumber(displayAccountNumber)}
