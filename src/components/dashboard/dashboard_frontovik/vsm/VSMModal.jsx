@@ -554,7 +554,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
             >
                 <Spin spinning={loading}>
                     <Tabs activeKey={activeTabKey} onChange={setActiveTabKey}>
-                        <TabPane tab="Управление подписками" key="1">
+                        <TabPane tab="Активные подписки" key="1">
                             <div style={{ padding: "12px 0" }}>
                                 <p style={{ color: isDark ? "#94a3b8" : "#64748b", marginBottom: 16 }}>
                                     Список сервисов (Card-on-File), где сохранена ваша карта. Вы можете заблокировать автоматические списания от любого из них.
@@ -651,7 +651,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                     }}
                                                                     onClick={() => {
                                                                         setSelectedMerchantFilter(merchant);
-                                                                        setActiveTabKey("4");
+                                                                        setActiveTabKey("3");
                                                                     }}
                                                                 >
                                                                     Все транзакции
@@ -667,7 +667,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 })()}
                             </div>
                         </TabPane>
-                        <TabPane tab="Активные блокировки" key="2">
+                        <TabPane tab="Блокированные подписки" key="2">
                             <div style={{ padding: "12px 0" }}>
                                 <p style={{ color: isDark ? "#94a3b8" : "#64748b", marginBottom: 16 }}>
                                     Список действующих блокировок VISA на автосписания. Вы можете отменить любую из них для возобновления платежей.
@@ -767,7 +767,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                     } else {
                                                                         setSelectedMerchantFilter({ mCC: stopMcc, mrchName: displayMerchantName });
                                                                     }
-                                                                    setActiveTabKey("4");
+                                                                    setActiveTabKey("3");
                                                                 }}
                                                             >
                                                                 Все транзакции
@@ -782,46 +782,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 )}
                             </div>
                         </TabPane>
-                        <TabPane tab="Добавить вручную" key="3">
-                            <Form form={form} layout="vertical" onFinish={handleAddStop} style={{ padding: "12px 0" }}>
-                                <Form.Item 
-                                    name="merchantName" 
-                                    label="Название мерчанта (Netflix, Yandex и т.д.)"
-                                    rules={[{ required: true, message: "Введите название мерчанта" }]}
-                                >
-                                    <Input placeholder="Например: NETFLIX" />
-                                </Form.Item>
-                                
-                                <Form.Item 
-                                    name="duration" 
-                                    label="Длительность блокировки (в месяцах, макс 60)"
-                                    rules={[{ required: true, message: "Укажите длительность" }]}
-                                >
-                                    <InputNumber min={1} max={60} style={{ width: '100%' }} placeholder="12" />
-                                </Form.Item>
-
-                                <Form.Item 
-                                    name="startDate" 
-                                    label="Дата начала"
-                                    rules={[{ required: true, message: "Выберите дату" }]}
-                                >
-                                    <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-                                </Form.Item>
-
-                                <Form.Item name="recurringAndInstallmentIndicator" label="Повторяющиеся платежи (автоматические)" valuePropName="checked" initialValue={true}>
-                                    <Switch />
-                                </Form.Item>
-
-                                <Form.Item name="cancelSubscription" label="Отменить подписку на стороне VISA" valuePropName="checked" initialValue={true}>
-                                    <Switch />
-                                </Form.Item>
-
-                                <Button type="primary" htmlType="submit" block style={{ borderRadius: "8px", fontWeight: "bold", height: "40px", marginTop: "12px" }}>
-                                    Создать ограничение
-                                </Button>
-                            </Form>
-                        </TabPane>
-                        <TabPane tab="История транзакций" key="4">
+                        <TabPane tab="История транзакций" key="3">
                             <div style={{ padding: "12px 0" }}>
                                 <div style={{ 
                                     display: "flex", 
