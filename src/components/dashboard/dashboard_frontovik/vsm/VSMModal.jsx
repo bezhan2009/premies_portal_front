@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ConfigProvider, theme as antdTheme, Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip } from "antd";
+import { ConfigProvider, theme as antdTheme, Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip, Radio } from "antd";
 import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } from "../../../../services/vsmService";
 import { logAuditAction } from "../../../../utils/auditLogger";
 import { fetchTransactionsByCardId } from "../../../../api/processing/transactions";
@@ -7,6 +7,13 @@ import useThemeStore from "../../../../store/useThemeStore";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode";
 
 const { TabPane } = Tabs;
+
+const RECOMMENDED_TRAN_TYPES = new Set([
+    "SCHEDULED_RECURRING",
+    "UNSCHEDULED_RECURRING",
+    "INSTALLMENT",
+    "BILL_PAY"
+]);
 
 const LOCAL_MCC_JOURNAL = {
     "4111": "Пригородный транспорт и метро",
@@ -101,6 +108,9 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
     const [mccMap, setMccMap] = useState({});
     const [hoveredSubIdx, setHoveredSubIdx] = useState(null);
     const [hoveredBlockIdx, setHoveredBlockIdx] = useState(null);
+    const [activeTabKey, setActiveTabKey] = useState("1");
+    const [txFilter, setTxFilter] = useState("filtered");
+    const [selectedMerchantFilter, setSelectedMerchantFilter] = useState(null);
     const [form] = Form.useForm();
     const [modal, contextHolder] = Modal.useModal();
     
@@ -156,6 +166,14 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
             }
         }
     }, [isOpen, card]);
+
+    useEffect(() => {
+        if (txFilter === "filtered" && selectedMerchantFilter) {
+            if (!isFilterMerchantSub(selectedMerchantFilter)) {
+                setSelectedMerchantFilter(null);
+            }
+        }
+    }, [txFilter, selectedMerchantFilter, cofData]);
 
     const fetchData = async (accountNum) => {
         if (!accountNum) return;
@@ -273,6 +291,21 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
             if (match && match[1].toLowerCase().replace(/[\s\-_]/g, "") === normalized) return true;
             return false;
         });
+    };
+
+    const isMerchantSubscription = (merchant) => {
+        if (!merchant.tranTypeDetails || merchant.tranTypeDetails.length === 0) {
+            return true; // Default fallback to show if details are absent
+        }
+        return merchant.tranTypeDetails.some(detail => RECOMMENDED_TRAN_TYPES.has(detail.tranType));
+    };
+
+    const isFilterMerchantSub = (filter) => {
+        if (!filter) return false;
+        if (filter.tranTypeDetails) return isMerchantSubscription(filter);
+        const found = cofData.find(m => String(m.mCC) === String(filter.mCC));
+        if (found) return isMerchantSubscription(found);
+        return true;
     };
 
     const handleAddStop = async (values) => {
@@ -432,6 +465,53 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
         );
     };
 
+    const getFilteredTransactionsList = () => {
+        let list = [];
+        const allowedMccs = new Set();
+        const allowedNames = new Set();
+        
+        cofData.forEach(merchant => {
+            const mrchName = getMerchantDisplayName(merchant, transactions);
+            const isSub = isMerchantSubscription(merchant);
+            
+            if (txFilter === "all" || isSub) {
+                allowedMccs.add(String(merchant.mCC));
+                allowedNames.add(mrchName.toUpperCase());
+            }
+        });
+        
+        list = transactions.filter(tx => {
+            const txMcc = String(tx.mcc);
+            const txAddr = (tx.terminalAddress || "").toUpperCase();
+            
+            let matchesMerchant = false;
+            
+            if (selectedMerchantFilter) {
+                const filterMcc = String(selectedMerchantFilter.mCC);
+                const filterName = getMerchantDisplayName(selectedMerchantFilter, transactions).toUpperCase();
+                
+                const mccMatch = filterMcc && txMcc === filterMcc;
+                const nameMatch = filterName && txAddr.includes(filterName);
+                
+                matchesMerchant = mccMatch || nameMatch;
+            } else {
+                const mccMatch = allowedMccs.has(txMcc);
+                const nameMatch = Array.from(allowedNames).some(name => txAddr.includes(name));
+                matchesMerchant = mccMatch || nameMatch;
+            }
+            
+            return matchesMerchant;
+        });
+        
+        return [...list].sort((a, b) => {
+            const dateA = a.localTransactionDate ? a.localTransactionDate.split('.').reverse().join('-') : "";
+            const dateB = b.localTransactionDate ? b.localTransactionDate.split('.').reverse().join('-') : "";
+            const timeA = a.localTransactionTime || "";
+            const timeB = b.localTransactionTime || "";
+            return `${dateB} ${timeB}`.localeCompare(`${dateA} ${timeA}`);
+        });
+    };
+
     const renderLogo = (logoUrl, name) => {
         if (logoUrl) {
             return <img src={logoUrl} alt={name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", flexShrink: 0 }} />;
@@ -473,7 +553,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                 width={850}
             >
                 <Spin spinning={loading}>
-                    <Tabs defaultActiveKey="1">
+                    <Tabs activeKey={activeTabKey} onChange={setActiveTabKey}>
                         <TabPane tab="Управление подписками" key="1">
                             <div style={{ padding: "12px 0" }}>
                                 <p style={{ color: isDark ? "#94a3b8" : "#64748b", marginBottom: 16 }}>
@@ -482,7 +562,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 {(() => {
                                     const activeSubscriptions = cofData.filter(merchant => {
                                         const mrchName = getMerchantDisplayName(merchant, transactions);
-                                        return !isMerchantBlocked(mrchName);
+                                        return !isMerchantBlocked(mrchName) && isMerchantSubscription(merchant);
                                     });
 
                                     if (activeSubscriptions.length === 0) {
@@ -560,6 +640,21 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                     onClick={() => handleBlockMerchantDirectly(mrchName)}
                                                                 >
                                                                     Блокировать списания
+                                                                </Button>
+                                                                <Button 
+                                                                    type="default"
+                                                                    style={{ 
+                                                                        borderRadius: "8px", 
+                                                                        fontWeight: "500",
+                                                                        width: "100%",
+                                                                        marginTop: "8px"
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        setSelectedMerchantFilter(merchant);
+                                                                        setActiveTabKey("4");
+                                                                    }}
+                                                                >
+                                                                    Все транзакции
                                                                 </Button>
                                                             </div>
                                                         </div>
@@ -657,6 +752,26 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                             >
                                                                 Разблокировать
                                                             </Button>
+                                                            <Button 
+                                                                type="default"
+                                                                style={{ 
+                                                                    borderRadius: "8px", 
+                                                                    fontWeight: "500",
+                                                                    width: "100%",
+                                                                    marginTop: "8px"
+                                                                }}
+                                                                onClick={() => {
+                                                                    const m = cofData.find(merchant => String(merchant.mCC) === String(stopMcc));
+                                                                    if (m) {
+                                                                        setSelectedMerchantFilter(m);
+                                                                    } else {
+                                                                        setSelectedMerchantFilter({ mCC: stopMcc, mrchName: displayMerchantName });
+                                                                    }
+                                                                    setActiveTabKey("4");
+                                                                }}
+                                                            >
+                                                                Все транзакции
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                     {renderPreviousPayments(stopMcc, displayMerchantName)}
@@ -705,6 +820,148 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                     Создать ограничение
                                 </Button>
                             </Form>
+                        </TabPane>
+                        <TabPane tab="История транзакций" key="4">
+                            <div style={{ padding: "12px 0" }}>
+                                <div style={{ 
+                                    display: "flex", 
+                                    justifyContent: "space-between", 
+                                    alignItems: "center", 
+                                    gap: "16px", 
+                                    marginBottom: "16px",
+                                    flexWrap: "wrap",
+                                    background: isDark ? "#1e293b" : "#f8fafc",
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`
+                                }}>
+                                    <div>
+                                        <span style={{ display: "block", fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b", marginBottom: "4px", fontWeight: 600 }}>
+                                            Фильтр транзакций:
+                                        </span>
+                                        <Radio.Group 
+                                            value={txFilter} 
+                                            onChange={e => setTxFilter(e.target.value)}
+                                            size="small"
+                                        >
+                                            <Radio.Button value="all">Показывать все данные</Radio.Button>
+                                            <Radio.Button value="filtered">Показывать отфильтрованные</Radio.Button>
+                                        </Radio.Group>
+                                    </div>
+                                    
+                                    <div style={{ minWidth: "250px" }}>
+                                        <span style={{ display: "block", fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b", marginBottom: "4px", fontWeight: 600 }}>
+                                            Фильтр по мерчанту:
+                                        </span>
+                                        <Select
+                                            style={{ width: "100%" }}
+                                            placeholder="Все мерчанты"
+                                            allowClear
+                                            value={selectedMerchantFilter ? JSON.stringify({ mCC: selectedMerchantFilter.mCC, mrchName: selectedMerchantFilter.mrchName }) : undefined}
+                                            onChange={val => {
+                                                if (val) {
+                                                    setSelectedMerchantFilter(JSON.parse(val));
+                                                } else {
+                                                    setSelectedMerchantFilter(null);
+                                                }
+                                            }}
+                                            size="small"
+                                        >
+                                            {cofData
+                                                .filter(m => txFilter === "all" || isMerchantSubscription(m))
+                                                .map((m, mIdx) => {
+                                                    const mName = getMerchantDisplayName(m, transactions);
+                                                    return (
+                                                        <Select.Option key={mIdx} value={JSON.stringify({ mCC: m.mCC, mrchName: m.mrchName })}>
+                                                            {mName} ({getMccDescription(m.mCC)})
+                                                        </Select.Option>
+                                                    );
+                                                })
+                                            }
+                                        </Select>
+                                    </div>
+                                </div>
+                                
+                                {(() => {
+                                    const filteredTxs = getFilteredTransactionsList();
+                                    return (
+                                        <div>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                                                <span style={{ fontSize: "12px", color: isDark ? "#94a3b8" : "#64748b" }}>
+                                                    Найдено транзакций: <strong>{filteredTxs.length}</strong>
+                                                </span>
+                                                {selectedMerchantFilter && (
+                                                    <Button 
+                                                        type="link" 
+                                                        size="small" 
+                                                        onClick={() => setSelectedMerchantFilter(null)}
+                                                        style={{ padding: 0 }}
+                                                    >
+                                                        Сбросить фильтр мерчанта
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            
+                                            {filteredTxs.length === 0 ? (
+                                                <div style={{ textAlign: "center", padding: "40px 0", color: isDark ? "#64748b" : "#94a3b8", fontSize: "14px" }}>
+                                                    Нет транзакций для отображения
+                                                </div>
+                                            ) : (
+                                                <div style={{ 
+                                                    display: "flex", 
+                                                    flexDirection: "column", 
+                                                    gap: "8px", 
+                                                    maxHeight: "380px", 
+                                                    overflowY: "auto", 
+                                                    paddingRight: "4px" 
+                                                }}>
+                                                    {filteredTxs.map((tx, idx) => {
+                                                        const amt = formatTransactionAmount(tx.amount || tx.reqamt || 0);
+                                                        const curr = getCurrencyCode(tx.currency || tx.conCurrency);
+                                                        const mccDesc = getMccDescription(tx.mcc);
+                                                        const rawName = cleanTerminalAddress(tx.terminalAddress) || tx.terminalAddress || "Неизвестный мерчант";
+                                                        
+                                                        return (
+                                                            <div key={idx} style={{
+                                                                background: isDark ? "#1e293b" : "#f8fafc",
+                                                                border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+                                                                borderRadius: "8px",
+                                                                padding: "12px 16px",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "space-between",
+                                                                gap: "16px",
+                                                                boxShadow: "0 2px 4px rgba(0,0,0,0.01)"
+                                                            }}>
+                                                                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 2 }}>
+                                                                    {renderLogo("", rawName)}
+                                                                    <div style={{ minWidth: 0 }}>
+                                                                        <h5 style={{ margin: "0 0 2px 0", fontWeight: 600, color: isDark ? "#f1f5f9" : "#0f172a", fontSize: "13px" }}>
+                                                                            {rawName}
+                                                                        </h5>
+                                                                        <span style={{ fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b" }}>
+                                                                            Категория: {mccDesc} (MCC: {tx.mcc})
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div style={{ flex: 1.5, textAlign: "right" }}>
+                                                                    <strong style={{ display: "block", fontSize: "14px", color: isDark ? "#38bdf8" : "#0284c7" }}>
+                                                                        {amt} {curr}
+                                                                    </strong>
+                                                                    <span style={{ fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>
+                                                                        {tx.localTransactionDate} {tx.localTransactionTime ? tx.localTransactionTime.substring(0, 5) : ""}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </TabPane>
                     </Tabs>
                 </Spin>
