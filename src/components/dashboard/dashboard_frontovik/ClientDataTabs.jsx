@@ -7,6 +7,7 @@ import DebtCertificateModal from "./DebtCertificateModal.jsx";
 import CreditDetails from "./CreditDetails.jsx";
 import DepositDetails from "./DepositDetails.jsx";
 import UniversalClientCard from "./UniversalClientCard.jsx";
+import VSMModal from "./vsm/VSMModal.jsx";
 import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js";
 import { logAuditAction } from "../../../utils/auditLogger.js";
 import { serviceCodes } from "../../../utils/serviceCodes.js";
@@ -161,6 +162,7 @@ const ClientDataTabs = ({
   onOpenLimits,
   hasBlockCardAccess,
   hasChangePinAccess,
+  hasVsmAccess,
   selectedClient,
   tableData,
   isMobile,
@@ -185,6 +187,9 @@ const ClientDataTabs = ({
   const [activeCreditCategory, setActiveCreditCategory] = React.useState("all");
   const [selectedCredit, setSelectedCredit] = React.useState(null);
   const [selectedDeposit, setSelectedDeposit] = React.useState(null);
+
+  const [isVSMModalOpen, setIsVSMModalOpen] = React.useState(false);
+  const [vsmCard, setVsmCard] = React.useState(null);
 
   const openAndHighlightTab = (tabName, elementId) => {
     setActiveTab(tabName);
@@ -693,6 +698,23 @@ const ClientDataTabs = ({
             >
               Скачать реквизиты
             </button>
+
+            {hasVsmAccess && (
+              <button
+                className="button"
+                style={{
+                  background: "#10b981",
+                  color: "white",
+                  width: "100%",
+                }}
+                onClick={() => {
+                  setVsmCard(card);
+                  setIsVSMModalOpen(true);
+                }}
+              >
+                Управление подписками
+              </button>
+            )}
           </div>
         );
       },
@@ -1856,6 +1878,18 @@ const ClientDataTabs = ({
         handleClose={() => setIsDebtCertificateModalOpen(false)}
         clientData={selectedClient}
       />
+
+      {isVSMModalOpen && vsmCard && (
+        <VSMModal
+          isOpen={isVSMModalOpen}
+          onClose={() => {
+            setIsVSMModalOpen(false);
+            setVsmCard(null);
+          }}
+          card={vsmCard}
+          accountsData={accountsData}
+        />
+      )}
     </div>
   );
 };

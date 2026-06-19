@@ -1651,6 +1651,7 @@ export default function ABSClientSearch() {
                                 onOpenLimits={handleOpenLimits}
                                 hasBlockCardAccess={hasBlockCardAccess}
                                 hasChangePinAccess={hasChangePinAccess}
+                                hasVsmAccess={hasRole(38)}
                                 tableData={tableData}
                                 isMobile={isMobile}
                                 activeTab={activeTab}
