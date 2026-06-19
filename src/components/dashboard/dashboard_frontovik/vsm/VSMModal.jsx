@@ -176,7 +176,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
 
     const renderLogo = (logoUrl, name) => {
         if (logoUrl) {
-            return <img src={logoUrl} alt={name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />;
+            return <img src={logoUrl} alt={name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", flexShrink: 0 }} />;
         }
         
         const firstLetter = name ? name.charAt(0).toUpperCase() : "?";
@@ -196,7 +196,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                 justifyContent: "center",
                 fontSize: 20,
                 fontWeight: "bold",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.12)"
+                boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+                flexShrink: 0
             }}>
                 {firstLetter}
             </div>
