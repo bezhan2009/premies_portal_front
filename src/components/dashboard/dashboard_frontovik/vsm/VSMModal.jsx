@@ -1,9 +1,40 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber } from "antd";
+import React, { useState, useEffect, useRef } from "react";
+import { Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip } from "antd";
 import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } from "../../../../services/vsmService";
 import { logAuditAction } from "../../../../utils/auditLogger";
 
 const { TabPane } = Tabs;
+
+const TruncatedTooltipText = ({ text }) => {
+    const [isTruncated, setIsTruncated] = useState(false);
+    const textRef = useRef(null);
+
+    const checkTruncation = () => {
+        if (textRef.current) {
+            setIsTruncated(textRef.current.scrollWidth > textRef.current.offsetWidth);
+        }
+    };
+
+    return (
+        <Tooltip title={isTruncated ? text : ""} mouseEnterDelay={0.15}>
+            <h4
+                ref={textRef}
+                onMouseEnter={checkTruncation}
+                style={{
+                    margin: "0 0 4px 0",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    cursor: isTruncated ? "help" : "default"
+                }}
+            >
+                {text}
+            </h4>
+        </Tooltip>
+    );
+};
 
 const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
     const [loading, setLoading] = useState(false);
@@ -219,82 +250,88 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                             <p style={{ color: "#64748b", marginBottom: 16 }}>
                                 Список сервисов (Card-on-File), где сохранена ваша карта. Вы можете заблокировать автоматические списания от любого из них.
                             </p>
-                            {cofData.length === 0 ? (
-                                <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: "14px" }}>
-                                    Нет сохраненных активных подписок/сервисов (Card-on-File)
-                                </div>
-                            ) : (
-                                <div style={{ 
-                                    display: "flex", 
-                                    flexDirection: "column", 
-                                    gap: "12px" 
-                                }}>
-                                    {cofData.map((merchant, idx) => {
-                                        const mrchName = merchant.mrchDbaName || merchant.mrchName || "Неизвестный мерчант";
-                                        const isBlocked = isMerchantBlocked(mrchName);
-                                        
-                                        return (
-                                            <div 
-                                                key={idx}
-                                                style={{
-                                                    background: "#ffffff",
-                                                    border: "1px solid #e2e8f0",
-                                                    borderRadius: "12px",
-                                                    padding: "16px",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "space-between",
-                                                    gap: "16px",
-                                                    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-                                                    transition: "transform 0.2s, box-shadow 0.2s"
-                                                }}
-                                                className="subscription-card"
-                                            >
-                                                <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
-                                                    {renderLogo(merchant.mrchLogoURL, mrchName)}
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <h4 style={{ margin: "0 0 4px 0", fontWeight: 700, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={mrchName}>{mrchName}</h4>
-                                                        <span style={{ fontSize: "11px", color: "#64748b" }}>MCC: {merchant.mCC}</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: "#475569" }}>
-                                                    <div>
-                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Всего транзакций</span>
-                                                        <strong style={{ color: "#0f172a" }}>{merchant.totalTranCount || "0"}</strong>
-                                                    </div>
-                                                    <div>
-                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Последний платеж</span>
-                                                        <strong style={{ color: "#0f172a" }}>{merchant.lastTranAmt ? `${Number(merchant.lastTranAmt).toFixed(2)} ${merchant.lastTranCurrency}` : "-"}</strong>
-                                                    </div>
-                                                    <div>
-                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Дата платежа</span>
-                                                        <strong style={{ color: "#0f172a" }}>{merchant.lastMrchTranDt || "-"}</strong>
-                                                    </div>
-                                                </div>
+                            {(() => {
+                                const activeSubscriptions = cofData.filter(merchant => {
+                                    const mrchName = merchant.mrchDbaName || merchant.mrchName || "";
+                                    return !isMerchantBlocked(mrchName);
+                                });
 
-                                                <div style={{ flex: 1.5, textAlign: "right" }}>
-                                                    <Button 
-                                                        type={isBlocked ? "default" : "primary"}
-                                                        danger={!isBlocked}
-                                                        disabled={isBlocked}
-                                                        style={{ 
-                                                            borderRadius: "8px", 
-                                                            fontWeight: "bold",
-                                                            width: "100%",
-                                                            background: isBlocked ? "#f1f5f9" : undefined,
-                                                            color: isBlocked ? "#94a3b8" : undefined
-                                                        }}
-                                                        onClick={() => handleBlockMerchantDirectly(mrchName)}
-                                                    >
-                                                        {isBlocked ? "Заблокировано" : "Блокировать списания"}
-                                                    </Button>
+                                if (activeSubscriptions.length === 0) {
+                                    return (
+                                        <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: "14px" }}>
+                                            Нет активных подписок (все привязанные сервисы заблокированы или отсутствуют)
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div style={{ 
+                                        display: "flex", 
+                                        flexDirection: "column", 
+                                        gap: "12px" 
+                                    }}>
+                                        {activeSubscriptions.map((merchant, idx) => {
+                                            const mrchName = merchant.mrchDbaName || merchant.mrchName || "Неизвестный мерчант";
+                                            return (
+                                                <div 
+                                                    key={idx}
+                                                    style={{
+                                                        background: "#ffffff",
+                                                        border: "1px solid #e2e8f0",
+                                                        borderRadius: "12px",
+                                                        padding: "16px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "space-between",
+                                                        gap: "16px",
+                                                        boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
+                                                        transition: "transform 0.2s, box-shadow 0.2s"
+                                                    }}
+                                                    className="subscription-card"
+                                                >
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
+                                                        {renderLogo(merchant.mrchLogoURL, mrchName)}
+                                                        <div style={{ minWidth: 0, flex: 1 }}>
+                                                            <TruncatedTooltipText text={mrchName} />
+                                                            <span style={{ fontSize: "11px", color: "#64748b" }}>MCC: {merchant.mCC}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: "#475569" }}>
+                                                        <div>
+                                                            <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Всего транзакций</span>
+                                                            <strong style={{ color: "#0f172a" }}>{merchant.totalTranCount || "0"}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Последний платеж</span>
+                                                            <strong style={{ color: "#0f172a" }}>{merchant.lastTranAmt ? `${Number(merchant.lastTranAmt).toFixed(2)} ${merchant.lastTranCurrency}` : "-"}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Дата платежа</span>
+                                                            <strong style={{ color: "#0f172a" }}>{merchant.lastMrchTranDt || "-"}</strong>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ flex: 1.5, textAlign: "right" }}>
+                                                        <Button 
+                                                            type="primary"
+                                                            danger
+                                                            style={{ 
+                                                                borderRadius: "8px", 
+                                                                fontWeight: "bold",
+                                                                width: "100%"
+                                                            }}
+                                                            onClick={() => handleBlockMerchantDirectly(mrchName)}
+                                                        >
+                                                            Блокировать списания
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </TabPane>
                     <TabPane tab="Активные блокировки" key="2">
@@ -335,8 +372,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                             >
                                                 <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
                                                     {renderLogo("", displayMerchantName)}
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <h4 style={{ margin: "0 0 4px 0", fontWeight: 700, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={displayMerchantName}>{displayMerchantName}</h4>
+                                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                                        <TruncatedTooltipText text={displayMerchantName} />
                                                         <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>Активное ограничение</span>
                                                     </div>
                                                 </div>
