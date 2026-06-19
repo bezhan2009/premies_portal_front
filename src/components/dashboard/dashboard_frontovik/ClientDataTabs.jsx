@@ -699,7 +699,11 @@ const ClientDataTabs = ({
               Скачать реквизиты
             </button>
 
-            {hasVsmAccess && (
+            {hasVsmAccess && (() => {
+              const type = (card.type || card.CardTypeName || card.details?.cardTypeName || "").toLowerCase();
+              const num = (card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "");
+              return type.includes("visa") || num.startsWith("4");
+            })() && (
               <button
                 className="button"
                 style={{
@@ -1405,6 +1409,22 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
                         <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
+                        {hasVsmAccess && (() => {
+                          const type = (card.type || card.CardTypeName || card.details?.cardTypeName || "").toLowerCase();
+                          const num = (card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "");
+                          return type.includes("visa") || num.startsWith("4");
+                        })() && (
+                          <button
+                            className="card-action-btn neutral"
+                            style={{ borderColor: "#10b981", color: "#10b981", fontWeight: "bold" }}
+                            onClick={() => {
+                              setVsmCard(card);
+                              setIsVSMModalOpen(true);
+                            }}
+                          >
+                            Управление подписками
+                          </button>
+                        )}
                         {pinCount >= 1 && (
                           <button 
                             className={`card-action-btn ${pinCount >= 3 ? "danger btn-reset-pin-highlight" : "warning btn-reset-pin-warning"}`} 
