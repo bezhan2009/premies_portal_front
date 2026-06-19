@@ -25,3 +25,27 @@ export const addMerchantStop = async (cardId, accountNumber, requestData) => {
         throw error;
     }
 };
+
+export const getCofDataInfo = async (cardId, accountNumber) => {
+    try {
+        const response = await apiClient.post("/api/vsm/cof-datainfo", {
+            cardId,
+            accountNumber
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const cancelStopInstruction = async (cardId, cancelStopInstructions) => {
+    try {
+        const response = await apiClient.post("/api/vsm/cancel", {
+            cardId,
+            cancelStopInstructions
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
