@@ -125,28 +125,13 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
 
     return (
         <Modal
-            title={`Управление подписками: ${card?.cardNumber || card?.cardId || ''}`}
+            title={`Управление подписками: ${card?.type || card?.CardTypeName || card?.details?.cardTypeName || 'Карта'} (${card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || ''})`}
             open={isOpen}
             onCancel={onClose}
             footer={null}
             width={800}
         >
             <Spin spinning={loading}>
-                <div style={{ marginBottom: 16 }}>
-                    <strong>Выберите счет для запроса: </strong>
-                    <Select 
-                        value={selectedAccount} 
-                        onChange={(val) => {
-                            setSelectedAccount(val);
-                            fetchStops(val);
-                        }}
-                        style={{ width: 250, marginLeft: 8 }}
-                    >
-                        {uniqueAccounts.map(acc => (
-                            <Select.Option key={acc} value={acc}>{acc}</Select.Option>
-                        ))}
-                    </Select>
-                </div>
 
                 <Tabs defaultActiveKey="1">
                     <TabPane tab="Активные блокировки / Подписки" key="1">
