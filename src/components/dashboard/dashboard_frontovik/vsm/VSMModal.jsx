@@ -225,9 +225,9 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 </div>
                             ) : (
                                 <div style={{ 
-                                    display: "grid", 
-                                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", 
-                                    gap: "16px" 
+                                    display: "flex", 
+                                    flexDirection: "column", 
+                                    gap: "12px" 
                                 }}>
                                     {cofData.map((merchant, idx) => {
                                         const mrchName = merchant.mrchDbaName || merchant.mrchName || "Неизвестный мерчант";
@@ -242,52 +242,54 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                     borderRadius: "12px",
                                                     padding: "16px",
                                                     display: "flex",
-                                                    flexDirection: "column",
+                                                    alignItems: "center",
                                                     justifyContent: "space-between",
+                                                    gap: "16px",
                                                     boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-                                                    transition: "transform 0.2s, box-shadow 0.2s",
-                                                    position: "relative"
+                                                    transition: "transform 0.2s, box-shadow 0.2s"
                                                 }}
                                                 className="subscription-card"
                                             >
-                                                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
                                                     {renderLogo(merchant.mrchLogoURL, mrchName)}
-                                                    <div style={{ overflow: "hidden" }}>
-                                                        <h4 style={{ margin: 0, fontWeight: 700, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={mrchName}>{mrchName}</h4>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <h4 style={{ margin: "0 0 4px 0", fontWeight: 700, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={mrchName}>{mrchName}</h4>
                                                         <span style={{ fontSize: "11px", color: "#64748b" }}>MCC: {merchant.mCC}</span>
                                                     </div>
                                                 </div>
                                                 
-                                                <div style={{ fontSize: "12px", color: "#475569", marginBottom: "16px", flexGrow: 1 }}>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>Всего транзакций:</span>
+                                                <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: "#475569" }}>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Всего транзакций</span>
                                                         <strong style={{ color: "#0f172a" }}>{merchant.totalTranCount || "0"}</strong>
                                                     </div>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>Последний платеж:</span>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Последний платеж</span>
                                                         <strong style={{ color: "#0f172a" }}>{merchant.lastTranAmt ? `${Number(merchant.lastTranAmt).toFixed(2)} ${merchant.lastTranCurrency}` : "-"}</strong>
                                                     </div>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>Дата:</span>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Дата платежа</span>
                                                         <strong style={{ color: "#0f172a" }}>{merchant.lastMrchTranDt || "-"}</strong>
                                                     </div>
                                                 </div>
 
-                                                <Button 
-                                                    type={isBlocked ? "default" : "primary"}
-                                                    danger={!isBlocked}
-                                                    disabled={isBlocked}
-                                                    block
-                                                    style={{ 
-                                                        borderRadius: "8px", 
-                                                        fontWeight: "bold",
-                                                        background: isBlocked ? "#f1f5f9" : undefined,
-                                                        color: isBlocked ? "#94a3b8" : undefined
-                                                    }}
-                                                    onClick={() => handleBlockMerchantDirectly(mrchName)}
-                                                >
-                                                    {isBlocked ? "Заблокировано" : "Блокировать списания"}
-                                                </Button>
+                                                <div style={{ flex: 1.5, textAlign: "right" }}>
+                                                    <Button 
+                                                        type={isBlocked ? "default" : "primary"}
+                                                        danger={!isBlocked}
+                                                        disabled={isBlocked}
+                                                        style={{ 
+                                                            borderRadius: "8px", 
+                                                            fontWeight: "bold",
+                                                            width: "100%",
+                                                            background: isBlocked ? "#f1f5f9" : undefined,
+                                                            color: isBlocked ? "#94a3b8" : undefined
+                                                        }}
+                                                        onClick={() => handleBlockMerchantDirectly(mrchName)}
+                                                    >
+                                                        {isBlocked ? "Заблокировано" : "Блокировать списания"}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -306,9 +308,9 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 </div>
                             ) : (
                                 <div style={{ 
-                                    display: "grid", 
-                                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", 
-                                    gap: "16px" 
+                                    display: "flex", 
+                                    flexDirection: "column", 
+                                    gap: "12px" 
                                 }}>
                                     {stops.map((stop, idx) => {
                                         const stopMrchName = stop.merchantIdentifier?.merchantName || "";
@@ -325,50 +327,52 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                     borderRadius: "12px",
                                                     padding: "16px",
                                                     display: "flex",
-                                                    flexDirection: "column",
+                                                    alignItems: "center",
                                                     justifyContent: "space-between",
-                                                    boxShadow: "0 4px 6px rgba(239, 68, 68, 0.02)",
-                                                    position: "relative"
+                                                    gap: "16px",
+                                                    boxShadow: "0 4px 6px rgba(239, 68, 68, 0.02)"
                                                 }}
                                             >
-                                                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
                                                     {renderLogo("", displayMerchantName)}
-                                                    <div>
-                                                        <h4 style={{ margin: 0, fontWeight: 700, fontSize: "14px" }}>{displayMerchantName}</h4>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <h4 style={{ margin: "0 0 4px 0", fontWeight: 700, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={displayMerchantName}>{displayMerchantName}</h4>
                                                         <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>Активное ограничение</span>
                                                     </div>
                                                 </div>
 
-                                                <div style={{ fontSize: "12px", color: "#475569", marginBottom: "16px", flexGrow: 1 }}>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>ID инструкции:</span>
+                                                <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: "#475569" }}>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>ID инструкции</span>
                                                         <strong style={{ color: "#0f172a" }}>{stop.stopInstructionId || "-"}</strong>
                                                     </div>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>Дата начала:</span>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Дата начала</span>
                                                         <strong style={{ color: "#0f172a" }}>{stop.startDate || "-"}</strong>
                                                     </div>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-                                                        <span>Дата окончания:</span>
+                                                    <div>
+                                                        <span style={{ display: "block", fontSize: "11px", color: "#94a3b8" }}>Дата окончания</span>
                                                         <strong style={{ color: "#0f172a" }}>{stop.endDate || "-"}</strong>
                                                     </div>
                                                 </div>
 
-                                                <Button 
-                                                    type="primary"
-                                                    ghost
-                                                    block
-                                                    style={{ 
-                                                        borderRadius: "8px", 
-                                                        fontWeight: "bold",
-                                                        borderColor: "#10b981",
-                                                        color: "#10b981",
-                                                        borderWidth: "1.5px"
-                                                    }}
-                                                    onClick={() => handleCancelStop(stop.stopInstructionId)}
-                                                >
-                                                    Разблокировать
-                                                </Button>
+                                                <div style={{ flex: 1.5, textAlign: "right" }}>
+                                                    <Button 
+                                                        type="primary"
+                                                        ghost
+                                                        style={{ 
+                                                            borderRadius: "8px", 
+                                                            fontWeight: "bold",
+                                                            borderColor: "#10b981",
+                                                            color: "#10b981",
+                                                            borderWidth: "1.5px",
+                                                            width: "100%"
+                                                        }}
+                                                        onClick={() => handleCancelStop(stop.stopInstructionId)}
+                                                    >
+                                                        Разблокировать
+                                                    </Button>
+                                                </div>
                                             </div>
                                         );
                                     })}
