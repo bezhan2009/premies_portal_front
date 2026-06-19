@@ -4,8 +4,62 @@ import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } f
 import { logAuditAction } from "../../../../utils/auditLogger";
 import { fetchTransactionsByCardId } from "../../../../api/processing/transactions";
 import useThemeStore from "../../../../store/useThemeStore";
+import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode";
 
 const { TabPane } = Tabs;
+
+const LOCAL_MCC_JOURNAL = {
+    "4111": "Пригородный транспорт и метро",
+    "4112": "Пассажирские поезда",
+    "4121": "Такси и лимузины",
+    "4214": "Доставка и курьеры",
+    "4511": "Авиалинии и авиаперевозчики",
+    "4722": "Туристические агентства",
+    "4789": "Транспортные услуги",
+    "4812": "Магазины телефонов",
+    "4814": "Телекоммуникационные услуги (связь)",
+    "4816": "Компьютерные сети, провайдеры связи",
+    "4899": "Кабельное и платное ТВ",
+    "4900": "Коммунальные услуги",
+    "5045": "Компьютерное оборудование и ПО",
+    "5311": "Универмаги",
+    "5411": "Бакалея, супермаркеты",
+    "5541": "АЗС (Станции техобслуживания)",
+    "5542": "Автоматизированные бензоколонки",
+    "5651": "Семейная одежда",
+    "5691": "Магазины одежды и аксессуаров",
+    "5732": "Магазины электроники",
+    "5734": "Программное обеспечение",
+    "5811": "Кейтеринг",
+    "5812": "Рестораны и кафе",
+    "5813": "Бары, ночные клубы",
+    "5814": "Фастфуд",
+    "5816": "Цифровые товары - игры",
+    "5912": "Аптеки",
+    "5921": "Магазины алкоголя",
+    "5941": "Спортивные товары",
+    "5942": "Книжные магазины",
+    "5943": "Магазины канцелярии",
+    "5977": "Косметика и парфюмерия",
+    "5999": "Магазины розничной торговли",
+    "6012": "Финансовые институты",
+    "7011": "Отели, гостиницы и мотели",
+    "7216": "Химчистки",
+    "7298": "Салоны красоты и здоровья",
+    "7333": "Фотостудии и коммерческая съемка",
+    "7399": "Бизнес-услуги",
+    "7832": "Кинотеатры",
+    "7997": "Клубы, спортзалы, боулинг",
+    "7999": "Услуги отдыха и развлечений",
+    "8011": "Врачи, медицинские клиники",
+    "8099": "Медицинские услуги",
+    "8299": "Школы и образовательные услуги",
+    "8398": "Благотворительные организации",
+    "8999": "Профессиональные услуги",
+    "9222": "Штрафы",
+    "9311": "Налоговые платежи",
+    "9399": "Правительственные услуги"
+};
 
 const TruncatedTooltipText = ({ text, isDark }) => {
     const [isTruncated, setIsTruncated] = useState(false);
@@ -260,17 +314,20 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
     const cleanTerminalAddress = (addr) => {
         if (!addr) return "";
         let cleaned = addr.replace(/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/g, "");
-        cleaned = cleaned.replace(/[*.\-_]/g, " ");
+        cleaned = cleaned.replace(/[^a-zA-Z0-9]/g, " ");
         let words = cleaned.split(/\s+/);
-        const excludeWords = new Set(["moscow", "rus", "ru", "com", "net", "help", "www", "tjs", "usd", "eur", "tj", "co", "ltd", "gbr", "usa", "sg", "singapore", "ae", "dubai", "payment", "pay", "card", "gate", "gateway", "billing", "bill"]);
+        const excludeWords = new Set([
+            "moscow", "rus", "ru", "com", "net", "help", "www", "tjs", "usd", "eur", "tj", "co", "ltd", "gbr", "usa", "sg", "singapore", "ae", "dubai", "payment", "pay", "card", "gate", "gateway", "billing", "bill",
+            "ru", "tj", "vn", "uz", "us", "ua", "kz", "tr", "gb", "de", "fr", "it", "es", "by", "kg", "am", "az", "ge", "md", "pl", "cn", "in", "co", "ae", "sg", "hk", "se", "ch", "at", "nl", "be", "dk", "no", "fi", "pt", "gr", "ie", "nz", "ca", "au", "za"
+        ]);
         let resultWords = [];
         for (let w of words) {
             let wl = w.toLowerCase();
-            if (wl && !excludeWords.has(wl) && isNaN(w)) {
+            if (wl && wl.length >= 2 && !excludeWords.has(wl) && isNaN(w)) {
                 resultWords.push(w);
             }
         }
-        if (resultWords.length === 0) return addr;
+        if (resultWords.length === 0) return "";
         let uniqueWords = [];
         for (let w of resultWords) {
             let wu = w.toUpperCase();
@@ -298,21 +355,18 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                 }
             });
             if (maxName) {
-                return cleanTerminalAddress(maxName);
+                const cleaned = cleanTerminalAddress(maxName);
+                if (cleaned && cleaned.length > 2) {
+                    return cleaned;
+                }
             }
         }
         return merchant.mrchDbaName || merchant.mrchName || "Неизвестный мерчант";
     };
 
-    const getCurrencyName = (code) => {
-        const map = {
-            "972": "TJS",
-            "840": "USD",
-            "978": "EUR",
-            "643": "RUB",
-            "949": "TRY"
-        };
-        return map[String(code)] || code || "TJS";
+    const getMccDescription = (mcc) => {
+        const codeStr = String(mcc);
+        return mccMap[codeStr] || LOCAL_MCC_JOURNAL[codeStr] || `Категория ${codeStr}`;
     };
 
     const getMerchantTransactions = (mcc, name, transactionsList) => {
@@ -321,6 +375,13 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
             if (name && tx.terminalAddress && tx.terminalAddress.toUpperCase().includes(name.toUpperCase())) return true;
             return false;
         });
+    };
+
+    const formatTransactionAmount = (amount) => {
+        if (amount === null || amount === undefined || amount === "") return "0.00";
+        const val = Number(amount) / 100;
+        if (isNaN(val)) return "0.00";
+        return val.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(",", ".");
     };
 
     const renderPreviousPayments = (mcc, name) => {
@@ -344,8 +405,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                 </span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                     {lastPayments.map((pay, pIdx) => {
-                        const amt = Number(pay.amount || pay.reqamt || 0).toFixed(2);
-                        const curr = getCurrencyName(pay.currency || pay.conCurrency);
+                        const amt = formatTransactionAmount(pay.amount || pay.reqamt || 0);
+                        const curr = getCurrencyCode(pay.currency || pay.conCurrency);
                         return (
                             <div key={pIdx} style={{
                                 background: isDark ? "#1e293b" : "#f8fafc",
@@ -467,7 +528,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                 <div style={{ minWidth: 0, flex: 1 }}>
                                                                     <TruncatedTooltipText text={mrchName} isDark={isDark} />
                                                                     <span style={{ fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b" }}>
-                                                                        Категория: {mccMap[String(merchant.mCC)] || merchant.mCC || "Неизвестная категория"}
+                                                                        Категория: {getMccDescription(merchant.mCC)}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -479,7 +540,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                 </div>
                                                                 <div>
                                                                     <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Последний платеж</span>
-                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{merchant.lastTranAmt ? `${Number(merchant.lastTranAmt).toFixed(2)} ${merchant.lastTranCurrency}` : "-"}</strong>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{merchant.lastTranAmt ? `${Number(merchant.lastTranAmt).toFixed(2)} ${getCurrencyCode(merchant.lastTranCurrency)}` : "-"}</strong>
                                                                 </div>
                                                                 <div>
                                                                     <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата платежа</span>
@@ -533,7 +594,6 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                             const displayMerchantName = match ? match[1] : (stopMrchName || "Все транзакции");
                                             
                                             const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
-                                            const stopMccDesc = stopMcc ? (mccMap[String(stopMcc)] || stopMcc) : "";
 
                                             return (
                                                 <div 
@@ -561,7 +621,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                             <div style={{ minWidth: 0, flex: 1 }}>
                                                                 <TruncatedTooltipText text={displayMerchantName} isDark={isDark} />
                                                                 <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
-                                                                    Активное ограничение {stopMccDesc ? `(${stopMccDesc})` : ""}
+                                                                    Активное ограничение ({getMccDescription(stopMcc)})
                                                                 </span>
                                                             </div>
                                                         </div>
