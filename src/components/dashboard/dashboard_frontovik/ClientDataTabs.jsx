@@ -4,6 +4,7 @@ import { Input as AntInput, Space, Button, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons.jsx";
+import { extractDocxClientData } from "../../../utils/docxTemplateHelpers.js";
 import DebtCertificateModal from "./DebtCertificateModal.jsx";
 import CreditDetails from "./CreditDetails.jsx";
 import DepositDetails from "./DepositDetails.jsx";
@@ -1895,9 +1896,7 @@ const ClientDataTabs = ({
                               page="DepositDetails"
                               section="Договоры депозитов"
                               data={{
-                                "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
-                                "client.clientCode": selectedClient?.client_code || "",
-                                "client.inn": selectedClient?.tax_code || "",
+                                ...extractDocxClientData(selectedClient),
                                 "deposit.agreementId": agreement.ColvirReferenceId || "",
                                 "deposit.code": agreement.Code || "",
                                 "deposit.productName": agreement.Product?.Name || "",

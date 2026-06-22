@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ConfigProvider, theme as antdTheme, Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip, Radio } from "antd";
 import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } from "../../../../services/vsmService";
 import DynamicDocxButtons from "../../../general/DynamicDocxButtons.jsx";
+import { extractDocxClientData } from "../../../../utils/docxTemplateHelpers.js";
 import { logAuditAction } from "../../../../utils/auditLogger";
 import { fetchTransactionsByCardId } from "../../../../api/processing/transactions";
 import useThemeStore from "../../../../store/useThemeStore";
@@ -693,9 +694,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                     page="VsmSearch"
                                                                     section="Подписки VSM"
                                                                     data={{
-                                                                        "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
-                                                                        "client.clientCode": selectedClient?.client_code || "",
-                                                                        "client.inn": selectedClient?.tax_code || "",
+                                                                        ...extractDocxClientData(selectedClient),
                                                                         "card.cardId": card?.cardId || "",
                                                                         "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
                                                                         "vsm.merchantName": mrchName,
@@ -831,9 +830,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                     page="VsmSearch"
                                                                     section="Подписки VSM"
                                                                     data={{
-                                                                        "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
-                                                                        "client.clientCode": selectedClient?.client_code || "",
-                                                                        "client.inn": selectedClient?.tax_code || "",
+                                                                        ...extractDocxClientData(selectedClient),
                                                                         "card.cardId": card?.cardId || "",
                                                                         "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
                                                                         "vsm.merchantName": displayMerchantName,

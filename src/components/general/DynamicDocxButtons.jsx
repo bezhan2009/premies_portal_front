@@ -75,7 +75,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
         `${API_URL}/api/docx/generate`,
         {
           templatePath: variant.templatePath,
-          data: buildDocxPayload(variant, data),
+          data: buildDocxPayload(variant, data, {}, template.uniqueIdFormat || template.UniqueIdFormat),
         },
         {
           headers: {

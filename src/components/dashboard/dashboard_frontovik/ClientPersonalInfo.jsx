@@ -6,6 +6,7 @@ import {
 } from "react-icons/fa";
 import { serviceCodes } from "../../../utils/serviceCodes";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
+import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -230,30 +231,7 @@ const ClientPersonalInfo = ({
               <DynamicDocxButtons
                 page="ClientDetails"
                 section="Документы клиента"
-                data={{
-                  "client.fullName": name,
-                  "client.firstName": selectedClient.name || "",
-                  "client.lastName": selectedClient.surname || "",
-                  "client.middleName": selectedClient.patronymic || "",
-                  "client.clientCode": code,
-                  "client.inn": inn,
-                  "client.pinfl": inn,
-                  "client.phoneNumber": phone,
-                  "client.mobilePhone": phone,
-                  "client.gender": selectedClient.Sex === "M" ? "Мужской" : selectedClient.Sex === "F" ? "Женский" : (selectedClient.Sex || ""),
-                  "client.birthDate": selectedClient.BirthDate || selectedClient.birth_date || "",
-                  "client.birthPlace": selectedClient.birth_place || "",
-                  "client.citizenship": selectedClient.citizenship || "",
-                  "client.documentType": selectedClient.identity_document_type || "",
-                  "client.passportSeries": selectedClient.passport_series || "",
-                  "client.passportNumber": selectedClient.passport_number || "",
-                  "client.passportIssueDate": selectedClient.passport_issue_date || "",
-                  "client.passportExpireDate": selectedClient.passport_expire_date || "",
-                  "client.passportAuthority": selectedClient.passport_authority || "",
-                  "client.registrationAddress": selectedClient.registration_address || "",
-                  "client.residenceAddress": selectedClient.residence_address || "",
-                  "client.email": selectedClient.email || "",
-                }}
+                data={extractDocxClientData(selectedClient)}
               />
             </div>
             

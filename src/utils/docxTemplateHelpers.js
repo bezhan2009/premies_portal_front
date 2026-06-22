@@ -120,9 +120,35 @@ export const getValueByDocxPath = (source = {}, path = "") => {
   }, source);
 };
 
-export const getSystemDocxData = () => {
+export const getSystemDocxData = (uniqueIdFormat) => {
   const now = new Date();
   const storage = typeof window !== "undefined" ? window.localStorage : null;
+
+  let uniqueId = "";
+  if (uniqueIdFormat && typeof uniqueIdFormat === "string" && uniqueIdFormat.trim() !== "") {
+    const yyyy = String(now.getFullYear());
+    const yy = yyyy.slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    const rand = String(Math.floor(1000 + Math.random() * 9000));
+    const seq = String(now.getTime()).slice(-6);
+
+    uniqueId = uniqueIdFormat
+      .replace(/YYYY/g, yyyy)
+      .replace(/YY/g, yy)
+      .replace(/MM/g, mm)
+      .replace(/DD/g, dd)
+      .replace(/HH/g, hh)
+      .replace(/mm/g, min)
+      .replace(/ss/g, ss)
+      .replace(/RAND/g, rand)
+      .replace(/SEQ/g, seq);
+  } else {
+    uniqueId = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${now.getTime()}`;
+  }
 
   return {
     "system.currentDate": now.toLocaleDateString("ru-RU"),
@@ -132,13 +158,156 @@ export const getSystemDocxData = () => {
     "system.operatorName": storage?.getItem("operator_name") || storage?.getItem("username") || "Оператор",
     "system.operatorOffice": storage?.getItem("operator_office") || "",
     "system.operatorBranch": storage?.getItem("operator_branch") || "",
-    "system.uniqueId": `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${now.getTime()}`,
+    "system.uniqueId": uniqueId,
   };
 };
 
-export const buildDocxPayload = (variant = {}, data = {}, overrides = {}) => {
+export const extractDocxClientData = (client) => {
+  if (!client) return {};
+
+  const name = client.long_name || `${client.surname || ""} ${client.name || ""} ${client.patronymic || ""}`.trim();
+  const code = client.client_code || "";
+  const inn = client.tax_code || client.inn || "";
+  
+  let gender = "";
+  if (client.Sex === "M" || client.Sex === "m" || String(client.Sex).toUpperCase() === "M") {
+    gender = "Мужской";
+  } else if (client.Sex === "F" || client.Sex === "f" || String(client.Sex).toUpperCase() === "F") {
+    gender = "Женский";
+  } else {
+    gender = client.Sex || "";
+  }
+
+  const getValByCode = (codeStr) => {
+    const upper = codeStr.toUpperCase();
+    if (Array.isArray(client.ClientClassifier)) {
+      const found = client.ClientClassifier.find(c => 
+        c.Classifier?.Code?.toUpperCase() === upper || 
+        c.Classifier?.Name?.toUpperCase() === upper
+      );
+      if (found) return found.Value?.Name || found.Value?.Value || null;
+    }
+    if (Array.isArray(client.AddInfoList)) {
+      const found = client.AddInfoList.find(a => a.Code?.toUpperCase() === upper);
+      if (found) return found.Value || null;
+    }
+    return null;
+  };
+
+  let docType = "";
+  let passSeries = "";
+  let passNumber = "";
+  let passIssueDate = "";
+  let passExpireDate = "";
+  let passAuthority = "";
+
+  if (Array.isArray(client.RegistrationDocuments) && client.RegistrationDocuments.length > 0) {
+    let doc = client.RegistrationDocuments.find(d => {
+      const tName = String(d.Type?.Name || "").toLowerCase();
+      return tName.includes("паспорт") || tName.includes("passport");
+    });
+    if (!doc) {
+      doc = client.RegistrationDocuments[0];
+    }
+    if (doc) {
+      docType = doc.Type?.Name || "";
+      passSeries = doc.Serie || "";
+      passNumber = doc.Number || "";
+      passIssueDate = doc.IssueDate ? doc.IssueDate.split("T")[0] : "";
+      passExpireDate = doc.ExpireDate ? doc.ExpireDate.split("T")[0] : "";
+      passAuthority = doc.Authority || doc.IssueAuthority || "";
+    }
+  }
+
+  let regAddress = "";
+  let resAddress = "";
+
+  if (Array.isArray(client.DetailedAddresses) && client.DetailedAddresses.length > 0) {
+    const regAddrObj = client.DetailedAddresses.find(a => {
+      const tName = String(a.Type?.Name || a.type?.name || "").toLowerCase();
+      return tName.includes("юридическ") || tName.includes("регистрац") || tName.includes("прописк");
+    }) || client.DetailedAddresses[0];
+
+    const resAddrObj = client.DetailedAddresses.find(a => {
+      const tName = String(a.Type?.Name || a.type?.name || "").toLowerCase();
+      return tName.includes("фактическ") || tName.includes("проживан") || tName.includes("резиден");
+    }) || client.DetailedAddresses[0];
+
+    if (regAddrObj) {
+      regAddress = regAddrObj.AddressString || `${regAddrObj.City?.Name || ""}, ${regAddrObj.Street?.Name || ""} ${regAddrObj.HouseNumber?.Value || ""}`.trim();
+    }
+    if (resAddrObj) {
+      resAddress = resAddrObj.AddressString || `${resAddrObj.City?.Name || ""}, ${resAddrObj.Street?.Name || ""} ${resAddrObj.HouseNumber?.Value || ""}`.trim();
+    }
+  }
+
+  let phone = client.phone || "";
+  let mobilePhone = client.phone || "";
+  let email = client.email || "";
+
+  if (Array.isArray(client.ContactData) && client.ContactData.length > 0) {
+    const phoneObj = client.ContactData.find(c => {
+      const tName = String(c.Type?.Name || c.type?.name || "").toLowerCase();
+      return tName.includes("мобильн") || tName.includes("телефон") || tName.includes("phone");
+    });
+    const emailObj = client.ContactData.find(c => {
+      const tName = String(c.Type?.Name || c.type?.name || "").toLowerCase();
+      return tName.includes("email") || tName.includes("почт");
+    });
+
+    if (phoneObj) {
+      phone = phoneObj.Value || phone;
+      mobilePhone = phoneObj.Value || mobilePhone;
+    }
+    if (emailObj) {
+      email = emailObj.Value || email;
+    }
+  }
+
+  return {
+    "client.fullName": name,
+    "client.firstName": client.name || "",
+    "client.lastName": client.surname || "",
+    "client.middleName": client.patronymic || "",
+    "client.clientCode": code,
+    "client.pinfl": inn,
+    "client.inn": inn,
+    "client.gender": gender,
+    "client.birthDate": client.BirthDate ? client.BirthDate.split("T")[0] : (client.birth_date ? client.birth_date.split("T")[0] : ""),
+    "client.birthPlace": client.birth_place || "",
+    "client.citizenship": client.citizenship || "",
+    "client.documentType": docType,
+    "client.passportSeries": passSeries,
+    "client.passportNumber": passNumber,
+    "client.passportIssueDate": passIssueDate,
+    "client.passportExpireDate": passExpireDate,
+    "client.passportAuthority": passAuthority,
+    "client.registrationAddress": regAddress,
+    "client.residenceAddress": resAddress,
+    "client.phoneNumber": phone,
+    "client.mobilePhone": mobilePhone,
+    "client.email": email,
+    "client.officeName": getValByCode("OFFICE") || getValByCode("BRANCH") || "",
+    "client.managerName": getValByCode("MANAGER") || "",
+    
+    "client.companyName": client.company_name || name,
+    "client.companyShortName": client.short_name || client.company_short_name || "",
+    "client.companyInn": inn,
+    "client.companyMfo": getValByCode("MFO") || "",
+    "client.companyOkpo": getValByCode("OKPO") || "",
+    "client.directorName": getValByCode("DIRECTOR") || getValByCode("DIR") || "",
+    "client.accountantName": getValByCode("ACCOUNTANT") || getValByCode("BUHG") || "",
+    "client.legalAddress": regAddress,
+    "client.actualAddress": resAddress,
+    "client.registrationDate": client.BirthDate ? client.BirthDate.split("T")[0] : (client.birth_date ? client.birth_date.split("T")[0] : ""),
+    "client.companyPhone": phone,
+    "client.companyEmail": email,
+  };
+};
+
+export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, uniqueIdFormat = "") => {
   const source = {
-    ...getSystemDocxData(),
+    ...getSystemDocxData(uniqueIdFormat),
     ...data,
   };
   const payload = {};
@@ -160,7 +329,7 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}) => {
       : sourceValue;
   });
 
-  Object.entries(getSystemDocxData()).forEach(([key, value]) => {
+  Object.entries(getSystemDocxData(uniqueIdFormat)).forEach(([key, value]) => {
     if (!Object.prototype.hasOwnProperty.call(payload, key)) {
       payload[key] = value;
     }

@@ -204,6 +204,7 @@ const getInitialVariant = () => ({
 const getInitialFormState = () => ({
   name: "",
   description: "",
+  uniqueIdFormat: "",
   page: BUTTON_PLACEMENTS[0].page,
   section: BUTTON_PLACEMENTS[0].section,
   roles: [3, 17],
@@ -243,6 +244,30 @@ const DocxGenerator = () => {
   const [testVariantIdx, setTestVariantIdx] = useState(0);
   const [testInputs, setTestInputs] = useState({});
   const [isTestGenerating, setIsTestGenerating] = useState(false);
+  const [collapsedVariants, setCollapsedVariants] = useState({});
+
+  const inheritVariant = (srcIndex) => {
+    const sourceVariant = activeTemplate?.variants?.[srcIndex];
+    if (!sourceVariant) return;
+
+    const inheritedKeys = (sourceVariant.keys || []).map((k) => ({
+      ...k,
+    }));
+
+    setActiveTemplate((current) => ({
+      ...current,
+      variants: [
+        ...current.variants,
+        {
+          name: `${sourceVariant.name} (копия)`,
+          description: sourceVariant.description || "",
+          outputFileName: sourceVariant.outputFileName ? `${sourceVariant.outputFileName}_copy` : "",
+          templatePath: sourceVariant.templatePath || "",
+          keys: inheritedKeys,
+        },
+      ],
+    }));
+  };
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -327,6 +352,7 @@ const DocxGenerator = () => {
 
   const handleStartAdd = () => {
     setActiveTemplate(getInitialFormState());
+    setCollapsedVariants({});
     setEditorMode("add");
   };
 
@@ -334,9 +360,11 @@ const DocxGenerator = () => {
     const parsedVariants = normalizeDocxVariants(template.variants);
     setActiveTemplate({
       ...template,
+      uniqueIdFormat: template.uniqueIdFormat || template.UniqueIdFormat || "",
       roles: normalizeDocxRoles(template.roles),
       variants: parsedVariants.length > 0 ? parsedVariants : [getInitialVariant()],
     });
+    setCollapsedVariants({});
     setEditorMode("edit");
   };
 
@@ -624,7 +652,7 @@ const DocxGenerator = () => {
         `${API_URL}/api/docx/generate`,
         {
           templatePath: variant.templatePath,
-          data: buildDocxPayload(variant, {}, testInputs),
+          data: buildDocxPayload(variant, {}, testInputs, testTemplate.uniqueIdFormat || testTemplate.UniqueIdFormat),
         },
         {
           headers: {
@@ -910,6 +938,20 @@ const DocxGenerator = () => {
                       placeholder="Пояснение для оператора"
                     />
                   </label>
+                  <label className="docx-field">
+                    <span>Формат уникального номера (uniqueId)</span>
+                    <input
+                      type="text"
+                      value={activeTemplate.uniqueIdFormat || ""}
+                      onChange={(event) =>
+                        setActiveTemplate({ ...activeTemplate, uniqueIdFormat: event.target.value })
+                      }
+                      placeholder="Например: YYYYMMDD-RAND-SEQ"
+                    />
+                    <small style={{ color: "#6b7280", marginTop: "4px", fontSize: "11px" }}>
+                      Формат для system.uniqueId. Токены: <strong>YYYY</strong> (год), <strong>YY</strong> (год 2 знака), <strong>MM</strong> (месяц), <strong>DD</strong> (день), <strong>HH</strong> (часы), <strong>mm</strong> (минуты), <strong>ss</strong> (секунды), <strong>RAND</strong> (случайные 4 цифры), <strong>SEQ</strong> (хвост таймстампа 6 цифр).
+                    </small>
+                  </label>
                 </div>
               </section>
 
@@ -1014,49 +1056,116 @@ const DocxGenerator = () => {
               </section>
 
               <section className="docx-editor-card">
-                <div className="docx-section-title docx-section-title--with-action">
-                  <div className="docx-section-title__copy">
-                    <Layers size={18} />
-                    <div>
-                      <h2>Варианты генерации</h2>
-                      <p>Один шаблон-кнопка может открывать несколько DOCX-файлов на выбор.</p>
+                <div className="docx-section-title docx-section-title--with-action" style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "stretch" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div className="docx-section-title__copy">
+                      <Layers size={18} />
+                      <div>
+                        <h2>Варианты генерации</h2>
+                        <p>Один шаблон-кнопка может открывать несколько DOCX-файлов на выбор.</p>
+                      </div>
                     </div>
                   </div>
-                  <button type="button" className="docx-btn docx-btn--secondary" onClick={addVariant}>
-                    <PlusCircle size={16} />
-                    <span>Добавить вариант</span>
-                  </button>
+                  <div className="docx-mapping-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #f3f4f6", paddingTop: "12px" }}>
+                    <button
+                      type="button"
+                      className="docx-btn docx-btn--secondary"
+                      onClick={() => {
+                        const allCollapsed = {};
+                        activeTemplate.variants.forEach((_, idx) => {
+                          allCollapsed[idx] = true;
+                        });
+                        setCollapsedVariants(allCollapsed);
+                      }}
+                    >
+                      Свернуть все
+                    </button>
+                    <button
+                      type="button"
+                      className="docx-btn docx-btn--secondary"
+                      onClick={() => setCollapsedVariants({})}
+                    >
+                      Развернуть все
+                    </button>
+                    <button type="button" className="docx-btn docx-btn--secondary" onClick={addVariant}>
+                      <PlusCircle size={16} />
+                      <span>Добавить вариант</span>
+                    </button>
+                    {activeTemplate.variants.length > 0 && (
+                      <div className="docx-inherit-selector" style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
+                        <span style={{ fontSize: "13px", color: "#6b7280" }}>Наследовать из:</span>
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            const srcIndex = e.target.value;
+                            if (srcIndex !== "") {
+                              inheritVariant(Number(srcIndex));
+                              e.target.value = "";
+                            }
+                          }}
+                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #d1d5db", fontSize: "14px", background: "white" }}
+                        >
+                          <option value="">Выберите вариант...</option>
+                          {activeTemplate.variants.map((v, idx) => (
+                            <option key={idx} value={idx}>
+                              {idx + 1}. {v.name || `Вариант ${idx + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="docx-variant-list">
                   {activeTemplate.variants.map((variant, variantIndex) => (
                     <article key={variantIndex} className="docx-variant-card">
-                      <div className="docx-variant-card__header">
+                      <div className="docx-variant-card__header" style={{ marginBottom: collapsedVariants[variantIndex] ? "0px" : "16px" }}>
                         <div className="docx-variant-number">{variantIndex + 1}</div>
-                        <div className="docx-variant-title-fields">
-                          <label className="docx-field">
-                            <span>Название варианта *</span>
-                            <input
-                              type="text"
-                              value={variant.name}
-                              onChange={(event) =>
-                                updateVariant(variantIndex, { name: event.target.value })
-                              }
-                              placeholder="Например: Для физического лица"
-                            />
-                          </label>
-                          <label className="docx-field">
-                            <span>Имя файла при скачивании</span>
-                            <input
-                              type="text"
-                              value={variant.outputFileName || ""}
-                              onChange={(event) =>
-                                updateVariant(variantIndex, { outputFileName: event.target.value })
-                              }
-                              placeholder="Например: credit_certificate"
-                            />
-                          </label>
-                        </div>
+                        {collapsedVariants[variantIndex] ? (
+                          <div style={{ display: "flex", flex: 1, alignItems: "center", gap: "12px", marginLeft: "12px" }}>
+                            <strong style={{ fontSize: "16px" }}>{variant.name || `Вариант ${variantIndex + 1}`}</strong>
+                            <span style={{ color: "#6b7280", fontSize: "13px" }}>
+                              {variant.templatePath ? variant.templatePath.split("/").pop() : "Файл не прикреплен"} · {variant.keys?.length || 0} ключей
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="docx-variant-title-fields">
+                            <label className="docx-field">
+                              <span>Название варианта *</span>
+                              <input
+                                type="text"
+                                value={variant.name}
+                                onChange={(event) =>
+                                  updateVariant(variantIndex, { name: event.target.value })
+                                }
+                                placeholder="Например: Для физического лица"
+                              />
+                            </label>
+                            <label className="docx-field">
+                              <span>Имя файла при скачивании</span>
+                              <input
+                                type="text"
+                                value={variant.outputFileName || ""}
+                                onChange={(event) =>
+                                  updateVariant(variantIndex, { outputFileName: event.target.value })
+                                }
+                                placeholder="Например: credit_certificate"
+                              />
+                            </label>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="docx-btn docx-btn--secondary"
+                          onClick={() => setCollapsedVariants(prev => ({
+                            ...prev,
+                            [variantIndex]: !prev[variantIndex]
+                          }))}
+                          style={{ marginLeft: "auto", marginRight: "8px", padding: "6px 12px", minWidth: "100px" }}
+                        >
+                          {collapsedVariants[variantIndex] ? "Развернуть" : "Свернуть"}
+                        </button>
                         {activeTemplate.variants.length > 1 && (
                           <button
                             type="button"
@@ -1069,168 +1178,172 @@ const DocxGenerator = () => {
                         )}
                       </div>
 
-                      <label className="docx-field">
-                        <span>Описание варианта</span>
-                        <input
-                          type="text"
-                          value={variant.description || ""}
-                          onChange={(event) =>
-                            updateVariant(variantIndex, { description: event.target.value })
-                          }
-                          placeholder="Например: Печатная форма с подписью филиала"
-                        />
-                      </label>
-
-                      <div className="docx-upload-box">
-                        <div className="docx-upload-box__file">
-                          <FileText size={26} />
-                          <div>
-                            <strong>DOCX-файл варианта</strong>
-                            <span>
-                              {variant.templatePath
-                                ? variant.templatePath.split("/").pop()
-                                : "Файл пока не прикреплен"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="docx-upload-actions">
-                          {variant.templatePath && (
-                            <a
-                              href={`${API_URL}${variant.templatePath}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="docx-btn docx-btn--secondary"
-                            >
-                              <Download size={16} />
-                              <span>Скачать</span>
-                            </a>
-                          )}
-                          <label className="docx-btn docx-btn--dark">
-                            <Upload size={16} />
-                            <span>{variant.templatePath ? "Заменить файл" : "Загрузить DOCX"}</span>
+                      {!collapsedVariants[variantIndex] && (
+                        <>
+                          <label className="docx-field">
+                            <span>Описание варианта</span>
                             <input
-                              type="file"
-                              accept=".docx"
+                              type="text"
+                              value={variant.description || ""}
                               onChange={(event) =>
-                                handleUploadFile(variantIndex, event.target.files?.[0])
+                                updateVariant(variantIndex, { description: event.target.value })
                               }
+                              placeholder="Например: Печатная форма с подписью филиала"
                             />
                           </label>
-                        </div>
-                      </div>
 
-                      <div className="docx-mapping-head">
-                        <div>
-                          <strong>Ключи подстановки</strong>
-                          <span>DOCX-ключ должен совпадать с плейсхолдером в файле.</span>
-                        </div>
-                        <div className="docx-mapping-actions">
-                          <button
-                            type="button"
-                            className="docx-btn docx-btn--secondary"
-                            onClick={() => addEmptyMapping(variantIndex)}
-                          >
-                            <Plus size={16} />
-                            <span>Пустая строка</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="docx-btn docx-btn--accent"
-                            onClick={() => openKeyDrawer(variantIndex)}
-                          >
-                            <FileJson size={16} />
-                            <span>Выбрать из docxDictionary</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {(variant.keys || []).length === 0 ? (
-                        <div className="docx-mapping-empty">
-                          <FileJson size={24} />
-                          <span>
-                            Добавьте ключи только для этого варианта. Список JSON-ключей открывается
-                            при добавлении или редактировании шаблона.
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="docx-mapping-table">
-                          <div className="docx-mapping-row docx-mapping-row--head">
-                            <span>Ключ в DOCX</span>
-                            <span>Ключ из системы</span>
-                            <span>Если пусто</span>
-                            <span>Опции</span>
-                          </div>
-                          {variant.keys.map((mapping, keyIndex) => {
-                            const normalized = normalizeDocxKeyMapping(mapping);
-                            const dictionaryItem = getDictionaryItem(normalized.systemKey);
-
-                            return (
-                              <div key={keyIndex} className="docx-mapping-row">
-                                <label className="docx-field docx-field--small">
-                                  <input
-                                    type="text"
-                                    value={normalized.docxKey}
-                                    onChange={(event) =>
-                                      updateKeyMapping(variantIndex, keyIndex, {
-                                        docxKey: event.target.value,
-                                      })
-                                    }
-                                    placeholder="client.fullName"
-                                  />
-                                </label>
-                                <label className="docx-field docx-field--small">
-                                  <input
-                                    type="text"
-                                    list="docx-system-keys"
-                                    value={normalized.systemKey}
-                                    onChange={(event) =>
-                                      updateKeyMapping(variantIndex, keyIndex, {
-                                        systemKey: event.target.value,
-                                        key: event.target.value,
-                                      })
-                                    }
-                                    placeholder="credit.amount"
-                                  />
-                                  {dictionaryItem && <small>{dictionaryItem.description}</small>}
-                                </label>
-                                <label className="docx-field docx-field--small">
-                                  <input
-                                    type="text"
-                                    value={normalized.defaultValue}
-                                    onChange={(event) =>
-                                      updateKeyMapping(variantIndex, keyIndex, {
-                                        defaultValue: event.target.value,
-                                      })
-                                    }
-                                    placeholder="Нет данных"
-                                  />
-                                </label>
-                                <div className="docx-mapping-options">
-                                  <label className="docx-check">
-                                    <input
-                                      type="checkbox"
-                                      checked={normalized.required}
-                                      onChange={(event) =>
-                                        updateKeyMapping(variantIndex, keyIndex, {
-                                          required: event.target.checked,
-                                        })
-                                      }
-                                    />
-                                    <span>важно</span>
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="docx-icon-btn docx-icon-btn--danger"
-                                    onClick={() => removeKey(variantIndex, keyIndex)}
-                                    title="Удалить ключ"
-                                  >
-                                    <X size={16} />
-                                  </button>
-                                </div>
+                          <div className="docx-upload-box">
+                            <div className="docx-upload-box__file">
+                              <FileText size={26} />
+                              <div>
+                                <strong>DOCX-файл варианта</strong>
+                                <span>
+                                  {variant.templatePath
+                                    ? variant.templatePath.split("/").pop()
+                                    : "Файл пока не прикреплен"}
+                                </span>
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                            <div className="docx-upload-actions">
+                              {variant.templatePath && (
+                                <a
+                                  href={`${API_URL}${variant.templatePath}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="docx-btn docx-btn--secondary"
+                                >
+                                  <Download size={16} />
+                                  <span>Скачать</span>
+                                </a>
+                              )}
+                              <label className="docx-btn docx-btn--dark">
+                                <Upload size={16} />
+                                <span>{variant.templatePath ? "Заменить файл" : "Загрузить DOCX"}</span>
+                                <input
+                                  type="file"
+                                  accept=".docx"
+                                  onChange={(event) =>
+                                    handleUploadFile(variantIndex, event.target.files?.[0])
+                                  }
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="docx-mapping-head">
+                            <div>
+                              <strong>Ключи подстановки</strong>
+                              <span>DOCX-ключ должен совпадать с плейсхолдером в файле.</span>
+                            </div>
+                            <div className="docx-mapping-actions">
+                              <button
+                                type="button"
+                                className="docx-btn docx-btn--secondary"
+                                onClick={() => addEmptyMapping(variantIndex)}
+                              >
+                                <Plus size={16} />
+                                <span>Пустая строка</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="docx-btn docx-btn--accent"
+                                onClick={() => openKeyDrawer(variantIndex)}
+                              >
+                                <FileJson size={16} />
+                                <span>Выбрать из docxDictionary</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {(variant.keys || []).length === 0 ? (
+                            <div className="docx-mapping-empty">
+                              <FileJson size={24} />
+                              <span>
+                                Добавьте ключи только для этого варианта. Список JSON-ключей открывается
+                                при добавлении или редактировании шаблона.
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="docx-mapping-table">
+                              <div className="docx-mapping-row docx-mapping-row--head">
+                                <span>Ключ в DOCX</span>
+                                <span>Ключ из системы</span>
+                                <span>Если пусто</span>
+                                <span>Опции</span>
+                              </div>
+                              {variant.keys.map((mapping, keyIndex) => {
+                                const normalized = normalizeDocxKeyMapping(mapping);
+                                const dictionaryItem = getDictionaryItem(normalized.systemKey);
+
+                                return (
+                                  <div key={keyIndex} className="docx-mapping-row">
+                                    <label className="docx-field docx-field--small">
+                                      <input
+                                        type="text"
+                                        value={normalized.docxKey}
+                                        onChange={(event) =>
+                                          updateKeyMapping(variantIndex, keyIndex, {
+                                            docxKey: event.target.value,
+                                          })
+                                        }
+                                        placeholder="client.fullName"
+                                      />
+                                    </label>
+                                    <label className="docx-field docx-field--small">
+                                      <input
+                                        type="text"
+                                        list="docx-system-keys"
+                                        value={normalized.systemKey}
+                                        onChange={(event) =>
+                                          updateKeyMapping(variantIndex, keyIndex, {
+                                            systemKey: event.target.value,
+                                            key: event.target.value,
+                                          })
+                                        }
+                                        placeholder="credit.amount"
+                                      />
+                                      {dictionaryItem && <small>{dictionaryItem.description}</small>}
+                                    </label>
+                                    <label className="docx-field docx-field--small">
+                                      <input
+                                        type="text"
+                                        value={normalized.defaultValue}
+                                        onChange={(event) =>
+                                          updateKeyMapping(variantIndex, keyIndex, {
+                                            defaultValue: event.target.value,
+                                          })
+                                        }
+                                        placeholder="Нет данных"
+                                      />
+                                    </label>
+                                    <div className="docx-mapping-options">
+                                      <label className="docx-check">
+                                        <input
+                                          type="checkbox"
+                                          checked={normalized.required}
+                                          onChange={(event) =>
+                                            updateKeyMapping(variantIndex, keyIndex, {
+                                              required: event.target.checked,
+                                            })
+                                          }
+                                        />
+                                        <span>важно</span>
+                                      </label>
+                                      <button
+                                        type="button"
+                                        className="docx-icon-btn docx-icon-btn--danger"
+                                        onClick={() => removeKey(variantIndex, keyIndex)}
+                                        title="Удалить ключ"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
                       )}
                     </article>
                   ))}
