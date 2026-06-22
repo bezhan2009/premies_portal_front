@@ -41,6 +41,7 @@ const LOCAL_MCC_JOURNAL = {
     "5812": "Рестораны и кафе",
     "5813": "Бары, ночные клубы",
     "5814": "Фастфуд",
+    "5815": "Стриминговые сервисы, книги, музыка",
     "5816": "Цифровые товары - игры",
     "5912": "Аптеки",
     "5921": "Магазины алкоголя",
@@ -54,6 +55,7 @@ const LOCAL_MCC_JOURNAL = {
     "7216": "Химчистки",
     "7298": "Салоны красоты и здоровья",
     "7333": "Фотостудии и коммерческая съемка",
+    "7372": "Компьютерное программирование и разработка ПО",
     "7399": "Бизнес-услуги",
     "7832": "Кинотеатры",
     "7997": "Клубы, спортзалы, боулинг",
@@ -306,6 +308,35 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
         const found = cofData.find(m => String(m.mCC) === String(filter.mCC));
         if (found) return isMerchantSubscription(found);
         return true;
+    };
+
+    const getStopLogoUrl = (stop) => {
+        if (!stop) return "";
+        const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+        const stopMrchName = stop.merchantIdentifier?.merchantName || "";
+        const notes = stop.additional?.additionalNotes || "";
+        const match = notes.match(/merchant_name=([^|]+)/);
+        const displayMerchantName = match ? match[1] : (stopMrchName || "");
+
+        const normalizedStopName = displayMerchantName.toLowerCase().replace(/[\s\-_]/g, "");
+
+        let found = cofData.find(m => {
+            const mName = getMerchantDisplayName(m, transactions).toLowerCase().replace(/[\s\-_]/g, "");
+            if (mName && normalizedStopName && (mName.includes(normalizedStopName) || normalizedStopName.includes(mName))) {
+                return true;
+            }
+            const rawMName = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || normalizedStopName.includes(rawMName))) {
+                return true;
+            }
+            return false;
+        });
+
+        if (!found && stopMcc) {
+            found = cofData.find(m => String(m.mCC) === String(stopMcc));
+        }
+
+        return found ? found.mrchLogoURL : "";
     };
 
     const handleAddStop = async (values) => {
@@ -672,114 +703,122 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                 <p style={{ color: isDark ? "#94a3b8" : "#64748b", marginBottom: 16 }}>
                                     Список действующих блокировок VISA на автосписания. Вы можете отменить любую из них для возобновления платежей.
                                 </p>
-                                {stops.length === 0 ? (
-                                    <div style={{ textAlign: "center", padding: "40px 0", color: isDark ? "#64748b" : "#94a3b8", fontSize: "14px" }}>
-                                        Нет действующих блокировок
-                                    </div>
-                                ) : (
-                                    <div style={{ 
-                                        display: "flex", 
-                                        flexDirection: "column", 
-                                        gap: "12px" 
-                                    }}>
-                                        {stops.map((stop, idx) => {
-                                            const stopMrchName = stop.merchantIdentifier?.merchantName || "";
-                                            const notes = stop.additional?.additionalNotes || "";
-                                            const match = notes.match(/merchant_name=([^|]+)/);
-                                            const displayMerchantName = match ? match[1] : (stopMrchName || "Все транзакции");
-                                            
-                                            const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+                                {(() => {
+                                    const activeStops = stops.filter(stop => stop.status === "Active");
 
-                                            return (
-                                                <div 
-                                                    key={stop.stopInstructionId || idx}
-                                                    onMouseEnter={() => setHoveredBlockIdx(idx)}
-                                                    onMouseLeave={() => setHoveredBlockIdx(null)}
-                                                    style={{
-                                                        background: isDark ? "#1e293b" : "#ffffff",
-                                                        border: `1px solid ${hoveredBlockIdx === idx ? "#ef4444" : (isDark ? "#ef444420" : "#fee2e2")}`,
-                                                        borderRadius: "12px",
-                                                        padding: "16px",
-                                                        display: "flex",
-                                                        flexDirection: "column",
-                                                        gap: "12px",
-                                                        boxShadow: hoveredBlockIdx === idx 
-                                                            ? "0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -4px rgba(239, 68, 68, 0.1)"
-                                                            : (isDark ? "0 4px 6px rgba(0,0,0,0.15)" : "0 4px 6px rgba(239, 68, 68, 0.02)"),
-                                                        transform: hoveredBlockIdx === idx ? "translateY(-2px)" : "none",
-                                                        transition: "all 0.2s ease-in-out"
-                                                    }}
-                                                >
-                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", width: "100%", flexWrap: "wrap" }}>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
-                                                            {renderLogo("", displayMerchantName)}
-                                                            <div style={{ minWidth: 0, flex: 1 }}>
-                                                                <TruncatedTooltipText text={displayMerchantName} isDark={isDark} />
-                                                                <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
-                                                                    Активное ограничение ({getMccDescription(stopMcc)})
-                                                                </span>
+                                    if (activeStops.length === 0) {
+                                        return (
+                                            <div style={{ textAlign: "center", padding: "40px 0", color: isDark ? "#64748b" : "#94a3b8", fontSize: "14px" }}>
+                                                Нет действующих блокировок
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div style={{ 
+                                            display: "flex", 
+                                            flexDirection: "column", 
+                                            gap: "12px" 
+                                        }}>
+                                            {activeStops.map((stop, idx) => {
+                                                const stopMrchName = stop.merchantIdentifier?.merchantName || "";
+                                                const notes = stop.additional?.additionalNotes || "";
+                                                const match = notes.match(/merchant_name=([^|]+)/);
+                                                const displayMerchantName = match ? match[1] : (stopMrchName || "Все транзакции");
+                                                
+                                                const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+
+                                                return (
+                                                    <div 
+                                                        key={stop.stopInstructionId || idx}
+                                                        onMouseEnter={() => setHoveredBlockIdx(idx)}
+                                                        onMouseLeave={() => setHoveredBlockIdx(null)}
+                                                        style={{
+                                                            background: isDark ? "#1e293b" : "#ffffff",
+                                                            border: `1px solid ${hoveredBlockIdx === idx ? "#ef4444" : (isDark ? "#ef444420" : "#fee2e2")}`,
+                                                            borderRadius: "12px",
+                                                            padding: "16px",
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            gap: "12px",
+                                                            boxShadow: hoveredBlockIdx === idx 
+                                                                ? "0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -4px rgba(239, 68, 68, 0.1)"
+                                                                : (isDark ? "0 4px 6px rgba(0,0,0,0.15)" : "0 4px 6px rgba(239, 68, 68, 0.02)"),
+                                                            transform: hoveredBlockIdx === idx ? "translateY(-2px)" : "none",
+                                                            transition: "all 0.2s ease-in-out"
+                                                        }}
+                                                    >
+                                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", width: "100%", flexWrap: "wrap" }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
+                                                                {renderLogo(getStopLogoUrl(stop), displayMerchantName)}
+                                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                                    <TruncatedTooltipText text={displayMerchantName} isDark={isDark} />
+                                                                    <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
+                                                                        Активное ограничение ({getMccDescription(stopMcc)})
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: isDark ? "#cbd5e1" : "#475569" }}>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>ID инструкции</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.stopInstructionId || "-"}</strong>
+                                                                </div>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата начала</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.startDate || "-"}</strong>
+                                                                </div>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата окончания</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.endDate || "-"}</strong>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ flex: 1.5, textAlign: "right", minWidth: "150px" }}>
+                                                                <Button 
+                                                                    type="primary"
+                                                                    ghost
+                                                                    style={{ 
+                                                                        borderRadius: "8px", 
+                                                                        fontWeight: "bold",
+                                                                        borderColor: "#10b981",
+                                                                        color: "#10b981",
+                                                                        borderWidth: "1.5px",
+                                                                        width: "100%"
+                                                                    }}
+                                                                    onClick={() => handleCancelStop(stop.stopInstructionId)}
+                                                                >
+                                                                    Разблокировать
+                                                                </Button>
+                                                                <Button 
+                                                                    type="default"
+                                                                    style={{ 
+                                                                        borderRadius: "8px", 
+                                                                        fontWeight: "500",
+                                                                        width: "100%",
+                                                                        marginTop: "8px"
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        const m = cofData.find(merchant => String(merchant.mCC) === String(stopMcc));
+                                                                        if (m) {
+                                                                            setSelectedMerchantFilter(m);
+                                                                        } else {
+                                                                            setSelectedMerchantFilter({ mCC: stopMcc, mrchName: displayMerchantName });
+                                                                        }
+                                                                        setActiveTabKey("3");
+                                                                    }}
+                                                                >
+                                                                    Все транзакции
+                                                                </Button>
                                                             </div>
                                                         </div>
-
-                                                        <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: isDark ? "#cbd5e1" : "#475569" }}>
-                                                            <div>
-                                                                <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>ID инструкции</span>
-                                                                <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.stopInstructionId || "-"}</strong>
-                                                            </div>
-                                                            <div>
-                                                                <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата начала</span>
-                                                                <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.startDate || "-"}</strong>
-                                                            </div>
-                                                            <div>
-                                                                <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата окончания</span>
-                                                                <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stop.endDate || "-"}</strong>
-                                                            </div>
-                                                        </div>
-
-                                                        <div style={{ flex: 1.5, textAlign: "right", minWidth: "150px" }}>
-                                                            <Button 
-                                                                type="primary"
-                                                                ghost
-                                                                style={{ 
-                                                                    borderRadius: "8px", 
-                                                                    fontWeight: "bold",
-                                                                    borderColor: "#10b981",
-                                                                    color: "#10b981",
-                                                                    borderWidth: "1.5px",
-                                                                    width: "100%"
-                                                                }}
-                                                                onClick={() => handleCancelStop(stop.stopInstructionId)}
-                                                            >
-                                                                Разблокировать
-                                                            </Button>
-                                                            <Button 
-                                                                type="default"
-                                                                style={{ 
-                                                                    borderRadius: "8px", 
-                                                                    fontWeight: "500",
-                                                                    width: "100%",
-                                                                    marginTop: "8px"
-                                                                }}
-                                                                onClick={() => {
-                                                                    const m = cofData.find(merchant => String(merchant.mCC) === String(stopMcc));
-                                                                    if (m) {
-                                                                        setSelectedMerchantFilter(m);
-                                                                    } else {
-                                                                        setSelectedMerchantFilter({ mCC: stopMcc, mrchName: displayMerchantName });
-                                                                    }
-                                                                    setActiveTabKey("3");
-                                                                }}
-                                                            >
-                                                                Все транзакции
-                                                            </Button>
-                                                        </div>
+                                                        {renderPreviousPayments(stopMcc, displayMerchantName)}
                                                     </div>
-                                                    {renderPreviousPayments(stopMcc, displayMerchantName)}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </TabPane>
                         <TabPane tab="История транзакций" key="3">
