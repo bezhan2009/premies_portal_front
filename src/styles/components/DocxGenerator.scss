@@ -864,15 +864,25 @@
   }
 }
 
-.docx-drawer-layer,
-.docx-modal-layer {
+.docx-drawer-layer {
   position: fixed;
   inset: 0;
   z-index: 1000;
 }
 
-.docx-drawer-backdrop,
 .docx-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.docx-drawer-backdrop {
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(4px);
 }
@@ -977,23 +987,16 @@
   }
 }
 
-.docx-modal-layer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-}
-
 .docx-modal {
-  width: min(760px, 100%);
+  width: min(560px, 100%);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
   background: var(--bg-surface);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .docx-modal__body {
@@ -1081,39 +1084,55 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 8px 13px;
-  border: 1px solid rgba(200, 16, 46, 0.18);
-  border-radius: 10px;
-  background: rgba(200, 16, 46, 0.08);
-  color: #c8102e;
+  padding: 8px 14px;
+  border: 1.5px solid var(--primary-color, #e11d48) !important;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--primary-color, #e11d48) !important;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.22s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  svg {
+    color: var(--primary-color, #e11d48);
+    transition: color 0.2s ease;
+  }
 
   &:hover:not(:disabled) {
-    background: #c8102e;
-    color: #ffffff;
+    background: var(--primary-color, #e11d48) !important;
+    color: #ffffff !important;
     transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(200, 16, 46, 0.22);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.22);
+
+    svg {
+      color: #ffffff;
+    }
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
 
 .docx-runtime-btn--multi {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+
+  svg {
+    color: #2563eb;
+  }
 
   &:hover:not(:disabled) {
-    background: #b45309;
-    color: #ffffff;
-    box-shadow: 0 8px 18px rgba(180, 83, 9, 0.22);
+    background: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+
+    svg {
+      color: #ffffff;
+    }
   }
 }
 
@@ -1133,7 +1152,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 15px;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-secondary);
@@ -1141,17 +1160,18 @@
   text-align: left;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.22s ease;
+  transition: all 0.2s ease;
 
   span {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
 
   strong {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 700;
+    transition: color 0.2s ease;
   }
 
   small {
@@ -1163,15 +1183,20 @@
   svg {
     flex: 0 0 auto;
     color: var(--text-secondary);
+    transition: all 0.2s ease;
   }
 
   &:hover {
-    border-color: #c8102e;
-    background: rgba(200, 16, 46, 0.05);
+    border-color: #2563eb;
+    background: rgba(37, 99, 235, 0.04);
+
+    strong {
+      color: #2563eb;
+    }
 
     svg {
-      color: #c8102e;
-      transform: translateX(2px);
+      color: #2563eb;
+      transform: translateX(3px);
     }
   }
 }

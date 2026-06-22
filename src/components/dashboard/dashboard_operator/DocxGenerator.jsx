@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import CustomSelect from "../../elements/CustomSelect";
 import { docxDictionary } from "../../../utils/docxDictionary";
 import {
   buildDocxPayload,
@@ -761,24 +762,24 @@ const DocxGenerator = () => {
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
             </div>
-            <select value={pageFilter} onChange={(event) => setPageFilter(event.target.value)}>
-              <option value="all">Все страницы</option>
-              {[...new Set(BUTTON_PLACEMENTS.filter((item) => item.page).map((item) => item.page))].map(
-                (page) => (
-                  <option key={page} value={page}>
-                    {page}
-                  </option>
-                ),
-              )}
-            </select>
-            <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-              <option value="all">Все роли</option>
-              {SYSTEM_ROLES.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              value={pageFilter}
+              onChange={(val) => setPageFilter(val)}
+              options={[
+                { value: "all", label: "Все страницы" },
+                ...[...new Set(BUTTON_PLACEMENTS.filter((item) => item.page).map((item) => item.page))].map(
+                  (page) => ({ value: page, label: page })
+                )
+              ]}
+            />
+            <CustomSelect
+              value={roleFilter}
+              onChange={(val) => setRoleFilter(val)}
+              options={[
+                { value: "all", label: "Все роли" },
+                ...SYSTEM_ROLES.map((role) => ({ value: String(role.id), label: role.name }))
+              ]}
+            />
           </section>
 
           {loading ? (
@@ -1094,24 +1095,23 @@ const DocxGenerator = () => {
                     {activeTemplate.variants.length > 0 && (
                       <div className="docx-inherit-selector" style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
                         <span style={{ fontSize: "13px", color: "#6b7280" }}>Наследовать из:</span>
-                        <select
-                          defaultValue=""
-                          onChange={(e) => {
-                            const srcIndex = e.target.value;
-                            if (srcIndex !== "") {
-                              inheritVariant(Number(srcIndex));
-                              e.target.value = "";
+                        <CustomSelect
+                          value=""
+                          placeholder="Выберите вариант..."
+                          onChange={(val) => {
+                            if (val !== "") {
+                              inheritVariant(Number(val));
                             }
                           }}
-                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #d1d5db", fontSize: "14px", background: "white" }}
-                        >
-                          <option value="">Выберите вариант...</option>
-                          {activeTemplate.variants.map((v, idx) => (
-                            <option key={idx} value={idx}>
-                              {idx + 1}. {v.name || `Вариант ${idx + 1}`}
-                            </option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: "", label: "Выберите вариант..." },
+                            ...activeTemplate.variants.map((v, idx) => ({
+                              value: String(idx),
+                              label: `${idx + 1}. ${v.name || `Вариант ${idx + 1}`}`
+                            }))
+                          ]}
+                          style={{ minWidth: "200px" }}
+                        />
                       </div>
                     )}
                   </div>
@@ -1475,16 +1475,14 @@ const DocxGenerator = () => {
               <div className="docx-modal__body">
                 <label className="docx-field">
                   <span>Вариант файла</span>
-                  <select
-                    value={testVariantIdx}
-                    onChange={(event) => handleTestVariantChange(Number(event.target.value))}
-                  >
-                    {(testTemplate.parsedVariants || []).map((variant, index) => (
-                      <option key={`${variant.name}-${index}`} value={index}>
-                        {variant.name}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={String(testVariantIdx)}
+                    onChange={(val) => handleTestVariantChange(Number(val))}
+                    options={(testTemplate.parsedVariants || []).map((variant, index) => ({
+                      value: String(index),
+                      label: variant.name
+                    }))}
+                  />
                 </label>
 
                 {(() => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import { ChevronRight, FileDown, Layers, Loader2, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -178,7 +179,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       </div>
 
       <AnimatePresence>
-        {showVariantModal && selectedTemplate && (
+        {showVariantModal && selectedTemplate && typeof document !== "undefined" && createPortal(
           <div className="docx-modal-layer">
             <motion.div
               className="docx-modal docx-modal--compact"
@@ -223,7 +224,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
     </>
