@@ -33,7 +33,7 @@ export const docxDictionary = [
     category: "Юр. Лицо (Client - Legal)",
     keys: [
       { key: "client.companyName", description: "Название компании" },
-      { key: "client.inn", description: "ИНН" },
+      { key: "client.inn", description: "ИНН компании" },
       { key: "client.directorName", description: "ФИО Директора" },
       { key: "client.legalAddress", description: "Юридический адрес" },
       { key: "client.actualAddress", description: "Фактический адрес" },
@@ -72,6 +72,17 @@ export const docxDictionary = [
       { key: "application.id", description: "Номер заявки" },
       { key: "application.amount", description: "Сумма заявки" },
       { key: "application.status", description: "Статус заявки" },
+    ]
+  },
+  {
+    category: "Подписки VSM (VSM Subscriptions)",
+    keys: [
+      { key: "vsm.merchantName", description: "Название мерчанта" },
+      { key: "vsm.endDate", description: "Дата окончания подписки" },
+      { key: "vsm.stopInstructionId", description: "ID инструкции остановки" },
+      { key: "vsm.originChannel", description: "Канал создания (например, API)" },
+      { key: "vsm.status", description: "Статус подписки" },
+      { key: "vsm.cancelSubscription", description: "Флаг отмены подписки (true/false)" },
     ]
   }
 ];
