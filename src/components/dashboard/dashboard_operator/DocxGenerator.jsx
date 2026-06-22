@@ -92,7 +92,6 @@ const DocxGenerator = () => {
   };
 
   const handleStartEdit = (tmpl) => {
-    // Parse JSON roles and variants if strings
     let roles = [];
     let variants = [];
 
@@ -197,7 +196,6 @@ const DocxGenerator = () => {
     const updated = { ...activeTemplate };
     const variant = updated.variants[activeVariantIndex];
     
-    // Check if key already added
     if (variant.keys.some((k) => k.key === keyName)) {
       alert("Этот ключ уже добавлен в данный вариант");
       return;
@@ -216,7 +214,6 @@ const DocxGenerator = () => {
   const handleSaveTemplate = async () => {
     if (!activeTemplate.name.trim()) return alert("Укажите название шаблона");
     
-    // Validate variants
     for (let i = 0; i < activeTemplate.variants.length; i++) {
       const v = activeTemplate.variants[i];
       if (!v.name.trim()) return alert(`Заполните название варианта #${i + 1}`);
@@ -264,7 +261,6 @@ const DocxGenerator = () => {
     setTestTemplate(tmpl);
     setTestVariantIdx(0);
     
-    // Init test inputs with default values
     const initialInputs = {};
     if (Array.isArray(variants[0]?.keys)) {
       variants[0].keys.forEach((k) => {
@@ -332,59 +328,59 @@ const DocxGenerator = () => {
     }
   };
 
-  // Filter template list
   const filteredTemplates = templates.filter(tmpl => 
     tmpl.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     tmpl.page.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-8 font-sans transition-colors duration-200">
+    <div className="block_info_prems content-page" style={{ textAlign: "left", width: "100%", padding: "10px 0" }}>
       
       {/* 1. Dashboard View */}
       {editorMode === null && (
         <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                Конструктор Шаблонов DOCX
+              <h1 className="text-2xl font-bold text-[var(--text-color)]" style={{ letterSpacing: "-0.5px" }}>
+                Шаблоны документов (DOCX)
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
-                Управляйте шаблонами документов Word, настраивайте привязки к страницам и ролям сотрудников.
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
+                Создание и редактирование печатных форм Word для автоматической генерации из разделов системы.
               </p>
             </div>
             <button
               onClick={handleStartAdd}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-3 rounded-2xl shadow-lg shadow-indigo-950/30 transition-all transform hover:-translate-y-[2px] active:translate-y-0 cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #c8102e 0%, #a00d24 100%)" }}
+              className="flex items-center gap-2 text-white font-bold px-5 py-3.5 rounded-2xl shadow-md hover:brightness-105 hover:-translate-y-[1px] active:translate-y-0 transition-all cursor-pointer"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4.5 h-4.5" />
               <span>Добавить шаблон</span>
             </button>
           </div>
 
           {/* Search bar */}
           <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <input
               type="text"
               placeholder="Поиск по названию шаблона или страницы..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800/60 border border-slate-700/60 pl-12 pr-4 py-3 rounded-2xl outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 text-sm transition-all placeholder:text-slate-500 text-slate-100"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] pl-12 pr-4 py-3.5 rounded-2xl outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)] placeholder:text-[var(--text-secondary)] transition-all"
             />
           </div>
 
           {/* Template Grid */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
+            <div className="flex flex-col items-center justify-center py-20 text-[var(--text-secondary)]">
+              <div className="w-10 h-10 border-4 border-[#c8102e]/20 border-t-[#c8102e] rounded-full animate-spin mb-4" />
               <p>Загрузка шаблонов...</p>
             </div>
           ) : filteredTemplates.length === 0 ? (
-            <div className="bg-slate-800/30 border border-slate-800/80 rounded-3xl p-12 text-center text-slate-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="text-base font-semibold">Шаблоны не найдены</p>
-              <p className="text-xs mt-1">Добавьте новый шаблон, чтобы начать генерацию документов.</p>
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-12 text-center text-[var(--text-secondary)] shadow-sm">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-30 text-[#c8102e]" />
+              <p className="text-base font-bold text-[var(--text-color)]">Шаблоны не найдены</p>
+              <p className="text-xs mt-1">Добавьте новый шаблон, чтобы настроить автоматическую генерацию.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -402,46 +398,46 @@ const DocxGenerator = () => {
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-slate-800/40 border border-slate-800 hover:border-slate-700/80 rounded-3xl p-6 transition-all duration-300 shadow-md flex flex-col justify-between"
+                    className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex justify-between items-start gap-4 mb-3">
-                        <h3 className="text-base font-bold text-slate-100 line-clamp-1">{tmpl.name}</h3>
-                        <span className="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-500/20">
+                        <h3 className="text-sm font-bold text-[var(--text-color)] line-clamp-1">{tmpl.name}</h3>
+                        <span className="bg-[#c8102e]/5 text-[#c8102e] text-[10px] font-bold px-2.5 py-1 rounded-full border border-[#c8102e]/10">
                           {variants.length} {variants.length === 1 ? "вариант" : variants.length < 5 ? "варианта" : "вариантов"}
                         </span>
                       </div>
                       
-                      <p className="text-xs text-slate-400 mb-6 line-clamp-2 h-8 leading-relaxed">
+                      <p className="text-xs text-[var(--text-secondary)] mb-6 line-clamp-2 h-8 leading-relaxed">
                         {tmpl.description || "Описание отсутствует"}
                       </p>
 
-                      <div className="space-y-3.5 mb-6">
-                        <div className="flex items-center gap-2.5 text-xs text-slate-300">
-                          <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+                      <div className="space-y-3.5 mb-6 border-t border-[var(--border-color)] pt-4">
+                        <div className="flex items-center gap-2.5 text-xs text-[var(--text-color)]">
+                          <MapPin className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                           <div>
-                            <span className="text-slate-500">Страница:</span> <code className="bg-slate-900/80 px-2 py-0.5 rounded text-[11px] font-mono text-indigo-400">{tmpl.page}</code>
+                            <span className="text-[var(--text-secondary)]">Страница:</span> <code className="bg-[var(--bg-secondary)] px-2 py-0.5 rounded text-[11px] font-mono text-[#c8102e]">{tmpl.page}</code>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5 text-xs text-slate-300">
-                          <Layers className="w-4 h-4 text-slate-500 shrink-0" />
+                        <div className="flex items-center gap-2.5 text-xs text-[var(--text-color)]">
+                          <Layers className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                           <div>
-                            <span className="text-slate-500">Раздел:</span> <span className="font-semibold">{tmpl.section}</span>
+                            <span className="text-[var(--text-secondary)]">Раздел:</span> <span className="font-semibold">{tmpl.section}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                          <Shield className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+                        <div className="flex items-start gap-2.5 text-xs text-[var(--text-color)]">
+                          <Shield className="w-4 h-4 text-[var(--text-secondary)] mt-0.5 shrink-0" />
                           <div className="flex flex-wrap gap-1">
-                            <span className="text-slate-500 mr-1 mt-0.5">Доступно:</span>
+                            <span className="text-[var(--text-secondary)] mr-1 mt-0.5">Доступно:</span>
                             {roles.length === 0 ? (
-                              <span className="text-slate-400">Все роли</span>
+                              <span className="text-[var(--text-secondary)]">Все роли</span>
                             ) : (
                               roles.map(rid => {
                                 const rname = SYSTEM_ROLES.find(r => r.id === rid)?.name || `ID ${rid}`;
                                 return (
-                                  <span key={rid} className="bg-slate-900/60 text-slate-400 px-2 py-0.5 rounded text-[10px]">
+                                  <span key={rid} className="bg-[var(--bg-secondary)] text-[var(--text-color)] border border-[var(--border-color)] px-2 py-0.5 rounded text-[10px]">
                                     {rname}
                                   </span>
                                 );
@@ -452,24 +448,24 @@ const DocxGenerator = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-2.5 border-t border-slate-700/30 pt-4 mt-2">
+                    <div className="flex gap-2.5 border-t border-[var(--border-color)] pt-4 mt-2">
                       <button
                         onClick={() => handleStartEdit(tmpl)}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold py-2.5 rounded-xl transition-all cursor-pointer border border-slate-700/50"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--border-color)] text-[var(--text-color)] text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer border border-[var(--border-color)]"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
-                        <span>Править</span>
+                        <span>Изменить</span>
                       </button>
                       <button
                         onClick={() => handleOpenTest(tmpl)}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-semibold py-2.5 rounded-xl transition-all cursor-pointer border border-blue-500/20"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-[#c8102e]/5 hover:bg-[#c8102e] text-[#c8102e] hover:text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer border border-[#c8102e]/20"
                       >
                         <Play className="w-3.5 h-3.5" />
                         <span>Тест</span>
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(tmpl.ID)}
-                        className="flex items-center justify-center w-10 bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl transition-all cursor-pointer border border-red-500/20"
+                        className="flex items-center justify-center w-10 bg-red-500/5 hover:bg-red-600 text-red-600 hover:text-white rounded-xl transition-all cursor-pointer border border-red-500/10"
                         title="Удалить"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -488,55 +484,55 @@ const DocxGenerator = () => {
         <div className="max-w-4xl mx-auto" style={{ animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
           <button
             onClick={() => setEditorMode(null)}
-            className="flex items-center gap-2 text-slate-400 hover:text-white font-semibold text-sm mb-6 transition-all cursor-pointer group"
+            className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-color)] font-bold text-sm mb-6 transition-all cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Вернуться на панель</span>
+            <span>Вернуться в список</span>
           </button>
 
-          <h2 className="text-2xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            {editorMode === "add" ? "Создание нового шаблона" : "Редактирование шаблона"}
+          <h2 className="text-xl font-bold text-[var(--text-color)] mb-6">
+            {editorMode === "add" ? "Создание шаблона" : "Настройка шаблона"}
           </h2>
 
           <div className="space-y-6">
             
             {/* Step 1: Info */}
-            <div className="bg-slate-800/40 border border-slate-800 rounded-3xl p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-200 border-b border-slate-700/30 pb-3 mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5 text-blue-500" />
-                <span>Основная информация</span>
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 space-y-4 shadow-sm">
+              <h3 className="text-sm font-bold text-[var(--text-color)] border-b border-[var(--border-color)] pb-3 mb-4 flex items-center gap-2">
+                <Info className="w-4.5 h-4.5 text-[#c8102e]" />
+                <span>Параметры кнопки</span>
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Название шаблона *</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider">Название кнопки *</label>
                   <input
                     type="text"
                     value={activeTemplate.name}
                     onChange={(e) => setActiveTemplate({ ...activeTemplate, name: e.target.value })}
-                    placeholder="Например: Справка о закрытии кредита"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 text-sm transition-all text-slate-100"
+                    placeholder="Например: Справка о кредите"
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)] transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Описание</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider">Краткое описание</label>
                   <input
                     type="text"
                     value={activeTemplate.description}
                     onChange={(e) => setActiveTemplate({ ...activeTemplate, description: e.target.value })}
-                    placeholder="Для чего этот документ и какие роли его генерируют..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 text-sm transition-all text-slate-100"
+                    placeholder="Подсказка при наведении на кнопку..."
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)] transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Где показывать кнопку (Страница) *</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider">На какой странице выводить *</label>
                   <select
                     value={activeTemplate.page}
                     onChange={(e) => setActiveTemplate({ ...activeTemplate, page: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 text-sm transition-all text-slate-100"
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)] transition-all"
                   >
                     {PAGES_LIST.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -544,20 +540,20 @@ const DocxGenerator = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Раздел (HTML ID или Заголовок) *</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider">Заголовок раздела страницы *</label>
                   <input
                     type="text"
                     value={activeTemplate.section}
                     onChange={(e) => setActiveTemplate({ ...activeTemplate, section: e.target.value })}
                     placeholder="Например: Документы и график платежей"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 text-sm transition-all text-slate-100"
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)] transition-all"
                   />
                 </div>
               </div>
 
-              <div className="pt-4">
-                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Кто может видеть эту кнопку (Роли)</label>
-                <div className="flex flex-wrap gap-3">
+              <div className="pt-4 border-t border-[var(--border-color)]">
+                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-wider">Роли, которые могут видеть эту кнопку</label>
+                <div className="flex flex-wrap gap-2.5">
                   {SYSTEM_ROLES.map((role) => {
                     const isChecked = activeTemplate.roles.includes(role.id);
                     return (
@@ -570,10 +566,10 @@ const DocxGenerator = () => {
                             : [...activeTemplate.roles, role.id];
                           setActiveTemplate({ ...activeTemplate, roles: updatedRoles });
                         }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                           isChecked
-                            ? "bg-blue-600/10 border-blue-500 text-blue-400"
-                            : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
+                            ? "bg-[#c8102e]/5 border-[#c8102e] text-[#c8102e]"
+                            : "bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--text-secondary)]"
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5" />}
@@ -587,15 +583,15 @@ const DocxGenerator = () => {
 
             {/* Step 2: Variants */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-700/30 pb-3">
-                <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-amber-500" />
-                  <span>Виды генерации (Варианты шаблона)</span>
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+                <h3 className="text-sm font-bold text-[var(--text-color)] flex items-center gap-2">
+                  <Layers className="w-4.5 h-4.5 text-[#c8102e]" />
+                  <span>Варианты шаблона (файлы и ключи замены)</span>
                 </h3>
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#c8102e] hover:brightness-110 transition-all cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Добавить вариант</span>
@@ -603,10 +599,10 @@ const DocxGenerator = () => {
               </div>
 
               {activeTemplate.variants.map((variant, vIdx) => (
-                <div key={vIdx} className="bg-slate-800/40 border border-slate-800 rounded-3xl p-6 space-y-4">
+                <div key={vIdx} className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 space-y-4 shadow-sm">
                   <div className="flex justify-between items-center gap-4">
                     <div className="flex-1">
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Название варианта</label>
+                      <label className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-1">Название варианта</label>
                       <input
                         type="text"
                         value={variant.name}
@@ -615,15 +611,15 @@ const DocxGenerator = () => {
                           updated.variants[vIdx].name = e.target.value;
                           setActiveTemplate(updated);
                         }}
-                        placeholder="Например: Для Физических лиц"
-                        className="bg-transparent border-b border-slate-700 hover:border-slate-500 focus:border-blue-500 outline-none font-bold text-base text-slate-100 py-1 transition-colors w-full"
+                        placeholder="Например: Вариант А: Физические лица"
+                        className="bg-transparent border-b border-[var(--border-color)] focus:border-[#c8102e] outline-none font-bold text-sm text-[var(--text-color)] py-1 transition-colors w-full"
                       />
                     </div>
                     {activeTemplate.variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeVariant(vIdx)}
-                        className="text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 p-2 rounded-xl transition-all cursor-pointer mt-3"
+                        className="text-red-600 hover:text-white hover:bg-red-600 border border-red-500/20 p-2 rounded-xl transition-all cursor-pointer mt-3"
                         title="Удалить вариант"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -632,19 +628,19 @@ const DocxGenerator = () => {
                   </div>
 
                   {/* File Upload Section */}
-                  <div className="bg-slate-900/50 border border-dashed border-slate-700 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 justify-between">
+                  <div className="bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400">
+                      <div className="p-3 bg-[#c8102e]/5 rounded-xl border border-[#c8102e]/10 text-[#c8102e]">
                         <FileText className="w-6 h-6" />
                       </div>
                       <div className="text-left">
-                        <span className="block text-xs font-bold text-slate-400 uppercase tracking-wide">Шаблон документа (.docx)</span>
+                        <span className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Шаблон DOCX файла</span>
                         {variant.templatePath ? (
-                          <span className="text-sm text-emerald-400 font-medium font-mono line-clamp-1 mt-0.5">
+                          <span className="text-xs text-[var(--text-color)] font-mono line-clamp-1 mt-0.5">
                             {variant.templatePath.split("/").pop()}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-500 block mt-0.5">Файл не загружен</span>
+                          <span className="text-xs text-[var(--text-secondary)] block mt-0.5">Файл не прикреплен</span>
                         )}
                       </div>
                     </div>
@@ -654,15 +650,15 @@ const DocxGenerator = () => {
                           href={`${API_URL}${variant.templatePath}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 px-3.5 py-2 rounded-xl transition-all border border-slate-700"
+                          className="flex items-center gap-1.5 text-xs text-[var(--text-color)] bg-[var(--bg-surface)] hover:border-[var(--text-secondary)] px-3.5 py-2 rounded-xl transition-all border border-[var(--border-color)]"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          <span>Скачать</span>
+                          <span>Скачать шаблон</span>
                         </a>
                       )}
-                      <label className="flex items-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-2 rounded-xl shadow-md transition-all cursor-pointer font-semibold transform active:scale-[0.98]">
+                      <label className="flex items-center gap-1.5 text-xs text-white bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer font-bold transform active:scale-[0.98]">
                         <Upload className="w-3.5 h-3.5" />
-                        <span>{variant.templatePath ? "Заменить" : "Загрузить"}</span>
+                        <span>{variant.templatePath ? "Изменить файл" : "Прикрепить файл"}</span>
                         <input
                           type="file"
                           accept=".docx"
@@ -676,45 +672,45 @@ const DocxGenerator = () => {
                   {/* Keys mapping */}
                   <div className="space-y-3.5">
                     <div className="flex justify-between items-center">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Сопоставление JSON ключей</label>
+                      <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">JSON Ключи в файле</label>
                       <button
                         type="button"
                         onClick={() => openKeyDrawer(vIdx)}
-                        className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-bold text-[#c8102e] hover:brightness-110 flex items-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Добавить ключ из словаря</span>
+                        <span>Выбрать ключи</span>
                       </button>
                     </div>
 
                     {variant.keys.length === 0 ? (
-                      <div className="bg-slate-900/20 border border-slate-800/80 rounded-2xl py-6 text-center text-slate-600 text-xs">
-                        Ключи не выбраны. Выберите ключи из словаря для авто-подстановки данных.
+                      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl py-6 text-center text-[var(--text-secondary)] text-xs">
+                        Не настроено ни одного ключа. Выберите ключи, которые используются в данном файле в формате {"{key.name}"}.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1">
                         {variant.keys.map((k, kIdx) => (
-                          <div key={kIdx} className="bg-slate-900/60 border border-slate-850 rounded-xl p-3 flex flex-col justify-between gap-2.5">
+                          <div key={kIdx} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl p-3 flex flex-col justify-between gap-2.5">
                             <div className="flex justify-between items-center gap-2">
-                              <code className="bg-slate-850 px-2.5 py-1 rounded text-indigo-400 text-xs font-mono font-bold truncate">
+                              <code className="bg-[var(--bg-surface)] border border-[var(--border-color)] px-2.5 py-1 rounded text-[#c8102e] text-xs font-mono font-bold truncate">
                                 {k.key}
                               </code>
                               <button
                                 type="button"
                                 onClick={() => removeKey(vIdx, kIdx)}
-                                className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                className="text-red-600 hover:bg-red-500/10 p-1 rounded-lg transition-colors cursor-pointer"
                               >
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Дефолтное значение (Fallback)</label>
+                              <label className="block text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-1">Значение по умолчанию (если поле пустое)</label>
                               <input
                                 type="text"
                                 value={k.defaultValue}
                                 onChange={(e) => updateKeyDefaultValue(vIdx, kIdx, e.target.value)}
-                                placeholder="Например: Нет данных / 0.00"
-                                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-500 text-xs transition-all text-slate-100"
+                                placeholder="Например: Нет данных"
+                                className="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-lg px-2.5 py-1.5 outline-none focus:border-[#c8102e] text-xs text-[var(--text-color)]"
                               />
                             </div>
                           </div>
@@ -727,18 +723,19 @@ const DocxGenerator = () => {
             </div>
 
             {/* Save Actions */}
-            <div className="flex justify-end gap-3 border-t border-slate-800 pt-6">
+            <div className="flex justify-end gap-3 border-t border-[var(--border-color)] pt-6">
               <button
                 type="button"
                 onClick={() => setEditorMode(null)}
-                className="px-6 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all cursor-pointer"
+                className="px-6 py-3.5 rounded-2xl text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer"
               >
                 Отмена
               </button>
               <button
                 type="button"
                 onClick={handleSaveTemplate}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg shadow-indigo-950/30 transition-all cursor-pointer transform hover:-translate-y-[1px] active:translate-y-0"
+                style={{ background: "linear-gradient(135deg, #c8102e 0%, #a00d24 100%)" }}
+                className="text-white font-bold px-8 py-3.5 rounded-2xl shadow-md hover:brightness-105 transition-all cursor-pointer transform hover:-translate-y-[1px] active:translate-y-0"
               >
                 Сохранить шаблон
               </button>
@@ -758,7 +755,7 @@ const DocxGenerator = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowDrawer(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             />
             
             <div className="absolute inset-y-0 right-0 max-w-full flex">
@@ -767,16 +764,16 @@ const DocxGenerator = () => {
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                className="w-screen max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full"
+                className="w-screen max-w-md bg-[var(--bg-surface)] border-l border-[var(--border-color)] shadow-2xl flex flex-col h-full"
               >
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                   <div>
-                    <h3 className="text-base font-bold text-white">Словарь JSON ключей</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Выберите ключ для вставки в шаблон</p>
+                    <h3 className="text-sm font-bold text-[var(--text-color)]">Выберите ключ замены</h3>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Ключ будет добавлен в ваш вариант шаблона</p>
                   </div>
                   <button
                     onClick={() => setShowDrawer(false)}
-                    className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-color)] hover:bg-[var(--bg-secondary)] rounded-lg transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -785,7 +782,7 @@ const DocxGenerator = () => {
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                   {docxDictionary.map((section, sIdx) => (
                     <div key={sIdx} className="space-y-2.5">
-                      <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-1.5">
+                      <h4 className="text-[10px] font-extrabold text-[#c8102e] uppercase tracking-widest border-b border-[var(--border-color)] pb-1.5">
                         {section.category}
                       </h4>
                       <div className="space-y-1.5">
@@ -794,15 +791,15 @@ const DocxGenerator = () => {
                             key={j}
                             type="button"
                             onClick={() => selectKeyFromDrawer(item.key)}
-                            className="w-full text-left p-3 bg-slate-800/40 hover:bg-blue-600/10 hover:border-blue-500 border border-slate-800 hover:border-blue-500/50 rounded-xl transition-all duration-150 flex justify-between items-center group cursor-pointer"
+                            className="w-full text-left p-3 bg-[var(--bg-secondary)] hover:bg-[#c8102e]/5 border border-[var(--border-color)] hover:border-[#c8102e]/30 rounded-xl transition-all duration-150 flex justify-between items-center group cursor-pointer"
                           >
                             <div className="flex-1 pr-4">
-                              <code className="text-indigo-400 text-xs font-mono font-bold group-hover:text-blue-400 block transition-colors">
+                              <code className="text-[#c8102e] text-xs font-mono font-bold block">
                                 {item.key}
                               </code>
-                              <span className="text-[10px] text-slate-500 block mt-0.5">{item.description}</span>
+                              <span className="text-[10px] text-[var(--text-secondary)] block mt-0.5">{item.description}</span>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-all shrink-0" />
                           </button>
                         ))}
                       </div>
@@ -818,22 +815,22 @@ const DocxGenerator = () => {
       {/* 4. Test Generation Modal */}
       <AnimatePresence>
         {showTestModal && testTemplate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: "spring", duration: 0.4 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Тестирование шаблона</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{testTemplate.name}</p>
+                  <h3 className="text-sm font-bold text-[var(--text-color)]">Тестирование генерации</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Макет: {testTemplate.name}</p>
                 </div>
                 <button
                   onClick={() => setShowTestModal(false)}
-                  className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                  className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-color)] hover:bg-[var(--bg-secondary)] rounded-lg transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -843,11 +840,11 @@ const DocxGenerator = () => {
                 
                 {/* Variant Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Выберите вариант для проверки</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-wider">Вариант шаблона</label>
                   <select
                     value={testVariantIdx}
                     onChange={(e) => handleTestVariantChange(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 text-sm text-slate-100"
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[#c8102e] text-sm text-[var(--text-color)]"
                   >
                     {(typeof testTemplate.variants === "string" ? JSON.parse(testTemplate.variants) : testTemplate.variants || []).map((v, idx) => (
                       <option key={idx} value={idx}>{v.name}</option>
@@ -857,21 +854,21 @@ const DocxGenerator = () => {
 
                 {/* Fill mock data */}
                 <div className="space-y-4">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-                    Входные данные для макета
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider border-b border-[var(--border-color)] pb-2">
+                    Тестовые переменные
                   </label>
                   
                   {Object.keys(testInputs).length === 0 ? (
-                    <div className="text-center py-6 text-xs text-slate-600 bg-slate-950/20 border border-slate-850 rounded-xl">
-                      В данном варианте нет ключей для заполнения.
+                    <div className="text-center py-6 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl">
+                      В данном варианте нет ключей для подстановки.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-3.5">
                       {Object.keys(testInputs).map((key) => (
                         <div key={key}>
                           <div className="flex justify-between items-center mb-1">
-                            <code className="text-indigo-400 text-xs font-mono font-semibold">{key}</code>
-                            <span className="text-[10px] text-slate-600">
+                            <code className="text-[#c8102e] text-xs font-mono font-semibold">{key}</code>
+                            <span className="text-[10px] text-[var(--text-secondary)]">
                               {docxDictionary.flatMap(s => s.keys).find(k => k.key === key)?.description || ""}
                             </span>
                           </div>
@@ -879,8 +876,8 @@ const DocxGenerator = () => {
                             type="text"
                             value={testInputs[key]}
                             onChange={(e) => setTestInputs({ ...testInputs, [key]: e.target.value })}
-                            placeholder="Введите тестовое значение..."
-                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 outline-none focus:border-blue-500 text-xs text-slate-100"
+                            placeholder="Напишите тестовое значение..."
+                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 outline-none focus:border-[#c8102e] text-xs text-[var(--text-color)]"
                           />
                         </div>
                       ))}
@@ -890,24 +887,25 @@ const DocxGenerator = () => {
 
               </div>
 
-              <div className="bg-slate-950/80 px-6 py-4 flex justify-end gap-3 border-t border-slate-800">
+              <div className="bg-[var(--bg-secondary)] px-6 py-4 flex justify-end gap-3 border-t border-[var(--border-color)]">
                 <button
                   onClick={() => setShowTestModal(false)}
-                  className="px-5 py-2.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all cursor-pointer"
+                  className="px-5 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--border-color)] rounded-xl transition-all cursor-pointer"
                 >
                   Закрыть
                 </button>
                 <button
                   onClick={handleRunTestGenerate}
                   disabled={isTestGenerating}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md transition-all text-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #c8102e 0%, #a00d24 100%)" }}
+                  className="text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all text-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isTestGenerating ? (
                     <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   ) : (
                     <Download className="w-3.5 h-3.5" />
                   )}
-                  <span>Сгенерировать файл</span>
+                  <span>Сгенерировать</span>
                 </button>
               </div>
             </motion.div>
