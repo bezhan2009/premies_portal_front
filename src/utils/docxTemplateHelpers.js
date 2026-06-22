@@ -162,6 +162,106 @@ export const getSystemDocxData = (uniqueIdFormat) => {
   };
 };
 
+export const formatDocxDate = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(String(dateStr).trim())) {
+      return String(dateStr).trim();
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return `${match[3]}.${match[2]}.${match[1]}`;
+      }
+      return dateStr;
+    }
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+export const formatDocxTime = (timeStr) => {
+  if (!timeStr) return "";
+  try {
+    const d = new Date(timeStr);
+    if (isNaN(d.getTime())) {
+      const match = String(timeStr).match(/(\d{2}):(\d{2}):(\d{2})/);
+      if (match) {
+        return `${match[1]}:${match[2]}:${match[3]}`;
+      }
+      return timeStr;
+    }
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `${hh}:${min}:${ss}`;
+  } catch (e) {
+    return timeStr;
+  }
+};
+
+export const formatDocxDateTime = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return dateStr;
+    }
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+export const formatDocxValueByKey = (key, value) => {
+  if (value === undefined || value === null || value === "") {
+    return value;
+  }
+
+  const keyLower = String(key).toLowerCase();
+
+  if (value instanceof Date) {
+    if (keyLower.includes("datetime") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
+      return formatDocxDateTime(value.toISOString());
+    }
+    if (keyLower.includes("date")) {
+      return formatDocxDate(value.toISOString());
+    }
+    if (keyLower.includes("time")) {
+      return formatDocxTime(value.toISOString());
+    }
+  }
+
+  if (typeof value === "string") {
+    const isDatePattern = /^\d{4}-\d{2}-\d{2}/.test(value) || /^\d{4}\/\d{2}\/\d{2}/.test(value);
+    
+    if (isDatePattern) {
+      if (keyLower.includes("datetime") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
+        return formatDocxDateTime(value);
+      }
+      if (keyLower.includes("date")) {
+        return formatDocxDate(value);
+      }
+      if (keyLower.includes("time")) {
+        return formatDocxTime(value);
+      }
+    }
+  }
+
+  return value;
+};
+
 export const extractDocxClientData = (client) => {
   if (!client) return {};
 
@@ -194,12 +294,12 @@ export const extractDocxClientData = (client) => {
     return null;
   };
 
-  let docType = "";
-  let passSeries = "";
-  let passNumber = "";
-  let passIssueDate = "";
+  let docType = client.identdoc_name || "";
+  let passSeries = client.identdoc_series || "";
+  let passNumber = client.identdoc_num || "";
+  let passIssueDate = client.identdoc_date || "";
   let passExpireDate = "";
-  let passAuthority = "";
+  let passAuthority = client.identdoc_orgname || "";
 
   if (Array.isArray(client.RegistrationDocuments) && client.RegistrationDocuments.length > 0) {
     let doc = client.RegistrationDocuments.find(d => {
@@ -210,12 +310,12 @@ export const extractDocxClientData = (client) => {
       doc = client.RegistrationDocuments[0];
     }
     if (doc) {
-      docType = doc.Type?.Name || "";
-      passSeries = doc.Serie || "";
-      passNumber = doc.Number || "";
-      passIssueDate = doc.IssueDate ? doc.IssueDate.split("T")[0] : "";
-      passExpireDate = doc.ExpireDate ? doc.ExpireDate.split("T")[0] : "";
-      passAuthority = doc.Authority || doc.IssueAuthority || "";
+      docType = doc.Type?.Name || docType;
+      passSeries = doc.Serie || passSeries;
+      passNumber = doc.Number || passNumber;
+      passIssueDate = doc.IssueDate || passIssueDate;
+      passExpireDate = doc.ExpireDate || passExpireDate;
+      passAuthority = doc.Authority || doc.IssueAuthority || passAuthority;
     }
   }
 
@@ -266,21 +366,21 @@ export const extractDocxClientData = (client) => {
 
   return {
     "client.fullName": name,
-    "client.firstName": client.name || "",
-    "client.lastName": client.surname || "",
-    "client.middleName": client.patronymic || "",
+    "client.firstName": client.name || client.FirstName || "",
+    "client.lastName": client.surname || client.LastName || "",
+    "client.middleName": client.patronymic || client.MiddleName || "",
     "client.clientCode": code,
     "client.pinfl": inn,
     "client.inn": inn,
     "client.gender": gender,
-    "client.birthDate": client.BirthDate ? client.BirthDate.split("T")[0] : (client.birth_date ? client.birth_date.split("T")[0] : ""),
-    "client.birthPlace": client.birth_place || "",
+    "client.birthDate": formatDocxDate(client.BirthDate || client.birth_date || client.birthDate),
+    "client.birthPlace": client.birth_place || client.birthPlace || "",
     "client.citizenship": client.citizenship || "",
     "client.documentType": docType,
     "client.passportSeries": passSeries,
     "client.passportNumber": passNumber,
-    "client.passportIssueDate": passIssueDate,
-    "client.passportExpireDate": passExpireDate,
+    "client.passportIssueDate": formatDocxDate(passIssueDate),
+    "client.passportExpireDate": formatDocxDate(passExpireDate),
     "client.passportAuthority": passAuthority,
     "client.registrationAddress": regAddress,
     "client.residenceAddress": resAddress,
@@ -290,8 +390,8 @@ export const extractDocxClientData = (client) => {
     "client.officeName": getValByCode("OFFICE") || getValByCode("BRANCH") || "",
     "client.managerName": getValByCode("MANAGER") || "",
     
-    "client.companyName": client.company_name || name,
-    "client.companyShortName": client.short_name || client.company_short_name || "",
+    "client.companyName": client.company_name || client.companyName || name,
+    "client.companyShortName": client.short_name || client.company_short_name || client.companyShortName || "",
     "client.companyInn": inn,
     "client.companyMfo": getValByCode("MFO") || "",
     "client.companyOkpo": getValByCode("OKPO") || "",
@@ -299,7 +399,7 @@ export const extractDocxClientData = (client) => {
     "client.accountantName": getValByCode("ACCOUNTANT") || getValByCode("BUHG") || "",
     "client.legalAddress": regAddress,
     "client.actualAddress": resAddress,
-    "client.registrationDate": client.BirthDate ? client.BirthDate.split("T")[0] : (client.birth_date ? client.birth_date.split("T")[0] : ""),
+    "client.registrationDate": formatDocxDate(client.registrationDate || client.BirthDate || client.birth_date),
     "client.companyPhone": phone,
     "client.companyEmail": email,
   };
@@ -337,7 +437,13 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     }
   });
 
-  return payload;
+  // Apply automatic formatting for date/time fields across the entire payload
+  const formattedPayload = {};
+  Object.entries(payload).forEach(([key, value]) => {
+    formattedPayload[key] = formatDocxValueByKey(key, value);
+  });
+
+  return formattedPayload;
 };
 
 export const sanitizeDocxFileName = (value, fallback = "document") => {

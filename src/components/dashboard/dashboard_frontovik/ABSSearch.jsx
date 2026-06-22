@@ -537,6 +537,28 @@ export default function ABSClientSearch() {
                 details: `Загрузка подробных данных клиента (карты, счета, кредиты, депозиты) для ${client.surname} ${client.name} (Код клиента: ${client.client_code})`
             });
 
+            const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+            // Enrich client details if they are basic (e.g. from phone search, missing DetailedAddresses)
+            if (clientCode && (!client.DetailedAddresses || client.DetailedAddresses.length === 0)) {
+                try {
+                    const fullClient = await getClientByCode(clientCode, token);
+                    if (fullClient) {
+                        const normalizedFullClient = normalizeClientData(fullClient, TYPE_SEARCH_CLIENT[1].value);
+                        setClientsData((prev) => {
+                            const updated = [...prev];
+                            updated[selectedClientIndex] = {
+                                ...updated[selectedClientIndex],
+                                ...normalizedFullClient,
+                            };
+                            return updated;
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to enrich client details:", err);
+                }
+            }
+
             const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
                 getUserCards(clientCode),
                 getUserAccounts(clientCode),
