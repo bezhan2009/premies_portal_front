@@ -23,7 +23,7 @@ export const generateDocxFromTemplate = async (templatePath, jsonData, outputFil
     formData.append("data", JSON.stringify(jsonData));
 
     // 3. Call backend API
-    const apiResponse = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/docx/generate`, formData, {
+    const apiResponse = await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575'}/api/docx/generate`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Authorization': `Bearer ${localStorage.getItem("token") || localStorage.getItem("access_token")}`

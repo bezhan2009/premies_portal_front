@@ -3,7 +3,7 @@ import axios from "axios";
 import { Loader2, FileDown, CheckCircle, AlertCircle, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const [templates, setTemplates] = useState([]);
