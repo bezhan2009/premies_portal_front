@@ -87,3 +87,15 @@ export const fetchCreditGraphs = async (referenceId) => {
     return [];
   }
 };
+
+export const getClientByCode = async (clientIndex) => {
+  try {
+    const res = await apiClientABS_Frontovik(
+      "/client/info/client-index?clientIndex=" + clientIndex,
+    );
+    return res.data;
+  } catch (err) {
+    console.error("getClientByCode error:", err);
+  }
+};
+

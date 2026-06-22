@@ -69,13 +69,20 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     setGeneratingId(`${template.ID || template.id}_${variant.name}`);
     setShowVariantModal(false);
 
+    console.log("=== DOCX Generation Debug ===");
+    console.log("Template:", template);
+    console.log("Variant:", variant);
+    console.log("Input data passed to button:", data);
+    const finalPayload = buildDocxPayload(variant, data, {}, template.uniqueIdFormat || template.UniqueIdFormat);
+    console.log("Built Final Payload:", finalPayload);
+
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("access_token");
       const response = await axios.post(
         `${API_URL}/api/docx/generate`,
         {
           templatePath: variant.templatePath,
-          data: buildDocxPayload(variant, data, {}, template.uniqueIdFormat || template.UniqueIdFormat),
+          data: finalPayload,
         },
         {
           headers: {

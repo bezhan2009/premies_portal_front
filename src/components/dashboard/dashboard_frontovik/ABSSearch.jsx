@@ -9,6 +9,7 @@ import {
     getUserDeposits,
     getUserInfoPhone,
     fetchCreditGraphs,
+    getClientByCode,
 } from "../../../api/ABS_frotavik/getUserCredits";
 import {
     fetchLoanDetails,
@@ -386,25 +387,7 @@ export default function ABSClientSearch() {
         return data;
     };
 
-    // Функция для получения информации о клиенте по client code
-    const getClientByCode = async (clientCode, token) => {
-        const response = await fetch(
-            `${API_BASE_URL}/client/info/client-index?clientIndex=${clientCode}`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            },
-        );
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
-    };
+        // getClientByCode is now imported from getUserCredits API
 
     const handleSearchClient = async () => {
         if (!phoneNumber) {
@@ -541,10 +524,13 @@ export default function ABSClientSearch() {
 
             // Enrich client details if they are basic (e.g. from phone search, missing DetailedAddresses)
             if (clientCode && (!client.DetailedAddresses || client.DetailedAddresses.length === 0)) {
+                console.log("[ABSSearch] DetailedAddresses not found. Fetching full client details...");
                 try {
-                    const fullClient = await getClientByCode(clientCode, token);
+                    const fullClient = await getClientByCode(clientCode);
+                    console.log("[ABSSearch] Fetch full client details response:", fullClient);
                     if (fullClient) {
                         const normalizedFullClient = normalizeClientData(fullClient, TYPE_SEARCH_CLIENT[1].value);
+                        console.log("[ABSSearch] Normalized full client:", normalizedFullClient);
                         setClientsData((prev) => {
                             const updated = [...prev];
                             updated[selectedClientIndex] = {
@@ -555,8 +541,10 @@ export default function ABSClientSearch() {
                         });
                     }
                 } catch (err) {
-                    console.error("Failed to enrich client details:", err);
+                    console.error("[ABSSearch] Failed to enrich client details:", err);
                 }
+            } else {
+                console.log("[ABSSearch] Client already enriched. DetailedAddresses:", client.DetailedAddresses);
             }
 
             const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
