@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ConfigProvider, theme as antdTheme, Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip, Radio } from "antd";
 import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } from "../../../../services/vsmService";
+import DynamicDocxButtons from "../../../general/DynamicDocxButtons.jsx";
 import { logAuditAction } from "../../../../utils/auditLogger";
 import { fetchTransactionsByCardId } from "../../../../api/processing/transactions";
 import useThemeStore from "../../../../store/useThemeStore";
@@ -102,7 +103,7 @@ const TruncatedTooltipText = ({ text, isDark }) => {
     );
 };
 
-const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
+const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
     const [loading, setLoading] = useState(false);
     const [stops, setStops] = useState([]);
     const [cofData, setCofData] = useState([]);
@@ -678,7 +679,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                         borderRadius: "8px", 
                                                                         fontWeight: "500",
                                                                         width: "100%",
-                                                                        marginTop: "8px"
+                                                                        marginTop: "8px",
+                                                                        marginBottom: "8px"
                                                                     }}
                                                                     onClick={() => {
                                                                         setSelectedMerchantFilter(merchant);
@@ -687,6 +689,20 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                 >
                                                                     Все транзакции
                                                                 </Button>
+                                                                <DynamicDocxButtons
+                                                                    page="VsmSearch"
+                                                                    section="Подписки VSM"
+                                                                    data={{
+                                                                        "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
+                                                                        "client.clientCode": selectedClient?.client_code || "",
+                                                                        "client.inn": selectedClient?.tax_code || "",
+                                                                        "card.cardId": card?.cardId || "",
+                                                                        "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
+                                                                        "vsm.merchantName": mrchName,
+                                                                        "vsm.merchantId": merchant.mCC || "",
+                                                                        "vsm.status": "Active",
+                                                                    }}
+                                                                />
                                                             </div>
                                                         </div>
                                                         {renderPreviousPayments(merchant.mCC, mrchName)}
@@ -796,7 +812,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                         borderRadius: "8px", 
                                                                         fontWeight: "500",
                                                                         width: "100%",
-                                                                        marginTop: "8px"
+                                                                        marginTop: "8px",
+                                                                        marginBottom: "8px"
                                                                     }}
                                                                     onClick={() => {
                                                                         const m = cofData.find(merchant => String(merchant.mCC) === String(stopMcc));
@@ -810,6 +827,23 @@ const VSMModal = ({ isOpen, onClose, card, accountsData }) => {
                                                                 >
                                                                     Все транзакции
                                                                 </Button>
+                                                                <DynamicDocxButtons
+                                                                    page="VsmSearch"
+                                                                    section="Подписки VSM"
+                                                                    data={{
+                                                                        "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
+                                                                        "client.clientCode": selectedClient?.client_code || "",
+                                                                        "client.inn": selectedClient?.tax_code || "",
+                                                                        "card.cardId": card?.cardId || "",
+                                                                        "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
+                                                                        "vsm.merchantName": displayMerchantName,
+                                                                        "vsm.merchantId": stop.merchantIdentifier?.merchantCategoryCode || "",
+                                                                        "vsm.stopInstructionId": stop.stopInstructionId || "",
+                                                                        "vsm.startDate": stop.startDate || "",
+                                                                        "vsm.endDate": stop.endDate || "",
+                                                                        "vsm.status": stop.status || "",
+                                                                    }}
+                                                                />
                                                             </div>
                                                         </div>
                                                         {renderPreviousPayments(stopMcc, displayMerchantName)}

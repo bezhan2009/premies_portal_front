@@ -3,6 +3,7 @@ import { Table } from "../../table/FlexibleAntTable.jsx";
 import { Input as AntInput, Space, Button, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
+import DynamicDocxButtons from "../../general/DynamicDocxButtons.jsx";
 import DebtCertificateModal from "./DebtCertificateModal.jsx";
 import CreditDetails from "./CreditDetails.jsx";
 import DepositDetails from "./DepositDetails.jsx";
@@ -1148,9 +1149,24 @@ const ClientDataTabs = ({
                         </div>
                       </div>
 
-                      <div className="card-actions-bar" style={{ marginTop: "auto" }}>
+                      <div className="card-actions-bar" style={{ marginTop: "auto", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                         <button className="card-action-btn outline-danger" onClick={() => handleNavigateToAccountOperations(acc.Number)}>Выписка (АБС)</button>
                         <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(matchingCard || { cardId: "", details: { cardNumberMask: "" } })}>Скачать реквизиты</button>
+                        <DynamicDocxButtons
+                          page="AccountDetails"
+                          section="Счета клиента в АБС"
+                          data={{
+                            "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
+                            "client.clientCode": selectedClient?.client_code || "",
+                            "client.inn": selectedClient?.tax_code || "",
+                            "account.number": acc.Number,
+                            "account.balance": acc.Balance || "0.00",
+                            "account.currency": acc.Currency?.Code || "",
+                            "account.openDate": acc.DateOpened || "",
+                            "account.status": acc.Status?.Name || "",
+                            "account.branch": acc.Branch?.Name || "",
+                          }}
+                        />
                       </div>
                     </div>
                   );
@@ -1409,6 +1425,23 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
                         <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
+                        <DynamicDocxButtons
+                          page="CardDetails"
+                          section="Карты клиента"
+                          data={{
+                            "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
+                            "client.clientCode": selectedClient?.client_code || "",
+                            "client.inn": selectedClient?.tax_code || "",
+                            "card.cardId": card.cardId || "",
+                            "card.cardNumber": card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "",
+                            "card.cardNumberMask": card.details?.cardNumberMask || card.CardNumber || "",
+                            "card.type": card.type || card.CardTypeName || card.details?.cardTypeName || "",
+                            "card.statusName": card.statusName || "",
+                            "card.expireDate": card.details?.expirationDate || card.expirationDate || "",
+                            "card.issueDate": card.details?.requestDate || card.requestDate || "",
+                            "card.accountNumber": card.details?.accounts?.[0]?.number || card.accounts?.[0]?.accountNumber || "",
+                          }}
+                        />
                         {hasVsmAccess && (() => {
                           const type = (card.type || card.CardTypeName || card.details?.cardTypeName || "").toLowerCase();
                           const num = (card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "");
@@ -1851,13 +1884,34 @@ const ClientDataTabs = ({
                             </div>
                           </div>
 
-                          <div style={{ display: "flex", gap: "12px" }}>
+                          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                             <button 
                               className="card-action-btn neutral"
                               onClick={() => setSelectedDeposit(item)}
                             >
                               Подробнее
                             </button>
+                            <DynamicDocxButtons
+                              page="DepositDetails"
+                              section="Договоры депозитов"
+                              data={{
+                                "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
+                                "client.clientCode": selectedClient?.client_code || "",
+                                "client.inn": selectedClient?.tax_code || "",
+                                "deposit.agreementId": agreement.ColvirReferenceId || "",
+                                "deposit.code": agreement.Code || "",
+                                "deposit.productName": agreement.Product?.Name || "",
+                                "deposit.amount": amount || "0.00",
+                                "deposit.balance": depoBalance || "0.00",
+                                "deposit.currency": currency || "",
+                                "deposit.interestRate": bonusRate || "0",
+                                "deposit.startDate": dateFromStr || "",
+                                "deposit.endDate": dateToStr || "",
+                                "deposit.statusName": statusName || "",
+                                "deposit.accountNumber": depoAcc.AccCode || "",
+                                "deposit.interestAccount": incomeAcc.AccCode || "",
+                              }}
+                            />
                           </div>
                         </div>
                       );
@@ -1908,6 +1962,7 @@ const ClientDataTabs = ({
           }}
           card={vsmCard}
           accountsData={accountsData}
+          selectedClient={selectedClient}
         />
       )}
     </div>
