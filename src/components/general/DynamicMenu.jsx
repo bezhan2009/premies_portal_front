@@ -449,6 +449,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "users_operator",
                         icon: Users
                     },
+                    {
+                        name: "Генератор DOCX",
+                        href: "/operator/docx-generator",
+                        key: "docx_generator",
+                        icon: FileText
+                    },
                 ],
             });
         }

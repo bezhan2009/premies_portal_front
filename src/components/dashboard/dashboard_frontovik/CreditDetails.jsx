@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import "../../../styles/ABSSearch.scss";
+import { generateDocxFromTemplate } from "../../../utils/docxGeneratorUtil";
 
 const CreditDetails = ({ credit, onBack }) => {
   const details = credit.loanDetails || {};
@@ -66,6 +67,38 @@ const CreditDetails = ({ credit, onBack }) => {
   });
 
   const scheduleList = Object.values(scheduleMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateDocx = async (templateName, outputName) => {
+    setIsGenerating(true);
+    
+    const jsonData = {
+      "system.currentDate": format(new Date(), "yyyy-MM-dd"),
+      "system.currentTime": format(new Date(), "HH:mm:ss"),
+      "credit.amount": amount,
+      "credit.currency": currency,
+      "credit.statusName": statusName,
+      "credit.interestRate": interestRate,
+      "credit.penaltyRate": penaltyRate,
+      "credit.expert": expert,
+      "credit.clientCode": clientCode,
+      "credit.department": department,
+      "credit.term": term,
+      "credit.startDate": startDate,
+      "credit.endDate": endDate,
+      "credit.purposeName": purposeName,
+      "credit.debtBalance": debtBalance,
+    };
+
+    try {
+      await generateDocxFromTemplate(`/templates/${templateName}.docx`, jsonData, outputName);
+    } catch (error) {
+      alert("Ошибка при генерации документа. Убедитесь, что шаблон существует в папке public/templates.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleExportSchedule = () => {
     const ws = XLSX.utils.json_to_sheet(scheduleList.map(s => ({
@@ -204,13 +237,29 @@ const CreditDetails = ({ credit, onBack }) => {
       {/* Schedule Table */}
       <div style={{ background: "#fff", padding: "20px", borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>График платежей</div>
-          <button 
-            onClick={handleExportSchedule}
-            style={{ background: "#27ae60", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: 600 }}
-          >
-            Экспорт в Excel
-          </button>
+          <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>Документы и график платежей</div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button 
+              onClick={() => handleGenerateDocx("credit_statement", `Справка_о_кредите_${clientCode}.docx`)}
+              disabled={isGenerating}
+              style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: 600, opacity: isGenerating ? 0.7 : 1 }}
+            >
+              Справка о кредите (DOCX)
+            </button>
+            <button 
+              onClick={() => handleGenerateDocx("credit_debt", `Справка_о_задолженности_${clientCode}.docx`)}
+              disabled={isGenerating}
+              style={{ background: "#eab308", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: 600, opacity: isGenerating ? 0.7 : 1 }}
+            >
+              Справка о задолженности (DOCX)
+            </button>
+            <button 
+              onClick={handleExportSchedule}
+              style={{ background: "#27ae60", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: 600 }}
+            >
+              Экспорт в Excel
+            </button>
+          </div>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
