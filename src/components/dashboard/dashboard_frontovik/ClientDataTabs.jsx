@@ -1157,9 +1157,7 @@ const ClientDataTabs = ({
                           page="AccountDetails"
                           section="Счета клиента в АБС"
                           data={{
-                            "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
-                            "client.clientCode": selectedClient?.client_code || "",
-                            "client.inn": selectedClient?.tax_code || "",
+                            ...extractDocxClientData(selectedClient),
                             "account.number": acc.Number,
                             "account.balance": acc.Balance || "0.00",
                             "account.currency": acc.Currency?.Code || "",
@@ -1430,9 +1428,7 @@ const ClientDataTabs = ({
                           page="CardDetails"
                           section="Карты клиента"
                           data={{
-                            "client.fullName": `${selectedClient?.surname || ""} ${selectedClient?.name || ""} ${selectedClient?.patronymic || ""}`.trim(),
-                            "client.clientCode": selectedClient?.client_code || "",
-                            "client.inn": selectedClient?.tax_code || "",
+                            ...extractDocxClientData(selectedClient),
                             "card.cardId": card.cardId || "",
                             "card.cardNumber": card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "",
                             "card.cardNumberMask": card.details?.cardNumberMask || card.CardNumber || "",
@@ -1483,7 +1479,7 @@ const ClientDataTabs = ({
         {activeTab === "credits" && (
           <div className="tab-pane-fade">
             {selectedCredit ? (
-              <CreditDetails credit={selectedCredit} onBack={() => setSelectedCredit(null)} />
+              <CreditDetails credit={selectedCredit} selectedClient={selectedClient} onBack={() => setSelectedCredit(null)} />
             ) : (
               <>
                 <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>

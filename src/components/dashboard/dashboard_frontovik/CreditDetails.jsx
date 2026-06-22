@@ -3,9 +3,10 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import "../../../styles/ABSSearch.scss";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
+import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
 
 
-const CreditDetails = ({ credit, onBack }) => {
+const CreditDetails = ({ credit, selectedClient, onBack }) => {
   const details = credit.loanDetails || {};
   const params = details.params || {};
   const balances = details.balances || [];
@@ -215,6 +216,7 @@ const CreditDetails = ({ credit, onBack }) => {
               page="CreditDetails"
               section="Документы и график платежей"
               data={{
+                ...extractDocxClientData(selectedClient),
                 "system.currentDate": format(new Date(), "yyyy-MM-dd"),
                 "system.currentTime": format(new Date(), "HH:mm:ss"),
                 "system.operatorName": localStorage.getItem("operator_name") || "Оператор",
