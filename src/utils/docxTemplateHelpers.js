@@ -310,7 +310,9 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     ...getSystemDocxData(uniqueIdFormat),
     ...data,
   };
-  const payload = {};
+  const payload = {
+    ...data,
+  };
   const keys = Array.isArray(variant.keys)
     ? variant.keys.map(normalizeDocxKeyMapping).filter((item) => item.docxKey)
     : [];
