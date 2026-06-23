@@ -222,6 +222,121 @@ const getPlacement = (page, section) =>
 
 const getDictionaryItem = (key) => dictionaryItems.find((item) => item.key === key);
 
+const TABLE_SOURCE_FIELDS = {
+  transactions: [
+    { value: "date", label: "Дата транзакции (date)" },
+    { value: "amount", label: "Сумма транзакции (amount)" },
+    { value: "currency", label: "Валюта транзакции (currency)" },
+    { value: "details", label: "Детали транзакции (details)" },
+    { value: "card", label: "Карта транзакции (card)" },
+    { value: "stan", label: "STAN (stan)" },
+    { value: "merchant", label: "Мерчант (merchant)" },
+    { value: "status", label: "Статус (status)" },
+  ],
+  schedule: [
+    { value: "date", label: "Дата платежа (date)" },
+    { value: "amount", label: "Сумма платежа (amount)" },
+    { value: "principal", label: "Основной долг (principal)" },
+    { value: "interest", label: "Проценты (interest)" },
+    { value: "balance", label: "Остаток долга (balance)" },
+  ]
+};
+
+const parseSystemKeyForBuilder = (systemKey) => {
+  const normalized = String(systemKey || "").trim();
+  
+  if (!normalized.startsWith("eval:")) {
+    return {
+      type: "simple",
+      simpleKey: normalized,
+      tableSource: "transactions",
+      tableField: "date",
+      tableFormat: "none",
+      tableFormatCustom: "",
+      formulaExpression: "",
+    };
+  }
+
+  const expr = normalized.slice(5).trim();
+  
+  const tableMatch = expr.match(/^\(?([a-zA-Z0-9_]+)\s*\|\|\s*\[\]\)?\.map\(\s*([a-zA-Z0-9_]+)\s*=>\s*(.+)\)$/);
+  
+  if (tableMatch) {
+    const source = tableMatch[1];
+    const varName = tableMatch[2];
+    const body = tableMatch[3].trim();
+    
+    const fieldMatch = body.match(new RegExp(`${varName}\\.([a-zA-Z0-9_]+)`));
+    const field = fieldMatch ? fieldMatch[1] : "";
+    
+    let format = "none";
+    let custom = "";
+    
+    if (body.includes("slice(0, 10)")) {
+      format = "date";
+    } else if (body.includes("slice(11, 19)")) {
+      format = "time";
+    } else if (body.includes("+ ' UZS'") || body.includes('+ " UZS"') || body.includes("UZS")) {
+      format = "currency";
+    } else if (body !== `${varName}.${field}`) {
+      format = "custom";
+      custom = body;
+    }
+    
+    return {
+      type: "table",
+      simpleKey: "",
+      tableSource: source,
+      tableField: field || "date",
+      tableFormat: format,
+      tableFormatCustom: custom,
+      formulaExpression: "",
+    };
+  }
+  
+  return {
+    type: "formula",
+    simpleKey: "",
+    tableSource: "transactions",
+    tableField: "date",
+    tableFormat: "none",
+    tableFormatCustom: "",
+    formulaExpression: expr,
+  };
+};
+
+const buildSystemKeyFromBuilder = (state) => {
+  if (state.type === "simple") {
+    return state.simpleKey;
+  }
+  
+  if (state.type === "table") {
+    const source = state.tableSource || "transactions";
+    const field = state.tableField || "date";
+    const varName = source === "transactions" ? "t" : "s";
+    
+    let exprBody = `${varName}.${field}`;
+    
+    if (state.tableFormat === "date") {
+      exprBody = `String(${varName}.${field} || '').slice(0, 10)`;
+    } else if (state.tableFormat === "time") {
+      exprBody = `String(${varName}.${field} || '').slice(11, 19)`;
+    } else if (state.tableFormat === "currency") {
+      exprBody = `${varName}.${field} !== undefined ? ${varName}.${field} + ' UZS' : ''`;
+    } else if (state.tableFormat === "custom") {
+      exprBody = state.tableFormatCustom || `${varName}.${field}`;
+    }
+    
+    return `eval: (${source} || []).map(${varName} => ${exprBody})`;
+  }
+  
+  if (state.type === "formula") {
+    return `eval: ${state.formulaExpression}`;
+  }
+  
+  return "";
+};
+
 const createTestInputs = (variant) =>
   (variant.keys || []).reduce((acc, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
@@ -248,6 +363,61 @@ const DocxGenerator = () => {
   const [testInputs, setTestInputs] = useState({});
   const [isTestGenerating, setIsTestGenerating] = useState(false);
   const [collapsedVariants, setCollapsedVariants] = useState({});
+  const [valueBuilder, setValueBuilder] = useState({
+    isOpen: false,
+    variantIndex: null,
+    keyIndex: null,
+    docxKey: "",
+    type: "simple",
+    simpleKey: "",
+    tableSource: "transactions",
+    tableField: "date",
+    tableFormat: "none",
+    tableFormatCustom: "",
+    formulaExpression: "",
+    defaultValue: "",
+    required: false,
+  });
+
+  const openValueBuilder = (variantIndex, keyIndex, mapping) => {
+    const normalized = normalizeDocxKeyMapping(mapping);
+    const parsed = parseSystemKeyForBuilder(normalized.systemKey);
+    setValueBuilder({
+      isOpen: true,
+      variantIndex,
+      keyIndex,
+      docxKey: normalized.docxKey,
+      type: parsed.type,
+      simpleKey: parsed.simpleKey,
+      tableSource: parsed.tableSource,
+      tableField: parsed.tableField,
+      tableFormat: parsed.tableFormat,
+      tableFormatCustom: parsed.tableFormatCustom,
+      formulaExpression: parsed.formulaExpression,
+      defaultValue: normalized.defaultValue || "",
+      required: normalized.required || false,
+    });
+  };
+
+  const handleApplyValueBuilder = () => {
+    const finalSystemKey = buildSystemKeyFromBuilder(valueBuilder);
+    
+    let finalDocxKey = valueBuilder.docxKey;
+    if (!finalDocxKey && valueBuilder.type === "simple" && valueBuilder.simpleKey) {
+      finalDocxKey = valueBuilder.simpleKey.split(".").pop() || valueBuilder.simpleKey;
+    } else if (!finalDocxKey && valueBuilder.type === "table") {
+      finalDocxKey = `${valueBuilder.tableSource}_${valueBuilder.tableField}`;
+    }
+
+    updateKeyMapping(valueBuilder.variantIndex, valueBuilder.keyIndex, {
+      systemKey: finalSystemKey,
+      docxKey: finalDocxKey,
+      defaultValue: valueBuilder.defaultValue,
+      required: valueBuilder.required,
+    });
+    
+    setValueBuilder((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const inheritVariant = (srcIndex) => {
     const sourceVariant = activeTemplate?.variants?.[srcIndex];
@@ -1446,18 +1616,30 @@ const DocxGenerator = () => {
                                       />
                                     </label>
                                     <label className="docx-field docx-field--small">
-                                      <input
-                                        type="text"
-                                        list="docx-system-keys"
-                                        value={normalized.systemKey}
-                                        onChange={(event) =>
-                                          updateKeyMapping(variantIndex, keyIndex, {
-                                            systemKey: event.target.value,
-                                            key: event.target.value,
-                                          })
-                                        }
-                                        placeholder="credit.amount"
-                                      />
+                                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                        <input
+                                          type="text"
+                                          list="docx-system-keys"
+                                          value={normalized.systemKey}
+                                          onChange={(event) =>
+                                            updateKeyMapping(variantIndex, keyIndex, {
+                                              systemKey: event.target.value,
+                                              key: event.target.value,
+                                            })
+                                          }
+                                          placeholder="credit.amount"
+                                          style={{ flex: 1 }}
+                                        />
+                                        <button
+                                          type="button"
+                                          className="docx-btn docx-btn--secondary"
+                                          onClick={() => openValueBuilder(variantIndex, keyIndex, normalized)}
+                                          title="Конструктор значений"
+                                          style={{ padding: "6px", height: "34px", width: "34px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "auto", border: "1px solid #d1d5db" }}
+                                        >
+                                          <Settings2 size={16} />
+                                        </button>
+                                      </div>
                                       {dictionaryItem && <small>{dictionaryItem.description}</small>}
                                     </label>
                                     <label className="docx-field docx-field--small">
@@ -1714,6 +1896,313 @@ const DocxGenerator = () => {
                 >
                   {isTestGenerating ? <Loader2 className="docx-spin" size={16} /> : <Download size={16} />}
                   <span>{isTestGenerating ? "Генерация..." : "Сгенерировать и скачать"}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {valueBuilder.isOpen && (
+          <div className="docx-modal-layer" style={{ zIndex: 100000 }}>
+            <motion.div
+              className="docx-modal"
+              style={{ maxWidth: "600px" }}
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ type: "spring", duration: 0.35 }}
+            >
+              <div className="docx-modal__header">
+                <div>
+                  <span className="docx-eyebrow">Конструктор значений</span>
+                  <h2>Настройка ключа подстановки</h2>
+                  <p>Сконструируйте таблицу, формулу или выберите простой системный ключ.</p>
+                </div>
+                <button type="button" className="docx-icon-btn" onClick={() => setValueBuilder(prev => ({ ...prev, isOpen: false }))}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="docx-modal__body" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {/* Type Tab Selector */}
+                <div style={{ display: "flex", background: "#f3f4f6", padding: "4px", borderRadius: "8px", gap: "4px" }}>
+                  {[
+                    { type: "simple", label: "Простой ключ", desc: "Значение поля из БД", icon: Database },
+                    { type: "table", label: "Колонка таблицы", desc: "Список (транзакции/график)", icon: Layers },
+                    { type: "formula", label: "Выражение / Функция", desc: "Пользовательский JS код", icon: Settings2 }
+                  ].map((tab) => {
+                    const TabIcon = tab.icon;
+                    const active = valueBuilder.type === tab.type;
+                    return (
+                      <button
+                        key={tab.type}
+                        type="button"
+                        onClick={() => setValueBuilder(prev => ({ ...prev, type: tab.type }))}
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          padding: "8px 12px",
+                          borderRadius: "6px",
+                          border: "none",
+                          background: active ? "white" : "transparent",
+                          color: active ? "#4f46e5" : "#4b5563",
+                          boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <TabIcon size={18} style={{ marginBottom: "4px" }} />
+                        <span style={{ fontSize: "13px", fontWeight: "600" }}>{tab.label}</span>
+                        <span style={{ fontSize: "10px", opacity: 0.8, textAlign: "center", display: "block", marginTop: "2px" }}>{tab.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Main Fields based on Type */}
+                {valueBuilder.type === "simple" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div className="docx-field">
+                      <span>Системный ключ</span>
+                      <input
+                        type="text"
+                        list="docx-system-keys"
+                        value={valueBuilder.simpleKey}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValueBuilder(prev => ({ ...prev, simpleKey: val }));
+                        }}
+                        placeholder="Например: client.fullName"
+                      />
+                      <small style={{ color: "#6b7280" }}>
+                        Выберите ключ из списка или воспользуйтесь быстрым поиском ниже:
+                      </small>
+                    </div>
+
+                    <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "8px", background: "#f9fafb" }}>
+                      {dictionaryItems
+                        .filter(item => !item.key.startsWith("transactions.") && !item.key.startsWith("schedule."))
+                        .map(item => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => setValueBuilder(prev => ({ ...prev, simpleKey: item.key }))}
+                            style={{
+                              display: "flex",
+                              width: "100%",
+                              justifyContent: "space-between",
+                              padding: "6px 8px",
+                              border: "none",
+                              background: valueBuilder.simpleKey === item.key ? "#e0e7ff" : "transparent",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              fontSize: "12px",
+                              color: valueBuilder.simpleKey === item.key ? "#4338ca" : "#1f2937",
+                              marginBottom: "2px"
+                            }}
+                          >
+                            <code>{item.key}</code>
+                            <span style={{ color: "#6b7280" }}>{item.description}</span>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+
+                {valueBuilder.type === "table" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <div className="docx-field" style={{ flex: 1 }}>
+                        <span>Источник данных (Массив)</span>
+                        <CustomSelect
+                          value={valueBuilder.tableSource}
+                          onChange={(val) => {
+                            const defaultField = val === "transactions" ? "date" : "date";
+                            setValueBuilder(prev => ({ ...prev, tableSource: val, tableField: defaultField }));
+                          }}
+                          options={[
+                            { value: "transactions", label: "Транзакции (transactions)" },
+                            { value: "schedule", label: "График платежей (schedule)" }
+                          ]}
+                        />
+                      </div>
+                      <div className="docx-field" style={{ flex: 1 }}>
+                        <span>Колонка таблицы</span>
+                        <CustomSelect
+                          value={valueBuilder.tableField}
+                          onChange={(val) => setValueBuilder(prev => ({ ...prev, tableField: val }))}
+                          options={TABLE_SOURCE_FIELDS[valueBuilder.tableSource] || []}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="docx-field">
+                      <span>Форматирование значений в колонке</span>
+                      <CustomSelect
+                        value={valueBuilder.tableFormat}
+                        onChange={(val) => setValueBuilder(prev => ({ ...prev, tableFormat: val }))}
+                        options={[
+                          { value: "none", label: "Без форматирования (как есть)" },
+                          { value: "date", label: "Обрезать до даты (ГГГГ-ММ-ДД)" },
+                          { value: "time", label: "Обрезать до времени (ЧЧ:ММ:СС)" },
+                          { value: "currency", label: "Добавить ' UZS'" },
+                          { value: "custom", label: "Свой JS-код трансформации" }
+                        ]}
+                      />
+                    </div>
+
+                    {valueBuilder.tableFormat === "custom" && (
+                      <div className="docx-field">
+                        <span>JS-выражение трансформации</span>
+                        <input
+                          type="text"
+                          value={valueBuilder.tableFormatCustom}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setValueBuilder(prev => ({ ...prev, tableFormatCustom: val }));
+                          }}
+                          placeholder="Например: t.amount + ' сум'"
+                        />
+                        <small style={{ color: "#6b7280" }}>
+                          Используйте переменную <strong>t</strong> (для транзакций) или <strong>s</strong> (для графика).
+                        </small>
+                      </div>
+                    )}
+
+                    <div style={{ background: "#f3f4f6", padding: "12px", borderRadius: "8px" }}>
+                      <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#6b7280", fontWeight: "600", display: "block", marginBottom: "4px" }}>
+                        Результат сборки в системный ключ:
+                      </span>
+                      <code style={{ fontSize: "12px", color: "#111827", wordBreak: "break-all" }}>
+                        {buildSystemKeyFromBuilder(valueBuilder)}
+                      </code>
+                    </div>
+                  </div>
+                )}
+
+                {valueBuilder.type === "formula" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div className="docx-field">
+                      <span>JS выражение</span>
+                      <textarea
+                        value={valueBuilder.formulaExpression}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValueBuilder(prev => ({ ...prev, formulaExpression: val }));
+                        }}
+                        placeholder="Например: client.firstName + ' ' + client.lastName"
+                        rows={3}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", fontFamily: "monospace", fontSize: "13px" }}
+                      />
+                      <small style={{ color: "#6b7280" }}>
+                        Любой валидный Javascript-код. Переменные из docxDictionary доступны в области видимости.
+                      </small>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: "600", color: "#4b5563" }}>Кликните по ключу для вставки в формулу:</span>
+                      <div style={{ maxHeight: "140px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "8px", background: "#f9fafb" }}>
+                        {dictionaryItems.map(item => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => {
+                              setValueBuilder(prev => ({
+                                ...prev,
+                                formulaExpression: prev.formulaExpression + " " + item.key
+                              }));
+                            }}
+                            style={{
+                              display: "inline-flex",
+                              padding: "4px 8px",
+                              border: "1px solid #e5e7eb",
+                              background: "white",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                              margin: "2px",
+                              color: "#4f46e5"
+                            }}
+                          >
+                            {item.key}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: "#f3f4f6", padding: "12px", borderRadius: "8px" }}>
+                      <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#6b7280", fontWeight: "600", display: "block", marginBottom: "4px" }}>
+                        Результат сборки в системный ключ:
+                      </span>
+                      <code style={{ fontSize: "12px", color: "#111827", wordBreak: "break-all" }}>
+                        {buildSystemKeyFromBuilder(valueBuilder)}
+                      </code>
+                    </div>
+                  </div>
+                )}
+
+                {/* Common fields (docxKey, defaultValue, required) */}
+                <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: "16px", display: "flex", gap: "12px" }}>
+                  <div className="docx-field" style={{ flex: 2 }}>
+                    <span>Ключ в DOCX шаблоне (placeholder)</span>
+                    <input
+                      type="text"
+                      value={valueBuilder.docxKey}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setValueBuilder(prev => ({ ...prev, docxKey: val }));
+                      }}
+                      placeholder="Например: clientFullName"
+                    />
+                  </div>
+                  <div className="docx-field" style={{ flex: 2 }}>
+                    <span>Значение по умолчанию</span>
+                    <input
+                      type="text"
+                      value={valueBuilder.defaultValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setValueBuilder(prev => ({ ...prev, defaultValue: val }));
+                      }}
+                      placeholder="Например: - "
+                    />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", alignSelf: "flex-end", height: "38px" }}>
+                    <label className="docx-check">
+                      <input
+                        type="checkbox"
+                        checked={valueBuilder.required}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setValueBuilder(prev => ({ ...prev, required: val }));
+                        }}
+                      />
+                      <span>важно</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="docx-modal__footer">
+                <button
+                  type="button"
+                  className="docx-btn docx-btn--secondary"
+                  onClick={() => setValueBuilder(prev => ({ ...prev, isOpen: false }))}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  className="docx-btn docx-btn--primary"
+                  onClick={handleApplyValueBuilder}
+                >
+                  Применить
                 </button>
               </div>
             </motion.div>

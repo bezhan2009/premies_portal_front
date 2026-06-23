@@ -1,4 +1,4 @@
-﻿import RadioSelect from "../../components/elements/RadioSelect";
+import RadioSelect from "../../components/elements/RadioSelect";
 import {
     districtTypes,
     docTypes, genders,
@@ -2352,14 +2352,6 @@ export default function GiftCard({ edit = false }) {
                                 </div>
                             </div>
                             <div className="compliance-grid">
-                                <CheckBox
-                                    id="is_resident"
-                                    className="compliance-checkbox-item"
-                                    title="Резидент"
-                                    value={data.is_resident}
-                                    onChange={(val) => setData("is_resident", val)}
-                                    error={errors}
-                                />
                                 <Select
                                     id="client_occupation"
                                     title="Чем занимается клиент"
@@ -2367,16 +2359,6 @@ export default function GiftCard({ edit = false }) {
                                     onChange={(val) => setData("client_occupation", val)}
                                     value={data.client_occupation}
                                     options={complianceOptions.client_occupation}
-                                    searchable
-                                    error={errors}
-                                />
-                                <Select
-                                    id="net_worth"
-                                    title="Какова чистая стоимость / торговый оборот Клиента"
-                                    placeholder="Выберите сумму"
-                                    onChange={(val) => setData("net_worth", val)}
-                                    value={data.net_worth}
-                                    options={complianceOptions.net_worth}
                                     searchable
                                     error={errors}
                                 />
