@@ -19,6 +19,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const [generatingId, setGeneratingId] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState("pdf");
   const [paramsModal, setParamsModal] = useState({
     isOpen: false,
     variant: null,
@@ -85,7 +86,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     });
   }, [allTemplates, data]);
 
-  const handleGenerate = async (template, variant, skipParamsCheck = false) => {
+  const handleGenerate = async (template, variant, format = "pdf", skipParamsCheck = false) => {
     if (!skipParamsCheck) {
       const hasTransactions = variant.keys.some((k) => {
         const sk = k.systemKey || '';
@@ -171,6 +172,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
         {
           templatePath: variant.templatePath,
           data: finalPayload,
+          format: format,
         },
         {
           headers: {
@@ -189,7 +191,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       );
 
       link.href = url;
-      link.setAttribute("download", `${downloadName}.pdf`);
+      link.setAttribute("download", `${downloadName}.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -202,7 +204,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     }
   };
 
-  const handleButtonClick = (template) => {
+  const handleButtonClick = (template, format = "pdf") => {
     const variants = template.parsedVariants || normalizeDocxVariants(template.variants);
 
     if (variants.length === 0) {
@@ -211,10 +213,11 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     }
 
     if (variants.length === 1) {
-      handleGenerate(template, variants[0]);
+      handleGenerate(template, variants[0], format);
       return;
     }
 
+    setSelectedFormat(format);
     setSelectedTemplate({
       ...template,
       parsedVariants: variants,
@@ -244,23 +247,36 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           const isWorking = generatingId && generatingId.startsWith(`${template.ID || template.id}_`);
 
           return (
-            <button
-              key={template.ID || template.id}
-              type="button"
-              onClick={() => handleButtonClick(template)}
-              disabled={Boolean(generatingId)}
-              className={`docx-runtime-btn ${hasMultiple ? "docx-runtime-btn--multi" : ""}`}
-              title={template.description || template.name}
-            >
-              {isWorking ? (
-                <Loader2 className="docx-spin" size={15} />
-              ) : hasMultiple ? (
-                <Layers size={15} />
-              ) : (
-                <FileDown size={15} />
-              )}
-              <span>{template.name}</span>
-            </button>
+            <div key={template.ID || template.id} className="docx-generate-group" style={{display: "inline-flex", marginRight: "8px", verticalAlign: "middle", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)"}}>
+              <button
+                type="button"
+                onClick={() => handleButtonClick(template, "pdf")}
+                className="docx-runtime-btn"
+                disabled={Boolean(generatingId)}
+                title={template.description || template.name}
+                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: "1px solid rgba(255,255,255,0.2)", margin: 0, boxShadow: "none" }}
+              >
+                {isWorking ? (
+                  <Loader2 className="docx-spin" size={15} />
+                ) : hasMultiple ? (
+                  <Layers size={15} />
+                ) : (
+                  <FileText size={15} />
+                )}
+                <span>{template.name}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleButtonClick(template, "docx")}
+                className="docx-runtime-btn"
+                disabled={Boolean(generatingId)}
+                style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, paddingLeft: "10px", paddingRight: "10px", margin: 0, boxShadow: "none", backgroundColor: "#334155" }}
+                title="Скачать в DOCX"
+              >
+                <Download size={15} />
+                <span style={{ fontSize: "11px", marginLeft: "2px" }}>DOCX</span>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -298,7 +314,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                       key={`${variant.name}-${index}`}
                       type="button"
                       className="docx-variant-picker__item"
-                      onClick={() => handleGenerate(selectedTemplate, variant)}
+                      onClick={() => handleGenerate(selectedTemplate, variant, selectedFormat)}
                     >
                       <span>
                         <strong>{variant.name}</strong>

@@ -6,9 +6,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
   const contentRef = useRef(null);
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
 
-  if (!isOpen || !template) return null;
-
-  const variants = template.parsedVariants || (typeof template.variants === 'string' ? JSON.parse(template.variants) : template.variants) || [];
+  const variants = template?.parsedVariants || (typeof template?.variants === 'string' ? JSON.parse(template.variants) : template?.variants) || [];
   const activeVariant = variants[selectedVariantIdx] || null;
 
   const jsonExample = useMemo(() => {
@@ -51,6 +49,8 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
 
     html2pdf().set(opt).from(element).save();
   };
+
+  if (!isOpen || !template) return null;
 
   return (
     <div className="docx-modal-overlay">

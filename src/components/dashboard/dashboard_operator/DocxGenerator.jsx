@@ -918,6 +918,7 @@ const DocxGenerator = () => {
         {
           templatePath: variant.templatePath,
           data: buildDocxPayload(variant, {}, testInputs, testTemplate.uniqueIdFormat || testTemplate.UniqueIdFormat),
+          format: "pdf",
         },
         {
           headers: {
@@ -1176,7 +1177,7 @@ const DocxGenerator = () => {
                       )}
                     </div>
 
-                    <div className="docx-card-actions">
+                    <div className="docx-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", width: "100%" }}>
                       <button type="button" className="docx-btn docx-btn--secondary" onClick={() => handleStartEdit(template)}>
                         <Edit2 size={16} />
                         <span>Изменить</span>
