@@ -21,7 +21,10 @@ const CustomSelect = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState({});
+  const [dropdownStyle, setDropdownStyle] = useState({
+    zIndex: 1000000,
+    visibility: "hidden",
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -97,7 +100,8 @@ const CustomSelect = ({
       setDropdownStyle({
         left,
         width,
-        zIndex: 3000,
+        zIndex: 1000000,
+        visibility: "visible",
         ...(shouldOpenUpward
           ? {
               bottom: Math.max(
@@ -123,8 +127,15 @@ const CustomSelect = ({
 
   const handleToggle = () => {
     if (!disabled) {
-      setIsOpen((previous) => !previous);
+      const nextOpen = !isOpen;
+      setIsOpen(nextOpen);
       setSearchTerm("");
+      if (nextOpen) {
+        setDropdownStyle({
+          zIndex: 1000000,
+          visibility: "hidden",
+        });
+      }
     }
   };
 

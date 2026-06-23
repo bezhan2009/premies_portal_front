@@ -97,7 +97,7 @@
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  z-index: 9999;
+  z-index: 1000000 !important;
 
   @supports (backdrop-filter: blur(12px)) {
     background: rgba(var(--bg-surface-rgb), 0.85);

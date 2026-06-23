@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
+  AlertTriangle,
   ArrowLeft,
   Check,
   ChevronRight,
   Database,
   Download,
   Edit2,
+  Eye,
   FileJson,
   FileText,
   Info,
@@ -379,6 +381,15 @@ const DocxGenerator = () => {
     required: false,
   });
 
+  const [previewState, setPreviewState] = useState({
+    isOpen: false,
+    html: "",
+    isLoading: false,
+    error: "",
+    variantIndex: null,
+    fileName: "",
+  });
+
   const openValueBuilder = (variantIndex, keyIndex, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
     const parsed = parseSystemKeyForBuilder(normalized.systemKey);
@@ -461,6 +472,12 @@ const DocxGenerator = () => {
   useEffect(() => {
     loadTemplates();
   }, []);
+
+  useEffect(() => {
+    if (editorMode === null) {
+      setPreviewState(prev => ({ ...prev, isOpen: false, variantIndex: null }));
+    }
+  }, [editorMode]);
 
   const hydratedTemplates = useMemo(
     () =>
@@ -605,9 +622,65 @@ const DocxGenerator = () => {
       });
 
       updateVariant(variantIndex, { templatePath: res.data.url });
+      
+      // Auto-load preview!
+      handleTogglePreview(variantIndex, res.data.url, file);
     } catch (err) {
       console.error(err);
       alert("Ошибка при загрузке файла");
+    }
+  };
+
+  const handleTogglePreview = async (variantIndex, templatePath, localFile) => {
+    if (previewState.isOpen && previewState.variantIndex === variantIndex && !localFile) {
+      setPreviewState((prev) => ({ ...prev, isOpen: false, variantIndex: null }));
+      return;
+    }
+
+    setPreviewState({
+      isOpen: true,
+      html: "",
+      isLoading: true,
+      error: "",
+      variantIndex,
+      fileName: localFile ? localFile.name : (templatePath ? templatePath.split("/").pop() : "Файл"),
+    });
+
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      let res;
+      if (localFile) {
+        const formData = new FormData();
+        formData.append("template", localFile);
+        res = await axios.post(`${API_URL}/api/docx/templates/preview`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        res = await axios.post(
+          `${API_URL}/api/docx/templates/preview`,
+          { templatePath },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+      setPreviewState((prev) => ({
+        ...prev,
+        html: res.data.html,
+        isLoading: false,
+      }));
+    } catch (err) {
+      console.error("Preview fetch error", err);
+      setPreviewState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: "Не удалось загрузить превью документа",
+      }));
     }
   };
 
@@ -1103,7 +1176,10 @@ const DocxGenerator = () => {
             </button>
           </div>
 
-          <div className="docx-builder-layout">
+          <div className="docx-builder-layout" style={{
+            gridTemplateColumns: previewState.isOpen ? "minmax(0, 1.15fr) minmax(0, 0.85fr) 320px" : "minmax(0, 1fr) 320px",
+            transition: "grid-template-columns 0.3s ease"
+          }}>
             <main className="docx-builder-main">
               <section className="docx-editor-card">
                 <div className="docx-section-title">
@@ -1532,15 +1608,28 @@ const DocxGenerator = () => {
                             </div>
                             <div className="docx-upload-actions">
                               {variant.templatePath && (
-                                <a
-                                  href={`${API_URL}${variant.templatePath}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="docx-btn docx-btn--secondary"
-                                >
-                                  <Download size={16} />
-                                  <span>Скачать</span>
-                                </a>
+                                <>
+                                  <button
+                                    type="button"
+                                    className={`docx-btn ${previewState.isOpen && previewState.variantIndex === variantIndex ? "docx-btn--primary" : "docx-btn--secondary"}`}
+                                    onClick={() => handleTogglePreview(variantIndex, variant.templatePath, null)}
+                                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                                  >
+                                    <Eye size={16} />
+                                    <span>
+                                      {previewState.isOpen && previewState.variantIndex === variantIndex ? "Скрыть" : "Показать"} превью
+                                    </span>
+                                  </button>
+                                  <a
+                                    href={`${API_URL}${variant.templatePath}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="docx-btn docx-btn--secondary"
+                                  >
+                                    <Download size={16} />
+                                    <span>Скачать</span>
+                                  </a>
+                                </>
                               )}
                               <label className="docx-btn docx-btn--dark">
                                 <Upload size={16} />
@@ -1688,6 +1777,46 @@ const DocxGenerator = () => {
                 </div>
               </section>
             </main>
+
+            {previewState.isOpen && (
+              <aside className="docx-preview-aside">
+                <div className="docx-preview-header">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Eye size={18} style={{ color: "#c8102e" }} />
+                    <span style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-color)" }}>
+                      Превью: {previewState.fileName}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="docx-icon-btn"
+                    onClick={() => setPreviewState(prev => ({ ...prev, isOpen: false }))}
+                    title="Свернуть превью"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="docx-preview-body">
+                  {previewState.isLoading ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "12px", color: "#6b7280" }}>
+                      <div className="docx-spinner" />
+                      <span>Загрузка превью...</span>
+                    </div>
+                  ) : previewState.error ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "8px", color: "var(--error-color)" }}>
+                      <AlertTriangle size={32} />
+                      <span>{previewState.error}</span>
+                    </div>
+                  ) : (
+                    <div 
+                      className="docx-html-container"
+                      dangerouslySetInnerHTML={{ __html: previewState.html }} 
+                    />
+                  )}
+                </div>
+              </aside>
+            )}
 
             <aside className="docx-builder-aside">
               <div className="docx-preview-card">
