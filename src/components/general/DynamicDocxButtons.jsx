@@ -189,7 +189,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       );
 
       link.href = url;
-      link.setAttribute("download", `${downloadName}.docx`);
+      link.setAttribute("download", `${downloadName}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();

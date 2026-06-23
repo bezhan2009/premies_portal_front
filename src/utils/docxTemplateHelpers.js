@@ -259,6 +259,11 @@ export const formatDocxValueByKey = (key, value) => {
 
   const keyLower = String(key).toLowerCase();
 
+  // Format floating point numbers to 2 decimal places (e.g. 473.570000005 -> "473.57", 473.5 -> "473.50")
+  if (typeof value === "number" && !Number.isInteger(value)) {
+    return value.toFixed(2);
+  }
+
   if (value instanceof Date) {
     if (keyLower.includes("datetime") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
       return formatDocxDateTime(value.toISOString());
@@ -283,6 +288,14 @@ export const formatDocxValueByKey = (key, value) => {
       }
       if (keyLower.includes("time")) {
         return formatDocxTime(value);
+      }
+    }
+    
+    // Catch string representations of floats with many decimals and round to 2
+    if (/^\d+\.\d{3,}$/.test(value)) {
+      const parsedFloat = parseFloat(value);
+      if (!isNaN(parsedFloat)) {
+        return parsedFloat.toFixed(2);
       }
     }
   }
