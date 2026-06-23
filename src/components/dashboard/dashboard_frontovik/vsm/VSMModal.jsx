@@ -240,6 +240,14 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
     };
 
     const handleBlockMerchantDirectly = (mrchName) => {
+        let apiMrchName = String(mrchName || "").trim();
+        if (apiMrchName.length > 25) {
+            apiMrchName = apiMrchName.slice(0, 25).trim();
+        }
+        if (apiMrchName.length < 2) {
+            apiMrchName = "MERCHANT";
+        }
+
         modal.confirm({
             title: `Заблокировать списания от ${mrchName}?`,
             content: (
@@ -259,7 +267,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                         recurringAndInstallmentIndicator: true,
                         cancelSubscription: true,
                         merchantIdentifiers: {
-                            merchantNames: [mrchName],
+                            merchantNames: [apiMrchName],
                         },
                         startDate: today
                     };
@@ -349,12 +357,20 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
 
         setLoading(true);
         try {
+            let apiMrchName = String(values.merchantName || "").trim();
+            if (apiMrchName.length > 25) {
+                apiMrchName = apiMrchName.slice(0, 25).trim();
+            }
+            if (apiMrchName.length < 2 && apiMrchName.length > 0) {
+                apiMrchName = "MERCHANT";
+            }
+
             const payload = {
                 duration: values.duration,
                 recurringAndInstallmentIndicator: values.recurringAndInstallmentIndicator,
                 cancelSubscription: values.cancelSubscription,
                 merchantIdentifiers: {
-                    merchantNames: values.merchantName ? [values.merchantName] : [],
+                    merchantNames: apiMrchName ? [apiMrchName] : [],
                 },
                 startDate: values.startDate.format("YYYY-MM-DD")
             };
@@ -427,7 +443,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                 }
             }
         }
-        return merchant.mrchDbaName || merchant.mrchName || "Неизвестный мерчант";
+        return merchant.mrchName || merchant.mrchDbaName || "Неизвестный мерчант";
     };
 
     const getMccDescription = (mcc) => {
