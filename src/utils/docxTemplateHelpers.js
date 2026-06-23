@@ -109,8 +109,10 @@ export const getValueByDocxPath = (source = {}, path = "") => {
 
   // Handle eval expressions
   if (path.startsWith("eval:")) {
-    const expression = path.slice(5).trim();
+    let expression = path.slice(5).trim();
     try {
+      // Auto-repair corrupted expressions: "(varName  [])" → "(varName || [])"
+      expression = expression.replace(/\((\s*\w+)\s{2,}\[\]\s*\)/g, '($1 || [])');
       // Execute the expression with source acting as the available scope variables
       const fn = new Function("source", `
         try {

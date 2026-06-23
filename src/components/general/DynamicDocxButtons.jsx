@@ -87,10 +87,20 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
   const handleGenerate = async (template, variant, skipParamsCheck = false) => {
     if (!skipParamsCheck) {
-      const hasTransactions = variant.keys.some((k) => k.systemKey?.startsWith("transactions."));
-      const hasSchedule = variant.keys.some((k) => k.systemKey?.startsWith("schedule."));
+      const hasTransactions = variant.keys.some((k) => {
+        const sk = k.systemKey || '';
+        return sk.startsWith("transactions.") || (sk.startsWith("eval:") && sk.includes("transactions"));
+      });
+      const hasSchedule = variant.keys.some((k) => {
+        const sk = k.systemKey || '';
+        return sk.startsWith("schedule.") || (sk.startsWith("eval:") && sk.includes("schedule"));
+      });
 
-      if (hasTransactions || hasSchedule) {
+      // Skip params modal if schedule data is already available in the data prop
+      const scheduleAlreadyAvailable = hasSchedule && Array.isArray(data.schedule) && data.schedule.length > 0;
+      const needsParams = hasTransactions || (hasSchedule && !scheduleAlreadyAvailable);
+
+      if (needsParams) {
         setParamsModal({
           isOpen: true,
           variant,
@@ -131,14 +141,20 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           finalData.transactions = res.data?.data || res.data || [];
         }
       } else if (paramsModal.type === "schedule") {
-        const creditId = finalData.credit?.referenceId || finalData.creditId;
-        if (creditId) {
-          const token = localStorage.getItem("token") || localStorage.getItem("access_token");
-          const res = await axios.get(`${API_URL}/api/credits/${creditId}/schedule`, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { fromDate: paramsModal.fromDate, toDate: paramsModal.toDate },
-          });
-          finalData.schedule = res.data?.schedule || res.data || [];
+        // Use schedule data already in the data prop if available (e.g. from CreditDetails page)
+        if (Array.isArray(finalData.schedule) && finalData.schedule.length > 0) {
+          console.log("Schedule data already present in data prop, using it directly:", finalData.schedule.length, "items");
+        } else {
+          // Fallback: try to fetch schedule from API
+          const creditId = finalData["credit.referenceId"] || finalData.credit?.referenceId || finalData.creditId;
+          if (creditId) {
+            const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+            const res = await axios.get(`${API_URL}/api/credits/${creditId}/schedule`, {
+              headers: { Authorization: `Bearer ${token}` },
+              params: { fromDate: paramsModal.fromDate, toDate: paramsModal.toDate },
+            });
+            finalData.schedule = res.data?.schedule || res.data || [];
+          }
         }
       }
     } catch (err) {
