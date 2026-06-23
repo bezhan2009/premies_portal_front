@@ -223,6 +223,8 @@ export const docxDictionary = [
       { key: "schedule.principal", description: "Погашение основного долга" },
       { key: "schedule.interest", description: "Погашение процентов" },
       { key: "schedule.balance", description: "Остаток основного долга" },
+      { key: "schedule.status", description: "Статус платежа" },
+      { key: "schedule.type", description: "Тип платежа" },
     ],
   },
 ];

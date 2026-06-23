@@ -452,11 +452,9 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
       ? overrideValue
       : getValueByDocxPath(source, mapping.systemKey);
 
-    // If the evaluated value is an array, format it as a column using newlines
+    // If the evaluated value is an array, map its elements but preserve it as an array
     if (Array.isArray(sourceValue)) {
-      sourceValue = sourceValue
-        .map(v => formatDocxValueByKey(mapping.systemKey, v))
-        .join("\n");
+      sourceValue = sourceValue.map(v => formatDocxValueByKey(mapping.systemKey, v));
     }
 
     payload[mapping.docxKey] = isEmptyDocxValue(sourceValue)

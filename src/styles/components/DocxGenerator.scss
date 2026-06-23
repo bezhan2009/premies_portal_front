@@ -717,8 +717,15 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   border-top: 1px solid var(--border-color);
+  
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
 
   strong {
     display: block;
@@ -868,6 +875,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
+  pointer-events: none;
 }
 
 .docx-modal-layer {
@@ -883,8 +891,7 @@
 }
 
 .docx-drawer-backdrop {
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(4px);
+  display: none;
 }
 
 .docx-drawer {
@@ -896,6 +903,7 @@
   background: var(--bg-surface);
   border-left: 1px solid var(--border-color);
   box-shadow: -18px 0 42px rgba(15, 23, 42, 0.22);
+  pointer-events: auto;
 }
 
 .docx-drawer__header,

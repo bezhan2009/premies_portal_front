@@ -241,6 +241,8 @@ const TABLE_SOURCE_FIELDS = {
     { value: "principal", label: "Основной долг (principal)" },
     { value: "interest", label: "Проценты (interest)" },
     { value: "balance", label: "Остаток долга (balance)" },
+    { value: "status", label: "Статус платежа (status)" },
+    { value: "type", label: "Тип платежа (type)" },
   ]
 };
 
@@ -955,6 +957,49 @@ const DocxGenerator = () => {
       </span>
     ));
   };
+
+  const previewAside = useMemo(() => {
+    if (!previewState.isOpen) return null;
+    return (
+      <aside className="docx-preview-aside">
+        <div className="docx-preview-header">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Eye size={18} style={{ color: "#c8102e" }} />
+            <span style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-color)" }}>
+              Превью: {previewState.fileName}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="docx-icon-btn"
+            onClick={() => setPreviewState(prev => ({ ...prev, isOpen: false }))}
+            title="Свернуть превью"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="docx-preview-body">
+          {previewState.isLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "12px", color: "#6b7280" }}>
+              <div className="docx-spinner" />
+              <span>Загрузка превью...</span>
+            </div>
+          ) : previewState.error ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "8px", color: "var(--error-color)" }}>
+              <AlertTriangle size={32} />
+              <span>{previewState.error}</span>
+            </div>
+          ) : (
+            <div 
+              className="docx-html-container"
+              dangerouslySetInnerHTML={{ __html: previewState.html }} 
+            />
+          )}
+        </div>
+      </aside>
+    );
+  }, [previewState.isOpen, previewState.isLoading, previewState.error, previewState.html, previewState.fileName]);
 
   return (
     <div className="docx-page">
@@ -1778,45 +1823,7 @@ const DocxGenerator = () => {
               </section>
             </main>
 
-            {previewState.isOpen && (
-              <aside className="docx-preview-aside">
-                <div className="docx-preview-header">
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Eye size={18} style={{ color: "#c8102e" }} />
-                    <span style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-color)" }}>
-                      Превью: {previewState.fileName}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="docx-icon-btn"
-                    onClick={() => setPreviewState(prev => ({ ...prev, isOpen: false }))}
-                    title="Свернуть превью"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="docx-preview-body">
-                  {previewState.isLoading ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "12px", color: "#6b7280" }}>
-                      <div className="docx-spinner" />
-                      <span>Загрузка превью...</span>
-                    </div>
-                  ) : previewState.error ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "300px", gap: "8px", color: "var(--error-color)" }}>
-                      <AlertTriangle size={32} />
-                      <span>{previewState.error}</span>
-                    </div>
-                  ) : (
-                    <div 
-                      className="docx-html-container"
-                      dangerouslySetInnerHTML={{ __html: previewState.html }} 
-                    />
-                  )}
-                </div>
-              </aside>
-            )}
+            {previewAside}
 
             <aside className="docx-builder-aside">
               <div className="docx-preview-card">
