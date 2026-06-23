@@ -455,3 +455,54 @@ export const sanitizeDocxFileName = (value, fallback = "document") => {
 
   return safe || fallback;
 };
+
+export const evaluateDocxTemplateConditions = (conditions, data = {}, uniqueIdFormat = "") => {
+  const parsedConditions = parseDocxJsonField(conditions, []);
+  if (!Array.isArray(parsedConditions) || parsedConditions.length === 0) {
+    return true;
+  }
+
+  const source = {
+    ...getSystemDocxData(uniqueIdFormat),
+    ...data,
+  };
+
+  return parsedConditions.every((cond) => {
+    if (!cond.key) {
+      return true;
+    }
+
+    const rawValue = getValueByDocxPath(source, cond.key);
+    const actualValue = formatDocxValueByKey(cond.key, rawValue);
+
+    const conditionValue = cond.value;
+    const operator = cond.operator || "=";
+
+    const strActual = actualValue !== undefined && actualValue !== null ? String(actualValue).trim() : "";
+    const strCond = conditionValue !== undefined && conditionValue !== null ? String(conditionValue).trim() : "";
+
+    const numActual = Number(strActual);
+    const numCond = Number(strCond);
+    const isNumeric = !Number.isNaN(numActual) && !Number.isNaN(numCond) && strActual !== "" && strCond !== "";
+
+    const valA = isNumeric ? numActual : strActual;
+    const valB = isNumeric ? numCond : strCond;
+
+    switch (operator) {
+      case "=":
+        return valA == valB; // Use loose equality in case types differ slightly
+      case "!=":
+        return valA != valB;
+      case ">":
+        return valA > valB;
+      case "<":
+        return valA < valB;
+      case ">=":
+        return valA >= valB;
+      case "<=":
+        return valA <= valB;
+      default:
+        return true;
+    }
+  });
+};

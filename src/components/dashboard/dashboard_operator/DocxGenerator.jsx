@@ -35,6 +35,7 @@ import {
   normalizeDocxVariant,
   normalizeDocxVariants,
   sanitizeDocxFileName,
+  parseDocxJsonField,
 } from "../../../utils/docxTemplateHelpers";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -210,6 +211,7 @@ const getInitialFormState = () => ({
   section: BUTTON_PLACEMENTS[0].section,
   roles: [3, 17],
   variants: [getInitialVariant()],
+  conditions: [],
 });
 
 const getRoleName = (id) => SYSTEM_ROLES.find((role) => role.id === Number(id))?.name || `Роль ${id}`;
@@ -359,11 +361,13 @@ const DocxGenerator = () => {
 
   const handleStartEdit = (template) => {
     const parsedVariants = normalizeDocxVariants(template.variants);
+    const parsedConditions = parseDocxJsonField(template.conditions || template.Conditions, []);
     setActiveTemplate({
       ...template,
       uniqueIdFormat: template.uniqueIdFormat || template.UniqueIdFormat || "",
       roles: normalizeDocxRoles(template.roles),
       variants: parsedVariants.length > 0 ? parsedVariants : [getInitialVariant()],
+      conditions: Array.isArray(parsedConditions) ? parsedConditions : [],
     });
     setCollapsedVariants({});
     setEditorMode("edit");
@@ -588,12 +592,24 @@ const DocxGenerator = () => {
       });
     }
 
+    const rawConditions = Array.isArray(activeTemplate.conditions)
+      ? activeTemplate.conditions
+      : parseDocxJsonField(activeTemplate.conditions, []);
+    const conditions = rawConditions
+      .map((c) => ({
+        key: String(c.key || "").trim(),
+        operator: String(c.operator || "=").trim(),
+        value: String(c.value || "").trim(),
+      }))
+      .filter((c) => c.key);
+
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("access_token");
       const payload = {
         ...activeTemplate,
         roles: activeTemplate.roles,
         variants: cleanedVariants,
+        conditions,
       };
 
       if (editorMode === "add") {
@@ -855,6 +871,18 @@ const DocxGenerator = () => {
                           )}
                         </div>
                       </div>
+                      {template.conditions && parseDocxJsonField(template.conditions, []).length > 0 && (
+                        <div>
+                          <span className="docx-meta-label">Условия ({parseDocxJsonField(template.conditions, []).length})</span>
+                          <div className="docx-variant-mini-list">
+                            {parseDocxJsonField(template.conditions, []).map((cond, idx) => (
+                              <span key={idx}>
+                                <code>{cond.key}</code> {cond.operator} <code>{cond.value}</code>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="docx-card-actions">
@@ -1022,6 +1050,134 @@ const DocxGenerator = () => {
                     />
                   </label>
                 </div>
+              </section>
+
+              <section className="docx-editor-card">
+                <div className="docx-section-title docx-section-title--with-action" style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "stretch" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div className="docx-section-title__copy">
+                      <Settings2 size={18} />
+                      <div>
+                        <h2>Условия для показа кнопки</h2>
+                        <p>Кнопка появится только если все условия выполняются (на основе данных страницы и системы).</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="docx-btn docx-btn--secondary"
+                      onClick={() => {
+                        const conditions = Array.isArray(activeTemplate.conditions)
+                          ? activeTemplate.conditions
+                          : parseDocxJsonField(activeTemplate.conditions, []);
+                        setActiveTemplate({
+                          ...activeTemplate,
+                          conditions: [
+                            ...conditions,
+                            { key: "", operator: "=", value: "" }
+                          ]
+                        });
+                      }}
+                    >
+                      <Plus size={16} />
+                      <span>Добавить условие</span>
+                    </button>
+                  </div>
+                </div>
+
+                {(() => {
+                  const conditions = Array.isArray(activeTemplate.conditions)
+                    ? activeTemplate.conditions
+                    : parseDocxJsonField(activeTemplate.conditions, []);
+
+                  if (conditions.length === 0) {
+                    return (
+                      <div className="docx-mapping-empty" style={{ padding: "20px 0" }}>
+                        <Info size={20} />
+                        <span>Нет настроенных условий. Кнопка будет показываться всегда.</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="docx-mapping-table" style={{ marginTop: "12px" }}>
+                      <div className="docx-mapping-row docx-mapping-row--head" style={{ gridTemplateColumns: "1fr 120px 1fr 50px" }}>
+                        <span>Системный/JSON ключ</span>
+                        <span>Сравнение</span>
+                        <span>Значение</span>
+                        <span></span>
+                      </div>
+                      {conditions.map((cond, condIdx) => {
+                        const dictionaryItem = getDictionaryItem(cond.key);
+
+                        return (
+                          <div key={condIdx} className="docx-mapping-row" style={{ gridTemplateColumns: "1fr 120px 1fr 50px" }}>
+                            <label className="docx-field docx-field--small">
+                              <input
+                                type="text"
+                                list="docx-system-keys"
+                                value={cond.key || ""}
+                                onChange={(event) => {
+                                  const updated = [...conditions];
+                                  updated[condIdx] = { ...updated[condIdx], key: event.target.value };
+                                  setActiveTemplate({ ...activeTemplate, conditions: updated });
+                                }}
+                                placeholder="client.fullName или system.currentYear"
+                              />
+                              {dictionaryItem && <small>{dictionaryItem.description}</small>}
+                            </label>
+                            
+                            <div className="docx-field docx-field--small">
+                              <CustomSelect
+                                value={cond.operator || "="}
+                                onChange={(val) => {
+                                  const updated = [...conditions];
+                                  updated[condIdx] = { ...updated[condIdx], operator: val };
+                                  setActiveTemplate({ ...activeTemplate, conditions: updated });
+                                }}
+                                options={[
+                                  { value: "=", label: "=" },
+                                  { value: "!=", label: "!=" },
+                                  { value: ">", label: ">" },
+                                  { value: "<", label: "<" },
+                                  { value: ">=", label: ">=" },
+                                  { value: "<=", label: "<=" },
+                                ]}
+                                style={{ width: "100%" }}
+                              />
+                            </div>
+
+                            <label className="docx-field docx-field--small">
+                              <input
+                                type="text"
+                                value={cond.value || ""}
+                                onChange={(event) => {
+                                  const updated = [...conditions];
+                                  updated[condIdx] = { ...updated[condIdx], value: event.target.value };
+                                  setActiveTemplate({ ...activeTemplate, conditions: updated });
+                                }}
+                                placeholder="Например: 2026"
+                              />
+                            </label>
+
+                            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                              <button
+                                type="button"
+                                className="docx-icon-btn docx-icon-btn--danger"
+                                onClick={() => {
+                                  const updated = conditions.filter((_, idx) => idx !== condIdx);
+                                  setActiveTemplate({ ...activeTemplate, conditions: updated });
+                                }}
+                                title="Удалить условие"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </section>
 
               <section className="docx-editor-card">
@@ -1369,6 +1525,20 @@ const DocxGenerator = () => {
                   <code>{activeTemplate.section || "section"}</code>
                   <span>Роли</span>
                   <div className="docx-chip-list">{renderRoleChips(activeTemplate.roles)}</div>
+                  <span>Условия</span>
+                  <div className="docx-variant-mini-list" style={{ marginTop: "4px" }}>
+                    {(() => {
+                      const conditions = Array.isArray(activeTemplate.conditions)
+                        ? activeTemplate.conditions
+                        : parseDocxJsonField(activeTemplate.conditions, []);
+                      if (conditions.length === 0) return <span style={{ color: "#9ca3af" }}>Без условий (всегда)</span>;
+                      return conditions.map((cond, idx) => (
+                        <span key={idx}>
+                          <code>{cond.key || "?"}</code> {cond.operator} <code>{cond.value || "?"}</code>
+                        </span>
+                      ));
+                    })()}
+                  </div>
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { ChevronRight, FileDown, Layers, Loader2, X } from "lucide-react";
@@ -8,12 +8,13 @@ import {
   normalizeDocxRoles,
   normalizeDocxVariants,
   sanitizeDocxFileName,
+  evaluateDocxTemplateConditions,
 } from "../../utils/docxTemplateHelpers";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 const DynamicDocxButtons = ({ page, section, data = {} }) => {
-  const [templates, setTemplates] = useState([]);
+  const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -55,7 +56,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             return template.parsedRoles.some((role) => userRoles.includes(role));
           });
 
-        setTemplates(filtered);
+        setAllTemplates(filtered);
       } catch (err) {
         console.error("Failed to load docx templates:", err);
       } finally {
@@ -65,6 +66,16 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
     fetchTemplates();
   }, [page, section]);
+
+  const templates = useMemo(() => {
+    return allTemplates.filter((template) => {
+      return evaluateDocxTemplateConditions(
+        template.conditions || template.Conditions,
+        data,
+        template.uniqueIdFormat || template.UniqueIdFormat
+      );
+    });
+  }, [allTemplates, data]);
 
   const handleGenerate = async (template, variant) => {
     setGeneratingId(`${template.ID || template.id}_${variant.name}`);
