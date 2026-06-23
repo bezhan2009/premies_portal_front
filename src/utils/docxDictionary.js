@@ -202,4 +202,27 @@ export const docxDictionary = [
       { key: "bank.branchAddress", description: "Адрес филиала" },
     ],
   },
+  {
+    category: "Транзакции (Динамическая таблица)",
+    keys: [
+      { key: "transactions.date", description: "Дата и время транзакции" },
+      { key: "transactions.amount", description: "Сумма транзакции" },
+      { key: "transactions.currency", description: "Валюта транзакции" },
+      { key: "transactions.details", description: "Детали (назначение) транзакции" },
+      { key: "transactions.card", description: "Карта транзакции" },
+      { key: "transactions.stan", description: "STAN" },
+      { key: "transactions.merchant", description: "Мерчант" },
+      { key: "transactions.status", description: "Статус" },
+    ],
+  },
+  {
+    category: "График платежей (Динамическая таблица)",
+    keys: [
+      { key: "schedule.date", description: "Дата платежа" },
+      { key: "schedule.amount", description: "Общая сумма платежа" },
+      { key: "schedule.principal", description: "Погашение основного долга" },
+      { key: "schedule.interest", description: "Погашение процентов" },
+      { key: "schedule.balance", description: "Остаток основного долга" },
+    ],
+  },
 ];

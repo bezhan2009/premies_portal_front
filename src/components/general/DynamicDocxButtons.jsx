@@ -19,6 +19,14 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const [generatingId, setGeneratingId] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [paramsModal, setParamsModal] = useState({
+    isOpen: false,
+    variant: null,
+    template: null,
+    type: null,
+    fromDate: "",
+    toDate: "",
+  });
 
   const getRoles = () => {
     const roleIds = normalizeDocxRoles(localStorage.getItem("role_ids"));
@@ -77,15 +85,67 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     });
   }, [allTemplates, data]);
 
-  const handleGenerate = async (template, variant) => {
+  const handleGenerate = async (template, variant, skipParamsCheck = false) => {
+    if (!skipParamsCheck) {
+      const hasTransactions = variant.keys.some((k) => k.systemKey?.startsWith("transactions."));
+      const hasSchedule = variant.keys.some((k) => k.systemKey?.startsWith("schedule."));
+
+      if (hasTransactions || hasSchedule) {
+        setParamsModal({
+          isOpen: true,
+          variant,
+          template,
+          type: hasTransactions ? "transactions" : "schedule",
+          fromDate: "",
+          toDate: "",
+        });
+        setShowVariantModal(false);
+        return;
+      }
+    }
+
     setGeneratingId(`${template.ID || template.id}_${variant.name}`);
     setShowVariantModal(false);
+    setParamsModal((prev) => ({ ...prev, isOpen: false }));
 
     console.log("=== DOCX Generation Debug ===");
     console.log("Template:", template);
     console.log("Variant:", variant);
     console.log("Input data passed to button:", data);
-    const finalPayload = buildDocxPayload(variant, data, {}, template.uniqueIdFormat || template.UniqueIdFormat);
+
+    let finalData = { ...data };
+
+    // Fetch dynamic data if required
+    try {
+      if (paramsModal.type === "transactions") {
+        const cardId = finalData.card?.cardId || finalData.cardId;
+        if (cardId) {
+          const procUrl = import.meta.env.VITE_BACKEND_PROCESSING_URL || "http://10.64.20.84:5003";
+          const res = await axios.get(`${procUrl}/api/Transactions/by-cards`, {
+            params: {
+              cardIds: cardId,
+              fromDate: paramsModal.fromDate || undefined,
+              toDate: paramsModal.toDate || undefined,
+            },
+          });
+          finalData.transactions = res.data?.data || res.data || [];
+        }
+      } else if (paramsModal.type === "schedule") {
+        const creditId = finalData.credit?.referenceId || finalData.creditId;
+        if (creditId) {
+          const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+          const res = await axios.get(`${API_URL}/api/credits/${creditId}/schedule`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { fromDate: paramsModal.fromDate, toDate: paramsModal.toDate },
+          });
+          finalData.schedule = res.data?.schedule || res.data || [];
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch dynamic docx table data:", err);
+    }
+
+    const finalPayload = buildDocxPayload(variant, finalData, {}, template.uniqueIdFormat || template.UniqueIdFormat);
     console.log("Built Final Payload:", finalPayload);
 
     try {
@@ -232,6 +292,68 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               <div className="docx-modal__footer">
                 <button type="button" className="docx-btn docx-btn--secondary" onClick={() => setShowVariantModal(false)}>
                   Отмена
+                </button>
+              </div>
+            </motion.div>
+          </div>,
+          document.body
+        )}
+
+        {paramsModal.isOpen && paramsModal.template && typeof document !== "undefined" && createPortal(
+          <div className="docx-modal-layer">
+            <motion.div
+              className="docx-modal docx-modal--compact"
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ type: "spring", duration: 0.35 }}
+            >
+              <div className="docx-modal__header">
+                <div>
+                  <span className="docx-eyebrow">Дополнительные параметры</span>
+                  <h2>{paramsModal.template.name}</h2>
+                  <p>
+                    {paramsModal.type === "transactions" 
+                      ? "Для этого шаблона необходимо указать период транзакций." 
+                      : "Для этого шаблона необходимо указать период графика платежей."}
+                  </p>
+                </div>
+                <button type="button" className="docx-icon-btn" onClick={() => setParamsModal(prev => ({ ...prev, isOpen: false }))}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="docx-variant-picker" style={{ padding: "1.5rem 1rem" }}>
+                <div className="docx-form-group">
+                  <label>Дата начала (От)</label>
+                  <input 
+                    type="date" 
+                    className="docx-form-input"
+                    value={paramsModal.fromDate}
+                    onChange={(e) => setParamsModal(prev => ({ ...prev, fromDate: e.target.value }))}
+                  />
+                </div>
+                <div className="docx-form-group">
+                  <label>Дата конца (До)</label>
+                  <input 
+                    type="date" 
+                    className="docx-form-input"
+                    value={paramsModal.toDate}
+                    onChange={(e) => setParamsModal(prev => ({ ...prev, toDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="docx-modal__footer">
+                <button type="button" className="docx-btn docx-btn--secondary" onClick={() => setParamsModal(prev => ({ ...prev, isOpen: false }))}>
+                  Отмена
+                </button>
+                <button 
+                  type="button" 
+                  className="docx-btn docx-btn--primary" 
+                  onClick={() => handleGenerate(paramsModal.template, paramsModal.variant, true)}
+                >
+                  Сгенерировать
                 </button>
               </div>
             </motion.div>

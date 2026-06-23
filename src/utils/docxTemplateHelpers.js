@@ -107,6 +107,28 @@ export const getValueByDocxPath = (source = {}, path = "") => {
     return undefined;
   }
 
+  // Handle eval expressions
+  if (path.startsWith("eval:")) {
+    const expression = path.slice(5).trim();
+    try {
+      // Execute the expression with source acting as the available scope variables
+      const fn = new Function("source", `
+        try {
+          with(source) {
+            return ${expression};
+          }
+        } catch (e) {
+          console.error("Eval error in docx path:", e);
+          return "";
+        }
+      `);
+      return fn(source);
+    } catch (e) {
+      console.error("Failed to compile eval expression:", e);
+      return "";
+    }
+  }
+
   if (Object.prototype.hasOwnProperty.call(source, path)) {
     return source[path];
   }
@@ -114,6 +136,10 @@ export const getValueByDocxPath = (source = {}, path = "") => {
   return path.split(".").reduce((current, segment) => {
     if (current === undefined || current === null) {
       return undefined;
+    }
+
+    if (Array.isArray(current)) {
+      return current.map(item => (item !== undefined && item !== null ? item[segment] : undefined));
     }
 
     return current[segment];
@@ -422,9 +448,16 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     const overrideValue = Object.prototype.hasOwnProperty.call(overrides, overrideKey)
       ? overrides[overrideKey]
       : undefined;
-    const sourceValue = overrideValue !== undefined
+    let sourceValue = overrideValue !== undefined
       ? overrideValue
       : getValueByDocxPath(source, mapping.systemKey);
+
+    // If the evaluated value is an array, format it as a column using newlines
+    if (Array.isArray(sourceValue)) {
+      sourceValue = sourceValue
+        .map(v => formatDocxValueByKey(mapping.systemKey, v))
+        .join("\n");
+    }
 
     payload[mapping.docxKey] = isEmptyDocxValue(sourceValue)
       ? mapping.defaultValue || ""

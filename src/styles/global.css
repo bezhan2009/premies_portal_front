@@ -1309,3 +1309,178 @@ button:active {
     transform: translateY(0);
   }
 } /*# sourceMappingURL=global.css.map */
+
+/* DOCX Modal Layer Fix */
+.docx-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+.docx-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.docx-modal--compact {
+  max-width: 400px;
+}
+.docx-modal__header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.docx-modal__header h2 {
+  margin: 0.25rem 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+.docx-modal__header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+.docx-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: #6366f1;
+}
+.docx-icon-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.docx-icon-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+.docx-variant-picker {
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.docx-variant-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.docx-variant-picker__item:hover {
+  border-color: #6366f1;
+  background: #f5f5ff;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1);
+}
+.docx-variant-picker__item span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.docx-variant-picker__item strong {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+.docx-variant-picker__item small {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+.docx-variant-picker__item svg {
+  color: #9ca3af;
+  transition: transform 0.2s;
+}
+.docx-variant-picker__item:hover svg {
+  color: #6366f1;
+  transform: translateX(4px);
+}
+.docx-modal__footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: #f9fafb;
+}
+.docx-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+}
+.docx-btn--primary {
+  background: #6366f1;
+  color: white;
+}
+.docx-btn--primary:hover {
+  background: #4f46e5;
+}
+.docx-btn--primary:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+.docx-btn--secondary {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+.docx-btn--secondary:hover {
+  background: #f3f4f6;
+}
+/* Form controls inside modal */
+.docx-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.docx-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+.docx-form-input {
+  padding: 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+.docx-form-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
