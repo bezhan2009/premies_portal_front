@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
-import { ChevronRight, FileDown, Layers, Loader2, X } from "lucide-react";
+import { ChevronRight, FileDown, Layers, Loader2, X, FileText, Download } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildDocxPayload,
@@ -10,6 +10,7 @@ import {
   sanitizeDocxFileName,
   evaluateDocxTemplateConditions,
 } from "../../utils/docxTemplateHelpers";
+import { fetchCreditGraphs } from "../../api/ABS_frotavik/getUserCredits";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -149,12 +150,28 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           // Fallback: try to fetch schedule from API
           const creditId = finalData["credit.referenceId"] || finalData.credit?.referenceId || finalData.creditId;
           if (creditId) {
-            const token = localStorage.getItem("token") || localStorage.getItem("access_token");
-            const res = await axios.get(`${API_URL}/api/credits/${creditId}/schedule`, {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { fromDate: paramsModal.fromDate, toDate: paramsModal.toDate },
-            });
-            finalData.schedule = res.data?.schedule || res.data || [];
+            const graphs = await fetchCreditGraphs(creditId);
+            const scheduleMap = {};
+            if (Array.isArray(graphs)) {
+              graphs.forEach(g => {
+                const date = g.PaymentDate;
+                if (!date) return;
+                if (!scheduleMap[date]) {
+                  scheduleMap[date] = { date, amount: 0, interest: 0, principal: 0, status: g.Status, type: g.Type };
+                }
+                const amt = Number(g.Amount || 0);
+                if (g.Code === "CR_PD") {
+                  scheduleMap[date].principal += amt;
+                  scheduleMap[date].amount += amt;
+                } else if (g.Code === "CR_INTER") {
+                  scheduleMap[date].interest += amt;
+                  scheduleMap[date].amount += amt;
+                }
+                if (g.Status && g.Status !== "Выплачен") scheduleMap[date].status = g.Status;
+              });
+            }
+            const scheduleList = Object.values(scheduleMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            finalData.schedule = scheduleList;
           }
         }
       }
@@ -171,6 +188,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
         `${API_URL}/api/docx/generate`,
         {
           templatePath: variant.templatePath,
+          templateId: template.ID || template.id,
           data: finalPayload,
           format: format,
         },
@@ -238,6 +256,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     return null;
   }
 
+  const userRoles = getRoles();
+
   return (
     <>
       <div className="docx-runtime-buttons">
@@ -246,36 +266,48 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           const hasMultiple = variants.length > 1;
           const isWorking = generatingId && generatingId.startsWith(`${template.ID || template.id}_`);
 
+          const pdfRoles = normalizeDocxRoles(template.pdfRoles || template.PdfRoles);
+          const docxRoles = normalizeDocxRoles(template.docxRoles || template.DocxRoles);
+          
+          const canPdf = pdfRoles.length === 0 || pdfRoles.some(r => userRoles.includes(r));
+          const canDocx = docxRoles.length === 0 || docxRoles.some(r => userRoles.includes(r));
+
+          if (!canPdf && !canDocx) return null;
+
           return (
             <div key={template.ID || template.id} className="docx-generate-group" style={{display: "inline-flex", marginRight: "8px", verticalAlign: "middle", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)"}}>
-              <button
-                type="button"
-                onClick={() => handleButtonClick(template, "pdf")}
-                className="docx-runtime-btn"
-                disabled={Boolean(generatingId)}
-                title={template.description || template.name}
-                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: "1px solid rgba(255,255,255,0.2)", margin: 0, boxShadow: "none" }}
-              >
-                {isWorking ? (
-                  <Loader2 className="docx-spin" size={15} />
-                ) : hasMultiple ? (
-                  <Layers size={15} />
-                ) : (
-                  <FileText size={15} />
-                )}
-                <span>{template.name}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleButtonClick(template, "docx")}
-                className="docx-runtime-btn"
-                disabled={Boolean(generatingId)}
-                style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, paddingLeft: "10px", paddingRight: "10px", margin: 0, boxShadow: "none", backgroundColor: "#334155" }}
-                title="Скачать в DOCX"
-              >
-                <Download size={15} />
-                <span style={{ fontSize: "11px", marginLeft: "2px" }}>DOCX</span>
-              </button>
+              {canPdf && (
+                <button
+                  type="button"
+                  onClick={() => handleButtonClick(template, "pdf")}
+                  className="docx-runtime-btn"
+                  disabled={Boolean(generatingId)}
+                  title={template.description || template.name}
+                  style={{ borderTopRightRadius: canDocx ? 0 : "8px", borderBottomRightRadius: canDocx ? 0 : "8px", borderRight: canDocx ? "1px solid rgba(255,255,255,0.2)" : "none", margin: 0, boxShadow: "none" }}
+                >
+                  {isWorking ? (
+                    <Loader2 className="docx-spin" size={15} />
+                  ) : hasMultiple ? (
+                    <Layers size={15} />
+                  ) : (
+                    <FileText size={15} />
+                  )}
+                  <span>{template.name} {canDocx ? "" : "(PDF)"}</span>
+                </button>
+              )}
+              {canDocx && (
+                <button
+                  type="button"
+                  onClick={() => handleButtonClick(template, "docx")}
+                  className="docx-runtime-btn"
+                  disabled={Boolean(generatingId)}
+                  style={{ borderTopLeftRadius: canPdf ? 0 : "8px", borderBottomLeftRadius: canPdf ? 0 : "8px", paddingLeft: canPdf ? "10px" : "15px", paddingRight: canPdf ? "10px" : "15px", margin: 0, boxShadow: "none", backgroundColor: "#334155" }}
+                  title="Скачать в DOCX"
+                >
+                  <Download size={15} />
+                  <span style={{ fontSize: "11px", marginLeft: "2px" }}>DOCX</span>
+                </button>
+              )}
             </div>
           );
         })}
@@ -398,7 +430,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                   <button 
                     type="button" 
                     className="docx-btn docx-btn--primary" 
-                    onClick={() => handleGenerate(paramsModal.template, paramsModal.variant, true)}
+                    onClick={() => handleGenerate(paramsModal.template, paramsModal.variant, selectedFormat, true)}
                   >
                     Сгенерировать
                   </button>

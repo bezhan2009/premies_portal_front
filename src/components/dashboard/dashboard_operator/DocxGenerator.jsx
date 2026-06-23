@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Check,
+  Clock,
   ChevronRight,
   Database,
   Download,
@@ -213,6 +214,8 @@ const getInitialFormState = () => ({
   page: BUTTON_PLACEMENTS[0].page,
   section: BUTTON_PLACEMENTS[0].section,
   roles: [3, 17],
+  pdfRoles: [],
+  docxRoles: [],
   variants: [getInitialVariant()],
   conditions: [],
 });
@@ -394,6 +397,12 @@ const DocxGenerator = () => {
   });
 
   const [docsModalTemplate, setDocsModalTemplate] = useState(null);
+  
+  // Audit Modal States
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [auditTemplate, setAuditTemplate] = useState(null);
 
   const openValueBuilder = (variantIndex, keyIndex, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
@@ -558,6 +567,8 @@ const DocxGenerator = () => {
       ...template,
       uniqueIdFormat: template.uniqueIdFormat || template.UniqueIdFormat || "",
       roles: normalizeDocxRoles(template.roles),
+      pdfRoles: normalizeDocxRoles(template.pdfRoles || template.PdfRoles),
+      docxRoles: normalizeDocxRoles(template.docxRoles || template.DocxRoles),
       variants: parsedVariants.length > 0 ? parsedVariants : [getInitialVariant()],
       conditions: Array.isArray(parsedConditions) ? parsedConditions : [],
     });
@@ -879,6 +890,25 @@ const DocxGenerator = () => {
     }
   };
 
+  const handleOpenAudit = async (template) => {
+    setAuditTemplate(template);
+    setShowAuditModal(true);
+    setIsLoadingAudit(true);
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      const res = await axios.get(`${API_URL}/api/docx/audit?templateId=${template.ID || template.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAuditLogs(res.data || []);
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при загрузке аудита");
+      setAuditLogs([]);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  };
+
   const handleOpenTest = (template) => {
     const variants = template.parsedVariants || normalizeDocxVariants(template.variants);
 
@@ -1177,18 +1207,22 @@ const DocxGenerator = () => {
                       )}
                     </div>
 
-                    <div className="docx-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", width: "100%" }}>
+                    <div className="docx-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "8px", width: "100%" }}>
                       <button type="button" className="docx-btn docx-btn--secondary" onClick={() => handleStartEdit(template)}>
                         <Edit2 size={16} />
                         <span>Изменить</span>
                       </button>
                       <button type="button" className="docx-btn docx-btn--accent" onClick={() => handleOpenTest(template)}>
                         <Play size={16} />
-                        <span>Сгенерировать</span>
+                        <span>Тест</span>
                       </button>
                       <button type="button" className="docx-btn docx-btn--primary" onClick={() => setDocsModalTemplate(template)}>
                         <FileJson size={16} />
                         <span>API Docs</span>
+                      </button>
+                      <button type="button" className="docx-btn docx-btn--secondary" onClick={() => handleOpenAudit(template)}>
+                        <Clock size={16} />
+                        <span>История</span>
                       </button>
                       <button
                         type="button"
@@ -1883,22 +1917,14 @@ const DocxGenerator = () => {
 
       <AnimatePresence>
         {showDrawer && (
-          <div className="docx-drawer-layer">
-            <motion.div
-              className="docx-drawer-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowDrawer(false)}
-            />
-            <motion.aside
-              className="docx-drawer"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 26, stiffness: 220 }}
-            >
-              <div className="docx-drawer__header">
+          <motion.aside
+            className="docx-drawer"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 26, stiffness: 220 }}
+          >
+            <div className="docx-drawer__header">
                 <div>
                   <span className="docx-eyebrow">docxDictionary</span>
                   <h2>Выберите системный ключ</h2>
@@ -1943,7 +1969,6 @@ const DocxGenerator = () => {
                 ))}
               </div>
             </motion.aside>
-          </div>
         )}
       </AnimatePresence>
 
@@ -2348,6 +2373,77 @@ const DocxGenerator = () => {
                 >
                   Применить
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAuditModal && (
+          <div className="docx-modal-layer">
+            <motion.div
+              className="docx-modal-container"
+              style={{ maxWidth: "1000px" }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="docx-modal-header">
+                <h2>История генераций: {auditTemplate?.name}</h2>
+                <button
+                  type="button"
+                  className="docx-icon-btn"
+                  onClick={() => setShowAuditModal(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="docx-modal-content">
+                {isLoadingAudit ? (
+                  <div style={{ padding: "40px", textAlign: "center" }}>
+                    <Loader2 className="docx-spin" size={32} color="#3b82f6" style={{ margin: "0 auto 16px" }} />
+                    <p>Загрузка истории...</p>
+                  </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="docx-empty-state">
+                    <Clock size={48} color="#94a3b8" style={{ marginBottom: "16px" }} />
+                    <h3>Истории пока нет</h3>
+                    <p>Документ еще ни разу не генерировался</p>
+                  </div>
+                ) : (
+                  <div className="docx-table-container">
+                    <table className="docx-table">
+                      <thead>
+                        <tr>
+                          <th>Дата и Время</th>
+                          <th>Пользователь</th>
+                          <th>ID Шаблона</th>
+                          <th>Формат</th>
+                          <th>Данные</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map((log, idx) => (
+                          <tr key={idx}>
+                            <td>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
+                            <td>{log.username} (ID: {log.userId})</td>
+                            <td>{log.templateId}</td>
+                            <td><span className={`docx-badge ${log.format === 'pdf' ? 'docx-badge--danger' : 'docx-badge--primary'}`}>{log.format?.toUpperCase()}</span></td>
+                            <td>
+                              <details>
+                                <summary style={{ cursor: "pointer", color: "#3b82f6" }}>Посмотреть данные</summary>
+                                <pre style={{ fontSize: "11px", backgroundColor: "#f1f5f9", padding: "8px", borderRadius: "4px", marginTop: "8px", maxHeight: "200px", overflow: "auto" }}>
+                                  {JSON.stringify(log.data, null, 2)}
+                                </pre>
+                              </details>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
