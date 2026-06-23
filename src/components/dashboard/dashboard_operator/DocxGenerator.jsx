@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import ApiDocsModal from "./ApiDocsModal";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -391,6 +392,8 @@ const DocxGenerator = () => {
     variantIndex: null,
     fileName: "",
   });
+
+  const [docsModalTemplate, setDocsModalTemplate] = useState(null);
 
   const openValueBuilder = (variantIndex, keyIndex, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
@@ -933,7 +936,7 @@ const DocxGenerator = () => {
       );
 
       link.href = url;
-      link.setAttribute("download", `${downloadName}.docx`);
+      link.setAttribute("download", `${downloadName}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1181,6 +1184,10 @@ const DocxGenerator = () => {
                       <button type="button" className="docx-btn docx-btn--accent" onClick={() => handleOpenTest(template)}>
                         <Play size={16} />
                         <span>Сгенерировать</span>
+                      </button>
+                      <button type="button" className="docx-btn docx-btn--primary" onClick={() => setDocsModalTemplate(template)}>
+                        <FileJson size={16} />
+                        <span>API Docs</span>
                       </button>
                       <button
                         type="button"
@@ -2345,6 +2352,12 @@ const DocxGenerator = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ApiDocsModal 
+        isOpen={!!docsModalTemplate} 
+        template={docsModalTemplate} 
+        onClose={() => setDocsModalTemplate(null)} 
+      />
     </div>
   );
 };

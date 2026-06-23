@@ -19,6 +19,7 @@
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
+    "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.525.0",
     "pdfjs-dist": "^3.11.174",
