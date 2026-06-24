@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle } from "lucide-react";
+import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
+import useThemeStore from "../../../store/useThemeStore";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 export default function OperatorFeedbackPage() {
+  const token = localStorage.getItem("access_token");
+  const currentUserId = Number(localStorage.getItem("user_id") || 0);
+  const { theme } = useThemeStore();
+
   const [totalUnread, setTotalUnread] = useState(0);
   const [messages, setMessages] = useState([]);
   
@@ -22,10 +28,15 @@ export default function OperatorFeedbackPage() {
   const [activeThreadName, setActiveThreadName] = useState("");
   
   const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [file, setFile] = useState(null);
   
   // Search threads
   const [threadSearch, setThreadSearch] = useState("");
   
+  // Tabs
+  const [activeTab, setActiveTab] = useState("support"); // "support" | "direct"
+
   // Direct messages user list / search
   const [usersList, setUsersList] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -47,27 +58,24 @@ export default function OperatorFeedbackPage() {
     headers: { Authorization: `Bearer ${token}` }
   };
 
-  // Fetch users for direct messages
   const fetchUsers = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/users/emails`, axiosConfig);
       setUsersList(res.data.users || []);
     } catch (err) {
-      console.error("Error fetching users list:", err);
+      console.error("Error fetching users:", err);
     }
   }, []);
 
-  // Fetch total unread count
   const fetchTotalUnread = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/feedback/unread-count`, axiosConfig);
       setTotalUnread(res.data.unread_count || 0);
     } catch (err) {
-      console.error("Error fetching total unread count:", err);
+      console.error("Error fetching total unread:", err);
     }
   }, []);
 
-  // Fetch support threads
   const fetchSupportThreads = useCallback(async (showLoading = false) => {
     if (showLoading) setLoadingThreads(true);
     try {
@@ -80,7 +88,6 @@ export default function OperatorFeedbackPage() {
     }
   }, []);
 
-  // Fetch direct message threads
   const fetchDirectThreads = useCallback(async (showLoading = false) => {
     if (showLoading) setLoadingThreads(true);
     try {
@@ -93,7 +100,6 @@ export default function OperatorFeedbackPage() {
     }
   }, []);
 
-  // Fetch messages
   const fetchMessages = useCallback(async (type, threadId, showLoading = false) => {
     if (!threadId) return;
     if (showLoading) setLoadingChat(true);
@@ -102,7 +108,23 @@ export default function OperatorFeedbackPage() {
         ? `${API_URL}/api/feedback?userId=${threadId}`
         : `${API_URL}/api/feedback?chatWith=${threadId}`;
       const res = await axios.get(url, axiosConfig);
-      setMessages(res.data || []);
+      
+      setMessages(prevMessages => {
+         // Check for new incoming messages to show notification
+         if (prevMessages.length > 0 && res.data && res.data.length > prevMessages.length) {
+            const newMsg = res.data[res.data.length - 1];
+            if ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId)) {
+               if ("Notification" in window) {
+                  if (Notification.permission === "granted") {
+                     new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: newMsg.message || "Вложение" });
+                  } else if (Notification.permission !== "denied") {
+                     Notification.requestPermission();
+                  }
+               }
+            }
+         }
+         return res.data || [];
+      });
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
@@ -110,7 +132,6 @@ export default function OperatorFeedbackPage() {
     }
   }, []);
 
-  // Mark read
   const markAsRead = useCallback(async (type, threadId) => {
     if (!threadId) return;
     try {
@@ -119,24 +140,18 @@ export default function OperatorFeedbackPage() {
         : { user_id: threadId };
       await axios.post(`${API_URL}/api/feedback/mark-read`, payload, axiosConfig);
       
-      // Refresh lists
-      if (type === "support") {
-        fetchSupportThreads();
-      } else if (type === "direct") {
-        fetchDirectThreads();
-        fetchTotalUnread();
-      }
+      if (type === "support") fetchSupportThreads();
+      else if (type === "direct") fetchDirectThreads();
+      fetchTotalUnread();
     } catch (err) {
-      console.error("Error marking messages as read:", err);
+      console.error("Error marking read:", err);
     }
   }, [fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
-  // Scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Initial load
   useEffect(() => {
     fetchUsers();
     fetchSupportThreads(true);
@@ -144,7 +159,6 @@ export default function OperatorFeedbackPage() {
     fetchTotalUnread();
   }, [fetchSupportThreads, fetchDirectThreads, fetchUsers, fetchTotalUnread]);
 
-  // Polling
   useEffect(() => {
     const chatInterval = setInterval(() => {
       if (activeChatType && activeThreadId) {
@@ -164,7 +178,6 @@ export default function OperatorFeedbackPage() {
     };
   }, [activeChatType, activeThreadId, fetchMessages, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
-  // Mark read when messages length or active thread changes
   useEffect(() => {
     if (activeChatType && activeThreadId) {
       markAsRead(activeChatType, activeThreadId);
@@ -172,27 +185,40 @@ export default function OperatorFeedbackPage() {
     }
   }, [activeChatType, activeThreadId, messages.length, markAsRead]);
 
-  // Send message
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeThreadId || !activeChatType) return;
+    if (!newMessage.trim() && !file) return;
+    if (!activeThreadId || !activeChatType) return;
 
     setSending(true);
+    let attachmentUrl = "";
+
     try {
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await axios.post(`${API_URL}/api/feedback/upload`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        });
+        attachmentUrl = uploadRes.data.url;
+      }
+
       let payload = activeChatType === "direct" 
-        ? { message: newMessage.trim(), recipient_id: activeThreadId }
-        : { message: newMessage.trim(), user_id: activeThreadId };
+        ? { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId }
+        : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId };
 
       const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
       setMessages((prev) => [...prev, res.data]);
       setNewMessage("");
+      setFile(null);
+      setShowEmojiPicker(false);
       setTimeout(scrollToBottom, 50);
       
-      if (activeChatType === "support") {
-        fetchSupportThreads();
-      } else if (activeChatType === "direct") {
-        fetchDirectThreads();
-      }
+      if (activeChatType === "support") fetchSupportThreads();
+      else if (activeChatType === "direct") fetchDirectThreads();
     } catch (err) {
       console.error("Error sending message:", err);
     } finally {
@@ -200,7 +226,6 @@ export default function OperatorFeedbackPage() {
     }
   };
 
-  // Unified select thread handler
   const handleSelectThread = useCallback((thread) => {
     setActiveChatType(thread.chatType);
     setActiveThreadId(thread.id);
@@ -209,8 +234,8 @@ export default function OperatorFeedbackPage() {
     setMobileShowChat(true);
   }, [fetchMessages]);
 
-  // Start chat with selected user from search
   const handleStartDirectChat = (user) => {
+    setActiveTab("direct");
     setActiveChatType("direct");
     setActiveThreadId(user.id);
     setActiveThreadName(user.full_name || user.username);
@@ -234,7 +259,6 @@ export default function OperatorFeedbackPage() {
     }
   };
 
-  // Filter users from list
   const filteredUsers = usersList.filter((u) => {
     if (u.id === currentUserId) return false;
     const query = userSearchQuery.toLowerCase().trim();
@@ -246,62 +270,38 @@ export default function OperatorFeedbackPage() {
     );
   });
 
-  // Unified list of all threads (support + direct)
-  const unifiedThreads = useMemo(() => {
-    const supportMapped = supportThreads.map(t => ({
-      chatType: "support",
+  const displayThreads = useMemo(() => {
+    let source = activeTab === "support" ? supportThreads : directThreads;
+    let mapped = source.map(t => ({
+      chatType: activeTab,
       id: t.user_id,
       name: t.username,
       message: t.message,
       unread_count: t.unread_count,
       last_message_at: t.last_message_at,
-      isSupportTicket: true
+      isSupportTicket: activeTab === "support"
     }));
     
-    const directMapped = directThreads.map(t => ({
-      chatType: "direct",
-      id: t.user_id,
-      name: t.username,
-      message: t.message,
-      unread_count: t.unread_count,
-      last_message_at: t.last_message_at,
-      isSupportTicket: false
-    }));
-    
-    const list = [...supportMapped, ...directMapped];
-    
-    // Sort by last message time descending
-    list.sort((a, b) => {
+    mapped.sort((a, b) => {
       const timeA = new Date(a.last_message_at || 0).getTime();
       const timeB = new Date(b.last_message_at || 0).getTime();
       return timeB - timeA;
     });
-    
-    return list;
-  }, [supportThreads, directThreads]);
 
-  const filteredThreads = useMemo(() => {
-    return unifiedThreads.filter((t) => {
-      const query = threadSearch.toLowerCase();
-      return t.name?.toLowerCase().includes(query);
-    });
-  }, [unifiedThreads, threadSearch]);
+    return mapped.filter((t) => t.name?.toLowerCase().includes(threadSearch.toLowerCase()));
+  }, [activeTab, supportThreads, directThreads, threadSearch]);
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
     try {
       const d = new Date(timeStr);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return "";
-    }
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
   };
 
   return (
     <div className="feedback-container">
-      <Helmet>
-        <title>Панель обратной связи</title>
-      </Helmet>
+      <Helmet><title>Панель обратной связи</title></Helmet>
       
       <style>{`
         .feedback-container {
@@ -315,7 +315,7 @@ export default function OperatorFeedbackPage() {
 
         /* Sidebar */
         .feedback-sidebar {
-          width: 320px;
+          width: 340px;
           border-right: 1px solid var(--border-color);
           display: flex;
           flex-direction: column;
@@ -325,7 +325,7 @@ export default function OperatorFeedbackPage() {
         }
         
         .sidebar-header {
-          padding: 16px 20px 10px 20px;
+          padding: 16px 20px 0 20px;
         }
         .sidebar-header h2 {
           font-size: 18px;
@@ -337,7 +337,28 @@ export default function OperatorFeedbackPage() {
           color: var(--text-color);
         }
         
-        /* Direct messaging user lookup */
+        .tabs-container {
+          display: flex;
+          border-bottom: 1px solid var(--border-color);
+          margin-top: 12px;
+        }
+        .tab-btn {
+          flex: 1;
+          background: none;
+          border: none;
+          padding: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          transition: all 0.2s;
+        }
+        .tab-btn.active {
+          color: var(--primary-color);
+          border-bottom: 2px solid var(--primary-color);
+        }
+
         .user-search-container {
           padding: 10px 16px;
           border-bottom: 1px solid var(--border-color);
@@ -363,7 +384,6 @@ export default function OperatorFeedbackPage() {
           color: var(--text-color);
           font-size: 13px;
           outline: none;
-          transition: border-color 0.2s;
         }
         .search-wrapper input:focus {
           border-color: var(--primary-color);
@@ -390,12 +410,10 @@ export default function OperatorFeedbackPage() {
           font-size: 13px;
           cursor: pointer;
           color: var(--text-color);
-          transition: background 0.2s;
           text-align: left;
           background: none;
           border: none;
           width: 100%;
-          outline: none;
         }
         .user-dropdown-item:hover {
           background: var(--bg-color);
@@ -440,7 +458,6 @@ export default function OperatorFeedbackPage() {
           height: 40px;
           border-radius: 20px;
           background: rgba(var(--primary-rgb), 0.15);
-          border: 1px solid rgba(var(--primary-rgb), 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -477,7 +494,15 @@ export default function OperatorFeedbackPage() {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        
+        .unread-badge {
+          background: var(--danger-color, #eb2525);
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 10px;
+        }
+
         /* Chat Area */
         .feedback-chat {
           flex: 1;
@@ -493,10 +518,6 @@ export default function OperatorFeedbackPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-        }
-        .chat-title-info {
-          display: flex;
-          flex-direction: column;
         }
         .chat-title-info h3 {
           font-size: 16px;
@@ -514,12 +535,6 @@ export default function OperatorFeedbackPage() {
           margin-top: 2px;
         }
         
-        .chat-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
         .btn-back-list {
           display: none;
           background: none;
@@ -528,13 +543,8 @@ export default function OperatorFeedbackPage() {
           cursor: pointer;
           padding: 6px;
           margin-right: 8px;
-          border-radius: 4px;
         }
-        .btn-back-list:hover {
-          background: rgba(var(--primary-rgb), 0.05);
-        }
-        
-        /* Instructions Banner */
+
         .chat-instructions-banner {
           background: rgba(var(--primary-rgb), 0.05);
           border-bottom: 1px solid var(--border-color);
@@ -593,7 +603,6 @@ export default function OperatorFeedbackPage() {
           background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
           color: #ffffff;
           border-bottom-right-radius: 4px;
-          box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.15);
         }
         .incoming .msg-bubble {
           background: var(--bg-secondary);
@@ -615,18 +624,25 @@ export default function OperatorFeedbackPage() {
         .incoming .msg-meta {
           color: var(--text-secondary);
         }
+        .msg-attachment img {
+          max-width: 100%;
+          border-radius: 8px;
+          margin-top: 8px;
+        }
 
         /* Input Bar */
         .chat-input-bar {
           padding: 16px 24px;
           border-top: 1px solid var(--border-color);
           background: var(--bg-sidebar);
+          position: relative;
         }
         .chat-input-form {
           display: flex;
           gap: 12px;
+          align-items: center;
         }
-        .chat-input-form input {
+        .chat-input-form input[type="text"] {
           flex: 1;
           background: var(--bg-color);
           border: 1px solid var(--border-input);
@@ -635,10 +651,22 @@ export default function OperatorFeedbackPage() {
           color: var(--text-color);
           font-size: 14px;
           outline: none;
-          transition: border-color 0.2s;
         }
-        .chat-input-form input:focus {
+        .chat-input-form input[type="text"]:focus {
           border-color: var(--primary-color);
+        }
+        .icon-btn {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s;
+        }
+        .icon-btn:hover {
+          color: var(--primary-color);
         }
         .chat-send-btn {
           background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
@@ -651,19 +679,25 @@ export default function OperatorFeedbackPage() {
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.15);
-          flex-shrink: 0;
-        }
-        .chat-send-btn:hover:not(:disabled) {
-          filter: brightness(1.1);
-          transform: translateY(-1px);
         }
         .chat-send-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
-
+        .emoji-picker-container {
+          position: absolute;
+          bottom: 70px;
+          left: 16px;
+          z-index: 100;
+        }
+        .file-preview {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
         .chat-empty-state {
           flex: 1;
           display: flex;
@@ -686,38 +720,21 @@ export default function OperatorFeedbackPage() {
           margin-bottom: 8px;
         }
 
-        /* Custom Scrollbars */
+        /* Scrollbars */
         .threads-list::-webkit-scrollbar,
-        .chat-messages::-webkit-scrollbar,
-        .users-dropdown-list::-webkit-scrollbar {
+        .chat-messages::-webkit-scrollbar {
           width: 6px;
         }
-        .threads-list::-webkit-scrollbar-track,
-        .chat-messages::-webkit-scrollbar-track,
-        .users-dropdown-list::-webkit-scrollbar-track {
-          background: transparent;
-        }
         .threads-list::-webkit-scrollbar-thumb,
-        .chat-messages::-webkit-scrollbar-thumb,
-        .users-dropdown-list::-webkit-scrollbar-thumb {
+        .chat-messages::-webkit-scrollbar-thumb {
           background: var(--border-color);
           border-radius: 3px;
         }
 
-        /* Responsive Layout styles */
         @media (max-width: 768px) {
-          .btn-back-list {
-            display: block;
-          }
-          
-          .feedback-sidebar {
-            width: 100%;
-            display: ${mobileShowChat ? "none" : "flex"};
-          }
-          
-          .feedback-chat {
-            display: ${mobileShowChat ? "flex" : "none"};
-          }
+          .btn-back-list { display: block; }
+          .feedback-sidebar { width: 100%; display: ${mobileShowChat ? "none" : "flex"}; }
+          .feedback-chat { display: ${mobileShowChat ? "flex" : "none"}; }
         }
       `}</style>
 
@@ -737,95 +754,80 @@ export default function OperatorFeedbackPage() {
               onChange={(e) => setThreadSearch(e.target.value)}
             />
           </div>
+          
+          <div className="tabs-container">
+             <button className={`tab-btn ${activeTab === "support" ? "active" : ""}`} onClick={() => setActiveTab("support")}>
+               Обращения
+             </button>
+             <button className={`tab-btn ${activeTab === "direct" ? "active" : ""}`} onClick={() => setActiveTab("direct")}>
+               Личные сообщения
+             </button>
+          </div>
         </div>
 
-        {/* User Search for Direct Chat */}
-        <div className="user-search-container">
-          <div className="search-wrapper">
-            <Search size={14} />
-            <input
-              type="text"
-              placeholder="Начать новый диалог с..."
-              value={userSearchQuery}
-              onChange={(e) => {
-                setUserSearchQuery(e.target.value);
-                setShowUsersDropdown(true);
-              }}
-              onFocus={() => setShowUsersDropdown(true)}
-            />
+        {activeTab === "direct" && (
+          <div className="user-search-container">
+            <div className="search-wrapper">
+              <Search size={14} />
+              <input
+                type="text"
+                placeholder="Начать новый диалог с..."
+                value={userSearchQuery}
+                onChange={(e) => {
+                  setUserSearchQuery(e.target.value);
+                  setShowUsersDropdown(true);
+                }}
+                onFocus={() => setShowUsersDropdown(true)}
+              />
+            </div>
+            {showUsersDropdown && filteredUsers.length > 0 && (
+              <div className="users-dropdown-list">
+                {filteredUsers.map((u) => (
+                  <button key={u.id} className="user-dropdown-item" onClick={() => handleStartDirectChat(u)}>
+                    <span className="user-dropdown-fullname">{u.full_name || u.username}</span>
+                    <span className="user-dropdown-username">{u.email || `@${u.username}`}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          {showUsersDropdown && filteredUsers.length > 0 && (
-            <div className="users-dropdown-list">
-              {filteredUsers.map((u) => (
-                <button
-                  key={u.id}
-                  className="user-dropdown-item"
-                  onClick={() => handleStartDirectChat(u)}
-                >
-                  <span className="user-dropdown-fullname">{u.full_name || u.username}</span>
-                  <span className="user-dropdown-username">{u.email || `@${u.username}`}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {showUsersDropdown && userSearchQuery.trim() !== "" && filteredUsers.length === 0 && (
-            <div className="users-dropdown-list" style={{ padding: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Пользователь не найден
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Threads list */}
         <div className="threads-list">
           {loadingThreads ? (
-            <div style={{ padding: "40px 0" }}>
-              <Spinner size="medium" label="Загрузка чатов..." />
-            </div>
-          ) : filteredThreads.length === 0 ? (
+            <div style={{ padding: "40px 0" }}><Spinner size="medium" label="Загрузка чатов..." /></div>
+          ) : displayThreads.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
               Нет активных диалогов.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {filteredThreads.map((thread) => {
-                const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
-                const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
+            displayThreads.map((thread) => {
+              const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
+              const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
 
-                return (
-                  <div
-                    key={`${thread.chatType}-${thread.id}`}
-                    className={`thread-item ${isActive ? "active" : ""}`}
-                    onClick={() => handleSelectThread(thread)}
-                  >
-                    <div 
-                      className="thread-avatar" 
-                      style={thread.isSupportTicket ? { background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary-color)' } : {}}
-                    >
-                      {thread.isSupportTicket ? <Shield size={18} /> : initials}
+              return (
+                <div
+                  key={`${thread.chatType}-${thread.id}`}
+                  className={`thread-item ${isActive ? "active" : ""}`}
+                  onClick={() => handleSelectThread(thread)}
+                >
+                  <div className="thread-avatar">
+                    {thread.isSupportTicket ? <Shield size={18} /> : initials}
+                  </div>
+                  <div className="thread-info">
+                    <div className="thread-meta">
+                      <span className="thread-name">{thread.name}</span>
+                      <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                     </div>
-                    <div className="thread-info">
-                      <div className="thread-meta">
-                        <span className="thread-name" style={thread.isSupportTicket ? { fontWeight: '700' } : {}}>{thread.name}</span>
-                        <span className="thread-time">{formatTime(thread.last_message_at)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                          <span className="thread-msg">{thread.message || "Диалог начат"}</span>
-                          {thread.isSupportTicket && (
-                            <span style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '600', marginTop: '2px' }}>
-                              Обращение об ошибке
-                            </span>
-                          )}
-                        </div>
-                        {thread.unread_count > 0 && (
-                          <span className="unread-badge">{thread.unread_count}</span>
-                        )}
-                      </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
+                      {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -835,25 +837,15 @@ export default function OperatorFeedbackPage() {
         {activeThreadId ? (
           <>
             <div className="chat-header">
-              <div className="chat-header-actions">
-                <button 
-                  className="btn-back-list" 
-                  onClick={() => setMobileShowChat(false)}
-                  title="Назад к списку"
-                >
-                  <ArrowLeft size={20} />
-                </button>
+              <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
+                <button className="btn-back-list" onClick={() => setMobileShowChat(false)}><ArrowLeft size={20} /></button>
                 <div className="chat-title-info">
                   <h3>{activeThreadName}</h3>
-                  <span>
-                    <Shield size={12} />
-                    {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}
-                  </span>
+                  <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
                 </div>
               </div>
             </div>
 
-            {/* Instruction banner */}
             <div className="chat-instructions-banner">
               <Info size={16} />
               <span>
@@ -871,13 +863,11 @@ export default function OperatorFeedbackPage() {
             ) : (
               <div className="chat-messages">
                 {messages.length === 0 ? (
-                  <div className="chat-empty-state">
-                    <MessageSquare size={48} />
-                    <h3>Обращение пусто</h3>
-                  </div>
+                  <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
                   messages.map((msg) => {
-                    const isOutgoing = msg.is_operator;
+                    // Operator outgoing is msg.is_operator for support, but for direct it's current user
+                    const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
 
                     return (
                       <div key={msg.id} className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"}`}>
@@ -885,7 +875,16 @@ export default function OperatorFeedbackPage() {
                           <span className="msg-sender">{msg.username}</span>
                         )}
                         <div className="msg-bubble">
-                          <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>
+                          {msg.message && <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
+                          {msg.attachment_url && (
+                            <div className="msg-attachment">
+                              {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                <img src={`${API_URL}${msg.attachment_url}`} alt="attachment" />
+                              ) : (
+                                <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>Скачать файл</a>
+                              )}
+                            </div>
+                          )}
                           <div className="msg-meta">
                             <Clock size={10} style={{ marginRight: 2 }} />
                             <span>{formatTime(msg.created_at)}</span>
@@ -900,16 +899,33 @@ export default function OperatorFeedbackPage() {
             )}
 
             <div className="chat-input-bar">
+              {file && (
+                <div className="file-preview">
+                  <Paperclip size={14} /> Выбран файл: {file.name}
+                  <button onClick={() => setFile(null)} style={{background:"none", border:"none", color:"red", cursor:"pointer"}}>x</button>
+                </div>
+              )}
+              {showEmojiPicker && (
+                <div className="emoji-picker-container">
+                  <EmojiPicker onEmojiClick={(e) => setNewMessage(prev => prev + e.emoji)} theme={theme} />
+                </div>
+              )}
               <form onSubmit={handleSendMessage} className="chat-input-form">
+                <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <Smile size={22} />
+                </button>
+                <label className="icon-btn">
+                  <Paperclip size={22} />
+                  <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
+                </label>
                 <input
                   type="text"
                   placeholder="Напишите ответ..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   disabled={sending}
-                  required
                 />
-                <button type="submit" className="chat-send-btn" disabled={sending || !newMessage.trim()}>
+                <button type="submit" className="chat-send-btn" disabled={sending || (!newMessage.trim() && !file)}>
                   <Send size={18} />
                 </button>
               </form>

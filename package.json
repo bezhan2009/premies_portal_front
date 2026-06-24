@@ -18,6 +18,7 @@
     "antd": "^5.28.0",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
+    "emoji-picker-react": "^4.19.1",
     "framer-motion": "^12.23.26",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",

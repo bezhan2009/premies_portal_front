@@ -414,7 +414,8 @@ export const changeCardLimit = async (payload) => {
 };
 
 export const activateCardSoap = async (contractId, cardId) => {
-    const url = '/api/cards';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = `${GATEWAY_URL}/api/transactions/activate-card`;
     
     const xml = `<?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
@@ -448,7 +449,9 @@ export const activateCardSoap = async (contractId, cardId) => {
     try {
         const response = await axios.post(url, xml, {
             headers: {
-                'Content-Type': 'text/xml;charset=UTF-8'
+                'accept': '*/*',
+                'Content-Type': 'text/xml;charset=UTF-8',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
