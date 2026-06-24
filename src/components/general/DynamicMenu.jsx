@@ -419,20 +419,24 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const links = useMemo(() => {
         const baseLinks = [
             { name: "База знаний", href: "/user/knowledge-base", key: "knowledge", icon: BookOpen },
-            { 
+        ];
+
+        if (!roles.includes(3)) {
+            baseLinks.push({ 
                 name: "Актив чат", 
                 href: "/feedback", 
                 key: "feedback", 
                 icon: MessageSquare, 
                 hasNotification: unreadFeedbackCount > 0 
-            },
-            {
-                name: "Обратная связь",
-                href: "/submit-feedback",
-                key: "submit_feedback",
-                icon: Send
-            },
-        ];
+            });
+        }
+
+        baseLinks.push({
+            name: "Обратная связь",
+            href: "/submit-feedback",
+            key: "submit_feedback",
+            icon: Send
+        });
 
         const additionalLinks = [];
 

@@ -38,7 +38,7 @@ export default function FeedbackPage() {
 
   // Load default recipient (mbarotov) and handle URL params for errors
   useEffect(() => {
-    axios.get(`${API_URL}/api/users/id-by-username?username=mbarotov`, {
+    axios.get(`${API_URL}/users/id-by-username?username=mbarotov`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     .then(res => {

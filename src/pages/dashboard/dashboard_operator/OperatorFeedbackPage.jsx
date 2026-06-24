@@ -159,7 +159,7 @@ export default function OperatorFeedbackPage() {
     fetchTotalUnread();
 
     // Fetch mbarotov and ensure he is in supportThreads
-    axios.get(`${API_URL}/api/users/id-by-username?username=mbarotov`, axiosConfig)
+    axios.get(`${API_URL}/users/id-by-username?username=mbarotov`, axiosConfig)
       .then(res => {
         if (res.data && res.data.id) {
           const mbarotovId = res.data.id;
