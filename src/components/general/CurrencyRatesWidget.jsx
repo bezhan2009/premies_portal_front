@@ -63,7 +63,14 @@ const CurrencyRatesWidget = () => {
 
   const [isVisible, setIsVisible] = useState(false);
 
-  if (location.pathname.includes("/agent-qr/transactions/list")) return null;
+  if (
+    location.pathname.includes("/agent-qr/transactions/list") ||
+    location.pathname.includes("/feedback") ||
+    location.pathname.includes("/operator/feedback") ||
+    location.pathname.includes("/submit-feedback")
+  ) {
+    return null;
+  }
 
   return (
     <div className={`currency-rates-overlay ${!isVisible ? "minimized" : ""}`}>

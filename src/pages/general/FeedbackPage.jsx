@@ -177,12 +177,12 @@ export default function FeedbackPage() {
           max-width: 600px;
           height: 100%;
           max-height: 800px;
-          background: var(--bg-sidebar);
+          background: var(--bg-surface, var(--bg-sidebar));
           border: 1px solid var(--border-color);
-          border-radius: 16px;
+          border-radius: 18px;
           display: flex;
           flex-direction: column;
-          box-shadow: var(--shadow-lg);
+          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
           overflow: hidden;
         }
         .chat-header {
@@ -206,6 +206,16 @@ export default function FeedbackPage() {
           gap: 12px;
           background: var(--bg-color);
         }
+        @keyframes messageAppear {
+          from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
         .message-bubble {
           max-width: 75%;
           padding: 12px 16px;
@@ -214,18 +224,19 @@ export default function FeedbackPage() {
           line-height: 1.4;
           position: relative;
           word-break: break-word;
+          animation: messageAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
         .message-outgoing {
           align-self: flex-end;
-          background: var(--primary-color);
-          color: white;
+          background: #eb2525 !important;
+          color: #ffffff !important;
           border-bottom-right-radius: 4px;
         }
         .message-incoming {
           align-self: flex-start;
-          background: var(--bg-sidebar);
-          color: var(--text-color);
-          border: 1px solid var(--border-color);
+          background: #ffffff !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0 !important;
           border-bottom-left-radius: 4px;
         }
         .message-attachment img {
