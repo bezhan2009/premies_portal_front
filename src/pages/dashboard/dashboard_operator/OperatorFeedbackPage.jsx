@@ -51,8 +51,6 @@ export default function OperatorFeedbackPage() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const token = localStorage.getItem("access_token");
-  const currentUserId = Number(localStorage.getItem("user_id") || 0);
 
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}` }
