@@ -225,11 +225,12 @@ export const fetchCardFios = async (cardIds) => {
 
 // Получение информации об уведомлениях (сервисах) карты
 export const fetchCardServices = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/services?CardId=${cardId}`, {
+        const response = await axios.get(`${GATEWAY_URL}/api/transactions/services?CardId=${cardId}`, {
             headers: {
-                'accept': '*/*'
+                'accept': '*/*',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -262,14 +263,15 @@ export const changeCardStatus = async (cardId, status) => {
 
 // Разблокировка карты
 export const unblockCard = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/validate-card`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/unblock-card`, {
             cardId: String(cardId)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -281,14 +283,15 @@ export const unblockCard = async (cardId) => {
 
 // Сброс счетчика ПИН
 export const resetPinCounter = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/reset-pin-counter`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/reset-pin-counter`, {
             cardId: String(cardId)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -362,12 +365,13 @@ export const checkPinOtp = async (phoneNumber, otpCode) => {
 
 // Управление сервисами (SMS/3DS)
 export const manageCardService = async (payload) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/service-action`, payload, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/service-action`, payload, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -377,11 +381,12 @@ export const manageCardService = async (payload) => {
     }
 };
 export const fetchCardLimits = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.get(`${BASE_URL_5012}/api/Transactions/limits?CardId=${cardId}`, {
+        const response = await axios.get(`${GATEWAY_URL}/api/transactions/limits?CardId=${cardId}`, {
             headers: {
-                'accept': '*/*'
+                'accept': '*/*',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -392,12 +397,13 @@ export const fetchCardLimits = async (cardId) => {
 };
 
 export const changeCardLimit = async (payload) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/change-card-limit`, payload, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/change-limit`, payload, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;

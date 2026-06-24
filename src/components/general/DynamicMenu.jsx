@@ -91,6 +91,38 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [forcePasswordChange, setForcePasswordChange] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
+
+    const fetchUnreadFeedbackCount = useCallback(async () => {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/feedback/unread-count`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                setUnreadFeedbackCount(data.unread_count || 0);
+            }
+        } catch (error) {
+            console.error("Ошибка при получении непрочитанных сообщений фидбека:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchUnreadFeedbackCount();
+        const interval = setInterval(fetchUnreadFeedbackCount, 15000);
+        return () => clearInterval(interval);
+    }, [fetchUnreadFeedbackCount]);
 
     // Функция для проверки необходимости смены пароля
     const checkPasswordChangeRequired = useCallback(() => {
@@ -387,6 +419,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const links = useMemo(() => {
         const baseLinks = [
             { name: "База знаний", href: "/user/knowledge-base", key: "knowledge", icon: BookOpen },
+            { 
+                name: "Обратная связь", 
+                href: "/feedback", 
+                key: "feedback", 
+                icon: MessageSquare, 
+                hasNotification: unreadFeedbackCount > 0 
+            },
         ];
 
         const additionalLinks = [];
@@ -917,7 +956,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
 
         return [...baseLinks, ...additionalLinks];
-    }, [roles, hasNewApplications]);
+    }, [roles, hasNewApplications, unreadFeedbackCount]);
 
     const [openDropdowns, setOpenDropdowns] = useState({});
 
