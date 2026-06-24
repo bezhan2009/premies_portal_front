@@ -1,7 +1,7 @@
 import LogoImageComponent from "../Logo.jsx";
 import LogoutButton from "./Logout.jsx";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import { FaChevronDown, FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdPassword } from "react-icons/md";
