@@ -36,35 +36,31 @@ export default function FeedbackPage() {
     if (isOperator) navigate("/operator/feedback");
   }, [isOperator, navigate]);
 
-  // Handle URL params for errors
+  // Load default recipient (mbarotov) and handle URL params for errors
   useEffect(() => {
+    axios.get(`${API_URL}/api/users/id-by-username?username=mbarotov`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      if (res.data && res.data.id) {
+        setRecipientId(res.data.id);
+      }
+    })
+    .catch(err => console.error("Could not fetch mbarotov ID:", err));
+
     const searchParams = new URLSearchParams(location.search);
     const errParam = searchParams.get("errorMsg");
     const pageParam = searchParams.get("page");
     
     if (errParam) {
       setNewMessage(`Ошибка: ${errParam}\nСтраница: ${pageParam || "Неизвестно"}\n\n`);
-      
-      // Fetch mbarotov ID
-      axios.get(`${API_URL}/api/users/id-by-username?username=mbarotov`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => {
-        if (res.data && res.data.id) {
-          setRecipientId(res.data.id);
-        }
-      })
-      .catch(err => console.error("Could not fetch mbarotov ID:", err));
     }
   }, [location, token]);
 
   const fetchMessages = async () => {
+    if (recipientId === 0) return;
     try {
-      // If we are talking to mbarotov, fetch direct messages with him
-      const url = recipientId > 0 
-        ? `${API_URL}/api/feedback?chatWith=${recipientId}` 
-        : `${API_URL}/api/feedback`;
-        
+      const url = `${API_URL}/api/feedback?chatWith=${recipientId}`;
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
