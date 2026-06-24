@@ -420,11 +420,17 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         const baseLinks = [
             { name: "База знаний", href: "/user/knowledge-base", key: "knowledge", icon: BookOpen },
             { 
-                name: "Обратная связь", 
+                name: "Актив чат", 
                 href: "/feedback", 
                 key: "feedback", 
                 icon: MessageSquare, 
                 hasNotification: unreadFeedbackCount > 0 
+            },
+            {
+                name: "Обратная связь",
+                href: "/submit-feedback",
+                key: "submit_feedback",
+                icon: Send
             },
         ];
 
@@ -495,7 +501,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: FileText
                     },
                     {
-                        name: "Обратная связь (Оператор)",
+                        name: "Актив чат (Оператор)",
                         href: "/operator/feedback",
                         key: "feedback_operator",
                         icon: MessageSquare,

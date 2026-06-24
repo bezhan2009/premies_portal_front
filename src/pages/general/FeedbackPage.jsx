@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Send, AlertCircle, Paperclip, Smile } from "lucide-react";
+import { Send, AlertCircle, Paperclip, Smile, Check, CheckCheck } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
 import useThemeStore from "../../store/useThemeStore";
@@ -70,7 +70,8 @@ export default function FeedbackPage() {
         const newMsg = res.data[res.data.length - 1];
         if (newMsg.user_id !== currentUserId && "Notification" in window) {
            if (Notification.permission === "granted") {
-              new Notification("Новое сообщение", { body: newMsg.message || "Вложение" });
+              const notif = new Notification("Новое сообщение", { body: newMsg.message || "Вложение" });
+              notif.onclick = () => window.focus();
            } else if (Notification.permission !== "denied") {
               Notification.requestPermission();
            }
@@ -86,6 +87,16 @@ export default function FeedbackPage() {
     }
   };
 
+  const markAsRead = async () => {
+    try {
+      await axios.post(`${API_URL}/api/feedback/mark-read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error("Error marking as read:", err);
+    }
+  };
+
   useEffect(() => {
     fetchMessages();
     const interval = setInterval(fetchMessages, 5000);
@@ -93,8 +104,11 @@ export default function FeedbackPage() {
   }, [recipientId]); // Re-fetch when recipientId changes
 
   useEffect(() => {
+    if (messages.length > 0) {
+      markAsRead();
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -347,7 +361,14 @@ export default function FeedbackPage() {
                       )}
                     </div>
                   )}
-                  <div className="message-time">{formatTime(msg.created_at)}</div>
+                  <div className="message-time">
+                    {formatTime(msg.created_at)}
+                    {isOutgoing && (
+                      <span style={{ marginLeft: 4, display: 'inline-flex', verticalAlign: 'middle' }}>
+                        {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })

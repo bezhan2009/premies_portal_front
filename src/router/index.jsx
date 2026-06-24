@@ -11,6 +11,7 @@ import RegisterPage from "../pages/general/RegisterPage.jsx";
 import RequireRole from "../middlewares/RequireRole.jsx";
 import RequestAccessPage from "../pages/general/RequestAccessPage.jsx";
 import FeedbackPage from "../pages/general/FeedbackPage.jsx";
+import SubmitFeedbackPage from "../pages/general/SubmitFeedbackPage.jsx";
 
 // Modularized routes
 import operatorRoutes from "./routes/operator.routes";
@@ -51,8 +52,11 @@ export default function AppRouter() {
           {/* База знаний (теперь с Sidebar) */}
           <Route path="/user/knowledge-base" element={<DashboardAgentKB />} />
 
-          {/* Обратная связь */}
+          {/* Актив чат */}
           <Route path="/feedback" element={<FeedbackPage />} />
+          
+          {/* Обратная связь (Форма) */}
+          <Route path="/submit-feedback" element={<SubmitFeedbackPage />} />
 
           {/* Подготовленные страницы */}
           <Route path="/under/development" element={<UnderDevelopmentPage />} />

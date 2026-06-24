@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile, UserPlus, X } from "lucide-react";
+import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile, UserPlus, X, Check, CheckCheck } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
@@ -35,7 +35,7 @@ export default function OperatorFeedbackPage() {
   const [threadSearch, setThreadSearch] = useState("");
   
   // Tabs
-  const [activeTab, setActiveTab] = useState("support"); // "support" | "direct"
+  const [activeTab, setActiveTab] = useState("direct"); // "support" | "direct"
 
   // Direct messages user list / search
   const [usersList, setUsersList] = useState([]);
@@ -115,7 +115,8 @@ export default function OperatorFeedbackPage() {
             if ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId)) {
                if ("Notification" in window) {
                   if (Notification.permission === "granted") {
-                     new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: newMsg.message || "Вложение" });
+                     const notif = new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: newMsg.message || "Вложение" });
+                     notif.onclick = () => window.focus();
                   } else if (Notification.permission !== "denied") {
                      Notification.requestPermission();
                   }
@@ -156,6 +157,33 @@ export default function OperatorFeedbackPage() {
     fetchSupportThreads(true);
     fetchDirectThreads(false);
     fetchTotalUnread();
+
+    // Fetch mbarotov and ensure he is in supportThreads
+    axios.get(`${API_URL}/api/users/id-by-username?username=mbarotov`, axiosConfig)
+      .then(res => {
+        if (res.data && res.data.id) {
+          const mbarotovId = res.data.id;
+          const mbarotovName = res.data.full_name || res.data.username || "mbarotov";
+          
+          setSupportThreads(prev => {
+            if (!prev.some(t => t.user_id === mbarotovId)) {
+              return [
+                ...prev,
+                {
+                  user_id: mbarotovId,
+                  username: mbarotovName,
+                  message: "Чат с тех. поддержкой",
+                  unread_count: 0,
+                  last_message_at: new Date().toISOString()
+                }
+              ];
+            }
+            return prev;
+          });
+        }
+      })
+      .catch(err => console.error("Could not fetch mbarotov ID:", err));
+
   }, [fetchSupportThreads, fetchDirectThreads, fetchUsers, fetchTotalUnread]);
 
   useEffect(() => {
@@ -1025,6 +1053,11 @@ export default function OperatorFeedbackPage() {
                           <div className="msg-meta">
                             <Clock size={10} style={{ marginRight: 2 }} />
                             <span>{formatTime(msg.created_at)}</span>
+                            {isOutgoing && (
+                              <span style={{ marginLeft: 4 }}>
+                                {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

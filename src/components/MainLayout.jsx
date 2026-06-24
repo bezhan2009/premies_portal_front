@@ -117,6 +117,12 @@ const MainLayout = () => {
     if (pathname.includes("/mail-agent")) return "mail_agent_send";
 
     if (pathname.includes("/agent/client-pins")) return "client_pins_list";
+    
+    // Feedback
+    if (pathname.includes("/operator/feedback")) return "feedback_operator";
+    if (pathname.includes("/submit-feedback")) return "submit_feedback";
+    if (pathname.includes("/feedback")) return "feedback";
+
     return "";
   };
 
