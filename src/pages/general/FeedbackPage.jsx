@@ -150,12 +150,29 @@ export default function FeedbackPage() {
       // Regular user support chat starts automatically
       setActiveChatType("support");
       setActiveThreadId(currentUserId);
-      setActiveThreadName("Поддержка Activ Daily");
+      setActiveThreadName("Обратная связь / Сообщить об ошибке");
       fetchMessages("support", currentUserId, true);
       markAsRead("support", currentUserId);
       fetchDirectThreads(false);
     }
   }, [isOperator, currentUserId, fetchSupportThreads, fetchDirectThreads, fetchMessages, markAsRead, fetchUsers]);
+
+  // Read URL query params for pre-populating feedback message on errors
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorMsg = params.get("errorMsg");
+    const page = params.get("page");
+    if (errorMsg || page) {
+      let prepopulated = "Здравствуйте! Обнаружена ошибка в работе системы:\n";
+      if (page) prepopulated += `• Страница: ${page}\n`;
+      if (errorMsg) prepopulated += `• Описание ошибки: ${errorMsg}\n`;
+      prepopulated += "• Что пошло не так: [пожалуйста, кратко опишите ваши действия]";
+      setNewMessage(prepopulated);
+      
+      // Clean query parameters from URL without reloading page
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Polling
   useEffect(() => {
@@ -245,7 +262,7 @@ export default function FeedbackPage() {
   const handleSelectUserSupport = () => {
     setActiveChatType("support");
     setActiveThreadId(currentUserId);
-    setActiveThreadName("Поддержка Activ Daily");
+    setActiveThreadName("Обратная связь / Сообщить об ошибке");
     fetchMessages("support", currentUserId, true);
     setMobileShowChat(true);
   };
@@ -790,7 +807,7 @@ export default function FeedbackPage() {
               }
             }}
           >
-            {isOperator ? "Обращения клиентов" : "Техподдержка"}
+            {isOperator ? "Сообщения об ошибках" : "Обратная связь"}
           </button>
           <button 
             className={`sidebar-tab ${activeTab === "direct" ? "active" : ""}`}
@@ -889,9 +906,9 @@ export default function FeedbackPage() {
                 </div>
                 <div className="thread-info">
                   <div className="thread-meta">
-                    <span className="thread-name">Техподдержка Activ Daily</span>
+                    <span className="thread-name">Обратная связь (Ошибки)</span>
                   </div>
-                  <span className="thread-msg">Служба поддержки пользователей</span>
+                  <span className="thread-msg">Сообщить о баге или сбое</span>
                 </div>
               </div>
             )
@@ -914,9 +931,9 @@ export default function FeedbackPage() {
                     </div>
                     <div className="thread-info">
                       <div className="thread-meta">
-                        <span className="thread-name" style={{ fontWeight: '700' }}>Техподдержка Activ Daily</span>
+                        <span className="thread-name" style={{ fontWeight: '700' }}>Обратная связь (Ошибки)</span>
                       </div>
-                      <span className="thread-msg">Служба поддержки пользователей</span>
+                      <span className="thread-msg">Сообщить о баге или сбое</span>
                     </div>
                   </div>
                 )}
@@ -968,7 +985,7 @@ export default function FeedbackPage() {
                   <h3>{activeThreadName}</h3>
                   <span>
                     <Shield size={12} />
-                    {activeChatType === "support" ? "Канал поддержки" : "Личное сообщение"}
+                    {activeChatType === "support" ? "Обратная связь по ошибкам" : "Личное сообщение"}
                   </span>
                 </div>
               </div>
@@ -979,7 +996,7 @@ export default function FeedbackPage() {
               <Info size={16} />
               <span>
                 {activeChatType === "support" 
-                  ? "Это ваш канал связи с техподдержкой. Опишите вашу проблему, и первый свободный оператор ответит вам."
+                  ? "Обнаружили баг или ошибку в системе? Напишите сюда! Пожалуйста, укажите детали проблемы, чтобы разработчики смогли исправить её."
                   : `Личная беседа. Все сообщения между вами и ${activeThreadName} конфиденциальны.`
                 }
               </span>
