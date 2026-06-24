@@ -494,6 +494,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "docx_generator",
                         icon: FileText
                     },
+                    {
+                        name: "Обратная связь (Оператор)",
+                        href: "/operator/feedback",
+                        key: "feedback_operator",
+                        icon: MessageSquare,
+                        hasNotification: unreadFeedbackCount > 0
+                    },
                 ],
             });
         }
