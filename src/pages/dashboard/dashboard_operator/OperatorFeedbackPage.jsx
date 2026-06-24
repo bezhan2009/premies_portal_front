@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile } from "lucide-react";
+import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile, UserPlus, X } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
@@ -41,6 +41,7 @@ export default function OperatorFeedbackPage() {
   const [usersList, setUsersList] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
   
   // Loading states
   const [loadingChat, setLoadingChat] = useState(false);
@@ -240,6 +241,7 @@ export default function OperatorFeedbackPage() {
     fetchMessages("direct", user.id, true);
     setShowUsersDropdown(false);
     setUserSearchQuery("");
+    setShowNewChatModal(false);
     setMobileShowChat(true);
     
     const threadExists = directThreads.some(t => t.user_id === user.id);
@@ -260,11 +262,13 @@ export default function OperatorFeedbackPage() {
   const filteredUsers = usersList.filter((u) => {
     if (u.id === currentUserId) return false;
     const query = userSearchQuery.toLowerCase().trim();
-    if (!query) return false;
+    if (!query) return true;
     return (
       u.full_name?.toLowerCase().includes(query) ||
       u.username?.toLowerCase().includes(query) ||
-      u.email?.toLowerCase().includes(query)
+      u.email?.toLowerCase().includes(query) ||
+      u.first_name?.toLowerCase().includes(query) ||
+      u.last_name?.toLowerCase().includes(query)
     );
   });
 
@@ -734,6 +738,158 @@ export default function OperatorFeedbackPage() {
           .feedback-sidebar { width: 100%; display: ${mobileShowChat ? "none" : "flex"}; }
           .feedback-chat { display: ${mobileShowChat ? "flex" : "none"}; }
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease-out;
+        }
+        .new-chat-modal {
+          background: var(--bg-sidebar);
+          border: 1px solid var(--border-color);
+          border-radius: 16px;
+          width: 100%;
+          max-width: 460px;
+          max-height: 80vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: var(--shadow-2xl);
+          animation: slideUp 0.2s ease-out;
+          overflow: hidden;
+        }
+        .modal-header {
+          padding: 16px 20px;
+          border-bottom: 1px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .modal-header h3 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--text-color);
+        }
+        .modal-close-btn {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+        }
+        .modal-close-btn:hover {
+          background: var(--bg-secondary);
+          color: var(--text-color);
+        }
+        .modal-search-area {
+          padding: 16px;
+          border-bottom: 1px solid var(--border-color);
+          background: var(--bg-sidebar);
+        }
+        .modal-users-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .modal-user-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: none;
+          border: none;
+          width: 100%;
+          text-align: left;
+        }
+        .modal-user-item:hover {
+          background: var(--bg-secondary);
+        }
+        .modal-user-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(var(--primary-rgb), 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary-color);
+          font-weight: 700;
+          font-size: 13px;
+        }
+        .modal-user-info {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .modal-user-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-color);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .modal-user-details {
+          font-size: 11px;
+          color: var(--text-secondary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .new-chat-trigger-container {
+          padding: 12px 16px;
+          border-top: 1px solid var(--border-color);
+          background: var(--bg-sidebar);
+        }
+        .new-chat-trigger-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+          color: #ffffff;
+          border: none;
+          border-radius: 10px;
+          padding: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .new-chat-trigger-btn:hover {
+          opacity: 0.9;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
       `}</style>
 
       {/* Left Sidebar */}
@@ -762,34 +918,6 @@ export default function OperatorFeedbackPage() {
              </button>
           </div>
         </div>
-
-        {activeTab === "direct" && (
-          <div className="user-search-container">
-            <div className="search-wrapper">
-              <Search size={14} />
-              <input
-                type="text"
-                placeholder="Начать новый диалог с..."
-                value={userSearchQuery}
-                onChange={(e) => {
-                  setUserSearchQuery(e.target.value);
-                  setShowUsersDropdown(true);
-                }}
-                onFocus={() => setShowUsersDropdown(true)}
-              />
-            </div>
-            {showUsersDropdown && filteredUsers.length > 0 && (
-              <div className="users-dropdown-list">
-                {filteredUsers.map((u) => (
-                  <button key={u.id} className="user-dropdown-item" onClick={() => handleStartDirectChat(u)}>
-                    <span className="user-dropdown-fullname">{u.full_name || u.username}</span>
-                    <span className="user-dropdown-username">{u.email || `@${u.username}`}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Threads list */}
         <div className="threads-list">
@@ -827,6 +955,17 @@ export default function OperatorFeedbackPage() {
               );
             })
           )}
+        </div>
+
+        {/* New Chat Button at the bottom of the sidebar */}
+        <div className="new-chat-trigger-container">
+          <button className="new-chat-trigger-btn" onClick={() => {
+            setUserSearchQuery("");
+            setShowNewChatModal(true);
+          }}>
+            <UserPlus size={18} />
+            <span>Начать новый чат</span>
+          </button>
         </div>
       </div>
 
@@ -937,6 +1076,59 @@ export default function OperatorFeedbackPage() {
           </div>
         )}
       </div>
+
+      {showNewChatModal && (
+        <div className="modal-overlay" onClick={() => setShowNewChatModal(false)}>
+          <div className="new-chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Начать новый чат</h3>
+              <button className="modal-close-btn" onClick={() => setShowNewChatModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-search-area">
+              <div className="search-wrapper">
+                <Search size={14} />
+                <input
+                  type="text"
+                  placeholder="Поиск по email, имени, фамилии..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="modal-users-list">
+              {filteredUsers.length === 0 ? (
+                <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
+                  Пользователи не найдены.
+                </div>
+              ) : (
+                filteredUsers.map((u) => {
+                  const initials = u.full_name 
+                    ? u.full_name.substring(0, 2).toUpperCase() 
+                    : u.username ? u.username.substring(0, 2).toUpperCase() : "?";
+                  
+                  const details = [
+                    u.email,
+                    u.first_name || u.last_name ? `${u.first_name || ""} ${u.last_name || ""}`.trim() : null
+                  ].filter(Boolean).join(" • ") || `@${u.username}`;
+
+                  return (
+                    <button key={u.id} className="modal-user-item" onClick={() => handleStartDirectChat(u)}>
+                      <div className="modal-user-avatar">{initials}</div>
+                      <div className="modal-user-info">
+                        <span className="modal-user-name">{u.full_name || u.username}</span>
+                        <span className="modal-user-details">{details}</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
