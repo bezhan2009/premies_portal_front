@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info } from "lucide-react";
 import Spinner from "../../components/Spinner.jsx";
@@ -6,7 +6,7 @@ import Spinner from "../../components/Spinner.jsx";
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 export default function FeedbackPage() {
-  const [activeTab, setActiveTab] = useState("support"); // "support" | "direct"
+  const [totalUnread, setTotalUnread] = useState(0);
   const [messages, setMessages] = useState([]);
   
   // Support threads (operator only)
@@ -63,6 +63,16 @@ export default function FeedbackPage() {
       setUsersList(res.data.users || []);
     } catch (err) {
       console.error("Error fetching users list:", err);
+    }
+  }, []);
+
+  // Fetch total unread count (for regular users to calculate support unread count)
+  const fetchTotalUnread = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/feedback/unread-count`, axiosConfig);
+      setTotalUnread(res.data.unread_count || 0);
+    } catch (err) {
+      console.error("Error fetching total unread count:", err);
     }
   }, []);
 
@@ -127,13 +137,16 @@ export default function FeedbackPage() {
       // Refresh lists
       if (type === "support" && isOperator) {
         fetchSupportThreads();
+      } else if (type === "support" && !isOperator) {
+        fetchTotalUnread();
       } else if (type === "direct") {
         fetchDirectThreads();
+        fetchTotalUnread();
       }
     } catch (err) {
       console.error("Error marking messages as read:", err);
     }
-  }, [isOperator, fetchSupportThreads, fetchDirectThreads]);
+  }, [isOperator, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -154,8 +167,9 @@ export default function FeedbackPage() {
       fetchMessages("support", currentUserId, true);
       markAsRead("support", currentUserId);
       fetchDirectThreads(false);
+      fetchTotalUnread();
     }
-  }, [isOperator, currentUserId, fetchSupportThreads, fetchDirectThreads, fetchMessages, markAsRead, fetchUsers]);
+  }, [isOperator, currentUserId, fetchSupportThreads, fetchDirectThreads, fetchMessages, markAsRead, fetchUsers, fetchTotalUnread]);
 
   // Read URL query params for pre-populating feedback message on errors
   useEffect(() => {
@@ -185,6 +199,8 @@ export default function FeedbackPage() {
     const listsInterval = setInterval(() => {
       if (isOperator) {
         fetchSupportThreads();
+      } else {
+        fetchTotalUnread();
       }
       fetchDirectThreads();
     }, 8000);
@@ -193,7 +209,7 @@ export default function FeedbackPage() {
       clearInterval(chatInterval);
       clearInterval(listsInterval);
     };
-  }, [activeChatType, activeThreadId, isOperator, fetchMessages, fetchSupportThreads, fetchDirectThreads]);
+  }, [activeChatType, activeThreadId, isOperator, fetchMessages, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
   // Mark read when messages length or active thread changes
   useEffect(() => {
@@ -240,32 +256,27 @@ export default function FeedbackPage() {
     }
   };
 
-  // Select support thread (Operator)
-  const handleSelectSupportThread = (thread) => {
-    setActiveChatType("support");
-    setActiveThreadId(thread.user_id);
-    setActiveThreadName(thread.username);
-    fetchMessages("support", thread.user_id, true);
-    setMobileShowChat(true);
-  };
-
-  // Select direct thread
-  const handleSelectDirectThread = (thread) => {
-    setActiveChatType("direct");
-    setActiveThreadId(thread.user_id);
-    setActiveThreadName(thread.username);
-    fetchMessages("direct", thread.user_id, true);
-    setMobileShowChat(true);
-  };
-
   // Select standard support (User)
-  const handleSelectUserSupport = () => {
+  const handleSelectUserSupport = useCallback(() => {
     setActiveChatType("support");
     setActiveThreadId(currentUserId);
     setActiveThreadName("Обратная связь / Сообщить об ошибке");
     fetchMessages("support", currentUserId, true);
     setMobileShowChat(true);
-  };
+  }, [currentUserId, fetchMessages]);
+
+  // Unified select thread handler
+  const handleSelectThread = useCallback((thread) => {
+    if (thread.chatType === "support" && !isOperator) {
+      handleSelectUserSupport();
+      return;
+    }
+    setActiveChatType(thread.chatType);
+    setActiveThreadId(thread.id);
+    setActiveThreadName(thread.name);
+    fetchMessages(thread.chatType, thread.id, true);
+    setMobileShowChat(true);
+  }, [isOperator, handleSelectUserSupport, fetchMessages]);
 
   // Start chat with selected user from search
   const handleStartDirectChat = (user) => {
@@ -305,16 +316,93 @@ export default function FeedbackPage() {
     );
   });
 
-  // Filter threads
-  const filteredSupportThreads = supportThreads.filter((t) =>
-    t.username?.toLowerCase().includes(threadSearch.toLowerCase())
-  );
+  // Pinned support unread count calculation for regular user
+  const supportUnreadCount = useMemo(() => {
+    if (isOperator) return 0;
+    const directUnreadSum = directThreads.reduce((sum, t) => sum + (t.unread_count || 0), 0);
+    return Math.max(0, totalUnread - directUnreadSum);
+  }, [isOperator, totalUnread, directThreads]);
 
-  const filteredDirectThreads = directThreads.filter((t) =>
-    t.username?.toLowerCase().includes(threadSearch.toLowerCase())
-  );
+  // Unified list of all threads (support + direct)
+  const unifiedThreads = useMemo(() => {
+    let list = [];
+    
+    if (isOperator) {
+      // Operator merges support threads and direct threads
+      const supportMapped = supportThreads.map(t => ({
+        chatType: "support",
+        id: t.user_id,
+        name: t.username,
+        message: t.message,
+        unread_count: t.unread_count,
+        last_message_at: t.last_message_at,
+        isSupportTicket: true
+      }));
+      
+      const directMapped = directThreads.map(t => ({
+        chatType: "direct",
+        id: t.user_id,
+        name: t.username,
+        message: t.message,
+        unread_count: t.unread_count,
+        last_message_at: t.last_message_at,
+        isSupportTicket: false
+      }));
+      
+      list = [...supportMapped, ...directMapped];
+      
+      // Sort by last message time descending
+      list.sort((a, b) => {
+        const timeA = new Date(a.last_message_at || 0).getTime();
+        const timeB = new Date(b.last_message_at || 0).getTime();
+        return timeB - timeA;
+      });
+    } else {
+      // Regular user gets direct threads
+      const directMapped = directThreads.map(t => ({
+        chatType: "direct",
+        id: t.user_id,
+        name: t.username,
+        message: t.message,
+        unread_count: t.unread_count,
+        last_message_at: t.last_message_at,
+        isSupportTicket: false
+      }));
+      
+      // Sort direct threads first
+      directMapped.sort((a, b) => {
+        const timeA = new Date(a.last_message_at || 0).getTime();
+        const timeB = new Date(b.last_message_at || 0).getTime();
+        return timeB - timeA;
+      });
+      
+      // Prepend the pinned support chat item
+      const supportItem = {
+        chatType: "support",
+        id: currentUserId,
+        name: "Обратная связь (Ошибки)",
+        message: "Сообщить о баге или сбое",
+        unread_count: supportUnreadCount,
+        last_message_at: null, // keep at top
+        isSupportTicket: true
+      };
+      
+      list = [supportItem, ...directMapped];
+    }
+    
+    return list;
+  }, [isOperator, supportThreads, directThreads, supportUnreadCount, currentUserId]);
 
-  const showSupportInDirect = !isOperator && (!threadSearch || "техподдержка activ daily".includes(threadSearch.toLowerCase()));
+  const filteredThreads = useMemo(() => {
+    return unifiedThreads.filter((t) => {
+      const query = threadSearch.toLowerCase();
+      // If user searches "ошибка" or "обратная", support ticket matches
+      if (t.isSupportTicket && ("обратная связь (ошибки)".includes(query) || "ошибка".includes(query) || "обратная".includes(query))) {
+        return true;
+      }
+      return t.name?.toLowerCase().includes(query);
+    });
+  }, [unifiedThreads, threadSearch]);
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
@@ -796,64 +884,41 @@ export default function FeedbackPage() {
           </div>
         </div>
 
-        {/* Tabs for Support vs Direct messages */}
-        <div className="sidebar-tabs">
-          <button 
-            className={`sidebar-tab ${activeTab === "support" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("support");
-              if (!isOperator) {
-                handleSelectUserSupport();
-              }
-            }}
-          >
-            {isOperator ? "Сообщения об ошибках" : "Обратная связь"}
-          </button>
-          <button 
-            className={`sidebar-tab ${activeTab === "direct" ? "active" : ""}`}
-            onClick={() => setActiveTab("direct")}
-          >
-            Личные чаты
-          </button>
-        </div>
-
-        {/* Direct messaging user lookup */}
-        {activeTab === "direct" && (
-          <div className="user-search-container">
-            <div className="search-wrapper">
-              <Search size={14} />
-              <input
-                type="text"
-                placeholder="Кому написать..."
-                value={userSearchQuery}
-                onChange={(e) => {
-                  setUserSearchQuery(e.target.value);
-                  setShowUsersDropdown(true);
-                }}
-                onFocus={() => setShowUsersDropdown(true)}
-              />
-            </div>
-            {showUsersDropdown && filteredUsers.length > 0 && (
-              <div className="users-dropdown-list">
-                {filteredUsers.map((u) => (
-                  <button
-                    key={u.id}
-                    className="user-dropdown-item"
-                    onClick={() => handleStartDirectChat(u)}
-                  >
-                    <span className="user-dropdown-fullname">{u.full_name || u.username}</span>
-                    <span className="user-dropdown-username">{u.email || `@${u.username}`}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {showUsersDropdown && userSearchQuery.trim() !== "" && filteredUsers.length === 0 && (
-              <div className="users-dropdown-list" style={{ padding: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                Пользователь не найден
-              </div>
-            )}
+        {/* Direct messaging user lookup (Always visible to easily start new direct chats) */}
+        <div className="user-search-container">
+          <div className="search-wrapper">
+            <Search size={14} />
+            <input
+              type="text"
+              placeholder="Начать новый диалог с..."
+              value={userSearchQuery}
+              onChange={(e) => {
+                setUserSearchQuery(e.target.value);
+                setShowUsersDropdown(true);
+              }}
+              onFocus={() => setShowUsersDropdown(true)}
+            />
           </div>
-        )}
+          {showUsersDropdown && filteredUsers.length > 0 && (
+            <div className="users-dropdown-list">
+              {filteredUsers.map((u) => (
+                <button
+                  key={u.id}
+                  className="user-dropdown-item"
+                  onClick={() => handleStartDirectChat(u)}
+                >
+                  <span className="user-dropdown-fullname">{u.full_name || u.username}</span>
+                  <span className="user-dropdown-username">{u.email || `@${u.username}`}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {showUsersDropdown && userSearchQuery.trim() !== "" && filteredUsers.length === 0 && (
+            <div className="users-dropdown-list" style={{ padding: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Пользователь не найден
+            </div>
+          )}
+        </div>
 
         {/* Threads list */}
         <div className="threads-list">
@@ -861,109 +926,59 @@ export default function FeedbackPage() {
             <div style={{ padding: "40px 0" }}>
               <Spinner size="medium" label="Загрузка чатов..." />
             </div>
-          ) : activeTab === "support" ? (
-            /* SUPPORT THREADS TAB */
-            isOperator ? (
-              filteredSupportThreads.length === 0 ? (
-                <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
-                  Нет открытых обращений
-                </div>
-              ) : (
-                filteredSupportThreads.map((thread) => {
-                  const isActive = activeChatType === "support" && activeThreadId === thread.user_id;
-                  const initials = thread.username ? thread.username.substring(0, 2).toUpperCase() : "?";
-                  return (
-                    <div
-                      key={thread.user_id}
-                      className={`thread-item ${isActive ? "active" : ""}`}
-                      onClick={() => handleSelectSupportThread(thread)}
-                    >
-                      <div className="thread-avatar">{initials}</div>
-                      <div className="thread-info">
-                        <div className="thread-meta">
-                          <span className="thread-name">{thread.username}</span>
-                          <span className="thread-time">{formatTime(thread.last_message_at)}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span className="thread-msg">{thread.message || "Обращение"}</span>
-                          {thread.unread_count > 0 && (
-                            <span className="unread-badge">{thread.unread_count}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )
-            ) : (
-              /* Regular user support single item */
-              <div
-                className={`thread-item ${activeChatType === "support" ? "active" : ""}`}
-                onClick={handleSelectUserSupport}
-              >
-                <div className="thread-avatar" style={{ background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary-color)' }}>
-                  <Shield size={18} />
-                </div>
-                <div className="thread-info">
-                  <div className="thread-meta">
-                    <span className="thread-name">Обратная связь (Ошибки)</span>
-                  </div>
-                  <span className="thread-msg">Сообщить о баге или сбое</span>
-                </div>
-              </div>
-            )
+          ) : filteredThreads.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
+              Нет активных диалогов.<br />Воспользуйтесь поиском выше, чтобы начать диалог.
+            </div>
           ) : (
-            /* DIRECT MESSAGES THREADS TAB */
-            (!showSupportInDirect && filteredDirectThreads.length === 0) ? (
-              <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
-                Нет личных чатов.<br />Воспользуйтесь поиском выше, чтобы начать диалог.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {showSupportInDirect && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {filteredThreads.map((thread) => {
+                const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
+                
+                // Initials for avatar
+                let initials = "?";
+                if (thread.isSupportTicket && !isOperator) {
+                  initials = "OS";
+                } else if (thread.name) {
+                  initials = thread.name.substring(0, 2).toUpperCase();
+                }
+
+                return (
                   <div
-                    className={`thread-item ${activeChatType === "support" ? "active" : ""}`}
-                    onClick={handleSelectUserSupport}
-                    style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '4px', paddingBottom: '10px' }}
+                    key={`${thread.chatType}-${thread.id}`}
+                    className={`thread-item ${isActive ? "active" : ""}`}
+                    onClick={() => handleSelectThread(thread)}
+                    style={thread.isSupportTicket && !isOperator ? { borderBottom: '1px solid var(--border-color)', marginBottom: '4px', paddingBottom: '10px' } : {}}
                   >
-                    <div className="thread-avatar" style={{ background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary-color)' }}>
-                      <Shield size={18} />
+                    <div 
+                      className="thread-avatar" 
+                      style={thread.isSupportTicket ? { background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary-color)' } : {}}
+                    >
+                      {thread.isSupportTicket ? <Shield size={18} /> : initials}
                     </div>
                     <div className="thread-info">
                       <div className="thread-meta">
-                        <span className="thread-name" style={{ fontWeight: '700' }}>Обратная связь (Ошибки)</span>
+                        <span className="thread-name" style={thread.isSupportTicket ? { fontWeight: '700' } : {}}>{thread.name}</span>
+                        <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                       </div>
-                      <span className="thread-msg">Сообщить о баге или сбое</span>
-                    </div>
-                  </div>
-                )}
-                {filteredDirectThreads.map((thread) => {
-                  const isActive = activeChatType === "direct" && activeThreadId === thread.user_id;
-                  const initials = thread.username ? thread.username.substring(0, 2).toUpperCase() : "?";
-                  return (
-                    <div
-                      key={thread.user_id}
-                      className={`thread-item ${isActive ? "active" : ""}`}
-                      onClick={() => handleSelectDirectThread(thread)}
-                    >
-                      <div className="thread-avatar">{initials}</div>
-                      <div className="thread-info">
-                        <div className="thread-meta">
-                          <span className="thread-name">{thread.username}</span>
-                          <span className="thread-time">{formatTime(thread.last_message_at)}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span className="thread-msg">{thread.message || "Диалог начат"}</span>
-                          {thread.unread_count > 0 && (
-                            <span className="unread-badge">{thread.unread_count}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span className="thread-msg">{thread.message || (thread.isSupportTicket && !isOperator ? "Сообщить о баге или сбое" : "Диалог начат")}</span>
+                          {isOperator && thread.isSupportTicket && (
+                            <span style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '600', marginTop: '2px' }}>
+                              Обращение об ошибке
+                            </span>
                           )}
                         </div>
+                        {thread.unread_count > 0 && (
+                          <span className="unread-badge">{thread.unread_count}</span>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
