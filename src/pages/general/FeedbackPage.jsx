@@ -297,6 +297,8 @@ export default function FeedbackPage() {
     t.username?.toLowerCase().includes(threadSearch.toLowerCase())
   );
 
+  const showSupportInDirect = !isOperator && (!threadSearch || "техподдержка activ daily".includes(threadSearch.toLowerCase()));
+
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
     try {
@@ -895,36 +897,55 @@ export default function FeedbackPage() {
             )
           ) : (
             /* DIRECT MESSAGES THREADS TAB */
-            filteredDirectThreads.length === 0 ? (
+            (!showSupportInDirect && filteredDirectThreads.length === 0) ? (
               <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
                 Нет личных чатов.<br />Воспользуйтесь поиском выше, чтобы начать диалог.
               </div>
             ) : (
-              filteredDirectThreads.map((thread) => {
-                const isActive = activeChatType === "direct" && activeThreadId === thread.user_id;
-                const initials = thread.username ? thread.username.substring(0, 2).toUpperCase() : "?";
-                return (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {showSupportInDirect && (
                   <div
-                    key={thread.user_id}
-                    className={`thread-item ${isActive ? "active" : ""}`}
-                    onClick={() => handleSelectDirectThread(thread)}
+                    className={`thread-item ${activeChatType === "support" ? "active" : ""}`}
+                    onClick={handleSelectUserSupport}
+                    style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '4px', paddingBottom: '10px' }}
                   >
-                    <div className="thread-avatar">{initials}</div>
+                    <div className="thread-avatar" style={{ background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary-color)' }}>
+                      <Shield size={18} />
+                    </div>
                     <div className="thread-info">
                       <div className="thread-meta">
-                        <span className="thread-name">{thread.username}</span>
-                        <span className="thread-time">{formatTime(thread.last_message_at)}</span>
+                        <span className="thread-name" style={{ fontWeight: '700' }}>Техподдержка Activ Daily</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span className="thread-msg">{thread.message || "Диалог начат"}</span>
-                        {thread.unread_count > 0 && (
-                          <span className="unread-badge">{thread.unread_count}</span>
-                        )}
-                      </div>
+                      <span className="thread-msg">Служба поддержки пользователей</span>
                     </div>
                   </div>
-                );
-              })
+                )}
+                {filteredDirectThreads.map((thread) => {
+                  const isActive = activeChatType === "direct" && activeThreadId === thread.user_id;
+                  const initials = thread.username ? thread.username.substring(0, 2).toUpperCase() : "?";
+                  return (
+                    <div
+                      key={thread.user_id}
+                      className={`thread-item ${isActive ? "active" : ""}`}
+                      onClick={() => handleSelectDirectThread(thread)}
+                    >
+                      <div className="thread-avatar">{initials}</div>
+                      <div className="thread-info">
+                        <div className="thread-meta">
+                          <span className="thread-name">{thread.username}</span>
+                          <span className="thread-time">{formatTime(thread.last_message_at)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span className="thread-msg">{thread.message || "Диалог начат"}</span>
+                          {thread.unread_count > 0 && (
+                            <span className="unread-badge">{thread.unread_count}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )
           )}
         </div>
