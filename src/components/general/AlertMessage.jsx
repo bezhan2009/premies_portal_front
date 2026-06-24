@@ -1,17 +1,17 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 
-export default function AlertMessage({ message, type = "error", duration = 3000 }) {
+export default function AlertMessage({ message, type = "error", duration = 3000, onClick }) {
 
     useEffect(() => {
         if (!message) return;
 
         if (type === "success") {
-            toast.success(message, { autoClose: duration });
+            toast.success(message, { autoClose: duration, onClick });
         } else if (type === "info") {
-            toast.info(message, { autoClose: duration });
+            toast.info(message, { autoClose: duration, onClick });
         } else if (type === "warning") {
-            toast.warning(message, { autoClose: duration });
+            toast.warning(message, { autoClose: duration, onClick });
         } else {
             const handleRedirect = () => {
                 const errorMsg = encodeURIComponent(message);
@@ -40,11 +40,11 @@ export default function AlertMessage({ message, type = "error", duration = 3000 
                         Сообщить об ошибке в Обратную связь
                     </div>
                 </div>,
-                { autoClose: duration }
+                { autoClose: duration, onClick }
             );
         }
 
-    }, [message, type, duration]);
+    }, [message, type, duration, onClick]);
 
     return null;
 }

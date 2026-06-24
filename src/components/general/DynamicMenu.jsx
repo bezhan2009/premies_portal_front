@@ -81,10 +81,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [modalError, setModalError] = useState("");
     const [loading, setLoading] = useState(false);
+    const prevUnreadCountRef = useRef(0);
     const [alert, setAlert] = useState({
         show: false,
         message: "",
         type: "info",
+        onClick: null,
     });
     const [roles, setRoles] = useState([]);
     const [ws, setWs] = useState(null);
@@ -123,6 +125,24 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         const interval = setInterval(fetchUnreadFeedbackCount, 15000);
         return () => clearInterval(interval);
     }, [fetchUnreadFeedbackCount]);
+
+    useEffect(() => {
+        if (unreadFeedbackCount > prevUnreadCountRef.current) {
+            const isChatPage = window.location.pathname.includes("/feedback") || window.location.pathname.includes("/operator/feedback");
+            if (!isChatPage) {
+                const isOperatorUser = roles.includes(3);
+                setAlert({
+                    show: true,
+                    message: "У вас новое сообщение в Актив чате! Нажмите, чтобы открыть.",
+                    type: "info",
+                    onClick: () => {
+                        navigate(isOperatorUser ? "/operator/feedback" : "/feedback");
+                    }
+                });
+            }
+        }
+        prevUnreadCountRef.current = unreadFeedbackCount;
+    }, [unreadFeedbackCount, roles, navigate]);
 
     // Функция для проверки необходимости смены пароля
     const checkPasswordChangeRequired = useCallback(() => {
@@ -1100,6 +1120,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 <AlertMessage
                     message={alert.message}
                     type={alert.type}
+                    onClick={alert.onClick}
                     onClose={() => setAlert({ ...alert, show: false })}
                     duration={5000}
                 />

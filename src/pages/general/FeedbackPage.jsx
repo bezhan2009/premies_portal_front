@@ -30,7 +30,18 @@ export default function FeedbackPage() {
     catch { return []; }
   };
   const isOperator = getRoles().includes(3);
-  const currentUserId = Number(localStorage.getItem("user_id") || 0);
+  
+  const getUserIdFromToken = () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return 0;
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return Number(payload.user_id || 0);
+    } catch {
+      return 0;
+    }
+  };
+  const currentUserId = getUserIdFromToken();
 
   useEffect(() => {
     if (isOperator) navigate("/operator/feedback");

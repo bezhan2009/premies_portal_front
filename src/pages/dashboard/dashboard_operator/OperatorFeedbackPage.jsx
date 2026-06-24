@@ -10,7 +10,18 @@ const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 export default function OperatorFeedbackPage() {
   const token = localStorage.getItem("access_token");
-  const currentUserId = Number(localStorage.getItem("user_id") || 0);
+  
+  const getUserIdFromToken = () => {
+    try {
+      const tokenString = localStorage.getItem("access_token");
+      if (!tokenString) return 0;
+      const payload = JSON.parse(atob(tokenString.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return Number(payload.user_id || 0);
+    } catch {
+      return 0;
+    }
+  };
+  const currentUserId = getUserIdFromToken();
   const { theme } = useThemeStore();
 
   const [totalUnread, setTotalUnread] = useState(0);
