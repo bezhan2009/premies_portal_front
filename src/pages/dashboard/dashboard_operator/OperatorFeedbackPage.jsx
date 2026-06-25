@@ -501,12 +501,15 @@ export default function OperatorFeedbackPage() {
 
   // Close context menu on window click
   useEffect(() => {
-    const closeMenu = () => {
-      setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    const closeMenu = (e) => {
+      setContextMenu(prev => {
+        if (!prev.visible) return prev;
+        return { visible: false, x: 0, y: 0, target: null, type: "" };
+      });
       setShowReactionPicker(false);
     };
-    window.addEventListener("click", closeMenu);
-    return () => window.removeEventListener("click", closeMenu);
+    window.addEventListener("mousedown", closeMenu);
+    return () => window.removeEventListener("mousedown", closeMenu);
   }, []);
 
   // Load pinned and muted lists
@@ -884,8 +887,9 @@ export default function OperatorFeedbackPage() {
   // context menus triggers
   const triggerContextMenu = (e, item, type) => {
     e.preventDefault();
+    e.stopPropagation();
     const menuWidth = 240;
-    const menuHeight = type === "message" ? 190 : 150;
+    const menuHeight = type === "message" ? 320 : 150;
     let x = e.clientX;
     let y = e.clientY;
     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
@@ -1205,6 +1209,7 @@ export default function OperatorFeedbackPage() {
       <AnimatePresence>
         {contextMenu.visible && (
           <motion.div 
+            onMouseDown={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.95, y: -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -2356,7 +2361,18 @@ export default function OperatorFeedbackPage() {
             {loadingChat ? (
               <LoadingSkeleton />
             ) : (
-              <div className="chat-messages">
+              <div
+                className="chat-messages"
+                onContextMenu={(e) => {
+                  const clickedOnBackground = e.target === e.currentTarget ||
+                    e.target.closest('[data-msg-bubble]') === null;
+                  if (clickedOnBackground) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    triggerContextMenu(e, null, "chatArea");
+                  }
+                }}
+              >
                 {filteredMessages.length === 0 ? (
                   <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
@@ -2421,7 +2437,7 @@ export default function OperatorFeedbackPage() {
                                 maxWidth: "80%"
                               }}>
                                 {group.messages.map(msg => (
-                                  <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                                  <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => { e.stopPropagation(); triggerContextMenu(e, msg, "message"); }} style={{ position: "relative" }}>
                                     <img src={`${API_URL}${msg.attachment_url}`} style={{ width: group.messages.length > 1 ? "140px" : "200px", height: group.messages.length > 1 ? "140px" : "auto", objectFit: "cover", borderRadius: "12px", cursor: "pointer", border: isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }} alt="img" onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)} />
                                     <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
                                       <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>

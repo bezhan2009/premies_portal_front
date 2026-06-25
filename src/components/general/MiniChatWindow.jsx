@@ -321,12 +321,16 @@ const MiniChatWindow = () => {
 
   // Close context menu on window click
   useEffect(() => {
-    const closeMenu = () => {
-      setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    const closeMenu = (e) => {
+      // Only close if the click is NOT inside the context menu itself
+      setContextMenu(prev => {
+        if (!prev.visible) return prev;
+        return { visible: false, x: 0, y: 0, target: null, type: "" };
+      });
       setShowReactionPicker(false);
     };
-    window.addEventListener("click", closeMenu);
-    return () => window.removeEventListener("click", closeMenu);
+    window.addEventListener("mousedown", closeMenu);
+    return () => window.removeEventListener("mousedown", closeMenu);
   }, []);
 
   // Fetch threads data
@@ -868,8 +872,9 @@ const MiniChatWindow = () => {
   // context menus triggers
   const triggerContextMenu = (e, item, type) => {
     e.preventDefault();
-    const menuWidth = 160;
-    const menuHeight = type === "message" ? 140 : 100;
+    e.stopPropagation();
+    const menuWidth = 270;
+    const menuHeight = type === "message" ? 320 : 200;
     let x = e.clientX;
     let y = e.clientY;
     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
@@ -1117,6 +1122,7 @@ const MiniChatWindow = () => {
       {/* FLOAT CONTEXT MENU */}
       {contextMenu.visible && (
         <div 
+          onMouseDown={(e) => e.stopPropagation()}
           style={{
             position: "fixed",
             top: `${contextMenu.y}px`,
@@ -1293,6 +1299,30 @@ const MiniChatWindow = () => {
                     }}
                   >
                     <CheckSquare size={14} /> Выбрать
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsMessageSelectionMode(true);
+                      setSelectedMessageIds([contextMenu.target.id]);
+                      setForwardModalOpen(true);
+                      setContextMenu({ ...contextMenu, visible: false });
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#3b82f6",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <CornerUpRight size={14} /> Переслать
                   </button>
                   {((chatType === "direct" && contextMenu.target.user_id === currentUserId) ||
                     (chatType === "support" && (isOperator ? contextMenu.target.is_operator : (!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)))) && (
@@ -2071,7 +2101,17 @@ const MiniChatWindow = () => {
 
                       {/* Messages scroll content */}
                       <div 
-                        onContextMenu={(e) => { if (e.target === e.currentTarget) triggerContextMenu(e, null, "chatArea"); }}
+                        onContextMenu={(e) => {
+                          // Only show chatArea menu when right-clicking on the background itself
+                          // (not on a message bubble which has its own handler)
+                          const clickedOnBackground = e.target === e.currentTarget ||
+                            e.target.closest('[data-msg-bubble]') === null;
+                          if (clickedOnBackground) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            triggerContextMenu(e, null, "chatArea");
+                          }
+                        }}
                         style={{
                           flex: 1,
                           overflowY: "auto",
@@ -2179,7 +2219,7 @@ const MiniChatWindow = () => {
                                         {group.messages.map(msg => {
                                           const isSelected = selectedMessageIds.includes(msg.id);
                                           return (
-                                            <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                                            <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
                                               <img 
                                                 src={`${API_URL}${msg.attachment_url}`} 
                                                 style={{ 
@@ -2254,6 +2294,7 @@ const MiniChatWindow = () => {
                                       exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
                                       transition={{ duration: 0.22, ease: "easeOut" }}
                                       id={`msg-bubble-${msg.id}`}
+                                      data-msg-bubble="true"
                                       onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
                                       onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                                       style={{

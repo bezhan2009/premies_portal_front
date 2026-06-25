@@ -426,12 +426,15 @@ export default function FeedbackPage() {
 
   // Close context menu on window click
   useEffect(() => {
-    const closeMenu = () => {
-      setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    const closeMenu = (e) => {
+      setContextMenu(prev => {
+        if (!prev.visible) return prev;
+        return { visible: false, x: 0, y: 0, target: null, type: "" };
+      });
       setShowReactionPicker(false);
     };
-    window.addEventListener("click", closeMenu);
-    return () => window.removeEventListener("click", closeMenu);
+    window.addEventListener("mousedown", closeMenu);
+    return () => window.removeEventListener("mousedown", closeMenu);
   }, []);
 
   // Load default recipient (mbarotov) and handle URL params for errors
@@ -756,8 +759,9 @@ export default function FeedbackPage() {
   // context menus triggers
   const triggerContextMenu = (e, item, type) => {
     e.preventDefault();
+    e.stopPropagation();
     const menuWidth = 240;
-    const menuHeight = type === "message" ? 190 : 120;
+    const menuHeight = type === "message" ? 320 : 120;
     let x = e.clientX;
     let y = e.clientY;
     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
@@ -1015,6 +1019,7 @@ export default function FeedbackPage() {
       <AnimatePresence>
         {contextMenu.visible && (
           <motion.div 
+            onMouseDown={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.95, y: -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -1525,7 +1530,18 @@ export default function FeedbackPage() {
         )}
 
         {/* MESSAGES LIST */}
-        <div className="chat-messages">
+        <div
+          className="chat-messages"
+          onContextMenu={(e) => {
+            const clickedOnBackground = e.target === e.currentTarget ||
+              e.target.closest('[data-msg-bubble]') === null;
+            if (clickedOnBackground) {
+              e.preventDefault();
+              e.stopPropagation();
+              triggerContextMenu(e, null, "chatArea");
+            }
+          }}
+        >
           {loading ? (
             <LoadingSkeleton />
           ) : filteredMessages.length === 0 ? (
@@ -1588,7 +1604,7 @@ export default function FeedbackPage() {
                         {group.messages.map(msg => {
                           const isSelected = selectedMessageIds.includes(msg.id);
                           return (
-                            <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                            <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
                               <img 
                                 src={`${API_URL}${msg.attachment_url}`} 
                                 style={{ 
