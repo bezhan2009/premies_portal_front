@@ -5,7 +5,7 @@ import {
   X, Send, Paperclip, Smile, Check, CheckCheck, 
   Minus, ArrowLeft, Search, User, Shield, PlusCircle,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown,
-  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle
+  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Info
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -450,12 +450,12 @@ const MiniChatWindow = () => {
     }
   }, [isMiniChatOpen, currentView, recipientId, chatType, fetchMessages]);
 
-  // Scroll to bottom instantly on chat switch
+  // Scroll to bottom instantly on chat switch or opening mini-chat
   useEffect(() => {
     if (currentView === "chat") {
       messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
     }
-  }, [recipientId, chatType, currentView]);
+  }, [recipientId, chatType, currentView, isMiniChatOpen]);
 
   // Scroll to bottom smoothly on new messages
   useEffect(() => {
@@ -463,6 +463,29 @@ const MiniChatWindow = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length, currentView, localSearchActive]);
+
+  // Reset selection states on view or chat switch
+  useEffect(() => {
+    handleExitMessageSelection();
+    handleExitChatSelection();
+  }, [currentView, recipientId, chatType]);
+
+  // Reset userSearchQuery when exiting new_chat view
+  useEffect(() => {
+    if (currentView !== "new_chat") {
+      setUserSearchQuery("");
+    }
+  }, [currentView]);
+
+  // Notification auto-dismiss timer
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleMessagesScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -2304,7 +2327,7 @@ const MiniChatWindow = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -15 }}
                       transition={{ duration: 0.15 }}
-                      style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
+                      style={{ position: "relative", display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Local Search input */}
                       {localSearchActive && (
@@ -2330,6 +2353,7 @@ const MiniChatWindow = () => {
 
                       {/* Messages scroll content */}
                       <div 
+                        onScroll={handleMessagesScroll}
                         onContextMenu={(e) => {
                           // Only show chatArea menu when right-clicking on the background itself
                           // (not on a message bubble which has its own handler)
@@ -2494,7 +2518,12 @@ const MiniChatWindow = () => {
                                 const isSelected = selectedMessageIds.includes(msg.id);
 
                                 return (
-                                  <div 
+                                  <motion.div
+  layout
+  initial={{ opacity: 0, y: 15, scale: 0.96 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+  transition={{ duration: 0.22, ease: "easeOut" }} 
                                     key={msg.id}
                                     onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                                     style={{ 
@@ -2525,12 +2554,12 @@ const MiniChatWindow = () => {
                                       display: "flex",
                                       justifyContent: isOut ? "flex-end" : "flex-start"
                                     }}>
-                                      <motion.div 
-                                        layout
-                                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                        transition={{ duration: 0.22, ease: "easeOut" }}
+                                      <div 
+
+
+
+
+
                                         id={`msg-bubble-${msg.id}`}
                                         data-msg-bubble="true"
                                         onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
@@ -2706,9 +2735,9 @@ const MiniChatWindow = () => {
                                           </span>
                                         )}
                                       </div>
-                                    </motion.div>
+                                    </div>
                                   </div>
-                                </div>
+                                </motion.div>
                               );
                               });
                             })()}
@@ -2716,6 +2745,48 @@ const MiniChatWindow = () => {
                         )}
                         <div ref={messagesEndRef} />
                       </div>
+
+                      <AnimatePresence>
+                        {showScrollBottomBtn && (
+                          <motion.button
+                            type="button"
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                            style={{
+                              position: "absolute",
+                              bottom: isMessageSelectionMode ? "70px" : "60px",
+                              right: "16px",
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "50%",
+                              background: "rgba(255, 255, 255, 0.9)",
+                              backdropFilter: "blur(8px)",
+                              WebkitBackdropFilter: "blur(8px)",
+                              border: "1px solid var(--border-color, rgba(226, 232, 240, 0.8))",
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              color: "#eb2525",
+                              zIndex: 99,
+                              transition: "background 0.2s, transform 0.1s"
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "#ffffff";
+                              e.currentTarget.style.transform = "scale(1.05)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+                              e.currentTarget.style.transform = "scale(1)";
+                            }}
+                          >
+                            <ArrowDown size={18} />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
 
                       {/* Message Selection Bar - shown when in selection mode */}
                       {isMessageSelectionMode && (
@@ -3027,29 +3098,77 @@ const MiniChatWindow = () => {
 
       {/* Forward Modal */}
       {/* Notification Toast */}
-      {notification && (
-        <div style={{
-          position: "fixed",
-          top: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: notification.type === "error" ? "#ef4444" : "#10b981",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "10px",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
-          zIndex: 35000,
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          fontFamily: EMOJI_FONT_STACK,
-          animation: "slideDown 0.3s ease-out"
-        }}>
-          {notification.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            key="notification-toast"
+            initial={{ opacity: 0, y: -20, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+            style={{
+              position: "fixed",
+              top: "24px",
+              right: "24px",
+              zIndex: 999999,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 18px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: notification.type === "error" ? "1px solid rgba(239, 68, 68, 0.2)" : (notification.type === "warning" ? "1px solid rgba(245, 158, 11, 0.2)" : "1px solid rgba(16, 185, 129, 0.2)"),
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              color: "var(--text-color, #1e293b)",
+              minWidth: "280px",
+              maxWidth: "400px",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+          >
+            <div style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: notification.type === "error" ? "rgba(239, 68, 68, 0.1)" : (notification.type === "warning" ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)"),
+              color: notification.type === "error" ? "#ef4444" : (notification.type === "warning" ? "#f59e0b" : "#10b981"),
+              flexShrink: 0
+            }}>
+              {notification.type === "error" ? (
+                <AlertCircle size={16} />
+              ) : notification.type === "warning" ? (
+                <Info size={16} />
+              ) : (
+                <CheckCircle size={16} />
+              )}
+            </div>
+            <div style={{ flex: 1, fontSize: "13px", fontWeight: 600, lineHeight: 1.4 }}>
+              {notification.message}
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px",
+                color: "var(--text-secondary, #94a3b8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--text-color, #1e293b)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary, #94a3b8)"}
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation Modal */}
       {confirmModal && (

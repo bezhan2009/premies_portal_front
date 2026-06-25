@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
-  Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, PlusCircle,
-  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle
+  Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
+  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle, Info
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
@@ -356,44 +356,59 @@ export default function FeedbackPage() {
     }
   };
 
-  const handleForwardMessages = async (targetThread) => {
+  const handleToggleForwardThread = (thread) => {
+    setSelectedForwardThreads(prev => {
+      const exists = prev.some(t => t.id === thread.id && t.chatType === thread.chatType);
+      if (exists) {
+        return prev.filter(t => !(t.id === thread.id && t.chatType === thread.chatType));
+      } else {
+        return [...prev, thread];
+      }
+    });
+  };
+
+  const handleConfirmForward = async () => {
+    if (selectedForwardThreads.length === 0) return;
     const token = localStorage.getItem("access_token");
     if (!token) return;
     const sortedIds = [...selectedMessageIds].sort((a, b) => a - b);
     setSending(true);
     try {
-      for (const msgId of sortedIds) {
-        const msg = messages.find(m => m.id === msgId);
-        if (!msg) continue;
-        let textToSend = "";
-        if (msg.message) {
-          const isAlreadyForwarded = msg.message.startsWith("<!--fwd:") || msg.message.startsWith("Переслано от ");
-          if (isAlreadyForwarded) {
-            textToSend = msg.message;
+      for (const targetThread of selectedForwardThreads) {
+        for (const msgId of sortedIds) {
+          const msg = messages.find(m => m.id === msgId);
+          if (!msg) continue;
+          let textToSend = "";
+          if (msg.message) {
+            const isAlreadyForwarded = msg.message.startsWith("<!--fwd:") || msg.message.startsWith("Переслано от ");
+            if (isAlreadyForwarded) {
+              textToSend = msg.message;
+            } else {
+              let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+              let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+              let forwardPrefix = `${fwdComment}Переслано от ${senderName}:\n`;
+              textToSend = `${forwardPrefix}${msg.message}`;
+            }
           } else {
             let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
             let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
-            let forwardPrefix = `${fwdComment}Переслано от ${senderName}:\n`;
-            textToSend = `${forwardPrefix}${msg.message}`;
+            textToSend = `${fwdComment}Переслано от ${senderName}`;
           }
-        } else {
-          let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
-          let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
-          textToSend = `${fwdComment}Переслано от ${senderName}`;
+          const payload = {
+            message: textToSend,
+            attachment_url: msg.attachment_url || "",
+            recipient_id: targetThread.chatType === "direct" ? targetThread.id : 0,
+            reply_to_id: null
+          };
+          await axios.post(`${API_URL}/api/feedback`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
         }
-        const payload = {
-          message: textToSend,
-          attachment_url: msg.attachment_url || "",
-          recipient_id: targetThread.chatType === "direct" ? targetThread.id : 0,
-          reply_to_id: null
-        };
-        await axios.post(`${API_URL}/api/feedback`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
       }
       setIsMessageSelectionMode(false);
       setSelectedMessageIds([]);
       setForwardModalOpen(false);
+      setSelectedForwardThreads([]);
       fetchMessages();
     } catch (err) {
       console.error("Error forwarding messages:", err);
@@ -402,6 +417,34 @@ export default function FeedbackPage() {
       setSending(false);
     }
   };
+
+  const handleForwardInputKeyDown = (e) => {
+    const filtered = forwardThreads.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
+    if (filtered.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedForwardIndex(prev => (prev + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedForwardIndex(prev => (prev - 1 + filtered.length) % filtered.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (focusedForwardIndex >= 0 && focusedForwardIndex < filtered.length) {
+        handleToggleForwardThread(filtered[focusedForwardIndex]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    setFocusedForwardIndex(-1);
+  }, [forwardSearchQuery, forwardModalOpen]);
+
+  useEffect(() => {
+    if (focusedForwardIndex >= 0) {
+      const el = document.getElementById(`fwd-thread-${focusedForwardIndex}`);
+      if (el) el.scrollIntoView({ block: "nearest" });
+    }
+  }, [focusedForwardIndex]);
 
   const handleBulkDeleteMessages = async () => {
     if (!window.confirm(`Вы уверены, что хотите удалить ${selectedMessageIds.length} сообщений?`)) return;
@@ -568,10 +611,21 @@ export default function FeedbackPage() {
     return () => clearInterval(interval);
   }, [recipientId]);
 
-  // Scroll to bottom instantly on chat switch
+  // Scroll to bottom instantly on chat switch and clear selections
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    handleExitMessageSelection();
   }, [recipientId]);
+
+  // Notification auto-dismiss timer
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // Scroll to bottom smoothly on new messages
   useEffect(() => {
@@ -979,29 +1033,75 @@ export default function FeedbackPage() {
       {/* FORWARD CHAT MODAL */}
       <AnimatePresence>
         {/* Notification Toast */}
-      {notification && (
-        <div style={{
-          position: "fixed",
-          top: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: notification.type === "error" ? "#ef4444" : "#10b981",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "10px",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
-          zIndex: 35000,
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          fontFamily: EMOJI_FONT_STACK,
-          animation: "slideDown 0.3s ease-out"
-        }}>
-          {notification.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+        {notification && (
+          <motion.div
+            key="notification-toast"
+            initial={{ opacity: 0, y: -20, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+            style={{
+              position: "fixed",
+              top: "24px",
+              right: "24px",
+              zIndex: 999999,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 18px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: notification.type === "error" ? "1px solid rgba(239, 68, 68, 0.2)" : (notification.type === "warning" ? "1px solid rgba(245, 158, 11, 0.2)" : "1px solid rgba(16, 185, 129, 0.2)"),
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              color: "var(--text-color, #1e293b)",
+              minWidth: "280px",
+              maxWidth: "400px",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+          >
+            <div style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: notification.type === "error" ? "rgba(239, 68, 68, 0.1)" : (notification.type === "warning" ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)"),
+              color: notification.type === "error" ? "#ef4444" : (notification.type === "warning" ? "#f59e0b" : "#10b981"),
+              flexShrink: 0
+            }}>
+              {notification.type === "error" ? (
+                <AlertCircle size={16} />
+              ) : notification.type === "warning" ? (
+                <Info size={16} />
+              ) : (
+                <CheckCircle size={16} />
+              )}
+            </div>
+            <div style={{ flex: 1, fontSize: "13px", fontWeight: 600, lineHeight: 1.4 }}>
+              {notification.message}
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px",
+                color: "var(--text-secondary, #94a3b8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--text-color, #1e293b)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary, #94a3b8)"}
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
       {/* Confirmation Modal */}
       {confirmModal && (
@@ -1077,7 +1177,7 @@ export default function FeedbackPage() {
               style={{
                 width: "100%",
                 maxWidth: "400px",
-                height: "450px",
+                height: "480px",
                 minHeight: "400px",
                 background: "var(--bg-surface, white)",
                 borderRadius: "16px",
@@ -1117,49 +1217,81 @@ export default function FeedbackPage() {
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
                 {forwardThreads
                   .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
-                  .map(thread => (
-                    <button
-                      key={`${thread.chatType}-${thread.id}`}
-                      onClick={() => handleForwardMessages(thread)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "none",
-                        borderRadius: "10px",
-                        background: "transparent",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        color: "var(--text-color)",
-                        transition: "background 0.15s"
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <div style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "50%",
-                        background: thread.chatType === "support" ? "#eb2525" : "#3b82f6",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                        fontWeight: 600
-                      }}>
-                        {thread.chatType === "support" ? <Shield size={14} /> : thread.name.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span style={{ fontSize: "14px", fontWeight: 550 }}>{thread.name}</span>
-                    </button>
-                  ))}
+                  .map((thread, index) => {
+                    const isSelectedInFwd = selectedForwardThreads.some(t => t.id === thread.id && t.chatType === thread.chatType);
+                    const isFocused = index === focusedForwardIndex;
+                    return (
+                      <button
+                        key={`${thread.chatType}-${thread.id}`}
+                        id={`fwd-thread-${index}`}
+                        onClick={() => handleToggleForwardThread(thread)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          width: "100%",
+                          padding: "10px 12px",
+                          border: isFocused ? "1.5px solid #3b82f6" : "1.5px solid transparent",
+                          borderRadius: "10px",
+                          background: isFocused ? "rgba(59, 130, 246, 0.08)" : (isSelectedInFwd ? "rgba(59, 130, 246, 0.03)" : "transparent"),
+                          cursor: "pointer",
+                          textAlign: "left",
+                          color: "var(--text-color)",
+                          transition: "background 0.15s"
+                        }}
+                      >
+                        <div style={{ flexShrink: 0, marginRight: "4px" }}>
+                          {isSelectedInFwd ? (
+                            <CheckCircle2 size={16} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                          ) : (
+                            <div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                          )}
+                        </div>
+                        <div style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: thread.chatType === "support" ? "#eb2525" : "#3b82f6",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 600
+                        }}>
+                          {thread.chatType === "support" ? <Shield size={14} /> : thread.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: "14px", fontWeight: 550, flex: 1 }}>{thread.name}</span>
+                      </button>
+                    );
+                  })}
                 {forwardThreads.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase())).length === 0 && (
                   <div style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "13px", padding: "10px 0" }}>
                     Чаты не найдены
                   </div>
                 )}
+              </div>
+
+              <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "12px" }}>
+                <button
+                  onClick={handleConfirmForward}
+                  disabled={selectedForwardThreads.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "10px",
+                    background: "#eb2525",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    border: "none",
+                    cursor: "pointer",
+                    opacity: selectedForwardThreads.length === 0 ? 0.6 : 1,
+                    transition: "opacity 0.2s"
+                  }}
+                >
+                  Переслать ({selectedForwardThreads.length})
+                </button>
               </div>
             </motion.div>
           </div>
@@ -1469,6 +1601,7 @@ export default function FeedbackPage() {
           padding: 24px;
         }
         .chat-card {
+          position: relative;
           width: 100%;
           max-width: 600px;
           height: 100%;
@@ -1709,6 +1842,7 @@ export default function FeedbackPage() {
         {/* MESSAGES LIST */}
         <div
           className="chat-messages"
+          onScroll={handleMessagesScroll}
           onContextMenu={(e) => {
             const clickedOnBackground = e.target === e.currentTarget ||
               e.target.closest('[data-msg-bubble]') === null;
@@ -1829,8 +1963,13 @@ export default function FeedbackPage() {
                   const isSelected = selectedMessageIds.includes(msg.id);
 
                   return (
-                    <div 
+                    <motion.div 
                       key={msg.id}
+                      layout
+                      initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
                       onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                       style={{ 
                         display: "flex", 
@@ -1863,12 +2002,7 @@ export default function FeedbackPage() {
                           display: "flex",
                           justifyContent: isOutgoing ? "flex-end" : "flex-start"
                         }}>
-                        <motion.div
-                          layout
-                          initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                          transition={{ duration: 0.22, ease: "easeOut" }}
+                        <div
                           id={`msg-bubble-${msg.id}`}
                           className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
                           onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
@@ -2029,9 +2163,9 @@ export default function FeedbackPage() {
                             </span>
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
                 });
               })()}
@@ -2039,6 +2173,48 @@ export default function FeedbackPage() {
           )}
           <div ref={messagesEndRef} />
         </div>
+
+        <AnimatePresence>
+          {showScrollBottomBtn && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+              style={{
+                position: "absolute",
+                bottom: isMessageSelectionMode ? "130px" : "76px",
+                right: "20px",
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.9)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid var(--border-color)",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "#eb2525",
+                zIndex: 99,
+                transition: "background 0.2s, transform 0.1s"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              <ArrowDown size={20} />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* INPUT FOOTER */}
         {isMessageSelectionMode ? (

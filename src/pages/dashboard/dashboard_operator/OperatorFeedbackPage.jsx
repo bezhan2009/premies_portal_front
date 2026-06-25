@@ -417,6 +417,24 @@ export default function OperatorFeedbackPage() {
     }
   }, [focusedUserIndex]);
 
+  // Notification auto-dismiss timer
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  // Reset userSearchQuery and focusedUserIndex on new chat modal close
+  useEffect(() => {
+    if (!showNewChatModal) {
+      setUserSearchQuery("");
+      setFocusedUserIndex(-1);
+    }
+  }, [showNewChatModal]);
+
   const handleToggleForwardThread = (thread) => {
     setSelectedForwardThreads(prev => {
       const exists = prev.some(t => t.id === thread.id && t.chatType === thread.chatType);
@@ -883,12 +901,14 @@ export default function OperatorFeedbackPage() {
     };
   }, [activeChatType, activeThreadId, fetchMessages, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
-  // Scroll to bottom instantly on chat switch
+  // Scroll to bottom instantly on chat switch and clear selections
   useEffect(() => {
     if (activeChatType && activeThreadId) {
       scrollToBottom("auto");
     }
-  }, [activeChatType, activeThreadId]);
+    handleExitMessageSelection();
+    handleExitChatSelection();
+  }, [activeChatType, activeThreadId, mobileShowChat]);
 
   // Scroll to bottom smoothly on new messages
   useEffect(() => {
@@ -1463,29 +1483,75 @@ export default function OperatorFeedbackPage() {
       {/* FORWARD CHAT MODAL */}
       <AnimatePresence>
         {/* Notification Toast */}
-      {notification && (
-        <div style={{
-          position: "fixed",
-          top: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: notification.type === "error" ? "#ef4444" : "#10b981",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "10px",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
-          zIndex: 35000,
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          fontFamily: EMOJI_FONT_STACK,
-          animation: "slideDown 0.3s ease-out"
-        }}>
-          {notification.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+        {notification && (
+          <motion.div
+            key="notification-toast"
+            initial={{ opacity: 0, y: -20, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+            style={{
+              position: "fixed",
+              top: "24px",
+              right: "24px",
+              zIndex: 999999,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 18px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: notification.type === "error" ? "1px solid rgba(239, 68, 68, 0.2)" : (notification.type === "warning" ? "1px solid rgba(245, 158, 11, 0.2)" : "1px solid rgba(16, 185, 129, 0.2)"),
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              color: "var(--text-color, #1e293b)",
+              minWidth: "280px",
+              maxWidth: "400px",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+          >
+            <div style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: notification.type === "error" ? "rgba(239, 68, 68, 0.1)" : (notification.type === "warning" ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.1)"),
+              color: notification.type === "error" ? "#ef4444" : (notification.type === "warning" ? "#f59e0b" : "#10b981"),
+              flexShrink: 0
+            }}>
+              {notification.type === "error" ? (
+                <AlertCircle size={16} />
+              ) : notification.type === "warning" ? (
+                <Info size={16} />
+              ) : (
+                <CheckCircle size={16} />
+              )}
+            </div>
+            <div style={{ flex: 1, fontSize: "13px", fontWeight: 600, lineHeight: 1.4 }}>
+              {notification.message}
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px",
+                color: "var(--text-secondary, #94a3b8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--text-color, #1e293b)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary, #94a3b8)"}
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
       {/* Confirmation Modal */}
       {confirmModal && (
@@ -1601,49 +1667,81 @@ export default function OperatorFeedbackPage() {
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
                 {forwardThreadsList
                   .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
-                  .map(thread => (
-                    <button
-                      key={`${thread.chatType}-${thread.id}`}
-                      onClick={() => handleForwardMessages(thread)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "none",
-                        borderRadius: "10px",
-                        background: "transparent",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        color: "var(--text-color, #1e293b)",
-                        transition: "background 0.15s"
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <div style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "50%",
-                        background: thread.chatType === "support" ? "#eb2525" : "#3b82f6",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                        fontWeight: 600
-                      }}>
-                        {thread.chatType === "support" ? <Shield size={14} /> : thread.name.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span style={{ fontSize: "14px", fontWeight: 550 }}>{thread.name}</span>
-                    </button>
-                  ))}
+                  .map((thread, index) => {
+                    const isSelectedInFwd = selectedForwardThreads.some(t => t.id === thread.id && t.chatType === thread.chatType);
+                    const isFocused = index === focusedForwardIndex;
+                    return (
+                      <button
+                        key={`${thread.chatType}-${thread.id}`}
+                        id={`fwd-thread-${index}`}
+                        onClick={() => handleToggleForwardThread(thread)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          width: "100%",
+                          padding: "10px 12px",
+                          border: isFocused ? "1.5px solid #3b82f6" : "1.5px solid transparent",
+                          borderRadius: "10px",
+                          background: isFocused ? "rgba(59, 130, 246, 0.08)" : (isSelectedInFwd ? "rgba(59, 130, 246, 0.03)" : "transparent"),
+                          cursor: "pointer",
+                          textAlign: "left",
+                          color: "var(--text-color, #1e293b)",
+                          transition: "background 0.15s"
+                        }}
+                      >
+                        <div style={{ flexShrink: 0, marginRight: "4px" }}>
+                          {isSelectedInFwd ? (
+                            <CheckCircle2 size={16} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                          ) : (
+                            <div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                          )}
+                        </div>
+                        <div style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: thread.chatType === "support" ? "#eb2525" : "#3b82f6",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 600
+                        }}>
+                          {thread.chatType === "support" ? <Shield size={14} /> : thread.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: "14px", fontWeight: 550, flex: 1 }}>{thread.name}</span>
+                      </button>
+                    );
+                  })}
                 {forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase())).length === 0 && (
                   <div style={{ textAlign: "center", color: "var(--text-secondary, #64748b)", fontSize: "13px", padding: "10px 0" }}>
                     Чаты не найдены
                   </div>
                 )}
+              </div>
+
+              <div style={{ borderTop: "1px solid var(--border-color, #e2e8f0)", paddingTop: "12px" }}>
+                <button
+                  onClick={handleConfirmForward}
+                  disabled={selectedForwardThreads.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "10px",
+                    background: "#eb2525",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    border: "none",
+                    cursor: "pointer",
+                    opacity: selectedForwardThreads.length === 0 ? 0.6 : 1,
+                    transition: "opacity 0.2s"
+                  }}
+                >
+                  Переслать ({selectedForwardThreads.length})
+                </button>
               </div>
             </motion.div>
           </div>
@@ -2243,6 +2341,7 @@ export default function OperatorFeedbackPage() {
 
         /* Chat Pane */
         .feedback-chat {
+          position: relative;
           flex: 1;
           background: var(--bg-surface, var(--bg-sidebar));
           border: 1px solid var(--border-color);
@@ -2835,6 +2934,7 @@ export default function OperatorFeedbackPage() {
             ) : (
               <div
                 className="chat-messages"
+                onScroll={handleMessagesScroll}
                 onContextMenu={(e) => {
                   const clickedOnBackground = e.target === e.currentTarget ||
                     e.target.closest('[data-msg-bubble]') === null;
@@ -2961,7 +3061,12 @@ export default function OperatorFeedbackPage() {
                         const isSelected = selectedMessageIds.includes(msg.id);
 
                         return (
-                          <div 
+                          <motion.div
+  layout
+  initial={{ opacity: 0, y: 15, scale: 0.96 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+  transition={{ duration: 0.22, ease: "easeOut" }} 
                             key={msg.id}
                             onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                             style={{ 
@@ -2995,12 +3100,12 @@ export default function OperatorFeedbackPage() {
                                 display: "flex",
                                 justifyContent: isOutgoing ? "flex-end" : "flex-start"
                               }}>
-                              <motion.div 
-                                layout
-                                initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                transition={{ duration: 0.22, ease: "easeOut" }}
+                              <div 
+
+
+
+
+
                                 id={`msg-bubble-${msg.id}`}
                                 className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
                                 onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
@@ -3164,9 +3269,9 @@ export default function OperatorFeedbackPage() {
                                 )}
                               </div>
                             </div>
-                          </motion.div>
+                          </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                       });
                     })()}
@@ -3174,33 +3279,47 @@ export default function OperatorFeedbackPage() {
                 )}
                 <div ref={messagesEndRef} />
                 
-                {showScrollBottomBtn && (
-                  <button
-                    onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-                    style={{
-                      position: "absolute",
-                      bottom: "76px",
-                      right: "20px",
-                      width: "38px",
-                      height: "38px",
-                      borderRadius: "50%",
-                      background: "var(--bg-surface, #ffffff)",
-                      border: "1px solid var(--border-color, #cbd5e1)",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      color: "var(--text-color, #0f172a)",
-                      zIndex: 1000,
-                      transition: "all 0.2s"
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
-                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                  >
-                    <ArrowDown size={20} />
-                  </button>
-                )}
+                <AnimatePresence>
+                  {showScrollBottomBtn && (
+                    <motion.button
+                      type="button"
+                      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                      onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                      style={{
+                        position: "absolute",
+                        bottom: isMessageSelectionMode ? "130px" : "76px",
+                        right: "20px",
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "50%",
+                        background: "rgba(255, 255, 255, 0.9)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        border: "1px solid var(--border-color)",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        color: "#eb2525",
+                        zIndex: 99,
+                        transition: "background 0.2s, transform 0.1s"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.transform = "scale(1.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
+                    >
+                      <ArrowDown size={20} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
