@@ -3,7 +3,7 @@ import axios from "axios";
 import { 
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
-  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -60,7 +60,7 @@ const formatMessageText = (text) => {
   });
 
   // 2. Emojis
-  const emojiRegex = /[\p{Extended_Pictographic}\u200d\uFE0F\u{1F3FB}-\u{1F3FF}]+/gu;
+  const emojiRegex = /\p{Extended_Pictographic}(?:[\u{1F3FB}-\u{1F3FF}\uFE0F]|\u200d\p{Extended_Pictographic})*/gu;
   escaped = escaped.replace(emojiRegex, (emoji) => {
     const codePoints = [];
     for (const char of emoji) {
@@ -287,6 +287,7 @@ export default function OperatorFeedbackPage() {
 
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" }); // type: "message" | "thread"
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   // Advanced Features: Replies & Editing
   const [replyingTo, setReplyingTo] = useState(null);
@@ -335,7 +336,10 @@ export default function OperatorFeedbackPage() {
 
   // Close context menu on window click
   useEffect(() => {
-    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    const closeMenu = () => {
+      setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+      setShowReactionPicker(false);
+    };
     window.addEventListener("click", closeMenu);
     return () => window.removeEventListener("click", closeMenu);
   }, []);
@@ -904,20 +908,28 @@ export default function OperatorFeedbackPage() {
     let target = e.target;
     let button = null;
     while (target && target !== e.currentTarget) {
-      const style = window.getComputedStyle(target);
       if (
         target.tagName === "BUTTON" || 
         target.classList.contains("ripple-btn") || 
         target.classList.contains("thread-item") ||
         target.classList.contains("modal-user-item") ||
-        target.classList.contains("mini-chat-thread-card") ||
-        style.cursor === "pointer" ||
-        style.cursor === "grab"
+        target.classList.contains("mini-chat-thread-card")
       ) {
         button = target;
         break;
       }
       target = target.parentElement;
+    }
+    if (!button) {
+      target = e.target;
+      while (target && target !== e.currentTarget) {
+        const style = window.getComputedStyle(target);
+        if (style.cursor === "pointer" || style.cursor === "grab") {
+          button = target;
+          break;
+        }
+        target = target.parentElement;
+      }
     }
 
     if (!button) return;
@@ -998,108 +1010,102 @@ export default function OperatorFeedbackPage() {
               borderRadius: "12px",
               boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
               padding: "6px",
-              minWidth: "240px",
+              minWidth: "260px",
               display: "flex",
               flexDirection: "column",
               gap: "2px",
               fontFamily: EMOJI_FONT_STACK
             }}
           >
-            {contextMenu.type === "message" && (
-              <div style={{
-                display: "flex",
-                gap: "6px",
-                padding: "6px 8px",
-                borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
-                justifyContent: "space-between",
-                background: "rgba(248, 250, 252, 0.5)",
-                borderRadius: "8px 8px 0 0"
-              }}>
-                {POPULAR_EMOJIS.map(emoji => {
-                  const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
-                  const isSelected = parsedReactions[currentUserId] === emoji;
-                  return (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReact(contextMenu.target.id, emoji)}
-                      style={{
-                        background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "2px 4px",
-                        cursor: "pointer",
-                        transition: "transform 0.1s",
-                        outline: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.35)"}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                    >
-                      <img 
-                        src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
-                        alt={emoji} 
-                        style={{ width: "20px", height: "20px", display: "block" }}
-                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            
             {contextMenu.type === "message" ? (
               <>
-                <button 
-                  onClick={() => handleCopy(contextMenu.target.message)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px 10px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#1e293b",
-                    background: "transparent",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    textAlign: "left"
-                  }}
-                >
-                  <Check size={14} /> Копировать
-                </button>
-                <button 
-                  onClick={() => {
-                    setReplyingTo(contextMenu.target);
-                    setEditingMessage(null);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px 10px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#1e293b",
-                    background: "transparent",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    textAlign: "left"
-                  }}
-                >
-                  <CornerUpLeft size={14} /> Ответить
-                </button>
-                {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
-                  (activeChatType === "support" && contextMenu.target.is_operator)) && (
+                <div style={{
+                  display: "flex",
+                  gap: "6px",
+                  padding: "6px 8px",
+                  borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
+                  justifyContent: "space-between",
+                  background: "rgba(248, 250, 252, 0.5)",
+                  borderRadius: "8px 8px 0 0"
+                }}>
+                  {POPULAR_EMOJIS.map(emoji => {
+                    const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
+                    const isSelected = parsedReactions[currentUserId] === emoji;
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReact(contextMenu.target.id, emoji)}
+                        style={{
+                          background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "0",
+                          width: "24px",
+                          height: "24px",
+                          flexShrink: 0,
+                          cursor: "pointer",
+                          transition: "transform 0.1s",
+                          outline: "none",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.35)"}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                      >
+                        <img 
+                          src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                          alt={emoji} 
+                          style={{ width: "20px", height: "20px", display: "block" }}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                        />
+                      </button>
+                    );
+                  })}
+                  {/* Plus button to show all emotions */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowReactionPicker(!showReactionPicker);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "6px",
+                      width: "24px",
+                      height: "24px",
+                      flexShrink: 0,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#64748b"
+                    }}
+                  >
+                    <PlusCircle size={18} />
+                  </button>
+                </div>
+                
+                {showReactionPicker ? (
+                  <div style={{ padding: "4px" }}>
+                    <EmojiPicker 
+                      onEmojiClick={(emojiObj) => {
+                        handleReact(contextMenu.target.id, emojiObj.emoji);
+                        setContextMenu({ ...contextMenu, visible: false });
+                        setShowReactionPicker(false);
+                      }} 
+                      theme={theme}
+                      emojiStyle="apple"
+                      width={250}
+                      height={280}
+                    />
+                  </div>
+                ) : (
                   <>
                     <button 
                       onClick={() => {
-                        setEditingMessage(contextMenu.target);
-                        setNewMessage(contextMenu.target.message || "");
-                        setReplyingTo(null);
+                        setReplyingTo(contextMenu.target);
+                        setEditingMessage(null);
                       }}
                       style={{
                         display: "flex",
@@ -1116,10 +1122,10 @@ export default function OperatorFeedbackPage() {
                         textAlign: "left"
                       }}
                     >
-                      <Edit3 size={14} /> Редактировать
+                      <CornerUpLeft size={14} /> Ответить
                     </button>
                     <button 
-                      onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                      onClick={() => handleCopy(contextMenu.target.message)}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1127,7 +1133,7 @@ export default function OperatorFeedbackPage() {
                         padding: "8px 10px",
                         fontSize: "13px",
                         fontWeight: 500,
-                        color: "#ef4444",
+                        color: "#1e293b",
                         background: "transparent",
                         border: "none",
                         borderRadius: "8px",
@@ -1135,8 +1141,55 @@ export default function OperatorFeedbackPage() {
                         textAlign: "left"
                       }}
                     >
-                      <Trash2 size={14} /> Удалить
+                      <Check size={14} /> Копировать
                     </button>
+                    {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                      (activeChatType === "support" && contextMenu.target.is_operator)) && (
+                      <>
+                        <button 
+                          onClick={() => {
+                            setEditingMessage(contextMenu.target);
+                            setNewMessage(contextMenu.target.message || "");
+                            setReplyingTo(null);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 10px",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#1e293b",
+                            background: "transparent",
+                            border: "none",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            textAlign: "left"
+                          }}
+                        >
+                          <Edit3 size={14} /> Редактировать
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 10px",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#ef4444",
+                            background: "transparent",
+                            border: "none",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            textAlign: "left"
+                          }}
+                        >
+                          <Trash2 size={14} /> Удалить
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </>
@@ -1856,7 +1909,7 @@ export default function OperatorFeedbackPage() {
                               <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
+                              <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || "Вложение/Диалог начат" }} />
                               {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
                             </div>
                           </div>
@@ -1894,8 +1947,8 @@ export default function OperatorFeedbackPage() {
                         </span>
                         <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
+                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || "Вложение/Диалог начат" }} />
                         {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
                       </div>
                     </div>
@@ -2106,9 +2159,7 @@ export default function OperatorFeedbackPage() {
                                       background: isOutgoing 
                                         ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
                                         : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
-                                      border: isOutgoing 
-                                        ? (hasMyReaction ? "1.5px solid #ffffff" : "1.5px solid rgba(255, 255, 255, 0.2)")
-                                        : (hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid rgba(0, 0, 0, 0.06)"),
+                                      border: "none",
                                       borderRadius: "12px",
                                       padding: "2px 6px",
                                       fontSize: "11px",

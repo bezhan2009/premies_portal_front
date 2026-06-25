@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
-  Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
+  Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, PlusCircle
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
@@ -59,7 +59,7 @@ const formatMessageText = (text) => {
   });
 
   // 2. Emojis
-  const emojiRegex = /[\p{Extended_Pictographic}\u200d\uFE0F\u{1F3FB}-\u{1F3FF}]+/gu;
+  const emojiRegex = /\p{Extended_Pictographic}(?:[\u{1F3FB}-\u{1F3FF}\uFE0F]|\u200d\p{Extended_Pictographic})*/gu;
   escaped = escaped.replace(emojiRegex, (emoji) => {
     const codePoints = [];
     for (const char of emoji) {
@@ -262,6 +262,7 @@ export default function FeedbackPage() {
 
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" });
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   // Advanced Features: Replies & Editing
   const [replyingTo, setReplyingTo] = useState(null);
@@ -316,7 +317,10 @@ export default function FeedbackPage() {
 
   // Close context menu on window click
   useEffect(() => {
-    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    const closeMenu = () => {
+      setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+      setShowReactionPicker(false);
+    };
     window.addEventListener("click", closeMenu);
     return () => window.removeEventListener("click", closeMenu);
   }, []);
@@ -527,20 +531,28 @@ export default function FeedbackPage() {
     let target = e.target;
     let button = null;
     while (target && target !== e.currentTarget) {
-      const style = window.getComputedStyle(target);
       if (
         target.tagName === "BUTTON" || 
         target.classList.contains("ripple-btn") || 
         target.classList.contains("thread-item") ||
         target.classList.contains("modal-user-item") ||
-        target.classList.contains("mini-chat-thread-card") ||
-        style.cursor === "pointer" ||
-        style.cursor === "grab"
+        target.classList.contains("mini-chat-thread-card")
       ) {
         button = target;
         break;
       }
       target = target.parentElement;
+    }
+    if (!button) {
+      target = e.target;
+      while (target && target !== e.currentTarget) {
+        const style = window.getComputedStyle(target);
+        if (style.cursor === "pointer" || style.cursor === "grab") {
+          button = target;
+          break;
+        }
+        target = target.parentElement;
+      }
     }
 
     if (!button) return;
@@ -751,7 +763,7 @@ export default function FeedbackPage() {
               borderRadius: "12px",
               boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
               padding: "6px",
-              minWidth: "240px",
+              minWidth: "260px",
               display: "flex",
               flexDirection: "column",
               gap: "2px",
@@ -765,6 +777,7 @@ export default function FeedbackPage() {
                 padding: "6px 8px",
                 borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
                 justifyContent: "space-between",
+                alignItems: "center",
                 background: "rgba(248, 250, 252, 0.5)",
                 borderRadius: "8px 8px 0 0"
               }}>
@@ -779,7 +792,10 @@ export default function FeedbackPage() {
                         background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                         border: "none",
                         borderRadius: "6px",
-                        padding: "4px",
+                        padding: "0",
+                        width: "24px",
+                        height: "24px",
+                        flexShrink: 0,
                         cursor: "pointer",
                         transition: "transform 0.1s",
                         outline: "none",
@@ -799,57 +815,51 @@ export default function FeedbackPage() {
                     </button>
                   );
                 })}
+                {/* Plus button to show all emotions */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowReactionPicker(!showReactionPicker);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "6px",
+                    width: "24px",
+                    height: "24px",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b"
+                  }}
+                >
+                  <PlusCircle size={18} />
+                </button>
               </div>
             )}
             
-            <button 
-              onClick={() => handleCopy(contextMenu.target.message)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 10px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "#1e293b",
-                background: "transparent",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                textAlign: "left"
-              }}
-            >
-              <Check size={14} /> Копировать
-            </button>
-            <button 
-              onClick={() => {
-                setReplyingTo(contextMenu.target);
-                setEditingMessage(null);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 10px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "#1e293b",
-                background: "transparent",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                textAlign: "left"
-              }}
-            >
-              <CornerUpLeft size={14} /> Ответить
-            </button>
-            {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
+            {showReactionPicker ? (
+              <div style={{ padding: "4px" }}>
+                <EmojiPicker 
+                  onEmojiClick={(emojiObj) => {
+                    handleReact(contextMenu.target.id, emojiObj.emoji);
+                    setContextMenu({ ...contextMenu, visible: false });
+                    setShowReactionPicker(false);
+                  }} 
+                  theme={theme}
+                  emojiStyle="apple"
+                  width={250}
+                  height={280}
+                />
+              </div>
+            ) : (
               <>
                 <button 
                   onClick={() => {
-                    setEditingMessage(contextMenu.target);
-                    setNewMessage(contextMenu.target.message || "");
-                    setReplyingTo(null);
+                    setReplyingTo(contextMenu.target);
+                    setEditingMessage(null);
                   }}
                   style={{
                     display: "flex",
@@ -866,10 +876,10 @@ export default function FeedbackPage() {
                     textAlign: "left"
                   }}
                 >
-                  <Edit3 size={14} /> Редактировать
+                  <CornerUpLeft size={14} /> Ответить
                 </button>
                 <button 
-                  onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                  onClick={() => handleCopy(contextMenu.target.message)}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -877,7 +887,7 @@ export default function FeedbackPage() {
                     padding: "8px 10px",
                     fontSize: "13px",
                     fontWeight: 500,
-                    color: "#ef4444",
+                    color: "#1e293b",
                     background: "transparent",
                     border: "none",
                     borderRadius: "8px",
@@ -885,8 +895,54 @@ export default function FeedbackPage() {
                     textAlign: "left"
                   }}
                 >
-                  <Trash2 size={14} /> Удалить
+                  <Check size={14} /> Копировать
                 </button>
+                {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
+                  <>
+                    <button 
+                      onClick={() => {
+                        setEditingMessage(contextMenu.target);
+                        setNewMessage(contextMenu.target.message || "");
+                        setReplyingTo(null);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <Edit3 size={14} /> Редактировать
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#ef4444",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <Trash2 size={14} /> Удалить
+                    </button>
+                  </>
+                )}
               </>
             )}
           </motion.div>
@@ -957,7 +1013,6 @@ export default function FeedbackPage() {
           line-height: 1.4;
           position: relative;
           word-break: break-word;
-          animation: messageAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
           transition: background 0.5s, border-color 0.5s;
         }
         .message-outgoing {
@@ -1248,9 +1303,7 @@ export default function FeedbackPage() {
                               background: isOutgoing 
                                 ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
                                 : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
-                              border: isOutgoing 
-                                ? (hasMyReaction ? "1.5px solid #ffffff" : "1.5px solid rgba(255, 255, 255, 0.2)")
-                                : (hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid rgba(0, 0, 0, 0.06)"),
+                              border: "none",
                               borderRadius: "12px",
                               padding: "2px 6px",
                               fontSize: "11px",
