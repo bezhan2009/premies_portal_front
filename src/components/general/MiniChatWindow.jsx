@@ -19,6 +19,36 @@ const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
+const formatMessageText = (text) => {
+  if (!text) return "";
+  let escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  // 1. Links
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  escaped = escaped.replace(urlRegex, (url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; word-break: break-all;">${url}</a>`;
+  });
+
+  // 2. Emojis
+  const emojiRegex = /[\p{Extended_Pictographic}\u200d\uFE0F\u{1F3FB}-\u{1F3FF}]+/gu;
+  escaped = escaped.replace(emojiRegex, (emoji) => {
+    const codePoints = [];
+    for (const char of emoji) {
+      codePoints.push(char.codePointAt(0).toString(16));
+    }
+    const hex = codePoints.join("-");
+    const src = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${hex}.png`;
+    return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
+  });
+
+  return escaped;
+};
+
 const parseMessageReactions = (reactionsStr) => {
   try {
     if (!reactionsStr) return {};
@@ -217,6 +247,27 @@ const MiniChatWindow = () => {
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const adjustTextareaHeight = (element) => {
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 120)}px`;
+  };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      adjustTextareaHeight(textareaRef.current);
+    }
+  }, [newMessage]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   const token = localStorage.getItem("access_token");
 
   // Load pinned and muted chats
@@ -383,6 +434,9 @@ const MiniChatWindow = () => {
         console.error("Error updating message:", err);
       } finally {
         setSending(false);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "36px";
+        }
       }
       return;
     }
@@ -438,6 +492,9 @@ const MiniChatWindow = () => {
       console.error("Error sending message:", err);
     } finally {
       setSending(false);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "36px";
+      }
     }
   };
 
@@ -1526,9 +1583,10 @@ const MiniChatWindow = () => {
                                       <span style={{ fontWeight: 600 }}>
                                         {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
                                       </span>
-                                      <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                        {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
-                                      </div>
+                                      <div 
+                                        style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                        dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                                      />
                                     </div>
                                   )}
 
@@ -1540,9 +1598,8 @@ const MiniChatWindow = () => {
                                       animate={{ scale: 1, opacity: 1 }}
                                       transition={{ duration: 0.15 }}
                                       style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                    >
-                                      {msg.message}
-                                    </motion.div>
+                                      dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                                    />
                                   )}
                                   
                                   {/* Voice Audio */}
@@ -1600,8 +1657,15 @@ const MiniChatWindow = () => {
                                             transition: "all 0.15s"
                                           }}
                                         >
-                                          <span>{emoji}</span>
-                                          {count > 1 && <span>{count}</span>}
+                                        <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                                          <img 
+                                            src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                                            alt={emoji} 
+                                            style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
+                                            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                                          />
+                                        </span>
+                                        {count > 1 && <span>{count}</span>}
                                         </button>
                                       ))}
                                     </div>
@@ -1703,21 +1767,28 @@ const MiniChatWindow = () => {
                               <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
                             </label>
                             
-                            <input
-                              type="text"
+                            <textarea
+                              ref={textareaRef}
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
+                              onKeyDown={handleKeyDown}
                               placeholder={file ? `Файл: ${file.name}` : "Сообщение..."}
                               style={{
                                 flex: 1,
-                                padding: "6px 12px",
-                                borderRadius: "18px",
+                                padding: "8px 12px",
+                                borderRadius: "14px",
                                 border: "1px solid var(--border-color, #cbd5e1)",
                                 background: "var(--bg-color, #f8fafc)",
                                 color: "var(--text-color, #0f172a)",
                                 outline: "none",
                                 fontSize: "13px",
-                                fontFamily: EMOJI_FONT_STACK
+                                fontFamily: EMOJI_FONT_STACK,
+                                resize: "none",
+                                height: "36px",
+                                minHeight: "36px",
+                                maxHeight: "120px",
+                                lineHeight: "1.4",
+                                overflowY: "auto"
                               }}
                             />
 
@@ -1752,7 +1823,7 @@ const MiniChatWindow = () => {
                         )}
                         {showEmojiPicker && !isRecording && (
                           <div style={{ position: "absolute", bottom: "60px", right: "10px", zIndex: 10 }}>
-                            <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={theme} width={260} height={280} />
+                            <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={theme} emojiStyle="apple" width={260} height={280} />
                           </div>
                         )}
                       </div>

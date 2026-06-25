@@ -43,6 +43,36 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
+const formatMessageText = (text) => {
+  if (!text) return "";
+  let escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  // 1. Links
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  escaped = escaped.replace(urlRegex, (url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; word-break: break-all;">${url}</a>`;
+  });
+
+  // 2. Emojis
+  const emojiRegex = /[\p{Extended_Pictographic}\u200d\uFE0F\u{1F3FB}-\u{1F3FF}]+/gu;
+  escaped = escaped.replace(emojiRegex, (emoji) => {
+    const codePoints = [];
+    for (const char of emoji) {
+      codePoints.push(char.codePointAt(0).toString(16));
+    }
+    const hex = codePoints.join("-");
+    const src = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${hex}.png`;
+    return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
+  });
+
+  return escaped;
+};
+
 // Shimmering Skeleton Loader component for active chat loading
 const LoadingSkeleton = () => {
   return (
@@ -209,6 +239,27 @@ export default function FeedbackPage() {
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  const textareaRef = useRef(null);
+
+  const adjustTextareaHeight = (element) => {
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 120)}px`;
+  };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      adjustTextareaHeight(textareaRef.current);
+    }
+  }, [newMessage]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" });
 
@@ -370,6 +421,9 @@ export default function FeedbackPage() {
         setErrorMsg("Не удалось отредактировать сообщение.");
       } finally {
         setSending(false);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "36px";
+        }
       }
       return;
     }
@@ -406,6 +460,9 @@ export default function FeedbackPage() {
       setErrorMsg("Не удалось отправить сообщение. Попробуйте еще раз.");
     } finally {
       setSending(false);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "36px";
+      }
     }
   };
 
@@ -722,16 +779,23 @@ export default function FeedbackPage() {
                         background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                         border: "none",
                         borderRadius: "6px",
-                        fontSize: "18px",
-                        padding: "2px 4px",
+                        padding: "4px",
                         cursor: "pointer",
                         transition: "transform 0.1s",
-                        outline: "none"
+                        outline: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.35)"}
                       onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                     >
-                      {emoji}
+                      <img 
+                        src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                        alt={emoji} 
+                        style={{ width: "20px", height: "20px", display: "block" }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                      />
                     </button>
                   );
                 })}
@@ -1121,9 +1185,10 @@ export default function FeedbackPage() {
                         <span style={{ fontWeight: 600 }}>
                           {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
                         </span>
-                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
-                        </div>
+                        <div 
+                          style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                          dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                        />
                       </div>
                     )}
 
@@ -1135,9 +1200,8 @@ export default function FeedbackPage() {
                         transition={{ duration: 0.15 }}
                         className="message-text" 
                         style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {msg.message}
-                      </motion.div>
+                        dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                      />
                     )}
                     
                     {isVoice && (
@@ -1196,7 +1260,14 @@ export default function FeedbackPage() {
                               transition: "all 0.15s"
                             }}
                           >
-                            <span>{emoji}</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                              <img 
+                                src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                                alt={emoji} 
+                                style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                              />
+                            </span>
                             {count > 1 && <span>{count}</span>}
                           </button>
                         ))}
@@ -1276,7 +1347,7 @@ export default function FeedbackPage() {
           
           {showEmojiPicker && !isRecording && (
             <div className="emoji-picker-container">
-              <EmojiPicker onEmojiClick={onEmojiClick} theme={theme} />
+              <EmojiPicker onEmojiClick={onEmojiClick} theme={theme} emojiStyle="apple" />
             </div>
           )}
 
@@ -1306,13 +1377,24 @@ export default function FeedbackPage() {
                 <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
               </label>
               
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 className="chat-input"
                 placeholder="Напишите сообщение..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
                 disabled={sending}
+                style={{
+                  resize: "none",
+                  height: "36px",
+                  minHeight: "36px",
+                  maxHeight: "120px",
+                  lineHeight: "1.4",
+                  overflowY: "auto",
+                  borderRadius: "18px",
+                  padding: "8px 16px"
+                }}
               />
 
               {!isSendActive ? (
