@@ -5,6 +5,9 @@ import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
 import useThemeStore from "../../../store/useThemeStore";
+import { format, isToday, isYesterday } from "date-fns";
+import { ru } from "date-fns/locale";
+import ImageModal from "../../../components/modal/ImageModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -58,6 +61,8 @@ export default function OperatorFeedbackPage() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [sending, setSending] = useState(false);
+  const [hoveredMsgId, setHoveredMsgId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   
   // Mobile navigation
   const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -340,9 +345,18 @@ export default function OperatorFeedbackPage() {
     } catch { return ""; }
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
   return (
     <div className="feedback-container">
       <Helmet><title>Панель обратной связи</title></Helmet>
+      <ImageModal 
+        isOpen={!!selectedImage} 
+        imageUrl={selectedImage} 
+        onClose={() => setSelectedImage(null)} 
+      />
       
       <style>{`
         .feedback-container {
@@ -637,6 +651,7 @@ export default function OperatorFeedbackPage() {
           flex-direction: column;
           max-width: 70%;
           animation: messageAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          position: relative;
         }
         .msg-bubble-wrapper.outgoing {
           align-self: flex-end;
@@ -1075,27 +1090,57 @@ export default function OperatorFeedbackPage() {
                   <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
                   messages.map((msg) => {
-                    // Operator outgoing is msg.is_operator for support, but for direct it's current user
                     const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
 
                     return (
-                      <div key={msg.id} className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}>
+                      <div 
+                        key={msg.id} 
+                        className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
+                        onMouseEnter={() => setHoveredMsgId(msg.id)}
+                        onMouseLeave={() => setHoveredMsgId(null)}
+                      >
                         {!isOutgoing && activeChatType === "support" && (
                           <span className="msg-sender">{msg.username}</span>
                         )}
+                        
+                        {hoveredMsgId === msg.id && msg.message && (
+                          <div 
+                            onClick={() => handleCopy(msg.message)}
+                            style={{
+                              position: "absolute",
+                              top: "-20px",
+                              right: isOutgoing ? "0" : "auto",
+                              left: isOutgoing ? "auto" : "0",
+                              background: "rgba(0,0,0,0.6)",
+                              color: "white",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                              zIndex: 10
+                            }}
+                          >
+                            Копировать
+                          </div>
+                        )}
+
                         <div className="msg-bubble">
                           {msg.message && <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
                           {msg.attachment_url && (
                             <div className="msg-attachment">
                               {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                <img src={`${API_URL}${msg.attachment_url}`} alt="attachment" />
+                                <img 
+                                  src={`${API_URL}${msg.attachment_url}`} 
+                                  alt="attachment" 
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                                />
                               ) : (
                                 <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>Скачать файл</a>
                               )}
                             </div>
                           )}
                           <div className="msg-meta">
-
                             <span>{formatTime(msg.created_at)}</span>
                             {isOutgoing && (
                               <span style={{ marginLeft: 4 }}>

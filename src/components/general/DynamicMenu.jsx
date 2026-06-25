@@ -66,6 +66,7 @@ import {
 } from "lucide-react";
 import SettingsModal from "./SettingsModal.jsx";
 import ProfileModal from "./ProfileModal.jsx";
+import useChatStore from "../../store/useChatStore.js";
 import { Tooltip, Dropdown, Menu } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
@@ -93,6 +94,8 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [forcePasswordChange, setForcePasswordChange] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const setChatStoreUnreadCount = useChatStore(state => state.setUnreadCount);
+    const muteUntil = useChatStore(state => state.muteUntil);
     const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
 
     const fetchUnreadFeedbackCount = useCallback(async () => {
@@ -114,6 +117,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             if (response.ok) {
                 const data = await response.json();
                 setUnreadFeedbackCount(data.unread_count || 0);
+                setChatStoreUnreadCount(data.unread_count || 0);
             }
         } catch (error) {
             console.error("Ошибка при получении непрочитанных сообщений фидбека:", error);
@@ -129,7 +133,9 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     useEffect(() => {
         if (unreadFeedbackCount > prevUnreadCountRef.current) {
             const isChatPage = window.location.pathname.includes("/feedback") || window.location.pathname.includes("/operator/feedback");
-            if (!isChatPage) {
+            const isMuted = muteUntil && new Date() < new Date(muteUntil);
+            
+            if (!isChatPage && !isMuted) {
                 const isOperatorUser = roles.includes(3);
                 setAlert({
                     show: true,
@@ -142,7 +148,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             }
         }
         prevUnreadCountRef.current = unreadFeedbackCount;
-    }, [unreadFeedbackCount, roles, navigate]);
+    }, [unreadFeedbackCount, roles, navigate, muteUntil]);
 
     // Функция для проверки необходимости смены пароля
     const checkPasswordChangeRequired = useCallback(() => {

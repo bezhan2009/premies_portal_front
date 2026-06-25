@@ -5,6 +5,7 @@ import { Send, AlertCircle, Paperclip, Smile, Check, CheckCheck } from "lucide-r
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
 import useThemeStore from "../../store/useThemeStore";
+import ImageModal from "../../components/modal/ImageModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -22,6 +23,8 @@ export default function FeedbackPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [file, setFile] = useState(null);
   const [recipientId, setRecipientId] = useState(0);
+  const [hoveredMsgId, setHoveredMsgId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -170,9 +173,18 @@ export default function FeedbackPage() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
   return (
     <div className="feedback-chat-container">
       <Helmet><title>Обратная связь</title></Helmet>
+      <ImageModal 
+        isOpen={!!selectedImage} 
+        imageUrl={selectedImage} 
+        onClose={() => setSelectedImage(null)} 
+      />
       <style>{`
         .feedback-chat-container {
           display: flex;
@@ -370,12 +382,39 @@ export default function FeedbackPage() {
                 <div
                   key={msg.id}
                   className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
+                  onMouseEnter={() => setHoveredMsgId(msg.id)}
+                  onMouseLeave={() => setHoveredMsgId(null)}
                 >
+                  {hoveredMsgId === msg.id && msg.message && (
+                    <div 
+                      onClick={() => handleCopy(msg.message)}
+                      style={{
+                        position: "absolute",
+                        top: "-15px",
+                        right: isOutgoing ? "auto" : "-10px",
+                        left: isOutgoing ? "-10px" : "auto",
+                        background: "rgba(0,0,0,0.6)",
+                        color: "white",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        zIndex: 10
+                      }}
+                    >
+                      Копировать
+                    </div>
+                  )}
                   {msg.message && <div className="message-text" style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
                   {msg.attachment_url && (
                     <div className="message-attachment">
                       {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                        <img src={`${API_URL}${msg.attachment_url}`} alt="attachment" />
+                        <img 
+                          src={`${API_URL}${msg.attachment_url}`} 
+                          alt="attachment" 
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                        />
                       ) : (
                         <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>
                           Скачать файл
