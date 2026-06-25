@@ -466,6 +466,48 @@ export default function FeedbackPage() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const handleGlobalRipple = (e) => {
+    const button = e.target.closest("button, .ripple-btn");
+    if (!button) return;
+
+    if (window.getComputedStyle(button).position === "static") {
+      button.style.position = "relative";
+    }
+    button.style.overflow = "hidden";
+
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    const rect = button.getBoundingClientRect();
+    circle.style.left = `${e.clientX - rect.left - radius}px`;
+    circle.style.top = `${e.clientY - rect.top - radius}px`;
+
+    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
+    circle.style.position = "absolute";
+    circle.style.borderRadius = "50%";
+    circle.style.transform = "scale(0)";
+    circle.style.pointerEvents = "none";
+
+    circle.animate(
+      [
+        { transform: "scale(0)", opacity: 1 },
+        { transform: "scale(4)", opacity: 0 }
+      ],
+      {
+        duration: 600,
+        easing: "linear"
+      }
+    );
+
+    button.appendChild(circle);
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  };
+
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
   };
@@ -603,7 +645,7 @@ export default function FeedbackPage() {
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
   return (
-    <div className="feedback-chat-container" style={{ fontFamily: EMOJI_FONT_STACK }}>
+    <div className="feedback-chat-container" onMouseDown={handleGlobalRipple} style={{ fontFamily: EMOJI_FONT_STACK }}>
       <Helmet><title>Обратная связь</title></Helmet>
       <ImageModal 
         isOpen={!!selectedImage} 
@@ -1118,12 +1160,16 @@ export default function FeedbackPage() {
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px",
-                              background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
-                              border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                              background: isOutgoing 
+                                ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
+                                : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
+                              border: isOutgoing 
+                                ? (hasMyReaction ? "1.5px solid #ffffff" : "1.5px solid rgba(255, 255, 255, 0.2)")
+                                : (hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid rgba(0, 0, 0, 0.06)"),
                               borderRadius: "12px",
                               padding: "2px 6px",
                               fontSize: "11px",
-                              color: isOutgoing ? "white" : "inherit",
+                              color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
                               cursor: "pointer",
                               fontWeight: 600,
                               transition: "all 0.15s"

@@ -3,7 +3,7 @@ import axios from "axios";
 import { 
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
-  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -636,6 +636,22 @@ export default function OperatorFeedbackPage() {
     });
   };
 
+  const movePinnedChat = (threadId, direction) => {
+    const id = Number(threadId);
+    setPinnedChats(prev => {
+      const idx = prev.findIndex(x => Number(x) === id);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      if (direction === "up" && idx > 0) {
+        [updated[idx], updated[idx - 1]] = [updated[idx - 1], updated[idx]];
+      } else if (direction === "down" && idx < updated.length - 1) {
+        [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+      }
+      localStorage.setItem("pinned_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleToggleMute = (id) => {
     setMutedChats(prev => {
       const updated = prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id];
@@ -784,6 +800,12 @@ export default function OperatorFeedbackPage() {
     return unique.sort((a, b) => {
       const isPinnedA = pinnedChats.map(Number).includes(Number(a.id));
       const isPinnedB = pinnedChats.map(Number).includes(Number(b.id));
+      if (isPinnedA && isPinnedB) {
+        // Sort by index in pinnedChats array
+        const idxA = pinnedChats.map(Number).indexOf(Number(a.id));
+        const idxB = pinnedChats.map(Number).indexOf(Number(b.id));
+        return idxA - idxB;
+      }
       if (isPinnedA && !isPinnedB) return -1;
       if (!isPinnedA && isPinnedB) return 1;
       
@@ -808,6 +830,48 @@ export default function OperatorFeedbackPage() {
     } catch { return ""; }
   };
 
+  const handleGlobalRipple = (e) => {
+    const button = e.target.closest("button, .ripple-btn");
+    if (!button) return;
+
+    if (window.getComputedStyle(button).position === "static") {
+      button.style.position = "relative";
+    }
+    button.style.overflow = "hidden";
+
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    const rect = button.getBoundingClientRect();
+    circle.style.left = `${e.clientX - rect.left - radius}px`;
+    circle.style.top = `${e.clientY - rect.top - radius}px`;
+
+    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
+    circle.style.position = "absolute";
+    circle.style.borderRadius = "50%";
+    circle.style.transform = "scale(0)";
+    circle.style.pointerEvents = "none";
+
+    circle.animate(
+      [
+        { transform: "scale(0)", opacity: 1 },
+        { transform: "scale(4)", opacity: 0 }
+      ],
+      {
+        duration: 600,
+        easing: "linear"
+      }
+    );
+
+    button.appendChild(circle);
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  };
+
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
   };
@@ -815,7 +879,7 @@ export default function OperatorFeedbackPage() {
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
   return (
-    <div className="feedback-container" style={{ fontFamily: EMOJI_FONT_STACK }}>
+    <div className="feedback-container" onMouseDown={handleGlobalRipple} style={{ fontFamily: EMOJI_FONT_STACK }}>
       <Helmet><title>Панель обратной связи</title></Helmet>
       <ImageModal 
         isOpen={!!selectedImage} 
@@ -999,6 +1063,48 @@ export default function OperatorFeedbackPage() {
                 >
                   <Pin size={14} /> {pinnedChats.map(Number).includes(Number(contextMenu.target.id)) ? "Открепить" : "Закрепить"}
                 </button>
+                {pinnedChats.map(Number).includes(Number(contextMenu.target.id)) && (
+                  <>
+                    <button 
+                      onClick={() => { movePinnedChat(contextMenu.target.id, "up"); setContextMenu({ ...contextMenu, visible: false }); }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <ArrowUp size={14} /> Переместить выше
+                    </button>
+                    <button 
+                      onClick={() => { movePinnedChat(contextMenu.target.id, "down"); setContextMenu({ ...contextMenu, visible: false }); }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <ArrowDown size={14} /> Переместить ниже
+                    </button>
+                  </>
+                )}
                 <button 
                   onClick={() => handleToggleMute(contextMenu.target.id)}
                   style={{
@@ -1851,12 +1957,16 @@ export default function OperatorFeedbackPage() {
                                       display: "inline-flex",
                                       alignItems: "center",
                                       gap: "4px",
-                                      background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
-                                      border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                                      background: isOutgoing 
+                                        ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
+                                        : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
+                                      border: isOutgoing 
+                                        ? (hasMyReaction ? "1.5px solid #ffffff" : "1.5px solid rgba(255, 255, 255, 0.2)")
+                                        : (hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid rgba(0, 0, 0, 0.06)"),
                                       borderRadius: "12px",
                                       padding: "2px 6px",
                                       fontSize: "11px",
-                                      color: isOutgoing ? "white" : "inherit",
+                                      color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
                                       cursor: "pointer",
                                       fontWeight: 600,
                                       transition: "all 0.15s"

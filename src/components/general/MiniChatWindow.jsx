@@ -4,7 +4,7 @@ import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
   Minus, ArrowLeft, Search, User, Shield, PlusCircle,
-  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -18,6 +18,30 @@ const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+
+const parseMessageReactions = (reactionsStr) => {
+  try {
+    if (!reactionsStr) return {};
+    return JSON.parse(reactionsStr);
+  } catch {
+    return {};
+  }
+};
+
+const getReactionGroups = (reactionsStr, currentUserId) => {
+  const reactions = parseMessageReactions(reactionsStr);
+  const groups = {};
+  Object.entries(reactions).forEach(([userId, emoji]) => {
+    if (!groups[emoji]) groups[emoji] = [];
+    groups[emoji].push(Number(userId));
+  });
+  return Object.entries(groups).map(([emoji, userIds]) => ({
+    emoji,
+    userIds,
+    count: userIds.length,
+    hasMyReaction: userIds.map(Number).includes(Number(currentUserId))
+  }));
+};
 
 // Custom Audio Player component for voice messages
 const AudioPlayer = ({ src, isOut }) => {
@@ -429,6 +453,48 @@ const MiniChatWindow = () => {
     }
   };
 
+  const handleGlobalRipple = (e) => {
+    const button = e.target.closest("button, .ripple-btn");
+    if (!button) return;
+
+    if (window.getComputedStyle(button).position === "static") {
+      button.style.position = "relative";
+    }
+    button.style.overflow = "hidden";
+
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    const rect = button.getBoundingClientRect();
+    circle.style.left = `${e.clientX - rect.left - radius}px`;
+    circle.style.top = `${e.clientY - rect.top - radius}px`;
+
+    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
+    circle.style.position = "absolute";
+    circle.style.borderRadius = "50%";
+    circle.style.transform = "scale(0)";
+    circle.style.pointerEvents = "none";
+
+    circle.animate(
+      [
+        { transform: "scale(0)", opacity: 1 },
+        { transform: "scale(4)", opacity: 0 }
+      ],
+      {
+        duration: 600,
+        easing: "linear"
+      }
+    );
+
+    button.appendChild(circle);
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  };
+
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
   };
@@ -455,6 +521,22 @@ const MiniChatWindow = () => {
   const handleTogglePin = (threadId) => {
     setPinnedChats(prev => {
       const updated = prev.includes(threadId) ? prev.filter(id => id !== threadId) : [...prev, threadId];
+      localStorage.setItem("pinned_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const movePinnedChat = (threadId, direction) => {
+    const id = Number(threadId);
+    setPinnedChats(prev => {
+      const idx = prev.findIndex(x => Number(x) === id);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      if (direction === "up" && idx > 0) {
+        [updated[idx], updated[idx - 1]] = [updated[idx - 1], updated[idx]];
+      } else if (direction === "down" && idx < updated.length - 1) {
+        [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+      }
       localStorage.setItem("pinned_chats", JSON.stringify(updated));
       return updated;
     });
@@ -596,11 +678,14 @@ const MiniChatWindow = () => {
     
     // Sort: pinned first, then by date desc
     return [...filtered].sort((a, b) => {
-      const keyA = isOperator && activeTab === "support" ? a.user_id : a.user_id;
-      const keyB = isOperator && activeTab === "support" ? b.user_id : b.user_id;
-      const isPinnedA = pinnedChats.includes(keyA);
-      const isPinnedB = pinnedChats.includes(keyB);
+      const keyA = Number(isOperator && activeTab === "support" ? a.user_id : a.user_id);
+      const keyB = Number(isOperator && activeTab === "support" ? b.user_id : b.user_id);
+      const isPinnedA = pinnedChats.map(Number).includes(keyA);
+      const isPinnedB = pinnedChats.map(Number).includes(keyB);
       
+      if (isPinnedA && isPinnedB) {
+        return pinnedChats.map(Number).indexOf(keyA) - pinnedChats.map(Number).indexOf(keyB);
+      }
       if (isPinnedA && !isPinnedB) return -1;
       if (!isPinnedA && isPinnedB) return 1;
       return new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime();
@@ -777,8 +862,50 @@ const MiniChatWindow = () => {
                   textAlign: "left"
                 }}
               >
-                <Pin size={14} /> {pinnedChats.includes(contextMenu.target.user_id) ? "Открепить" : "Закрепить"}
+                <Pin size={14} /> {pinnedChats.map(Number).includes(Number(contextMenu.target.user_id)) ? "Открепить" : "Закрепить"}
               </button>
+              {pinnedChats.map(Number).includes(Number(contextMenu.target.user_id)) && (
+                <>
+                  <button 
+                    onClick={() => { movePinnedChat(contextMenu.target.user_id, "up"); setContextMenu({ ...contextMenu, visible: false }); }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <ArrowUp size={14} /> Переместить выше
+                  </button>
+                  <button 
+                    onClick={() => { movePinnedChat(contextMenu.target.user_id, "down"); setContextMenu({ ...contextMenu, visible: false }); }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <ArrowDown size={14} /> Переместить ниже
+                  </button>
+                </>
+              )}
               <button 
                 onClick={() => handleToggleMute(contextMenu.target.user_id)}
                 style={{
@@ -796,8 +923,8 @@ const MiniChatWindow = () => {
                   textAlign: "left"
                 }}
               >
-                {mutedChats.includes(contextMenu.target.user_id) ? <Bell size={14} /> : <BellOff size={14} />} 
-                {mutedChats.includes(contextMenu.target.user_id) ? "Включить звук" : "Без звука"}
+                {mutedChats.map(Number).includes(Number(contextMenu.target.user_id)) ? <Bell size={14} /> : <BellOff size={14} />} 
+                {mutedChats.map(Number).includes(Number(contextMenu.target.user_id)) ? "Включить звук" : "Без звука"}
               </button>
             </>
           )}
@@ -806,6 +933,7 @@ const MiniChatWindow = () => {
 
       <AnimatePresence>
         <motion.div
+          onMouseDown={handleGlobalRipple}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 40 }}
@@ -1333,12 +1461,16 @@ const MiniChatWindow = () => {
                                             display: "inline-flex",
                                             alignItems: "center",
                                             gap: "4px",
-                                            background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
-                                            border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                                            background: isOut 
+                                              ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
+                                              : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
+                                            border: isOut 
+                                              ? (hasMyReaction ? "1.5px solid #ffffff" : "1.5px solid rgba(255, 255, 255, 0.2)")
+                                              : (hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid rgba(0, 0, 0, 0.06)"),
                                             borderRadius: "12px",
                                             padding: "2px 6px",
                                             fontSize: "11px",
-                                            color: isOut ? "white" : "inherit",
+                                            color: isOut ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
                                             cursor: "pointer",
                                             fontWeight: 600,
                                             transition: "all 0.15s"
