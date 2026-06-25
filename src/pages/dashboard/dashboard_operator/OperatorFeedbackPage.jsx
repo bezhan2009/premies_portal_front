@@ -395,10 +395,6 @@ export default function OperatorFeedbackPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const filteredForwardThreads = useMemo(() => {
-    return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
-  }, [forwardThreadsList, forwardSearchQuery]);
-
   useEffect(() => {
     setFocusedForwardIndex(-1);
   }, [forwardSearchQuery, forwardModalOpen]);
@@ -525,6 +521,10 @@ export default function OperatorFeedbackPage() {
     });
     return list;
   }, [supportThreads, directThreads]);
+
+  const filteredForwardThreads = useMemo(() => {
+    return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
+  }, [forwardThreadsList, forwardSearchQuery]);
 
   const handleForwardMessages = async (targetThread) => {
     const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };

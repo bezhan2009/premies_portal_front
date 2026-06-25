@@ -786,10 +786,6 @@ const MiniChatWindow = () => {
     }
   };
 
-  const filteredForwardThreads = useMemo(() => {
-    return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
-  }, [forwardThreadsList, forwardSearchQuery]);
-
   useEffect(() => {
     setFocusedForwardIndex(-1);
   }, [forwardSearchQuery, forwardModalOpen]);
@@ -910,6 +906,10 @@ const MiniChatWindow = () => {
     });
     return list;
   }, [supportThreads, directThreads, isOperator]);
+
+  const filteredForwardThreads = useMemo(() => {
+    return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
+  }, [forwardThreadsList, forwardSearchQuery]);
 
   const handleForwardMessages = async (targetThread) => {
     if (!token) return;
