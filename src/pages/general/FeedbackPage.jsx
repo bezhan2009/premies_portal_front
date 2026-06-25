@@ -4,7 +4,7 @@ import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
   Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, PlusCircle,
-  CheckSquare, X, CheckCircle2, CornerUpRight
+  CheckSquare, X, CheckCircle2, CornerUpRight, Copy
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
@@ -267,6 +267,7 @@ export default function FeedbackPage() {
 
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" });
+  const contextMenuRef = useRef(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   // Advanced Features: Replies & Editing
@@ -377,6 +378,15 @@ export default function FeedbackPage() {
     }
   };
 
+  const handleBulkCopyMessages = () => {
+    const selectedMsgs = messages
+      .filter(m => selectedMessageIds.includes(m.id))
+      .sort((a, b) => a.id - b.id);
+    const textToCopy = selectedMsgs.map(m => m.message || "").filter(Boolean).join("\n");
+    navigator.clipboard.writeText(textToCopy);
+    handleExitMessageSelection();
+  };
+
   // Advanced Features: Voice Audio Messages
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -427,6 +437,7 @@ export default function FeedbackPage() {
   // Close context menu on window click
   useEffect(() => {
     const closeMenu = (e) => {
+      if (contextMenuRef.current && contextMenuRef.current.contains(e.target)) return;
       setContextMenu(prev => {
         if (!prev.visible) return prev;
         return { visible: false, x: 0, y: 0, target: null, type: "" };
@@ -1019,6 +1030,7 @@ export default function FeedbackPage() {
       <AnimatePresence>
         {contextMenu.visible && (
           <motion.div 
+            ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.95, y: -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1199,6 +1211,31 @@ export default function FeedbackPage() {
                       }}
                     >
                       <CheckSquare size={14} /> Выбрать
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setIsMessageSelectionMode(true);
+                        setSelectedMessageIds([contextMenu.target.id]);
+                        fetchForwardThreads();
+                        setForwardModalOpen(true);
+                        setContextMenu({ ...contextMenu, visible: false });
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#3b82f6",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <CornerUpRight size={14} /> Переслать
                     </button>
                     {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
                       <>
@@ -1849,6 +1886,28 @@ export default function FeedbackPage() {
             <div style={{ display: "flex", gap: "10px" }}>
               <button 
                 type="button" 
+                onClick={handleBulkCopyMessages} 
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "#10b981",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  transition: "opacity 0.2s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
+                onMouseLeave={e => e.currentTarget.style.opacity = 1}
+              >
+                <Copy size={14} /> Копировать
+              </button>
+              <button 
+                type="button" 
                 onClick={() => {
                   fetchForwardThreads();
                   setForwardModalOpen(true);
@@ -1930,9 +1989,9 @@ export default function FeedbackPage() {
                 borderRadius: "4px",
                 marginBottom: "8px"
               }}>
-                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                  {replyingTo.message || "Вложение"}
+                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
                 </div>
                 <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                   <X size={14} />
@@ -1953,9 +2012,9 @@ export default function FeedbackPage() {
                 borderRadius: "4px",
                 marginBottom: "8px"
               }}>
-                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                  {editingMessage.message}
+                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
                 </div>
                 <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                   <X size={14} />

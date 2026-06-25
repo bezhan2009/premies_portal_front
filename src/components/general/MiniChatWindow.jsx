@@ -5,7 +5,7 @@ import {
   X, Send, Paperclip, Smile, Check, CheckCheck, 
   Minus, ArrowLeft, Search, User, Shield, PlusCircle,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown,
-  CheckSquare, CheckCircle2, CornerUpRight
+  CheckSquare, CheckCircle2, CornerUpRight, Copy
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -233,6 +233,7 @@ const MiniChatWindow = () => {
   
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" }); // type: "message" | "thread"
+  const contextMenuRef = useRef(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   
   // Advanced Features: Replies & Editing
@@ -323,6 +324,7 @@ const MiniChatWindow = () => {
   useEffect(() => {
     const closeMenu = (e) => {
       // Only close if the click is NOT inside the context menu itself
+      if (contextMenuRef.current && contextMenuRef.current.contains(e.target)) return;
       setContextMenu(prev => {
         if (!prev.visible) return prev;
         return { visible: false, x: 0, y: 0, target: null, type: "" };
@@ -797,6 +799,15 @@ const MiniChatWindow = () => {
     }
   };
 
+  const handleBulkCopyMessages = () => {
+    const selectedMsgs = messages
+      .filter(m => selectedMessageIds.includes(m.id))
+      .sort((a, b) => a.id - b.id);
+    const textToCopy = selectedMsgs.map(m => m.message || "").filter(Boolean).join("\n");
+    navigator.clipboard.writeText(textToCopy);
+    handleExitMessageSelection();
+  };
+
   const handleBulkMuteChats = () => {
     setMutedChats(prev => {
       const allSelectedMuted = selectedChatIds.every(id => prev.includes(id));
@@ -1122,6 +1133,7 @@ const MiniChatWindow = () => {
       {/* FLOAT CONTEXT MENU */}
       {contextMenu.visible && (
         <div 
+          ref={contextMenuRef}
           onMouseDown={(e) => e.stopPropagation()}
           style={{
             position: "fixed",
@@ -2306,13 +2318,12 @@ const MiniChatWindow = () => {
                                         borderRadius: "14px",
                                         borderBottomRightRadius: isOut ? "4px" : "14px",
                                         borderBottomLeftRadius: !isOut ? "4px" : "14px",
-                                        boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
                                         fontSize: "13.5px",
                                         position: "relative",
                                         border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
                                         transition: "background 0.5s, border-color 0.5s",
                                         cursor: isMessageSelectionMode ? "pointer" : "default",
-                                        boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "none",
+                                        boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "0 2px 5px rgba(0,0,0,0.04)",
                                         filter: isSelected ? "brightness(0.95)" : "none"
                                       }}
                                     >
@@ -2478,20 +2489,28 @@ const MiniChatWindow = () => {
                             Выбрано: {selectedMessageIds.length}
                           </span>
                           <button
-                            onClick={handleBulkDeleteMessages}
-                            title="Удалить выбранные"
+                            onClick={handleBulkCopyMessages}
+                            title="Копировать"
                             disabled={selectedMessageIds.length === 0}
-                            style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#ef4444", display: "flex", alignItems: "center", padding: "4px" }}
+                            style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#3b82f6", display: "flex", alignItems: "center", padding: "4px" }}
                           >
-                            <Trash2 size={18} />
+                            <Copy size={18} />
                           </button>
                           <button
                             onClick={() => setForwardModalOpen(true)}
-                            title="Переслать выбранные"
+                            title="Переслать"
                             disabled={selectedMessageIds.length === 0}
                             style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#3b82f6", display: "flex", alignItems: "center", padding: "4px" }}
                           >
                             <CornerUpRight size={18} />
+                          </button>
+                          <button
+                            onClick={handleBulkDeleteMessages}
+                            title="Удалить"
+                            disabled={selectedMessageIds.length === 0}
+                            style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#ef4444", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       )}
@@ -2517,10 +2536,10 @@ const MiniChatWindow = () => {
                             borderRadius: "4px",
                             marginBottom: "8px"
                           }}>
-                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                              {replyingTo.message || "Вложение"}
-                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                               <span style={{ fontWeight: 600 }}>Ответ на: </span>
+                               <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
+                             </div>
                             <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                               <X size={14} />
                             </button>
@@ -2540,9 +2559,9 @@ const MiniChatWindow = () => {
                             borderRadius: "4px",
                             marginBottom: "8px"
                           }}>
-                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                              {editingMessage.message}
+                              <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
                             </div>
                             <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                               <X size={14} />

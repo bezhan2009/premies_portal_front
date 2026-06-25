@@ -4,7 +4,7 @@ import {
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
-  CheckSquare, CheckCircle2, CornerUpRight
+  CheckSquare, CheckCircle2, CornerUpRight, Copy
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -292,6 +292,7 @@ export default function OperatorFeedbackPage() {
 
   // Advanced Features: Context Menu
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" }); // type: "message" | "thread"
+  const contextMenuRef = useRef(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   // Advanced Features: Replies & Editing
@@ -420,6 +421,15 @@ export default function OperatorFeedbackPage() {
     }
   };
 
+  const handleBulkCopyMessages = () => {
+    const selectedMsgs = messages
+      .filter(m => selectedMessageIds.includes(m.id))
+      .sort((a, b) => a.id - b.id);
+    const textToCopy = selectedMsgs.map(m => m.message || "").filter(Boolean).join("\n");
+    navigator.clipboard.writeText(textToCopy);
+    handleExitMessageSelection();
+  };
+
   const handleBulkMuteChats = () => {
     setMutedChats(prev => {
       const allSelectedMuted = selectedChatIds.every(id => prev.includes(id));
@@ -502,6 +512,7 @@ export default function OperatorFeedbackPage() {
   // Close context menu on window click
   useEffect(() => {
     const closeMenu = (e) => {
+      if (contextMenuRef.current && contextMenuRef.current.contains(e.target)) return;
       setContextMenu(prev => {
         if (!prev.visible) return prev;
         return { visible: false, x: 0, y: 0, target: null, type: "" };
@@ -1205,10 +1216,122 @@ export default function OperatorFeedbackPage() {
         onSend={handleSendPastedFile}
       />
       
+      {/* FORWARD CHAT MODAL */}
+      <AnimatePresence>
+        {forwardModalOpen && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(15, 23, 42, 0.3)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100009
+          }}>
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                width: "100%",
+                maxWidth: "400px",
+                background: "var(--bg-surface, white)",
+                borderRadius: "16px",
+                boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -10px rgba(0,0,0,0.1)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-color, #1e293b)" }}>Переслать сообщения</h3>
+                <button onClick={() => setForwardModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, #64748b)" }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <input 
+                type="text"
+                placeholder="Поиск чата..."
+                value={forwardSearchQuery}
+                onChange={(e) => setForwardSearchQuery(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  fontSize: "14px",
+                  background: "var(--bg-color, #f8fafc)",
+                  color: "var(--text-color, #1e293b)",
+                  outline: "none"
+                }}
+              />
+
+              <div style={{ maxHeight: "250px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
+                {forwardThreadsList
+                  .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
+                  .map(thread => (
+                    <button
+                      key={`${thread.chatType}-${thread.id}`}
+                      onClick={() => handleForwardMessages(thread)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "none",
+                        borderRadius: "10px",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        color: "var(--text-color, #1e293b)",
+                        transition: "background 0.15s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <div style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        background: thread.chatType === "support" ? "#eb2525" : "#3b82f6",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                        fontWeight: 600
+                      }}>
+                        {thread.chatType === "support" ? <Shield size={14} /> : thread.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: "14px", fontWeight: 550 }}>{thread.name}</span>
+                    </button>
+                  ))}
+                {forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase())).length === 0 && (
+                  <div style={{ textAlign: "center", color: "var(--text-secondary, #64748b)", fontSize: "13px", padding: "10px 0" }}>
+                    Чаты не найдены
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
       {/* FLOAT CONTEXT MENU */}
       <AnimatePresence>
         {contextMenu.visible && (
           <motion.div 
+            ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.95, y: -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1387,6 +1510,30 @@ export default function OperatorFeedbackPage() {
                       }}
                     >
                       <CheckSquare size={14} /> Выбрать
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setIsMessageSelectionMode(true);
+                        setSelectedMessageIds([contextMenu.target.id]);
+                        setForwardModalOpen(true);
+                        setContextMenu({ ...contextMenu, visible: false });
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#3b82f6",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <CornerUpRight size={14} /> Переслать
                     </button>
                     {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
                       (activeChatType === "support" && contextMenu.target.is_operator)) && (
@@ -2436,15 +2583,46 @@ export default function OperatorFeedbackPage() {
                                 justifyContent: isOutgoing ? "flex-end" : "flex-start",
                                 maxWidth: "80%"
                               }}>
-                                {group.messages.map(msg => (
-                                  <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => { e.stopPropagation(); triggerContextMenu(e, msg, "message"); }} style={{ position: "relative" }}>
-                                    <img src={`${API_URL}${msg.attachment_url}`} style={{ width: group.messages.length > 1 ? "140px" : "200px", height: group.messages.length > 1 ? "140px" : "auto", objectFit: "cover", borderRadius: "12px", cursor: "pointer", border: isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }} alt="img" onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)} />
-                                    <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
-                                      <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
-                                      {isOutgoing && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                {group.messages.map(msg => {
+                                  const isSelected = selectedMessageIds.includes(msg.id);
+                                  return (
+                                    <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => { e.stopPropagation(); triggerContextMenu(e, msg, "message"); }} style={{ position: "relative" }}>
+                                      <img 
+                                        src={`${API_URL}${msg.attachment_url}`} 
+                                        style={{ 
+                                          width: group.messages.length > 1 ? "140px" : "200px", 
+                                          height: group.messages.length > 1 ? "140px" : "auto", 
+                                          objectFit: "cover", 
+                                          borderRadius: "12px", 
+                                          cursor: "pointer", 
+                                          border: isSelected ? "2px solid #3b82f6" : (isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
+                                          boxShadow: "0 2px 5px rgba(0,0,0,0.04)" 
+                                        }} 
+                                        alt="img" 
+                                        onClick={() => {
+                                          if (isMessageSelectionMode) {
+                                            handleSelectMessage(msg.id);
+                                          } else {
+                                            setSelectedImage(`${API_URL}${msg.attachment_url}`);
+                                          }
+                                        }} 
+                                      />
+                                      {isMessageSelectionMode && (
+                                        <div onClick={() => handleSelectMessage(msg.id)} style={{ position: "absolute", top: "6px", left: "6px", zIndex: 10, cursor: "pointer" }}>
+                                          {isSelected ? (
+                                            <CheckCircle2 size={18} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                          ) : (
+                                            <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", background: "rgba(0,0,0,0.2)" }} />
+                                          )}
+                                        </div>
+                                      )}
+                                      <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
+                                        {isOutgoing && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </motion.div>
                           );
@@ -2454,18 +2632,49 @@ export default function OperatorFeedbackPage() {
                         const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
                         const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
+                        const isSelected = selectedMessageIds.includes(msg.id);
+
                         return (
-                          <motion.div 
-                            key={msg.id} 
-                            layout
-                            initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                            transition={{ duration: 0.22, ease: "easeOut" }}
-                            id={`msg-bubble-${msg.id}`}
-                            className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
-                            onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                          <div 
+                            key={msg.id}
+                            style={{ 
+                              display: "flex", 
+                              alignItems: "center", 
+                              gap: "10px", 
+                              width: "100%", 
+                              alignSelf: isOutgoing ? "flex-end" : "flex-start",
+                              justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                            }}
                           >
+                            {isMessageSelectionMode && (
+                              <div 
+                                onClick={() => handleSelectMessage(msg.id)} 
+                                style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
+                              >
+                                {isSelected ? (
+                                  <CheckCircle2 size={20} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                ) : (
+                                  <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                                )}
+                              </div>
+                            )}
+                            <motion.div 
+                              layout
+                              initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                              transition={{ duration: 0.22, ease: "easeOut" }}
+                              id={`msg-bubble-${msg.id}`}
+                              className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
+                              onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                              onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
+                              style={{
+                                cursor: isMessageSelectionMode ? "pointer" : "default",
+                                boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "none",
+                                filter: isSelected ? "brightness(0.95)" : "none",
+                                alignSelf: "auto"
+                              }}
+                            >
                             {!isOutgoing && activeChatType === "support" && (
                               <span className="msg-sender">{msg.username}</span>
                             )}
@@ -2596,7 +2805,8 @@ export default function OperatorFeedbackPage() {
                               </div>
                             </div>
                           </motion.div>
-                        );
+                        </div>
+                      );
                       });
                     })()}
                   </AnimatePresence>
@@ -2607,134 +2817,238 @@ export default function OperatorFeedbackPage() {
 
             {/* INPUT PANEL */}
             <div className="chat-input-bar">
-              {/* Reply Preview */}
-              {replyingTo && (
-                <div style={{
-                  padding: "8px 12px",
-                  background: "var(--bg-color, #f1f5f9)",
-                  borderLeft: "3px solid #eb2525",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "12px",
-                  borderRadius: "4px",
-                  marginBottom: "8px"
+              {isMessageSelectionMode ? (
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center", 
+                  width: "100%",
+                  padding: "6px 8px"
                 }}>
-                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                    {replyingTo.message || "Вложение"}
-                  </div>
-                  <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-
-              {/* Edit Preview */}
-              {editingMessage && (
-                <div style={{
-                  padding: "8px 12px",
-                  background: "var(--bg-color, #f1f5f9)",
-                  borderLeft: "3px solid #f59e0b",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "12px",
-                  borderRadius: "4px",
-                  marginBottom: "8px"
-                }}>
-                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                    {editingMessage.message}
-                  </div>
-                  <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-
-              {file && (
-                <div className="file-preview">
-                  <Paperclip size={14} /> Выбран файл: {file.name}
-                  <button onClick={() => setFile(null)} style={{background:"none", border:"none", color:"red", cursor:"pointer"}}>x</button>
-                </div>
-              )}
-              {showEmojiPicker && !isRecording && (
-                <div className="emoji-picker-container">
-                  <EmojiPicker onEmojiClick={(e) => setNewMessage(prev => prev + e.emoji)} theme={theme} emojiStyle="apple" />
-                </div>
-              )}
-
-              {/* Voice Recording Panel */}
-              {isRecording ? (
-                <div style={{ display: "flex", gap: "10px", alignItems: "center", justifyContent: "space-between", padding: "6px 8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "red", fontSize: "14px", fontWeight: 600 }}>
-                    <span style={{ width: "8px", height: "8px", background: "red", borderRadius: "50%", display: "inline-block", animation: "pulse 1s infinite" }} />
-                    Запись: {recordingTime} сек.
-                  </div>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-color)" }}>
+                    Выбрано: {selectedMessageIds.length}
+                  </span>
                   <div style={{ display: "flex", gap: "10px" }}>
-                    <button type="button" onClick={cancelRecording} style={{ background: "rgba(0,0,0,0.05)", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "#64748b" }}>
-                      Отмена
+                    <button 
+                      type="button" 
+                      onClick={handleBulkCopyMessages} 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#10b981",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        transition: "opacity 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                    >
+                      <Copy size={14} /> Копировать
                     </button>
-                    <button type="button" onClick={stopRecording} style={{ background: "#eb2525", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "white", fontWeight: 650 }}>
-                      Отправить
+                    <button 
+                      type="button" 
+                      onClick={() => setForwardModalOpen(true)} 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        transition: "opacity 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                    >
+                      <CornerUpRight size={14} /> Переслать
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleBulkDeleteMessages} 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        transition: "opacity 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                    >
+                      <Trash2 size={14} /> Удалить
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleExitMessageSelection} 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "rgba(0,0,0,0.05)",
+                        color: "var(--text-color)",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      <X size={14} /> Отмена
                     </button>
                   </div>
                 </div>
               ) : (
-                /* Standard input bar */
-                <form onSubmit={handleSendMessage} className="chat-input-form">
-                  <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                    <Smile size={22} />
-                  </button>
-                  <label className="icon-btn">
-                    <Paperclip size={22} />
-                    <input type="file" style={{ display: "none" }} onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        setPastedFile(e.target.files[0]);
-                        setPasteModalOpen(true);
-                        e.target.value = null; // reset input
-                      }
-                    }} />
-                  </label>
-                  <textarea
-                    ref={textareaRef}
-                    placeholder="Напишите ответ..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
-                    disabled={sending}
-                    style={{
-                      flex: 1,
-                      background: "var(--bg-color)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "18px",
-                      padding: "8px 16px",
-                      color: "var(--text-color)",
-                      fontSize: "14.5px",
-                      outline: "none",
-                      fontFamily: EMOJI_FONT_STACK,
-                      resize: "none",
-                      height: "36px",
-                      minHeight: "36px",
-                      maxHeight: "120px",
-                      lineHeight: "1.4",
-                      overflowY: "auto"
-                    }}
-                  />
-
-                  {/* Voice mic or ChatGPT Send Button */}
-                  {!isSendActive ? (
-                    <button type="button" className="icon-btn" onClick={startRecording}>
-                      <Mic size={22} />
-                    </button>
-                  ) : (
-                    <button type="submit" className="chat-send-btn" disabled={sending}>
-                      <ArrowUp size={18} strokeWidth={2.5} />
-                    </button>
+                <>
+                  {/* Reply Preview */}
+                  {replyingTo && (
+                    <div style={{
+                      padding: "8px 12px",
+                      background: "var(--bg-color, #f1f5f9)",
+                      borderLeft: "3px solid #eb2525",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      marginBottom: "8px"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ fontWeight: 600 }}>Ответ на: </span>
+                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
+                      </div>
+                      <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                        <X size={14} />
+                      </button>
+                    </div>
                   )}
-                </form>
+
+                  {/* Edit Preview */}
+                  {editingMessage && (
+                    <div style={{
+                      padding: "8px 12px",
+                      background: "var(--bg-color, #f1f5f9)",
+                      borderLeft: "3px solid #f59e0b",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      marginBottom: "8px"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ fontWeight: 600 }}>Редактирование: </span>
+                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
+                      </div>
+                      <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  {file && (
+                    <div className="file-preview">
+                      <Paperclip size={14} /> Выбран файл: {file.name}
+                      <button onClick={() => setFile(null)} style={{background:"none", border:"none", color:"red", cursor:"pointer"}}>x</button>
+                    </div>
+                  )}
+                  {showEmojiPicker && !isRecording && (
+                    <div className="emoji-picker-container">
+                      <EmojiPicker onEmojiClick={(e) => setNewMessage(prev => prev + e.emoji)} theme={theme} emojiStyle="apple" />
+                    </div>
+                  )}
+
+                  {/* Voice Recording Panel */}
+                  {isRecording ? (
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center", justifyContent: "space-between", padding: "6px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "red", fontSize: "14px", fontWeight: 600 }}>
+                        <span style={{ width: "8px", height: "8px", background: "red", borderRadius: "50%", display: "inline-block", animation: "pulse 1s infinite" }} />
+                        Запись: {recordingTime} сек.
+                      </div>
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <button type="button" onClick={cancelRecording} style={{ background: "rgba(0,0,0,0.05)", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "#64748b" }}>
+                          Отмена
+                        </button>
+                        <button type="button" onClick={stopRecording} style={{ background: "#eb2525", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "white", fontWeight: 650 }}>
+                          Отправить
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Standard input bar */
+                    <form onSubmit={handleSendMessage} className="chat-input-form">
+                      <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                        <Smile size={22} />
+                      </button>
+                      <label className="icon-btn">
+                        <Paperclip size={22} />
+                        <input type="file" style={{ display: "none" }} onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setPastedFile(e.target.files[0]);
+                            setPasteModalOpen(true);
+                            e.target.value = null; // reset input
+                          }
+                        }} />
+                      </label>
+                      <textarea
+                        ref={textareaRef}
+                        placeholder="Напишите ответ..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onPaste={handlePaste}
+                        disabled={sending}
+                        style={{
+                          flex: 1,
+                          background: "var(--bg-color)",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "18px",
+                          padding: "8px 16px",
+                          color: "var(--text-color)",
+                          fontSize: "14.5px",
+                          outline: "none",
+                          fontFamily: EMOJI_FONT_STACK,
+                          resize: "none",
+                          height: "36px",
+                          minHeight: "36px",
+                          maxHeight: "120px",
+                          lineHeight: "1.4",
+                          overflowY: "auto"
+                        }}
+                      />
+
+                      {/* Voice mic or ChatGPT Send Button */}
+                      {!isSendActive ? (
+                        <button type="button" className="icon-btn" onClick={startRecording}>
+                          <Mic size={22} />
+                        </button>
+                      ) : (
+                        <button type="submit" className="chat-send-btn" disabled={sending}>
+                          <ArrowUp size={18} strokeWidth={2.5} />
+                        </button>
+                      )}
+                    </form>
+                  )}
+                </>
               )}
             </div>
           </>
