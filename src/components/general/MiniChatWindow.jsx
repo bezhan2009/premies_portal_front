@@ -2761,14 +2761,14 @@ const MiniChatWindow = () => {
                                       )}
 
                                       {/* Main text content */}
-                                      {fwdInfo.cleanText && !isVoice && (
+                                      {(fwdInfo.cleanText || msg.message) && !isVoice && (
                                         <motion.div 
-                                          key={fwdInfo.cleanText}
+                                          key={fwdInfo.cleanText || msg.message}
                                           initial={{ scale: 0.97, opacity: 0.9 }}
                                           animate={{ scale: 1, opacity: 1 }}
                                           transition={{ duration: 0.15 }}
                                           style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                          dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText) }}
+                                          dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText || msg.message) }}
                                         />
                                       )}
 
