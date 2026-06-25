@@ -47,7 +47,7 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 const parseForwardedMessage = (text) => {
-  if (!text) return { isForwarded: false, text: "" };
+  if (!text) return { isForwarded: false, cleanText: "" };
   const matchNew = text.match(/^<!--fwd:(\d+):(.+?)-->/);
   if (matchNew) {
     const fwdId = Number(matchNew[1]);
@@ -61,7 +61,7 @@ const parseForwardedMessage = (text) => {
     const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
     return { isForwarded: true, fwdId: 0, fwdName, cleanText };
   }
-  return { isForwarded: false, text };
+  return { isForwarded: false, cleanText: text };
 };
 
 const formatMessageText = (text) => {
@@ -312,6 +312,11 @@ export default function FeedbackPage() {
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
   const [forwardThreads, setForwardThreads] = useState([]);
   const [forwardSearchQuery, setForwardSearchQuery] = useState("");
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [selectedForwardThreads, setSelectedForwardThreads] = useState([]);
+  const [focusedForwardIndex, setFocusedForwardIndex] = useState(-1);
 
   const handleSelectMessage = (msgId) => {
     setSelectedMessageIds(prev => {
@@ -563,6 +568,12 @@ export default function FeedbackPage() {
     return () => clearInterval(interval);
   }, [recipientId]);
 
+  // Scroll to bottom instantly on chat switch
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [recipientId]);
+
+  // Scroll to bottom smoothly on new messages
   useEffect(() => {
     if (messages.length > 0) {
       markAsRead();
@@ -571,6 +582,11 @@ export default function FeedbackPage() {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length, localSearchActive]);
+
+  const handleMessagesScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    setShowScrollBottomBtn(scrollHeight - scrollTop - clientHeight > 300);
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -962,7 +978,83 @@ export default function FeedbackPage() {
 
       {/* FORWARD CHAT MODAL */}
       <AnimatePresence>
-        {forwardModalOpen && (
+        {/* Notification Toast */}
+      {notification && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: notification.type === "error" ? "#ef4444" : "#10b981",
+          color: "white",
+          padding: "10px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+          zIndex: 35000,
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontFamily: EMOJI_FONT_STACK,
+          animation: "slideDown 0.3s ease-out"
+        }}>
+          {notification.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.45)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 36000,
+          backdropFilter: "blur(3px)"
+        }} onClick={() => setConfirmModal(null)}>
+          <div style={{
+            background: "var(--bg-surface, #ffffff)",
+            borderRadius: "16px",
+            padding: "20px",
+            width: "320px",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            fontFamily: EMOJI_FONT_STACK
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--text-color)" }}>Подтверждение</div>
+            <div style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.5 }}>{confirmModal.message}</div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+              <button onClick={() => setConfirmModal(null)} style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                background: "transparent",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-secondary)"
+              }}>Отмена</button>
+              <button onClick={confirmModal.onConfirm} style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#eb2525",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 600
+              }}>Подтвердить</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {forwardModalOpen && (
           <div style={{
             position: "fixed",
             top: 0,
@@ -1009,6 +1101,7 @@ export default function FeedbackPage() {
                 placeholder="Поиск чата..."
                 value={forwardSearchQuery}
                 onChange={(e) => setForwardSearchQuery(e.target.value)}
+                onKeyDown={handleForwardInputKeyDown}
                 style={{
                   width: "100%",
                   padding: "10px 14px",
@@ -1120,7 +1213,7 @@ export default function FeedbackPage() {
                   return (
                     <button
                       key={emoji}
-                      onClick={() => handleReact(contextMenu.target.id, emoji)}
+                      onClick={() => { handleReact(contextMenu.target.id, emoji); setContextMenu({ ...contextMenu, visible: false }); }}
                       style={{
                         background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                         border: "none",
@@ -1753,6 +1846,7 @@ export default function FeedbackPage() {
                     >
                       {isMessageSelectionMode && (
                         <div 
+                          key="selection-checkbox"
                           style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
                         >
                           {isSelected ? (
@@ -1762,11 +1856,13 @@ export default function FeedbackPage() {
                           )}
                         </div>
                       )}
-                      <div style={{
-                        flex: 1,
-                        display: "flex",
-                        justifyContent: isOutgoing ? "flex-end" : "flex-start"
-                      }}>
+                      <div 
+                        key="bubble-container"
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                        }}>
                         <motion.div
                           layout
                           initial={{ opacity: 0, y: 15, scale: 0.96 }}

@@ -48,7 +48,7 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 const parseForwardedMessage = (text) => {
-  if (!text) return { isForwarded: false, text: "" };
+  if (!text) return { isForwarded: false, cleanText: "" };
   const matchNew = text.match(/^<!--fwd:(\d+):(.+?)-->/);
   if (matchNew) {
     const fwdId = Number(matchNew[1]);
@@ -62,7 +62,7 @@ const parseForwardedMessage = (text) => {
     const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
     return { isForwarded: true, fwdId: 0, fwdName, cleanText };
   }
-  return { isForwarded: false, text };
+  return { isForwarded: false, cleanText: text };
 };
 
 const formatMessageText = (text) => {
@@ -347,6 +347,12 @@ export default function OperatorFeedbackPage() {
   const [isMessageSelectionMode, setIsMessageSelectionMode] = useState(false);
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
   const [forwardSearchQuery, setForwardSearchQuery] = useState("");
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [selectedForwardThreads, setSelectedForwardThreads] = useState([]);
+  const [focusedForwardIndex, setFocusedForwardIndex] = useState(-1);
+  const [focusedUserIndex, setFocusedUserIndex] = useState(-1);
 
   const handleSelectMessage = (msgId) => {
     setSelectedMessageIds(prev => {
@@ -382,6 +388,131 @@ export default function OperatorFeedbackPage() {
   const handleExitChatSelection = () => {
     setIsChatSelectionMode(false);
     setSelectedChatIds([]);
+  };
+
+  const showToast = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const filteredForwardThreads = useMemo(() => {
+    return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
+  }, [forwardThreadsList, forwardSearchQuery]);
+
+  useEffect(() => {
+    setFocusedForwardIndex(-1);
+  }, [forwardSearchQuery, forwardModalOpen]);
+
+  useEffect(() => {
+    if (focusedForwardIndex >= 0) {
+      const el = document.getElementById(`fwd-thread-${focusedForwardIndex}`);
+      if (el) el.scrollIntoView({ block: "nearest" });
+    }
+  }, [focusedForwardIndex]);
+
+  useEffect(() => {
+    setFocusedUserIndex(-1);
+  }, [userSearchQuery, showNewChatModal]);
+
+  useEffect(() => {
+    if (focusedUserIndex >= 0) {
+      const el = document.getElementById(`new-chat-user-${focusedUserIndex}`);
+      if (el) el.scrollIntoView({ block: "nearest" });
+    }
+  }, [focusedUserIndex]);
+
+  const handleToggleForwardThread = (thread) => {
+    setSelectedForwardThreads(prev => {
+      const exists = prev.some(t => t.id === thread.id && t.chatType === thread.chatType);
+      if (exists) {
+        return prev.filter(t => !(t.id === thread.id && t.chatType === thread.chatType));
+      } else {
+        return [...prev, thread];
+      }
+    });
+  };
+
+  const handleForwardInputKeyDown = (e) => {
+    if (filteredForwardThreads.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedForwardIndex(prev => (prev + 1) % filteredForwardThreads.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedForwardIndex(prev => (prev - 1 + filteredForwardThreads.length) % filteredForwardThreads.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (focusedForwardIndex >= 0 && focusedForwardIndex < filteredForwardThreads.length) {
+        handleToggleForwardThread(filteredForwardThreads[focusedForwardIndex]);
+      }
+    }
+  };
+
+  const handleNewChatInputKeyDown = (e) => {
+    if (filteredUsers.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedUserIndex(prev => (prev + 1) % filteredUsers.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedUserIndex(prev => (prev - 1 + filteredUsers.length) % filteredUsers.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (focusedUserIndex >= 0 && focusedUserIndex < filteredUsers.length) {
+        handleStartDirectChat(filteredUsers[focusedUserIndex]);
+      }
+    }
+  };
+
+  const handleConfirmForward = async () => {
+    if (selectedForwardThreads.length === 0) return;
+    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+    const sortedIds = [...selectedMessageIds].sort((a, b) => a - b);
+    setSending(true);
+    try {
+      for (const targetThread of selectedForwardThreads) {
+        for (const msgId of sortedIds) {
+          const msg = messages.find(m => m.id === msgId);
+          if (!msg) continue;
+          
+          let textToSend = "";
+          if (msg.message) {
+            const isAlreadyForwarded = msg.message.startsWith("<!--fwd:") || msg.message.startsWith("Переслано от ");
+            if (isAlreadyForwarded) {
+              textToSend = msg.message;
+            } else {
+              let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+              let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+              let forwardPrefix = `${fwdComment}Переслано от ${senderName}:\n`;
+              textToSend = `${forwardPrefix}${msg.message}`;
+            }
+          } else {
+            let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+            let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+            textToSend = `${fwdComment}Переслано от ${senderName}`;
+          }
+          
+          const payload = {
+            message: textToSend,
+            attachment_url: msg.attachment_url || "",
+            recipient_id: targetThread.chatType === "direct" ? targetThread.id : 0,
+            reply_to_id: null
+          };
+          await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+        }
+      }
+      setIsMessageSelectionMode(false);
+      setSelectedMessageIds([]);
+      setForwardModalOpen(false);
+      setSelectedForwardThreads([]);
+      if (selectedForwardThreads.length === 1 && selectedForwardThreads[0].chatType === "direct") {
+        handleNavigateToDirectChat(selectedForwardThreads[0].id, selectedForwardThreads[0].name);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSending(false);
+    }
   };
 
   const forwardThreadsList = useMemo(() => {
@@ -447,23 +578,43 @@ export default function OperatorFeedbackPage() {
   };
 
   const handleBulkDeleteMessages = async () => {
-    if (!window.confirm(`Вы уверены, что хотите удалить ${selectedMessageIds.length} сообщений?`)) return;
-    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
-    setSending(true);
-    try {
-      for (const msgId of selectedMessageIds) {
-        await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+    setConfirmModal({
+      message: `Вы уверены, что хотите удалить ${selectedMessageIds.length} сообщений?`,
+      onConfirm: async () => {
+        setConfirmModal(null);
+        const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+        setSending(true);
+        let deletedCount = 0;
+        let forbiddenCount = 0;
+        try {
+          for (const msgId of selectedMessageIds) {
+            try {
+              await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+              deletedCount++;
+            } catch (err) {
+              if (err.response && err.response.status === 403) {
+                forbiddenCount++;
+              }
+            }
+          }
+          setIsMessageSelectionMode(false);
+          setSelectedMessageIds([]);
+          fetchMessages(activeChatType, activeThreadId);
+          if (activeChatType === "support") fetchSupportThreads();
+          else if (activeChatType === "direct") fetchDirectThreads();
+          if (forbiddenCount > 0) {
+            showToast(`Удалено ${deletedCount} сообщений. ${forbiddenCount} сообщений других пользователей нельзя удалить.`, "error");
+          } else {
+            showToast("Сообщения успешно удалены");
+          }
+        } catch (err) {
+          console.error("Error bulk deleting messages:", err);
+          showToast("Ошибка при удалении сообщений", "error");
+        } finally {
+          setSending(false);
+        }
       }
-      setIsMessageSelectionMode(false);
-      setSelectedMessageIds([]);
-      fetchMessages(activeChatType, activeThreadId);
-      if (activeChatType === "support") fetchSupportThreads();
-      else if (activeChatType === "direct") fetchDirectThreads();
-    } catch (err) {
-      console.error("Error bulk deleting messages:", err);
-    } finally {
-      setSending(false);
-    }
+    });
   };
 
   const handleBulkCopyMessages = () => {
@@ -673,9 +824,9 @@ export default function OperatorFeedbackPage() {
     }
   }, [fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior = "smooth") => {
     if (!localSearchActive) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
   };
 
@@ -732,12 +883,25 @@ export default function OperatorFeedbackPage() {
     };
   }, [activeChatType, activeThreadId, fetchMessages, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
+  // Scroll to bottom instantly on chat switch
+  useEffect(() => {
+    if (activeChatType && activeThreadId) {
+      scrollToBottom("auto");
+    }
+  }, [activeChatType, activeThreadId]);
+
+  // Scroll to bottom smoothly on new messages
   useEffect(() => {
     if (activeChatType && activeThreadId) {
       markAsRead(activeChatType, activeThreadId);
-      setTimeout(scrollToBottom, 50);
+      setTimeout(() => scrollToBottom("smooth"), 50);
     }
-  }, [activeChatType, activeThreadId, messages.length, markAsRead]);
+  }, [messages.length, markAsRead]);
+
+  const handleMessagesScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    setShowScrollBottomBtn(scrollHeight - scrollTop - clientHeight > 300);
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -1298,7 +1462,83 @@ export default function OperatorFeedbackPage() {
       
       {/* FORWARD CHAT MODAL */}
       <AnimatePresence>
-        {forwardModalOpen && (
+        {/* Notification Toast */}
+      {notification && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: notification.type === "error" ? "#ef4444" : "#10b981",
+          color: "white",
+          padding: "10px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+          zIndex: 35000,
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontFamily: EMOJI_FONT_STACK,
+          animation: "slideDown 0.3s ease-out"
+        }}>
+          {notification.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.45)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 36000,
+          backdropFilter: "blur(3px)"
+        }} onClick={() => setConfirmModal(null)}>
+          <div style={{
+            background: "var(--bg-surface, #ffffff)",
+            borderRadius: "16px",
+            padding: "20px",
+            width: "320px",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            fontFamily: EMOJI_FONT_STACK
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--text-color)" }}>Подтверждение</div>
+            <div style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.5 }}>{confirmModal.message}</div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+              <button onClick={() => setConfirmModal(null)} style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                background: "transparent",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-secondary)"
+              }}>Отмена</button>
+              <button onClick={confirmModal.onConfirm} style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#eb2525",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 600
+              }}>Подтвердить</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {forwardModalOpen && (
           <div style={{
             position: "fixed",
             top: 0,
@@ -1345,6 +1585,7 @@ export default function OperatorFeedbackPage() {
                 placeholder="Поиск чата..."
                 value={forwardSearchQuery}
                 onChange={(e) => setForwardSearchQuery(e.target.value)}
+                onKeyDown={handleForwardInputKeyDown}
                 style={{
                   width: "100%",
                   padding: "10px 14px",
@@ -1457,7 +1698,7 @@ export default function OperatorFeedbackPage() {
                     return (
                       <button
                         key={emoji}
-                        onClick={() => handleReact(contextMenu.target.id, emoji)}
+                        onClick={() => { handleReact(contextMenu.target.id, emoji); setContextMenu({ ...contextMenu, visible: false }); }}
                         style={{
                           background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                           border: "none",
@@ -2737,6 +2978,7 @@ export default function OperatorFeedbackPage() {
                           >
                             {isMessageSelectionMode && (
                               <div 
+                                key="selection-checkbox"
                                 style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
                               >
                                 {isSelected ? (
@@ -2746,11 +2988,13 @@ export default function OperatorFeedbackPage() {
                                 )}
                               </div>
                             )}
-                            <div style={{
-                              flex: 1,
-                              display: "flex",
-                              justifyContent: isOutgoing ? "flex-end" : "flex-start"
-                            }}>
+                            <div 
+                              key="bubble-container"
+                              style={{
+                                flex: 1,
+                                display: "flex",
+                                justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                              }}>
                               <motion.div 
                                 layout
                                 initial={{ opacity: 0, y: 15, scale: 0.96 }}
@@ -2929,6 +3173,34 @@ export default function OperatorFeedbackPage() {
                   </AnimatePresence>
                 )}
                 <div ref={messagesEndRef} />
+                
+                {showScrollBottomBtn && (
+                  <button
+                    onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                    style={{
+                      position: "absolute",
+                      bottom: "76px",
+                      right: "20px",
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "50%",
+                      background: "var(--bg-surface, #ffffff)",
+                      border: "1px solid var(--border-color, #cbd5e1)",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      color: "var(--text-color, #0f172a)",
+                      zIndex: 1000,
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                  >
+                    <ArrowDown size={20} />
+                  </button>
+                )}
               </div>
             )}
 
@@ -3195,6 +3467,7 @@ export default function OperatorFeedbackPage() {
                   placeholder="Поиск по email, имени, фамилии..."
                   value={userSearchQuery}
                   onChange={(e) => setUserSearchQuery(e.target.value)}
+                  onKeyDown={handleNewChatInputKeyDown}
                   autoFocus
                 />
               </div>
@@ -3205,7 +3478,7 @@ export default function OperatorFeedbackPage() {
                   Пользователи не найдены.
                 </div>
               ) : (
-                filteredUsers.map((u) => {
+                filteredUsers.map((u, index) => {
                   const initials = u.full_name 
                     ? u.full_name.substring(0, 2).toUpperCase() 
                     : u.username ? u.username.substring(0, 2).toUpperCase() : "?";
@@ -3215,8 +3488,15 @@ export default function OperatorFeedbackPage() {
                     u.first_name || u.last_name ? `${u.first_name || ""} ${u.last_name || ""}`.trim() : null
                   ].filter(Boolean).join(" • ") || `@${u.username}`;
 
+                  const isFocused = index === focusedUserIndex;
                   return (
-                    <button key={u.id} className="modal-user-item" onClick={() => handleStartDirectChat(u)}>
+                    <button 
+                      key={u.id} 
+                      id={`new-chat-user-${index}`}
+                      className={`modal-user-item ${isFocused ? "focused" : ""}`} 
+                      onClick={() => handleStartDirectChat(u)}
+                      style={isFocused ? { background: "rgba(59, 130, 246, 0.08)", border: "1.5px solid #3b82f6" } : {}}
+                    >
                       <div className="modal-user-avatar">{initials}</div>
                       <div className="modal-user-info">
                         <span className="modal-user-name">{u.full_name || u.username}</span>
