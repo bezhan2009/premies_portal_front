@@ -1219,96 +1219,150 @@ const MiniChatWindow = () => {
                         ) : filteredMessages.length === 0 ? (
                           <div style={{ textAlign: "center", marginTop: "20px", color: "gray", fontSize: "13px" }}>Нет сообщений</div>
                         ) : (
-                          filteredMessages.map(msg => {
-                            let isOut = false;
-                            if (chatType === "direct") {
-                              isOut = msg.user_id === currentUserId;
-                            } else {
-                              isOut = isOperator ? msg.is_operator : (!msg.is_operator && msg.user_id === currentUserId);
-                            }
+                          <AnimatePresence initial={false}>
+                            {filteredMessages.map(msg => {
+                              let isOut = false;
+                              if (chatType === "direct") {
+                                isOut = msg.user_id === currentUserId;
+                              } else {
+                                isOut = isOperator ? msg.is_operator : (!msg.is_operator && msg.user_id === currentUserId);
+                              }
 
-                            const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+                              const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
-                            return (
-                              <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                key={msg.id}
-                                id={`msg-bubble-${msg.id}`}
-                                onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                                style={{
-                                  alignSelf: isOut ? "flex-end" : "flex-start",
-                                  maxWidth: "80%",
-                                  background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
-                                  color: isOut ? "#ffffff" : "var(--text-color, #1e293b)",
-                                  padding: "10px 14px",
-                                  borderRadius: "14px",
-                                  borderBottomRightRadius: isOut ? "4px" : "14px",
-                                  borderBottomLeftRadius: !isOut ? "4px" : "14px",
-                                  boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
-                                  fontSize: "13.5px",
-                                  position: "relative",
-                                  border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
-                                  transition: "background 0.5s, border-color 0.5s"
-                                }}
-                              >
-                                {/* Reply Snippet */}
-                                {msg.reply_to_id && (
-                                  <div 
-                                    onClick={() => scrollToMessage(msg.reply_to_id)}
-                                    style={{
-                                      padding: "6px 8px",
-                                      background: isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
-                                      borderLeft: isOut ? "3px solid white" : "3px solid #eb2525",
-                                      fontSize: "11px",
-                                      borderRadius: "4px",
-                                      marginBottom: "6px",
-                                      cursor: "pointer",
-                                      opacity: 0.95
-                                    }}
-                                  >
-                                    <span style={{ fontWeight: 600 }}>
-                                      {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
-                                    </span>
-                                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                      {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                              return (
+                                <motion.div 
+                                  key={msg.id}
+                                  layout
+                                  initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                                  transition={{ duration: 0.22, ease: "easeOut" }}
+                                  id={`msg-bubble-${msg.id}`}
+                                  onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                                  style={{
+                                    alignSelf: isOut ? "flex-end" : "flex-start",
+                                    maxWidth: "80%",
+                                    background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
+                                    color: isOut ? "#ffffff" : "var(--text-color, #1e293b)",
+                                    padding: "10px 14px",
+                                    borderRadius: "14px",
+                                    borderBottomRightRadius: isOut ? "4px" : "14px",
+                                    borderBottomLeftRadius: !isOut ? "4px" : "14px",
+                                    boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
+                                    fontSize: "13.5px",
+                                    position: "relative",
+                                    border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
+                                    transition: "background 0.5s, border-color 0.5s"
+                                  }}
+                                >
+                                  {/* Reply Snippet */}
+                                  {msg.reply_to_id && (
+                                    <div 
+                                      onClick={() => scrollToMessage(msg.reply_to_id)}
+                                      style={{
+                                        padding: "6px 8px",
+                                        background: isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                                        borderLeft: isOut ? "3px solid white" : "3px solid #eb2525",
+                                        fontSize: "11px",
+                                        borderRadius: "4px",
+                                        marginBottom: "6px",
+                                        cursor: "pointer",
+                                        opacity: 0.95
+                                      }}
+                                    >
+                                      <span style={{ fontWeight: 600 }}>
+                                        {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                                      </span>
+                                      <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
 
-                                {/* Main content */}
-                                {msg.message && !isVoice && <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>}
-                                
-                                {/* Voice Audio */}
-                                {isVoice && (
-                                  <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOut} />
-                                )}
+                                  {/* Main content */}
+                                  {msg.message && !isVoice && (
+                                    <motion.div 
+                                      key={msg.message}
+                                      initial={{ scale: 0.97, opacity: 0.9 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      transition={{ duration: 0.15 }}
+                                      style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                    >
+                                      {msg.message}
+                                    </motion.div>
+                                  )}
+                                  
+                                  {/* Voice Audio */}
+                                  {isVoice && (
+                                    <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOut} />
+                                  )}
 
-                                {msg.attachment_url && !isVoice && (
-                                  <div style={{ marginTop: "6px" }}>
-                                    {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                      <img 
-                                        src={`${API_URL}${msg.attachment_url}`} 
-                                        style={{ maxWidth: "100%", borderRadius: "8px", cursor: "pointer" }} 
-                                        alt="img"
-                                        onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
-                                      />
-                                    ) : (
-                                      <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ color: isOut ? "white" : "blue", textDecoration: "underline" }}>Вложение</a>
+                                  {msg.attachment_url && !isVoice && (
+                                    <div style={{ marginTop: "6px" }}>
+                                      {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                        <img 
+                                          src={`${API_URL}${msg.attachment_url}`} 
+                                          style={{ maxWidth: "100%", borderRadius: "8px", cursor: "pointer" }} 
+                                          alt="img"
+                                          onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                                        />
+                                      ) : (
+                                        <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ color: isOut ? "white" : "blue", textDecoration: "underline" }}>Вложение</a>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Reactions list */}
+                                  {msg.reactions && (
+                                    <div style={{
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      gap: "4px",
+                                      marginTop: "6px",
+                                      marginBottom: "2px"
+                                    }}>
+                                      {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
+                                        <button
+                                          key={emoji}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleReact(msg.id, emoji);
+                                          }}
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "4px",
+                                            background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
+                                            border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                                            borderRadius: "12px",
+                                            padding: "2px 6px",
+                                            fontSize: "11px",
+                                            color: isOut ? "white" : "inherit",
+                                            cursor: "pointer",
+                                            fontWeight: 600,
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          <span>{emoji}</span>
+                                          {count > 1 && <span>{count}</span>}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <div style={{ fontSize: "9px", textAlign: "right", marginTop: "4px", opacity: 0.7, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "2px" }}>
+                                    {formatTime(msg.created_at)}
+                                    {isOut && (
+                                      <span>
+                                        {msg.is_read ? <CheckCheck size={11} style={{ color: isOut ? "white" : "#10b981" }} /> : <Check size={11} />}
+                                      </span>
                                     )}
                                   </div>
-                                )}
-                                <div style={{ fontSize: "9px", textAlign: "right", marginTop: "4px", opacity: 0.7, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "2px" }}>
-                                  {formatTime(msg.created_at)}
-                                  {isOut && (
-                                    <span>
-                                      {msg.is_read ? <CheckCheck size={11} style={{ color: isOut ? "white" : "#10b981" }} /> : <Check size={11} />}
-                                    </span>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )
-                          })
+                                </motion.div>
+                              )
+                            })}
+                          </AnimatePresence>
                         )}
                         <div ref={messagesEndRef} />
                       </div>

@@ -8,10 +8,38 @@ import {
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
+import { motion, AnimatePresence } from "framer-motion";
 import useThemeStore from "../../../store/useThemeStore";
 import ImageModal from "../../../components/modal/ImageModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
+
+const POPULAR_EMOJIS = ["👍", "❤️", "🔥", "😂", "😮", "😢", "🙏", "🎉", "👏"];
+
+const parseMessageReactions = (reactionsStr) => {
+  try {
+    if (!reactionsStr) return {};
+    return JSON.parse(reactionsStr);
+  } catch {
+    return {};
+  }
+};
+
+const getReactionGroups = (reactionsStr, currentUserId) => {
+  const reactions = parseMessageReactions(reactionsStr);
+  const groups = {};
+  Object.entries(reactions).forEach(([userId, emoji]) => {
+    if (!groups[emoji]) groups[emoji] = [];
+    groups[emoji].push(Number(userId));
+  });
+  return Object.entries(groups).map(([emoji, userIds]) => ({
+    emoji,
+    userIds,
+    count: userIds.length,
+    hasMyReaction: userIds.map(Number).includes(Number(currentUserId))
+  }));
+};
+
 
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
@@ -124,6 +152,52 @@ const AudioPlayer = ({ src, isOut }) => {
           <span>{formatDuration(duration)}</span>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Shimmering Skeleton Loader component for active chat loading
+const LoadingSkeleton = () => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", padding: "16px", height: "100%" }}>
+      <div style={{ 
+        alignSelf: "flex-start", 
+        width: "65%", 
+        height: "42px", 
+        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 14px 4px",
+        border: "1px solid rgba(226,232,240,0.5)"
+      }} />
+      <div style={{ 
+        alignSelf: "flex-end", 
+        width: "50%", 
+        height: "36px", 
+        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 4px 14px"
+      }} />
+      <div style={{ 
+        alignSelf: "flex-start", 
+        width: "75%", 
+        height: "48px", 
+        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 14px 4px",
+        border: "1px solid rgba(226,232,240,0.5)"
+      }} />
+      <div style={{ 
+        alignSelf: "flex-end", 
+        width: "60%", 
+        height: "40px", 
+        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 4px 14px"
+      }} />
     </div>
   );
 };
@@ -457,6 +531,51 @@ export default function OperatorFeedbackPage() {
     }
   };
 
+  const handleReact = async (msgId, emoji) => {
+    try {
+      const msg = messages.find(m => m.id === msgId);
+      if (!msg) return;
+
+      const parsed = parseMessageReactions(msg.reactions);
+      const currentReaction = parsed[currentUserId];
+
+      let newEmoji = emoji;
+      if (currentReaction === emoji) {
+        newEmoji = "";
+      }
+
+      const res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, axiosConfig);
+
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions: res.data.reactions } : m));
+    } catch (err) {
+      console.error("Error setting reaction:", err);
+    }
+  };
+
+  const handleDeleteChat = async (threadId) => {
+    if (!window.confirm("Вы уверены, что хотите удалить весь чат?")) return;
+    try {
+      let url = `${API_URL}/api/feedback/chat`;
+      if (activeTab === "direct") {
+        url += `?chatWith=${threadId}`;
+      } else {
+        url += `?userId=${threadId}`;
+      }
+      await axios.delete(url, axiosConfig);
+      
+      if (activeThreadId === threadId) {
+        setActiveThreadId(null);
+        setActiveChatType(null);
+        setMessages([]);
+      }
+      fetchSupportThreads();
+      fetchDirectThreads();
+      fetchTotalUnread();
+    } catch (err) {
+      console.error("Error deleting chat:", err);
+    }
+  };
+
   const handleSelectThread = useCallback((thread) => {
     setActiveChatType(thread.chatType);
     setActiveThreadId(thread.id);
@@ -500,8 +619,8 @@ export default function OperatorFeedbackPage() {
   // context menus triggers
   const triggerContextMenu = (e, item, type) => {
     e.preventDefault();
-    const menuWidth = 160;
-    const menuHeight = type === "message" ? 140 : 100;
+    const menuWidth = 240;
+    const menuHeight = type === "message" ? 190 : 150;
     let x = e.clientX;
     let y = e.clientY;
     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
@@ -545,6 +664,10 @@ export default function OperatorFeedbackPage() {
 
   // Voice recording routines
   const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Запись аудио доступна только в безопасном контексте (HTTPS или localhost).");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -631,7 +754,7 @@ export default function OperatorFeedbackPage() {
     );
   });
 
-  // Filter threads and sort pinned to top
+  // Filter threads and sort pinned to top with strict type safety and deduplication
   const displayThreads = useMemo(() => {
     let source = activeTab === "support" ? supportThreads : directThreads;
     let mapped = source.map(t => ({
@@ -646,10 +769,21 @@ export default function OperatorFeedbackPage() {
     
     const filtered = mapped.filter((t) => t.name?.toLowerCase().includes(threadSearch.toLowerCase()));
     
+    // Strict Deduplicate by id (which is user_id)
+    const seenIds = new Set();
+    const unique = [];
+    for (const t of filtered) {
+      const uId = Number(t.id);
+      if (!seenIds.has(uId)) {
+        seenIds.add(uId);
+        unique.push(t);
+      }
+    }
+    
     // Sort: Pinned first, then by date desc
-    return [...filtered].sort((a, b) => {
-      const isPinnedA = pinnedChats.includes(a.id);
-      const isPinnedB = pinnedChats.includes(b.id);
+    return unique.sort((a, b) => {
+      const isPinnedA = pinnedChats.map(Number).includes(Number(a.id));
+      const isPinnedB = pinnedChats.map(Number).includes(Number(b.id));
       if (isPinnedA && !isPinnedB) return -1;
       if (!isPinnedA && isPinnedB) return 1;
       
@@ -690,163 +824,225 @@ export default function OperatorFeedbackPage() {
       />
       
       {/* FLOAT CONTEXT MENU */}
-      {contextMenu.visible && (
-        <div 
-          style={{
-            position: "fixed",
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
-            zIndex: 100005,
-            background: "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(226, 232, 240, 0.8)",
-            borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-            padding: "6px",
-            minWidth: "160px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            fontFamily: EMOJI_FONT_STACK
-          }}
-        >
-          {contextMenu.type === "message" ? (
-            <>
-              <button 
-                onClick={() => handleCopy(contextMenu.target.message)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#1e293b",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <Check size={14} /> Копировать
-              </button>
-              <button 
-                onClick={() => {
-                  setReplyingTo(contextMenu.target);
-                  setEditingMessage(null);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#1e293b",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <CornerUpLeft size={14} /> Ответить
-              </button>
-              {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
-                (activeChatType === "support" && contextMenu.target.is_operator)) && (
-                <>
-                  <button 
-                    onClick={() => {
-                      setEditingMessage(contextMenu.target);
-                      setNewMessage(contextMenu.target.message || "");
-                      setReplyingTo(null);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px 10px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "#1e293b",
-                      background: "transparent",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      textAlign: "left"
-                    }}
-                  >
-                    <Edit3 size={14} /> Редактировать
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteMessage(contextMenu.target.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px 10px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "#ef4444",
-                      background: "transparent",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      textAlign: "left"
-                    }}
-                  >
-                    <Trash2 size={14} /> Удалить
-                  </button>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <button 
-                onClick={() => handleTogglePin(contextMenu.target.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#1e293b",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <Pin size={14} /> {pinnedChats.includes(contextMenu.target.id) ? "Открепить" : "Закрепить"}
-              </button>
-              <button 
-                onClick={() => handleToggleMute(contextMenu.target.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#1e293b",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                {mutedChats.includes(contextMenu.target.id) ? <Bell size={14} /> : <BellOff size={14} />} 
-                {mutedChats.includes(contextMenu.target.id) ? "Включить звук" : "Без звука"}
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      <AnimatePresence>
+        {contextMenu.visible && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            style={{
+              position: "fixed",
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
+              zIndex: 100005,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1px solid rgba(226, 232, 240, 0.8)",
+              borderRadius: "12px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              padding: "6px",
+              minWidth: "240px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "2px",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+          >
+            {contextMenu.type === "message" && (
+              <div style={{
+                display: "flex",
+                gap: "6px",
+                padding: "6px 8px",
+                borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
+                justifyContent: "space-between",
+                background: "rgba(248, 250, 252, 0.5)",
+                borderRadius: "8px 8px 0 0"
+              }}>
+                {POPULAR_EMOJIS.map(emoji => {
+                  const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
+                  const isSelected = parsedReactions[currentUserId] === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReact(contextMenu.target.id, emoji)}
+                      style={{
+                        background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "18px",
+                        padding: "2px 4px",
+                        cursor: "pointer",
+                        transition: "transform 0.1s",
+                        outline: "none"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.35)"}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            
+            {contextMenu.type === "message" ? (
+              <>
+                <button 
+                  onClick={() => handleCopy(contextMenu.target.message)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <Check size={14} /> Копировать
+                </button>
+                <button 
+                  onClick={() => {
+                    setReplyingTo(contextMenu.target);
+                    setEditingMessage(null);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <CornerUpLeft size={14} /> Ответить
+                </button>
+                {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                  (activeChatType === "support" && contextMenu.target.is_operator)) && (
+                  <>
+                    <button 
+                      onClick={() => {
+                        setEditingMessage(contextMenu.target);
+                        setNewMessage(contextMenu.target.message || "");
+                        setReplyingTo(null);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <Edit3 size={14} /> Редактировать
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#ef4444",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <Trash2 size={14} /> Удалить
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => handleTogglePin(contextMenu.target.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <Pin size={14} /> {pinnedChats.map(Number).includes(Number(contextMenu.target.id)) ? "Открепить" : "Закрепить"}
+                </button>
+                <button 
+                  onClick={() => handleToggleMute(contextMenu.target.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  {mutedChats.map(Number).includes(Number(contextMenu.target.id)) ? <Bell size={14} /> : <BellOff size={14} />} 
+                  {mutedChats.map(Number).includes(Number(contextMenu.target.id)) ? "Включить звук" : "Без звука"}
+                </button>
+                <button 
+                  onClick={() => handleDeleteChat(contextMenu.target.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#ef4444",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить чат
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <style>{`
         .feedback-container {
@@ -1375,6 +1571,10 @@ export default function OperatorFeedbackPage() {
           50% { opacity: 1; }
           100% { opacity: 0.4; }
         }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
       `}</style>
 
       {/* Left Sidebar */}
@@ -1416,8 +1616,8 @@ export default function OperatorFeedbackPage() {
             displayThreads.map((thread) => {
               const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
               const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
-              const isPinned = pinnedChats.includes(thread.id);
-              const isMuted = mutedChats.includes(thread.id);
+              const isPinned = pinnedChats.map(Number).includes(Number(thread.id));
+              const isMuted = mutedChats.map(Number).includes(Number(thread.id));
 
               return (
                 <div
@@ -1427,7 +1627,8 @@ export default function OperatorFeedbackPage() {
                   onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
                   style={{
                     border: isPinned ? "1.5px solid #3b82f6" : "1.5px solid transparent",
-                    position: "relative"
+                    position: "relative",
+                    background: isPinned ? "var(--bg-secondary, rgba(59, 130, 246, 0.04))" : "inherit"
                   }}
                 >
                   <div className="thread-avatar">
@@ -1493,14 +1694,22 @@ export default function OperatorFeedbackPage() {
                   onClick={() => handleToggleMute(activeThreadId)}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
                 >
-                  {mutedChats.includes(activeThreadId) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
+                  {mutedChats.map(Number).includes(Number(activeThreadId)) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
                 </button>
                 {/* Pin toggle */}
                 <button 
                   onClick={() => handleTogglePin(activeThreadId)}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
                 >
-                  <Pin size={18} style={{ transform: pinnedChats.includes(activeThreadId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(activeThreadId) ? "#3b82f6" : "inherit" }} />
+                  <Pin size={18} style={{ transform: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "rotate(45deg)" : "none", color: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "#3b82f6" : "inherit" }} />
+                </button>
+                {/* Delete Chat toggle */}
+                <button 
+                  onClick={() => handleDeleteChat(activeThreadId)}
+                  title="Очистить историю сообщений"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
@@ -1539,86 +1748,140 @@ export default function OperatorFeedbackPage() {
 
             {/* MESSAGES VIEW */}
             {loadingChat ? (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Spinner size="large" label="Загрузка диалога..." />
-              </div>
+              <LoadingSkeleton />
             ) : (
               <div className="chat-messages">
                 {filteredMessages.length === 0 ? (
                   <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
-                  filteredMessages.map((msg) => {
-                    const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
-                    const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+                  <AnimatePresence initial={false}>
+                    {filteredMessages.map((msg) => {
+                      const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
+                      const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
-                    return (
-                      <div 
-                        key={msg.id} 
-                        id={`msg-bubble-${msg.id}`}
-                        className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
-                        onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                      >
-                        {!isOutgoing && activeChatType === "support" && (
-                          <span className="msg-sender">{msg.username}</span>
-                        )}
+                      return (
+                        <motion.div 
+                          key={msg.id} 
+                          layout
+                          initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          id={`msg-bubble-${msg.id}`}
+                          className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
+                          onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                        >
+                          {!isOutgoing && activeChatType === "support" && (
+                            <span className="msg-sender">{msg.username}</span>
+                          )}
 
-                        <div className="msg-bubble">
-                          {/* Reply snippet inside bubble */}
-                          {msg.reply_to_id && (
-                            <div 
-                              onClick={() => scrollToMessage(msg.reply_to_id)}
-                              style={{
-                                padding: "6px 8px",
-                                background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
-                                borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
-                                fontSize: "11px",
-                                borderRadius: "4px",
-                                marginBottom: "6px",
-                                cursor: "pointer",
-                                opacity: 0.95
-                              }}
-                            >
-                              <span style={{ fontWeight: 600 }}>
-                                {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
-                              </span>
-                              <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                          <div className="msg-bubble">
+                            {/* Reply snippet inside bubble */}
+                            {msg.reply_to_id && (
+                              <div 
+                                onClick={() => scrollToMessage(msg.reply_to_id)}
+                                style={{
+                                  padding: "6px 8px",
+                                  background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                                  borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                                  fontSize: "11px",
+                                  borderRadius: "4px",
+                                  marginBottom: "6px",
+                                  cursor: "pointer",
+                                  opacity: 0.95
+                                }}
+                              >
+                                <span style={{ fontWeight: 600 }}>
+                                  {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                                </span>
+                                <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {msg.message && !isVoice && <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
-                          
-                          {isVoice && (
-                            <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
-                          )}
+                            {msg.message && !isVoice && (
+                              <motion.div 
+                                key={msg.message}
+                                initial={{ scale: 0.97, opacity: 0.9 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ duration: 0.15 }}
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {msg.message}
+                              </motion.div>
+                            )}
+                            
+                            {isVoice && (
+                              <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
+                            )}
 
-                          {msg.attachment_url && !isVoice && (
-                            <div className="msg-attachment">
-                              {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                <img 
-                                  src={`${API_URL}${msg.attachment_url}`} 
-                                  alt="attachment" 
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
-                                />
-                              ) : (
-                                <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>Скачать файл</a>
+                            {msg.attachment_url && !isVoice && (
+                              <div className="msg-attachment">
+                                {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                  <img 
+                                    src={`${API_URL}${msg.attachment_url}`} 
+                                    alt="attachment" 
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                                  />
+                                ) : (
+                                  <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>Скачать файл</a>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Reactions list */}
+                            {msg.reactions && (
+                              <div style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "4px",
+                                marginTop: "6px",
+                                marginBottom: "2px"
+                              }}>
+                                {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReact(msg.id, emoji);
+                                    }}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
+                                      border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                                      borderRadius: "12px",
+                                      padding: "2px 6px",
+                                      fontSize: "11px",
+                                      color: isOutgoing ? "white" : "inherit",
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      transition: "all 0.15s"
+                                    }}
+                                  >
+                                    <span>{emoji}</span>
+                                    {count > 1 && <span>{count}</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="msg-meta">
+                              <span>{formatTime(msg.created_at)}</span>
+                              {isOutgoing && (
+                                <span style={{ marginLeft: 4 }}>
+                                  {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
+                                </span>
                               )}
                             </div>
-                          )}
-                          <div className="msg-meta">
-                            <span>{formatTime(msg.created_at)}</span>
-                            {isOutgoing && (
-                              <span style={{ marginLeft: 4 }}>
-                                {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
                 )}
                 <div ref={messagesEndRef} />
               </div>

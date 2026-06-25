@@ -3,18 +3,82 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
-  ArrowLeft, Search, User, Shield, Mic, Trash2, 
-  CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
+  Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
+import { motion, AnimatePresence } from "framer-motion";
 import useThemeStore from "../../store/useThemeStore";
 import ImageModal from "../../components/modal/ImageModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
+const POPULAR_EMOJIS = ["👍", "❤️", "🔥", "😂", "😮", "😢", "🙏", "🎉", "👏"];
+
+const parseMessageReactions = (reactionsStr) => {
+  try {
+    if (!reactionsStr) return {};
+    return JSON.parse(reactionsStr);
+  } catch {
+    return {};
+  }
+};
+
+const getReactionGroups = (reactionsStr, currentUserId) => {
+  const reactions = parseMessageReactions(reactionsStr);
+  const groups = {};
+  Object.entries(reactions).forEach(([userId, emoji]) => {
+    if (!groups[emoji]) groups[emoji] = [];
+    groups[emoji].push(Number(userId));
+  });
+  return Object.entries(groups).map(([emoji, userIds]) => ({
+    emoji,
+    userIds,
+    count: userIds.length,
+    hasMyReaction: userIds.map(Number).includes(Number(currentUserId))
+  }));
+};
+
+
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+
+// Shimmering Skeleton Loader component for active chat loading
+const LoadingSkeleton = () => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", padding: "16px", height: "100%" }}>
+      <div style={{ 
+        alignSelf: "flex-start", 
+        width: "65%", 
+        height: "42px", 
+        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 14px 4px",
+        border: "1px solid rgba(226,232,240,0.5)"
+      }} />
+      <div style={{ 
+        alignSelf: "flex-end", 
+        width: "50%", 
+        height: "36px", 
+        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 4px 14px"
+      }} />
+      <div style={{ 
+        alignSelf: "flex-start", 
+        width: "75%", 
+        height: "48px", 
+        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
+        backgroundSize: "200% 100%", 
+        animation: "shimmer 1.5s infinite linear", 
+        borderRadius: "14px 14px 14px 4px",
+        border: "1px solid rgba(226,232,240,0.5)"
+      }} />
+    </div>
+  );
+};
 
 // Custom Audio Player component for voice messages
 const AudioPlayer = ({ src, isOut }) => {
@@ -356,6 +420,42 @@ export default function FeedbackPage() {
     }
   };
 
+  const handleReact = async (msgId, emoji) => {
+    try {
+      const msg = messages.find(m => m.id === msgId);
+      if (!msg) return;
+
+      const parsed = parseMessageReactions(msg.reactions);
+      const currentReaction = parsed[currentUserId];
+
+      let newEmoji = emoji;
+      if (currentReaction === emoji) {
+        newEmoji = "";
+      }
+
+      const res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions: res.data.reactions } : m));
+    } catch (err) {
+      console.error("Error setting reaction:", err);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!window.confirm("Вы уверены, что хотите очистить всю историю сообщений?")) return;
+    try {
+      await axios.delete(`${API_URL}/api/feedback/chat`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessages([]);
+      fetchMessages();
+    } catch (err) {
+      setErrorMsg("Не удалось очистить историю сообщений.");
+    }
+  };
+
   const onEmojiClick = (emojiObject) => {
     setNewMessage(prev => prev + emojiObject.emoji);
   };
@@ -373,8 +473,8 @@ export default function FeedbackPage() {
   // context menus triggers
   const triggerContextMenu = (e, item, type) => {
     e.preventDefault();
-    const menuWidth = 160;
-    const menuHeight = 140;
+    const menuWidth = 240;
+    const menuHeight = type === "message" ? 190 : 120;
     let x = e.clientX;
     let y = e.clientY;
     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
@@ -384,7 +484,7 @@ export default function FeedbackPage() {
 
   const handleTogglePin = (id) => {
     setPinnedChats(prev => {
-      const updated = prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id];
+      const updated = prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id];
       localStorage.setItem("pinned_chats", JSON.stringify(updated));
       return updated;
     });
@@ -415,6 +515,10 @@ export default function FeedbackPage() {
 
   // Voice recording routines
   const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Запись аудио доступна только в безопасном контексте (HTTPS или localhost).");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -508,116 +612,159 @@ export default function FeedbackPage() {
       />
 
       {/* FLOAT CONTEXT MENU */}
-      {contextMenu.visible && (
-        <div 
-          style={{
-            position: "fixed",
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
-            zIndex: 100005,
-            background: "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(226, 232, 240, 0.8)",
-            borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-            padding: "6px",
-            minWidth: "160px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            fontFamily: EMOJI_FONT_STACK
-          }}
-        >
-          <button 
-            onClick={() => handleCopy(contextMenu.target.message)}
+      <AnimatePresence>
+        {contextMenu.visible && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
             style={{
+              position: "fixed",
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
+              zIndex: 100005,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1px solid rgba(226, 232, 240, 0.8)",
+              borderRadius: "12px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              padding: "6px",
+              minWidth: "240px",
               display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 10px",
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "#1e293b",
-              background: "transparent",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              textAlign: "left"
+              flexDirection: "column",
+              gap: "2px",
+              fontFamily: EMOJI_FONT_STACK
             }}
           >
-            <Check size={14} /> Копировать
-          </button>
-          <button 
-            onClick={() => {
-              setReplyingTo(contextMenu.target);
-              setEditingMessage(null);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 10px",
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "#1e293b",
-              background: "transparent",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              textAlign: "left"
-            }}
-          >
-            <CornerUpLeft size={14} /> Ответить
-          </button>
-          {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
-            <>
-              <button 
-                onClick={() => {
-                  setEditingMessage(contextMenu.target);
-                  setNewMessage(contextMenu.target.message || "");
-                  setReplyingTo(null);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#1e293b",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <Edit3 size={14} /> Редактировать
-              </button>
-              <button 
-                onClick={() => handleDeleteMessage(contextMenu.target.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#ef4444",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  textAlign: "left"
-                }}
-              >
-                <Trash2 size={14} /> Удалить
-              </button>
-            </>
-          )}
-        </div>
-      )}
+            {contextMenu.type === "message" && (
+              <div style={{
+                display: "flex",
+                gap: "6px",
+                padding: "6px 8px",
+                borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
+                justifyContent: "space-between",
+                background: "rgba(248, 250, 252, 0.5)",
+                borderRadius: "8px 8px 0 0"
+              }}>
+                {POPULAR_EMOJIS.map(emoji => {
+                  const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
+                  const isSelected = parsedReactions[currentUserId] === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReact(contextMenu.target.id, emoji)}
+                      style={{
+                        background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "18px",
+                        padding: "2px 4px",
+                        cursor: "pointer",
+                        transition: "transform 0.1s",
+                        outline: "none"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.35)"}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => handleCopy(contextMenu.target.message)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 10px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#1e293b",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                textAlign: "left"
+              }}
+            >
+              <Check size={14} /> Копировать
+            </button>
+            <button 
+              onClick={() => {
+                setReplyingTo(contextMenu.target);
+                setEditingMessage(null);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 10px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#1e293b",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                textAlign: "left"
+              }}
+            >
+              <CornerUpLeft size={14} /> Ответить
+            </button>
+            {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
+              <>
+                <button 
+                  onClick={() => {
+                    setEditingMessage(contextMenu.target);
+                    setNewMessage(contextMenu.target.message || "");
+                    setReplyingTo(null);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <Edit3 size={14} /> Редактировать
+                </button>
+                <button 
+                  onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#ef4444",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .feedback-chat-container {
@@ -795,6 +942,10 @@ export default function FeedbackPage() {
           50% { opacity: 1; }
           100% { opacity: 0.4; }
         }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
       `}</style>
 
       <div className="chat-card">
@@ -822,6 +973,14 @@ export default function FeedbackPage() {
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
             >
               <Pin size={18} style={{ transform: pinnedChats.includes(recipientId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(recipientId) ? "#3b82f6" : "inherit" }} />
+            </button>
+            {/* Delete Chat toggle */}
+            <button 
+              onClick={handleDeleteChat}
+              title="Очистить историю сообщений"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+            >
+              <Trash2 size={18} />
             </button>
           </div>
         </div>
@@ -858,82 +1017,137 @@ export default function FeedbackPage() {
         {/* MESSAGES LIST */}
         <div className="chat-messages">
           {loading ? (
-            <div style={{ textAlign: "center", color: "var(--text-secondary)", marginTop: "20px" }}>
-              Загрузка...
-            </div>
+            <LoadingSkeleton />
           ) : filteredMessages.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-secondary)", marginTop: "40px" }}>
               Нет сообщений.
             </div>
           ) : (
-            filteredMessages.map((msg) => {
-              const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
-              const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+            <AnimatePresence initial={false}>
+              {filteredMessages.map((msg) => {
+                const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
+                const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
-              return (
-                <div
-                  key={msg.id}
-                  id={`msg-bubble-${msg.id}`}
-                  className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
-                  onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                >
-                  {/* Reply snippet inside bubble */}
-                  {msg.reply_to_id && (
-                    <div 
-                      onClick={() => scrollToMessage(msg.reply_to_id)}
-                      style={{
-                        padding: "6px 8px",
-                        background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
-                        borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
-                        fontSize: "11px",
-                        borderRadius: "4px",
-                        marginBottom: "6px",
-                        cursor: "pointer",
-                        opacity: 0.95
-                      }}
-                    >
-                      <span style={{ fontWeight: 600 }}>
-                        {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
-                      </span>
-                      <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                return (
+                  <motion.div
+                    key={msg.id}
+                    layout
+                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    id={`msg-bubble-${msg.id}`}
+                    className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
+                    onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                  >
+                    {/* Reply snippet inside bubble */}
+                    {msg.reply_to_id && (
+                      <div 
+                        onClick={() => scrollToMessage(msg.reply_to_id)}
+                        style={{
+                          padding: "6px 8px",
+                          background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                          borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                          fontSize: "11px",
+                          borderRadius: "4px",
+                          marginBottom: "6px",
+                          cursor: "pointer",
+                          opacity: 0.95
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>
+                          {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                        </span>
+                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {msg.message && !isVoice && <div className="message-text" style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
-                  
-                  {isVoice && (
-                    <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
-                  )}
+                    {msg.message && !isVoice && (
+                      <motion.div 
+                        key={msg.message}
+                        initial={{ scale: 0.97, opacity: 0.9 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                        className="message-text" 
+                        style={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {msg.message}
+                      </motion.div>
+                    )}
+                    
+                    {isVoice && (
+                      <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
+                    )}
 
-                  {msg.attachment_url && !isVoice && (
-                    <div className="message-attachment">
-                      {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                        <img 
-                          src={`${API_URL}${msg.attachment_url}`} 
-                          alt="attachment" 
-                          style={{ cursor: "pointer" }}
-                          onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
-                        />
-                      ) : (
-                        <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>
-                          Скачать файл
-                        </a>
+                    {msg.attachment_url && !isVoice && (
+                      <div className="message-attachment">
+                        {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                          <img 
+                            src={`${API_URL}${msg.attachment_url}`} 
+                            alt="attachment" 
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                          />
+                        ) : (
+                          <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>
+                            Скачать файл
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Reactions list */}
+                    {msg.reactions && (
+                      <div style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "4px",
+                        marginTop: "6px",
+                        marginBottom: "2px"
+                      }}>
+                        {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
+                          <button
+                            key={emoji}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReact(msg.id, emoji);
+                            }}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              background: hasMyReaction ? "rgba(235, 37, 37, 0.15)" : (isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)"),
+                              border: hasMyReaction ? "1.5px solid #eb2525" : "1.5px solid transparent",
+                              borderRadius: "12px",
+                              padding: "2px 6px",
+                              fontSize: "11px",
+                              color: isOutgoing ? "white" : "inherit",
+                              cursor: "pointer",
+                              fontWeight: 600,
+                              transition: "all 0.15s"
+                            }}
+                          >
+                            <span>{emoji}</span>
+                            {count > 1 && <span>{count}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="message-time">
+                      {formatTime(msg.created_at)}
+                      {isOutgoing && (
+                        <span style={{ marginLeft: 4, display: 'inline-flex', verticalAlign: 'middle' }}>
+                          {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
+                        </span>
                       )}
                     </div>
-                  )}
-                  <div className="message-time">
-                    {formatTime(msg.created_at)}
-                    {isOutgoing && (
-                      <span style={{ marginLeft: 4, display: 'inline-flex', verticalAlign: 'middle' }}>
-                        {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -1016,7 +1230,6 @@ export default function FeedbackPage() {
               </div>
             </div>
           ) : (
-            /* Standard input bar */
             <form className="chat-form" onSubmit={handleSendMessage}>
               <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                 <Smile size={22} />
@@ -1035,7 +1248,6 @@ export default function FeedbackPage() {
                 disabled={sending}
               />
 
-              {/* Voice mic or ChatGPT Send Button */}
               {!isSendActive ? (
                 <button type="button" className="icon-btn" onClick={startRecording}>
                   <Mic size={22} />
