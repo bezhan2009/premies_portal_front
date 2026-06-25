@@ -47,8 +47,40 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
+const parseForwardedMessage = (text) => {
+  if (!text) return { isForwarded: false, text: "" };
+  const matchNew = text.match(/^<!--fwd:(\d+):(.+?)-->/);
+  if (matchNew) {
+    const fwdId = Number(matchNew[1]);
+    const fwdName = matchNew[2];
+    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    return { isForwarded: true, fwdId, fwdName, cleanText };
+  }
+  const matchOld = text.match(/^Переслано от (.+?):\n?/);
+  if (matchOld) {
+    const fwdName = matchOld[1];
+    const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
+    return { isForwarded: true, fwdId: 0, fwdName, cleanText };
+  }
+  return { isForwarded: false, text };
+};
+
 const formatMessageText = (text) => {
   if (!text) return "";
+  
+  let prefix = "";
+  const fwdMatch = text.match(/^<!--fwd:\d+:(.+?)-->/);
+  if (fwdMatch) {
+    prefix = `↪️ Переслано от ${fwdMatch[1]}: `;
+    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+  } else {
+    const oldMatch = text.match(/^Переслано от (.+?):\n?/);
+    if (oldMatch) {
+      prefix = `↪️ Переслано от ${oldMatch[1]}: `;
+      text = text.replace(/^Переслано от .+?:\n?/, "");
+    }
+  }
+
   let escaped = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -74,7 +106,7 @@ const formatMessageText = (text) => {
     return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
   });
 
-  return escaped;
+  return prefix + escaped;
 };
 
 // Custom Audio Player component for voice messages
@@ -372,9 +404,22 @@ export default function OperatorFeedbackPage() {
         const msg = messages.find(m => m.id === msgId);
         if (!msg) continue;
         
-        let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
-        let forwardPrefix = `Переслано от ${senderName}:\n`;
-        let textToSend = msg.message ? `${forwardPrefix}${msg.message}` : `${forwardPrefix.trim()}`;
+        let textToSend = "";
+        if (msg.message) {
+          const isAlreadyForwarded = msg.message.startsWith("<!--fwd:") || msg.message.startsWith("Переслано от ");
+          if (isAlreadyForwarded) {
+            textToSend = msg.message;
+          } else {
+            let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+            let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+            let forwardPrefix = `${fwdComment}Переслано от ${senderName}:\n`;
+            textToSend = `${forwardPrefix}${msg.message}`;
+          }
+        } else {
+          let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+          let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+          textToSend = `${fwdComment}Переслано от ${senderName}`;
+        }
         
         const payload = {
           message: textToSend,
@@ -856,16 +901,51 @@ export default function OperatorFeedbackPage() {
   };
 
   const handleSelectThread = useCallback((thread) => {
-    setActiveChatType(thread.chatType);
-    setActiveThreadId(thread.id);
-    setActiveThreadName(thread.name);
+    if (isChatSelectionMode) {
+      handleSelectChat(thread.id);
+    } else {
+      setActiveChatType(thread.chatType);
+      setActiveThreadId(thread.id);
+      setActiveThreadName(thread.name);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      setLocalSearchActive(false);
+      setLocalSearchQuery("");
+      fetchMessages(thread.chatType, thread.id, true);
+      setMobileShowChat(true);
+    }
+  }, [isChatSelectionMode, handleSelectChat, fetchMessages]);
+
+  const handleNavigateToDirectChat = (userId, userName) => {
+    if (userId === 0) return;
+    setActiveTab("direct");
+    setActiveChatType("direct");
+    setActiveThreadId(userId);
+    setActiveThreadName(userName);
     setReplyingTo(null);
     setEditingMessage(null);
     setLocalSearchActive(false);
     setLocalSearchQuery("");
-    fetchMessages(thread.chatType, thread.id, true);
+    fetchMessages("direct", userId, true);
     setMobileShowChat(true);
-  }, [fetchMessages]);
+    
+    const threadExists = directThreads.some(t => t.user_id === userId);
+    if (!threadExists) {
+      setDirectThreads(prev => [
+        {
+          id: userId,
+          user_id: userId,
+          username: userName,
+          name: userName,
+          message: "",
+          last_message_at: new Date().toISOString(),
+          unread_count: 0,
+          chatType: "direct"
+        },
+        ...prev
+      ]);
+    }
+  };
 
   const handleStartDirectChat = (user) => {
     setActiveTab("direct");
@@ -1241,6 +1321,8 @@ export default function OperatorFeedbackPage() {
               style={{
                 width: "100%",
                 maxWidth: "400px",
+                height: "450px",
+                minHeight: "400px",
                 background: "var(--bg-surface, white)",
                 borderRadius: "16px",
                 boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -10px rgba(0,0,0,0.1)",
@@ -1275,7 +1357,7 @@ export default function OperatorFeedbackPage() {
                 }}
               />
 
-              <div style={{ maxHeight: "250px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
                 {forwardThreadsList
                   .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
                   .map(thread => (
@@ -2146,7 +2228,9 @@ export default function OperatorFeedbackPage() {
           border-radius: 16px;
           width: 100%;
           max-width: 460px;
-          max-height: 80vh;
+          height: 500px;
+          min-height: 400px;
+          max-height: 90vh;
           display: flex;
           flex-direction: column;
           box-shadow: var(--shadow-2xl);
@@ -2629,6 +2713,7 @@ export default function OperatorFeedbackPage() {
                         }
 
                         const msg = group;
+                        const fwdInfo = parseForwardedMessage(msg.message);
                         const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
                         const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
@@ -2637,49 +2722,80 @@ export default function OperatorFeedbackPage() {
                         return (
                           <div 
                             key={msg.id}
+                            onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                             style={{ 
                               display: "flex", 
                               alignItems: "center", 
                               gap: "10px", 
                               width: "100%", 
-                              alignSelf: isOutgoing ? "flex-end" : "flex-start",
-                              justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                              background: isMessageSelectionMode && isSelected ? "rgba(235, 37, 37, 0.08)" : "transparent",
+                              padding: isMessageSelectionMode ? "6px 12px" : "0",
+                              borderRadius: isMessageSelectionMode ? "8px" : "0",
+                              transition: "background 0.2s",
+                              cursor: isMessageSelectionMode ? "pointer" : "default"
                             }}
                           >
                             {isMessageSelectionMode && (
                               <div 
-                                onClick={() => handleSelectMessage(msg.id)} 
                                 style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
                               >
                                 {isSelected ? (
-                                  <CheckCircle2 size={20} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                  <CheckCircle2 size={20} style={{ color: "#eb2525", fill: "#eb2525", stroke: "white" }} />
                                 ) : (
                                   <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
                                 )}
                               </div>
                             )}
-                            <motion.div 
-                              layout
-                              initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                              transition={{ duration: 0.22, ease: "easeOut" }}
-                              id={`msg-bubble-${msg.id}`}
-                              className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
-                              onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                              onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
-                              style={{
-                                cursor: isMessageSelectionMode ? "pointer" : "default",
-                                boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "none",
-                                filter: isSelected ? "brightness(0.95)" : "none",
-                                alignSelf: "auto"
-                              }}
-                            >
+                            <div style={{
+                              flex: 1,
+                              display: "flex",
+                              justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                            }}>
+                              <motion.div 
+                                layout
+                                initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                                transition={{ duration: 0.22, ease: "easeOut" }}
+                                id={`msg-bubble-${msg.id}`}
+                                className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
+                                onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                                style={{
+                                  cursor: isMessageSelectionMode ? "pointer" : "default",
+                                  alignSelf: "auto"
+                                }}
+                              >
                             {!isOutgoing && activeChatType === "support" && (
                               <span className="msg-sender">{msg.username}</span>
                             )}
 
                             <div className="msg-bubble">
+                              {/* Forwarded Header Block */}
+                              {fwdInfo.isForwarded && (
+                                <div 
+                                  onClick={fwdInfo.fwdId ? (e) => { e.stopPropagation(); handleNavigateToDirectChat(fwdInfo.fwdId, fwdInfo.fwdName); } : undefined}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(235,37,37,0.08)",
+                                    borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                                    padding: "6px 10px",
+                                    borderRadius: "6px",
+                                    marginBottom: "6px",
+                                    cursor: fwdInfo.fwdId ? "pointer" : "default",
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    color: isOutgoing ? "white" : "var(--text-color, #1e293b)",
+                                    transition: "opacity 0.2s"
+                                  }}
+                                  onMouseEnter={fwdInfo.fwdId ? e => e.currentTarget.style.opacity = 0.8 : undefined}
+                                  onMouseLeave={fwdInfo.fwdId ? e => e.currentTarget.style.opacity = 1 : undefined}
+                                >
+                                  <CornerUpRight size={12} />
+                                  <span>Переслано от {fwdInfo.fwdName}</span>
+                                </div>
+                              )}
                               {/* Reply snippet inside bubble */}
                               {msg.reply_to_id && (
                                 <div 
@@ -2737,14 +2853,14 @@ export default function OperatorFeedbackPage() {
                                 </div>
                               )}
 
-                              {msg.message && !isVoice && (
+                              {fwdInfo.cleanText && !isVoice && (
                                 <motion.div 
-                                  key={msg.message}
+                                  key={fwdInfo.cleanText}
                                   initial={{ scale: 0.97, opacity: 0.9 }}
                                   animate={{ scale: 1, opacity: 1 }}
                                   transition={{ duration: 0.15 }}
                                   style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                  dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                                  dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText) }}
                                 />
                               )}
 
@@ -2806,7 +2922,8 @@ export default function OperatorFeedbackPage() {
                             </div>
                           </motion.div>
                         </div>
-                      );
+                      </div>
+                    );
                       });
                     })()}
                   </AnimatePresence>

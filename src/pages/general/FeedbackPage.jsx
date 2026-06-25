@@ -46,8 +46,40 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 // Custom font family stack with emoji support
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
+const parseForwardedMessage = (text) => {
+  if (!text) return { isForwarded: false, text: "" };
+  const matchNew = text.match(/^<!--fwd:(\d+):(.+?)-->/);
+  if (matchNew) {
+    const fwdId = Number(matchNew[1]);
+    const fwdName = matchNew[2];
+    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    return { isForwarded: true, fwdId, fwdName, cleanText };
+  }
+  const matchOld = text.match(/^Переслано от (.+?):\n?/);
+  if (matchOld) {
+    const fwdName = matchOld[1];
+    const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
+    return { isForwarded: true, fwdId: 0, fwdName, cleanText };
+  }
+  return { isForwarded: false, text };
+};
+
 const formatMessageText = (text) => {
   if (!text) return "";
+  
+  let prefix = "";
+  const fwdMatch = text.match(/^<!--fwd:\d+:(.+?)-->/);
+  if (fwdMatch) {
+    prefix = `↪️ Переслано от ${fwdMatch[1]}: `;
+    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+  } else {
+    const oldMatch = text.match(/^Переслано от (.+?):\n?/);
+    if (oldMatch) {
+      prefix = `↪️ Переслано от ${oldMatch[1]}: `;
+      text = text.replace(/^Переслано от .+?:\n?/, "");
+    }
+  }
+
   let escaped = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -73,7 +105,7 @@ const formatMessageText = (text) => {
     return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
   });
 
-  return escaped;
+  return prefix + escaped;
 };
 
 // Shimmering Skeleton Loader component for active chat loading
@@ -328,9 +360,22 @@ export default function FeedbackPage() {
       for (const msgId of sortedIds) {
         const msg = messages.find(m => m.id === msgId);
         if (!msg) continue;
-        let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
-        let forwardPrefix = `Переслано от ${senderName}:\n`;
-        let textToSend = msg.message ? `${forwardPrefix}${msg.message}` : `${forwardPrefix.trim()}`;
+        let textToSend = "";
+        if (msg.message) {
+          const isAlreadyForwarded = msg.message.startsWith("<!--fwd:") || msg.message.startsWith("Переслано от ");
+          if (isAlreadyForwarded) {
+            textToSend = msg.message;
+          } else {
+            let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+            let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+            let forwardPrefix = `${fwdComment}Переслано от ${senderName}:\n`;
+            textToSend = `${forwardPrefix}${msg.message}`;
+          }
+        } else {
+          let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+          let fwdComment = `<!--fwd:${msg.user_id || 0}:${senderName}-->`;
+          textToSend = `${fwdComment}Переслано от ${senderName}`;
+        }
         const payload = {
           message: textToSend,
           attachment_url: msg.attachment_url || "",
@@ -940,6 +985,8 @@ export default function FeedbackPage() {
               style={{
                 width: "100%",
                 maxWidth: "400px",
+                height: "450px",
+                minHeight: "400px",
                 background: "var(--bg-surface, white)",
                 borderRadius: "16px",
                 boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -10px rgba(0,0,0,0.1)",
@@ -974,7 +1021,7 @@ export default function FeedbackPage() {
                 }}
               />
 
-              <div style={{ maxHeight: "250px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
                 {forwardThreads
                   .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
                   .map(thread => (
@@ -1683,6 +1730,7 @@ export default function FeedbackPage() {
                   }
 
                   const msg = group;
+                  const fwdInfo = parseForwardedMessage(msg.message);
                   const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
                   const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
                   const isSelected = selectedMessageIds.includes(msg.id);
@@ -1690,43 +1738,69 @@ export default function FeedbackPage() {
                   return (
                     <div 
                       key={msg.id}
+                      onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                       style={{ 
                         display: "flex", 
                         alignItems: "center", 
                         gap: "10px", 
                         width: "100%", 
-                        alignSelf: isOutgoing ? "flex-end" : "flex-start",
-                        justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                        background: isMessageSelectionMode && isSelected ? "rgba(235, 37, 37, 0.08)" : "transparent",
+                        padding: isMessageSelectionMode ? "6px 12px" : "0",
+                        borderRadius: isMessageSelectionMode ? "8px" : "0",
+                        transition: "background 0.2s",
+                        cursor: isMessageSelectionMode ? "pointer" : "default"
                       }}
                     >
                       {isMessageSelectionMode && (
                         <div 
-                          onClick={() => handleSelectMessage(msg.id)} 
                           style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
                         >
                           {isSelected ? (
-                            <CheckCircle2 size={20} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                            <CheckCircle2 size={20} style={{ color: "#eb2525", fill: "#eb2525", stroke: "white" }} />
                           ) : (
                             <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
                           )}
                         </div>
                       )}
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
-                        id={`msg-bubble-${msg.id}`}
-                        className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
-                        onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                        onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
-                        style={{
-                          cursor: isMessageSelectionMode ? "pointer" : "default",
-                          boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "none",
-                          filter: isSelected ? "brightness(0.95)" : "none",
-                        }}
-                      >
+                      <div style={{
+                        flex: 1,
+                        display: "flex",
+                        justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                      }}>
+                        <motion.div
+                          layout
+                          initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          id={`msg-bubble-${msg.id}`}
+                          className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
+                          onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                          style={{
+                            cursor: isMessageSelectionMode ? "pointer" : "default",
+                          }}
+                        >
+                        {/* Forwarded Header Block */}
+                        {fwdInfo.isForwarded && (
+                          <div 
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(235,37,37,0.08)",
+                              borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              marginBottom: "6px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: isOutgoing ? "white" : "var(--text-color, #1e293b)"
+                            }}
+                          >
+                            <CornerUpRight size={12} />
+                            <span>Переслано от {fwdInfo.fwdName}</span>
+                          </div>
+                        )}
                         {/* Reply snippet inside bubble */}
                         {msg.reply_to_id && (
                           <div 
@@ -1792,15 +1866,15 @@ export default function FeedbackPage() {
                         )}
 
                         {/* Main text content */}
-                        {msg.message && !isVoice && (
+                        {fwdInfo.cleanText && !isVoice && (
                           <motion.div 
-                            key={msg.message}
+                            key={fwdInfo.cleanText}
                             initial={{ scale: 0.97, opacity: 0.9 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.15 }}
                             className="message-text"
                             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                            dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                            dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText) }}
                           />
                         )}
 
@@ -1861,7 +1935,8 @@ export default function FeedbackPage() {
                         </div>
                       </motion.div>
                     </div>
-                  );
+                  </div>
+                );
                 });
               })()}
             </AnimatePresence>
