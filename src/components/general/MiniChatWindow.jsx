@@ -291,6 +291,7 @@ const MiniChatWindow = () => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
+  const [partnerPresence, setPartnerPresence] = useState({ isOnline: false, lastSeen: null });
 
   // Advanced Features: Pinned & Muted Chats
   const [pinnedChats, setPinnedChats] = useState([]);
@@ -508,6 +509,29 @@ const MiniChatWindow = () => {
       fetchUsers();
     }
   }, [isMiniChatOpen, currentView]);
+
+  useEffect(() => {
+    if (!isMiniChatOpen || currentView !== "chat" || !recipientId || recipientId === 0 || !token) {
+      setPartnerPresence({ isOnline: false, lastSeen: null });
+      return;
+    }
+
+    const fetchPresence = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/users/${recipientId}/presence`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPartnerPresence({
+          isOnline: res.data.is_online,
+          lastSeen: res.data.last_seen ? new Date(res.data.last_seen) : null
+        });
+      } catch (_) {}
+    };
+
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 30000);
+    return () => clearInterval(interval);
+  }, [isMiniChatOpen, currentView, recipientId, token]);
 
   // Handlers
   const handleSendMessage = async (e) => {
@@ -1356,27 +1380,11 @@ const MiniChatWindow = () => {
 
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
-  // --- Presence & Typing (declared just before return) ---
-  const [partnerPresence, setPartnerPresence] = useState({ isOnline: false, lastSeen: null });
-  const [isSelfTyping, setIsSelfTyping] = useState(false);
-  const selfTypingTimerRef = useRef(null);
-
-  useEffect(() => {
-    if (!recipientId || recipientId === 0 || !token) return;
-    const fetchPresence = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/users/${recipientId}/presence`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setPartnerPresence({ isOnline: res.data.is_online, lastSeen: res.data.last_seen ? new Date(res.data.last_seen) : null });
-      } catch (_) {}
-    };
-    fetchPresence();
-    const interval = setInterval(fetchPresence, 30000);
-    return () => clearInterval(interval);
-  }, [recipientId, token]);
-
   const formatPresence = ({ isOnline, lastSeen }) => {
+    const seenTime = lastSeen ? new Date(lastSeen).getTime() : 0;
+    lastSeen = seenTime > 0 ? lastSeen : null;
+    const lastSeenDiff = seenTime > 0 ? Math.floor((Date.now() - seenTime) / 1000) : Number.POSITIVE_INFINITY;
+    isOnline = Boolean(isOnline && lastSeenDiff < 60);
     if (isOnline) return { label: 'В сети', color: '#22c55e' };
     if (!lastSeen) return { label: '', color: 'transparent' };
     const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
@@ -1388,9 +1396,6 @@ const MiniChatWindow = () => {
 
   const handleTypingChange = (e) => {
     setNewMessage(e.target.value);
-    setIsSelfTyping(true);
-    if (selfTypingTimerRef.current) clearTimeout(selfTypingTimerRef.current);
-    selfTypingTimerRef.current = setTimeout(() => setIsSelfTyping(false), 2000);
   };
 
   return (
@@ -1411,6 +1416,7 @@ const MiniChatWindow = () => {
       {contextMenu.visible && (
         <div 
           ref={contextMenuRef}
+          className="mini-chat-context-menu"
           onMouseDown={(e) => e.stopPropagation()}
           style={{
             position: "fixed",
@@ -2004,7 +2010,7 @@ const MiniChatWindow = () => {
                     >
                       {/* Chat Selection Panel OR Search */}
                       {isChatSelectionMode ? (
-                        <div style={{
+                        <div className="mini-chat-selection-bar" style={{
                           padding: "10px 14px",
                           borderBottom: "1px solid var(--border-color, #e2e8f0)",
                           background: "var(--bg-sidebar, #f8fafc)",
@@ -2177,6 +2183,7 @@ const MiniChatWindow = () => {
                                       style={{ listStyle: "none", padding: 0, margin: 0 }}
                                     >
                                       <div
+                                        className="mini-chat-thread-row"
                                         onClick={() => {
                                           if (isChatSelectionMode) {
                                             handleSelectChat(threadId);
@@ -2201,7 +2208,7 @@ const MiniChatWindow = () => {
                                           marginBottom: "8px",
                                           border: isChatSelectionMode && selectedChatIds.includes(threadId)
                                             ? "1.5px solid #3b82f6"
-                                            : "1.5px solid #3b82f6",
+                                            : "1px solid var(--border-color, #e2e8f0)",
                                           transition: "all 0.2s",
                                           position: "relative"
                                         }}
@@ -2272,6 +2279,7 @@ const MiniChatWindow = () => {
                               const isMuted = mutedChats.includes(threadId);
                               return (
                                 <div
+                                  className="mini-chat-thread-row"
                                   key={`${activeTab}-${threadId}`}
                                   onClick={() => {
                                     if (isChatSelectionMode) {
@@ -2874,7 +2882,7 @@ const MiniChatWindow = () => {
 
                       {/* Message Selection Bar - shown when in selection mode */}
                       {isMessageSelectionMode && (
-                        <div style={{
+                        <div className="mini-chat-selection-bar" style={{
                           padding: "10px 14px",
                           background: "var(--bg-sidebar, #ffffff)",
                           borderTop: "2px solid #3b82f6",
@@ -2991,16 +2999,6 @@ const MiniChatWindow = () => {
                         ) : (
                           /* Standard form */
                           <>
-                            {isSelfTyping && (
-                              <div style={{ padding: "0 4px 4px", display: "flex", alignItems: "center", gap: "5px" }}>
-                                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-                                  {[0, 0.18, 0.36].map((delay, i) => (
-                                    <span key={i} style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#94a3b8", display: "inline-block", animation: "typingDot 1.2s ease-in-out infinite", animationDelay: `${delay}s` }} />
-                                  ))}
-                                </div>
-                                <span style={{ fontSize: "10px", color: "#94a3b8", fontStyle: "italic" }}>печатаете...</span>
-                              </div>
-                            )}
                           <form
                             onSubmit={handleSendMessage}
                             style={{
@@ -3193,6 +3191,7 @@ const MiniChatWindow = () => {
                             const name = user.full_name || user.username || user.email;
                             return (
                               <div
+                                className="mini-chat-user-row"
                                 key={user.id}
                                 onClick={() => {
                                   setChatType("direct");
@@ -3536,6 +3535,41 @@ const MiniChatWindow = () => {
       )}
 
       <style>{`
+        .mini-chat-selection-bar {
+          min-height: 52px;
+          box-sizing: border-box;
+          flex-shrink: 0;
+          overflow: visible;
+        }
+        .mini-chat-selection-bar button {
+          width: 32px;
+          min-width: 32px;
+          height: 32px;
+          min-height: 32px;
+          padding: 0 !important;
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+        .mini-chat-context-menu > button {
+          min-height: 36px;
+          box-sizing: border-box;
+          flex-shrink: 0;
+          overflow: visible;
+        }
+        .mini-chat-thread-row,
+        .mini-chat-user-row,
+        .mini-chat-thread-card {
+          min-height: 58px;
+          box-sizing: border-box;
+          overflow: visible;
+        }
+        .mini-chat-thread-card button {
+          min-height: 36px;
+          box-sizing: border-box;
+        }
         @keyframes pulse {
           0% { opacity: 0.4; }
           50% { opacity: 1; }
