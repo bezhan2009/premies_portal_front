@@ -10,6 +10,7 @@ import { Helmet } from "react-helmet";
 import { motion, AnimatePresence } from "framer-motion";
 import useThemeStore from "../../store/useThemeStore";
 import ImageModal from "../../components/modal/ImageModal";
+import PasteFileModal from "../../components/modal/PasteFileModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -65,7 +66,7 @@ const formatMessageText = (text) => {
     for (const char of emoji) {
       codePoints.push(char.codePointAt(0).toString(16));
     }
-    const hex = codePoints.join("-");
+    const hex = codePoints.filter(c => c !== "fe0f").join("-");
     const src = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${hex}.png`;
     return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
   });
@@ -238,6 +239,8 @@ export default function FeedbackPage() {
   const [recipientId, setRecipientId] = useState(0);
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [pasteModalOpen, setPasteModalOpen] = useState(false);
+  const [pastedFile, setPastedFile] = useState(null);
 
   const textareaRef = useRef(null);
 
@@ -467,6 +470,48 @@ export default function FeedbackPage() {
       if (textareaRef.current) {
         textareaRef.current.style.height = "36px";
       }
+    }
+  };
+
+  const handlePaste = (e) => {
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      setPastedFile(e.clipboardData.files[0]);
+      setPasteModalOpen(true);
+    }
+  };
+
+  const handleSendPastedFile = async (readyFile, fileMessage) => {
+    setPasteModalOpen(false);
+    if (!readyFile) return;
+    setSending(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", readyFile);
+      const uploadRes = await axios.post(`${API_URL}/api/feedback/upload`, formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+      });
+      const attachmentUrl = uploadRes.data.url;
+
+      const payload = {
+        message: fileMessage.trim(),
+        attachment_url: attachmentUrl,
+        recipient_id: recipientId,
+        reply_to_id: replyingTo ? replyingTo.id : null
+      };
+
+      await axios.post(`${API_URL}/api/feedback`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReplyingTo(null);
+      fetchMessages();
+    } catch (err) {
+      console.error("Error sending pasted file:", err);
+      setErrorMsg("Не удалось отправить файл. Попробуйте еще раз.");
+    } finally {
+      setSending(false);
+      setPastedFile(null);
     }
   };
 
@@ -742,6 +787,12 @@ export default function FeedbackPage() {
         imageUrl={selectedImage} 
         onClose={() => setSelectedImage(null)} 
       />
+      <PasteFileModal
+        isOpen={pasteModalOpen}
+        file={pastedFile}
+        onClose={() => { setPasteModalOpen(false); setPastedFile(null); }}
+        onSend={handleSendPastedFile}
+      />
 
       {/* FLOAT CONTEXT MENU */}
       <AnimatePresence>
@@ -778,6 +829,7 @@ export default function FeedbackPage() {
                 borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexWrap: "wrap",
                 background: "rgba(248, 250, 252, 0.5)",
                 borderRadius: "8px 8px 0 0"
               }}>
@@ -1206,138 +1258,216 @@ export default function FeedbackPage() {
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {filteredMessages.map((msg) => {
-                const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
-                const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+              {(() => {
+                const groups = [];
+                let currentAlbum = null;
+                
+                filteredMessages.forEach((msg) => {
+                  const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
+                  const hasText = !!msg.message;
+                  
+                  if (isImg && !hasText && !msg.reply_to_id) {
+                    if (!currentAlbum) {
+                      currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
+                    } else {
+                      const diff = new Date(msg.created_at) - new Date(currentAlbum.messages[currentAlbum.messages.length - 1].created_at);
+                      if (msg.user_id === currentAlbum.user_id && msg.is_operator === currentAlbum.is_operator && diff < 60000) {
+                        currentAlbum.messages.push(msg);
+                      } else {
+                        groups.push(currentAlbum);
+                        currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
+                      }
+                    }
+                  } else {
+                    if (currentAlbum) {
+                      groups.push(currentAlbum);
+                      currentAlbum = null;
+                    }
+                    groups.push({ type: 'single', ...msg });
+                  }
+                });
+                if (currentAlbum) groups.push(currentAlbum);
 
-                return (
-                  <motion.div
-                    key={msg.id}
-                    layout
-                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                    transition={{ duration: 0.22, ease: "easeOut" }}
-                    id={`msg-bubble-${msg.id}`}
-                    className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
-                    onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                  >
-                    {/* Reply snippet inside bubble */}
-                    {msg.reply_to_id && (
-                      <div 
-                        onClick={() => scrollToMessage(msg.reply_to_id)}
+                return groups.map(group => {
+                  if (group.type === 'album') {
+                    const isOutgoing = group.user_id === currentUserId && !group.is_operator;
+                    return (
+                      <motion.div
+                        key={group.id}
+                        layout
+                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
                         style={{
-                          padding: "6px 8px",
-                          background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
-                          borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
-                          fontSize: "11px",
-                          borderRadius: "4px",
-                          marginBottom: "6px",
-                          cursor: "pointer",
-                          opacity: 0.95
+                          alignSelf: isOutgoing ? "flex-end" : "flex-start",
+                          maxWidth: "80%",
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "4px",
+                          justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                          marginBottom: "8px"
                         }}
                       >
-                        <span style={{ fontWeight: 600 }}>
-                          {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
-                        </span>
+                        {group.messages.map(msg => (
+                          <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                            <img src={`${API_URL}${msg.attachment_url}`} style={{ width: group.messages.length > 1 ? "140px" : "200px", height: group.messages.length > 1 ? "140px" : "auto", objectFit: "cover", borderRadius: "12px", cursor: "pointer", border: isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }} alt="img" onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)} />
+                            <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                              <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
+                              {isOutgoing && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </motion.div>
+                    );
+                  }
+
+                  const msg = group;
+                  const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
+                  const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      layout
+                      initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      id={`msg-bubble-${msg.id}`}
+                      className={`message-bubble ${isOutgoing ? "message-outgoing" : "message-incoming"}`}
+                      onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                    >
+                      {/* Reply snippet inside bubble */}
+                      {msg.reply_to_id && (
                         <div 
-                          style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                          dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
-                        />
-                      </div>
-                    )}
-
-                    {msg.message && !isVoice && (
-                      <motion.div 
-                        key={msg.message}
-                        initial={{ scale: 0.97, opacity: 0.9 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.15 }}
-                        className="message-text" 
-                        style={{ whiteSpace: "pre-wrap" }}
-                        dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
-                      />
-                    )}
-                    
-                    {isVoice && (
-                      <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
-                    )}
-
-                    {msg.attachment_url && !isVoice && (
-                      <div className="message-attachment">
-                        {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                          <img 
-                            src={`${API_URL}${msg.attachment_url}`} 
-                            alt="attachment" 
-                            style={{ cursor: "pointer" }}
-                            onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                          onClick={() => scrollToMessage(msg.reply_to_id)}
+                          style={{
+                            padding: "6px 8px",
+                            background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                            borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                            fontSize: "11px",
+                            borderRadius: "4px",
+                            marginBottom: "6px",
+                            cursor: "pointer",
+                            opacity: 0.95
+                          }}
+                        >
+                          <span style={{ fontWeight: 600 }}>
+                            {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                          </span>
+                          <div 
+                            style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                            dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
                           />
-                        ) : (
-                          <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{color: "inherit", textDecoration: "underline"}}>
-                            Скачать файл
-                          </a>
+                        </div>
+                      )}
+
+                      {/* Voice Audio */}
+                      {isVoice && (
+                        <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
+                      )}
+
+                      {/* Attachment file before message */}
+                      {msg.attachment_url && !isVoice && (
+                        <div style={{ marginBottom: msg.message ? "8px" : "0", marginTop: msg.reply_to_id ? "8px" : "0" }}>
+                          {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                            <img 
+                              src={`${API_URL}${msg.attachment_url}`} 
+                              style={{ maxWidth: "100%", borderRadius: "8px", cursor: "pointer" }} 
+                              alt="img"
+                              onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
+                            />
+                          ) : (
+                            <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", color: "inherit", background: isOutgoing ? "rgba(255,255,255,0.15)" : "var(--bg-color, #f1f5f9)", padding: "8px 12px", borderRadius: "10px", border: isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity=0.8} onMouseLeave={e => e.currentTarget.style.opacity=1}>
+                              <div style={{ width: "36px", height: "36px", flexShrink: 0, background: isOutgoing ? "rgba(255,255,255,0.2)" : "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <img src="/src/assets/file.png" alt="file" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+                              </div>
+                              <div style={{ overflow: "hidden", flex: 1 }}>
+                                <div style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isOutgoing ? "white" : "var(--text-color, #1e293b)" }}>
+                                  {msg.attachment_url.split('/').pop() || "Документ"}
+                                </div>
+                                <div style={{ fontSize: "11px", color: isOutgoing ? "rgba(255,255,255,0.8)" : "var(--text-secondary, #64748b)", marginTop: "2px" }}>
+                                  Файл
+                                </div>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Main text content */}
+                      {msg.message && !isVoice && (
+                        <motion.div 
+                          key={msg.message}
+                          initial={{ scale: 0.97, opacity: 0.9 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.15 }}
+                          className="message-text"
+                          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                          dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                        />
+                      )}
+
+                      {/* Reactions list */}
+                      {msg.reactions && (
+                        <div style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "4px",
+                          marginTop: "6px",
+                          marginBottom: "2px"
+                        }}>
+                          {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
+                            <button
+                              key={emoji}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReact(msg.id, emoji);
+                              }}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                background: isOutgoing 
+                                  ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
+                                  : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
+                                border: "none",
+                                borderRadius: "12px",
+                                padding: "2px 6px",
+                                fontSize: "11px",
+                                color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                transition: "all 0.15s"
+                              }}
+                            >
+                              <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                                <img 
+                                  src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                                  alt={emoji} 
+                                  style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                                />
+                              </span>
+                              {count > 1 && <span>{count}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="message-time">
+                        {formatTime(msg.created_at)}
+                        {isOutgoing && (
+                          <span style={{ marginLeft: 4, display: 'inline-flex', verticalAlign: 'middle' }}>
+                            {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
+                          </span>
                         )}
                       </div>
-                    )}
-
-                    {/* Reactions list */}
-                    {msg.reactions && (
-                      <div style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        marginTop: "6px",
-                        marginBottom: "2px"
-                      }}>
-                        {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
-                          <button
-                            key={emoji}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReact(msg.id, emoji);
-                            }}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              background: isOutgoing 
-                                ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
-                                : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
-                              border: "none",
-                              borderRadius: "12px",
-                              padding: "2px 6px",
-                              fontSize: "11px",
-                              color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
-                              cursor: "pointer",
-                              fontWeight: 600,
-                              transition: "all 0.15s"
-                            }}
-                          >
-                            <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-                              <img 
-                                src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
-                                alt={emoji} 
-                                style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
-                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
-                              />
-                            </span>
-                            {count > 1 && <span>{count}</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="message-time">
-                      {formatTime(msg.created_at)}
-                      {isOutgoing && (
-                        <span style={{ marginLeft: 4, display: 'inline-flex', verticalAlign: 'middle' }}>
-                          {msg.is_read ? <CheckCheck size={14} color="#4ade80" /> : <Check size={14} opacity={0.7} />}
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    </motion.div>
+                  );
+                });
+              })()}
             </AnimatePresence>
           )}
           <div ref={messagesEndRef} />
@@ -1427,7 +1557,13 @@ export default function FeedbackPage() {
               </button>
               <label className="icon-btn">
                 <Paperclip size={22} />
-                <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
+                <input type="file" style={{ display: "none" }} onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setPastedFile(e.target.files[0]);
+                    setPasteModalOpen(true);
+                    e.target.value = null; // reset input
+                  }
+                }} />
               </label>
               
               <textarea
@@ -1437,6 +1573,7 @@ export default function FeedbackPage() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 disabled={sending}
                 style={{
                   resize: "none",
