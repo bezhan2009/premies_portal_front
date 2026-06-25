@@ -4,7 +4,7 @@ import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
   Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, PlusCircle,
-  CheckSquare, X, CheckCircle2, CornerUpRight, Copy
+  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
