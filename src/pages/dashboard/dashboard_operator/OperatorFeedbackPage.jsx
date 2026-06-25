@@ -1465,6 +1465,43 @@ export default function OperatorFeedbackPage() {
 
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
+  // --- Presence & Typing ---
+  const [partnerPresence, setPartnerPresence] = useState({ isOnline: false, lastSeen: null });
+  const [isSelfTyping, setIsSelfTyping] = useState(false);
+  const selfTypingTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!activeThreadId || !token) return;
+    const fetchPresence = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/users/${activeThreadId}/presence`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPartnerPresence({ isOnline: res.data.is_online, lastSeen: res.data.last_seen ? new Date(res.data.last_seen) : null });
+      } catch (_) {}
+    };
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 30000);
+    return () => clearInterval(interval);
+  }, [activeThreadId, token]);
+
+  const formatPresence = ({ isOnline, lastSeen }) => {
+    if (isOnline) return { label: 'В сети', color: '#22c55e' };
+    if (!lastSeen) return { label: '', color: 'transparent' };
+    const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
+    if (diff < 60) return { label: 'Был(а) недавно', color: '#94a3b8' };
+    if (diff < 3600) return { label: `Был(а) ${Math.floor(diff / 60)} мин. назад`, color: '#94a3b8' };
+    if (diff < 86400) return { label: `Был(а) ${Math.floor(diff / 3600)} ч. назад`, color: '#94a3b8' };
+    return { label: `Был(а) ${new Date(lastSeen).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`, color: '#94a3b8' };
+  };
+
+  const handleTypingChange = (e) => {
+    setNewMessage(e.target.value);
+    setIsSelfTyping(true);
+    if (selfTypingTimerRef.current) clearTimeout(selfTypingTimerRef.current);
+    selfTypingTimerRef.current = setTimeout(() => setIsSelfTyping(false), 2000);
+  };
+
   return (
     <div className="feedback-container" onMouseDown={handleGlobalRipple} style={{ fontFamily: EMOJI_FONT_STACK }}>
       <Helmet><title>Панель обратной связи</title></Helmet>
@@ -2458,29 +2495,44 @@ export default function OperatorFeedbackPage() {
         }
 
         .chat-input-bar {
-          padding: 16px;
-          background: var(--bg-sidebar);
-          border-top: 1px solid var(--border-color);
+          padding: 8px 16px 16px 16px;
+          background: transparent;
           position: relative;
         }
         .chat-input-form {
           display: flex;
-          gap: 10px;
-          align-items: center;
+          gap: 8px;
+          align-items: flex-end;
+          background: var(--bg-sidebar, #ffffff);
+          border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+          border-radius: 26px;
+          padding: 6px 10px 6px 14px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .chat-input-form:focus-within {
+          border-color: var(--primary-color, #eb2525);
+          box-shadow: 0 4px 20px rgba(235,37,37,0.12);
         }
         .chat-input-form input, .chat-input-form textarea {
           flex: 1;
-          background: var(--bg-color);
-          border: 1px solid var(--border-input);
-          border-radius: 24px;
-          padding: 10px 18px;
+          background: transparent !important;
+          border: none !important;
+          padding: 6px 0 !important;
           color: var(--text-color);
-          font-size: 14.5px;
-          outline: none;
-          font-family: ${EMOJI_FONT_STACK} !important;
+          font-size: 15px;
+          outline: none !important;
+          font-family: inherit !important;
+          resize: none;
+          max-height: 120px;
+          line-height: 1.4;
+          overflowY: auto;
+          box-shadow: none !important;
         }
         .chat-input-form input:focus, .chat-input-form textarea:focus {
-          border-color: var(--primary-color);
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
         }
         .icon-btn {
           background: none;
@@ -2491,22 +2543,28 @@ export default function OperatorFeedbackPage() {
           align-items: center;
           justify-content: center;
           transition: color 0.2s;
+          height: 34px;
+          width: 34px;
+          flex-shrink: 0;
+          margin-bottom: 2px;
         }
         .icon-btn:hover {
           color: var(--primary-color);
         }
         .chat-send-btn {
-          background: var(--text-color, #0f172a);
+          background: #eb2525;
           color: white;
           border: none;
-          width: 38px;
-          height: 38px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s;
+          flex-shrink: 0;
+          margin-bottom: 2px;
         }
         
         .chat-empty-state {
@@ -2709,6 +2767,10 @@ export default function OperatorFeedbackPage() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
       `}</style>
 
       {/* Left Sidebar */}
@@ -2858,7 +2920,15 @@ export default function OperatorFeedbackPage() {
                 <button className="btn-back-list" onClick={() => setMobileShowChat(false)}><ArrowLeft size={20} /></button>
                 <div className="chat-title-info">
                   <h3>{activeThreadName}</h3>
-                  <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
+                    {(() => { const p = formatPresence(partnerPresence); return p.label ? (
+                      <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: p.color, display: "inline-block" }} />
+                        {p.label}
+                      </span>
+                    ) : null; })()}
+                  </div>
                 </div>
               </div>
 
@@ -3010,41 +3080,81 @@ export default function OperatorFeedbackPage() {
                               }}>
                                 {group.messages.map(msg => {
                                   const isSelected = selectedMessageIds.includes(msg.id);
+                                  const imgReactionGroups = getReactionGroups(msg.reactions, currentUserId);
                                   return (
-                                    <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => { e.stopPropagation(); triggerContextMenu(e, msg, "message"); }} style={{ position: "relative" }}>
-                                      <img 
-                                        src={`${API_URL}${msg.attachment_url}`} 
-                                        style={{ 
-                                          width: group.messages.length > 1 ? "140px" : "200px", 
-                                          height: group.messages.length > 1 ? "140px" : "auto", 
-                                          objectFit: "cover", 
-                                          borderRadius: "12px", 
-                                          cursor: "pointer", 
-                                          border: isSelected ? "2px solid #3b82f6" : (isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
-                                          boxShadow: "0 2px 5px rgba(0,0,0,0.04)" 
-                                        }} 
-                                        alt="img" 
-                                        onClick={() => {
-                                          if (isMessageSelectionMode) {
-                                            handleSelectMessage(msg.id);
-                                          } else {
-                                            setSelectedImage(`${API_URL}${msg.attachment_url}`);
-                                          }
-                                        }} 
-                                      />
-                                      {isMessageSelectionMode && (
-                                        <div onClick={() => handleSelectMessage(msg.id)} style={{ position: "absolute", top: "6px", left: "6px", zIndex: 10, cursor: "pointer" }}>
-                                          {isSelected ? (
-                                            <CheckCircle2 size={18} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
-                                          ) : (
-                                            <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", background: "rgba(0,0,0,0.2)" }} />
-                                          )}
+                                    <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isOutgoing ? "flex-end" : "flex-start" }}>
+                                      <div id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => { e.stopPropagation(); triggerContextMenu(e, msg, "message"); }} style={{ position: "relative" }}>
+                                        <img 
+                                          src={`${API_URL}${msg.attachment_url}`} 
+                                          style={{ 
+                                            width: group.messages.length > 1 ? "140px" : "200px", 
+                                            height: group.messages.length > 1 ? "140px" : "auto", 
+                                            objectFit: "cover", 
+                                            borderRadius: "12px", 
+                                            cursor: "pointer", 
+                                            border: isSelected ? "2px solid #3b82f6" : (isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
+                                            boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
+                                            display: "block"
+                                          }} 
+                                          alt="img" 
+                                          onClick={() => {
+                                            if (isMessageSelectionMode) {
+                                              handleSelectMessage(msg.id);
+                                            } else {
+                                              setSelectedImage(`${API_URL}${msg.attachment_url}`);
+                                            }
+                                          }} 
+                                        />
+                                        {isMessageSelectionMode && (
+                                          <div onClick={() => handleSelectMessage(msg.id)} style={{ position: "absolute", top: "6px", left: "6px", zIndex: 10, cursor: "pointer" }}>
+                                            {isSelected ? (
+                                              <CheckCircle2 size={18} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                            ) : (
+                                              <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", background: "rgba(0,0,0,0.2)" }} />
+                                            )}
+                                          </div>
+                                        )}
+                                        <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                          <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
+                                          {isOutgoing && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                        </div>
+                                      </div>
+                                      {/* Reactions strip for album image */}
+                                      {imgReactionGroups.length > 0 && (
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "4px", justifyContent: isOutgoing ? "flex-end" : "flex-start" }}>
+                                          {imgReactionGroups.map(({ emoji, count, hasMyReaction }) => (
+                                            <button
+                                              key={emoji}
+                                              onClick={(e) => { e.stopPropagation(); handleReact(msg.id, emoji); }}
+                                              style={{
+                                                background: isOutgoing
+                                                  ? (hasMyReaction ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)")
+                                                  : (hasMyReaction ? "rgba(235,37,37,0.08)" : "rgba(0,0,0,0.04)"),
+                                                border: hasMyReaction
+                                                  ? (isOutgoing ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(235,37,37,0.3)")
+                                                  : "1px solid transparent",
+                                                borderRadius: "12px",
+                                                padding: "2px 7px",
+                                                fontSize: "11px",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "3px",
+                                                cursor: "pointer",
+                                                color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
+                                                fontWeight: 600,
+                                              }}
+                                            >
+                                              <img
+                                                src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`}
+                                                alt={emoji}
+                                                style={{ width: "14px", height: "14px", verticalAlign: "middle" }}
+                                                onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.outerHTML = emoji; }}
+                                              />
+                                              {count > 1 && <span>{count}</span>}
+                                            </button>
+                                          ))}
                                         </div>
                                       )}
-                                      <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
-                                        <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
-                                        {isOutgoing && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
-                                      </div>
                                     </div>
                                   );
                                 })}
@@ -3503,58 +3613,89 @@ export default function OperatorFeedbackPage() {
                     </div>
                   ) : (
                     /* Standard input bar */
-                    <form onSubmit={handleSendMessage} className="chat-input-form">
-                      <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                        <Smile size={22} />
-                      </button>
-                      <label className="icon-btn">
-                        <Paperclip size={22} />
-                        <input type="file" style={{ display: "none" }} onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            setPastedFile(e.target.files[0]);
-                            setPasteModalOpen(true);
-                            e.target.value = null; // reset input
-                          }
-                        }} />
-                      </label>
-                      <textarea
-                        ref={textareaRef}
-                        placeholder="Напишите ответ..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onPaste={handlePaste}
-                        disabled={sending}
-                        style={{
-                          flex: 1,
-                          background: "var(--bg-color)",
-                          border: "1px solid var(--border-color)",
-                          borderRadius: "18px",
-                          padding: "8px 16px",
-                          color: "var(--text-color)",
-                          fontSize: "14.5px",
-                          outline: "none",
-                          fontFamily: EMOJI_FONT_STACK,
-                          resize: "none",
-                          height: "36px",
-                          minHeight: "36px",
-                          maxHeight: "120px",
-                          lineHeight: "1.4",
-                          overflowY: "auto"
-                        }}
-                      />
-
-                      {/* Voice mic or ChatGPT Send Button */}
-                      {!isSendActive ? (
-                        <button type="button" className="icon-btn" onClick={startRecording}>
-                          <Mic size={22} />
-                        </button>
-                      ) : (
-                        <button type="submit" className="chat-send-btn" disabled={sending}>
-                          <ArrowUp size={18} strokeWidth={2.5} />
-                        </button>
+                    <>
+                      {isSelfTyping && (
+                        <div style={{ padding: "0 4px 6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                            {[0, 0.18, 0.36].map((delay, i) => (
+                              <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#94a3b8", display: "inline-block", animation: "typingDot 1.2s ease-in-out infinite", animationDelay: `${delay}s` }} />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: "11px", color: "#94a3b8", fontStyle: "italic" }}>печатаете...</span>
+                        </div>
                       )}
-                    </form>
+                      <form onSubmit={handleSendMessage} className="chat-input-form">
+                        <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                          <Smile size={22} />
+                        </button>
+                        <label className="icon-btn">
+                          <Paperclip size={22} />
+                          <input type="file" style={{ display: "none" }} onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              setPastedFile(e.target.files[0]);
+                              setPasteModalOpen(true);
+                              e.target.value = null; // reset input
+                            }
+                          }} />
+                        </label>
+                         <textarea
+                          ref={textareaRef}
+                          placeholder="Напишите ответ..."
+                          value={newMessage}
+                          onChange={handleTypingChange}
+                          onKeyDown={handleKeyDown}
+                          onPaste={handlePaste}
+                          disabled={sending}
+                          style={{
+                            flex: 1,
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-color)",
+                            fontSize: "15px",
+                            outline: "none",
+                            fontFamily: EMOJI_FONT_STACK,
+                            resize: "none",
+                            height: "36px",
+                            minHeight: "36px",
+                            maxHeight: "120px",
+                            lineHeight: "1.4",
+                            overflowY: "auto",
+                            padding: "6px 4px 6px 0",
+                            boxShadow: "none"
+                          }}
+                        />
+
+                        <AnimatePresence mode="wait">
+                          {!isSendActive ? (
+                            <motion.button
+                              key="mic-btn"
+                              type="button"
+                              className="icon-btn"
+                              onClick={startRecording}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <Mic size={22} />
+                            </motion.button>
+                          ) : (
+                            <motion.button
+                              key="send-btn"
+                              type="submit"
+                              className="chat-send-btn"
+                              disabled={sending}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <ArrowUp size={18} strokeWidth={2.5} />
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </form>
+                    </>
                   )}
                 </>
               )}

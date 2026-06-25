@@ -1356,6 +1356,43 @@ const MiniChatWindow = () => {
 
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
+  // --- Presence & Typing (declared just before return) ---
+  const [partnerPresence, setPartnerPresence] = useState({ isOnline: false, lastSeen: null });
+  const [isSelfTyping, setIsSelfTyping] = useState(false);
+  const selfTypingTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!recipientId || recipientId === 0 || !token) return;
+    const fetchPresence = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/users/${recipientId}/presence`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPartnerPresence({ isOnline: res.data.is_online, lastSeen: res.data.last_seen ? new Date(res.data.last_seen) : null });
+      } catch (_) {}
+    };
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 30000);
+    return () => clearInterval(interval);
+  }, [recipientId, token]);
+
+  const formatPresence = ({ isOnline, lastSeen }) => {
+    if (isOnline) return { label: 'В сети', color: '#22c55e' };
+    if (!lastSeen) return { label: '', color: 'transparent' };
+    const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
+    if (diff < 60) return { label: 'Был(а) недавно', color: '#94a3b8' };
+    if (diff < 3600) return { label: `Был(а) ${Math.floor(diff / 60)} мин. назад`, color: '#94a3b8' };
+    if (diff < 86400) return { label: `Был(а) ${Math.floor(diff / 3600)} ч. назад`, color: '#94a3b8' };
+    return { label: `Был(а) ${new Date(lastSeen).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`, color: '#94a3b8' };
+  };
+
+  const handleTypingChange = (e) => {
+    setNewMessage(e.target.value);
+    setIsSelfTyping(true);
+    if (selfTypingTimerRef.current) clearTimeout(selfTypingTimerRef.current);
+    selfTypingTimerRef.current = setTimeout(() => setIsSelfTyping(false), 2000);
+  };
+
   return (
     <>
       <ImageModal 
@@ -1870,9 +1907,17 @@ const MiniChatWindow = () => {
                       <ArrowLeft size={16} />
                     </button>
                   )}
-                  <span style={{ fontWeight: 650, fontSize: "15px", color: "var(--text-color, #1e293b)" }}>
-                    {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : "Актив чат"}
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span style={{ fontWeight: 650, fontSize: "15px", color: "var(--text-color, #1e293b)" }}>
+                      {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : "Актив чат"}
+                    </span>
+                    {currentView === "chat" && (() => { const p = formatPresence(partnerPresence); return p.label ? (
+                      <span style={{ fontSize: "10px", color: p.color, display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: p.color, display: "inline-block", flexShrink: 0 }} />
+                        {p.label}
+                      </span>
+                    ) : null; })()}
+                  </div>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -2471,32 +2516,71 @@ const MiniChatWindow = () => {
                                       >
                                         {group.messages.map(msg => {
                                           const isSelected = selectedMessageIds.includes(msg.id);
+                                          const imgReactionGroups = getReactionGroups(msg.reactions, currentUserId);
                                           return (
-                                            <div key={msg.id} id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
-                                              <img 
-                                                src={`${API_URL}${msg.attachment_url}`} 
-                                                style={{ 
-                                                  width: group.messages.length > 1 ? "140px" : "200px", 
-                                                  height: group.messages.length > 1 ? "140px" : "auto", 
-                                                  objectFit: "cover", 
-                                                  borderRadius: "12px", 
-                                                  cursor: "pointer", 
-                                                  border: isSelected ? "2px solid #3b82f6" : (isOut ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
-                                                  boxShadow: "0 2px 5px rgba(0,0,0,0.04)" 
-                                                }} 
-                                                alt="img" 
-                                                onClick={() => {
-                                                  if (isMessageSelectionMode) {
-                                                    handleSelectMessage(msg.id);
-                                                  } else {
-                                                    setSelectedImage(`${API_URL}${msg.attachment_url}`);
-                                                  }
-                                                }} 
-                                              />
-                                              <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
-                                                <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
-                                                {isOut && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                            <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isOut ? "flex-end" : "flex-start" }}>
+                                              <div id={`msg-bubble-${msg.id}`} data-msg-bubble="true" onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                                                <img 
+                                                  src={`${API_URL}${msg.attachment_url}`} 
+                                                  style={{ 
+                                                    width: group.messages.length > 1 ? "140px" : "200px", 
+                                                    height: group.messages.length > 1 ? "140px" : "auto", 
+                                                    objectFit: "cover", 
+                                                    borderRadius: "12px", 
+                                                    cursor: "pointer", 
+                                                    border: isSelected ? "2px solid #3b82f6" : (isOut ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
+                                                    boxShadow: "0 2px 5px rgba(0,0,0,0.04)" 
+                                                  }} 
+                                                  alt="img" 
+                                                  onClick={() => {
+                                                    if (isMessageSelectionMode) {
+                                                      handleSelectMessage(msg.id);
+                                                    } else {
+                                                      setSelectedImage(`${API_URL}${msg.attachment_url}`);
+                                                    }
+                                                  }} 
+                                                />
+                                                <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                                  <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
+                                                  {isOut && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                                </div>
                                               </div>
+                                              {/* Reactions strip for album image */}
+                                              {imgReactionGroups.length > 0 && (
+                                                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "4px", justifyContent: isOut ? "flex-end" : "flex-start" }}>
+                                                  {imgReactionGroups.map(({ emoji, count, hasMyReaction }) => (
+                                                    <button
+                                                      key={emoji}
+                                                      onClick={(e) => { e.stopPropagation(); handleReact(msg.id, emoji); }}
+                                                      style={{
+                                                        background: isOut
+                                                          ? (hasMyReaction ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)")
+                                                          : (hasMyReaction ? "rgba(235,37,37,0.08)" : "rgba(0,0,0,0.04)"),
+                                                        border: hasMyReaction
+                                                          ? (isOut ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(235,37,37,0.3)")
+                                                          : "1px solid transparent",
+                                                        borderRadius: "12px",
+                                                        padding: "2px 7px",
+                                                        fontSize: "11px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "3px",
+                                                        cursor: "pointer",
+                                                        color: isOut ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
+                                                        fontWeight: 600,
+                                                      }}
+                                                    >
+                                                      <img
+                                                        src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`}
+                                                        alt={emoji}
+                                                        style={{ width: "14px", height: "14px", verticalAlign: "middle" }}
+                                                        onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.outerHTML = emoji; }}
+                                                      />
+                                                      {count > 1 && <span>{count}</span>}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              )}
                                             </div>
                                           );
                                         })}
@@ -2838,9 +2922,8 @@ const MiniChatWindow = () => {
                       {/* Input Footer */}
                       {!isMessageSelectionMode && (
                       <div style={{
-                        padding: "12px",
-                        background: "var(--bg-sidebar, #ffffff)",
-                        borderTop: "1px solid var(--border-color, #e2e8f0)",
+                        padding: "6px 12px 12px 12px",
+                        background: "transparent",
                         position: "relative"
                       }}>
                         {/* Reply Preview */}
@@ -2907,11 +2990,62 @@ const MiniChatWindow = () => {
                           </div>
                         ) : (
                           /* Standard form */
-                          <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, gray)" }}>
+                          <>
+                            {isSelfTyping && (
+                              <div style={{ padding: "0 4px 4px", display: "flex", alignItems: "center", gap: "5px" }}>
+                                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                                  {[0, 0.18, 0.36].map((delay, i) => (
+                                    <span key={i} style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#94a3b8", display: "inline-block", animation: "typingDot 1.2s ease-in-out infinite", animationDelay: `${delay}s` }} />
+                                  ))}
+                                </div>
+                                <span style={{ fontSize: "10px", color: "#94a3b8", fontStyle: "italic" }}>печатаете...</span>
+                              </div>
+                            )}
+                          <form
+                            onSubmit={handleSendMessage}
+                            style={{
+                              display: "flex",
+                              gap: "6px",
+                              alignItems: "flex-end",
+                              background: "var(--bg-sidebar, #ffffff)",
+                              border: "1px solid var(--border-color, #e2e8f0)",
+                              borderRadius: "20px",
+                              padding: "4px 6px 4px 10px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "var(--text-secondary, gray)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "28px",
+                                height: "28px",
+                                flexShrink: 0,
+                                marginBottom: "1px"
+                              }}
+                            >
                               <Smile size={18} />
                             </button>
-                            <label style={{ cursor: "pointer", color: "var(--text-secondary, gray)", display: "flex", alignItems: "center" }}>
+                            <label
+                              style={{
+                                cursor: "pointer",
+                                color: "var(--text-secondary, gray)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "28px",
+                                height: "28px",
+                                flexShrink: 0,
+                                marginBottom: "1px"
+                              }}
+                            >
                               <Paperclip size={18} />
                               <input type="file" style={{ display: "none" }} onChange={(e) => {
                                 if (e.target.files && e.target.files.length > 0) {
@@ -2925,57 +3059,86 @@ const MiniChatWindow = () => {
                             <textarea
                               ref={textareaRef}
                               value={newMessage}
-                              onChange={(e) => setNewMessage(e.target.value)}
+                              onChange={handleTypingChange}
                               onKeyDown={handleKeyDown}
                               onPaste={handlePaste}
                               placeholder="Сообщение..."
                               style={{
                                 flex: 1,
-                                padding: "8px 12px",
-                                borderRadius: "14px",
-                                border: "1px solid var(--border-color, #cbd5e1)",
-                                background: "var(--bg-color, #f8fafc)",
+                                padding: "6px 0",
+                                background: "transparent",
+                                border: "none",
                                 color: "var(--text-color, #0f172a)",
                                 outline: "none",
                                 fontSize: "13px",
                                 fontFamily: EMOJI_FONT_STACK,
                                 resize: "none",
-                                height: "36px",
-                                minHeight: "36px",
-                                maxHeight: "120px",
+                                height: "28px",
+                                minHeight: "28px",
+                                maxHeight: "100px",
                                 lineHeight: "1.4",
-                                overflowY: "auto"
+                                overflowY: "auto",
+                                boxShadow: "none"
                               }}
                             />
 
-                            {/* Voice mic button when input is empty */}
-                            {!isSendActive ? (
-                              <button type="button" onClick={startRecording} style={{ background: "none", border: "none", color: "var(--text-secondary, gray)", cursor: "pointer" }}>
-                                <Mic size={18} />
-                              </button>
-                            ) : (
-                              /* ChatGPT Send Button style */
-                              <button 
-                                type="submit" 
-                                disabled={sending}
-                                style={{
-                                  background: "var(--text-color, #0f172a)",
-                                  color: "white",
-                                  border: "none",
-                                  width: "32px",
-                                  height: "32px",
-                                  borderRadius: "50%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s"
-                                }}
-                              >
-                                <ArrowUp size={16} strokeWidth={2.5} />
-                              </button>
-                            )}
+                            <AnimatePresence mode="wait">
+                              {!isSendActive ? (
+                                <motion.button
+                                  key="mic-btn"
+                                  type="button"
+                                  onClick={startRecording}
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.8, opacity: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "var(--text-secondary, gray)",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "28px",
+                                    height: "28px",
+                                    flexShrink: 0,
+                                    marginBottom: "1px"
+                                  }}
+                                >
+                                  <Mic size={18} />
+                                </motion.button>
+                              ) : (
+                                <motion.button 
+                                  key="send-btn"
+                                  type="submit" 
+                                  disabled={sending}
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.8, opacity: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                  style={{
+                                    background: "#eb2525",
+                                    color: "white",
+                                    border: "none",
+                                    width: "28px",
+                                    height: "28px",
+                                    borderRadius: "50%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                    flexShrink: 0,
+                                    marginBottom: "1px"
+                                  }}
+                                >
+                                  <ArrowUp size={14} strokeWidth={2.5} />
+                                </motion.button>
+                              )}
+                            </AnimatePresence>
                           </form>
+                          </>
                         )}
                         {showEmojiPicker && !isRecording && (
                           <div style={{ position: "absolute", bottom: "60px", right: "10px", zIndex: 10 }}>
@@ -3377,6 +3540,10 @@ const MiniChatWindow = () => {
           0% { opacity: 0.4; }
           50% { opacity: 1; }
           100% { opacity: 0.4; }
+        }
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
     </>
