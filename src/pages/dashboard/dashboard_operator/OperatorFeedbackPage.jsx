@@ -1,15 +1,132 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, CheckCircle, Paperclip, Smile, UserPlus, X, Check, CheckCheck } from "lucide-react";
+import { 
+  Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
+  Paperclip, Smile, UserPlus, X, Check, CheckCheck,
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
+} from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
 import useThemeStore from "../../../store/useThemeStore";
-import { format, isToday, isYesterday } from "date-fns";
-import { ru } from "date-fns/locale";
 import ImageModal from "../../../components/modal/ImageModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
+
+// Custom font family stack with emoji support
+const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+
+// Custom Audio Player component for voice messages
+const AudioPlayer = ({ src, isOut }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (audioRef.current.paused) {
+      audioRef.current.play().catch(err => console.error("Audio play error:", err));
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+    setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration || 0);
+  };
+
+  const formatDuration = (secs) => {
+    if (isNaN(secs)) return "00:00";
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = Math.floor(secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "8px 12px",
+      background: isOut ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.05)",
+      borderRadius: "12px",
+      marginTop: "4px",
+      minWidth: "200px",
+      color: isOut ? "white" : "var(--text-color, #1e293b)"
+    }}>
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        onTimeUpdate={handleTimeUpdate} 
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+      <button 
+        type="button"
+        onClick={togglePlay}
+        style={{
+          background: isOut ? "white" : "#eb2525",
+          color: isOut ? "#eb2525" : "white",
+          border: "none",
+          width: "28px",
+          height: "28px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer"
+        }}
+      >
+        {isPlaying ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        )}
+      </button>
+      <div style={{ flex: 1 }}>
+        <div 
+          style={{
+            height: "4px",
+            background: isOut ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.1)",
+            borderRadius: "2px",
+            position: "relative",
+            cursor: "pointer",
+            marginTop: "6px"
+          }} 
+          onClick={(e) => {
+            if (!audioRef.current || !audioRef.current.duration) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = clickX / rect.width;
+            audioRef.current.currentTime = pct * audioRef.current.duration;
+          }}
+        >
+          <div style={{
+            width: `${progress}%`,
+            height: "100%",
+            background: isOut ? "white" : "#eb2525",
+            borderRadius: "2px"
+          }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", marginTop: "4px", opacity: 0.8 }}>
+          <span>{formatDuration(currentTime)}</span>
+          <span>{formatDuration(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function OperatorFeedbackPage() {
   const token = localStorage.getItem("access_token");
@@ -20,9 +137,7 @@ export default function OperatorFeedbackPage() {
       if (!tokenString) return 0;
       const payload = JSON.parse(atob(tokenString.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
       return Number(payload.user_id || 0);
-    } catch {
-      return 0;
-    }
+    } catch { return 0; }
   };
   const currentUserId = getUserIdFromToken();
   const { theme } = useThemeStore();
@@ -49,12 +164,11 @@ export default function OperatorFeedbackPage() {
   const [threadSearch, setThreadSearch] = useState("");
   
   // Tabs
-  const [activeTab, setActiveTab] = useState("direct"); // "support" | "direct"
+  const [activeTab, setActiveTab] = useState("support"); // "support" | "direct"
 
   // Direct messages user list / search
   const [usersList, setUsersList] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   
   // Loading states
@@ -67,11 +181,52 @@ export default function OperatorFeedbackPage() {
   // Mobile navigation
   const [mobileShowChat, setMobileShowChat] = useState(false);
 
+  // Advanced Features: Context Menu
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" }); // type: "message" | "thread"
+
+  // Advanced Features: Replies & Editing
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+
+  // Advanced Features: Voice Audio Messages
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
+  // Advanced Features: Pinned & Muted Chats
+  const [pinnedChats, setPinnedChats] = useState([]);
+  const [mutedChats, setMutedChats] = useState([]);
+
+  // Advanced Features: Chat Message Search
+  const [localSearchActive, setLocalSearchActive] = useState(false);
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+
   const messagesEndRef = useRef(null);
 
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}` }
   };
+
+  // Close context menu on window click
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, []);
+
+  // Load pinned and muted lists
+  useEffect(() => {
+    try {
+      const savedPinned = JSON.parse(localStorage.getItem("pinned_chats") || "[]");
+      const savedMuted = JSON.parse(localStorage.getItem("muted_chats") || "[]");
+      setPinnedChats(savedPinned);
+      setMutedChats(savedMuted);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -128,7 +283,9 @@ export default function OperatorFeedbackPage() {
          // Check for new incoming messages to show notification
          if (prevMessages.length > 0 && res.data && res.data.length > prevMessages.length) {
             const newMsg = res.data[res.data.length - 1];
-            if ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId)) {
+            const isMuted = mutedChats.includes(threadId);
+
+            if (!isMuted && ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId))) {
                if ("Notification" in window) {
                   if (Notification.permission === "granted") {
                      const notif = new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: newMsg.message || "Вложение" });
@@ -146,7 +303,7 @@ export default function OperatorFeedbackPage() {
     } finally {
       if (showLoading) setLoadingChat(false);
     }
-  }, []);
+  }, [mutedChats, currentUserId]);
 
   const markAsRead = useCallback(async (type, threadId) => {
     if (!threadId) return;
@@ -165,7 +322,9 @@ export default function OperatorFeedbackPage() {
   }, [fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!localSearchActive) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -234,8 +393,25 @@ export default function OperatorFeedbackPage() {
     if (!activeThreadId || !activeChatType) return;
 
     setSending(true);
-    let attachmentUrl = "";
 
+    // Edit message route
+    if (editingMessage) {
+      try {
+        await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
+          message: newMessage.trim()
+        }, axiosConfig);
+        setEditingMessage(null);
+        setNewMessage("");
+        fetchMessages(activeChatType, activeThreadId);
+      } catch (err) {
+        console.error("Error editing message:", err);
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    let attachmentUrl = "";
     try {
       if (file) {
         const formData = new FormData();
@@ -250,13 +426,14 @@ export default function OperatorFeedbackPage() {
       }
 
       let payload = activeChatType === "direct" 
-        ? { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId }
-        : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId };
+        ? { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
+        : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
 
       const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
       setMessages((prev) => [...prev, res.data]);
       setNewMessage("");
       setFile(null);
+      setReplyingTo(null);
       setShowEmojiPicker(false);
       setTimeout(scrollToBottom, 50);
       
@@ -269,10 +446,25 @@ export default function OperatorFeedbackPage() {
     }
   };
 
+  const handleDeleteMessage = async (msgId) => {
+    try {
+      await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+      fetchMessages(activeChatType, activeThreadId);
+      if (activeChatType === "support") fetchSupportThreads();
+      else if (activeChatType === "direct") fetchDirectThreads();
+    } catch (err) {
+      console.error("Error deleting message:", err);
+    }
+  };
+
   const handleSelectThread = useCallback((thread) => {
     setActiveChatType(thread.chatType);
     setActiveThreadId(thread.id);
     setActiveThreadName(thread.name);
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setLocalSearchActive(false);
+    setLocalSearchQuery("");
     fetchMessages(thread.chatType, thread.id, true);
     setMobileShowChat(true);
   }, [fetchMessages]);
@@ -282,9 +474,11 @@ export default function OperatorFeedbackPage() {
     setActiveChatType("direct");
     setActiveThreadId(user.id);
     setActiveThreadName(user.full_name || user.username);
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setLocalSearchActive(false);
+    setLocalSearchQuery("");
     fetchMessages("direct", user.id, true);
-    setShowUsersDropdown(false);
-    setUserSearchQuery("");
     setShowNewChatModal(false);
     setMobileShowChat(true);
     
@@ -303,6 +497,127 @@ export default function OperatorFeedbackPage() {
     }
   };
 
+  // context menus triggers
+  const triggerContextMenu = (e, item, type) => {
+    e.preventDefault();
+    const menuWidth = 160;
+    const menuHeight = type === "message" ? 140 : 100;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+    setContextMenu({ visible: true, x, y, target: item, type });
+  };
+
+  const handleTogglePin = (id) => {
+    setPinnedChats(prev => {
+      const updated = prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id];
+      localStorage.setItem("pinned_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleToggleMute = (id) => {
+    setMutedChats(prev => {
+      const updated = prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id];
+      localStorage.setItem("muted_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const scrollToMessage = (id) => {
+    const el = document.getElementById(`msg-bubble-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const bubble = el.querySelector(".msg-bubble");
+      if (bubble) {
+        const origBg = bubble.style.background;
+        const origBorder = bubble.style.border;
+        bubble.style.background = "rgba(235, 37, 37, 0.25)";
+        bubble.style.border = "1.5px solid #eb2525";
+        setTimeout(() => {
+          bubble.style.background = origBg;
+          bubble.style.border = origBorder;
+        }, 1000);
+      }
+    }
+  };
+
+  // Voice recording routines
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
+        
+        const formData = new FormData();
+        formData.append("file", audioFile);
+        
+        setSending(true);
+        try {
+          const uploadRes = await axios.post(`${API_URL}/api/feedback/upload`, formData, {
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+          });
+          const attachmentUrl = uploadRes.data.url;
+
+          let payload = activeChatType === "direct" 
+            ? { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
+            : { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
+
+          const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+          setMessages((prev) => [...prev, res.data]);
+          setReplyingTo(null);
+          
+          if (activeChatType === "support") fetchSupportThreads();
+          else if (activeChatType === "direct") fetchDirectThreads();
+        } catch (err) {
+          console.error("Error sending voice message:", err);
+        } finally {
+          setSending(false);
+        }
+
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Voice media error:", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = () => {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      };
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
   const filteredUsers = usersList.filter((u) => {
     if (u.id === currentUserId) return false;
     const query = userSearchQuery.toLowerCase().trim();
@@ -316,6 +631,7 @@ export default function OperatorFeedbackPage() {
     );
   });
 
+  // Filter threads and sort pinned to top
   const displayThreads = useMemo(() => {
     let source = activeTab === "support" ? supportThreads : directThreads;
     let mapped = source.map(t => ({
@@ -328,14 +644,27 @@ export default function OperatorFeedbackPage() {
       isSupportTicket: activeTab === "support"
     }));
     
-    mapped.sort((a, b) => {
+    const filtered = mapped.filter((t) => t.name?.toLowerCase().includes(threadSearch.toLowerCase()));
+    
+    // Sort: Pinned first, then by date desc
+    return [...filtered].sort((a, b) => {
+      const isPinnedA = pinnedChats.includes(a.id);
+      const isPinnedB = pinnedChats.includes(b.id);
+      if (isPinnedA && !isPinnedB) return -1;
+      if (!isPinnedA && isPinnedB) return 1;
+      
       const timeA = new Date(a.last_message_at || 0).getTime();
       const timeB = new Date(b.last_message_at || 0).getTime();
       return timeB - timeA;
     });
+  }, [activeTab, supportThreads, directThreads, threadSearch, pinnedChats]);
 
-    return mapped.filter((t) => t.name?.toLowerCase().includes(threadSearch.toLowerCase()));
-  }, [activeTab, supportThreads, directThreads, threadSearch]);
+  // Filter messages based on local query search
+  const filteredMessages = useMemo(() => {
+    if (!localSearchActive || !localSearchQuery.trim()) return messages;
+    const query = localSearchQuery.toLowerCase().trim();
+    return messages.filter(m => m.message?.toLowerCase().includes(query));
+  }, [messages, localSearchActive, localSearchQuery]);
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
@@ -349,8 +678,10 @@ export default function OperatorFeedbackPage() {
     navigator.clipboard.writeText(text);
   };
 
+  const isSendActive = newMessage.trim() !== "" || file !== null;
+
   return (
-    <div className="feedback-container">
+    <div className="feedback-container" style={{ fontFamily: EMOJI_FONT_STACK }}>
       <Helmet><title>Панель обратной связи</title></Helmet>
       <ImageModal 
         isOpen={!!selectedImage} 
@@ -358,13 +689,171 @@ export default function OperatorFeedbackPage() {
         onClose={() => setSelectedImage(null)} 
       />
       
+      {/* FLOAT CONTEXT MENU */}
+      {contextMenu.visible && (
+        <div 
+          style={{
+            position: "fixed",
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`,
+            zIndex: 100005,
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(226, 232, 240, 0.8)",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            padding: "6px",
+            minWidth: "160px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+            fontFamily: EMOJI_FONT_STACK
+          }}
+        >
+          {contextMenu.type === "message" ? (
+            <>
+              <button 
+                onClick={() => handleCopy(contextMenu.target.message)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <Check size={14} /> Копировать
+              </button>
+              <button 
+                onClick={() => {
+                  setReplyingTo(contextMenu.target);
+                  setEditingMessage(null);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <CornerUpLeft size={14} /> Ответить
+              </button>
+              {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                (activeChatType === "support" && contextMenu.target.is_operator)) && (
+                <>
+                  <button 
+                    onClick={() => {
+                      setEditingMessage(contextMenu.target);
+                      setNewMessage(contextMenu.target.message || "");
+                      setReplyingTo(null);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <Edit3 size={14} /> Редактировать
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#ef4444",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <Trash2 size={14} /> Удалить
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => handleTogglePin(contextMenu.target.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <Pin size={14} /> {pinnedChats.includes(contextMenu.target.id) ? "Открепить" : "Закрепить"}
+              </button>
+              <button 
+                onClick={() => handleToggleMute(contextMenu.target.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                {mutedChats.includes(contextMenu.target.id) ? <Bell size={14} /> : <BellOff size={14} />} 
+                {mutedChats.includes(contextMenu.target.id) ? "Включить звук" : "Без звука"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      
       <style>{`
         .feedback-container {
           display: flex;
           height: calc(100vh - 64px);
           background: var(--bg-color);
           color: var(--text-color);
-          font-family: 'Inter', sans-serif;
           overflow: hidden;
           padding: 24px;
           gap: 20px;
@@ -397,133 +886,90 @@ export default function OperatorFeedbackPage() {
           gap: 8px;
           color: var(--text-color);
         }
-        
+        .search-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        .search-wrapper svg {
+          position: absolute;
+          left: 12px;
+          color: var(--text-secondary);
+        }
+        .search-wrapper input {
+          width: 100%;
+          padding: 8px 12px 8px 36px;
+          background: var(--bg-color);
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          color: var(--text-color);
+          font-size: 13.5px;
+          outline: none;
+          font-family: ${EMOJI_FONT_STACK};
+        }
+        .search-wrapper input:focus {
+          border-color: var(--primary-color);
+        }
         .tabs-container {
           display: flex;
           border-bottom: 1px solid var(--border-color);
-          margin-top: 12px;
+          margin-bottom: 8px;
         }
         .tab-btn {
           flex: 1;
           background: none;
           border: none;
-          padding: 10px;
+          padding: 8px 4px;
           font-size: 13px;
-          font-weight: 600;
           color: var(--text-secondary);
           cursor: pointer;
           border-bottom: 2px solid transparent;
-          transition: all 0.2s;
+          font-weight: 500;
         }
         .tab-btn.active {
           color: var(--primary-color);
-          border-bottom: 2px solid var(--primary-color);
-        }
-
-        .user-search-container {
-          padding: 10px 16px;
-          border-bottom: 1px solid var(--border-color);
-          position: relative;
-          background: var(--bg-sidebar);
-        }
-        .search-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-        .search-wrapper svg {
-          position: absolute;
-          left: 10px;
-          color: var(--text-secondary);
-        }
-        .search-wrapper input {
-          width: 100%;
-          background: var(--bg-color);
-          border: 1px solid var(--border-input);
-          border-radius: 8px;
-          padding: 8px 12px 8px 32px;
-          color: var(--text-color);
-          font-size: 13px;
-          outline: none;
-        }
-        .search-wrapper input:focus {
-          border-color: var(--primary-color);
-        }
-        
-        .users-dropdown-list {
-          position: absolute;
-          top: 100%;
-          left: 16px;
-          right: 16px;
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          max-height: 200px;
-          overflow-y: auto;
-          z-index: 100;
-          box-shadow: var(--shadow-lg);
-          display: flex;
-          flex-direction: column;
-          padding: 6px 0;
-        }
-        .user-dropdown-item {
-          padding: 8px 12px;
-          font-size: 13px;
-          cursor: pointer;
-          color: var(--text-color);
-          text-align: left;
-          background: none;
-          border: none;
-          width: 100%;
-        }
-        .user-dropdown-item:hover {
-          background: var(--bg-color);
-        }
-        .user-dropdown-fullname {
+          border-bottom-color: var(--primary-color);
           font-weight: 600;
-          display: block;
-        }
-        .user-dropdown-username {
-          font-size: 11px;
-          color: var(--text-secondary);
         }
 
+        /* Threads List */
         .threads-list {
           flex: 1;
           overflow-y: auto;
-          padding: 10px;
+          padding: 8px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
         }
         .thread-item {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 12px;
-          border-radius: 8px;
+          padding: 10px 12px;
+          border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s;
           border: 1px solid transparent;
         }
         .thread-item:hover {
           background: var(--bg-secondary);
-          border-color: var(--border-color);
         }
         .thread-item.active {
-          background: rgba(var(--primary-rgb), 0.1);
-          border-color: rgba(var(--primary-rgb), 0.2);
+          background: rgba(235, 37, 37, 0.08);
+          border-color: rgba(235, 37, 37, 0.15);
         }
         .thread-avatar {
           width: 40px;
           height: 40px;
-          border-radius: 20px;
-          background: rgba(var(--primary-rgb), 0.15);
+          border-radius: 50%;
+          background: rgba(var(--primary-rgb), 0.1);
+          color: var(--primary-color);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--primary-color);
           font-weight: 700;
+          font-size: 14px;
           flex-shrink: 0;
         }
         .thread-info {
@@ -533,12 +979,12 @@ export default function OperatorFeedbackPage() {
         .thread-meta {
           display: flex;
           justify-content: space-between;
-          align-items: baseline;
+          align-items: center;
           margin-bottom: 4px;
         }
         .thread-name {
-          font-size: 14px;
           font-weight: 600;
+          font-size: 14px;
           color: var(--text-color);
           white-space: nowrap;
           overflow: hidden;
@@ -556,192 +1002,156 @@ export default function OperatorFeedbackPage() {
           text-overflow: ellipsis;
         }
         .unread-badge {
-          background: var(--danger-color, #eb2525);
+          background: #ef4444;
           color: white;
           font-size: 10px;
           font-weight: 700;
-          padding: 2px 6px;
           border-radius: 10px;
+          padding: 2px 6px;
+          min-width: 18px;
+          text-align: center;
         }
 
-        /* Chat Area */
+        /* Chat Pane */
         .feedback-chat {
           flex: 1;
-          display: flex;
-          flex-direction: column;
           background: var(--bg-surface, var(--bg-sidebar));
           border: 1px solid var(--border-color);
           border-radius: 18px;
           box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+          display: flex;
+          flex-direction: column;
           overflow: hidden;
           height: 100%;
         }
-        
         .chat-header {
-          padding: 16px 24px;
+          padding: 16px 20px;
           border-bottom: 1px solid var(--border-color);
-          background: var(--bg-sidebar);
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
+          background: var(--bg-sidebar);
+          z-index: 10;
         }
         .chat-title-info h3 {
+          margin: 0;
           font-size: 16px;
           font-weight: 700;
           color: var(--text-color);
-          margin: 0;
         }
         .chat-title-info span {
           font-size: 11px;
-          color: var(--primary-color);
-          font-weight: 600;
+          color: var(--text-secondary);
           display: flex;
           align-items: center;
           gap: 4px;
           margin-top: 2px;
         }
-        
         .btn-back-list {
           display: none;
           background: none;
           border: none;
           color: var(--text-color);
           cursor: pointer;
-          padding: 6px;
-          margin-right: 8px;
+          padding: 4px;
         }
-
+        
         .chat-instructions-banner {
-          background: rgba(var(--primary-rgb), 0.05);
-          border-bottom: 1px solid var(--border-color);
-          padding: 12px 24px;
-          font-size: 13px;
-          color: var(--text-secondary);
+          background: rgba(59, 130, 246, 0.08);
+          border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+          padding: 8px 16px;
           display: flex;
           align-items: center;
-          gap: 10px;
-        }
-        .chat-instructions-banner svg {
-          color: var(--primary-color);
-          flex-shrink: 0;
+          gap: 8px;
+          color: #2563eb;
+          font-size: 12px;
         }
 
         .chat-messages {
           flex: 1;
+          padding: 20px;
           overflow-y: auto;
-          padding: 24px;
+          background: var(--bg-color);
           display: flex;
           flex-direction: column;
-          gap: 16px;
-        }
-
-        /* Message Bubbles */
-        @keyframes messageAppear {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+          gap: 12px;
         }
         .msg-bubble-wrapper {
           display: flex;
           flex-direction: column;
-          max-width: 70%;
-          animation: messageAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          position: relative;
+          max-width: 75%;
         }
         .msg-bubble-wrapper.outgoing {
           align-self: flex-end;
-          align-items: flex-end;
         }
         .msg-bubble-wrapper.incoming {
           align-self: flex-start;
-          align-items: flex-start;
         }
-        
         .msg-sender {
           font-size: 11px;
-          font-weight: 700;
-          color: var(--primary-color);
+          color: var(--text-secondary);
           margin-bottom: 4px;
-          margin-left: 6px;
+          margin-left: 12px;
         }
         .msg-bubble {
-          padding: 12px 16px;
+          padding: 10px 14px;
           border-radius: 16px;
-          font-size: 14px;
-          line-height: 1.5;
+          font-size: 14.5px;
+          line-height: 1.4;
           word-break: break-word;
           position: relative;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          transition: background 0.5s, border-color 0.5s;
         }
         .outgoing .msg-bubble {
-          background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-          color: #ffffff;
+          background: #eb2525 !important;
+          color: #ffffff !important;
           border-bottom-right-radius: 4px;
         }
         .incoming .msg-bubble {
-          background: var(--bg-secondary);
-          color: var(--text-color);
+          background: var(--bg-surface, #ffffff) !important;
+          color: var(--text-color, #1e293b) !important;
+          border: 1px solid var(--border-color, #e2e8f0) !important;
           border-bottom-left-radius: 4px;
-          border: 1px solid var(--border-color);
-        }
-        
-        /* Direct messages red/white style */
-        .direct-msg.outgoing .msg-bubble {
-          background: #eb2525 !important;
-          color: #ffffff !important;
-        }
-        .direct-msg.incoming .msg-bubble {
-          background: #ffffff !important;
-          color: #1e293b !important;
-          border: 1px solid #e2e8f0 !important;
-        }
-        .msg-meta {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 4px;
-          margin-top: 6px;
-          font-size: 9px;
-        }
-        .outgoing .msg-meta {
-          color: rgba(255, 255, 255, 0.8);
-        }
-        .incoming .msg-meta {
-          color: var(--text-secondary);
         }
         .msg-attachment img {
           max-width: 100%;
           border-radius: 8px;
           margin-top: 8px;
         }
+        .msg-meta {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 4px;
+          font-size: 9px;
+          opacity: 0.7;
+          margin-top: 4px;
+        }
 
-        /* Input Bar */
         .chat-input-bar {
-          padding: 16px 24px;
-          border-top: 1px solid var(--border-color);
+          padding: 16px;
           background: var(--bg-sidebar);
+          border-top: 1px solid var(--border-color);
           position: relative;
         }
         .chat-input-form {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           align-items: center;
         }
-        .chat-input-form input[type="text"] {
+        .chat-input-form input {
           flex: 1;
           background: var(--bg-color);
           border: 1px solid var(--border-input);
-          border-radius: 10px;
-          padding: 12px 16px;
+          border-radius: 24px;
+          padding: 10px 18px;
           color: var(--text-color);
-          font-size: 14px;
+          font-size: 14.5px;
           outline: none;
+          font-family: ${EMOJI_FONT_STACK} !important;
         }
-        .chat-input-form input[type="text"]:focus {
+        .chat-input-form input:focus {
           border-color: var(--primary-color);
         }
         .icon-btn {
@@ -758,35 +1168,19 @@ export default function OperatorFeedbackPage() {
           color: var(--primary-color);
         }
         .chat-send-btn {
-          background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-          color: #ffffff;
+          background: var(--text-color, #0f172a);
+          color: white;
           border: none;
-          border-radius: 10px;
-          width: 44px;
-          height: 44px;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
+          transition: all 0.2s;
         }
-        .chat-send-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .emoji-picker-container {
-          position: absolute;
-          bottom: 70px;
-          left: 16px;
-          z-index: 100;
-        }
-        .file-preview {
-          font-size: 12px;
-          color: var(--text-secondary);
-          margin-bottom: 8px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
+        
         .chat-empty-state {
           flex: 1;
           display: flex;
@@ -794,8 +1188,8 @@ export default function OperatorFeedbackPage() {
           align-items: center;
           justify-content: center;
           color: var(--text-secondary);
+          padding: 30px;
           text-align: center;
-          padding: 40px;
         }
         .chat-empty-state svg {
           margin-bottom: 16px;
@@ -809,7 +1203,6 @@ export default function OperatorFeedbackPage() {
           margin-bottom: 8px;
         }
 
-        /* Scrollbars */
         .threads-list::-webkit-scrollbar,
         .chat-messages::-webkit-scrollbar {
           width: 6px;
@@ -977,6 +1370,11 @@ export default function OperatorFeedbackPage() {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
+        @keyframes pulse {
+          0% { opacity: 0.4; }
+          50% { opacity: 1; }
+          100% { opacity: 0.4; }
+        }
       `}</style>
 
       {/* Left Sidebar */}
@@ -1018,19 +1416,30 @@ export default function OperatorFeedbackPage() {
             displayThreads.map((thread) => {
               const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
               const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
+              const isPinned = pinnedChats.includes(thread.id);
+              const isMuted = mutedChats.includes(thread.id);
 
               return (
                 <div
                   key={`${thread.chatType}-${thread.id}`}
                   className={`thread-item ${isActive ? "active" : ""}`}
                   onClick={() => handleSelectThread(thread)}
+                  onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
+                  style={{
+                    border: isPinned ? "1.5px solid #3b82f6" : "1.5px solid transparent",
+                    position: "relative"
+                  }}
                 >
                   <div className="thread-avatar">
                     {thread.isSupportTicket ? <Shield size={18} /> : initials}
                   </div>
                   <div className="thread-info">
                     <div className="thread-meta">
-                      <span className="thread-name">{thread.name}</span>
+                      <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        {thread.name}
+                        {isPinned && <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />}
+                        {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
+                      </span>
                       <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1044,7 +1453,7 @@ export default function OperatorFeedbackPage() {
           )}
         </div>
 
-        {/* New Chat Button at the bottom of the sidebar */}
+        {/* New Chat Button */}
         <div className="new-chat-trigger-container">
           <button className="new-chat-trigger-btn" onClick={() => {
             setUserSearchQuery("");
@@ -1060,6 +1469,7 @@ export default function OperatorFeedbackPage() {
       <div className="feedback-chat">
         {activeThreadId ? (
           <>
+            {/* CHAT HEADER */}
             <div className="chat-header">
               <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                 <button className="btn-back-list" onClick={() => setMobileShowChat(false)}><ArrowLeft size={20} /></button>
@@ -1067,6 +1477,31 @@ export default function OperatorFeedbackPage() {
                   <h3>{activeThreadName}</h3>
                   <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
                 </div>
+              </div>
+
+              {/* Chat Actions Toggles */}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                {/* Search toggle */}
+                <button 
+                  onClick={() => setLocalSearchActive(!localSearchActive)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: localSearchActive ? "#eb2525" : "var(--text-secondary)" }}
+                >
+                  <Search size={18} />
+                </button>
+                {/* Mute toggle */}
+                <button 
+                  onClick={() => handleToggleMute(activeThreadId)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  {mutedChats.includes(activeThreadId) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
+                </button>
+                {/* Pin toggle */}
+                <button 
+                  onClick={() => handleTogglePin(activeThreadId)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  <Pin size={18} style={{ transform: pinnedChats.includes(activeThreadId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(activeThreadId) ? "#3b82f6" : "inherit" }} />
+                </button>
               </div>
             </div>
 
@@ -1080,53 +1515,85 @@ export default function OperatorFeedbackPage() {
               </span>
             </div>
 
+            {/* Local Search input */}
+            {localSearchActive && (
+              <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border-color)", background: "var(--bg-sidebar)" }}>
+                <input 
+                  type="text"
+                  placeholder="Поиск по сообщениям..."
+                  value={localSearchQuery}
+                  onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 14px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--border-color)",
+                    fontSize: "13px",
+                    background: "var(--bg-color)",
+                    color: "var(--text-color)",
+                    outline: "none"
+                  }}
+                />
+              </div>
+            )}
+
+            {/* MESSAGES VIEW */}
             {loadingChat ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Spinner size="large" label="Загрузка диалога..." />
               </div>
             ) : (
               <div className="chat-messages">
-                {messages.length === 0 ? (
+                {filteredMessages.length === 0 ? (
                   <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
-                  messages.map((msg) => {
+                  filteredMessages.map((msg) => {
                     const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
+                    const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
                     return (
                       <div 
                         key={msg.id} 
+                        id={`msg-bubble-${msg.id}`}
                         className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
-                        onMouseEnter={() => setHoveredMsgId(msg.id)}
-                        onMouseLeave={() => setHoveredMsgId(null)}
+                        onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
                       >
                         {!isOutgoing && activeChatType === "support" && (
                           <span className="msg-sender">{msg.username}</span>
                         )}
-                        
-                        {hoveredMsgId === msg.id && msg.message && (
-                          <div 
-                            onClick={() => handleCopy(msg.message)}
-                            style={{
-                              position: "absolute",
-                              top: "-20px",
-                              right: isOutgoing ? "0" : "auto",
-                              left: isOutgoing ? "auto" : "0",
-                              background: "rgba(0,0,0,0.6)",
-                              color: "white",
-                              padding: "2px 6px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              cursor: "pointer",
-                              zIndex: 10
-                            }}
-                          >
-                            Копировать
-                          </div>
-                        )}
 
                         <div className="msg-bubble">
-                          {msg.message && <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
-                          {msg.attachment_url && (
+                          {/* Reply snippet inside bubble */}
+                          {msg.reply_to_id && (
+                            <div 
+                              onClick={() => scrollToMessage(msg.reply_to_id)}
+                              style={{
+                                padding: "6px 8px",
+                                background: isOutgoing ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                                borderLeft: isOutgoing ? "3px solid white" : "3px solid #eb2525",
+                                fontSize: "11px",
+                                borderRadius: "4px",
+                                marginBottom: "6px",
+                                cursor: "pointer",
+                                opacity: 0.95
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>
+                                {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                              </span>
+                              <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                              </div>
+                            </div>
+                          )}
+
+                          {msg.message && !isVoice && <div style={{ whiteSpace: "pre-wrap" }}>{msg.message}</div>}
+                          
+                          {isVoice && (
+                            <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOutgoing} />
+                          )}
+
+                          {msg.attachment_url && !isVoice && (
                             <div className="msg-attachment">
                               {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
                                 <img 
@@ -1157,37 +1624,112 @@ export default function OperatorFeedbackPage() {
               </div>
             )}
 
+            {/* INPUT PANEL */}
             <div className="chat-input-bar">
+              {/* Reply Preview */}
+              {replyingTo && (
+                <div style={{
+                  padding: "8px 12px",
+                  background: "var(--bg-color, #f1f5f9)",
+                  borderLeft: "3px solid #eb2525",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "12px",
+                  borderRadius: "4px",
+                  marginBottom: "8px"
+                }}>
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontWeight: 600 }}>Ответ на: </span>
+                    {replyingTo.message || "Вложение"}
+                  </div>
+                  <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Edit Preview */}
+              {editingMessage && (
+                <div style={{
+                  padding: "8px 12px",
+                  background: "var(--bg-color, #f1f5f9)",
+                  borderLeft: "3px solid #f59e0b",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "12px",
+                  borderRadius: "4px",
+                  marginBottom: "8px"
+                }}>
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontWeight: 600 }}>Редактирование: </span>
+                    {editingMessage.message}
+                  </div>
+                  <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               {file && (
                 <div className="file-preview">
                   <Paperclip size={14} /> Выбран файл: {file.name}
                   <button onClick={() => setFile(null)} style={{background:"none", border:"none", color:"red", cursor:"pointer"}}>x</button>
                 </div>
               )}
-              {showEmojiPicker && (
+              {showEmojiPicker && !isRecording && (
                 <div className="emoji-picker-container">
                   <EmojiPicker onEmojiClick={(e) => setNewMessage(prev => prev + e.emoji)} theme={theme} />
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="chat-input-form">
-                <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                  <Smile size={22} />
-                </button>
-                <label className="icon-btn">
-                  <Paperclip size={22} />
-                  <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
-                </label>
-                <input
-                  type="text"
-                  placeholder="Напишите ответ..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  disabled={sending}
-                />
-                <button type="submit" className="chat-send-btn" disabled={sending || (!newMessage.trim() && !file)}>
-                  <Send size={18} />
-                </button>
-              </form>
+
+              {/* Voice Recording Panel */}
+              {isRecording ? (
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", justifyContent: "space-between", padding: "6px 8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "red", fontSize: "14px", fontWeight: 600 }}>
+                    <span style={{ width: "8px", height: "8px", background: "red", borderRadius: "50%", display: "inline-block", animation: "pulse 1s infinite" }} />
+                    Запись: {recordingTime} сек.
+                  </div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button type="button" onClick={cancelRecording} style={{ background: "rgba(0,0,0,0.05)", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "#64748b" }}>
+                      Отмена
+                    </button>
+                    <button type="button" onClick={stopRecording} style={{ background: "#eb2525", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", color: "white", fontWeight: 650 }}>
+                      Отправить
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Standard input bar */
+                <form onSubmit={handleSendMessage} className="chat-input-form">
+                  <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                    <Smile size={22} />
+                  </button>
+                  <label className="icon-btn">
+                    <Paperclip size={22} />
+                    <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Напишите ответ..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    disabled={sending}
+                  />
+
+                  {/* Voice mic or ChatGPT Send Button */}
+                  {!isSendActive ? (
+                    <button type="button" className="icon-btn" onClick={startRecording}>
+                      <Mic size={22} />
+                    </button>
+                  ) : (
+                    <button type="submit" className="chat-send-btn" disabled={sending}>
+                      <ArrowUp size={18} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </form>
+              )}
             </div>
           </>
         ) : (

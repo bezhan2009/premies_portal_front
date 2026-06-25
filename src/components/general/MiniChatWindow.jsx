@@ -3,7 +3,8 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
-  Minus, ArrowLeft, Search, User, Shield, PlusCircle
+  Minus, ArrowLeft, Search, User, Shield, PlusCircle,
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -14,6 +15,121 @@ import { useLocation } from "react-router-dom";
 import "react-resizable/css/styles.css";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
+
+// Custom font family stack with emoji support
+const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+
+// Custom Audio Player component for voice messages
+const AudioPlayer = ({ src, isOut }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (audioRef.current.paused) {
+      audioRef.current.play().catch(err => console.error("Audio play error:", err));
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+    setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration || 0);
+  };
+
+  const formatDuration = (secs) => {
+    if (isNaN(secs)) return "00:00";
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = Math.floor(secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "8px 12px",
+      background: isOut ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.05)",
+      borderRadius: "12px",
+      marginTop: "4px",
+      minWidth: "200px",
+      color: isOut ? "white" : "var(--text-color, #1e293b)"
+    }}>
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        onTimeUpdate={handleTimeUpdate} 
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+      <button 
+        type="button"
+        onClick={togglePlay}
+        style={{
+          background: isOut ? "white" : "#eb2525",
+          color: isOut ? "#eb2525" : "white",
+          border: "none",
+          width: "28px",
+          height: "28px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer"
+        }}
+      >
+        {isPlaying ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        )}
+      </button>
+      <div style={{ flex: 1 }}>
+        <div 
+          style={{
+            height: "4px",
+            background: isOut ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.1)",
+            borderRadius: "2px",
+            position: "relative",
+            cursor: "pointer",
+            marginTop: "6px"
+          }} 
+          onClick={(e) => {
+            if (!audioRef.current || !audioRef.current.duration) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = clickX / rect.width;
+            audioRef.current.currentTime = pct * audioRef.current.duration;
+          }}
+        >
+          <div style={{
+            width: `${progress}%`,
+            height: "100%",
+            background: isOut ? "white" : "#eb2525",
+            borderRadius: "2px"
+          }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", marginTop: "4px", opacity: 0.8 }}>
+          <span>{formatDuration(currentTime)}</span>
+          <span>{formatDuration(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MiniChatWindow = () => {
   const { isMiniChatOpen, closeMiniChat, setUnreadCount } = useChatStore();
@@ -54,8 +170,42 @@ const MiniChatWindow = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   
+  // Advanced Features: Context Menu
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, type: "" }); // type: "message" | "thread"
+  
+  // Advanced Features: Replies & Editing
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+
+  // Advanced Features: Voice Audio Messages
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
+  // Advanced Features: Pinned & Muted Chats
+  const [pinnedChats, setPinnedChats] = useState([]);
+  const [mutedChats, setMutedChats] = useState([]);
+
+  // Advanced Features: Active Chat Search
+  const [localSearchActive, setLocalSearchActive] = useState(false);
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+  
   const messagesEndRef = useRef(null);
   const token = localStorage.getItem("access_token");
+
+  // Load pinned and muted chats
+  useEffect(() => {
+    try {
+      const savedPinned = JSON.parse(localStorage.getItem("pinned_chats") || "[]");
+      const savedMuted = JSON.parse(localStorage.getItem("muted_chats") || "[]");
+      setPinnedChats(savedPinned);
+      setMutedChats(savedMuted);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // Get user ID
   const getUserIdFromToken = () => {
@@ -73,14 +223,17 @@ const MiniChatWindow = () => {
   };
   const isOperator = getRoles().includes(3);
 
-  // Set default tab for operators to support tickets
+  // Set default tab
   useEffect(() => {
-    if (isOperator) {
-      setActiveTab("support");
-    } else {
-      setActiveTab("support"); // Support tickets/Technical Support is also default for users
-    }
+    setActiveTab("support");
   }, [isOperator]);
+
+  // Close context menu on window click
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, type: "" });
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, []);
 
   // Fetch threads data
   const fetchThreadsData = useCallback(async () => {
@@ -99,7 +252,7 @@ const MiniChatWindow = () => {
         setDirectThreads(res.data || []);
       }
     } catch (err) {
-      console.error("Error fetching threads in mini-chat:", err);
+      console.error("Error fetching threads:", err);
     } finally {
       setLoadingThreads(false);
     }
@@ -144,7 +297,7 @@ const MiniChatWindow = () => {
       });
       setUnreadCount(countRes.data.unread_count || 0);
     } catch (err) {
-      console.error("Error fetching messages in mini-chat:", err);
+      console.error("Error fetching messages:", err);
     } finally {
       setLoading(false);
     }
@@ -160,12 +313,12 @@ const MiniChatWindow = () => {
     }
   }, [isMiniChatOpen, currentView, recipientId, chatType, fetchMessages]);
 
-  // Scroll to bottom on message list update
+  // Scroll to bottom
   useEffect(() => {
-    if (currentView === "chat") {
+    if (currentView === "chat" && !localSearchActive) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length, currentView]);
+  }, [messages.length, currentView, localSearchActive]);
 
   // Fetch users list for new chat
   const fetchUsers = async () => {
@@ -174,7 +327,7 @@ const MiniChatWindow = () => {
       const res = await axios.get(`${API_URL}/users/emails`, { headers: { Authorization: `Bearer ${token}` } });
       setUsersList(res.data.users || []);
     } catch (err) {
-      console.error("Error fetching users list:", err);
+      console.error("Error fetching users:", err);
     }
   };
 
@@ -190,8 +343,27 @@ const MiniChatWindow = () => {
     if (!newMessage.trim() && !file) return;
 
     setSending(true);
-    let attachmentUrl = "";
 
+    // Edit message route
+    if (editingMessage) {
+      try {
+        await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
+          message: newMessage.trim()
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setEditingMessage(null);
+        setNewMessage("");
+        fetchMessages();
+      } catch (err) {
+        console.error("Error updating message:", err);
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    let attachmentUrl = "";
     try {
       if (file) {
         const formData = new FormData();
@@ -207,20 +379,23 @@ const MiniChatWindow = () => {
         payload = {
           message: newMessage.trim(),
           attachment_url: attachmentUrl,
-          recipient_id: recipientId
+          recipient_id: recipientId,
+          reply_to_id: replyingTo ? replyingTo.id : null
         };
       } else {
         if (isOperator) {
           payload = {
             message: newMessage.trim(),
             attachment_url: attachmentUrl,
-            user_id: recipientId
+            user_id: recipientId,
+            reply_to_id: replyingTo ? replyingTo.id : null
           };
         } else {
           payload = {
             message: newMessage.trim(),
             attachment_url: attachmentUrl,
-            recipient_id: 0
+            recipient_id: 0,
+            reply_to_id: replyingTo ? replyingTo.id : null
           };
         }
       }
@@ -231,15 +406,26 @@ const MiniChatWindow = () => {
       
       setNewMessage("");
       setFile(null);
+      setReplyingTo(null);
       setShowEmojiPicker(false);
       fetchMessages();
-
-      // Refresh corresponding list
       fetchThreadsData();
     } catch (err) {
       console.error("Error sending message:", err);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (msgId) => {
+    try {
+      await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMessages();
+      fetchThreadsData();
+    } catch (err) {
+      console.error("Error deleting message:", err);
     }
   };
 
@@ -253,22 +439,182 @@ const MiniChatWindow = () => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Filter threads based on search query
-  const filteredThreads = useMemo(() => {
-    const query = threadSearch.toLowerCase().trim();
-    if (activeTab === "support") {
-      if (isOperator) {
-        return supportThreads.filter(t => t.username?.toLowerCase().includes(query));
-      } else {
-        // Users see Tech Support widget, no filter required
-        return [];
-      }
-    } else {
-      return directThreads.filter(t => t.username?.toLowerCase().includes(query));
-    }
-  }, [activeTab, supportThreads, directThreads, threadSearch, isOperator]);
+  // context menus triggers
+  const triggerContextMenu = (e, item, type) => {
+    e.preventDefault();
+    const menuWidth = 160;
+    const menuHeight = type === "message" ? 140 : 100;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+    setContextMenu({ visible: true, x, y, target: item, type });
+  };
 
-  // Filter users list for starting new chats
+  // Pin & Mute managers
+  const handleTogglePin = (threadId) => {
+    setPinnedChats(prev => {
+      const updated = prev.includes(threadId) ? prev.filter(id => id !== threadId) : [...prev, threadId];
+      localStorage.setItem("pinned_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleToggleMute = (threadId) => {
+    setMutedChats(prev => {
+      const updated = prev.includes(threadId) ? prev.filter(id => id !== threadId) : [...prev, threadId];
+      localStorage.setItem("muted_chats", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Scroll to reply message and flash
+  const scrollToMessage = (id) => {
+    const el = document.getElementById(`msg-bubble-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const origBg = el.style.background;
+      const origBorder = el.style.border;
+      el.style.background = "rgba(235, 37, 37, 0.25)";
+      el.style.border = "1px solid #eb2525";
+      setTimeout(() => {
+        el.style.background = origBg;
+        el.style.border = origBorder;
+      }, 1000);
+    }
+  };
+
+  // Voice recording routines
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
+        
+        const formData = new FormData();
+        formData.append("file", audioFile);
+        
+        setSending(true);
+        try {
+          const uploadRes = await axios.post(`${API_URL}/api/feedback/upload`, formData, {
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+          });
+          const attachmentUrl = uploadRes.data.url;
+
+          let payload = {};
+          if (chatType === "direct") {
+            payload = {
+              message: "[Голосовое сообщение]",
+              attachment_url: attachmentUrl,
+              recipient_id: recipientId,
+              reply_to_id: replyingTo ? replyingTo.id : null
+            };
+          } else {
+            if (isOperator) {
+              payload = {
+                message: "[Голосовое сообщение]",
+                attachment_url: attachmentUrl,
+                user_id: recipientId,
+                reply_to_id: replyingTo ? replyingTo.id : null
+              };
+            } else {
+              payload = {
+                message: "[Голосовое сообщение]",
+                attachment_url: attachmentUrl,
+                recipient_id: 0,
+                reply_to_id: replyingTo ? replyingTo.id : null
+              };
+            }
+          }
+
+          await axios.post(`${API_URL}/api/feedback`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          setReplyingTo(null);
+          fetchMessages();
+          fetchThreadsData();
+        } catch (err) {
+          console.error("Error sending voice message:", err);
+        } finally {
+          setSending(false);
+        }
+
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Voice media error:", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = () => {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      };
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  // Filter threads and sort pinned to top
+  const sortedThreads = useMemo(() => {
+    const query = threadSearch.toLowerCase().trim();
+    let source = [];
+    if (activeTab === "support") {
+      source = isOperator ? supportThreads : [];
+    } else {
+      source = directThreads;
+    }
+    
+    const filtered = source.filter(t => t.username?.toLowerCase().includes(query));
+    
+    // Sort: pinned first, then by date desc
+    return [...filtered].sort((a, b) => {
+      const keyA = isOperator && activeTab === "support" ? a.user_id : a.user_id;
+      const keyB = isOperator && activeTab === "support" ? b.user_id : b.user_id;
+      const isPinnedA = pinnedChats.includes(keyA);
+      const isPinnedB = pinnedChats.includes(keyB);
+      
+      if (isPinnedA && !isPinnedB) return -1;
+      if (!isPinnedA && isPinnedB) return 1;
+      return new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime();
+    });
+  }, [activeTab, supportThreads, directThreads, threadSearch, isOperator, pinnedChats]);
+
+  // Filter messages based on local query search
+  const filteredMessages = useMemo(() => {
+    if (!localSearchActive || !localSearchQuery.trim()) return messages;
+    const query = localSearchQuery.toLowerCase().trim();
+    return messages.filter(m => m.message?.toLowerCase().includes(query));
+  }, [messages, localSearchActive, localSearchQuery]);
+
+  // Filter users list
   const filteredUsers = useMemo(() => {
     const query = userSearchQuery.toLowerCase().trim();
     if (!query) return usersList.filter(u => u.id !== currentUserId);
@@ -280,7 +626,6 @@ const MiniChatWindow = () => {
     );
   }, [usersList, userSearchQuery, currentUserId]);
 
-  // Excluded page logic (Error 300 fix: place here, after all hooks)
   const isExcludedPath = 
     location.pathname.includes("/feedback") ||
     location.pathname.includes("/operator/feedback") ||
@@ -290,6 +635,8 @@ const MiniChatWindow = () => {
     return null;
   }
 
+  const isSendActive = newMessage.trim() !== "" || file !== null;
+
   return (
     <>
       <ImageModal 
@@ -297,6 +644,165 @@ const MiniChatWindow = () => {
         imageUrl={selectedImage} 
         onClose={() => setSelectedImage(null)} 
       />
+
+      {/* FLOAT CONTEXT MENU */}
+      {contextMenu.visible && (
+        <div 
+          style={{
+            position: "fixed",
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`,
+            zIndex: 100005,
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(226, 232, 240, 0.8)",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            padding: "6px",
+            minWidth: "160px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+            fontFamily: EMOJI_FONT_STACK
+          }}
+        >
+          {contextMenu.type === "message" ? (
+            <>
+              <button 
+                onClick={() => handleCopy(contextMenu.target.message)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <Check size={14} /> Копировать
+              </button>
+              <button 
+                onClick={() => {
+                  setReplyingTo(contextMenu.target);
+                  setEditingMessage(null);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <CornerUpLeft size={14} /> Ответить
+              </button>
+              {((chatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                (chatType === "support" && (isOperator ? contextMenu.target.is_operator : (!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)))) && (
+                <>
+                  <button 
+                    onClick={() => {
+                      setEditingMessage(contextMenu.target);
+                      setNewMessage(contextMenu.target.message || "");
+                      setReplyingTo(null);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <Edit3 size={14} /> Редактировать
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#ef4444",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <Trash2 size={14} /> Удалить
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => handleTogglePin(contextMenu.target.user_id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <Pin size={14} /> {pinnedChats.includes(contextMenu.target.user_id) ? "Открепить" : "Закрепить"}
+              </button>
+              <button 
+                onClick={() => handleToggleMute(contextMenu.target.user_id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                {mutedChats.includes(contextMenu.target.user_id) ? <Bell size={14} /> : <BellOff size={14} />} 
+                {mutedChats.includes(contextMenu.target.user_id) ? "Включить звук" : "Без звука"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         <motion.div
@@ -309,6 +815,7 @@ const MiniChatWindow = () => {
             bottom: "80px",
             right: "20px",
             zIndex: 9999,
+            fontFamily: EMOJI_FONT_STACK
           }}
           drag
           dragControls={dragControls}
@@ -354,7 +861,11 @@ const MiniChatWindow = () => {
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   {currentView !== "threads" && (
                     <button 
-                      onClick={() => setCurrentView("threads")}
+                      onClick={() => {
+                        setCurrentView("threads");
+                        setLocalSearchActive(false);
+                        setLocalSearchQuery("");
+                      }}
                       style={{
                         background: "none",
                         border: "none",
@@ -374,6 +885,48 @@ const MiniChatWindow = () => {
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {/* Chat Toggles */}
+                  {currentView === "chat" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {/* Search Toggle */}
+                      <button 
+                        onClick={() => setLocalSearchActive(!localSearchActive)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: localSearchActive ? "#eb2525" : "var(--text-secondary, #64748b)"
+                        }}
+                      >
+                        <Search size={16} />
+                      </button>
+                      {/* Mute Toggle */}
+                      <button 
+                        onClick={() => handleToggleMute(recipientId)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--text-secondary, #64748b)"
+                        }}
+                      >
+                        {mutedChats.includes(recipientId) ? <BellOff size={16} style={{ color: "#f59e0b" }} /> : <Bell size={16} />}
+                      </button>
+                      {/* Pin Toggle */}
+                      <button 
+                        onClick={() => handleTogglePin(recipientId)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--text-secondary, #64748b)"
+                        }}
+                      >
+                        <Pin size={16} style={{ transform: pinnedChats.includes(recipientId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(recipientId) ? "#3b82f6" : "inherit" }} />
+                      </button>
+                    </div>
+                  )}
+
                   {currentView === "threads" && (
                     <button 
                       title="Начать новый чат"
@@ -431,7 +984,8 @@ const MiniChatWindow = () => {
                                 background: "var(--bg-color, #f8fafc)",
                                 color: "var(--text-color, #0f172a)",
                                 fontSize: "13px",
-                                outline: "none"
+                                outline: "none",
+                                fontFamily: EMOJI_FONT_STACK
                               }}
                             />
                           </div>
@@ -534,12 +1088,14 @@ const MiniChatWindow = () => {
                               Написать сообщение
                             </button>
                           </div>
-                        ) : filteredThreads.length === 0 ? (
+                        ) : sortedThreads.length === 0 ? (
                           <div style={{ textAlign: "center", marginTop: "30px", color: "var(--text-secondary)", fontSize: "13px" }}>Нет активных чатов</div>
                         ) : (
-                          filteredThreads.map(thread => {
-                            const threadId = isOperator && activeTab === "support" ? thread.user_id : thread.user_id;
+                          sortedThreads.map(thread => {
+                            const threadId = thread.user_id;
                             const isSelected = recipientId === threadId && chatType === activeTab;
+                            const isPinned = pinnedChats.includes(threadId);
+                            const isMuted = mutedChats.includes(threadId);
                             return (
                               <div
                                 key={`${activeTab}-${threadId}`}
@@ -549,6 +1105,7 @@ const MiniChatWindow = () => {
                                   setActiveThreadName(thread.username);
                                   setCurrentView("chat");
                                 }}
+                                onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
@@ -558,8 +1115,9 @@ const MiniChatWindow = () => {
                                   background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
                                   cursor: "pointer",
                                   marginBottom: "8px",
-                                  border: "1px solid var(--border-color, #e2e8f0)",
-                                  transition: "all 0.2s"
+                                  border: isPinned ? "1.5px solid #3b82f6" : "1px solid var(--border-color, #e2e8f0)",
+                                  transition: "all 0.2s",
+                                  position: "relative"
                                 }}
                               >
                                 <div style={{
@@ -577,8 +1135,10 @@ const MiniChatWindow = () => {
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                                    <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
                                       {thread.username}
+                                      {isPinned && <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />}
+                                      {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
                                     </span>
                                     <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
                                       {formatTime(thread.last_message_at)}
@@ -622,6 +1182,28 @@ const MiniChatWindow = () => {
                       transition={{ duration: 0.15 }}
                       style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}
                     >
+                      {/* Local Search input */}
+                      {localSearchActive && (
+                        <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-color, #e2e8f0)", background: "var(--bg-sidebar, #f8fafc)" }}>
+                          <input 
+                            type="text"
+                            placeholder="Поиск по сообщениям..."
+                            value={localSearchQuery}
+                            onChange={(e) => setLocalSearchQuery(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--border-color, #cbd5e1)",
+                              fontSize: "12px",
+                              background: "var(--bg-color, #ffffff)",
+                              color: "var(--text-color, #0f172a)",
+                              outline: "none"
+                            }}
+                          />
+                        </div>
+                      )}
+
                       {/* Messages scroll content */}
                       <div style={{
                         flex: 1,
@@ -634,10 +1216,10 @@ const MiniChatWindow = () => {
                       }}>
                         {loading ? (
                           <div style={{ textAlign: "center", marginTop: "20px", color: "gray", fontSize: "13px" }}>Загрузка...</div>
-                        ) : messages.length === 0 ? (
+                        ) : filteredMessages.length === 0 ? (
                           <div style={{ textAlign: "center", marginTop: "20px", color: "gray", fontSize: "13px" }}>Нет сообщений</div>
                         ) : (
-                          messages.map(msg => {
+                          filteredMessages.map(msg => {
                             let isOut = false;
                             if (chatType === "direct") {
                               isOut = msg.user_id === currentUserId;
@@ -645,13 +1227,15 @@ const MiniChatWindow = () => {
                               isOut = isOperator ? msg.is_operator : (!msg.is_operator && msg.user_id === currentUserId);
                             }
 
+                            const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+
                             return (
                               <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 key={msg.id}
-                                onMouseEnter={() => setHoveredMsgId(msg.id)}
-                                onMouseLeave={() => setHoveredMsgId(null)}
+                                id={`msg-bubble-${msg.id}`}
+                                onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
                                 style={{
                                   alignSelf: isOut ? "flex-end" : "flex-start",
                                   maxWidth: "80%",
@@ -664,32 +1248,43 @@ const MiniChatWindow = () => {
                                   boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
                                   fontSize: "13.5px",
                                   position: "relative",
-                                  border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)"
+                                  border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
+                                  transition: "background 0.5s, border-color 0.5s"
                                 }}
                               >
-                                {hoveredMsgId === msg.id && msg.message && (
+                                {/* Reply Snippet */}
+                                {msg.reply_to_id && (
                                   <div 
-                                    onClick={() => handleCopy(msg.message)}
+                                    onClick={() => scrollToMessage(msg.reply_to_id)}
                                     style={{
-                                      position: "absolute",
-                                      top: "-18px",
-                                      right: isOut ? "auto" : "-10px",
-                                      left: isOut ? "-10px" : "auto",
-                                      background: "rgba(0,0,0,0.75)",
-                                      color: "white",
-                                      padding: "2px 6px",
+                                      padding: "6px 8px",
+                                      background: isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                                      borderLeft: isOut ? "3px solid white" : "3px solid #eb2525",
+                                      fontSize: "11px",
                                       borderRadius: "4px",
-                                      fontSize: "9px",
+                                      marginBottom: "6px",
                                       cursor: "pointer",
-                                      zIndex: 10,
-                                      whiteSpace: "nowrap"
+                                      opacity: 0.95
                                     }}
                                   >
-                                    Копировать
+                                    <span style={{ fontWeight: 600 }}>
+                                      {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                                    </span>
+                                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                      {messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение"}
+                                    </div>
                                   </div>
                                 )}
-                                <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>
-                                {msg.attachment_url && (
+
+                                {/* Main content */}
+                                {msg.message && !isVoice && <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>}
+                                
+                                {/* Voice Audio */}
+                                {isVoice && (
+                                  <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOut} />
+                                )}
+
+                                {msg.attachment_url && !isVoice && (
                                   <div style={{ marginTop: "6px" }}>
                                     {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
                                       <img 
@@ -725,55 +1320,131 @@ const MiniChatWindow = () => {
                         borderTop: "1px solid var(--border-color, #e2e8f0)",
                         position: "relative"
                       }}>
-                        {showEmojiPicker && (
+                        {/* Reply Preview */}
+                        {replyingTo && (
+                          <div style={{
+                            padding: "8px 12px",
+                            background: "var(--bg-color, #f1f5f9)",
+                            borderLeft: "3px solid #eb2525",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: "12px",
+                            borderRadius: "4px",
+                            marginBottom: "8px"
+                          }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <span style={{ fontWeight: 600 }}>Ответ на: </span>
+                              {replyingTo.message || "Вложение"}
+                            </div>
+                            <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                              <X size={14} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Edit Preview */}
+                        {editingMessage && (
+                          <div style={{
+                            padding: "8px 12px",
+                            background: "var(--bg-color, #f1f5f9)",
+                            borderLeft: "3px solid #f59e0b",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: "12px",
+                            borderRadius: "4px",
+                            marginBottom: "8px"
+                          }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <span style={{ fontWeight: 600 }}>Редактирование: </span>
+                              {editingMessage.message}
+                            </div>
+                            <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
+                              <X size={14} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Audio capturing state */}
+                        {isRecording ? (
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center", justifyContent: "space-between", padding: "6px 8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "red", fontSize: "13px", fontWeight: 600 }}>
+                              <span style={{ width: "8px", height: "8px", background: "red", borderRadius: "50%", display: "inline-block", animation: "pulse 1s infinite" }} />
+                              Запись: {recordingTime} сек.
+                            </div>
+                            <div style={{ display: "flex", gap: "10px" }}>
+                              <button type="button" onClick={cancelRecording} style={{ background: "rgba(0,0,0,0.05)", border: "none", padding: "6px 12px", borderRadius: "14px", cursor: "pointer", fontSize: "12px", color: "#64748b" }}>
+                                Отмена
+                              </button>
+                              <button type="button" onClick={stopRecording} style={{ background: "#eb2525", border: "none", padding: "6px 12px", borderRadius: "14px", cursor: "pointer", fontSize: "12px", color: "white", fontWeight: 650 }}>
+                                Отправить
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Standard form */
+                          <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, gray)" }}>
+                              <Smile size={18} />
+                            </button>
+                            <label style={{ cursor: "pointer", color: "var(--text-secondary, gray)", display: "flex", alignItems: "center" }}>
+                              <Paperclip size={18} />
+                              <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
+                            </label>
+                            
+                            <input
+                              type="text"
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              placeholder={file ? `Файл: ${file.name}` : "Сообщение..."}
+                              style={{
+                                flex: 1,
+                                padding: "6px 12px",
+                                borderRadius: "18px",
+                                border: "1px solid var(--border-color, #cbd5e1)",
+                                background: "var(--bg-color, #f8fafc)",
+                                color: "var(--text-color, #0f172a)",
+                                outline: "none",
+                                fontSize: "13px",
+                                fontFamily: EMOJI_FONT_STACK
+                              }}
+                            />
+
+                            {/* Voice mic button when input is empty */}
+                            {!isSendActive ? (
+                              <button type="button" onClick={startRecording} style={{ background: "none", border: "none", color: "var(--text-secondary, gray)", cursor: "pointer" }}>
+                                <Mic size={18} />
+                              </button>
+                            ) : (
+                              /* ChatGPT Send Button style */
+                              <button 
+                                type="submit" 
+                                disabled={sending}
+                                style={{
+                                  background: "var(--text-color, #0f172a)",
+                                  color: "white",
+                                  border: "none",
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s"
+                                }}
+                              >
+                                <ArrowUp size={16} strokeWidth={2.5} />
+                              </button>
+                            )}
+                          </form>
+                        )}
+                        {showEmojiPicker && !isRecording && (
                           <div style={{ position: "absolute", bottom: "60px", right: "10px", zIndex: 10 }}>
                             <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={theme} width={260} height={280} />
                           </div>
                         )}
-                        <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, gray)" }}>
-                            <Smile size={18} />
-                          </button>
-                          <label style={{ cursor: "pointer", color: "var(--text-secondary, gray)", display: "flex", alignItems: "center" }}>
-                            <Paperclip size={18} />
-                            <input type="file" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
-                          </label>
-                          <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder={file ? `Файл: ${file.name}` : "Сообщение..."}
-                            style={{
-                              flex: 1,
-                              padding: "6px 12px",
-                              borderRadius: "18px",
-                              border: "1px solid var(--border-color, #cbd5e1)",
-                              background: "var(--bg-color, #f8fafc)",
-                              color: "var(--text-color, #0f172a)",
-                              outline: "none",
-                              fontSize: "13px"
-                            }}
-                          />
-                          <button 
-                            type="submit" 
-                            disabled={sending || (!newMessage.trim() && !file)}
-                            style={{
-                              background: "#eb2525",
-                              color: "white",
-                              border: "none",
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              opacity: (sending || (!newMessage.trim() && !file)) ? 0.5 : 1
-                            }}
-                          >
-                            <Send size={14} />
-                          </button>
-                        </form>
                       </div>
                     </motion.div>
                   )}
@@ -805,7 +1476,8 @@ const MiniChatWindow = () => {
                               background: "var(--bg-color, #f8fafc)",
                               color: "var(--text-color)",
                               fontSize: "13px",
-                              outline: "none"
+                              outline: "none",
+                              fontFamily: EMOJI_FONT_STACK
                             }}
                           />
                         </div>
@@ -827,7 +1499,6 @@ const MiniChatWindow = () => {
                                   setActiveThreadName(name);
                                   setCurrentView("chat");
                                   
-                                  // Instantly append to direct list if not present
                                   setDirectThreads(prev => {
                                     if (!prev.some(t => t.user_id === user.id)) {
                                       return [{
@@ -886,6 +1557,14 @@ const MiniChatWindow = () => {
           </ResizableBox>
         </motion.div>
       </AnimatePresence>
+
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.4; }
+          50% { opacity: 1; }
+          100% { opacity: 0.4; }
+        }
+      `}</style>
     </>
   );
 };
