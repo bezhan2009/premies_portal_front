@@ -41,7 +41,7 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 
 
 // Custom font family stack with emoji support
-const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 // Shimmering Skeleton Loader component for active chat loading
 const LoadingSkeleton = () => {
@@ -467,7 +467,25 @@ export default function FeedbackPage() {
   };
 
   const handleGlobalRipple = (e) => {
-    const button = e.target.closest("button, .ripple-btn");
+    let target = e.target;
+    let button = null;
+    while (target && target !== e.currentTarget) {
+      const style = window.getComputedStyle(target);
+      if (
+        target.tagName === "BUTTON" || 
+        target.classList.contains("ripple-btn") || 
+        target.classList.contains("thread-item") ||
+        target.classList.contains("modal-user-item") ||
+        target.classList.contains("mini-chat-thread-card") ||
+        style.cursor === "pointer" ||
+        style.cursor === "grab"
+      ) {
+        button = target;
+        break;
+      }
+      target = target.parentElement;
+    }
+
     if (!button) return;
 
     if (window.getComputedStyle(button).position === "static") {
@@ -484,7 +502,10 @@ export default function FeedbackPage() {
     circle.style.left = `${e.clientX - rect.left - radius}px`;
     circle.style.top = `${e.clientY - rect.top - radius}px`;
 
-    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    const isDarkBg = button.classList.contains("primary") || 
+                     button.style.background === "#eb2525" || 
+                     button.style.backgroundColor === "rgb(235, 37, 37)" ||
+                     button.getAttribute("style")?.includes("#eb2525");
     circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
     circle.style.position = "absolute";
     circle.style.borderRadius = "50%";
@@ -497,15 +518,15 @@ export default function FeedbackPage() {
         { transform: "scale(4)", opacity: 0 }
       ],
       {
-        duration: 600,
-        easing: "linear"
+        duration: 500,
+        easing: "ease-out"
       }
     );
 
     button.appendChild(circle);
     setTimeout(() => {
       circle.remove();
-    }, 600);
+    }, 500);
   };
 
   const handleCopy = (text) => {

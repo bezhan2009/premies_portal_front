@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, Reorder } from "framer-motion";
 import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
@@ -17,7 +17,7 @@ import "react-resizable/css/styles.css";
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
 // Custom font family stack with emoji support
-const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 const parseMessageReactions = (reactionsStr) => {
   try {
@@ -454,7 +454,25 @@ const MiniChatWindow = () => {
   };
 
   const handleGlobalRipple = (e) => {
-    const button = e.target.closest("button, .ripple-btn");
+    let target = e.target;
+    let button = null;
+    while (target && target !== e.currentTarget) {
+      const style = window.getComputedStyle(target);
+      if (
+        target.tagName === "BUTTON" || 
+        target.classList.contains("ripple-btn") || 
+        target.classList.contains("thread-item") ||
+        target.classList.contains("modal-user-item") ||
+        target.classList.contains("mini-chat-thread-card") ||
+        style.cursor === "pointer" ||
+        style.cursor === "grab"
+      ) {
+        button = target;
+        break;
+      }
+      target = target.parentElement;
+    }
+
     if (!button) return;
 
     if (window.getComputedStyle(button).position === "static") {
@@ -471,7 +489,10 @@ const MiniChatWindow = () => {
     circle.style.left = `${e.clientX - rect.left - radius}px`;
     circle.style.top = `${e.clientY - rect.top - radius}px`;
 
-    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    const isDarkBg = button.classList.contains("primary") || 
+                     button.style.background === "#eb2525" || 
+                     button.style.backgroundColor === "rgb(235, 37, 37)" ||
+                     button.getAttribute("style")?.includes("#eb2525");
     circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
     circle.style.position = "absolute";
     circle.style.borderRadius = "50%";
@@ -484,15 +505,15 @@ const MiniChatWindow = () => {
         { transform: "scale(4)", opacity: 0 }
       ],
       {
-        duration: 600,
-        easing: "linear"
+        duration: 500,
+        easing: "ease-out"
       }
     );
 
     button.appendChild(circle);
     setTimeout(() => {
       circle.remove();
-    }, 600);
+    }, 500);
   };
 
   const handleCopy = (text) => {
@@ -568,6 +589,10 @@ const MiniChatWindow = () => {
 
   // Voice recording routines
   const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Запись аудио доступна только в безопасном контексте (HTTPS или localhost).");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -691,6 +716,20 @@ const MiniChatWindow = () => {
       return new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime();
     });
   }, [activeTab, supportThreads, directThreads, threadSearch, isOperator, pinnedChats]);
+
+  const pinnedThreads = useMemo(() => {
+    return sortedThreads.filter(t => pinnedChats.map(Number).includes(Number(t.user_id)));
+  }, [sortedThreads, pinnedChats]);
+
+  const unpinnedThreads = useMemo(() => {
+    return sortedThreads.filter(t => !pinnedChats.map(Number).includes(Number(t.user_id)));
+  }, [sortedThreads, pinnedChats]);
+
+  const handleReorderPinned = (newOrder) => {
+    const normalized = newOrder.map(Number);
+    setPinnedChats(normalized);
+    localStorage.setItem("pinned_chats", JSON.stringify(normalized));
+  };
 
   // Filter messages based on local query search
   const filteredMessages = useMemo(() => {
@@ -959,8 +998,8 @@ const MiniChatWindow = () => {
             onResize={(e, { size }) => setDimensions({ width: size.width, height: size.height })}
           >
             <div style={{
-              width: "100%",
-              height: "100%",
+              width: `${dimensions.width}px`,
+              height: `${dimensions.height}px`,
               background: "var(--bg-surface, rgba(255, 255, 255, 0.85))",
               borderRadius: "16px",
               boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
@@ -1082,7 +1121,7 @@ const MiniChatWindow = () => {
               </div>
 
               {/* VIEW SWITCHER ANIMATION */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", height: "100%", minHeight: 0, overflow: "hidden", position: "relative" }}>
                 <AnimatePresence mode="wait">
                   {/* VIEW 1: THREAD LIST */}
                   {currentView === "threads" && (
@@ -1092,7 +1131,7 @@ const MiniChatWindow = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 15 }}
                       transition={{ duration: 0.15 }}
-                      style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}
+                      style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Search */}
                       {!(activeTab === "support" && !isOperator) && (
@@ -1219,82 +1258,167 @@ const MiniChatWindow = () => {
                         ) : sortedThreads.length === 0 ? (
                           <div style={{ textAlign: "center", marginTop: "30px", color: "var(--text-secondary)", fontSize: "13px" }}>Нет активных чатов</div>
                         ) : (
-                          sortedThreads.map(thread => {
-                            const threadId = thread.user_id;
-                            const isSelected = recipientId === threadId && chatType === activeTab;
-                            const isPinned = pinnedChats.includes(threadId);
-                            const isMuted = mutedChats.includes(threadId);
-                            return (
-                              <div
-                                key={`${activeTab}-${threadId}`}
-                                onClick={() => {
-                                  setChatType(activeTab);
-                                  setRecipientId(threadId);
-                                  setActiveThreadName(thread.username);
-                                  setCurrentView("chat");
-                                }}
-                                onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "12px",
-                                  padding: "10px 12px",
-                                  borderRadius: "10px",
-                                  background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
-                                  cursor: "pointer",
-                                  marginBottom: "8px",
-                                  border: isPinned ? "1.5px solid #3b82f6" : "1px solid var(--border-color, #e2e8f0)",
-                                  transition: "all 0.2s",
-                                  position: "relative"
-                                }}
-                              >
-                                <div style={{
-                                  width: "36px",
-                                  height: "36px",
-                                  borderRadius: "50%",
-                                  background: "#e2e8f0",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  color: "#64748b",
-                                  flexShrink: 0
-                                }}>
-                                  <User size={18} />
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                                    <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
-                                      {thread.username}
-                                      {isPinned && <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />}
-                                      {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
-                                    </span>
-                                    <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
-                                      {formatTime(thread.last_message_at)}
-                                    </span>
+                          <>
+                            {pinnedThreads.length > 0 && (
+                              <Reorder.Group axis="y" values={pinnedThreads} onReorder={handleReorderPinned} style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                                {pinnedThreads.map(thread => {
+                                  const threadId = thread.user_id;
+                                  const isSelected = recipientId === threadId && chatType === activeTab;
+                                  const isMuted = mutedChats.includes(threadId);
+                                  return (
+                                    <Reorder.Item
+                                      key={`${activeTab}-${threadId}`}
+                                      value={thread}
+                                      as="div"
+                                      style={{ listStyle: "none", padding: 0, margin: 0 }}
+                                    >
+                                      <div
+                                        onClick={() => {
+                                          setChatType(activeTab);
+                                          setRecipientId(threadId);
+                                          setActiveThreadName(thread.username);
+                                          setCurrentView("chat");
+                                        }}
+                                        onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "12px",
+                                          padding: "10px 12px",
+                                          borderRadius: "10px",
+                                          background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
+                                          cursor: "grab",
+                                          marginBottom: "8px",
+                                          border: "1.5px solid #3b82f6",
+                                          transition: "all 0.2s",
+                                          position: "relative"
+                                        }}
+                                      >
+                                        <div style={{
+                                          width: "36px",
+                                          height: "36px",
+                                          borderRadius: "50%",
+                                          background: "#e2e8f0",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          color: "#64748b",
+                                          flexShrink: 0
+                                        }}>
+                                          <User size={18} />
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                                            <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
+                                              {thread.username}
+                                              <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />
+                                              {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
+                                            </span>
+                                            <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
+                                              {formatTime(thread.last_message_at)}
+                                            </span>
+                                          </div>
+                                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <span style={{ fontSize: "12px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "10px" }}>
+                                              {thread.message || (thread.attachment_url ? "Вложение" : "Нет сообщений")}
+                                            </span>
+                                            {thread.unread_count > 0 && (
+                                              <span style={{
+                                                background: "#ef4444",
+                                                color: "white",
+                                                fontSize: "10px",
+                                                fontWeight: "bold",
+                                                borderRadius: "10px",
+                                                padding: "1px 6px",
+                                                minWidth: "16px",
+                                                textAlign: "center"
+                                              }}>
+                                                {thread.unread_count}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </Reorder.Item>
+                                  );
+                                })}
+                              </Reorder.Group>
+                            )}
+                            {unpinnedThreads.map(thread => {
+                              const threadId = thread.user_id;
+                              const isSelected = recipientId === threadId && chatType === activeTab;
+                              const isMuted = mutedChats.includes(threadId);
+                              return (
+                                <div
+                                  key={`${activeTab}-${threadId}`}
+                                  onClick={() => {
+                                    setChatType(activeTab);
+                                    setRecipientId(threadId);
+                                    setActiveThreadName(thread.username);
+                                    setCurrentView("chat");
+                                  }}
+                                  onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "12px",
+                                    padding: "10px 12px",
+                                    borderRadius: "10px",
+                                    background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
+                                    cursor: "pointer",
+                                    marginBottom: "8px",
+                                    border: "1px solid var(--border-color, #e2e8f0)",
+                                    transition: "all 0.2s",
+                                    position: "relative"
+                                  }}
+                                >
+                                  <div style={{
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "50%",
+                                    background: "#e2e8f0",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#64748b",
+                                    flexShrink: 0
+                                  }}>
+                                    <User size={18} />
                                   </div>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <span style={{ fontSize: "12px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "10px" }}>
-                                      {thread.message || (thread.attachment_url ? "Вложение" : "Нет сообщений")}
-                                    </span>
-                                    {thread.unread_count > 0 && (
-                                      <span style={{
-                                        background: "#ef4444",
-                                        color: "white",
-                                        fontSize: "10px",
-                                        fontWeight: "bold",
-                                        borderRadius: "10px",
-                                        padding: "1px 6px",
-                                        minWidth: "16px",
-                                        textAlign: "center"
-                                      }}>
-                                        {thread.unread_count}
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                                      <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
+                                        {thread.username}
+                                        {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
                                       </span>
-                                    )}
+                                      <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
+                                        {formatTime(thread.last_message_at)}
+                                      </span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "10px" }}>
+                                        {thread.message || (thread.attachment_url ? "Вложение" : "Нет сообщений")}
+                                      </span>
+                                      {thread.unread_count > 0 && (
+                                        <span style={{
+                                          background: "#ef4444",
+                                          color: "white",
+                                          fontSize: "10px",
+                                          fontWeight: "bold",
+                                          borderRadius: "10px",
+                                          padding: "1px 6px",
+                                          minWidth: "16px",
+                                          textAlign: "center"
+                                        }}>
+                                          {thread.unread_count}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })
+                              );
+                            })}
+                          </>
                         )}
                       </div>
                     </motion.div>
@@ -1308,7 +1432,7 @@ const MiniChatWindow = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -15 }}
                       transition={{ duration: 0.15 }}
-                      style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}
+                      style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Local Search input */}
                       {localSearchActive && (
@@ -1643,7 +1767,7 @@ const MiniChatWindow = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -15 }}
                       transition={{ duration: 0.15 }}
-                      style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}
+                      style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Search Users */}
                       <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-color, #cbd5e1)" }}>

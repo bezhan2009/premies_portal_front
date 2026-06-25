@@ -8,7 +8,7 @@ import {
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import useThemeStore from "../../../store/useThemeStore";
 import ImageModal from "../../../components/modal/ImageModal";
 
@@ -42,7 +42,7 @@ const getReactionGroups = (reactionsStr, currentUserId) => {
 
 
 // Custom font family stack with emoji support
-const EMOJI_FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
+const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 // Custom Audio Player component for voice messages
 const AudioPlayer = ({ src, isOut }) => {
@@ -815,6 +815,20 @@ export default function OperatorFeedbackPage() {
     });
   }, [activeTab, supportThreads, directThreads, threadSearch, pinnedChats]);
 
+  const pinnedThreads = useMemo(() => {
+    return displayThreads.filter(t => pinnedChats.map(Number).includes(Number(t.id)));
+  }, [displayThreads, pinnedChats]);
+
+  const unpinnedThreads = useMemo(() => {
+    return displayThreads.filter(t => !pinnedChats.map(Number).includes(Number(t.id)));
+  }, [displayThreads, pinnedChats]);
+
+  const handleReorderPinned = (newOrder) => {
+    const newPinnedIds = newOrder.map(t => Number(t.id));
+    setPinnedChats(newPinnedIds);
+    localStorage.setItem("pinned_chats", JSON.stringify(newPinnedIds));
+  };
+
   // Filter messages based on local query search
   const filteredMessages = useMemo(() => {
     if (!localSearchActive || !localSearchQuery.trim()) return messages;
@@ -831,7 +845,25 @@ export default function OperatorFeedbackPage() {
   };
 
   const handleGlobalRipple = (e) => {
-    const button = e.target.closest("button, .ripple-btn");
+    let target = e.target;
+    let button = null;
+    while (target && target !== e.currentTarget) {
+      const style = window.getComputedStyle(target);
+      if (
+        target.tagName === "BUTTON" || 
+        target.classList.contains("ripple-btn") || 
+        target.classList.contains("thread-item") ||
+        target.classList.contains("modal-user-item") ||
+        target.classList.contains("mini-chat-thread-card") ||
+        style.cursor === "pointer" ||
+        style.cursor === "grab"
+      ) {
+        button = target;
+        break;
+      }
+      target = target.parentElement;
+    }
+
     if (!button) return;
 
     if (window.getComputedStyle(button).position === "static") {
@@ -848,7 +880,10 @@ export default function OperatorFeedbackPage() {
     circle.style.left = `${e.clientX - rect.left - radius}px`;
     circle.style.top = `${e.clientY - rect.top - radius}px`;
 
-    const isDarkBg = button.classList.contains("primary") || button.style.background === "#eb2525" || button.style.backgroundColor === "rgb(235, 37, 37)";
+    const isDarkBg = button.classList.contains("primary") || 
+                     button.style.background === "#eb2525" || 
+                     button.style.backgroundColor === "rgb(235, 37, 37)" ||
+                     button.getAttribute("style")?.includes("#eb2525");
     circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
     circle.style.position = "absolute";
     circle.style.borderRadius = "50%";
@@ -861,15 +896,15 @@ export default function OperatorFeedbackPage() {
         { transform: "scale(4)", opacity: 0 }
       ],
       {
-        duration: 600,
-        easing: "linear"
+        duration: 500,
+        easing: "ease-out"
       }
     );
 
     button.appendChild(circle);
     setTimeout(() => {
       circle.remove();
-    }, 600);
+    }, 500);
   };
 
   const handleCopy = (text) => {
@@ -1719,44 +1754,92 @@ export default function OperatorFeedbackPage() {
               Нет активных диалогов.
             </div>
           ) : (
-            displayThreads.map((thread) => {
-              const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
-              const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
-              const isPinned = pinnedChats.map(Number).includes(Number(thread.id));
-              const isMuted = mutedChats.map(Number).includes(Number(thread.id));
+            <>
+              {pinnedThreads.length > 0 && (
+                <Reorder.Group axis="y" values={pinnedThreads} onReorder={handleReorderPinned} style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {pinnedThreads.map((thread) => {
+                    const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
+                    const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
+                    const isMuted = mutedChats.map(Number).includes(Number(thread.id));
 
-              return (
-                <div
-                  key={`${thread.chatType}-${thread.id}`}
-                  className={`thread-item ${isActive ? "active" : ""}`}
-                  onClick={() => handleSelectThread(thread)}
-                  onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
-                  style={{
-                    border: isPinned ? "1.5px solid #3b82f6" : "1.5px solid transparent",
-                    position: "relative",
-                    background: isPinned ? "var(--bg-secondary, rgba(59, 130, 246, 0.04))" : "inherit"
-                  }}
-                >
-                  <div className="thread-avatar">
-                    {thread.isSupportTicket ? <Shield size={18} /> : initials}
-                  </div>
-                  <div className="thread-info">
-                    <div className="thread-meta">
-                      <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        {thread.name}
-                        {isPinned && <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />}
-                        {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
-                      </span>
-                      <span className="thread-time">{formatTime(thread.last_message_at)}</span>
+                    return (
+                      <Reorder.Item
+                        key={`${thread.chatType}-${thread.id}`}
+                        value={thread}
+                        as="div"
+                        style={{ listStyle: "none", padding: 0, margin: 0 }}
+                      >
+                        <div
+                          className={`thread-item ${isActive ? "active" : ""}`}
+                          onClick={() => handleSelectThread(thread)}
+                          onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
+                          style={{
+                            border: "1.5px solid #3b82f6",
+                            position: "relative",
+                            background: "var(--bg-secondary, rgba(59, 130, 246, 0.04))",
+                            cursor: "grab"
+                          }}
+                        >
+                          <div className="thread-avatar">
+                            {thread.isSupportTicket ? <Shield size={18} /> : initials}
+                          </div>
+                          <div className="thread-info">
+                            <div className="thread-meta">
+                              <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                {thread.name}
+                                <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />
+                                {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
+                              </span>
+                              <span className="thread-time">{formatTime(thread.last_message_at)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
+                              {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </Reorder.Item>
+                    );
+                  })}
+                </Reorder.Group>
+              )}
+              {unpinnedThreads.map((thread) => {
+                const isActive = activeChatType === thread.chatType && activeThreadId === thread.id;
+                const initials = thread.name ? thread.name.substring(0, 2).toUpperCase() : "?";
+                const isMuted = mutedChats.map(Number).includes(Number(thread.id));
+
+                return (
+                  <div
+                    key={`${thread.chatType}-${thread.id}`}
+                    className={`thread-item ${isActive ? "active" : ""}`}
+                    onClick={() => handleSelectThread(thread)}
+                    onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
+                    style={{
+                      border: "1.5px solid transparent",
+                      position: "relative",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <div className="thread-avatar">
+                      {thread.isSupportTicket ? <Shield size={18} /> : initials}
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
-                      {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
+                    <div className="thread-info">
+                      <div className="thread-meta">
+                        <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          {thread.name}
+                          {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
+                        </span>
+                        <span className="thread-time">{formatTime(thread.last_message_at)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="thread-msg">{thread.message || "Вложение/Диалог начат"}</span>
+                        {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </>
           )}
         </div>
 
