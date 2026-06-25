@@ -3,7 +3,8 @@ import axios from "axios";
 import { 
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
-  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
+  CheckSquare, CheckCircle2, CornerUpRight
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -12,6 +13,7 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import useThemeStore from "../../../store/useThemeStore";
 import ImageModal from "../../../components/modal/ImageModal";
 import PasteFileModal from "../../../components/modal/PasteFileModal";
+import filePng from "../../../assets/file.png";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -65,9 +67,9 @@ const formatMessageText = (text) => {
   escaped = escaped.replace(emojiRegex, (emoji) => {
     const codePoints = [];
     for (const char of emoji) {
-      codePoints.push(char.codePointAt(0).toString(16));
+      codePoints.push(char.codePointAt(0).toString(16).padStart(4, "0"));
     }
-    const hex = codePoints.filter(c => c !== "fe0f").join("-");
+    const hex = codePoints.join("-");
     const src = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${hex}.png`;
     return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
   });
@@ -306,6 +308,166 @@ export default function OperatorFeedbackPage() {
   // Advanced Features: Pinned & Muted Chats
   const [pinnedChats, setPinnedChats] = useState([]);
   const [mutedChats, setMutedChats] = useState([]);
+
+  // Advanced Features: Message Selection & Forwarding
+  const [selectedMessageIds, setSelectedMessageIds] = useState([]);
+  const [isMessageSelectionMode, setIsMessageSelectionMode] = useState(false);
+  const [forwardModalOpen, setForwardModalOpen] = useState(false);
+  const [forwardSearchQuery, setForwardSearchQuery] = useState("");
+
+  const handleSelectMessage = (msgId) => {
+    setSelectedMessageIds(prev => {
+      const isSelected = prev.includes(msgId);
+      const updated = isSelected ? prev.filter(id => id !== msgId) : [...prev, msgId];
+      if (updated.length === 0) {
+        setIsMessageSelectionMode(false);
+      }
+      return updated;
+    });
+  };
+
+  const handleExitMessageSelection = () => {
+    setIsMessageSelectionMode(false);
+    setSelectedMessageIds([]);
+  };
+
+  // Advanced Features: Chat Selection
+  const [selectedChatIds, setSelectedChatIds] = useState([]);
+  const [isChatSelectionMode, setIsChatSelectionMode] = useState(false);
+
+  const handleSelectChat = (chatId) => {
+    setSelectedChatIds(prev => {
+      const isSelected = prev.includes(chatId);
+      const updated = isSelected ? prev.filter(id => id !== chatId) : [...prev, chatId];
+      if (updated.length === 0) {
+        setIsChatSelectionMode(false);
+      }
+      return updated;
+    });
+  };
+
+  const handleExitChatSelection = () => {
+    setIsChatSelectionMode(false);
+    setSelectedChatIds([]);
+  };
+
+  const forwardThreadsList = useMemo(() => {
+    const list = [];
+    supportThreads.forEach(t => {
+      list.push({ id: t.user_id, name: t.username || "Служба поддержки", chatType: "support" });
+    });
+    directThreads.forEach(t => {
+      list.push({ id: t.user_id, name: t.username || "Пользователь", chatType: "direct" });
+    });
+    return list;
+  }, [supportThreads, directThreads]);
+
+  const handleForwardMessages = async (targetThread) => {
+    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+    const sortedIds = [...selectedMessageIds].sort((a, b) => a - b);
+    setSending(true);
+    try {
+      for (const msgId of sortedIds) {
+        const msg = messages.find(m => m.id === msgId);
+        if (!msg) continue;
+        
+        let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+        let forwardPrefix = `Переслано от ${senderName}:\n`;
+        let textToSend = msg.message ? `${forwardPrefix}${msg.message}` : `${forwardPrefix.trim()}`;
+        
+        const payload = {
+          message: textToSend,
+          attachment_url: msg.attachment_url || "",
+          recipient_id: targetThread.chatType === "direct" ? targetThread.id : 0,
+          reply_to_id: null
+        };
+        
+        await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+      }
+      setIsMessageSelectionMode(false);
+      setSelectedMessageIds([]);
+      setForwardModalOpen(false);
+      
+      // Navigate to the target chat!
+      setActiveChatType(targetThread.chatType);
+      setActiveThreadId(targetThread.id);
+      setActiveThreadName(targetThread.name);
+      fetchMessages(targetThread.chatType, targetThread.id, true);
+    } catch (err) {
+      console.error("Error forwarding messages:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleBulkDeleteMessages = async () => {
+    if (!window.confirm(`Вы уверены, что хотите удалить ${selectedMessageIds.length} сообщений?`)) return;
+    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+    setSending(true);
+    try {
+      for (const msgId of selectedMessageIds) {
+        await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+      }
+      setIsMessageSelectionMode(false);
+      setSelectedMessageIds([]);
+      fetchMessages(activeChatType, activeThreadId);
+      if (activeChatType === "support") fetchSupportThreads();
+      else if (activeChatType === "direct") fetchDirectThreads();
+    } catch (err) {
+      console.error("Error bulk deleting messages:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleBulkMuteChats = () => {
+    setMutedChats(prev => {
+      const allSelectedMuted = selectedChatIds.every(id => prev.includes(id));
+      let updated;
+      if (allSelectedMuted) {
+        updated = prev.filter(id => !selectedChatIds.includes(id));
+      } else {
+        const uniqueSelected = selectedChatIds.filter(id => !prev.includes(id));
+        updated = [...prev, ...uniqueSelected];
+      }
+      localStorage.setItem("muted_chats", JSON.stringify(updated));
+      return updated;
+    });
+    setIsChatSelectionMode(false);
+    setSelectedChatIds([]);
+  };
+
+  const handleBulkDeleteChats = async () => {
+    if (!window.confirm(`Вы уверены, что хотите удалить ${selectedChatIds.length} выбранных чатов?`)) return;
+    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+    setSending(true);
+    try {
+      for (const threadId of selectedChatIds) {
+        let url = `${API_URL}/api/feedback/chat`;
+        if (activeTab === "direct") {
+          url += `?chatWith=${threadId}`;
+        } else {
+          url += `?userId=${threadId}`;
+        }
+        await axios.delete(url, axiosConfig);
+        
+        if (activeThreadId === threadId) {
+          setActiveThreadId(null);
+          setActiveChatType(null);
+          setMessages([]);
+        }
+      }
+      setIsChatSelectionMode(false);
+      setSelectedChatIds([]);
+      fetchSupportThreads();
+      fetchDirectThreads();
+      fetchTotalUnread();
+    } catch (err) {
+      console.error("Error bulk deleting chats:", err);
+    } finally {
+      setSending(false);
+    }
+  };
 
   // Advanced Features: Chat Message Search
   const [localSearchActive, setLocalSearchActive] = useState(false);
@@ -1066,7 +1228,7 @@ export default function OperatorFeedbackPage() {
               fontFamily: EMOJI_FONT_STACK
             }}
           >
-            {contextMenu.type === "message" ? (
+            {contextMenu.type === "message" && (
               <>
                 <div style={{
                   display: "flex",
@@ -1105,7 +1267,7 @@ export default function OperatorFeedbackPage() {
                         onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                       >
                         <img 
-                          src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                          src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`} 
                           alt={emoji} 
                           style={{ width: "20px", height: "20px", display: "block" }}
                           onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
@@ -1157,6 +1319,7 @@ export default function OperatorFeedbackPage() {
                       onClick={() => {
                         setReplyingTo(contextMenu.target);
                         setEditingMessage(null);
+                        setContextMenu({ ...contextMenu, visible: false });
                       }}
                       style={{
                         display: "flex",
@@ -1176,7 +1339,10 @@ export default function OperatorFeedbackPage() {
                       <CornerUpLeft size={14} /> Ответить
                     </button>
                     <button 
-                      onClick={() => handleCopy(contextMenu.target.message)}
+                      onClick={() => {
+                        handleCopy(contextMenu.target.message);
+                        setContextMenu({ ...contextMenu, visible: false });
+                      }}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1194,6 +1360,29 @@ export default function OperatorFeedbackPage() {
                     >
                       <Check size={14} /> Копировать
                     </button>
+                    <button 
+                      onClick={() => {
+                        setIsMessageSelectionMode(true);
+                        setSelectedMessageIds([contextMenu.target.id]);
+                        setContextMenu({ ...contextMenu, visible: false });
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <CheckSquare size={14} /> Выбрать
+                    </button>
                     {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
                       (activeChatType === "support" && contextMenu.target.is_operator)) && (
                       <>
@@ -1202,6 +1391,7 @@ export default function OperatorFeedbackPage() {
                             setEditingMessage(contextMenu.target);
                             setNewMessage(contextMenu.target.message || "");
                             setReplyingTo(null);
+                            setContextMenu({ ...contextMenu, visible: false });
                           }}
                           style={{
                             display: "flex",
@@ -1221,7 +1411,10 @@ export default function OperatorFeedbackPage() {
                           <Edit3 size={14} /> Редактировать
                         </button>
                         <button 
-                          onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                          onClick={() => {
+                            handleDeleteMessage(contextMenu.target.id);
+                            setContextMenu({ ...contextMenu, visible: false });
+                          }}
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -1244,10 +1437,61 @@ export default function OperatorFeedbackPage() {
                   </>
                 )}
               </>
-            ) : (
+            )}
+            {contextMenu.type === "chatArea" && (
+              <button 
+                onClick={() => {
+                  setIsMessageSelectionMode(true);
+                  setContextMenu({ ...contextMenu, visible: false });
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <CheckSquare size={14} /> Выбрать
+              </button>
+            )}
+            {contextMenu.type === "thread" && (
               <>
                 <button 
-                  onClick={() => handleTogglePin(contextMenu.target.id)}
+                  onClick={() => {
+                    setIsChatSelectionMode(true);
+                    setSelectedChatIds([contextMenu.target.id]);
+                    setContextMenu({ ...contextMenu, visible: false });
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#1e293b",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <CheckSquare size={14} /> Выбрать
+                </button>
+                <button 
+                  onClick={() => {
+                    handleTogglePin(contextMenu.target.id);
+                    setContextMenu({ ...contextMenu, visible: false });
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1308,7 +1552,10 @@ export default function OperatorFeedbackPage() {
                   </>
                 )}
                 <button 
-                  onClick={() => handleToggleMute(contextMenu.target.id)}
+                  onClick={() => {
+                    handleToggleMute(contextMenu.target.id);
+                    setContextMenu({ ...contextMenu, visible: false });
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1328,7 +1575,10 @@ export default function OperatorFeedbackPage() {
                   {mutedChats.map(Number).includes(Number(contextMenu.target.id)) ? "Включить звук" : "Без звука"}
                 </button>
                 <button 
-                  onClick={() => handleDeleteChat(contextMenu.target.id)}
+                  onClick={() => {
+                    handleDeleteChat(contextMenu.target.id);
+                    setContextMenu({ ...contextMenu, visible: false });
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -2247,7 +2497,7 @@ export default function OperatorFeedbackPage() {
                                   ) : (
                                     <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", color: "inherit", background: isOutgoing ? "rgba(255,255,255,0.15)" : "var(--bg-color, #f1f5f9)", padding: "8px 12px", borderRadius: "10px", border: isOutgoing ? "none" : "1px solid var(--border-color, #e2e8f0)", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity=0.8} onMouseLeave={e => e.currentTarget.style.opacity=1}>
                                       <div style={{ width: "36px", height: "36px", flexShrink: 0, background: isOutgoing ? "rgba(255,255,255,0.2)" : "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        <img src="/src/assets/file.png" alt="file" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+                                        <img src={filePng} alt="file" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
                                       </div>
                                       <div style={{ overflow: "hidden", flex: 1 }}>
                                         <div style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isOutgoing ? "white" : "var(--text-color, #1e293b)" }}>
@@ -2308,7 +2558,7 @@ export default function OperatorFeedbackPage() {
                                     >
                                       <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
                                         <img 
-                                          src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                                          src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`} 
                                           alt={emoji} 
                                           style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
                                           onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}

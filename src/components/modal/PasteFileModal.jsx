@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Paintbrush, Undo } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
+import filePng from '../../assets/file.png';
 
 const PasteFileModal = ({ isOpen, file, onClose, onSend }) => {
   const { theme } = useThemeStore();
@@ -269,7 +270,7 @@ const PasteFileModal = ({ isOpen, file, onClose, onSend }) => {
               alignItems: 'center',
               gap: '16px'
             }}>
-              <img src="/src/assets/file.png" alt="file" style={{ width: '64px', height: '64px', opacity: 0.8 }} />
+              <img src={filePng} alt="file" style={{ width: '64px', height: '64px', opacity: 0.8 }} />
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-color)', wordBreak: 'break-all' }}>{file.name}</div>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>

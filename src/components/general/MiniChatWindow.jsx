@@ -4,7 +4,8 @@ import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
   Minus, ArrowLeft, Search, User, Shield, PlusCircle,
-  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown
+  Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown,
+  CheckSquare, CheckCircle2, CornerUpRight
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -13,6 +14,7 @@ import useChatStore from "../../store/useChatStore";
 import ImageModal from "../modal/ImageModal";
 import PasteFileModal from "../modal/PasteFileModal";
 import { useLocation } from "react-router-dom";
+import filePng from "../../assets/file.png";
 import "react-resizable/css/styles.css";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -42,9 +44,9 @@ const formatMessageText = (text) => {
   escaped = escaped.replace(emojiRegex, (emoji) => {
     const codePoints = [];
     for (const char of emoji) {
-      codePoints.push(char.codePointAt(0).toString(16));
+      codePoints.push(char.codePointAt(0).toString(16).padStart(4, "0"));
     }
-    const hex = codePoints.filter(c => c !== "fe0f").join("-");
+    const hex = codePoints.join("-");
     const src = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${hex}.png`;
     return `<img src="${src}" alt="${emoji}" style="width: 20px; height: 20px; vertical-align: middle; margin: 0 1px; display: inline-block;" onerror="this.style.display='none'; this.after('${emoji}');" />`;
   });
@@ -236,6 +238,14 @@ const MiniChatWindow = () => {
   // Advanced Features: Replies & Editing
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
+
+  // Advanced Features: Selection & Forwarding
+  const [selectedMessageIds, setSelectedMessageIds] = useState([]);
+  const [isMessageSelectionMode, setIsMessageSelectionMode] = useState(false);
+  const [selectedChatIds, setSelectedChatIds] = useState([]);
+  const [isChatSelectionMode, setIsChatSelectionMode] = useState(false);
+  const [forwardModalOpen, setForwardModalOpen] = useState(false);
+  const [forwardSearchQuery, setForwardSearchQuery] = useState("");
 
   // Advanced Features: Voice Audio Messages
   const [isRecording, setIsRecording] = useState(false);
@@ -664,6 +674,191 @@ const MiniChatWindow = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleSelectMessage = (msgId) => {
+    setSelectedMessageIds(prev => {
+      const isSelected = prev.includes(msgId);
+      const updated = isSelected ? prev.filter(id => id !== msgId) : [...prev, msgId];
+      if (updated.length === 0) {
+        setIsMessageSelectionMode(false);
+      }
+      return updated;
+    });
+  };
+
+  const handleExitMessageSelection = () => {
+    setIsMessageSelectionMode(false);
+    setSelectedMessageIds([]);
+  };
+
+  const handleSelectChat = (chatId) => {
+    setSelectedChatIds(prev => {
+      const isSelected = prev.includes(chatId);
+      const updated = isSelected ? prev.filter(id => id !== chatId) : [...prev, chatId];
+      if (updated.length === 0) {
+        setIsChatSelectionMode(false);
+      }
+      return updated;
+    });
+  };
+
+  const handleExitChatSelection = () => {
+    setIsChatSelectionMode(false);
+    setSelectedChatIds([]);
+  };
+
+  const forwardThreadsList = useMemo(() => {
+    const list = [];
+    if (!isOperator) {
+      list.push({ id: 0, name: "Служба поддержки", chatType: "support" });
+    } else {
+      supportThreads.forEach(t => {
+        list.push({ id: t.user_id, name: t.username || "Служба поддержки", chatType: "support" });
+      });
+    }
+    directThreads.forEach(t => {
+      list.push({ id: t.user_id, name: t.username || "Пользователь", chatType: "direct" });
+    });
+    return list;
+  }, [supportThreads, directThreads, isOperator]);
+
+  const handleForwardMessages = async (targetThread) => {
+    if (!token) return;
+    const sortedIds = [...selectedMessageIds].sort((a, b) => a - b);
+    setSending(true);
+    try {
+      for (const msgId of sortedIds) {
+        const msg = messages.find(m => m.id === msgId);
+        if (!msg) continue;
+        
+        let senderName = msg.username || (msg.is_operator ? "Оператор" : "Пользователь");
+        let forwardPrefix = `Переслано от ${senderName}:\n`;
+        let textToSend = msg.message ? `${forwardPrefix}${msg.message}` : `${forwardPrefix.trim()}`;
+        
+        let payload = {};
+        if (targetThread.chatType === "direct") {
+          payload = {
+            message: textToSend,
+            attachment_url: msg.attachment_url || "",
+            recipient_id: targetThread.id,
+            reply_to_id: null
+          };
+        } else {
+          payload = {
+            message: textToSend,
+            attachment_url: msg.attachment_url || "",
+            recipient_id: 0,
+            user_id: isOperator ? targetThread.id : undefined,
+            reply_to_id: null
+          };
+        }
+        
+        await axios.post(`${API_URL}/api/feedback`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      setIsMessageSelectionMode(false);
+      setSelectedMessageIds([]);
+      setForwardModalOpen(false);
+      
+      // Navigate to target thread
+      setChatType(targetThread.chatType);
+      setRecipientId(targetThread.id);
+      setActiveThreadName(targetThread.name);
+      setCurrentView("chat");
+      fetchMessages();
+    } catch (err) {
+      console.error("Error forwarding messages:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleBulkDeleteMessages = async () => {
+    if (!window.confirm(`Вы уверены, что хотите удалить ${selectedMessageIds.length} сообщений?`)) return;
+    setSending(true);
+    try {
+      for (const msgId of selectedMessageIds) {
+        await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      setIsMessageSelectionMode(false);
+      setSelectedMessageIds([]);
+      fetchMessages();
+      fetchThreadsData();
+    } catch (err) {
+      console.error("Error bulk deleting messages:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleBulkMuteChats = () => {
+    setMutedChats(prev => {
+      const allSelectedMuted = selectedChatIds.every(id => prev.includes(id));
+      let updated;
+      if (allSelectedMuted) {
+        updated = prev.filter(id => !selectedChatIds.includes(id));
+      } else {
+        const uniqueSelected = selectedChatIds.filter(id => !prev.includes(id));
+        updated = [...prev, ...uniqueSelected];
+      }
+      localStorage.setItem("muted_chats", JSON.stringify(updated));
+      return updated;
+    });
+    setIsChatSelectionMode(false);
+    setSelectedChatIds([]);
+  };
+
+  const handleBulkDeleteChats = async () => {
+    if (!window.confirm(`Вы уверены, что хотите удалить ${selectedChatIds.length} выбранных чатов?`)) return;
+    setSending(true);
+    try {
+      for (const threadId of selectedChatIds) {
+        let url = `${API_URL}/api/feedback/chat`;
+        if (activeTab === "direct") {
+          url += `?chatWith=${threadId}`;
+        } else {
+          url += `?userId=${threadId}`;
+        }
+        await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+        
+        if (recipientId === threadId) {
+          setRecipientId(0);
+          setMessages([]);
+        }
+      }
+      setIsChatSelectionMode(false);
+      setSelectedChatIds([]);
+      fetchThreadsData();
+    } catch (err) {
+      console.error("Error bulk deleting chats:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDeleteChat = async (threadId) => {
+    if (!window.confirm("Вы уверены, что хотите удалить весь чат?")) return;
+    try {
+      let url = `${API_URL}/api/feedback/chat`;
+      if (chatType === "direct") {
+        url += `?chatWith=${threadId}`;
+      } else {
+        url += `?userId=${threadId}`;
+      }
+      await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+      
+      if (recipientId === threadId) {
+        setRecipientId(0);
+        setMessages([]);
+      }
+      fetchThreadsData();
+    } catch (err) {
+      console.error("Error deleting chat:", err);
+    }
+  };
+
   const formatTime = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
@@ -941,7 +1136,7 @@ const MiniChatWindow = () => {
             fontFamily: EMOJI_FONT_STACK
           }}
         >
-          {contextMenu.type === "message" ? (
+          {contextMenu.type === "message" && (
             <>
               {/* Popular emojis reactions bar */}
               <div style={{
@@ -984,7 +1179,7 @@ const MiniChatWindow = () => {
                       onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                     >
                       <img 
-                        src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
+                        src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`} 
                         alt={emoji} 
                         style={{ width: "20px", height: "20px", display: "block" }}
                         onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
@@ -1035,6 +1230,7 @@ const MiniChatWindow = () => {
                     onClick={() => {
                       setReplyingTo(contextMenu.target);
                       setEditingMessage(null);
+                      setContextMenu({ ...contextMenu, visible: false });
                     }}
                     style={{
                       display: "flex",
@@ -1054,7 +1250,10 @@ const MiniChatWindow = () => {
                     <CornerUpLeft size={14} /> Ответить
                   </button>
                   <button 
-                    onClick={() => handleCopy(contextMenu.target.message)}
+                    onClick={() => {
+                      handleCopy(contextMenu.target.message);
+                      setContextMenu({ ...contextMenu, visible: false });
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1072,6 +1271,29 @@ const MiniChatWindow = () => {
                   >
                     <Check size={14} /> Копировать
                   </button>
+                  <button 
+                    onClick={() => {
+                      setIsMessageSelectionMode(true);
+                      setSelectedMessageIds([contextMenu.target.id]);
+                      setContextMenu({ ...contextMenu, visible: false });
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <CheckSquare size={14} /> Выбрать
+                  </button>
                   {((chatType === "direct" && contextMenu.target.user_id === currentUserId) ||
                     (chatType === "support" && (isOperator ? contextMenu.target.is_operator : (!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)))) && (
                     <>
@@ -1080,6 +1302,7 @@ const MiniChatWindow = () => {
                           setEditingMessage(contextMenu.target);
                           setNewMessage(contextMenu.target.message || "");
                           setReplyingTo(null);
+                          setContextMenu({ ...contextMenu, visible: false });
                         }}
                         style={{
                           display: "flex",
@@ -1099,7 +1322,10 @@ const MiniChatWindow = () => {
                         <Edit3 size={14} /> Редактировать
                       </button>
                       <button 
-                        onClick={() => handleDeleteMessage(contextMenu.target.id)}
+                        onClick={() => {
+                          handleDeleteMessage(contextMenu.target.id);
+                          setContextMenu({ ...contextMenu, visible: false });
+                        }}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1122,10 +1348,61 @@ const MiniChatWindow = () => {
                 </>
               )}
             </>
-          ) : (
+          )}
+          {contextMenu.type === "chatArea" && (
+            <button 
+              onClick={() => {
+                setIsMessageSelectionMode(true);
+                setContextMenu({ ...contextMenu, visible: false });
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 10px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#1e293b",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                textAlign: "left"
+              }}
+            >
+              <CheckSquare size={14} /> Выбрать
+            </button>
+          )}
+          {contextMenu.type === "thread" && (
             <>
               <button 
-                onClick={() => handleTogglePin(contextMenu.target.user_id)}
+                onClick={() => {
+                  setIsChatSelectionMode(true);
+                  setSelectedChatIds([contextMenu.target.user_id]);
+                  setContextMenu({ ...contextMenu, visible: false });
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <CheckSquare size={14} /> Выбрать
+              </button>
+              <button 
+                onClick={() => {
+                  handleTogglePin(contextMenu.target.user_id);
+                  setContextMenu({ ...contextMenu, visible: false });
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1186,7 +1463,10 @@ const MiniChatWindow = () => {
                 </>
               )}
               <button 
-                onClick={() => handleToggleMute(contextMenu.target.user_id)}
+                onClick={() => {
+                  handleToggleMute(contextMenu.target.user_id);
+                  setContextMenu({ ...contextMenu, visible: false });
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1204,6 +1484,28 @@ const MiniChatWindow = () => {
               >
                 {mutedChats.map(Number).includes(Number(contextMenu.target.user_id)) ? <Bell size={14} /> : <BellOff size={14} />} 
                 {mutedChats.map(Number).includes(Number(contextMenu.target.user_id)) ? "Включить звук" : "Без звука"}
+              </button>
+              <button 
+                onClick={() => {
+                  handleDeleteChat(contextMenu.target.user_id);
+                  setContextMenu({ ...contextMenu, visible: false });
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#ef4444",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  textAlign: "left"
+                }}
+              >
+                <Trash2 size={14} /> Удалить чат
               </button>
             </>
           )}
@@ -1373,8 +1675,43 @@ const MiniChatWindow = () => {
                       transition={{ duration: 0.15 }}
                       style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
-                      {/* Search */}
-                      {!(activeTab === "support" && !isOperator) && (
+                      {/* Chat Selection Panel OR Search */}
+                      {isChatSelectionMode ? (
+                        <div style={{
+                          padding: "10px 14px",
+                          borderBottom: "1px solid var(--border-color, #e2e8f0)",
+                          background: "var(--bg-sidebar, #f8fafc)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px"
+                        }}>
+                          <button
+                            onClick={handleExitChatSelection}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, #64748b)", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <X size={18} />
+                          </button>
+                          <span style={{ flex: 1, fontWeight: 600, fontSize: "13px", color: "var(--text-color)" }}>
+                            Выбрано: {selectedChatIds.length}
+                          </span>
+                          <button
+                            onClick={handleBulkMuteChats}
+                            title={selectedChatIds.every(id => mutedChats.includes(id)) ? "Включить звук" : "Отключить звук"}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#f59e0b", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            {selectedChatIds.every(id => mutedChats.includes(id)) ? <Bell size={18} /> : <BellOff size={18} />}
+                          </button>
+                          <button
+                            onClick={handleBulkDeleteChats}
+                            title="Удалить чаты"
+                            disabled={selectedChatIds.length === 0}
+                            style={{ background: "none", border: "none", cursor: selectedChatIds.length === 0 ? "default" : "pointer", color: selectedChatIds.length === 0 ? "#94a3b8" : "#ef4444", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      ) : !(activeTab === "support" && !isOperator) && (
                         <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
                           <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                             <Search size={14} style={{ position: "absolute", left: "10px", color: "var(--text-secondary, #94a3b8)" }} />
@@ -1514,10 +1851,14 @@ const MiniChatWindow = () => {
                                     >
                                       <div
                                         onClick={() => {
-                                          setChatType(activeTab);
-                                          setRecipientId(threadId);
-                                          setActiveThreadName(thread.username);
-                                          setCurrentView("chat");
+                                          if (isChatSelectionMode) {
+                                            handleSelectChat(threadId);
+                                          } else {
+                                            setChatType(activeTab);
+                                            setRecipientId(threadId);
+                                            setActiveThreadName(thread.username);
+                                            setCurrentView("chat");
+                                          }
                                         }}
                                         onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
                                         style={{
@@ -1526,14 +1867,27 @@ const MiniChatWindow = () => {
                                           gap: "12px",
                                           padding: "10px 12px",
                                           borderRadius: "10px",
-                                          background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
-                                          cursor: "grab",
+                                          background: isChatSelectionMode && selectedChatIds.includes(threadId)
+                                            ? "rgba(59, 130, 246, 0.08)"
+                                            : isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
+                                          cursor: isChatSelectionMode ? "pointer" : "grab",
                                           marginBottom: "8px",
-                                          border: "1.5px solid #3b82f6",
+                                          border: isChatSelectionMode && selectedChatIds.includes(threadId)
+                                            ? "1.5px solid #3b82f6"
+                                            : "1.5px solid #3b82f6",
                                           transition: "all 0.2s",
                                           position: "relative"
                                         }}
                                       >
+                                        {isChatSelectionMode && (
+                                          <div style={{ flexShrink: 0 }}>
+                                            {selectedChatIds.includes(threadId) ? (
+                                              <CheckCircle2 size={18} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                            ) : (
+                                              <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                                            )}
+                                          </div>
+                                        )}
                                         <div style={{
                                           width: "36px",
                                           height: "36px",
@@ -1593,10 +1947,14 @@ const MiniChatWindow = () => {
                                 <div
                                   key={`${activeTab}-${threadId}`}
                                   onClick={() => {
-                                    setChatType(activeTab);
-                                    setRecipientId(threadId);
-                                    setActiveThreadName(thread.username);
-                                    setCurrentView("chat");
+                                    if (isChatSelectionMode) {
+                                      handleSelectChat(threadId);
+                                    } else {
+                                      setChatType(activeTab);
+                                      setRecipientId(threadId);
+                                      setActiveThreadName(thread.username);
+                                      setCurrentView("chat");
+                                    }
                                   }}
                                   onContextMenu={(e) => triggerContextMenu(e, thread, "thread")}
                                   style={{
@@ -1605,14 +1963,27 @@ const MiniChatWindow = () => {
                                     gap: "12px",
                                     padding: "10px 12px",
                                     borderRadius: "10px",
-                                    background: isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
+                                    background: isChatSelectionMode && selectedChatIds.includes(threadId)
+                                      ? "rgba(59, 130, 246, 0.08)"
+                                      : isSelected ? "rgba(235, 37, 37, 0.08)" : "var(--bg-surface, #ffffff)",
                                     cursor: "pointer",
                                     marginBottom: "8px",
-                                    border: "1px solid var(--border-color, #e2e8f0)",
+                                    border: isChatSelectionMode && selectedChatIds.includes(threadId)
+                                      ? "1.5px solid #3b82f6"
+                                      : "1px solid var(--border-color, #e2e8f0)",
                                     transition: "all 0.2s",
                                     position: "relative"
                                   }}
                                 >
+                                  {isChatSelectionMode && (
+                                    <div style={{ flexShrink: 0 }}>
+                                      {selectedChatIds.includes(threadId) ? (
+                                        <CheckCircle2 size={18} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                      ) : (
+                                        <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                                      )}
+                                    </div>
+                                  )}
                                   <div style={{
                                     width: "36px",
                                     height: "36px",
@@ -1699,15 +2070,18 @@ const MiniChatWindow = () => {
                       )}
 
                       {/* Messages scroll content */}
-                      <div style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: "16px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                        background: "var(--bg-color, #f1f5f9)"
-                      }}>
+                      <div 
+                        onContextMenu={(e) => { if (e.target === e.currentTarget) triggerContextMenu(e, null, "chatArea"); }}
+                        style={{
+                          flex: 1,
+                          overflowY: "auto",
+                          padding: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                          background: "var(--bg-color, #f1f5f9)"
+                        }}
+                      >
                         {loading ? (
                           <div style={{ textAlign: "center", marginTop: "20px", color: "gray", fontSize: "13px" }}>Загрузка...</div>
                         ) : filteredMessages.length === 0 ? (
@@ -1752,34 +2126,89 @@ const MiniChatWindow = () => {
                                   } else {
                                     isOut = isOperator ? group.is_operator : (!group.is_operator && group.user_id === currentUserId);
                                   }
+                                  const allSelected = group.messages.every(m => selectedMessageIds.includes(m.id));
                                   return (
-                                    <motion.div
+                                    <div
                                       key={group.id}
-                                      layout
-                                      initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                                      exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                      transition={{ duration: 0.22, ease: "easeOut" }}
                                       style={{
-                                        alignSelf: isOut ? "flex-end" : "flex-start",
-                                        maxWidth: "80%",
                                         display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: "4px",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        width: "100%",
+                                        alignSelf: isOut ? "flex-end" : "flex-start",
                                         justifyContent: isOut ? "flex-end" : "flex-start",
-                                        marginBottom: "8px"
                                       }}
                                     >
-                                      {group.messages.map(msg => (
-                                        <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
-                                          <img src={`${API_URL}${msg.attachment_url}`} style={{ width: group.messages.length > 1 ? "140px" : "200px", height: group.messages.length > 1 ? "140px" : "auto", objectFit: "cover", borderRadius: "12px", cursor: "pointer", border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }} alt="img" onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)} />
-                                          <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
-                                            <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
-                                            {isOut && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
-                                          </div>
+                                      {isMessageSelectionMode && (
+                                        <div 
+                                          onClick={() => {
+                                            group.messages.forEach(m => {
+                                              if (allSelected) {
+                                                setSelectedMessageIds(prev => prev.filter(id => id !== m.id));
+                                              } else {
+                                                if (!selectedMessageIds.includes(m.id)) {
+                                                  handleSelectMessage(m.id);
+                                                }
+                                              }
+                                            });
+                                          }} 
+                                          style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
+                                        >
+                                          {allSelected ? (
+                                            <CheckCircle2 size={20} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
+                                          ) : (
+                                            <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
+                                          )}
                                         </div>
-                                      ))}
-                                    </motion.div>
+                                      )}
+                                      <motion.div
+                                        layout
+                                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                                        transition={{ duration: 0.22, ease: "easeOut" }}
+                                        style={{
+                                          maxWidth: "80%",
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: "4px",
+                                          justifyContent: isOut ? "flex-end" : "flex-start",
+                                          marginBottom: "8px"
+                                        }}
+                                      >
+                                        {group.messages.map(msg => {
+                                          const isSelected = selectedMessageIds.includes(msg.id);
+                                          return (
+                                            <div key={msg.id} id={`msg-bubble-${msg.id}`} onContextMenu={(e) => triggerContextMenu(e, msg, "message")} style={{ position: "relative" }}>
+                                              <img 
+                                                src={`${API_URL}${msg.attachment_url}`} 
+                                                style={{ 
+                                                  width: group.messages.length > 1 ? "140px" : "200px", 
+                                                  height: group.messages.length > 1 ? "140px" : "auto", 
+                                                  objectFit: "cover", 
+                                                  borderRadius: "12px", 
+                                                  cursor: "pointer", 
+                                                  border: isSelected ? "2px solid #3b82f6" : (isOut ? "none" : "1px solid var(--border-color, #e2e8f0)"), 
+                                                  boxShadow: "0 2px 5px rgba(0,0,0,0.04)" 
+                                                }} 
+                                                alt="img" 
+                                                onClick={() => {
+                                                  if (isMessageSelectionMode) {
+                                                    handleSelectMessage(msg.id);
+                                                  } else {
+                                                    setSelectedImage(`${API_URL}${msg.attachment_url}`);
+                                                  }
+                                                }} 
+                                              />
+                                              <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.4)", borderRadius: "12px", padding: "2px 6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                                <span style={{ fontSize: "9px", color: "white" }}>{formatTime(msg.created_at)}</span>
+                                                {isOut && <span>{msg.is_read ? <CheckCheck size={10} color="white" /> : <Check size={10} color="white" />}</span>}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </motion.div>
+                                    </div>
                                   );
                                 }
 
@@ -1792,159 +2221,193 @@ const MiniChatWindow = () => {
                                 }
 
                                 const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
+                                const isSelected = selectedMessageIds.includes(msg.id);
 
                                 return (
-                                  <motion.div 
+                                  <div 
                                     key={msg.id}
-                                    layout
-                                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                    id={`msg-bubble-${msg.id}`}
-                                    onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
-                                    style={{
+                                    style={{ 
+                                      display: "flex", 
+                                      alignItems: "center", 
+                                      gap: "10px", 
+                                      width: "100%", 
                                       alignSelf: isOut ? "flex-end" : "flex-start",
-                                      maxWidth: "80%",
-                                      background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
-                                      color: isOut ? "#ffffff" : "var(--text-color, #1e293b)",
-                                      padding: "10px 14px",
-                                      borderRadius: "14px",
-                                      borderBottomRightRadius: isOut ? "4px" : "14px",
-                                      borderBottomLeftRadius: !isOut ? "4px" : "14px",
-                                      boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
-                                      fontSize: "13.5px",
-                                      position: "relative",
-                                      border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
-                                      transition: "background 0.5s, border-color 0.5s"
+                                      justifyContent: isOut ? "flex-end" : "flex-start",
                                     }}
                                   >
-                                    {/* Reply Snippet */}
-                                    {msg.reply_to_id && (
+                                    {isMessageSelectionMode && (
                                       <div 
-                                        onClick={() => scrollToMessage(msg.reply_to_id)}
-                                        style={{
-                                          padding: "6px 8px",
-                                          background: isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
-                                          borderLeft: isOut ? "3px solid white" : "3px solid #eb2525",
-                                          fontSize: "11px",
-                                          borderRadius: "4px",
-                                          marginBottom: "6px",
-                                          cursor: "pointer",
-                                          opacity: 0.95
-                                        }}
+                                        onClick={() => handleSelectMessage(msg.id)} 
+                                        style={{ cursor: "pointer", flexShrink: 0, paddingRight: "4px" }}
                                       >
-                                        <span style={{ fontWeight: 600 }}>
-                                          {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
-                                        </span>
-                                        <div 
-                                          style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                          dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
-                                        />
-                                      </div>
-                                    )}
-
-                                    {/* Voice Audio */}
-                                    {isVoice && (
-                                      <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOut} />
-                                    )}
-
-                                    {/* Attachment file before message */}
-                                    {msg.attachment_url && !isVoice && (
-                                      <div style={{ marginBottom: msg.message ? "8px" : "0", marginTop: msg.reply_to_id ? "8px" : "0" }}>
-                                        {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                          <img 
-                                            src={`${API_URL}${msg.attachment_url}`} 
-                                            style={{ maxWidth: "100%", borderRadius: "8px", cursor: "pointer" }} 
-                                            alt="img"
-                                            onClick={() => setSelectedImage(`${API_URL}${msg.attachment_url}`)}
-                                          />
+                                        {isSelected ? (
+                                          <CheckCircle2 size={20} style={{ color: "#3b82f6", fill: "#3b82f6", stroke: "white" }} />
                                         ) : (
-                                          <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", color: "inherit", background: isOut ? "rgba(255,255,255,0.15)" : "var(--bg-color, #f1f5f9)", padding: "8px 12px", borderRadius: "10px", border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity=0.8} onMouseLeave={e => e.currentTarget.style.opacity=1}>
-                                            <div style={{ width: "36px", height: "36px", flexShrink: 0, background: isOut ? "rgba(255,255,255,0.2)" : "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                              <img src="/src/assets/file.png" alt="file" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
-                                            </div>
-                                            <div style={{ overflow: "hidden", flex: 1 }}>
-                                              <div style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isOut ? "white" : "var(--text-color, #1e293b)" }}>
-                                                {msg.attachment_url.split('/').pop() || "Документ"}
-                                              </div>
-                                              <div style={{ fontSize: "11px", color: isOut ? "rgba(255,255,255,0.8)" : "var(--text-secondary, #64748b)", marginTop: "2px" }}>
-                                                Файл
-                                              </div>
-                                            </div>
-                                          </a>
+                                          <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #cbd5e1" }} />
                                         )}
                                       </div>
                                     )}
-
-                                    {/* Main text content */}
-                                    {msg.message && !isVoice && (
-                                      <motion.div 
-                                        key={msg.message}
-                                        initial={{ scale: 0.97, opacity: 0.9 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 0.15 }}
-                                        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                        dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
-                                      />
-                                    )}
-
-                                    {/* Reactions list */}
-                                    {msg.reactions && (
-                                      <div style={{
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: "4px",
-                                        marginTop: "6px",
-                                        marginBottom: "2px"
-                                      }}>
-                                        {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
-                                          <button
-                                            key={emoji}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleReact(msg.id, emoji);
-                                            }}
-                                            style={{
-                                              display: "inline-flex",
-                                              alignItems: "center",
-                                              gap: "4px",
-                                              background: isOut 
-                                                ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
-                                                : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
-                                              border: "none",
-                                              borderRadius: "12px",
-                                              padding: "2px 6px",
-                                              fontSize: "11px",
-                                              color: isOut ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
-                                              cursor: "pointer",
-                                              fontWeight: 600,
-                                              transition: "all 0.15s"
-                                            }}
-                                          >
-                                          <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-                                            <img 
-                                              src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join("-")}.png`} 
-                                              alt={emoji} 
-                                              style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
-                                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
-                                            />
+                                    <motion.div 
+                                      layout
+                                      initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                                      transition={{ duration: 0.22, ease: "easeOut" }}
+                                      id={`msg-bubble-${msg.id}`}
+                                      onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                                      onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
+                                      style={{
+                                        alignSelf: isOut ? "flex-end" : "flex-start",
+                                        maxWidth: "80%",
+                                        background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
+                                        color: isOut ? "#ffffff" : "var(--text-color, #1e293b)",
+                                        padding: "10px 14px",
+                                        borderRadius: "14px",
+                                        borderBottomRightRadius: isOut ? "4px" : "14px",
+                                        borderBottomLeftRadius: !isOut ? "4px" : "14px",
+                                        boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
+                                        fontSize: "13.5px",
+                                        position: "relative",
+                                        border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
+                                        transition: "background 0.5s, border-color 0.5s",
+                                        cursor: isMessageSelectionMode ? "pointer" : "default",
+                                        boxShadow: isSelected ? "0 0 0 2px #3b82f6" : "none",
+                                        filter: isSelected ? "brightness(0.95)" : "none"
+                                      }}
+                                    >
+                                      {/* Reply Snippet */}
+                                      {msg.reply_to_id && (
+                                        <div 
+                                          onClick={() => scrollToMessage(msg.reply_to_id)}
+                                          style={{
+                                            padding: "6px 8px",
+                                            background: isOut ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.05)",
+                                            borderLeft: isOut ? "3px solid white" : "3px solid #eb2525",
+                                            fontSize: "11px",
+                                            borderRadius: "4px",
+                                            marginBottom: "6px",
+                                            cursor: "pointer",
+                                            opacity: 0.95
+                                          }}
+                                        >
+                                          <span style={{ fontWeight: 600 }}>
+                                            {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
                                           </span>
-                                          {count > 1 && <span>{count}</span>}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    <div style={{ fontSize: "9px", textAlign: "right", marginTop: "4px", opacity: 0.7, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "2px" }}>
-                                      {formatTime(msg.created_at)}
-                                      {isOut && (
-                                        <span>
-                                          {msg.is_read ? <CheckCheck size={11} style={{ color: isOut ? "white" : "#10b981" }} /> : <Check size={11} />}
-                                        </span>
+                                          <div 
+                                            style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                            dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                                          />
+                                        </div>
                                       )}
-                                    </div>
-                                  </motion.div>
+
+                                      {/* Voice Audio */}
+                                      {isVoice && (
+                                        <AudioPlayer src={`${API_URL}${msg.attachment_url}`} isOut={isOut} />
+                                      )}
+
+                                      {/* Attachment file before message */}
+                                      {msg.attachment_url && !isVoice && (
+                                        <div style={{ marginBottom: msg.message ? "8px" : "0", marginTop: msg.reply_to_id ? "8px" : "0" }}>
+                                          {msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                            <img 
+                                              src={`${API_URL}${msg.attachment_url}`} 
+                                              style={{ maxWidth: "100%", borderRadius: "8px", cursor: "pointer" }} 
+                                              alt="img"
+                                              onClick={() => {
+                                                if (isMessageSelectionMode) {
+                                                  handleSelectMessage(msg.id);
+                                                } else {
+                                                  setSelectedImage(`${API_URL}${msg.attachment_url}`);
+                                                }
+                                              }}
+                                            />
+                                          ) : (
+                                            <a href={`${API_URL}${msg.attachment_url}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", color: "inherit", background: isOut ? "rgba(255,255,255,0.15)" : "var(--bg-color, #f1f5f9)", padding: "8px 12px", borderRadius: "10px", border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity=0.8} onMouseLeave={e => e.currentTarget.style.opacity=1}>
+                                              <div style={{ width: "36px", height: "36px", flexShrink: 0, background: isOut ? "rgba(255,255,255,0.2)" : "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                <img src={filePng} alt="file" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+                                              </div>
+                                              <div style={{ overflow: "hidden", flex: 1 }}>
+                                                <div style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isOut ? "white" : "var(--text-color, #1e293b)" }}>
+                                                  {msg.attachment_url.split('/').pop() || "Документ"}
+                                                </div>
+                                                <div style={{ fontSize: "11px", color: isOut ? "rgba(255,255,255,0.8)" : "var(--text-secondary, #64748b)", marginTop: "2px" }}>
+                                                  Файл
+                                                </div>
+                                              </div>
+                                            </a>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Main text content */}
+                                      {msg.message && !isVoice && (
+                                        <motion.div 
+                                          key={msg.message}
+                                          initial={{ scale: 0.97, opacity: 0.9 }}
+                                          animate={{ scale: 1, opacity: 1 }}
+                                          transition={{ duration: 0.15 }}
+                                          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                          dangerouslySetInnerHTML={{ __html: formatMessageText(msg.message) }}
+                                        />
+                                      )}
+
+                                      {/* Reactions list */}
+                                      {msg.reactions && (
+                                        <div style={{
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: "4px",
+                                          marginTop: "6px",
+                                          marginBottom: "2px"
+                                        }}>
+                                          {getReactionGroups(msg.reactions, currentUserId).map(({ emoji, count, hasMyReaction }) => (
+                                            <button
+                                              key={emoji}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReact(msg.id, emoji);
+                                              }}
+                                              style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "4px",
+                                                background: isOut 
+                                                  ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
+                                                  : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
+                                                border: "none",
+                                                borderRadius: "12px",
+                                                padding: "2px 6px",
+                                                fontSize: "11px",
+                                                color: isOut ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
+                                                cursor: "pointer",
+                                                fontWeight: 600,
+                                                transition: "all 0.15s"
+                                              }}
+                                            >
+                                            <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                                              <img 
+                                                src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/${Array.from(emoji).map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("-")}.png`} 
+                                                alt={emoji} 
+                                                style={{ width: "16px", height: "16px", verticalAlign: "middle" }}
+                                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.outerHTML = emoji; }}
+                                              />
+                                            </span>
+                                            {count > 1 && <span>{count}</span>}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      <div style={{ fontSize: "9px", textAlign: "right", marginTop: "4px", opacity: 0.7, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "2px" }}>
+                                        {formatTime(msg.created_at)}
+                                        {isOut && (
+                                          <span>
+                                            {msg.is_read ? <CheckCheck size={11} style={{ color: isOut ? "white" : "#10b981" }} /> : <Check size={11} />}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </motion.div>
+                                  </div>
                                 );
                               });
                             })()}
@@ -1953,7 +2416,47 @@ const MiniChatWindow = () => {
                         <div ref={messagesEndRef} />
                       </div>
 
+                      {/* Message Selection Bar - shown when in selection mode */}
+                      {isMessageSelectionMode && (
+                        <div style={{
+                          padding: "10px 14px",
+                          background: "var(--bg-sidebar, #ffffff)",
+                          borderTop: "2px solid #3b82f6",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          zIndex: 10
+                        }}>
+                          <button
+                            onClick={handleExitMessageSelection}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary, #64748b)", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <X size={18} />
+                          </button>
+                          <span style={{ flex: 1, fontWeight: 600, fontSize: "13px", color: "var(--text-color)" }}>
+                            Выбрано: {selectedMessageIds.length}
+                          </span>
+                          <button
+                            onClick={handleBulkDeleteMessages}
+                            title="Удалить выбранные"
+                            disabled={selectedMessageIds.length === 0}
+                            style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#ef4444", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => setForwardModalOpen(true)}
+                            title="Переслать выбранные"
+                            disabled={selectedMessageIds.length === 0}
+                            style={{ background: "none", border: "none", cursor: selectedMessageIds.length === 0 ? "default" : "pointer", color: selectedMessageIds.length === 0 ? "#94a3b8" : "#3b82f6", display: "flex", alignItems: "center", padding: "4px" }}
+                          >
+                            <CornerUpRight size={18} />
+                          </button>
+                        </div>
+                      )}
+
                       {/* Input Footer */}
+                      {!isMessageSelectionMode && (
                       <div style={{
                         padding: "12px",
                         background: "var(--bg-sidebar, #ffffff)",
@@ -2100,6 +2603,7 @@ const MiniChatWindow = () => {
                           </div>
                         )}
                       </div>
+                      )}
                     </motion.div>
                   )}
 
@@ -2211,6 +2715,123 @@ const MiniChatWindow = () => {
           </ResizableBox>
         </motion.div>
       </AnimatePresence>
+
+      {/* Forward Modal */}
+      {forwardModalOpen && (
+        <div
+          onClick={() => setForwardModalOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 20000,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-surface, #ffffff)",
+              borderRadius: "16px",
+              width: "320px",
+              maxHeight: "480px",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.2)",
+              overflow: "hidden",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: "14px 18px",
+              borderBottom: "1px solid var(--border-color, #e2e8f0)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            }}>
+              <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--text-color)" }}>Переслать в...</span>
+              <button onClick={() => setForwardModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <Search size={14} style={{ position: "absolute", left: "10px", color: "var(--text-secondary, #94a3b8)" }} />
+                <input
+                  type="text"
+                  placeholder="Поиск чата..."
+                  value={forwardSearchQuery}
+                  onChange={(e) => setForwardSearchQuery(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "6px 10px 6px 30px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--border-color, #cbd5e1)",
+                    background: "var(--bg-color, #f8fafc)",
+                    color: "var(--text-color, #0f172a)",
+                    fontSize: "13px",
+                    outline: "none",
+                    fontFamily: EMOJI_FONT_STACK
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Thread List */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
+              {forwardThreadsList
+                .filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
+                .map(thread => (
+                  <div
+                    key={`${thread.chatType}-${thread.id}`}
+                    onClick={() => handleForwardMessages(thread)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      marginBottom: "4px",
+                      transition: "background 0.15s",
+                      background: "transparent"
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(59, 130, 246, 0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <div style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: thread.chatType === "support" ? "rgba(235, 37, 37, 0.1)" : "#e2e8f0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: thread.chatType === "support" ? "#eb2525" : "#64748b",
+                      flexShrink: 0
+                    }}>
+                      {thread.chatType === "support" ? <Shield size={18} /> : <User size={18} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {thread.name}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                        {thread.chatType === "support" ? "Поддержка" : "Личный чат"}
+                      </div>
+                    </div>
+                    <CornerUpRight size={14} style={{ color: "#3b82f6", flexShrink: 0 }} />
+                  </div>
+                ))
+              }
+              {forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase())).length === 0 && (
+                <div style={{ textAlign: "center", padding: "20px", color: "var(--text-secondary)", fontSize: "13px" }}>Чаты не найдены</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes pulse {
