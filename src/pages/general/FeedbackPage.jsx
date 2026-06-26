@@ -52,13 +52,13 @@ const parseForwardedMessage = (text) => {
   if (matchNew) {
     const fwdId = Number(matchNew[1]);
     const fwdName = matchNew[2];
-    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от [^:\n]+(:\n?)?/, "");
     return { isForwarded: true, fwdId, fwdName, cleanText };
   }
-  const matchOld = text.match(/^Переслано от (.+?):\n?/);
+  const matchOld = text.match(/^Переслано от ([^:\n]+)(:\n?)?/);
   if (matchOld) {
     const fwdName = matchOld[1];
-    const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
+    const cleanText = text.replace(/^Переслано от [^:\n]+(:\n?)?/, "");
     return { isForwarded: true, fwdId: 0, fwdName, cleanText };
   }
   return { isForwarded: false, cleanText: text };
@@ -71,12 +71,12 @@ const formatMessageText = (text) => {
   const fwdMatch = text.match(/^<!--fwd:\d+:(.+?)-->/);
   if (fwdMatch) {
     prefix = `↪️ Переслано от ${fwdMatch[1]}: `;
-    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от [^:\n]+(:\n?)?/, "");
   } else {
-    const oldMatch = text.match(/^Переслано от (.+?):\n?/);
+    const oldMatch = text.match(/^Переслано от ([^:\n]+)(:\n?)?/);
     if (oldMatch) {
       prefix = `↪️ Переслано от ${oldMatch[1]}: `;
-      text = text.replace(/^Переслано от .+?:\n?/, "");
+      text = text.replace(/^Переслано от [^:\n]+(:\n?)?/, "");
     }
   }
 

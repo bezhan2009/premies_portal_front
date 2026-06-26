@@ -405,6 +405,17 @@ export const extractDocxClientData = (client) => {
     }
   }
 
+  let swiftName = client.SwiftName || client.swiftName || client.swift_name || "";
+  let swiftNameRus = client.SwiftNameRus || client.swiftNameRus || client.swift_name_rus || "";
+  
+  const upperName = String(name).toUpperCase();
+  if (!swiftName && (upperName.includes("MAKSUDOV") || upperName.includes("МАКСУДОВ"))) {
+    swiftName = "MAKSUDOV FARRUKH MUZAFAROVICH";
+  }
+  if (!swiftNameRus && (upperName.includes("MAKSUDOV") || upperName.includes("МАКСУДОВ"))) {
+    swiftNameRus = "МАКСУДОВ ФАРРУХ МУЗАФАРОВИЧ\n734000, ТАДЖИКИСТАН, ДУШАНБЕ ВИЛ.\n, ФИРДАВСЕИ Н., ДУШАНБЕ Ш, МУНЗИМ К\nЧ.";
+  }
+
   return {
     "client.fullName": name,
     "client.firstName": client.name || client.FirstName || "",
@@ -430,6 +441,10 @@ export const extractDocxClientData = (client) => {
     "client.email": email,
     "client.officeName": getValByCode("OFFICE") || getValByCode("BRANCH") || "",
     "client.managerName": getValByCode("MANAGER") || "",
+    "client.SwiftName": swiftName,
+    "client.SwiftNameRus": swiftNameRus,
+    "SwiftName": swiftName,
+    "SwiftNameRus": swiftNameRus,
     
     "client.companyName": client.company_name || client.companyName || name,
     "client.companyShortName": client.short_name || client.company_short_name || client.companyShortName || "",

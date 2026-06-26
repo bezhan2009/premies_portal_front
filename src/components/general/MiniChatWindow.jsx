@@ -25,21 +25,21 @@ const POPULAR_EMOJIS = ["👍", "❤️", "🔥", "😂", "😮", "😢", "🙏"
 const EMOJI_FONT_STACK = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 
 const parseForwardedMessage = (text) => {
-  if (!text) return { isForwarded: false, text: "" };
+  if (!text) return { isForwarded: false, cleanText: "" };
   const matchNew = text.match(/^<!--fwd:(\d+):(.+?)-->/);
   if (matchNew) {
     const fwdId = Number(matchNew[1]);
     const fwdName = matchNew[2];
-    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    const cleanText = text.replace(/^<!--fwd:\d+:.+?-->Переслано от [^:\n]+(:\n?)?/, "");
     return { isForwarded: true, fwdId, fwdName, cleanText };
   }
-  const matchOld = text.match(/^Переслано от (.+?):\n?/);
+  const matchOld = text.match(/^Переслано от ([^:\n]+)(:\n?)?/);
   if (matchOld) {
     const fwdName = matchOld[1];
-    const cleanText = text.replace(/^Переслано от .+?:\n?/, "");
+    const cleanText = text.replace(/^Переслано от [^:\n]+(:\n?)?/, "");
     return { isForwarded: true, fwdId: 0, fwdName, cleanText };
   }
-  return { isForwarded: false, text };
+  return { isForwarded: false, cleanText: text };
 };
 
 const formatMessageText = (text) => {
@@ -49,12 +49,12 @@ const formatMessageText = (text) => {
   const fwdMatch = text.match(/^<!--fwd:\d+:(.+?)-->/);
   if (fwdMatch) {
     prefix = `↪️ Переслано от ${fwdMatch[1]}: `;
-    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от .+?:\n?/, "");
+    text = text.replace(/^<!--fwd:\d+:.+?-->Переслано от [^:\n]+(:\n?)?/, "");
   } else {
-    const oldMatch = text.match(/^Переслано от (.+?):\n?/);
+    const oldMatch = text.match(/^Переслано от ([^:\n]+)(:\n?)?/);
     if (oldMatch) {
       prefix = `↪️ Переслано от ${oldMatch[1]}: `;
-      text = text.replace(/^Переслано от .+?:\n?/, "");
+      text = text.replace(/^Переслано от [^:\n]+(:\n?)?/, "");
     }
   }
 
@@ -2761,14 +2761,14 @@ const MiniChatWindow = () => {
                                       )}
 
                                       {/* Main text content */}
-                                      {(fwdInfo.cleanText || msg.message) && !isVoice && (
+                                      {fwdInfo.cleanText && !isVoice && (
                                         <motion.div 
-                                          key={fwdInfo.cleanText || msg.message}
+                                          key={fwdInfo.cleanText}
                                           initial={{ scale: 0.97, opacity: 0.9 }}
                                           animate={{ scale: 1, opacity: 1 }}
                                           transition={{ duration: 0.15 }}
                                           style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                          dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText || msg.message) }}
+                                          dangerouslySetInnerHTML={{ __html: formatMessageText(fwdInfo.cleanText) }}
                                         />
                                       )}
 

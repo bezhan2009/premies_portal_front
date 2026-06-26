@@ -47,6 +47,8 @@ export const docxDictionary = [
       { key: "client.accountsCount", description: "Количество счетов клиента" },
       { key: "client.creditsCount", description: "Количество кредитов клиента" },
       { key: "client.depositsCount", description: "Количество депозитов клиента" },
+      { key: "client.SwiftName", description: "клиент свифт имя/адрес" },
+      { key: "client.SwiftNameRus", description: "клиент свифт имя/адрес" },
     ],
   },
   {
