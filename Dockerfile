@@ -8,12 +8,13 @@ RUN npm install
 
 COPY . .
 
-# Важно: Убедись, что VITE_BACKEND_URL задан через переменную окружения
-# Или зашит в .env.production
 RUN npm run build
 
 # ---------- RUNTIME STAGE ----------
 FROM nginx:stable-alpine
+
+# Install openssl for certificate generation
+RUN apk add --no-cache openssl
 
 # Удалим дефолтный конфиг
 RUN rm /etc/nginx/conf.d/default.conf
