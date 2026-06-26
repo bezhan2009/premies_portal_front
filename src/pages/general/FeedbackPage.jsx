@@ -1518,6 +1518,29 @@ export default function FeedbackPage() {
               <>
                 {contextMenu.type === "message" && (
                   <>
+                    <button 
+                      onClick={() => {
+                        setReplyingTo(contextMenu.target);
+                        setEditingMessage(null);
+                        setContextMenu({ ...contextMenu, visible: false });
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <CornerUpLeft size={14} /> Ответить
+                    </button>
                     {((contextMenu.target.user_id === currentUserId && !contextMenu.target.is_operator) || isOperator) && (
                       <button 
                         onClick={() => {
@@ -1544,32 +1567,9 @@ export default function FeedbackPage() {
                           textAlign: "left"
                         }}
                       >
-                        📌 {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
+                        <Pin size={14} style={{ transform: "rotate(45deg)" }} /> {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
                       </button>
                     )}
-                    <button 
-                      onClick={() => {
-                        setReplyingTo(contextMenu.target);
-                        setEditingMessage(null);
-                        setContextMenu({ ...contextMenu, visible: false });
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px 10px",
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        color: "#1e293b",
-                        background: "transparent",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        textAlign: "left"
-                      }}
-                    >
-                      <CornerUpLeft size={14} /> Ответить
-                    </button>
                     <button 
                       onClick={() => {
                         handleCopy(contextMenu.target.message);
@@ -2032,7 +2032,10 @@ export default function FeedbackPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "#FFA726" }}>
-                <span>📌 Закреплённое сообщение ({pinnedMessages.length})</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <Pin size={12} style={{ transform: "rotate(45deg)" }} />
+                  Закреплённое сообщение ({pinnedMessages.length})
+                </span>
                 <span 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -2315,9 +2318,15 @@ export default function FeedbackPage() {
                             boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
                           }}
                         >
-                          <span>
-                            {msg.system_type === "pin" ? "📌 " : "📎 "}
-                            <strong>{msg.username}</strong> {msg.message}
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                            {msg.system_type === "pin" ? (
+                              <Pin size={12} style={{ transform: "rotate(45deg)" }} />
+                            ) : (
+                              <Pin size={12} style={{ opacity: 0.5 }} />
+                            )}
+                            <span>
+                              <strong>{msg.username}</strong> {msg.message}
+                            </span>
                           </span>
                           {msg.system_type === "pin" && msg.target_msg_id && (
                             <button
@@ -2407,7 +2416,7 @@ export default function FeedbackPage() {
                               zIndex: 5
                             }}
                           >
-                            📌
+                            <Pin size={10} style={{ transform: "rotate(45deg)", color: isOutgoing ? "rgba(255, 255, 255, 0.75)" : "#94a3b8" }} />
                           </span>
                         )}
                         {/* Forwarded Header Block */}
@@ -2917,8 +2926,8 @@ export default function FeedbackPage() {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-color)" }}>
-                📌 Закреплённые сообщения ({pinnedMessages.length})
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-color)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <Pin size={16} style={{ transform: "rotate(45deg)" }} /> Закреплённые сообщения ({pinnedMessages.length})
               </h3>
               <button 
                 onClick={() => setAllPinsModalOpen(false)} 

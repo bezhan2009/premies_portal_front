@@ -1611,6 +1611,29 @@ const MiniChatWindow = () => {
               ) : (
                 <>
                   <button 
+                    onClick={() => {
+                      setReplyingTo(contextMenu.target);
+                      setEditingMessage(null);
+                      setContextMenu({ ...contextMenu, visible: false });
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1e293b",
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <CornerUpLeft size={14} /> Ответить
+                  </button>
+                  <button 
                       onClick={() => {
                         const msg = contextMenu.target;
                         setContextMenu({ ...contextMenu, visible: false });
@@ -1635,31 +1658,8 @@ const MiniChatWindow = () => {
                         textAlign: "left"
                       }}
                     >
-                      📌 {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
+                      <Pin size={14} style={{ transform: "rotate(45deg)" }} /> {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
                     </button>
-                  <button 
-                    onClick={() => {
-                      setReplyingTo(contextMenu.target);
-                      setEditingMessage(null);
-                      setContextMenu({ ...contextMenu, visible: false });
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px 10px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "#1e293b",
-                      background: "transparent",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      textAlign: "left"
-                    }}
-                  >
-                    <CornerUpLeft size={14} /> Ответить
-                  </button>
                   <button 
                     onClick={() => {
                       handleCopy(contextMenu.target.message);
@@ -2546,7 +2546,10 @@ const MiniChatWindow = () => {
                             }}
                           >
                             <div style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 700, color: "#FFA726" }}>
-                              <span>📌 Закреплено ({pinnedMessages.length})</span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <Pin size={12} style={{ transform: "rotate(45deg)" }} />
+                                Закреплено ({pinnedMessages.length})
+                              </span>
                               <span 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3848,8 +3851,8 @@ const MiniChatWindow = () => {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--text-color)" }}>
-                📌 Pinned Messages ({pinnedMessages.length})
+              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--text-color)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <Pin size={14} style={{ transform: "rotate(45deg)" }} /> Pinned Messages ({pinnedMessages.length})
               </h3>
               <button 
                 onClick={() => setAllPinsModalOpen(false)} 
