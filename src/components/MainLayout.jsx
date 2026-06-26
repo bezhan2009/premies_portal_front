@@ -125,6 +125,10 @@ const MainLayout = () => {
     if (pathname.includes("/submit-feedback")) return "submit_feedback";
     if (pathname.includes("/feedback")) return "feedback";
 
+    // Groups
+    if (pathname.includes("/operator/groups")) return "groups_operator";
+    if (pathname.includes("/groups")) return "groups";
+
     return "";
   };
 

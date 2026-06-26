@@ -83,6 +83,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [modalError, setModalError] = useState("");
     const [loading, setLoading] = useState(false);
     const prevUnreadCountRef = useRef(0);
+    const prevGroupsUnreadCountRef = useRef(0);
     const [alert, setAlert] = useState({
         show: false,
         message: "",
@@ -95,8 +96,10 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const setChatStoreUnreadCount = useChatStore(state => state.setUnreadCount);
+    const setChatStoreGroupsUnreadCount = useChatStore(state => state.setGroupsUnreadCount);
     const muteUntil = useChatStore(state => state.muteUntil);
     const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
+    const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
 
     const fetchUnreadFeedbackCount = useCallback(async () => {
         const token = localStorage.getItem("access_token");
@@ -122,13 +125,43 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         } catch (error) {
             console.error("Ошибка при получении непрочитанных сообщений фидбека:", error);
         }
-    }, []);
+    }, [setChatStoreUnreadCount]);
+
+    const fetchGroupsUnreadCount = useCallback(async () => {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/groups/unread-count`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                setUnreadGroupsCount(data.unread_count || 0);
+                setChatStoreGroupsUnreadCount(data.unread_count || 0);
+            }
+        } catch (error) {
+            console.error("Ошибка при получении непрочитанных сообщений групп:", error);
+        }
+    }, [setChatStoreGroupsUnreadCount]);
 
     useEffect(() => {
         fetchUnreadFeedbackCount();
-        const interval = setInterval(fetchUnreadFeedbackCount, 15000);
+        fetchGroupsUnreadCount();
+        const interval = setInterval(() => {
+            fetchUnreadFeedbackCount();
+            fetchGroupsUnreadCount();
+        }, 15000);
         return () => clearInterval(interval);
-    }, [fetchUnreadFeedbackCount]);
+    }, [fetchUnreadFeedbackCount, fetchGroupsUnreadCount]);
 
     useEffect(() => {
         if (unreadFeedbackCount > prevUnreadCountRef.current) {
@@ -149,6 +182,26 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
         prevUnreadCountRef.current = unreadFeedbackCount;
     }, [unreadFeedbackCount, roles, navigate, muteUntil]);
+
+    useEffect(() => {
+        if (unreadGroupsCount > prevGroupsUnreadCountRef.current) {
+            const isGroupsPage = window.location.pathname.includes("/groups") || window.location.pathname.includes("/operator/groups");
+            const isMuted = muteUntil && new Date() < new Date(muteUntil);
+            
+            if (!isGroupsPage && !isMuted) {
+                const isOperatorUser = roles.includes(3);
+                setAlert({
+                    show: true,
+                    message: "У вас новое сообщение в Группе! Нажмите, чтобы открыть.",
+                    type: "info",
+                    onClick: () => {
+                        navigate(isOperatorUser ? "/operator/groups" : "/groups");
+                    }
+                });
+            }
+        }
+        prevGroupsUnreadCountRef.current = unreadGroupsCount;
+    }, [unreadGroupsCount, roles, navigate, muteUntil]);
 
     // Функция для проверки необходимости смены пароля
     const checkPasswordChangeRequired = useCallback(() => {
@@ -455,6 +508,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 icon: MessageSquare, 
                 hasNotification: unreadFeedbackCount > 0 
             });
+            baseLinks.push({
+                name: "Группы",
+                href: "/groups",
+                key: "groups",
+                icon: Users,
+                hasNotification: unreadGroupsCount > 0
+            });
         }
 
         baseLinks.push({
@@ -536,6 +596,13 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "feedback_operator",
                         icon: MessageSquare,
                         hasNotification: unreadFeedbackCount > 0
+                    },
+                    {
+                        name: "Группы (Оператор)",
+                        href: "/operator/groups",
+                        key: "groups_operator",
+                        icon: Users,
+                        hasNotification: unreadGroupsCount > 0
                     },
                 ],
             });
@@ -999,7 +1066,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
 
         return [...baseLinks, ...additionalLinks];
-    }, [roles, hasNewApplications, unreadFeedbackCount]);
+    }, [roles, hasNewApplications, unreadFeedbackCount, unreadGroupsCount]);
 
     const [openDropdowns, setOpenDropdowns] = useState({});
 

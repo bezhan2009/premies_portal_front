@@ -12,6 +12,7 @@ import RequireRole from "../middlewares/RequireRole.jsx";
 import RequestAccessPage from "../pages/general/RequestAccessPage.jsx";
 import FeedbackPage from "../pages/general/FeedbackPage.jsx";
 import SubmitFeedbackPage from "../pages/general/SubmitFeedbackPage.jsx";
+import GroupsPage from "../pages/general/GroupsPage.jsx";
 
 // Modularized routes
 import operatorRoutes from "./routes/operator.routes";
@@ -57,6 +58,9 @@ export default function AppRouter() {
           
           {/* Обратная связь (Форма) */}
           <Route path="/submit-feedback" element={<SubmitFeedbackPage />} />
+
+          {/* Группы */}
+          <Route path="/groups" element={<GroupsPage />} />
 
           {/* Подготовленные страницы */}
           <Route path="/under/development" element={<UnderDevelopmentPage />} />

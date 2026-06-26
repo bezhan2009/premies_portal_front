@@ -9,6 +9,7 @@ import DashboardOperatorTests from "../../pages/dashboard/dashboard_operator/Tes
 import AccessRequestsPage from "../../pages/dashboard/dashboard_operator/AccessRequestsPage.jsx";
 import UsersPage from "../../pages/dashboard/dashboard_operator/UsersPage.jsx";
 import OperatorFeedbackPage from "../../pages/dashboard/dashboard_operator/OperatorFeedbackPage.jsx";
+import OperatorGroupsPage from "../../pages/dashboard/dashboard_operator/OperatorGroupsPage.jsx";
 
 import DocxGenerator from "../../components/dashboard/dashboard_operator/DocxGenerator.jsx";
 
@@ -35,6 +36,7 @@ const operatorRoutes = (
     <Route path="/operator/users" element={<UsersPage />} />
     <Route path="/operator/feedback" element={<OperatorFeedbackPage />} />
     <Route path="/operator/docx-generator" element={<DocxGenerator />} />
+    <Route path="/operator/groups" element={<OperatorGroupsPage />} />
   </Route>
 );
 

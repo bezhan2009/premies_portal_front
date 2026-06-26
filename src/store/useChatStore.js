@@ -2,10 +2,12 @@ import { create } from "zustand";
 
 const useChatStore = create((set) => ({
   unreadCount: 0,
+  groupsUnreadCount: 0,
   isMiniChatOpen: false,
   muteUntil: null,
   
   setUnreadCount: (count) => set({ unreadCount: count }),
+  setGroupsUnreadCount: (count) => set({ groupsUnreadCount: count }),
   toggleMiniChat: () => set((state) => ({ isMiniChatOpen: !state.isMiniChatOpen })),
   closeMiniChat: () => set({ isMiniChatOpen: false }),
   openMiniChat: () => set({ isMiniChatOpen: true }),
