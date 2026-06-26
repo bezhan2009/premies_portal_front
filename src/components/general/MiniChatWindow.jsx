@@ -296,6 +296,10 @@ const MiniChatWindow = () => {
   // Advanced Features: Pinned & Muted Chats
   const [pinnedChats, setPinnedChats] = useState([]);
   const [mutedChats, setMutedChats] = useState([]);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
+  const [currentPinIndex, setCurrentPinIndex] = useState(0);
+  const [pinnedBarVisible, setPinnedBarVisible] = useState(true);
+  const [allPinsModalOpen, setAllPinsModalOpen] = useState(false);
 
   // Advanced Features: Active Chat Search
   const [localSearchActive, setLocalSearchActive] = useState(false);
@@ -441,15 +445,75 @@ const MiniChatWindow = () => {
     }
   }, [isMiniChatOpen, currentView, chatType, recipientId, isOperator, token, setUnreadCount]);
 
+  const fetchPinnedMessages = useCallback(async () => {
+    if (!token || currentView !== "chat") return;
+    try {
+      let url = "";
+      if (chatType === "support") {
+        url = isOperator 
+          ? `${API_URL}/api/feedback/pins?userId=${recipientId}`
+          : `${API_URL}/api/feedback/pins`;
+      } else {
+        url = `${API_URL}/api/feedback/pins?chatWith=${recipientId}`;
+      }
+      const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+      setPinnedMessages(res.data || []);
+    } catch (err) {
+      console.error("Error fetching pinned messages:", err);
+    }
+  }, [recipientId, chatType, isOperator, token, currentView]);
+
+  const handlePinMessage = async (msgId) => {
+    try {
+      await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMessages();
+      fetchPinnedMessages();
+      setCurrentPinIndex(0);
+      setPinnedBarVisible(true);
+    } catch (err) {
+      const errMsg = err.response?.data?.error || "Не удалось закрепить сообщение";
+      setNotification({ type: "error", message: errMsg });
+    }
+  };
+
+  const handleUnpinMessage = async (msgId) => {
+    try {
+      await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMessages();
+      fetchPinnedMessages();
+    } catch (err) {
+      const errMsg = err.response?.data?.error || "Не удалось открепить сообщение";
+      setNotification({ type: "error", message: errMsg });
+    }
+  };
+
+  const confirmPinMessage = (msgId) => {
+    setConfirmModal({
+      message: "Закрепить это сообщение?",
+      onConfirm: () => {
+        setConfirmModal(null);
+        handlePinMessage(msgId);
+      }
+    });
+  };
+
   // Poll messages when active
   useEffect(() => {
     if (isMiniChatOpen && currentView === "chat") {
       setLoading(true);
       fetchMessages();
-      const interval = setInterval(fetchMessages, 4000);
+      fetchPinnedMessages();
+      const interval = setInterval(() => {
+        fetchMessages();
+        fetchPinnedMessages();
+      }, 4000);
       return () => clearInterval(interval);
     }
-  }, [isMiniChatOpen, currentView, recipientId, chatType, fetchMessages]);
+  }, [isMiniChatOpen, currentView, recipientId, chatType, fetchMessages, fetchPinnedMessages]);
 
   // Scroll to bottom instantly on chat switch or opening mini-chat
   useEffect(() => {
@@ -1197,12 +1261,18 @@ const MiniChatWindow = () => {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       const origBg = el.style.background;
       const origBorder = el.style.border;
-      el.style.background = "rgba(235, 37, 37, 0.25)";
-      el.style.border = "1px solid #eb2525";
+      
+      el.style.transition = "background 0.2s, border-color 0.2s";
+      el.style.background = "#FFF9C4";
+      el.style.color = "#1e293b";
+      el.style.border = "1px solid #FFA726";
+      
       setTimeout(() => {
+        el.style.transition = "background 2s, border-color 2s";
         el.style.background = origBg;
+        el.style.color = "";
         el.style.border = origBorder;
-      }, 1000);
+      }, 200);
     }
   };
 
@@ -1411,6 +1481,19 @@ const MiniChatWindow = () => {
         onClose={() => { setPasteModalOpen(false); setPastedFile(null); }}
         onSend={handleSendPastedFile}
       />
+      {allPinsModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 100000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setAllPinsModalOpen(false)}>
+           <div style={{ width: "300px", background: "white", borderRadius: "12px", padding: "16px", maxHeight: "400px", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+             <h3 style={{ margin: "0 0 16px" }}>Закрепленные сообщения</h3>
+             {pinnedMessages.map((msg, idx) => (
+                <div key={msg.id} style={{ padding: "8px", borderBottom: "1px solid #eee", cursor: "pointer" }} onClick={() => { scrollToMessage(msg.id); setAllPinsModalOpen(false); }}>
+                  <div style={{ fontWeight: 600, fontSize: "12px" }}>{msg.username}</div>
+                  <div style={{ fontSize: "12px" }}>{msg.message}</div>
+                </div>
+             ))}
+           </div>
+        </div>
+      )}
 
       {/* FLOAT CONTEXT MENU */}
       {contextMenu.visible && (
@@ -1527,6 +1610,33 @@ const MiniChatWindow = () => {
                 </div>
               ) : (
                 <>
+                  <button 
+                      onClick={() => {
+                        const msg = contextMenu.target;
+                        setContextMenu({ ...contextMenu, visible: false });
+                        if (msg.is_pinned) {
+                          handleUnpinMessage(msg.id);
+                        } else {
+                          confirmPinMessage(msg.id);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      📌 {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
+                    </button>
                   <button 
                     onClick={() => {
                       setReplyingTo(contextMenu.target);
@@ -2404,6 +2514,127 @@ const MiniChatWindow = () => {
                         </div>
                       )}
 
+                      {/* PINNED MESSAGES BAR */}
+                      {pinnedMessages.length > 0 && pinnedBarVisible && (
+                        <div 
+                          style={{
+                            background: theme === "dark" ? "#3E2C1A" : "#FFF8E1",
+                            borderBottom: "1px solid var(--border-color, #cbd5e1)",
+                            padding: "6px 12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                            zIndex: 9,
+                            position: "relative",
+                            fontFamily: EMOJI_FONT_STACK,
+                            fontSize: "11px"
+                          }}
+                        >
+                          <div 
+                            onClick={() => {
+                              const currentPin = pinnedMessages[currentPinIndex];
+                              if (currentPin) scrollToMessage(currentPin.id);
+                            }}
+                            style={{
+                              flex: 1,
+                              cursor: "pointer",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "1px",
+                              overflow: "hidden"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 700, color: "#FFA726" }}>
+                              <span>📌 Закреплено ({pinnedMessages.length})</span>
+                              <span 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAllPinsModalOpen(true);
+                                }}
+                                style={{
+                                  color: "#eb2525",
+                                  cursor: "pointer",
+                                  textDecoration: "underline",
+                                  marginLeft: "6px"
+                                }}
+                              >
+                                Все
+                              </span>
+                            </div>
+                            {(() => {
+                              const currentPin = pinnedMessages[currentPinIndex];
+                              if (!currentPin) return null;
+                              const cleanText = parseForwardedMessage(currentPin.message).cleanText || (currentPin.attachment_url ? "Вложение" : "");
+                              const truncatedText = cleanText.length > 35 ? cleanText.substring(0, 35) + "..." : cleanText;
+                              return (
+                                <div style={{ color: theme === "dark" ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <strong>{currentPin.username || (currentPin.is_operator ? "Оператор" : "Пользователь")}:</strong> {truncatedText}
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                            <span style={{ color: "var(--text-secondary)" }}>
+                              {currentPinIndex + 1}/{pinnedMessages.length}
+                            </span>
+                            
+                            <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                              <button
+                                onClick={() => {
+                                  setCurrentPinIndex(prev => (prev - 1 + pinnedMessages.length) % pinnedMessages.length);
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--text-secondary)",
+                                  padding: "2px 4px",
+                                  fontWeight: "bold"
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.color = "#eb2525"}
+                                onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                              >
+                                ❮
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCurrentPinIndex(prev => (prev + 1) % pinnedMessages.length);
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--text-secondary)",
+                                  padding: "2px 4px",
+                                  fontWeight: "bold"
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.color = "#eb2525"}
+                                onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                              >
+                                ❯
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={() => setPinnedBarVisible(false)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "var(--text-secondary)",
+                                padding: "2px"
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                              onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Messages scroll content */}
                       <div 
                         onScroll={handleMessagesScroll}
@@ -2442,7 +2673,7 @@ const MiniChatWindow = () => {
                                 const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
                                 const hasText = !!msg.message;
                                 
-                                if (isImg && !hasText && !msg.reply_to_id) {
+                                if (isImg && !hasText && !msg.reply_to_id && !msg.is_system) {
                                   if (!currentAlbum) {
                                     currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
                                   } else {
@@ -2598,6 +2829,14 @@ const MiniChatWindow = () => {
                                 }
 
                                 const msg = group;
+                                if (msg.is_system) {
+                                  return (
+                                    <div key={msg.id} style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "12px", padding: "8px" }}>
+                                      {msg.message}
+                                    </div>
+                                  );
+                                }
+
                                 let isOut = false;
                                 if (chatType === "direct") {
                                   isOut = msg.user_id === currentUserId;
@@ -2611,11 +2850,11 @@ const MiniChatWindow = () => {
 
                                 return (
                                   <motion.div
-  layout
-  initial={{ opacity: 0, y: 15, scale: 0.96 }}
-  animate={{ opacity: 1, y: 0, scale: 1 }}
-  exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-  transition={{ duration: 0.22, ease: "easeOut" }} 
+                                    layout
+                                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
+                                    transition={{ duration: 0.22, ease: "easeOut" }} 
                                     key={msg.id}
                                     onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                                     style={{ 
@@ -2647,11 +2886,6 @@ const MiniChatWindow = () => {
                                       justifyContent: isOut ? "flex-end" : "flex-start"
                                     }}>
                                       <div 
-
-
-
-
-
                                         id={`msg-bubble-${msg.id}`}
                                         data-msg-bubble="true"
                                         onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
@@ -3580,6 +3814,125 @@ const MiniChatWindow = () => {
           30% { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
+
+      {/* ALL PINNED MESSAGES MODAL */}
+      {allPinsModalOpen && (
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100010
+          }}
+          onClick={() => setAllPinsModalOpen(false)}
+        >
+          <div 
+            style={{
+              background: "var(--bg-surface, white)",
+              borderRadius: "16px",
+              border: "1px solid var(--border-color)",
+              padding: "20px",
+              width: "100%",
+              maxWidth: "400px",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--text-color)" }}>
+                📌 Pinned Messages ({pinnedMessages.length})
+              </h3>
+              <button 
+                onClick={() => setAllPinsModalOpen(false)} 
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "4px" }}>
+              {pinnedMessages.map((msg) => {
+                const cleanText = parseForwardedMessage(msg.message).cleanText || (msg.attachment_url ? "Вложение" : "");
+                return (
+                  <div 
+                    key={msg.id}
+                    style={{
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "10px",
+                      padding: "10px",
+                      background: "var(--bg-color, #f1f5f9)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", color: "var(--text-secondary)" }}>
+                      <span style={{ fontWeight: 650, color: "var(--text-color)" }}>
+                        {msg.username || (msg.is_operator ? "Оператор" : "Пользователь")}
+                      </span>
+                      <span>{new Date(msg.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    
+                    <div 
+                      style={{ fontSize: "12px", color: "var(--text-color)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                      dangerouslySetInnerHTML={{ __html: formatMessageText(cleanText) }}
+                    />
+                    
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px", marginTop: "4px" }}>
+                      {((chatType === "direct" && (msg.user_id === currentUserId || isOperator)) || 
+                        (chatType === "support" && (isOperator || (!msg.is_operator && msg.user_id === currentUserId)))) && (
+                        <button
+                          onClick={() => handleUnpinMessage(msg.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#ef4444",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            fontWeight: 550
+                          }}
+                        >
+                          Открепить
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setAllPinsModalOpen(false);
+                          scrollToMessage(msg.id);
+                        }}
+                        style={{
+                          background: "#eb2525",
+                          border: "none",
+                          color: "white",
+                          borderRadius: "4px",
+                          padding: "2px 8px",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "2px"
+                        }}
+                      >
+                        Перейти ➜
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

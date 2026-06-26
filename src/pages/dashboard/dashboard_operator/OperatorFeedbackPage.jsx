@@ -341,6 +341,10 @@ export default function OperatorFeedbackPage() {
   // Advanced Features: Pinned & Muted Chats
   const [pinnedChats, setPinnedChats] = useState([]);
   const [mutedChats, setMutedChats] = useState([]);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
+  const [currentPinIndex, setCurrentPinIndex] = useState(0);
+  const [pinnedBarVisible, setPinnedBarVisible] = useState(true);
+  const [allPinsModalOpen, setAllPinsModalOpen] = useState(false);
 
   // Advanced Features: Message Selection & Forwarding
   const [selectedMessageIds, setSelectedMessageIds] = useState([]);
@@ -791,6 +795,53 @@ export default function OperatorFeedbackPage() {
     }
   }, []);
 
+  const fetchPinnedMessages = useCallback(async (type, threadId) => {
+    if (!threadId || !token) return;
+    try {
+      const url = type === "support"
+        ? `${API_URL}/api/feedback/pins?userId=${threadId}`
+        : `${API_URL}/api/feedback/pins?chatWith=${threadId}`;
+      const res = await axios.get(url, axiosConfig);
+      setPinnedMessages(res.data || []);
+    } catch (err) {
+      console.error("Error fetching pinned messages:", err);
+    }
+  }, [token]);
+
+  const handlePinMessage = async (msgId) => {
+    try {
+      await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, axiosConfig);
+      fetchMessages(activeChatType, activeThreadId);
+      fetchPinnedMessages(activeChatType, activeThreadId);
+      setCurrentPinIndex(0);
+      setPinnedBarVisible(true);
+    } catch (err) {
+      const errMsg = err.response?.data?.error || "Не удалось закрепить сообщение";
+      showToast(errMsg, "error");
+    }
+  };
+
+  const handleUnpinMessage = async (msgId) => {
+    try {
+      await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, axiosConfig);
+      fetchMessages(activeChatType, activeThreadId);
+      fetchPinnedMessages(activeChatType, activeThreadId);
+    } catch (err) {
+      const errMsg = err.response?.data?.error || "Не удалось открепить сообщение";
+      showToast(errMsg, "error");
+    }
+  };
+
+  const confirmPinMessage = (msgId) => {
+    setConfirmModal({
+      message: "Закрепить это сообщение?",
+      onConfirm: () => {
+        setConfirmModal(null);
+        handlePinMessage(msgId);
+      }
+    });
+  };
+
   const fetchMessages = useCallback(async (type, threadId, showLoading = false) => {
     if (!threadId) return;
     if (showLoading) setLoadingChat(true);
@@ -886,6 +937,7 @@ export default function OperatorFeedbackPage() {
     const chatInterval = setInterval(() => {
       if (activeChatType && activeThreadId) {
         fetchMessages(activeChatType, activeThreadId);
+        fetchPinnedMessages(activeChatType, activeThreadId);
       }
     }, 4000);
 
@@ -905,6 +957,7 @@ export default function OperatorFeedbackPage() {
   useEffect(() => {
     if (activeChatType && activeThreadId) {
       scrollToBottom("auto");
+      fetchPinnedMessages(activeChatType, activeThreadId);
     }
     handleExitMessageSelection();
     handleExitChatSelection();
@@ -1212,12 +1265,18 @@ export default function OperatorFeedbackPage() {
       if (bubble) {
         const origBg = bubble.style.background;
         const origBorder = bubble.style.border;
-        bubble.style.background = "rgba(235, 37, 37, 0.25)";
-        bubble.style.border = "1.5px solid #eb2525";
+        
+        bubble.style.transition = "background 0.2s, border-color 0.2s";
+        bubble.style.background = "#FFF9C4";
+        bubble.style.color = "#1e293b";
+        bubble.style.border = "1.5px solid #FFA726";
+        
         setTimeout(() => {
+          bubble.style.transition = "background 2s, border-color 2s";
           bubble.style.background = origBg;
+          bubble.style.color = "";
           bubble.style.border = origBorder;
-        }, 1000);
+        }, 200);
       }
     }
   };
@@ -1901,6 +1960,33 @@ export default function OperatorFeedbackPage() {
                   </div>
                 ) : (
                   <>
+                    <button 
+                      onClick={() => {
+                        const msg = contextMenu.target;
+                        setContextMenu({ ...contextMenu, visible: false });
+                        if (msg.is_pinned) {
+                          handleUnpinMessage(msg.id);
+                        } else {
+                          confirmPinMessage(msg.id);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#1e293b",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      📌 {contextMenu.target.is_pinned ? "Открепить" : "Закрепить"}
+                    </button>
                     <button 
                       onClick={() => {
                         setReplyingTo(contextMenu.target);
@@ -2998,6 +3084,138 @@ export default function OperatorFeedbackPage() {
               </div>
             )}
 
+            {/* PINNED MESSAGES BAR */}
+            {pinnedMessages.length > 0 && pinnedBarVisible && (
+              <div 
+                style={{
+                  background: theme === "dark" ? "#3E2C1A" : "#FFF8E1",
+                  borderBottom: "1px solid var(--border-color)",
+                  padding: "8px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  zIndex: 9,
+                  position: "relative",
+                  fontFamily: EMOJI_FONT_STACK
+                }}
+              >
+                <div 
+                  onClick={() => {
+                    const currentPin = pinnedMessages[currentPinIndex];
+                    if (currentPin) scrollToMessage(currentPin.id);
+                  }}
+                  style={{
+                    flex: 1,
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    overflow: "hidden"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "#FFA726" }}>
+                    <span>📌 Закреплённое сообщение ({pinnedMessages.length})</span>
+                    <span 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAllPinsModalOpen(true);
+                      }}
+                      style={{
+                        color: "#eb2525",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        marginLeft: "8px",
+                        fontWeight: 600
+                      }}
+                    >
+                      Показать все
+                    </span>
+                  </div>
+                  {(() => {
+                    const currentPin = pinnedMessages[currentPinIndex];
+                    if (!currentPin) return null;
+                    const cleanText = parseForwardedMessage(currentPin.message).cleanText || (currentPin.attachment_url ? "Вложение" : "");
+                    const truncatedText = cleanText.length > 60 ? cleanText.substring(0, 60) + "..." : cleanText;
+                    return (
+                      <div style={{ fontSize: "12px", color: theme === "dark" ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <strong>{currentPin.username || (currentPin.is_operator ? "Оператор" : "Пользователь")}:</strong> {truncatedText}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 550 }}>
+                    {currentPinIndex + 1}/{pinnedMessages.length}
+                  </span>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <button
+                      onClick={() => {
+                        setCurrentPinIndex(prev => (prev - 1 + pinnedMessages.length) % pinnedMessages.length);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text-secondary)",
+                        padding: "2px 6px",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#eb2525"}
+                      onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                    >
+                      ❮
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentPinIndex(prev => (prev + 1) % pinnedMessages.length);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text-secondary)",
+                        padding: "2px 6px",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#eb2525"}
+                      onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                    >
+                      ❯
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setPinnedBarVisible(false)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "var(--text-secondary)",
+                      padding: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                    onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* MESSAGES VIEW */}
             {loadingChat ? (
               <LoadingSkeleton />
@@ -3027,7 +3245,7 @@ export default function OperatorFeedbackPage() {
                         const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
                         const hasText = !!msg.message;
                         
-                        if (isImg && !hasText && !msg.reply_to_id) {
+                        if (isImg && !hasText && !msg.reply_to_id && !msg.is_system) {
                           if (!currentAlbum) {
                             currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
                           } else {
@@ -3164,6 +3382,57 @@ export default function OperatorFeedbackPage() {
                         }
 
                         const msg = group;
+                        if (msg.is_system) {
+                          return (
+                            <div 
+                              key={msg.id}
+                              style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                margin: "8px 0",
+                                width: "100%"
+                              }}
+                            >
+                              <div 
+                                style={{
+                                  background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                                  color: theme === "dark" ? "#cbd5e1" : "#64748b",
+                                  padding: "6px 14px",
+                                  borderRadius: "12px",
+                                  fontSize: "12px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                                }}
+                              >
+                                <span>
+                                  {msg.system_type === "pin" ? "📌 " : "📎 "}
+                                  <strong>{msg.username}</strong> {msg.message}
+                                </span>
+                                {msg.system_type === "pin" && msg.target_msg_id && (
+                                  <button
+                                    onClick={() => scrollToMessage(msg.target_msg_id)}
+                                    style={{
+                                      background: "transparent",
+                                      border: "none",
+                                      color: "#eb2525",
+                                      cursor: "pointer",
+                                      fontSize: "12px",
+                                      fontWeight: 600,
+                                      padding: "0 4px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "2px"
+                                    }}
+                                  >
+                                    Перейти ➜
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
                         const fwdInfo = parseForwardedMessage(msg.message);
                         const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
                         const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
@@ -3228,8 +3497,22 @@ export default function OperatorFeedbackPage() {
                               <span className="msg-sender">{msg.username}</span>
                             )}
 
-                            <div className="msg-bubble">
-                              {/* Forwarded Header Block */}
+                             <div className="msg-bubble" style={{ position: "relative", paddingRight: msg.is_pinned ? "30px" : "16px" }}>
+                               {msg.is_pinned && (
+                                 <span 
+                                   title="Закреплено" 
+                                   style={{
+                                     position: "absolute",
+                                     top: "10px",
+                                     right: "10px",
+                                     fontSize: "10px",
+                                     zIndex: 5
+                                   }}
+                                 >
+                                   📌
+                                 </span>
+                               )}
+                               {/* Forwarded Header Block */}
                               {fwdInfo.isForwarded && (
                                 <div 
                                   onClick={fwdInfo.fwdId ? (e) => { e.stopPropagation(); handleNavigateToDirectChat(fwdInfo.fwdId, fwdInfo.fwdName); } : undefined}
@@ -3766,6 +4049,122 @@ export default function OperatorFeedbackPage() {
                   );
                 })
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALL PINNED MESSAGES MODAL */}
+      {allPinsModalOpen && (
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100010
+          }}
+          onClick={() => setAllPinsModalOpen(false)}
+        >
+          <div 
+            style={{
+              background: "var(--bg-surface, white)",
+              borderRadius: "16px",
+              border: "1px solid var(--border-color)",
+              padding: "20px",
+              width: "100%",
+              maxWidth: "500px",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+              fontFamily: EMOJI_FONT_STACK
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-color)" }}>
+                📌 Закреплённые сообщения ({pinnedMessages.length})
+              </h3>
+              <button 
+                onClick={() => setAllPinsModalOpen(false)} 
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "4px" }}>
+              {pinnedMessages.map((msg) => {
+                const cleanText = parseForwardedMessage(msg.message).cleanText || (msg.attachment_url ? "Вложение" : "");
+                return (
+                  <div 
+                    key={msg.id}
+                    style={{
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "12px",
+                      padding: "12px",
+                      background: "var(--bg-color, #f1f5f9)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--text-secondary)" }}>
+                      <span style={{ fontWeight: 650, color: "var(--text-color)" }}>
+                        {msg.username || (msg.is_operator ? "Оператор" : "Пользователь")}
+                      </span>
+                      <span>{new Date(msg.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    
+                    <div 
+                      style={{ fontSize: "13px", color: "var(--text-color)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                      dangerouslySetInnerHTML={{ __html: formatMessageText(cleanText) }}
+                    />
+                    
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
+                      <button
+                        onClick={() => handleUnpinMessage(msg.id)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontWeight: 550
+                        }}
+                      >
+                        Открепить
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAllPinsModalOpen(false);
+                          scrollToMessage(msg.id);
+                        }}
+                        style={{
+                          background: "#eb2525",
+                          border: "none",
+                          color: "white",
+                          borderRadius: "6px",
+                          padding: "4px 10px",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        Перейти ➜
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
