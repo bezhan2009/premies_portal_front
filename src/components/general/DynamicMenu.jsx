@@ -185,7 +185,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
     useEffect(() => {
         if (unreadGroupsCount > prevGroupsUnreadCountRef.current) {
-            const isGroupsPage = window.location.pathname.includes("/groups") || window.location.pathname.includes("/operator/groups");
+            const isGroupsPage = (window.location.pathname.includes("/feedback") || window.location.pathname.includes("/operator/feedback")) && window.location.search.includes("tab=groups");
             const isMuted = muteUntil && new Date() < new Date(muteUntil);
             
             if (!isGroupsPage && !isMuted) {
@@ -195,7 +195,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     message: "У вас новое сообщение в Группе! Нажмите, чтобы открыть.",
                     type: "info",
                     onClick: () => {
-                        navigate(isOperatorUser ? "/operator/groups" : "/groups");
+                        navigate(isOperatorUser ? "/operator/feedback?tab=groups" : "/feedback?tab=groups");
                     }
                 });
             }
@@ -510,7 +510,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
             baseLinks.push({
                 name: "Группы",
-                href: "/groups",
+                href: "/feedback?tab=groups",
                 key: "groups",
                 icon: Users,
                 hasNotification: unreadGroupsCount > 0
@@ -599,7 +599,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     },
                     {
                         name: "Группы (Оператор)",
-                        href: "/operator/groups",
+                        href: "/operator/feedback?tab=groups",
                         key: "groups_operator",
                         icon: Users,
                         hasNotification: unreadGroupsCount > 0

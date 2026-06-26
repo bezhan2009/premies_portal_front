@@ -1,6 +1,6 @@
 import React from "react";
-import GroupsPage from "../../general/GroupsPage";
+import { Navigate } from "react-router-dom";
 
 export default function OperatorGroupsPage() {
-  return <GroupsPage />;
+  return <Navigate to="/operator/feedback?tab=groups" replace />;
 }

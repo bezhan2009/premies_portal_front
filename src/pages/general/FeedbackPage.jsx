@@ -4,7 +4,7 @@ import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
   Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
-  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle, Info
+  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle, Info, MessageSquare, ArrowLeft, Users
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
@@ -13,6 +13,8 @@ import useThemeStore from "../../store/useThemeStore";
 import ImageModal from "../../components/modal/ImageModal";
 import PasteFileModal from "../../components/modal/PasteFileModal";
 import filePng from "../../assets/file.png";
+import CreateGroupModal from "../../components/general/CreateGroupModal";
+import GroupMembersModal from "../../components/general/GroupMembersModal";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -264,6 +266,17 @@ export default function FeedbackPage() {
   const { theme } = useThemeStore();
   
   const [messages, setMessages] = useState([]);
+  
+  // Groups chat state
+  const [groups, setGroups] = useState([]);
+  const [activeGroup, setActiveGroup] = useState(null);
+  const [groupDetails, setGroupDetails] = useState(null);
+  const [activeTab, setActiveTab] = useState("support"); // "support" | "groups"
+  const [groupSearch, setGroupSearch] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [activeChatType, setActiveChatType] = useState("support"); // "support" | "group"
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -570,10 +583,49 @@ export default function FeedbackPage() {
     }
   }, [location, token]);
 
-  const fetchMessages = async () => {
-    if (recipientId === 0 || !token) return;
+  const fetchGroups = async () => {
+    if (!token) return;
     try {
-      const url = `${API_URL}/api/feedback?chatWith=${recipientId}`;
+      const res = await axios.get(`${API_URL}/api/groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroups(res.data || []);
+      
+      // Update active group details locally if it changed
+      if (activeGroup) {
+        const updatedActive = res.data.find(g => g.id === activeGroup.id);
+        if (updatedActive) {
+          setActiveGroup(updatedActive);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading groups:", err);
+    }
+  };
+
+  const fetchGroupDetails = async (groupId) => {
+    if (!groupId || !token) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/groups/${groupId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroupDetails(res.data);
+    } catch (err) {
+      console.error("Error loading group details:", err);
+    }
+  };
+
+  const fetchMessages = async () => {
+    if (!token) return;
+    try {
+      let url = "";
+      if (activeChatType === "group") {
+        if (!activeGroup) return;
+        url = `${API_URL}/api/groups/${activeGroup.id}/messages`;
+      } else {
+        if (recipientId === 0) return;
+        url = `${API_URL}/api/feedback?chatWith=${recipientId}`;
+      }
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -605,18 +657,33 @@ export default function FeedbackPage() {
   const markAsRead = async () => {
     if (!token) return;
     try {
-      await axios.post(`${API_URL}/api/feedback/mark-read`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (activeChatType === "group") {
+        if (!activeGroup) return;
+        await axios.post(`${API_URL}/api/groups/${activeGroup.id}/mark-read`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchGroups();
+      } else {
+        await axios.post(`${API_URL}/api/feedback/mark-read`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
     } catch (err) {
       console.error("Error marking as read:", err);
     }
   };
 
   const fetchPinnedMessages = async () => {
-    if (recipientId === 0 || !token) return;
+    if (!token) return;
     try {
-      const url = `${API_URL}/api/feedback/pins?chatWith=${recipientId}`;
+      let url = "";
+      if (activeChatType === "group") {
+        if (!activeGroup) return;
+        url = `${API_URL}/api/groups/${activeGroup.id}/pins`;
+      } else {
+        if (recipientId === 0) return;
+        url = `${API_URL}/api/feedback/pins?chatWith=${recipientId}`;
+      }
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -628,9 +695,15 @@ export default function FeedbackPage() {
 
   const handlePinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (activeChatType === "group") {
+        await axios.post(`${API_URL}/api/groups/${activeGroup.id}/messages/${msgId}/pin`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       fetchMessages();
       fetchPinnedMessages();
       setCurrentPinIndex(0);
@@ -643,9 +716,15 @@ export default function FeedbackPage() {
 
   const handleUnpinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (activeChatType === "group") {
+        await axios.post(`${API_URL}/api/groups/${activeGroup.id}/messages/${msgId}/unpin`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       fetchMessages();
       fetchPinnedMessages();
     } catch (err) {
@@ -665,14 +744,34 @@ export default function FeedbackPage() {
   };
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "groups") {
+      setActiveTab("groups");
+    } else {
+      setActiveTab("support");
+    }
+
+    fetchGroups();
+    const listInterval = setInterval(fetchGroups, 10000);
+    return () => clearInterval(listInterval);
+  }, []);
+
+  useEffect(() => {
     fetchMessages();
     fetchPinnedMessages();
+    if (activeChatType === "group" && activeGroup) {
+      fetchGroupDetails(activeGroup.id);
+    }
     const interval = setInterval(() => {
       fetchMessages();
       fetchPinnedMessages();
-    }, 5000);
+      if (activeChatType === "group" && activeGroup) {
+        fetchGroupDetails(activeGroup.id);
+      }
+    }, 4000);
     return () => clearInterval(interval);
-  }, [recipientId]);
+  }, [recipientId, activeChatType, activeGroup?.id]);
 
   // Presence polling
   useEffect(() => {
@@ -747,11 +846,19 @@ export default function FeedbackPage() {
     // Edit message route
     if (editingMessage) {
       try {
-        await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
-          message: newMessage.trim()
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        if (activeChatType === "group") {
+          await axios.put(`${API_URL}/api/groups/${activeGroup.id}/messages/${editingMessage.id}`, {
+            message: newMessage.trim()
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } else {
+          await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
+            message: newMessage.trim()
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
         setEditingMessage(null);
         setNewMessage("");
         fetchMessages();
@@ -780,12 +887,15 @@ export default function FeedbackPage() {
         attachmentUrl = uploadRes.data.url;
       }
 
-      await axios.post(`${API_URL}/api/feedback`, { 
-        message: newMessage.trim(),
-        attachment_url: attachmentUrl,
-        recipient_id: recipientId,
-        reply_to_id: replyingTo ? replyingTo.id : null
-      }, {
+      let payload = activeChatType === "group"
+        ? { message: newMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+        : { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
+
+      let sendUrl = activeChatType === "group"
+        ? `${API_URL}/api/groups/${activeGroup.id}/messages`
+        : `${API_URL}/api/feedback`;
+
+      await axios.post(sendUrl, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -824,14 +934,15 @@ export default function FeedbackPage() {
       });
       const attachmentUrl = uploadRes.data.url;
 
-      const payload = {
-        message: fileMessage.trim(),
-        attachment_url: attachmentUrl,
-        recipient_id: recipientId,
-        reply_to_id: replyingTo ? replyingTo.id : null
-      };
+      const payload = activeChatType === "group"
+        ? { message: fileMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+        : { message: fileMessage.trim(), attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
 
-      await axios.post(`${API_URL}/api/feedback`, payload, {
+      const sendUrl = activeChatType === "group"
+        ? `${API_URL}/api/groups/${activeGroup.id}/messages`
+        : `${API_URL}/api/feedback`;
+
+      await axios.post(sendUrl, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -848,9 +959,15 @@ export default function FeedbackPage() {
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (activeChatType === "group") {
+        await axios.delete(`${API_URL}/api/groups/${activeGroup.id}/messages/${msgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       fetchMessages();
     } catch (err) {
       setErrorMsg("Не удалось удалить сообщение.");
@@ -870,9 +987,16 @@ export default function FeedbackPage() {
         newEmoji = "";
       }
 
-      const res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      let res;
+      if (activeChatType === "group") {
+        res = await axios.post(`${API_URL}/api/groups/${activeGroup.id}/messages/${msgId}/react`, { emoji: newEmoji }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
 
       setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions: res.data.reactions } : m));
     } catch (err) {
@@ -1058,12 +1182,15 @@ export default function FeedbackPage() {
           });
           const attachmentUrl = uploadRes.data.url;
 
-          await axios.post(`${API_URL}/api/feedback`, {
-            message: "[Голосовое сообщение]",
-            attachment_url: attachmentUrl,
-            recipient_id: recipientId,
-            reply_to_id: replyingTo ? replyingTo.id : null
-          }, {
+          const payload = activeChatType === "group"
+            ? { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+            : { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
+          
+          const sendUrl = activeChatType === "group"
+            ? `${API_URL}/api/groups/${activeGroup.id}/messages`
+            : `${API_URL}/api/feedback`;
+
+          await axios.post(sendUrl, payload, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
@@ -1400,6 +1527,44 @@ export default function FeedbackPage() {
         )}
       </AnimatePresence>
 
+      {/* Groups Modals */}
+      {isCreateModalOpen && (
+        <CreateGroupModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          onCreated={(newGroup) => {
+            setIsCreateModalOpen(false);
+            fetchGroups();
+            setActiveChatType("group");
+            setActiveGroup(newGroup);
+            setReplyingTo(null);
+            setEditingMessage(null);
+            fetchMessages();
+          }}
+        />
+      )}
+      {isMembersModalOpen && activeGroup && (
+        <GroupMembersModal 
+          isOpen={isMembersModalOpen} 
+          onClose={() => setIsMembersModalOpen(false)} 
+          groupId={activeGroup.id}
+          onGroupDeleted={() => {
+            setIsMembersModalOpen(false);
+            setActiveGroup(null);
+            setActiveChatType("support");
+            setMessages([]);
+            fetchGroups();
+          }}
+          onLeave={() => {
+            setIsMembersModalOpen(false);
+            setActiveGroup(null);
+            setActiveChatType("support");
+            setMessages([]);
+            fetchGroups();
+          }}
+        />
+      )}
+
       {/* FLOAT CONTEXT MENU */}
       <AnimatePresence>
         {contextMenu.visible && (
@@ -1725,18 +1890,211 @@ export default function FeedbackPage() {
       <style>{`
         .feedback-chat-container {
           display: flex;
-          justify-content: center;
-          align-items: center;
           height: calc(100vh - 64px);
           background: var(--bg-color);
           padding: 24px;
+          gap: 20px;
         }
-        .chat-card {
-          position: relative;
-          width: 100%;
-          max-width: 600px;
+        
+        .feedback-sidebar {
+          width: 320px;
+          background: var(--bg-surface, var(--bg-sidebar));
+          border: 1px solid var(--border-color);
+          border-radius: 18px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+          overflow: hidden;
           height: 100%;
-          max-height: 800px;
+          flex-shrink: 0;
+        }
+        
+        .sidebar-header {
+          padding: 16px 20px 0 20px;
+        }
+        
+        .sidebar-header h2 {
+          font-size: 18px;
+          font-weight: 700;
+          margin: 0 0 12px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--text-color);
+        }
+        
+        .search-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        
+        .search-wrapper svg {
+          position: absolute;
+          left: 12px;
+          color: var(--text-secondary);
+        }
+        
+        .search-wrapper input {
+          width: 100%;
+          padding: 8px 12px 8px 36px;
+          background: var(--bg-color);
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          color: var(--text-color);
+          font-size: 13.5px;
+          outline: none;
+          font-family: inherit;
+        }
+        
+        .search-wrapper input:focus {
+          border-color: var(--primary-color, #eb2525);
+        }
+        
+        .tabs-container {
+          display: flex;
+          border-bottom: 1px solid var(--border-color);
+          margin-bottom: 8px;
+        }
+        
+        .tab-btn {
+          flex: 1;
+          background: none;
+          border: none;
+          padding: 8px 4px;
+          font-size: 13px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          font-weight: 500;
+        }
+        
+        .tab-btn.active {
+          color: var(--primary-color, #eb2525);
+          border-bottom-color: var(--primary-color, #eb2525);
+          font-weight: 600;
+        }
+        
+        .threads-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        
+        .thread-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 1px solid transparent;
+        }
+        
+        .thread-item:hover {
+          background: var(--bg-secondary, rgba(0,0,0,0.03));
+        }
+        
+        .thread-item.active {
+          background: rgba(235, 37, 37, 0.08);
+          border-color: rgba(235, 37, 37, 0.15);
+        }
+        
+        .thread-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(235, 37, 37, 0.1);
+          color: var(--primary-color, #eb2525);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 13px;
+          flex-shrink: 0;
+        }
+        
+        .thread-info {
+          flex: 1;
+          min-width: 0;
+        }
+        
+        .thread-meta {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 4px;
+        }
+        
+        .thread-name {
+          font-weight: 600;
+          font-size: 13.5px;
+          color: var(--text-color);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .thread-time {
+          font-size: 10px;
+          color: var(--text-secondary);
+        }
+        
+        .thread-msg {
+          font-size: 11.5px;
+          color: var(--text-secondary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .unread-badge {
+          background: #ef4444;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          border-radius: 10px;
+          padding: 2px 6px;
+          min-width: 18px;
+          text-align: center;
+        }
+        
+        .new-chat-trigger-container {
+          padding: 12px 16px;
+          border-top: 1px solid var(--border-color);
+          background: var(--bg-sidebar);
+        }
+        
+        .new-chat-trigger-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, var(--primary-color, #eb2525) 0%, var(--primary-hover, #eb2525) 100%);
+          color: #ffffff;
+          border: none;
+          border-radius: 10px;
+          padding: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        
+        .new-chat-trigger-btn:hover {
+          opacity: 0.9;
+        }
+
+        .feedback-chat {
+          position: relative;
+          flex: 1;
+          height: 100%;
           background: var(--bg-surface, var(--bg-sidebar));
           border: 1px solid var(--border-color);
           border-radius: 18px;
@@ -1927,48 +2285,227 @@ export default function FeedbackPage() {
         }
       `}</style>
 
-      <div className="chat-card">
+      {/* Left Sidebar */}
+      <div className="feedback-sidebar" style={{ display: mobileShowChat && window.innerWidth <= 768 ? "none" : "flex" }}>
+        <div className="sidebar-header">
+          <h2>
+            <MessageSquare size={20} />
+            <span>Обратная связь</span>
+          </h2>
+          <div className="search-wrapper">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Поиск..."
+              value={groupSearch}
+              onChange={(e) => setGroupSearch(e.target.value)}
+            />
+          </div>
+          
+          <div className="tabs-container">
+             <button className={`tab-btn ${activeTab === "support" ? "active" : ""}`} onClick={() => { setActiveTab("support"); setActiveChatType("support"); }}>
+               Обращения
+             </button>
+             <button className={`tab-btn ${activeTab === "groups" ? "active" : ""}`} onClick={() => { setActiveTab("groups"); if (activeGroup) { setActiveChatType("group"); } }}>
+               Группы
+             </button>
+          </div>
+        </div>
+
+        {/* Threads list */}
+        <div className="threads-list">
+          {activeTab === "support" ? (
+            <div
+              className={`thread-item ${activeChatType === "support" ? "active" : ""}`}
+              onClick={() => {
+                setActiveChatType("support");
+                setMobileShowChat(true);
+              }}
+            >
+              <div className="thread-avatar">
+                <Shield size={18} />
+              </div>
+              <div className="thread-info">
+                <div className="thread-meta">
+                  <span className="thread-name">Служба поддержки</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span className="thread-msg">Чат с тех. поддержкой</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            groups.filter(g => g.name.toLowerCase().includes(groupSearch.toLowerCase())).map(group => {
+              const isActive = activeChatType === "group" && activeGroup?.id === group.id;
+              const initials = group.name.charAt(0);
+              return (
+                <div
+                  key={`group-${group.id}`}
+                  className={`thread-item ${isActive ? "active" : ""}`}
+                  onClick={() => {
+                    setActiveChatType("group");
+                    setActiveGroup(group);
+                    setReplyingTo(null);
+                    setEditingMessage(null);
+                    setLocalSearchActive(false);
+                    setLocalSearchQuery("");
+                    setMobileShowChat(true);
+                  }}
+                >
+                  {group.avatar_url ? (
+                    <img src={`${API_URL}${group.avatar_url}`} alt={group.name} className="thread-avatar" style={{ objectFit: "cover" }} />
+                  ) : (
+                    <div className="thread-avatar" style={{ backgroundColor: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"][group.id % 7], color: "white" }}>
+                      {initials}
+                    </div>
+                  )}
+                  <div className="thread-info">
+                    <div className="thread-meta">
+                      <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        {group.name}
+                        {group.is_announcement && <span className="announcement-badge" style={{ fontSize: "9px", background: "#ef4444", color: "white", padding: "1px 4px", borderRadius: "4px" }}>📢 Канал</span>}
+                      </span>
+                      {group.last_message_at && <span className="thread-time">{formatTime(group.last_message_at)}</span>}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(group.last_message) || "Нет сообщений" }} />
+                      {group.unread_count > 0 && <span className="unread-badge">{group.unread_count}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer Button */}
+        {activeTab === "groups" && (
+          <div className="new-chat-trigger-container">
+            <button className="new-chat-trigger-btn" onClick={() => setIsCreateModalOpen(true)}>
+              <PlusCircle size={18} />
+              <span>Создать группу</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Right Chat Pane */}
+      <div className="feedback-chat" style={{ display: mobileShowChat || window.innerWidth > 768 ? "flex" : "none" }}>
+        
         {/* HEADER */}
         <div className="chat-header">
-          <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-            <h2 style={{ margin: 0 }}>Служба поддержки</h2>
-            {(() => { const p = formatPresence(partnerPresence); return p.label ? (
-              <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px", lineHeight: 1 }}>
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: p.color, display: "inline-block", flexShrink: 0 }} />
-                {p.label}
-              </span>
-            ) : null; })()}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {window.innerWidth <= 768 && (
+              <button 
+                onClick={() => setMobileShowChat(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-color)", marginRight: "4px" }}
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            {activeChatType === "group" ? (
+              <>
+                {activeGroup?.avatar_url ? (
+                  <img src={`${API_URL}${activeGroup.avatar_url}`} alt={activeGroup.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                ) : (
+                  <div 
+                    className="thread-avatar" 
+                    style={{ 
+                      width: "36px", 
+                      height: "36px", 
+                      borderRadius: "50%",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: "13px",
+                      backgroundColor: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"][activeGroup?.id % 7] 
+                    }}
+                  >
+                    {activeGroup?.name?.charAt(0)}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-color)", display: "flex", alignItems: "center", gap: "4px" }}>
+                    {activeGroup?.name}
+                    {activeGroup?.is_announcement && <span className="announcement-badge" style={{ fontSize: "9px", background: "#ef4444", color: "white", padding: "1px 4px", borderRadius: "4px" }}>📢 Канал</span>}
+                  </h2>
+                  <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                    {activeGroup?.is_announcement ? "Официальный канал объявлений" : `${groupDetails?.member_count || 1} участников`}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                <h2 style={{ margin: 0 }}>Служба поддержки</h2>
+                {(() => { const p = formatPresence(partnerPresence); return p.label ? (
+                  <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px", lineHeight: 1 }}>
+                    <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: p.color, display: "inline-block", flexShrink: 0 }} />
+                    {p.label}
+                  </span>
+                ) : null; })()}
+              </div>
+            )}
           </div>
+          
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {activeChatType === "group" && (
+              <button 
+                onClick={() => setIsMembersModalOpen(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "rgba(0,0,0,0.05)",
+                  border: "none",
+                  padding: "6px 12px",
+                  borderRadius: "14px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "var(--text-color)"
+                }}
+              >
+                <Users size={14} />
+                <span>Участники</span>
+              </button>
+            )}
+            
             {/* Search in chat toggle */}
             <button 
               onClick={() => setLocalSearchActive(!localSearchActive)}
               style={{ background: "none", border: "none", cursor: "pointer", color: localSearchActive ? "#eb2525" : "var(--text-secondary)" }}
             >
-              <Search size={18} />
+              <SearchIcon size={18} />
             </button>
-            {/* Mute toggle */}
-            <button 
-              onClick={() => handleToggleMute(recipientId)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-            >
-              {mutedChats.includes(recipientId) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
-            </button>
-            {/* Pin toggle */}
-            <button 
-              onClick={() => handleTogglePin(recipientId)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-            >
-              <Pin size={18} style={{ transform: pinnedChats.includes(recipientId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(recipientId) ? "#3b82f6" : "inherit" }} />
-            </button>
-            {/* Delete Chat toggle */}
-            <button 
-              onClick={handleDeleteChat}
-              title="Очистить историю сообщений"
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-            >
-              <Trash2 size={18} />
-            </button>
+            
+            {activeChatType !== "group" && (
+              <>
+                {/* Mute toggle */}
+                <button 
+                  onClick={() => handleToggleMute(recipientId)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  {mutedChats.includes(recipientId) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
+                </button>
+                {/* Pin toggle */}
+                <button 
+                  onClick={() => handleTogglePin(recipientId)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  <Pin size={18} style={{ transform: pinnedChats.includes(recipientId) ? "rotate(45deg)" : "none", color: pinnedChats.includes(recipientId) ? "#3b82f6" : "inherit" }} />
+                </button>
+                {/* Delete Chat toggle */}
+                <button 
+                  onClick={handleDeleteChat}
+                  title="Очистить историю сообщений"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -2405,6 +2942,11 @@ export default function FeedbackPage() {
                             paddingRight: msg.is_pinned ? "30px" : "16px"
                           }}
                         >
+                          {!isOutgoing && activeChatType === "group" && (
+                            <div style={{ fontSize: "11px", fontWeight: "bold", color: "var(--primary-color, #eb2525)", marginBottom: "4px" }}>
+                              {msg.username}
+                            </div>
+                          )}
                         {msg.is_pinned && (
                           <span 
                             title="Закреплено" 

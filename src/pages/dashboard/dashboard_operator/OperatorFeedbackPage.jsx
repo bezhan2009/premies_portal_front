@@ -13,6 +13,8 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import useThemeStore from "../../../store/useThemeStore";
 import ImageModal from "../../../components/modal/ImageModal";
 import PasteFileModal from "../../../components/modal/PasteFileModal";
+import CreateGroupModal from "../../../components/general/CreateGroupModal";
+import GroupMembersModal from "../../../components/general/GroupMembersModal";
 import filePng from "../../../assets/file.png";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -288,6 +290,12 @@ export default function OperatorFeedbackPage() {
   
   // Support threads (operator only)
   const [supportThreads, setSupportThreads] = useState([]);
+  
+  // Groups chat state
+  const [groups, setGroups] = useState([]);
+  const [groupDetails, setGroupDetails] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   
   // Direct chat threads (all users)
   const [directThreads, setDirectThreads] = useState([]);
@@ -753,6 +761,26 @@ export default function OperatorFeedbackPage() {
     }
   }, []);
 
+  const fetchGroups = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/groups`, axiosConfig);
+      setGroups(res.data || []);
+    } catch (err) {
+      console.error("Error fetching groups:", err);
+    }
+  }, [token]);
+
+  const fetchGroupDetails = useCallback(async (groupId) => {
+    if (!groupId || !token) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/groups/${groupId}`, axiosConfig);
+      setGroupDetails(res.data);
+    } catch (err) {
+      console.error("Error loading group details:", err);
+    }
+  }, [token]);
+
   const fetchUsers = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/users/emails`, axiosConfig);
@@ -798,9 +826,11 @@ export default function OperatorFeedbackPage() {
   const fetchPinnedMessages = useCallback(async (type, threadId) => {
     if (!threadId || !token) return;
     try {
-      const url = type === "support"
-        ? `${API_URL}/api/feedback/pins?userId=${threadId}`
-        : `${API_URL}/api/feedback/pins?chatWith=${threadId}`;
+      const url = type === "group"
+        ? `${API_URL}/api/groups/${threadId}/pins`
+        : type === "support"
+          ? `${API_URL}/api/feedback/pins?userId=${threadId}`
+          : `${API_URL}/api/feedback/pins?chatWith=${threadId}`;
       const res = await axios.get(url, axiosConfig);
       setPinnedMessages(res.data || []);
     } catch (err) {
@@ -810,7 +840,11 @@ export default function OperatorFeedbackPage() {
 
   const handlePinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, axiosConfig);
+      if (activeChatType === "group") {
+        await axios.post(`${API_URL}/api/groups/${activeThreadId}/messages/${msgId}/pin`, {}, axiosConfig);
+      } else {
+        await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, axiosConfig);
+      }
       fetchMessages(activeChatType, activeThreadId);
       fetchPinnedMessages(activeChatType, activeThreadId);
       setCurrentPinIndex(0);
@@ -823,7 +857,11 @@ export default function OperatorFeedbackPage() {
 
   const handleUnpinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, axiosConfig);
+      if (activeChatType === "group") {
+        await axios.post(`${API_URL}/api/groups/${activeThreadId}/messages/${msgId}/unpin`, {}, axiosConfig);
+      } else {
+        await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, axiosConfig);
+      }
       fetchMessages(activeChatType, activeThreadId);
       fetchPinnedMessages(activeChatType, activeThreadId);
     } catch (err) {
@@ -846,9 +884,11 @@ export default function OperatorFeedbackPage() {
     if (!threadId) return;
     if (showLoading) setLoadingChat(true);
     try {
-      let url = type === "support" 
-        ? `${API_URL}/api/feedback?userId=${threadId}`
-        : `${API_URL}/api/feedback?chatWith=${threadId}`;
+      let url = type === "group"
+        ? `${API_URL}/api/groups/${threadId}/messages`
+        : type === "support" 
+          ? `${API_URL}/api/feedback?userId=${threadId}`
+          : `${API_URL}/api/feedback?chatWith=${threadId}`;
       const res = await axios.get(url, axiosConfig);
       
       setMessages(prevMessages => {
@@ -880,13 +920,18 @@ export default function OperatorFeedbackPage() {
   const markAsRead = useCallback(async (type, threadId) => {
     if (!threadId) return;
     try {
-      const payload = type === "direct" 
-        ? { chat_with: threadId } 
-        : { user_id: threadId };
-      await axios.post(`${API_URL}/api/feedback/mark-read`, payload, axiosConfig);
-      
-      if (type === "support") fetchSupportThreads();
-      else if (type === "direct") fetchDirectThreads();
+      if (type === "group") {
+        await axios.post(`${API_URL}/api/groups/${threadId}/mark-read`, {}, axiosConfig);
+        fetchGroups();
+      } else {
+        const payload = type === "direct" 
+          ? { chat_with: threadId } 
+          : { user_id: threadId };
+        await axios.post(`${API_URL}/api/feedback/mark-read`, payload, axiosConfig);
+        
+        if (type === "support") fetchSupportThreads();
+        else if (type === "direct") fetchDirectThreads();
+      }
       fetchTotalUnread();
     } catch (err) {
       console.error("Error marking read:", err);
@@ -900,9 +945,20 @@ export default function OperatorFeedbackPage() {
   };
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "groups") {
+      setActiveTab("groups");
+    } else if (tabParam === "direct") {
+      setActiveTab("direct");
+    } else {
+      setActiveTab("support");
+    }
+
     fetchUsers();
     fetchSupportThreads(true);
     fetchDirectThreads(false);
+    fetchGroups();
     fetchTotalUnread();
 
     // Fetch mbarotov and ensure he is in supportThreads
@@ -938,12 +994,16 @@ export default function OperatorFeedbackPage() {
       if (activeChatType && activeThreadId) {
         fetchMessages(activeChatType, activeThreadId);
         fetchPinnedMessages(activeChatType, activeThreadId);
+        if (activeChatType === "group") {
+          fetchGroupDetails(activeThreadId);
+        }
       }
     }, 4000);
 
     const listsInterval = setInterval(() => {
       fetchSupportThreads();
       fetchDirectThreads();
+      fetchGroups();
       fetchTotalUnread();
     }, 8000);
 
@@ -986,9 +1046,15 @@ export default function OperatorFeedbackPage() {
     // Edit message route
     if (editingMessage) {
       try {
-        await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
-          message: newMessage.trim()
-        }, axiosConfig);
+        if (activeChatType === "group") {
+          await axios.put(`${API_URL}/api/groups/${activeThreadId}/messages/${editingMessage.id}`, {
+            message: newMessage.trim()
+          }, axiosConfig);
+        } else {
+          await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
+            message: newMessage.trim()
+          }, axiosConfig);
+        }
         setEditingMessage(null);
         setNewMessage("");
         fetchMessages(activeChatType, activeThreadId);
@@ -1019,9 +1085,15 @@ export default function OperatorFeedbackPage() {
 
       let payload = activeChatType === "direct" 
         ? { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
-        : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
+        : activeChatType === "group"
+          ? { message: newMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+          : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
 
-      const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+      let sendUrl = activeChatType === "group"
+        ? `${API_URL}/api/groups/${activeThreadId}/messages`
+        : `${API_URL}/api/feedback`;
+
+      const res = await axios.post(sendUrl, payload, axiosConfig);
       setMessages((prev) => [...prev, res.data]);
       setNewMessage("");
       setFile(null);
@@ -1031,6 +1103,7 @@ export default function OperatorFeedbackPage() {
       
       if (activeChatType === "support") fetchSupportThreads();
       else if (activeChatType === "direct") fetchDirectThreads();
+      else if (activeChatType === "group") fetchGroups();
     } catch (err) {
       console.error("Error sending message:", err);
     } finally {
@@ -1063,9 +1136,15 @@ export default function OperatorFeedbackPage() {
 
       let payload = activeChatType === "direct" 
         ? { message: fileMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
-        : { message: fileMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
+        : activeChatType === "group"
+          ? { message: fileMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+          : { message: fileMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
 
-      const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+      let sendUrl = activeChatType === "group"
+        ? `${API_URL}/api/groups/${activeThreadId}/messages`
+        : `${API_URL}/api/feedback`;
+
+      const res = await axios.post(sendUrl, payload, axiosConfig);
       setMessages((prev) => [...prev, res.data]);
       
       setReplyingTo(null);
@@ -1073,6 +1152,7 @@ export default function OperatorFeedbackPage() {
       
       if (activeChatType === "support") fetchSupportThreads();
       else if (activeChatType === "direct") fetchDirectThreads();
+      else if (activeChatType === "group") fetchGroups();
     } catch (err) {
       console.error("Error sending pasted file:", err);
     } finally {
@@ -1083,10 +1163,15 @@ export default function OperatorFeedbackPage() {
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+      if (activeChatType === "group") {
+        await axios.delete(`${API_URL}/api/groups/${activeThreadId}/messages/${msgId}`, axiosConfig);
+      } else {
+        await axios.delete(`${API_URL}/api/feedback/${msgId}`, axiosConfig);
+      }
       fetchMessages(activeChatType, activeThreadId);
       if (activeChatType === "support") fetchSupportThreads();
       else if (activeChatType === "direct") fetchDirectThreads();
+      else if (activeChatType === "group") fetchGroups();
     } catch (err) {
       console.error("Error deleting message:", err);
     }
@@ -1105,7 +1190,12 @@ export default function OperatorFeedbackPage() {
         newEmoji = "";
       }
 
-      const res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, axiosConfig);
+      let res;
+      if (activeChatType === "group") {
+        res = await axios.post(`${API_URL}/api/groups/${activeThreadId}/messages/${msgId}/react`, { emoji: newEmoji }, axiosConfig);
+      } else {
+        res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, axiosConfig);
+      }
 
       setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions: res.data.reactions } : m));
     } catch (err) {
@@ -1313,14 +1403,21 @@ export default function OperatorFeedbackPage() {
 
           let payload = activeChatType === "direct" 
             ? { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
-            : { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
+            : activeChatType === "group"
+              ? { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+              : { message: "[Голосовое сообщение]", attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
 
-          const res = await axios.post(`${API_URL}/api/feedback`, payload, axiosConfig);
+          let sendUrl = activeChatType === "group"
+            ? `${API_URL}/api/groups/${activeThreadId}/messages`
+            : `${API_URL}/api/feedback`;
+
+          const res = await axios.post(sendUrl, payload, axiosConfig);
           setMessages((prev) => [...prev, res.data]);
           setReplyingTo(null);
           
           if (activeChatType === "support") fetchSupportThreads();
           else if (activeChatType === "direct") fetchDirectThreads();
+          else if (activeChatType === "group") fetchGroups();
         } catch (err) {
           console.error("Error sending voice message:", err);
         } finally {
@@ -2883,6 +2980,9 @@ export default function OperatorFeedbackPage() {
              <button className={`tab-btn ${activeTab === "direct" ? "active" : ""}`} onClick={() => setActiveTab("direct")}>
                Личные сообщения
              </button>
+             <button className={`tab-btn ${activeTab === "groups" ? "active" : ""}`} onClick={() => setActiveTab("groups")}>
+               Группы
+             </button>
           </div>
         </div>
 
@@ -2890,6 +2990,51 @@ export default function OperatorFeedbackPage() {
         <div className="threads-list">
           {loadingThreads ? (
             <div style={{ padding: "40px 0" }}><Spinner size="medium" label="Загрузка чатов..." /></div>
+          ) : activeTab === "groups" ? (
+             groups.filter(g => g.name.toLowerCase().includes(threadSearch.toLowerCase())).map(group => {
+               const isActive = activeChatType === "group" && activeThreadId === group.id;
+               const initials = group.name.charAt(0);
+               return (
+                 <div
+                   key={`group-${group.id}`}
+                   className={`thread-item ${isActive ? "active" : ""}`}
+                   onClick={() => {
+                     setActiveChatType("group");
+                     setActiveThreadId(group.id);
+                     setActiveThreadName(group.name);
+                     setReplyingTo(null);
+                     setEditingMessage(null);
+                     setLocalSearchActive(false);
+                     setLocalSearchQuery("");
+                     fetchMessages("group", group.id, true);
+                     fetchGroupDetails(group.id);
+                     setMobileShowChat(true);
+                   }}
+                   style={{ border: "1.5px solid transparent", position: "relative", cursor: "pointer" }}
+                 >
+                   {group.avatar_url ? (
+                     <img src={`${API_URL}${group.avatar_url}`} alt={group.name} className="thread-avatar" style={{ objectFit: "cover" }} />
+                   ) : (
+                     <div className="thread-avatar" style={{ backgroundColor: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"][group.id % 7], color: "white" }}>
+                       {initials}
+                     </div>
+                   )}
+                   <div className="thread-info">
+                     <div className="thread-meta">
+                       <span className="thread-name" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                         {group.name}
+                         {group.is_announcement && <span className="announcement-badge" style={{ fontSize: "9px", background: "#ef4444", color: "white", padding: "1px 4px", borderRadius: "4px" }}>📢 Канал</span>}
+                       </span>
+                       {group.last_message_at && <span className="thread-time">{formatTime(group.last_message_at)}</span>}
+                     </div>
+                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                       <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(group.last_message) || "Нет сообщений" }} />
+                       {group.unread_count > 0 && <span className="unread-badge">{group.unread_count}</span>}
+                     </div>
+                   </div>
+                 </div>
+               );
+             })
           ) : displayThreads.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "20px", fontSize: "13px" }}>
               Нет активных диалогов.
@@ -2986,13 +3131,20 @@ export default function OperatorFeedbackPage() {
 
         {/* New Chat Button */}
         <div className="new-chat-trigger-container">
-          <button className="new-chat-trigger-btn" onClick={() => {
-            setUserSearchQuery("");
-            setShowNewChatModal(true);
-          }}>
-            <UserPlus size={18} />
-            <span>Начать новый чат</span>
-          </button>
+          {activeTab === "groups" ? (
+            <button className="new-chat-trigger-btn" onClick={() => setIsCreateModalOpen(true)}>
+              <PlusCircle size={18} />
+              <span>Создать группу</span>
+            </button>
+          ) : (
+            <button className="new-chat-trigger-btn" onClick={() => {
+              setUserSearchQuery("");
+              setShowNewChatModal(true);
+            }}>
+              <UserPlus size={18} />
+              <span>Начать новый чат</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -3004,22 +3156,81 @@ export default function OperatorFeedbackPage() {
             <div className="chat-header">
               <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                 <button className="btn-back-list" onClick={() => setMobileShowChat(false)}><ArrowLeft size={20} /></button>
-                <div className="chat-title-info">
-                  <h3>{activeThreadName}</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                    <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
-                    {(() => { const p = formatPresence(partnerPresence); return p.label ? (
-                      <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: p.color, display: "inline-block" }} />
-                        {p.label}
+                {activeChatType === "group" ? (
+                  <>
+                    {groupDetails?.avatar_url ? (
+                      <img src={`${API_URL}${groupDetails.avatar_url}`} alt={activeThreadName} className="thread-avatar" style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div 
+                        className="thread-avatar" 
+                        style={{ 
+                          width: "36px", 
+                          height: "36px", 
+                          borderRadius: "50%",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: "13px",
+                          backgroundColor: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"][activeThreadId % 7] 
+                        }}
+                      >
+                        {activeThreadName.charAt(0)}
+                      </div>
+                    )}
+                    <div className="chat-title-info">
+                      <h3 style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        {activeThreadName}
+                        {groupDetails?.is_announcement && <span className="announcement-badge" style={{ fontSize: "9px", background: "#ef4444", color: "white", padding: "1px 4px", borderRadius: "4px" }}>📢 Канал</span>}
+                      </h3>
+                      <span>
+                        {groupDetails?.is_announcement 
+                          ? "Официальный канал объявлений" 
+                          : `${groupDetails?.member_count || 1} участников`
+                        }
                       </span>
-                    ) : null; })()}
+                    </div>
+                  </>
+                ) : (
+                  <div className="chat-title-info">
+                    <h3>{activeThreadName}</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                      <span><Shield size={12} /> {activeChatType === "support" ? "Обращение об ошибке" : "Личное сообщение"}</span>
+                      {(() => { const p = formatPresence(partnerPresence); return p.label ? (
+                        <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: p.color, display: "inline-block" }} />
+                          {p.label}
+                        </span>
+                      ) : null; })()}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Chat Actions Toggles */}
               <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                {activeChatType === "group" && (
+                  <button 
+                    onClick={() => setIsMembersModalOpen(true)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      background: "rgba(0,0,0,0.05)",
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "14px",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--text-color)"
+                    }}
+                  >
+                    <User size={14} />
+                    <span>Участники</span>
+                  </button>
+                )}
                 {/* Search toggle */}
                 <button 
                   onClick={() => setLocalSearchActive(!localSearchActive)}
@@ -3027,28 +3238,32 @@ export default function OperatorFeedbackPage() {
                 >
                   <Search size={18} />
                 </button>
-                {/* Mute toggle */}
-                <button 
-                  onClick={() => handleToggleMute(activeThreadId)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-                >
-                  {mutedChats.map(Number).includes(Number(activeThreadId)) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
-                </button>
-                {/* Pin toggle */}
-                <button 
-                  onClick={() => handleTogglePin(activeThreadId)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-                >
-                  <Pin size={18} style={{ transform: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "rotate(45deg)" : "none", color: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "#3b82f6" : "inherit" }} />
-                </button>
-                {/* Delete Chat toggle */}
-                <button 
-                  onClick={() => handleDeleteChat(activeThreadId)}
-                  title="Очистить историю сообщений"
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-                >
-                  <Trash2 size={18} />
-                </button>
+                {activeChatType !== "group" && (
+                  <>
+                    {/* Mute toggle */}
+                    <button 
+                      onClick={() => handleToggleMute(activeThreadId)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                    >
+                      {mutedChats.map(Number).includes(Number(activeThreadId)) ? <BellOff size={18} style={{ color: "#f59e0b" }} /> : <Bell size={18} />}
+                    </button>
+                    {/* Pin toggle */}
+                    <button 
+                      onClick={() => handleTogglePin(activeThreadId)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                    >
+                      <Pin size={18} style={{ transform: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "rotate(45deg)" : "none", color: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "#3b82f6" : "inherit" }} />
+                    </button>
+                    {/* Delete Chat toggle */}
+                    <button 
+                      onClick={() => handleDeleteChat(activeThreadId)}
+                      title="Очистить историю сообщений"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -3057,7 +3272,9 @@ export default function OperatorFeedbackPage() {
               <span>
                 {activeChatType === "support" 
                   ? "Это обращение от пользователя об ошибке в системе. Вы можете прочитать детали и отправить ответ."
-                  : `Личная беседа. Все сообщения между вами и ${activeThreadName} конфиденциальны.`
+                  : activeChatType === "group"
+                    ? "Групповой чат для совместного обсуждения вопросов."
+                    : `Личная беседа. Все сообщения между вами и ${activeThreadName} конфиденциальны.`
                 }
               </span>
             </div>
@@ -3497,7 +3714,7 @@ export default function OperatorFeedbackPage() {
                                   alignSelf: "auto"
                                 }}
                               >
-                            {!isOutgoing && activeChatType === "support" && (
+                            {!isOutgoing && (activeChatType === "support" || activeChatType === "group") && (
                               <span className="msg-sender">{msg.username}</span>
                             )}
 
@@ -4056,6 +4273,43 @@ export default function OperatorFeedbackPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Groups Modals */}
+      {isCreateModalOpen && (
+        <CreateGroupModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          onCreated={(newGroup) => {
+            setIsCreateModalOpen(false);
+            fetchGroups();
+            setActiveChatType("group");
+            setActiveThreadId(newGroup.id);
+            setActiveThreadName(newGroup.name);
+            fetchMessages("group", newGroup.id, true);
+          }}
+        />
+      )}
+      {isMembersModalOpen && activeThreadId && (
+        <GroupMembersModal 
+          isOpen={isMembersModalOpen} 
+          onClose={() => setIsMembersModalOpen(false)} 
+          groupId={activeThreadId}
+          onGroupDeleted={() => {
+            setIsMembersModalOpen(false);
+            setActiveThreadId(null);
+            setActiveChatType(null);
+            setMessages([]);
+            fetchGroups();
+          }}
+          onLeave={() => {
+            setIsMembersModalOpen(false);
+            setActiveThreadId(null);
+            setActiveChatType(null);
+            setMessages([]);
+            fetchGroups();
+          }}
+        />
       )}
 
       {/* ALL PINNED MESSAGES MODAL */}

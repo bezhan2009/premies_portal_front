@@ -252,6 +252,7 @@ const MiniChatWindow = () => {
   const [threadSearch, setThreadSearch] = useState("");
   const [supportThreads, setSupportThreads] = useState([]);
   const [directThreads, setDirectThreads] = useState([]);
+  const [groups, setGroups] = useState([]);
   
   // New Chat User Selection
   const [usersList, setUsersList] = useState([]);
@@ -356,6 +357,11 @@ const MiniChatWindow = () => {
     catch { return []; }
   };
   const isOperator = getRoles().includes(3);
+  const activeGroup = useMemo(
+    () => chatType === "group" ? groups.find(group => Number(group.id) === Number(recipientId)) : null,
+    [chatType, groups, recipientId]
+  );
+  const canWriteActiveChat = !(chatType === "group" && activeGroup?.is_announcement && !isOperator);
 
   // Set default tab
   useEffect(() => {
@@ -382,6 +388,10 @@ const MiniChatWindow = () => {
     if (!isMiniChatOpen || !token) return;
     setLoadingThreads(true);
     try {
+      // Fetch groups
+      const groupsRes = await axios.get(`${API_URL}/api/groups`, { headers: { Authorization: `Bearer ${token}` } });
+      setGroups(groupsRes.data || []);
+
       if (isOperator) {
         const [supportRes, directRes] = await Promise.all([
           axios.get(`${API_URL}/api/feedback/threads`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -418,6 +428,8 @@ const MiniChatWindow = () => {
         url = isOperator 
           ? `${API_URL}/api/feedback?userId=${recipientId}`
           : `${API_URL}/api/feedback`;
+      } else if (chatType === "group") {
+        url = `${API_URL}/api/groups/${recipientId}/messages`;
       } else {
         url = `${API_URL}/api/feedback?chatWith=${recipientId}`;
       }
@@ -426,12 +438,19 @@ const MiniChatWindow = () => {
       setMessages(res.data || []);
       
       // Mark read
-      const payload = chatType === "direct" 
-        ? { chat_with: recipientId }
-        : (isOperator ? { user_id: recipientId } : {});
-      await axios.post(`${API_URL}/api/feedback/mark-read`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (chatType === "group") {
+        await axios.post(`${API_URL}/api/groups/${recipientId}/mark-read`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchThreadsData();
+      } else {
+        const payload = chatType === "direct" 
+          ? { chat_with: recipientId }
+          : (isOperator ? { user_id: recipientId } : {});
+        await axios.post(`${API_URL}/api/feedback/mark-read`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
 
       // Update global unread count
       const countRes = await axios.get(`${API_URL}/api/feedback/unread-count`, {
@@ -443,7 +462,7 @@ const MiniChatWindow = () => {
     } finally {
       setLoading(false);
     }
-  }, [isMiniChatOpen, currentView, chatType, recipientId, isOperator, token, setUnreadCount]);
+  }, [isMiniChatOpen, currentView, chatType, recipientId, isOperator, token, setUnreadCount, fetchThreadsData]);
 
   const fetchPinnedMessages = useCallback(async () => {
     if (!token || currentView !== "chat") return;
@@ -453,6 +472,8 @@ const MiniChatWindow = () => {
         url = isOperator 
           ? `${API_URL}/api/feedback/pins?userId=${recipientId}`
           : `${API_URL}/api/feedback/pins`;
+      } else if (chatType === "group") {
+        url = `${API_URL}/api/groups/${recipientId}/pins`;
       } else {
         url = `${API_URL}/api/feedback/pins?chatWith=${recipientId}`;
       }
@@ -465,7 +486,10 @@ const MiniChatWindow = () => {
 
   const handlePinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/pin`, {}, {
+      const url = chatType === "group"
+        ? `${API_URL}/api/groups/${recipientId}/messages/${msgId}/pin`
+        : `${API_URL}/api/feedback/${msgId}/pin`;
+      await axios.post(url, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMessages();
@@ -480,7 +504,10 @@ const MiniChatWindow = () => {
 
   const handleUnpinMessage = async (msgId) => {
     try {
-      await axios.post(`${API_URL}/api/feedback/${msgId}/unpin`, {}, {
+      const url = chatType === "group"
+        ? `${API_URL}/api/groups/${recipientId}/messages/${msgId}/unpin`
+        : `${API_URL}/api/feedback/${msgId}/unpin`;
+      await axios.post(url, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMessages();
@@ -607,7 +634,10 @@ const MiniChatWindow = () => {
     // Edit message route
     if (editingMessage) {
       try {
-        await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
+        const editUrl = chatType === "group"
+          ? `${API_URL}/api/groups/${recipientId}/messages/${editingMessage.id}`
+          : `${API_URL}/api/feedback/${editingMessage.id}`;
+        await axios.put(editUrl, {
           message: newMessage.trim()
         }, {
           headers: { Authorization: `Bearer ${token}` }
@@ -638,7 +668,15 @@ const MiniChatWindow = () => {
       }
 
       let payload = {};
-      if (chatType === "direct") {
+      let sendUrl = `${API_URL}/api/feedback`;
+      if (chatType === "group") {
+        sendUrl = `${API_URL}/api/groups/${recipientId}/messages`;
+        payload = {
+          message: newMessage.trim(),
+          attachment_url: attachmentUrl,
+          reply_to_id: replyingTo ? replyingTo.id : null
+        };
+      } else if (chatType === "direct") {
         payload = {
           message: newMessage.trim(),
           attachment_url: attachmentUrl,
@@ -663,7 +701,7 @@ const MiniChatWindow = () => {
         }
       }
 
-      await axios.post(`${API_URL}/api/feedback`, payload, {
+      await axios.post(sendUrl, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -704,8 +742,12 @@ const MiniChatWindow = () => {
       const attachmentUrl = uploadRes.data.url;
 
       let payload = {};
+      let sendUrl = `${API_URL}/api/feedback`;
       const msgText = fileMessage.trim();
-      if (chatType === "direct") {
+      if (chatType === "group") {
+        sendUrl = `${API_URL}/api/groups/${recipientId}/messages`;
+        payload = { message: msgText, attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null };
+      } else if (chatType === "direct") {
         payload = { message: msgText, attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
       } else {
         if (isOperator) {
@@ -715,7 +757,7 @@ const MiniChatWindow = () => {
         }
       }
 
-      await axios.post(`${API_URL}/api/feedback`, payload, {
+      await axios.post(sendUrl, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -732,7 +774,10 @@ const MiniChatWindow = () => {
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
+      const url = chatType === "group"
+        ? `${API_URL}/api/groups/${recipientId}/messages/${msgId}`
+        : `${API_URL}/api/feedback/${msgId}`;
+      await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMessages();
@@ -755,7 +800,10 @@ const MiniChatWindow = () => {
         newEmoji = "";
       }
 
-      const res = await axios.post(`${API_URL}/api/feedback/${msgId}/react`, { emoji: newEmoji }, {
+      const url = chatType === "group"
+        ? `${API_URL}/api/groups/${recipientId}/messages/${msgId}/react`
+        : `${API_URL}/api/feedback/${msgId}/react`;
+      const res = await axios.post(url, { emoji: newEmoji }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -963,7 +1011,15 @@ const MiniChatWindow = () => {
           }
           
           let payload = {};
-          if (targetThread.chatType === "direct") {
+          let sendUrl = `${API_URL}/api/feedback`;
+          if (targetThread.chatType === "group") {
+            sendUrl = `${API_URL}/api/groups/${targetThread.id}/messages`;
+            payload = {
+              message: textToSend,
+              attachment_url: msg.attachment_url || "",
+              reply_to_id: null
+            };
+          } else if (targetThread.chatType === "direct") {
             payload = {
               message: textToSend,
               attachment_url: msg.attachment_url || "",
@@ -979,7 +1035,7 @@ const MiniChatWindow = () => {
               reply_to_id: null
             };
           }
-          await axios.post(`${API_URL}/api/feedback`, payload, {
+          await axios.post(sendUrl, payload, {
             headers: { Authorization: `Bearer ${token}` }
           });
         }
@@ -988,8 +1044,16 @@ const MiniChatWindow = () => {
       setSelectedMessageIds([]);
       setForwardModalOpen(false);
       setSelectedForwardThreads([]);
-      if (selectedForwardThreads.length === 1 && selectedForwardThreads[0].chatType === "direct") {
-        handleNavigateToDirectChat(selectedForwardThreads[0].id, selectedForwardThreads[0].name);
+      if (selectedForwardThreads.length === 1) {
+        const target = selectedForwardThreads[0];
+        if (target.chatType === "direct") {
+          handleNavigateToDirectChat(target.id, target.name);
+        } else if (target.chatType === "group") {
+          setChatType("group");
+          setRecipientId(target.id);
+          setActiveThreadName(target.name);
+          setCurrentView("chat");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -1015,8 +1079,11 @@ const MiniChatWindow = () => {
     directThreads.forEach(t => {
       list.push({ id: t.user_id, name: t.username || "Пользователь", chatType: "direct" });
     });
+    groups.forEach(group => {
+      list.push({ id: group.id, name: group.name || "Группа", chatType: "group" });
+    });
     return list;
-  }, [supportThreads, directThreads, isOperator]);
+  }, [supportThreads, directThreads, groups, isOperator]);
 
   const filteredForwardThreads = useMemo(() => {
     return forwardThreadsList.filter(t => t.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()));
@@ -1049,7 +1116,15 @@ const MiniChatWindow = () => {
         }
         
         let payload = {};
-        if (targetThread.chatType === "direct") {
+        let sendUrl = `${API_URL}/api/feedback`;
+        if (targetThread.chatType === "group") {
+          sendUrl = `${API_URL}/api/groups/${targetThread.id}/messages`;
+          payload = {
+            message: textToSend,
+            attachment_url: msg.attachment_url || "",
+            reply_to_id: null
+          };
+        } else if (targetThread.chatType === "direct") {
           payload = {
             message: textToSend,
             attachment_url: msg.attachment_url || "",
@@ -1066,7 +1141,7 @@ const MiniChatWindow = () => {
           };
         }
         
-        await axios.post(`${API_URL}/api/feedback`, payload, {
+        await axios.post(sendUrl, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -1098,7 +1173,10 @@ const MiniChatWindow = () => {
         try {
           for (const msgId of selectedMessageIds) {
             try {
-              await axios.delete(`${API_URL}/api/feedback/${msgId}`, {
+              const url = chatType === "group"
+                ? `${API_URL}/api/groups/${recipientId}/messages/${msgId}`
+                : `${API_URL}/api/feedback/${msgId}`;
+              await axios.delete(url, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               deletedCount++;
@@ -1307,7 +1385,15 @@ const MiniChatWindow = () => {
           const attachmentUrl = uploadRes.data.url;
 
           let payload = {};
-          if (chatType === "direct") {
+          let sendUrl = `${API_URL}/api/feedback`;
+          if (chatType === "group") {
+            sendUrl = `${API_URL}/api/groups/${recipientId}/messages`;
+            payload = {
+              message: "[Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ]",
+              attachment_url: attachmentUrl,
+              reply_to_id: replyingTo ? replyingTo.id : null
+            };
+          } else if (chatType === "direct") {
             payload = {
               message: "[Голосовое сообщение]",
               attachment_url: attachmentUrl,
@@ -1332,7 +1418,7 @@ const MiniChatWindow = () => {
             }
           }
 
-          await axios.post(`${API_URL}/api/feedback`, payload, {
+          await axios.post(sendUrl, payload, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
