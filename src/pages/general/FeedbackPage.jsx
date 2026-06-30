@@ -292,8 +292,7 @@ export default function FeedbackPage() {
   const [pastedFile, setPastedFile] = useState(null);
   const [partnerPresence, setPartnerPresence] = useState({ isOnline: false, lastSeen: null });
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
-  const [isSelfTyping, setIsSelfTyping] = useState(false);
-  const selfTypingTimerRef = useRef(null);
+
 
   const textareaRef = useRef(null);
 
@@ -803,9 +802,6 @@ export default function FeedbackPage() {
 
   const handleTypingChange = (e) => {
     setNewMessage(e.target.value);
-    setIsSelfTyping(true);
-    if (selfTypingTimerRef.current) clearTimeout(selfTypingTimerRef.current);
-    selfTypingTimerRef.current = setTimeout(() => setIsSelfTyping(false), 2000);
   };
 
   // Scroll to bottom instantly on chat switch and clear selections
@@ -1285,7 +1281,7 @@ export default function FeedbackPage() {
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
             style={{
-              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
+              position: "fixed",
               top: "24px",
               right: "24px",
               zIndex: 999999,
@@ -1351,7 +1347,7 @@ export default function FeedbackPage() {
       {/* Confirmation Modal */}
       {confirmModal && (
         <div style={{
-          position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
+          position: "fixed",
           inset: 0,
           background: "rgba(0,0,0,0.45)",
           display: "flex",
@@ -1401,7 +1397,7 @@ export default function FeedbackPage() {
 
       {forwardModalOpen && (
           <div style={{
-            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,
@@ -1592,7 +1588,7 @@ export default function FeedbackPage() {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
             style={{
-              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
+              position: "fixed", transformOrigin: "top left",
               top: `${contextMenu.y}px`,
               left: `${contextMenu.x}px`,
               zIndex: 100005,
@@ -2748,7 +2744,7 @@ export default function FeedbackPage() {
                       <motion.div
                         key={group.id}
                         layout
-                        initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
                         transition={{ type: "spring", stiffness: 400, damping: 28 }}
@@ -2913,7 +2909,7 @@ export default function FeedbackPage() {
                     <motion.div 
                       key={msg.id}
                       layout
-                      initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
+                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
                       transition={{ type: "spring", stiffness: 400, damping: 28 }}
@@ -3367,16 +3363,7 @@ export default function FeedbackPage() {
               </div>
             ) : (
               <>
-                {isSelfTyping && (
-                  <div style={{ padding: "0 16px 6px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-                      {[0, 0.18, 0.36].map((delay, i) => (
-                        <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#94a3b8", display: "inline-block", animation: "typingDot 1.2s ease-in-out infinite", animationDelay: `${delay}s` }} />
-                      ))}
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", fontStyle: "italic" }}>печатаете...</span>
-                  </div>
-                )}
+
                 <form className="chat-form" onSubmit={handleSendMessage}>
                   <button type="button" className="icon-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                     <Smile size={22} />
@@ -3455,7 +3442,7 @@ export default function FeedbackPage() {
       {allPinsModalOpen && (
         <div 
           style={{
-            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
+            position: "fixed",
             inset: 0,
             background: "rgba(0, 0, 0, 0.45)",
             backdropFilter: "blur(4px)",

@@ -203,98 +203,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         prevGroupsUnreadCountRef.current = unreadGroupsCount;
     }, [unreadGroupsCount, roles, navigate, muteUntil]);
 
-    // Функция для проверки необходимости смены пароля
-    const checkPasswordChangeRequired = useCallback(() => {
-        const lastPasswordChange = localStorage.getItem("last_password_change");
 
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
 
-        // Проверка смены пароля в конце месяца
-        if (lastPasswordChange) {
-            const lastChange = new Date(lastPasswordChange);
-            const lastChangeMonth = lastChange.getMonth();
-            const lastChangeYear = lastChange.getFullYear();
-
-            // Если последняя смена была в прошлом месяце или раньше
-            if (
-                lastChangeYear < currentYear ||
-                (lastChangeYear === currentYear && lastChangeMonth < currentMonth)
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }, []);
-
-    // Функция для проверки дефолтного пароля
-    const checkDefaultPassword = useCallback(async () => {
-        const passwordCheckDone = localStorage.getItem("password_check_done");
-
-        // Если проверка уже была выполнена, пропускаем
-        if (passwordCheckDone === "true") {
-            return false;
-        }
-
-        const currentYear = new Date().getFullYear();
-        const defaultPassword = `Activ${currentYear}`;
-
-        try {
-            const response = await fetch(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/sign-in`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        username: localStorage.getItem("username") || "",
-                        password: defaultPassword,
-                    }),
-                },
-            );
-
-            if (response.ok) {
-                // Если дефолтный пароль сработал - требуем смену
-                return true;
-            } else {
-                // Если дефолтный пароль не сработал - помечаем проверку как выполненную
-                localStorage.setItem("password_check_done", "true");
-                return false;
-            }
-        } catch (error) {
-            console.error("Ошибка при проверке дефолтного пароля:", error);
-            // В случае ошибки помечаем проверку как выполненную, чтобы не блокировать работу
-            localStorage.setItem("password_check_done", "true");
-            return false;
-        }
-    }, []);
-
-    // Проверка при монтировании компонента
+    // Проверка при монтировании компонента (отключена по требованию)
     useEffect(() => {
-        const performPasswordChecks = async () => {
-            // Сначала проверяем месячную смену пароля
-            const monthlyChangeRequired = checkPasswordChangeRequired();
-
-            if (monthlyChangeRequired) {
-                setForcePasswordChange(true);
-                setIsModalOpen(true);
-                return;
-            }
-
-            // Затем проверяем дефолтный пароль
-            const defaultPasswordDetected = await checkDefaultPassword();
-
-            if (defaultPasswordDetected) {
-                setForcePasswordChange(true);
-                setIsModalOpen(true);
-            }
-        };
-
-        performPasswordChecks();
-    }, [checkPasswordChangeRequired, checkDefaultPassword]);
+        // Автоматическая проверка смены пароля отключена
+    }, []);
 
     // Функция для очистки localStorage и перенаправления на логин
     const clearStorageAndRedirect = useCallback(() => {
