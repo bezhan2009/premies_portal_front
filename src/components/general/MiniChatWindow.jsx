@@ -602,7 +602,7 @@ const MiniChatWindow = () => {
   }, [isMiniChatOpen, currentView]);
 
   useEffect(() => {
-    if (!isMiniChatOpen || currentView !== "chat" || !recipientId || recipientId === 0 || !token) {
+    if (!isMiniChatOpen || currentView !== "chat" || !recipientId || recipientId === 0 || !token || chatType === "group") {
       setPartnerPresence({ isOnline: false, lastSeen: null });
       return;
     }

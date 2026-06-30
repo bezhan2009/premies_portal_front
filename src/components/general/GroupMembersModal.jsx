@@ -2,39 +2,45 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Search, User, Shield, ShieldAlert, Trash2, LogOut, UserPlus } from "lucide-react";
 
-export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) {
+export default function GroupMembersModal({ isOpen, onClose, group, groupId, onUpdate }) {
   const [members, setMembers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [groupDetails, setGroupDetails] = useState(group || null);
 
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
   const currentUserId = Number(localStorage.getItem("user_id") || 0);
+  const resolvedGroupId = groupId || group?.id;
 
   useEffect(() => {
-    if (isOpen && group?.id) {
+    if (isOpen && resolvedGroupId) {
       fetchGroupDetails();
       fetchUsers();
       setError("");
       setSearchQuery("");
     }
-  }, [isOpen, group]);
+  }, [isOpen, resolvedGroupId]);
 
   const fetchGroupDetails = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await axios.get(`${API_URL}/api/groups/${group.id}`, {
+      const res = await axios.get(`${API_URL}/api/groups/${resolvedGroupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data) {
         setMembers(res.data.members || []);
         setIsAdmin(res.data.is_admin || false);
+        setGroupDetails(res.data);
       }
     } catch (err) {
       console.error("Error loading group details:", err);
       setError("Не удалось загрузить участников");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,13 +63,13 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.post(
-        `${API_URL}/api/groups/${group.id}/members`,
+        `${API_URL}/api/groups/${resolvedGroupId}/members`,
         { user_id: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSearchQuery("");
       fetchGroupDetails();
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(true);
     } catch (err) {
       setError(err.response?.data?.error || "Не удалось добавить участника");
     }
@@ -75,11 +81,11 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.delete(
-        `${API_URL}/api/groups/${group.id}/members/${userId}`,
+        `${API_URL}/api/groups/${resolvedGroupId}/members/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchGroupDetails();
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(true);
     } catch (err) {
       setError(err.response?.data?.error || "Не удалось удалить участника");
     }
@@ -90,7 +96,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.post(
-        `${API_URL}/api/groups/${group.id}/members/${userId}/promote`,
+        `${API_URL}/api/groups/${resolvedGroupId}/members/${userId}/promote`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -105,7 +111,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.post(
-        `${API_URL}/api/groups/${group.id}/members/${userId}/demote`,
+        `${API_URL}/api/groups/${resolvedGroupId}/members/${userId}/demote`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -121,7 +127,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.post(
-        `${API_URL}/api/groups/${group.id}/leave`,
+        `${API_URL}/api/groups/${resolvedGroupId}/leave`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -138,7 +144,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     try {
       const token = localStorage.getItem("access_token");
       await axios.delete(
-        `${API_URL}/api/groups/${group.id}`,
+        `${API_URL}/api/groups/${resolvedGroupId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onClose();
@@ -148,7 +154,25 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     }
   };
 
-  if (!isOpen || !group) return null;
+  if (!isOpen || !resolvedGroupId) return null;
+
+  if (!groupDetails) {
+    return (
+      <div className="groups-modal-overlay" onClick={onClose}>
+        <div className="groups-modal" onClick={e => e.stopPropagation()}>
+          <div className="groups-modal-header">
+            <h3 className="groups-modal-title">👥 Участники группы</h3>
+            <button className="groups-modal-close" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="groups-modal-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '150px' }}>
+            <span>Загрузка...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Filter users for adding (exclude current members)
   const filteredUsers = searchQuery.trim() === ""
@@ -180,7 +204,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
           )}
 
           {/* Add member section (admin only) */}
-          {isAdmin && !group.is_announcement && (
+          {isAdmin && !groupDetails.is_announcement && (
             <div className="groups-form-group" style={{ position: "relative", marginBottom: "16px" }}>
               <label className="groups-form-label">Добавить участника</label>
               <div className="groups-search-wrapper">
@@ -239,7 +263,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
 
                     {/* Member actions (for admin/creator) */}
                     <div className="member-item-actions">
-                      {isAdmin && !isSelf && !group.is_announcement && (
+                      {isAdmin && !isSelf && !groupDetails.is_announcement && (
                         <>
                           {member.is_admin ? (
                             <button
@@ -286,7 +310,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             {/* Self leave button */}
-            {!group.is_announcement && (
+            {!groupDetails.is_announcement && (
               <button className="modal-btn btn-secondary" onClick={handleLeaveGroup} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <LogOut size={16} /> Выйти
               </button>

@@ -776,7 +776,7 @@ export default function FeedbackPage() {
 
   // Presence polling
   useEffect(() => {
-    if (!recipientId || recipientId === 0 || !token) return;
+    if (!recipientId || recipientId === 0 || !token || activeChatType === "group") return;
     const fetchPresence = async () => {
       try {
         const res = await axios.get(`${API_URL}/users/${recipientId}/presence`, {
@@ -808,7 +808,29 @@ export default function FeedbackPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
     handleExitMessageSelection();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   }, [recipientId]);
+
+  // Always keep input focused like Telegram
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      if (!recipientId && !activeGroup) return;
+      const selection = window.getSelection()?.toString();
+      if (selection) return;
+      
+      const excludeSelector = 'input, textarea, button, select, option, a, [role="button"], .reaction-picker, .reaction-btn, .context-menu, .modal, .chat-selection-checkbox, .sidebar, .menu-item, .modal-overlay, .emoji-picker-container, .emoji-picker-container *';
+      if (e.target.closest(excludeSelector)) return;
+
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    };
+
+    document.addEventListener("click", handleGlobalClick);
+    return () => document.removeEventListener("click", handleGlobalClick);
+  }, [recipientId, activeGroup]);
 
   // Notification auto-dismiss timer
   useEffect(() => {
@@ -866,6 +888,7 @@ export default function FeedbackPage() {
         setSending(false);
         if (textareaRef.current) {
           textareaRef.current.style.height = "36px";
+          textareaRef.current.focus();
         }
       }
       return;
@@ -908,6 +931,7 @@ export default function FeedbackPage() {
       setSending(false);
       if (textareaRef.current) {
         textareaRef.current.style.height = "36px";
+        textareaRef.current.focus();
       }
     }
   };
@@ -1017,6 +1041,9 @@ export default function FeedbackPage() {
 
   const onEmojiClick = (emojiObject) => {
     setNewMessage(prev => prev + emojiObject.emoji);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
 
   const formatTime = (isoString) => {

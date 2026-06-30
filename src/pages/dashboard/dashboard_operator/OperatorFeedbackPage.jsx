@@ -4,7 +4,7 @@ import {
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
-  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle
+  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Square
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -1018,7 +1018,29 @@ export default function OperatorFeedbackPage() {
     }
     handleExitMessageSelection();
     handleExitChatSelection();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   }, [activeChatType, activeThreadId, mobileShowChat]);
+
+  // Always keep input focused like Telegram
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      if (!activeThreadId && !activeChatType) return;
+      const selection = window.getSelection()?.toString();
+      if (selection) return;
+      
+      const excludeSelector = 'input, textarea, button, select, option, a, [role="button"], .reaction-picker, .reaction-btn, .context-menu, .modal, .chat-selection-checkbox, .sidebar, .menu-item, .modal-overlay, .emoji-picker-container, .emoji-picker-container *';
+      if (e.target.closest(excludeSelector)) return;
+
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    };
+
+    document.addEventListener("click", handleGlobalClick);
+    return () => document.removeEventListener("click", handleGlobalClick);
+  }, [activeThreadId, activeChatType]);
 
   // Scroll to bottom smoothly on new messages
   useEffect(() => {
@@ -1061,6 +1083,7 @@ export default function OperatorFeedbackPage() {
         setSending(false);
         if (textareaRef.current) {
           textareaRef.current.style.height = "36px";
+          textareaRef.current.focus();
         }
       }
       return;
@@ -1107,6 +1130,7 @@ export default function OperatorFeedbackPage() {
       setSending(false);
       if (textareaRef.current) {
         textareaRef.current.style.height = "36px";
+        textareaRef.current.focus();
       }
     }
   };
@@ -1653,7 +1677,7 @@ export default function OperatorFeedbackPage() {
 
 
   useEffect(() => {
-    if (!activeThreadId || !token) return;
+    if (!activeThreadId || !token || activeChatType === "group") return;
     const fetchPresence = async () => {
       try {
         const res = await axios.get(`${API_URL}/users/${activeThreadId}/presence`, {
@@ -4140,7 +4164,7 @@ export default function OperatorFeedbackPage() {
                   )}
                   {showEmojiPicker && !isRecording && (
                     <div className="emoji-picker-container">
-                      <EmojiPicker onEmojiClick={(e) => setNewMessage(prev => prev + e.emoji)} theme={theme} emojiStyle="apple" />
+                      <EmojiPicker onEmojiClick={(e) => { setNewMessage(prev => prev + e.emoji); textareaRef.current?.focus(); }} theme={theme} emojiStyle="apple" />
                     </div>
                   )}
 
