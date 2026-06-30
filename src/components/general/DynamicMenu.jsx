@@ -1173,24 +1173,31 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                             );
 
                             if (!isOpen) {
+                                const dropdownMenuItems = {
+                                    items: [
+                                        {
+                                            key: `group-${link.key}`,
+                                            type: 'group',
+                                            label: link.name,
+                                            children: link.children.map((child) => ({
+                                                key: child.key,
+                                                icon: child.icon ? <child.icon size={16} /> : null,
+                                                label: (
+                                                    <Link to={child.href} onClick={handleLinkClick}>
+                                                        {child.name}
+                                                    </Link>
+                                                ),
+                                            })),
+                                        },
+                                    ],
+                                };
                                 return (
                                     <Dropdown
                                         key={link.key}
                                         trigger={['click', 'hover']}
                                         placement="rightTop"
-                                        overlay={
-                                            <Menu className="collapsed-flyout-menu">
-                                                <Menu.ItemGroup title={link.name}>
-                                                    {link.children.map((child) => (
-                                                        <Menu.Item key={child.key} icon={child.icon && <child.icon size={16} />}>
-                                                            <Link to={child.href} onClick={handleLinkClick}>
-                                                                {child.name}
-                                                            </Link>
-                                                        </Menu.Item>
-                                                    ))}
-                                                </Menu.ItemGroup>
-                                            </Menu>
-                                        }
+                                        menu={dropdownMenuItems}
+                                        overlayClassName="collapsed-flyout-menu"
                                     >
                                         <div className="collapsed-dropdown-trigger">
                                             {content}

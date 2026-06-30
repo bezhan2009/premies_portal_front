@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, useDragControls, Reorder } from "framer-motion";
+import "../../styles/animations.css";
 import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
@@ -242,6 +243,9 @@ const MiniChatWindow = () => {
   const [loading, setLoading] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [file, setFile] = useState(null);
+  // shimmer flash: ID of the last sent own-message bubble
+  const [shimmerMsgId, setShimmerMsgId] = useState(null);
+  const shimmerTimerRef = useRef(null);
   
   // Active Thread State
   const [recipientId, setRecipientId] = useState(0);
@@ -701,16 +705,24 @@ const MiniChatWindow = () => {
         }
       }
 
-      await axios.post(sendUrl, payload, {
+      const sendRes = await axios.post(sendUrl, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       setNewMessage("");
       setFile(null);
       setReplyingTo(null);
       setShowEmojiPicker(false);
       fetchMessages();
       fetchThreadsData();
+
+      // Trigger shimmer flash on the newly sent bubble
+      const newMsgId = sendRes?.data?.id;
+      if (newMsgId) {
+        if (shimmerTimerRef.current) clearTimeout(shimmerTimerRef.current);
+        setShimmerMsgId(newMsgId);
+        shimmerTimerRef.current = setTimeout(() => setShimmerMsgId(null), 700);
+      }
     } catch (err) {
       console.error("Error sending message:", err);
     } finally {
@@ -1456,6 +1468,13 @@ const MiniChatWindow = () => {
       }, 1000);
     } catch (err) {
       console.error("Voice media error:", err);
+      if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setNotification({ type: "error", message: "Микрофон не найден. Подключите микрофон и повторите попытку." });
+      } else if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setNotification({ type: "warning", message: "Доступ к микрофону запрещён. Разрешите доступ в настройках браузера." });
+      } else {
+        setNotification({ type: "error", message: "Не удалось начать запись. Проверьте микрофон и попробуйте снова." });
+      }
     }
   };
 
@@ -1596,11 +1615,17 @@ const MiniChatWindow = () => {
       )}
 
       {/* FLOAT CONTEXT MENU */}
+      <AnimatePresence>
       {contextMenu.visible && (
-        <div 
+        <motion.div
           ref={contextMenuRef}
-          className="mini-chat-context-menu"
+          className="mini-chat-context-menu animating"
+          key="context-menu"
           onMouseDown={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.92, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+          transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.8 }}
           style={{
             position: "fixed",
             top: `${contextMenu.y}px`,
@@ -2044,15 +2069,16 @@ const MiniChatWindow = () => {
               </button>
             </>
           )}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       <AnimatePresence>
         <motion.div
           onMouseDown={handleGlobalRipple}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.95 }}
           transition={{ type: "spring", damping: 30, stiffness: 350 }}
           style={{
             position: "fixed",
@@ -2212,10 +2238,9 @@ const MiniChatWindow = () => {
                   {currentView === "threads" && (
                     <motion.div
                       key="threads"
-                      initial={{ opacity: 0, x: -15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 15 }}
-                      transition={{ duration: 0.15 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }}
+                      exit={{ opacity: 0, x: -20, transition: { duration: 0.15, ease: "easeIn" } }}
                       style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Chat Selection Panel OR Search */}
@@ -2488,9 +2513,14 @@ const MiniChatWindow = () => {
                               const isSelected = recipientId === threadId && chatType === activeTab;
                               const isMuted = mutedChats.includes(threadId);
                               return (
-                                <div
+                                <motion.div
                                   className="mini-chat-thread-row"
                                   key={`${activeTab}-${threadId}`}
+                                  layout
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 350, damping: 28 } }}
+                                  whileHover={!isChatSelectionMode ? { backgroundColor: isSelected ? "rgba(235, 37, 37, 0.12)" : "rgba(235, 37, 37, 0.05)", x: 2, transition: { duration: 0.15 } } : {}}
+                                  whileTap={{ scale: 0.98 }}
                                   onClick={() => {
                                     if (isChatSelectionMode) {
                                       handleSelectChat(threadId);
@@ -2516,7 +2546,6 @@ const MiniChatWindow = () => {
                                     border: isChatSelectionMode && selectedChatIds.includes(threadId)
                                       ? "1.5px solid #3b82f6"
                                       : "1px solid var(--border-color, #e2e8f0)",
-                                    transition: "all 0.2s",
                                     position: "relative"
                                   }}
                                 >
@@ -2573,7 +2602,7 @@ const MiniChatWindow = () => {
                                       )}
                                     </div>
                                   </div>
-                                </div>
+                                </motion.div>
                               );
                             })}
                           </>
@@ -2586,10 +2615,9 @@ const MiniChatWindow = () => {
                   {currentView === "chat" && (
                     <motion.div
                       key="chat"
-                      initial={{ opacity: 0, x: 15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -15 }}
-                      transition={{ duration: 0.15 }}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }}
+                      exit={{ opacity: 0, x: -20, transition: { duration: 0.15, ease: "easeIn" } }}
                       style={{ position: "relative", display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Local Search input */}
@@ -2843,10 +2871,9 @@ const MiniChatWindow = () => {
                                       )}
                                       <motion.div
                                         layout
-                                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                        transition={{ duration: 0.22, ease: "easeOut" }}
+                                        initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 460, damping: 28, mass: 0.65 } }}
+                                        exit={{ opacity: 0, scale: 0.88, height: 0, overflow: "hidden", margin: 0, padding: 0, transition: { duration: 0.18 } }}
                                         style={{
                                           maxWidth: "80%",
                                           display: "flex",
@@ -2954,10 +2981,9 @@ const MiniChatWindow = () => {
                                 return (
                                   <motion.div
                                     layout
-                                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                                    transition={{ duration: 0.22, ease: "easeOut" }} 
+                                    initial={isOut ? { opacity: 0, y: 14, scale: 0.93, originX: 1, originY: 1 } : { opacity: 0, y: 16, scale: 0.95, originX: 0, originY: 1 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1, transition: isOut ? { type: "spring", stiffness: 500, damping: 30, mass: 0.6 } : { type: "spring", stiffness: 400, damping: 22, mass: 0.8 } }}
+                                    exit={{ opacity: 0, scale: 0.88, height: 0, overflow: "hidden", margin: 0, padding: 0, transition: { duration: 0.18 } }}
                                     key={msg.id}
                                     onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                                     style={{ 
@@ -2992,6 +3018,7 @@ const MiniChatWindow = () => {
                                         id={`msg-bubble-${msg.id}`}
                                         data-msg-bubble="true"
                                         onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
+                                        className={shimmerMsgId === msg.id ? "msg-shimmer animating" : "animating"}
                                         style={{
                                           maxWidth: "80%",
                                           background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
@@ -3004,7 +3031,7 @@ const MiniChatWindow = () => {
                                           position: "relative",
                                           border: isOut ? "none" : "1px solid var(--border-color, #e2e8f0)",
                                           transition: "background 0.5s, border-color 0.5s",
-                                          boxShadow: "0 2px 5px rgba(0,0,0,0.04)"
+                                          boxShadow: isOut ? "0 4px 12px rgba(235,37,37,0.25)" : "0 2px 5px rgba(0,0,0,0.04)"
                                         }}
                                       >
                                       {/* Forwarded Header Block */}
@@ -3180,8 +3207,10 @@ const MiniChatWindow = () => {
                           <motion.button
                             type="button"
                             initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 22 } }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10, transition: { duration: 0.12 } }}
+                            whileHover={{ scale: 1.1, transition: { type: "spring", stiffness: 400, damping: 20 } }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
                             style={{
                               position: "absolute",
@@ -3200,16 +3229,7 @@ const MiniChatWindow = () => {
                               justifyContent: "center",
                               cursor: "pointer",
                               color: "#eb2525",
-                              zIndex: 99,
-                              transition: "background 0.2s, transform 0.1s"
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "#ffffff";
-                              e.currentTarget.style.transform = "scale(1.05)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
-                              e.currentTarget.style.transform = "scale(1)";
+                              zIndex: 99
                             }}
                           >
                             <ArrowDown size={18} />
@@ -3423,10 +3443,11 @@ const MiniChatWindow = () => {
                                   key="mic-btn"
                                   type="button"
                                   onClick={startRecording}
-                                  initial={{ scale: 0.8, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  exit={{ scale: 0.8, opacity: 0 }}
-                                  transition={{ duration: 0.15 }}
+                                  initial={{ rotate: 45, scale: 0.5, opacity: 0 }}
+                                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                                  exit={{ rotate: -45, scale: 0.5, opacity: 0 }}
+                                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                                  whileTap={{ scale: 0.82 }}
                                   style={{
                                     background: "none",
                                     border: "none",
@@ -3448,10 +3469,12 @@ const MiniChatWindow = () => {
                                   key="send-btn"
                                   type="submit" 
                                   disabled={sending}
-                                  initial={{ scale: 0.8, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  exit={{ scale: 0.8, opacity: 0 }}
-                                  transition={{ duration: 0.15 }}
+                                  initial={{ rotate: -45, scale: 0.5, opacity: 0 }}
+                                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                                  exit={{ rotate: 45, scale: 0.5, opacity: 0 }}
+                                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                                  whileTap={{ scale: 0.82 }}
+                                  whileHover={{ scale: 1.1 }}
                                   style={{
                                     background: "#eb2525",
                                     color: "white",
@@ -3463,9 +3486,9 @@ const MiniChatWindow = () => {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     cursor: "pointer",
-                                    transition: "all 0.2s",
                                     flexShrink: 0,
-                                    marginBottom: "1px"
+                                    marginBottom: "1px",
+                                    boxShadow: "0 2px 8px rgba(235,37,37,0.4)"
                                   }}
                                 >
                                   <ArrowUp size={14} strokeWidth={2.5} />
@@ -3475,11 +3498,20 @@ const MiniChatWindow = () => {
                           </form>
                           </>
                         )}
-                        {showEmojiPicker && !isRecording && (
-                          <div style={{ position: "absolute", bottom: "60px", right: "10px", zIndex: 10 }}>
-                            <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={theme} emojiStyle="apple" width={260} height={280} />
-                          </div>
-                        )}
+                        <AnimatePresence>
+                          {showEmojiPicker && !isRecording && (
+                            <motion.div
+                              key="emoji-picker"
+                              initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.85, y: 10 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              style={{ position: "absolute", bottom: "60px", right: "10px", zIndex: 10 }}
+                            >
+                              <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} theme={theme} emojiStyle="apple" width={260} height={280} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                       )}
                     </motion.div>
@@ -3489,10 +3521,9 @@ const MiniChatWindow = () => {
                   {currentView === "new_chat" && (
                     <motion.div
                       key="new_chat"
-                      initial={{ opacity: 0, x: 15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -15 }}
-                      transition={{ duration: 0.15 }}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }}
+                      exit={{ opacity: 0, x: 20, transition: { duration: 0.15, ease: "easeIn" } }}
                       style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: 1, minHeight: 0, overflow: "hidden" }}
                     >
                       {/* Search Users */}
@@ -3601,9 +3632,9 @@ const MiniChatWindow = () => {
         {notification && (
           <motion.div
             key="notification-toast"
-            initial={{ opacity: 0, y: -20, x: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+            initial={{ opacity: 0, y: -14, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 420, damping: 26 } }}
+            exit={{ opacity: 0, y: -10, scale: 0.9, transition: { duration: 0.13 } }}
             style={{
               position: "fixed",
               top: "24px",

@@ -10,8 +10,6 @@ import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
 import { Helmet } from "react-helmet";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { springPresets, variants } from "../../../animations/config";
-import TextClone from "../../../components/animations/TextClone";
 import useThemeStore from "../../../store/useThemeStore";
 import ImageModal from "../../../components/modal/ImageModal";
 import PasteFileModal from "../../../components/modal/PasteFileModal";
@@ -308,7 +306,6 @@ export default function OperatorFeedbackPage() {
   const [activeThreadName, setActiveThreadName] = useState("");
   
   const [newMessage, setNewMessage] = useState("");
-  const [cloneInfo, setCloneInfo] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHoldMenu, setShowHoldMenu] = useState(false);
   const holdTimerRef = useRef(null);
@@ -1071,21 +1068,8 @@ export default function OperatorFeedbackPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    const messageText = newMessage.trim();
-    if (!messageText && !file) return;
+    if (!newMessage.trim() && !file) return;
     if (!activeThreadId || !activeChatType) return;
-
-    let cloneRect = null;
-    if (textareaRef.current) {
-      cloneRect = textareaRef.current.getBoundingClientRect();
-    }
-
-    if (messageText && !file && !editingMessage) {
-      setCloneInfo({
-        text: messageText,
-        rect: cloneRect
-      });
-    }
 
     setSending(true);
 
@@ -1094,11 +1078,11 @@ export default function OperatorFeedbackPage() {
       try {
         if (activeChatType === "group") {
           await axios.put(`${API_URL}/api/groups/${activeThreadId}/messages/${editingMessage.id}`, {
-            message: messageText
+            message: newMessage.trim()
           }, axiosConfig);
         } else {
           await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
-            message: messageText
+            message: newMessage.trim()
           }, axiosConfig);
         }
         setEditingMessage(null);
@@ -1130,26 +1114,21 @@ export default function OperatorFeedbackPage() {
       }
 
       let payload = activeChatType === "direct" 
-        ? { message: messageText, attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
+        ? { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null }
         : activeChatType === "group"
-          ? { message: messageText, attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
-          : { message: messageText, attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
+          ? { message: newMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+          : { message: newMessage.trim(), attachment_url: attachmentUrl, user_id: activeThreadId, reply_to_id: replyingTo ? replyingTo.id : null };
 
       let sendUrl = activeChatType === "group"
         ? `${API_URL}/api/groups/${activeThreadId}/messages`
         : `${API_URL}/api/feedback`;
 
-      // Clear input instantly
+      const res = await axios.post(sendUrl, payload, axiosConfig);
+      setMessages((prev) => [...prev, res.data]);
       setNewMessage("");
       setFile(null);
       setReplyingTo(null);
       setShowEmojiPicker(false);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "36px";
-      }
-
-      const res = await axios.post(sendUrl, payload, axiosConfig);
-      setMessages((prev) => [...prev, res.data]);
       setTimeout(scrollToBottom, 50);
       
       if (activeChatType === "support") fetchSupportThreads();
@@ -1159,6 +1138,9 @@ export default function OperatorFeedbackPage() {
       console.error("Error sending message:", err);
     } finally {
       setSending(false);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "36px";
+      }
     }
   };
 
@@ -1513,6 +1495,13 @@ export default function OperatorFeedbackPage() {
       }, 1000);
     } catch (err) {
       console.error("Voice media error:", err);
+      if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        showToast("Микрофон не найден. Подключите микрофон и повторите попытку.", "error");
+      } else if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        showToast("Доступ к микрофону запрещён. Разрешите доступ в настройках браузера.", "warning");
+      } else {
+        showToast("Не удалось начать запись. Проверьте микрофон и попробуйте снова.", "error");
+      }
     }
   };
 
@@ -2021,10 +2010,10 @@ export default function OperatorFeedbackPage() {
           <motion.div 
             ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
-            initial={variants.contextMenuOpen.initial}
-            animate={variants.contextMenuOpen.animate}
+            initial={{ opacity: 0, scale: 0.7, y: -10, filter: "blur(5px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={springPresets.pop}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
             style={{
               position: "fixed", transformOrigin: "top left",
               top: `${contextMenu.y}px`,
@@ -3244,19 +3233,11 @@ export default function OperatorFeedbackPage() {
         </div>
       </div>
 
+      {/* Right Chat Pane */}
       <div className="feedback-chat">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeThreadId ? `${activeChatType}-${activeThreadId}` : 'empty'}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            variants={variants.chatSlide}
-            style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", position: "relative" }}
-          >
-            {activeThreadId ? (
-              <>
-                {/* CHAT HEADER */}
+        {activeThreadId ? (
+          <>
+            {/* CHAT HEADER */}
             <div className="chat-header">
               <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                 <button className="btn-back-list" onClick={() => setMobileShowChat(false)}><ArrowLeft size={20} /></button>
@@ -3598,10 +3579,10 @@ export default function OperatorFeedbackPage() {
                             <motion.div
                               key={group.id}
                               layout
-                              initial={isOutgoing ? variants.messageSend.initial : variants.messageReceive.initial}
-                              animate={isOutgoing ? variants.messageSend.animate : variants.messageReceive.animate}
+                              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                              transition={isOutgoing ? springPresets.pop : springPresets.bounceIn}
+                              transition={{ type: "spring", stiffness: 400, damping: 28 }}
                               className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
                               style={{
                                 display: "flex",
@@ -3772,10 +3753,10 @@ export default function OperatorFeedbackPage() {
                         return (
                           <motion.div
   layout
-  initial={isOutgoing ? variants.messageSend.initial : variants.messageReceive.initial}
-  animate={isOutgoing ? variants.messageSend.animate : variants.messageReceive.animate}
+  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
   exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-  transition={isOutgoing ? springPresets.pop : springPresets.bounceIn}
+  transition={{ type: "spring", stiffness: 400, damping: 28 }} 
                             key={msg.id}
                             onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                             style={{ 
@@ -4197,19 +4178,11 @@ export default function OperatorFeedbackPage() {
                       <button onClick={() => setFile(null)} style={{background:"none", border:"none", color:"red", cursor:"pointer"}}>x</button>
                     </div>
                   )}
-                  <AnimatePresence>
-                    {showEmojiPicker && !isRecording && (
-                      <motion.div 
-                        className="emoji-picker-container"
-                        initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                        transition={springPresets.slide}
-                      >
-                        <EmojiPicker onEmojiClick={(e) => { setNewMessage(prev => prev + e.emoji); textareaRef.current?.focus(); }} theme={theme} emojiStyle="apple" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {showEmojiPicker && !isRecording && (
+                    <div className="emoji-picker-container">
+                      <EmojiPicker onEmojiClick={(e) => { setNewMessage(prev => prev + e.emoji); textareaRef.current?.focus(); }} theme={theme} emojiStyle="apple" />
+                    </div>
+                  )}
 
                   {/* Voice Recording Panel */}
                   {isRecording ? (
@@ -4279,12 +4252,10 @@ export default function OperatorFeedbackPage() {
                               type="button"
                               className="icon-btn"
                               onClick={startRecording}
-                              initial={{ rotate: 45, scale: 0.5, opacity: 0 }}
-                              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                              exit={{ rotate: -45, scale: 0.5, opacity: 0 }}
-                              transition={springPresets.pop}
-                              whileTap={{ scale: 0.85 }}
-                              whileHover={{ scale: 1.05 }}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
                             >
                               <Mic size={22} />
                             </motion.button>
@@ -4301,12 +4272,10 @@ export default function OperatorFeedbackPage() {
                               onPointerUp={() => clearTimeout(holdTimerRef.current)}
                               onPointerLeave={() => clearTimeout(holdTimerRef.current)}
         
-                              initial={{ rotate: -45, scale: 0.5, opacity: 0 }}
-                              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                              exit={{ rotate: 45, scale: 0.5, opacity: 0 }}
-                              transition={springPresets.pop}
-                              whileTap={{ scale: 0.85 }}
-                              whileHover={{ scale: 1.05 }}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
                             >
                               <ArrowUp size={18} strokeWidth={2.5} />
                             </motion.button>
@@ -4326,8 +4295,6 @@ export default function OperatorFeedbackPage() {
             <p>Выберите обращение из списка слева, чтобы прочитать детали и ответить пользователю.</p>
           </div>
         )}
-          </motion.div>
-        </AnimatePresence>
       </div>
 
       {showNewChatModal && (
@@ -4542,13 +4509,6 @@ export default function OperatorFeedbackPage() {
             </div>
           </div>
         </div>
-      )}
-      {cloneInfo && (
-        <TextClone
-          text={cloneInfo.text}
-          position={cloneInfo.rect}
-          onAnimationComplete={() => setCloneInfo(null)}
-        />
       )}
     </div>
   );

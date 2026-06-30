@@ -1,4 +1,14 @@
-/* styles/animations.css */
+/* =============================================================================
+   Activ Chat — Animation Utilities & Keyframes
+   GPU-accelerated helpers for the Telegram-style animation system
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   GPU compositing hints
+   Apply to elements that will be animated with transform / opacity.
+   Remove after animation ends to free compositor resources.
+   --------------------------------------------------------------------------- */
+
 .animating {
   will-change: transform, opacity;
 }
@@ -6,4 +16,130 @@
 .animating-gpu {
   will-change: transform;
   transform: translateZ(0);
+}
+
+/* ---------------------------------------------------------------------------
+   Shimmer sweep — applied to the newest own-message bubble after sending.
+   A white shine sweeps left→right over the bubble in 0.5 s.
+   --------------------------------------------------------------------------- */
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-12deg);
+    opacity: 0.6;
+  }
+  60% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(140%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+.msg-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.msg-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: shimmer-sweep 0.55s ease-out forwards;
+  z-index: 10;
+}
+
+/* ---------------------------------------------------------------------------
+   Typing indicator bounce — 3 dots, staggered by 0.15 s each
+   --------------------------------------------------------------------------- */
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing-bounce 0.9s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* ---------------------------------------------------------------------------
+   Recording pulse indicator
+   --------------------------------------------------------------------------- */
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* (Already referenced in MiniChatWindow inline style — now backed by CSS) */
+.recording-dot {
+  display: inline-block;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Context menu item hover — subtle left-border accent on hover
+   --------------------------------------------------------------------------- */
+
+.mini-chat-context-menu button:hover,
+.mini-chat-context-menu button:focus-visible {
+  background: rgba(235, 37, 37, 0.07) !important;
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Thread item hover transition support
+   --------------------------------------------------------------------------- */
+
+.mini-chat-thread-card {
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll fade edges on message list — visual polish
+   --------------------------------------------------------------------------- */
+
+.chat-messages-scroll {
+  /* Mask top/bottom 24 px so messages "fade" into the edges */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
+  );
 }
