@@ -282,6 +282,8 @@ export default function FeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showHoldMenu, setShowHoldMenu] = useState(false);
+  const holdTimerRef = useRef(null);
   const [file, setFile] = useState(null);
   const [recipientId, setRecipientId] = useState(0);
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
@@ -1269,7 +1271,7 @@ export default function FeedbackPage() {
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
             style={{
-              position: "fixed",
+              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
               top: "24px",
               right: "24px",
               zIndex: 999999,
@@ -1335,7 +1337,7 @@ export default function FeedbackPage() {
       {/* Confirmation Modal */}
       {confirmModal && (
         <div style={{
-          position: "fixed",
+          position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
           inset: 0,
           background: "rgba(0,0,0,0.45)",
           display: "flex",
@@ -1385,7 +1387,7 @@ export default function FeedbackPage() {
 
       {forwardModalOpen && (
           <div style={{
-            position: "fixed",
+            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
             top: 0,
             left: 0,
             right: 0,
@@ -1571,12 +1573,12 @@ export default function FeedbackPage() {
           <motion.div 
             ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.7, y: -10, filter: "blur(5px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
             style={{
-              position: "fixed",
+              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
               top: `${contextMenu.y}px`,
               left: `${contextMenu.x}px`,
               zIndex: 100005,
@@ -2675,7 +2677,7 @@ export default function FeedbackPage() {
 
         {/* MESSAGES LIST */}
         <div
-          className="chat-messages"
+          className="chat-messages chat-background-animated"
           onScroll={handleMessagesScroll}
           onContextMenu={(e) => {
             const clickedOnBackground = e.target === e.currentTarget ||
@@ -2732,10 +2734,10 @@ export default function FeedbackPage() {
                       <motion.div
                         key={group.id}
                         layout
-                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        transition={{ type: "spring", stiffness: 400, damping: 28 }}
                         style={{
                           alignSelf: isOutgoing ? "flex-end" : "flex-start",
                           maxWidth: "80%",
@@ -2897,10 +2899,10 @@ export default function FeedbackPage() {
                     <motion.div 
                       key={msg.id}
                       layout
-                      initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                      initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
                       onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                       style={{ 
                         display: "flex", 
@@ -3130,7 +3132,7 @@ export default function FeedbackPage() {
             <motion.button
               type="button"
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
               style={{
@@ -3439,7 +3441,7 @@ export default function FeedbackPage() {
       {allPinsModalOpen && (
         <div 
           style={{
-            position: "fixed",
+            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
             inset: 0,
             background: "rgba(0, 0, 0, 0.45)",
             backdropFilter: "blur(4px)",

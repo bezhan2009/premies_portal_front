@@ -21,7 +21,8 @@ function App() {
   // }, [])
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
+      <>
       <ThemeManager />
       <GlobalNativeTableEnhancer />
       <AppRouter />
@@ -40,6 +41,7 @@ function App() {
 
       {/* <CardTable /> */}
     </>
+    </MotionConfig>
   );
 }
 

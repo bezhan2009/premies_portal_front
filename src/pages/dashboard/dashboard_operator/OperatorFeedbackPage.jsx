@@ -307,6 +307,8 @@ export default function OperatorFeedbackPage() {
   
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showHoldMenu, setShowHoldMenu] = useState(false);
+  const holdTimerRef = useRef(null);
   const [file, setFile] = useState(null);
   
   // Search threads
@@ -674,34 +676,29 @@ export default function OperatorFeedbackPage() {
   };
 
   const handleBulkDeleteChats = async () => {
+    if (selectedChatIds.length === 0) return;
     if (!window.confirm(`Вы уверены, что хотите удалить ${selectedChatIds.length} выбранных чатов?`)) return;
-    const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
-    setSending(true);
     try {
       for (const threadId of selectedChatIds) {
-        let url = `${API_URL}/api/feedback/chat`;
-        if (activeTab === "direct") {
-          url += `?chatWith=${threadId}`;
+        if (activeTab === "groups") {
+          await axios.delete(`${API_URL}/api/groups/${threadId}`, axiosConfig);
         } else {
-          url += `?userId=${threadId}`;
-        }
-        await axios.delete(url, axiosConfig);
-        
-        if (activeThreadId === threadId) {
-          setActiveThreadId(null);
-          setActiveChatType(null);
-          setMessages([]);
+          let url = `${API_URL}/api/feedback/chat`;
+          if (activeTab === "direct") {
+            url += `?chatWith=${threadId}`;
+          } else {
+            url += `?userId=${threadId}`;
+          }
+          await axios.delete(url, axiosConfig);
         }
       }
-      setIsChatSelectionMode(false);
       setSelectedChatIds([]);
+      setIsChatSelectionMode(false);
       fetchSupportThreads();
       fetchDirectThreads();
-      fetchTotalUnread();
+      fetchGroups();
     } catch (err) {
       console.error("Error bulk deleting chats:", err);
-    } finally {
-      setSending(false);
     }
   };
 
@@ -1227,6 +1224,22 @@ export default function OperatorFeedbackPage() {
     }
   };
 
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm("ВНИМАНИЕ: Вы уверены, что хотите удалить группу? Все сообщения будут стерты навсегда!")) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.delete(`${API_URL}/api/groups/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (activeThreadId === groupId) {
+        setActiveThreadId(null);
+        setActiveChatType(null);
+        setMessages([]);
+      }
+      if (typeof fetchGroups === 'function') fetchGroups();
+    } catch (err) {
+      console.error("Error deleting group:", err);
+    }
+  };
+
   const handleSelectThread = useCallback((thread) => {
     if (isChatSelectionMode) {
       handleSelectChat(thread.id);
@@ -1683,7 +1696,7 @@ export default function OperatorFeedbackPage() {
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
             style={{
-              position: "fixed",
+              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
               top: "24px",
               right: "24px",
               zIndex: 999999,
@@ -1749,7 +1762,7 @@ export default function OperatorFeedbackPage() {
       {/* Confirmation Modal */}
       {confirmModal && (
         <div style={{
-          position: "fixed",
+          position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
           inset: 0,
           background: "rgba(0,0,0,0.45)",
           display: "flex",
@@ -1799,7 +1812,7 @@ export default function OperatorFeedbackPage() {
 
       {forwardModalOpen && (
           <div style={{
-            position: "fixed",
+            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
             top: 0,
             left: 0,
             right: 0,
@@ -1947,12 +1960,12 @@ export default function OperatorFeedbackPage() {
           <motion.div 
             ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.7, y: -10, filter: "blur(5px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
             style={{
-              position: "fixed",
+              position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
               top: `${contextMenu.y}px`,
               left: `${contextMenu.x}px`,
               zIndex: 100005,
@@ -2255,7 +2268,7 @@ export default function OperatorFeedbackPage() {
                 <CheckSquare size={14} /> Выбрать
               </button>
             )}
-            {contextMenu.type === "thread" && (
+            {['thread', 'group'].includes(contextMenu.type) && (
               <>
                 <button 
                   onClick={() => {
@@ -2369,7 +2382,11 @@ export default function OperatorFeedbackPage() {
                 </button>
                 <button 
                   onClick={() => {
-                    handleDeleteChat(contextMenu.target.id);
+                    if (contextMenu.type === "group") {
+                      handleDeleteGroup(contextMenu.target.id);
+                    } else {
+                      handleDeleteChat(contextMenu.target.id);
+                    }
                     setContextMenu({ ...contextMenu, visible: false });
                   }}
                   style={{
@@ -2998,9 +3015,14 @@ export default function OperatorFeedbackPage() {
                  <div
                    key={`group-${group.id}`}
                    className={`thread-item ${isActive ? "active" : ""}`}
+                  onContextMenu={(e) => triggerContextMenu(e, group, "group")}
                    onClick={() => {
-                     setActiveChatType("group");
-                     setActiveThreadId(group.id);
+                    if (isChatSelectionMode) {
+                      handleSelectChat(group.id);
+                      return;
+                    }
+                    setActiveChatType("group");
+                    setActiveThreadId(group.id);
                      setActiveThreadName(group.name);
                      setReplyingTo(null);
                      setEditingMessage(null);
@@ -3012,6 +3034,19 @@ export default function OperatorFeedbackPage() {
                    }}
                    style={{ border: "1.5px solid transparent", position: "relative", cursor: "pointer" }}
                  >
+                   {isChatSelectionMode && (
+                     <div className="chat-selection-checkbox" onClick={(e) => {
+                       e.stopPropagation();
+                       handleSelectChat(group.id);
+                     }}>
+                       {selectedChatIds.includes(group.id) ? (
+                         <CheckSquare size={20} color="#3b82f6" fill="rgba(59, 130, 246, 0.1)" />
+                       ) : (
+                         <Square size={20} color="#cbd5e1" />
+                       )}
+                     </div>
+                   )}
+
                    {group.avatar_url ? (
                      <img src={`${API_URL}${group.avatar_url}`} alt={group.name} className="thread-avatar" style={{ objectFit: "cover" }} />
                    ) : (
@@ -3441,7 +3476,7 @@ export default function OperatorFeedbackPage() {
               <LoadingSkeleton />
             ) : (
               <div
-                className="chat-messages"
+                className="chat-messages chat-background-animated"
                 onScroll={handleMessagesScroll}
                 onContextMenu={(e) => {
                   const clickedOnBackground = e.target === e.currentTarget ||
@@ -3494,10 +3529,10 @@ export default function OperatorFeedbackPage() {
                             <motion.div
                               key={group.id}
                               layout
-                              initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                              initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                              transition={{ duration: 0.22, ease: "easeOut" }}
+                              transition={{ type: "spring", stiffness: 400, damping: 28 }}
                               className={`msg-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${activeChatType === "direct" ? "direct-msg" : ""}`}
                               style={{
                                 display: "flex",
@@ -3668,10 +3703,10 @@ export default function OperatorFeedbackPage() {
                         return (
                           <motion.div
   layout
-  initial={{ opacity: 0, y: 15, scale: 0.96 }}
+  initial={{ opacity: 0, y: 20, scale: 0.9, filter: "blur(2px)" }}
   animate={{ opacity: 1, y: 0, scale: 1 }}
   exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-  transition={{ duration: 0.22, ease: "easeOut" }} 
+  transition={{ type: "spring", stiffness: 400, damping: 28 }} 
                             key={msg.id}
                             onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                             style={{ 
@@ -3898,7 +3933,7 @@ export default function OperatorFeedbackPage() {
                     <motion.button
                       type="button"
                       initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                       exit={{ opacity: 0, scale: 0.8, y: 10 }}
                       onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
                       style={{
@@ -4188,7 +4223,14 @@ export default function OperatorFeedbackPage() {
                               key="send-btn"
                               type="submit"
                               className="chat-send-btn"
-                              disabled={sending}
+                              disabled={sending} onPointerDown={(e) => {
+                                holdTimerRef.current = setTimeout(() => {
+                                  setShowHoldMenu(true);
+                                }, 500);
+                              }}
+                              onPointerUp={() => clearTimeout(holdTimerRef.current)}
+                              onPointerLeave={() => clearTimeout(holdTimerRef.current)}
+        
                               initial={{ scale: 0.8, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               exit={{ scale: 0.8, opacity: 0 }}
@@ -4316,7 +4358,7 @@ export default function OperatorFeedbackPage() {
       {allPinsModalOpen && (
         <div 
           style={{
-            position: "fixed",
+            position: "fixed", transformOrigin: "top left", backdropFilter: "blur(12px)", background: "rgba(255, 255, 255, 0.8)",
             inset: 0,
             background: "rgba(0, 0, 0, 0.45)",
             backdropFilter: "blur(4px)",

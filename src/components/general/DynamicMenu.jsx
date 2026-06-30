@@ -508,13 +508,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 icon: MessageSquare, 
                 hasNotification: unreadFeedbackCount > 0 
             });
-            baseLinks.push({
-                name: "Группы",
-                href: "/feedback?tab=groups",
-                key: "groups",
-                icon: Users,
-                hasNotification: unreadGroupsCount > 0
-            });
         }
 
         baseLinks.push({
@@ -596,13 +589,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "feedback_operator",
                         icon: MessageSquare,
                         hasNotification: unreadFeedbackCount > 0
-                    },
-                    {
-                        name: "Группы (Оператор)",
-                        href: "/operator/feedback?tab=groups",
-                        key: "groups_operator",
-                        icon: Users,
-                        hasNotification: unreadGroupsCount > 0
                     },
                 ],
             });

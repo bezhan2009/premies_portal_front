@@ -148,7 +148,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, onUpdate }) 
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !group) return null;
 
   // Filter users for adding (exclude current members)
   const filteredUsers = searchQuery.trim() === ""
