@@ -9,6 +9,8 @@ import {
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
 import { motion, AnimatePresence } from "framer-motion";
+import { springPresets, variants } from "../../animations/config";
+import TextClone from "../../components/animations/TextClone";
 import useThemeStore from "../../store/useThemeStore";
 import ImageModal from "../../components/modal/ImageModal";
 import PasteFileModal from "../../components/modal/PasteFileModal";
@@ -278,6 +280,7 @@ export default function FeedbackPage() {
   const [activeChatType, setActiveChatType] = useState("support"); // "support" | "group"
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [cloneInfo, setCloneInfo] = useState(null);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -832,6 +835,17 @@ export default function FeedbackPage() {
     return () => document.removeEventListener("click", handleGlobalClick);
   }, [recipientId, activeGroup]);
 
+  // Refocus input whenever sending or recording states change (e.g. after message send/edit or voice cancel)
+  useEffect(() => {
+    if (!sending && !isRecording && textareaRef.current) {
+      // Small timeout to ensure browser handles enabling/rendering first
+      const t = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 30);
+      return () => clearTimeout(t);
+    }
+  }, [sending, isRecording]);
+
   // Notification auto-dismiss timer
   useEffect(() => {
     if (notification) {
@@ -859,7 +873,20 @@ export default function FeedbackPage() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() && !file) return;
+    const messageText = newMessage.trim();
+    if (!messageText && !file) return;
+
+    let cloneRect = null;
+    if (textareaRef.current) {
+      cloneRect = textareaRef.current.getBoundingClientRect();
+    }
+
+    if (messageText && !file && !editingMessage) {
+      setCloneInfo({
+        text: messageText,
+        rect: cloneRect
+      });
+    }
 
     setSending(true);
     
@@ -868,13 +895,13 @@ export default function FeedbackPage() {
       try {
         if (activeChatType === "group") {
           await axios.put(`${API_URL}/api/groups/${activeGroup.id}/messages/${editingMessage.id}`, {
-            message: newMessage.trim()
+            message: messageText
           }, {
             headers: { Authorization: `Bearer ${token}` }
           });
         } else {
           await axios.put(`${API_URL}/api/feedback/${editingMessage.id}`, {
-            message: newMessage.trim()
+            message: messageText
           }, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -888,7 +915,6 @@ export default function FeedbackPage() {
         setSending(false);
         if (textareaRef.current) {
           textareaRef.current.style.height = "36px";
-          textareaRef.current.focus();
         }
       }
       return;
@@ -909,30 +935,31 @@ export default function FeedbackPage() {
       }
 
       let payload = activeChatType === "group"
-        ? { message: newMessage.trim(), attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
-        : { message: newMessage.trim(), attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
+        ? { message: messageText, attachment_url: attachmentUrl, reply_to_id: replyingTo ? replyingTo.id : null }
+        : { message: messageText, attachment_url: attachmentUrl, recipient_id: recipientId, reply_to_id: replyingTo ? replyingTo.id : null };
 
       let sendUrl = activeChatType === "group"
         ? `${API_URL}/api/groups/${activeGroup.id}/messages`
         : `${API_URL}/api/feedback`;
 
-      await axios.post(sendUrl, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      // Clear input instantly
       setNewMessage("");
       setFile(null);
       setReplyingTo(null);
       setShowEmojiPicker(false);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "36px";
+      }
+
+      await axios.post(sendUrl, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
       fetchMessages();
     } catch (err) {
       setErrorMsg("Не удалось отправить сообщение. Попробуйте еще раз.");
     } finally {
       setSending(false);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "36px";
-        textareaRef.current.focus();
-      }
     }
   };
 
@@ -1610,10 +1637,10 @@ export default function FeedbackPage() {
           <motion.div 
             ref={contextMenuRef}
             onMouseDown={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.7, y: -10, filter: "blur(5px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            initial={variants.contextMenuOpen.initial}
+            animate={variants.contextMenuOpen.animate}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            transition={springPresets.pop}
             style={{
               position: "fixed", transformOrigin: "top left",
               top: `${contextMenu.y}px`,
@@ -2430,8 +2457,17 @@ export default function FeedbackPage() {
 
       {/* Right Chat Pane */}
       <div className="feedback-chat" style={{ display: mobileShowChat || window.innerWidth > 768 ? "flex" : "none" }}>
-        
-        {/* HEADER */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeChatType === "group" ? `group-${activeGroup?.id}` : `support-${recipientId}`}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            variants={variants.chatSlide}
+            style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", position: "relative" }}
+          >
+            
+            {/* HEADER */}
         <div className="chat-header">
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {window.innerWidth <= 768 && (
@@ -2771,10 +2807,10 @@ export default function FeedbackPage() {
                       <motion.div
                         key={group.id}
                         layout
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        initial={isOutgoing ? variants.messageSend.initial : variants.messageReceive.initial}
+                        animate={isOutgoing ? variants.messageSend.animate : variants.messageReceive.animate}
                         exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                        transition={isOutgoing ? springPresets.pop : springPresets.bounceIn}
                         style={{
                           alignSelf: isOutgoing ? "flex-end" : "flex-start",
                           maxWidth: "80%",
@@ -2936,10 +2972,10 @@ export default function FeedbackPage() {
                     <motion.div 
                       key={msg.id}
                       layout
-                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      initial={isOutgoing ? variants.messageSend.initial : variants.messageReceive.initial}
+                      animate={isOutgoing ? variants.messageSend.animate : variants.messageReceive.animate}
                       exit={{ opacity: 0, scale: 0.9, height: 0, overflow: "hidden", margin: 0, padding: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                      transition={isOutgoing ? springPresets.pop : springPresets.bounceIn}
                       onClick={isMessageSelectionMode ? () => handleSelectMessage(msg.id) : undefined}
                       style={{ 
                         display: "flex", 
@@ -3366,11 +3402,19 @@ export default function FeedbackPage() {
               </div>
             )}
             
-            {showEmojiPicker && !isRecording && (
-              <div className="emoji-picker-container">
-                <EmojiPicker onEmojiClick={onEmojiClick} theme={theme} emojiStyle="apple" />
-              </div>
-            )}
+            <AnimatePresence>
+              {showEmojiPicker && !isRecording && (
+                <motion.div 
+                  className="emoji-picker-container"
+                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                  transition={springPresets.slide}
+                >
+                  <EmojiPicker onEmojiClick={onEmojiClick} theme={theme} emojiStyle="apple" />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Voice Recording Panel */}
             {isRecording ? (
@@ -3436,10 +3480,12 @@ export default function FeedbackPage() {
                         type="button"
                         className="icon-btn"
                         onClick={startRecording}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ rotate: 45, scale: 0.5, opacity: 0 }}
+                        animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                        exit={{ rotate: -45, scale: 0.5, opacity: 0 }}
+                        transition={springPresets.pop}
+                        whileTap={{ scale: 0.85 }}
+                        whileHover={{ scale: 1.05 }}
                       >
                         <Mic size={22} />
                       </motion.button>
@@ -3449,10 +3495,12 @@ export default function FeedbackPage() {
                         type="submit"
                         className="chat-submit-btn"
                         disabled={sending}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ rotate: -45, scale: 0.5, opacity: 0 }}
+                        animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                        exit={{ rotate: 45, scale: 0.5, opacity: 0 }}
+                        transition={springPresets.pop}
+                        whileTap={{ scale: 0.85 }}
+                        whileHover={{ scale: 1.05 }}
                       >
                         <ArrowUp size={18} strokeWidth={2.5} />
                       </motion.button>
@@ -3463,6 +3511,8 @@ export default function FeedbackPage() {
             )}
           </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* ALL PINNED MESSAGES MODAL */}
@@ -3581,6 +3631,13 @@ export default function FeedbackPage() {
             </div>
           </div>
         </div>
+      )}
+      {cloneInfo && (
+        <TextClone
+          text={cloneInfo.text}
+          position={cloneInfo.rect}
+          onAnimationComplete={() => setCloneInfo(null)}
+        />
       )}
     </div>
   );

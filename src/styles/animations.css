@@ -1,0 +1,9 @@
+/* styles/animations.css */
+.animating {
+  will-change: transform, opacity;
+}
+
+.animating-gpu {
+  will-change: transform;
+  transform: translateZ(0);
+}
