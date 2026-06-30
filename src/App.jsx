@@ -7,6 +7,8 @@ import "react-toastify/dist/ReactToastify.css";
 // import { CardTable } from "./pages/product/card/CardTable.jsx";
 import GlobalNativeTableEnhancer from "./components/table/GlobalNativeTableEnhancer.jsx";
 import ThemeManager from "./ThemeManager";
+import { MotionConfig } from "framer-motion";
+
 
 function App() {
   const isTechnicalDay = false;
