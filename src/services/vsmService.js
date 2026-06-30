@@ -49,3 +49,14 @@ export const cancelStopInstruction = async (cardId, cancelStopInstructions) => {
         throw error;
     }
 };
+
+export const clearVsmCache = async (cardId) => {
+    try {
+        const response = await apiClient.post("/api/vsm/clear-cache", {
+            cardId
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

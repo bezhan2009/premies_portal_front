@@ -689,17 +689,6 @@ const ClientDataTabs = ({
               Лимиты
             </button>
 
-            <button
-              className="button"
-              style={{
-                background: "#8b5cf6",
-                color: "white",
-                width: "100%",
-              }}
-              onClick={() => handleOpenRequisitesModal(card)}
-            >
-              Скачать реквизиты
-            </button>
 
             {hasVsmAccess && (() => {
               const type = (card.type || card.CardTypeName || card.details?.cardTypeName || "").toLowerCase();
@@ -1004,6 +993,7 @@ const ClientDataTabs = ({
                   
                   // Card connection
                   let pcBalance = null;
+                  let rawPcBalance = null;
                   let cardMask = null;
                   let matchingCard = null;
                   if (acc.Type === "CCUR") {
@@ -1025,6 +1015,7 @@ const ClientDataTabs = ({
                         return num && String(num).trim() === String(acc.Number).trim();
                       });
                       if (cardAcc && cardAcc.balance !== undefined) {
+                        rawPcBalance = cardAcc.balance;
                         pcBalance = Number(cardAcc.balance).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (acc.Currency?.Code || "");
                       }
                     }
@@ -1164,6 +1155,8 @@ const ClientDataTabs = ({
                             "account.openDate": acc.DateOpened || "",
                             "account.status": acc.Status?.Name || "",
                             "account.branch": acc.Branch?.Name || "",
+                            "account.type": acc.Type || "",
+                            "account.pcBalance": rawPcBalance !== null && rawPcBalance !== undefined ? rawPcBalance : null,
                           }}
                         />
                       </div>
@@ -1423,7 +1416,7 @@ const ClientDataTabs = ({
                         <button className="card-action-btn neutral" onClick={() => window.open(`http://10.64.1.10/services/tariff_by_idn.php?idn=${card.cardId}`, "_blank")}>Тарифы</button>
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
-                        <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(card)}>Скачать реквизиты</button>
+
                         <DynamicDocxButtons
                           page="CardDetails"
                           section="Карты клиента"

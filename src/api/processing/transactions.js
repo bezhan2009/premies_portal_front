@@ -241,12 +241,13 @@ export const fetchCardServices = async (cardId) => {
 };
 
 // Изменение статуса карты (блокировка)
-export const changeCardStatus = async (cardId, status) => {
+export const changeCardStatus = async (cardId, status, comment) => {
     const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
         const response = await axios.post(`${GATEWAY_URL}/api/transactions/block-card`, {
             cardId: String(cardId),
-            hotCardStatus: String(status)
+            reason: String(status),
+            description: String(comment || "")
         }, {
             headers: {
                 'accept': '*/*',
@@ -262,11 +263,12 @@ export const changeCardStatus = async (cardId, status) => {
 };
 
 // Разблокировка карты
-export const unblockCard = async (cardId) => {
+export const unblockCard = async (cardId, comment) => {
     const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
     try {
         const response = await axios.post(`${GATEWAY_URL}/api/transactions/unblock-card`, {
-            cardId: String(cardId)
+            cardId: String(cardId),
+            description: String(comment || "")
         }, {
             headers: {
                 'accept': '*/*',

@@ -693,10 +693,10 @@ export default function ABSClientSearch() {
         exportToExcel(sortedCards, columns, `Карты_${selectedClient?.surname}`);
     };
 
-    const handleBlockCardConfirm = async (status) => {
+    const handleBlockCardConfirm = async (status, comment) => {
         setIsBlockingLoading(true);
         try {
-            await changeCardStatus(blockingCardId, status);
+            await changeCardStatus(blockingCardId, status, comment);
 
             // Log audit action
             logAuditAction({
@@ -705,7 +705,7 @@ export default function ABSClientSearch() {
                 client_phone: selectedClient?.phone || "",
                 client_inn: selectedClient?.tax_code || "",
                 card_number: String(blockingCardId),
-                details: `Блокировка карты ${blockingCardId} со статусом ${status}`
+                details: `Блокировка карты ${blockingCardId} со статусом ${status}. Комментарий: ${comment}`
             });
 
             showAlert("Карта успешно заблокирована", "success");
@@ -745,8 +745,15 @@ export default function ABSClientSearch() {
     };
 
     const handleUnblockCard = async (cardId) => {
+        const comment = window.prompt("Введите причину/комментарий для разблокировки карты:");
+        if (comment === null) return;
+        if (!comment.trim()) {
+            showAlert("Комментарий обязателен для разблокировки карты", "error");
+            return;
+        }
+
         try {
-            await unblockCard(cardId);
+            await unblockCard(cardId, comment.trim());
 
             // Log audit action
             logAuditAction({
@@ -755,7 +762,7 @@ export default function ABSClientSearch() {
                 client_phone: selectedClient?.phone || "",
                 client_inn: selectedClient?.tax_code || "",
                 card_number: String(cardId),
-                details: `Разблокировка карты ${cardId}`
+                details: `Разблокировка карты ${cardId}. Комментарий: ${comment.trim()}`
             });
 
             showAlert("Карта успешно разблокирована", "success");
@@ -780,9 +787,9 @@ export default function ABSClientSearch() {
             if (scenario === 'A') {
                 await activateCardSoap(card.agreement, card.cardId);
             } else if (scenario === 'B') {
-                await unblockCard(card.cardId);
+                await unblockCard(card.cardId, "Разблокировка для активации карты");
             } else if (scenario === 'C') {
-                await changeCardStatus(card.cardId, "05");
+                await changeCardStatus(card.cardId, "05", "Блокировка для активации карты");
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 await activateCardSoap(card.agreement, card.cardId);
             }

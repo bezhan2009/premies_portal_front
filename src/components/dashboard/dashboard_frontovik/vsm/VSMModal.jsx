@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ConfigProvider, theme as antdTheme, Modal, Spin, message, Button, Tabs, Form, Input, DatePicker, Select, Switch, InputNumber, Tooltip, Radio } from "antd";
-import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction } from "../../../../services/vsmService";
+import { searchStops, addMerchantStop, getCofDataInfo, cancelStopInstruction, clearVsmCache } from "../../../../services/vsmService";
 import DynamicDocxButtons from "../../../general/DynamicDocxButtons.jsx";
 import { extractDocxClientData } from "../../../../utils/docxTemplateHelpers.js";
 import { logAuditAction } from "../../../../utils/auditLogger";
@@ -236,6 +236,25 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
             message.error("Ошибка при снятии ограничения: " + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const [clearingCache, setClearingCache] = useState(false);
+
+    const handleClearCache = async () => {
+        if (!card?.cardId) return;
+        setClearingCache(true);
+        try {
+            await clearVsmCache(card.cardId);
+            message.success("Кэш VSM успешно удален");
+            if (selectedAccount) {
+                fetchData(selectedAccount);
+            }
+        } catch (error) {
+            console.error("Failed to clear VSM cache:", error);
+            message.error("Не удалось удалить кэш VSM: " + (error.response?.data?.error || error.message));
+        } finally {
+            setClearingCache(false);
         }
     };
 
@@ -602,7 +621,22 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                 width={850}
             >
                 <Spin spinning={loading}>
-                    <Tabs activeKey={activeTabKey} onChange={setActiveTabKey}>
+                    <Tabs 
+                        activeKey={activeTabKey} 
+                        onChange={setActiveTabKey}
+                        tabBarExtraContent={
+                            <Button 
+                                type="primary" 
+                                danger
+                                size="small"
+                                onClick={handleClearCache}
+                                loading={clearingCache}
+                                style={{ borderRadius: '6px' }}
+                            >
+                                Обновить кэш VSM
+                            </Button>
+                        }
+                    >
                         <TabPane tab="Активные подписки" key="1">
                             <div style={{ padding: "12px 0" }}>
                                 <p style={{ color: isDark ? "#94a3b8" : "#64748b", marginBottom: 16 }}>

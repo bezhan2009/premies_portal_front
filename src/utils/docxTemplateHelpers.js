@@ -546,8 +546,8 @@ export const evaluateDocxTemplateConditions = (conditions, data = {}, uniqueIdFo
     const numCond = Number(strCond);
     const isNumeric = !Number.isNaN(numActual) && !Number.isNaN(numCond) && strActual !== "" && strCond !== "";
 
-    const valA = isNumeric ? numActual : strActual;
-    const valB = isNumeric ? numCond : strCond;
+    const valA = isNumeric ? numActual : strActual.toLowerCase();
+    const valB = isNumeric ? numCond : strCond.toLowerCase();
 
     switch (operator) {
       case "=":
