@@ -90,12 +90,12 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const handleGenerate = async (template, variant, format = "pdf", skipParamsCheck = false) => {
     if (!skipParamsCheck) {
       const hasTransactions = variant.keys.some((k) => {
-        const sk = k.systemKey || '';
-        return sk.startsWith("transactions.") || (sk.startsWith("eval:") && sk.includes("transactions"));
+        const sk = String(k.systemKey || k.key || '').toLowerCase();
+        return sk.includes("transactions");
       });
       const hasSchedule = variant.keys.some((k) => {
-        const sk = k.systemKey || '';
-        return sk.startsWith("schedule.") || (sk.startsWith("eval:") && sk.includes("schedule"));
+        const sk = String(k.systemKey || k.key || '').toLowerCase();
+        return sk.includes("schedule");
       });
 
       // Skip params modal if schedule data is already available in the data prop
@@ -131,6 +131,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     try {
       if (paramsModal.type === "transactions") {
         const cardId = finalData.card?.cardId || finalData.cardId;
+        const accountNumber = finalData.account?.number || finalData["account.number"] || finalData.accountNumber;
+        
         if (cardId) {
           const procUrl = import.meta.env.VITE_BACKEND_PROCESSING_URL || "http://10.64.20.84:5003";
           const res = await axios.get(`${procUrl}/api/Transactions/by-cards`, {
@@ -141,6 +143,58 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             },
           });
           finalData.transactions = res.data?.data || res.data || [];
+        } else if (accountNumber) {
+          const absUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
+          const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+          const params = new URLSearchParams();
+          if (paramsModal.fromDate) {
+             const [y, m, d] = paramsModal.fromDate.split("-");
+             params.append("startDate", `${d}.${m}.${y}`);
+          }
+          if (paramsModal.toDate) {
+             const [y, m, d] = paramsModal.toDate.split("-");
+             params.append("endDate", `${d}.${m}.${y}`);
+          }
+          params.append("accountNumber", accountNumber);
+          
+          const res = await axios.get(`${absUrl}/account/operations?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          const data = res.data;
+          let flatTransactions = [];
+          if (Array.isArray(data)) {
+            data.forEach(day => {
+              if (Array.isArray(day.Transactions)) {
+                 day.Transactions.forEach(tx => {
+                   flatTransactions.push({
+                     ...tx,
+                     doper: day.DOPER,
+                     date: `${tx.DOCDOPER || day.DOPER || ""} ${tx.EXECDT || ""}`.trim(),
+                     MOVD: tx.MOVD || 0,
+                     MOVC: tx.MOVC || 0
+                   });
+                 });
+              }
+            });
+          }
+          flatTransactions.sort((a, b) => {
+             const parseDate = (dStr, tStr) => {
+                if (!dStr) return 0;
+                const parts = dStr.split(".");
+                if (parts.length === 3) {
+                   const [d, m, y] = parts;
+                   let tsStr = `${y}-${m}-${d}`;
+                   if (tStr) tsStr += `T${tStr}`;
+                   return new Date(tsStr).getTime();
+                }
+                return 0;
+             };
+             return parseDate(b.DOCDOPER || b.doper, b.EXECDT) - parseDate(a.DOCDOPER || a.doper, a.EXECDT);
+          });
+          finalData.transactions = flatTransactions;
+          finalData.statementDateFrom = paramsModal.fromDate;
+          finalData.statementDateTo = paramsModal.toDate;
         }
       } else if (paramsModal.type === "schedule") {
         // Use schedule data already in the data prop if available (e.g. from CreditDetails page)
