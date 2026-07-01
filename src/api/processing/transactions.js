@@ -247,6 +247,7 @@ export const changeCardStatus = async (cardId, status, comment) => {
         const response = await axios.post(`${GATEWAY_URL}/api/transactions/block-card`, {
             cardId: String(cardId),
             reason: String(status),
+            hotCardStatus: String(status),
             description: String(comment || "")
         }, {
             headers: {
