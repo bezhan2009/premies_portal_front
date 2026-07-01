@@ -2532,7 +2532,7 @@ export default function FeedbackPage() {
               onClick={() => setLocalSearchActive(!localSearchActive)}
               style={{ background: "none", border: "none", cursor: "pointer", color: localSearchActive ? "#eb2525" : "var(--text-secondary)" }}
             >
-              <SearchIcon size={18} />
+              <Search size={18} />
             </button>
             
             {activeChatType !== "group" && (

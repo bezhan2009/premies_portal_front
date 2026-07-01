@@ -685,19 +685,19 @@ export default function EQMSList() {
 
               {/* Customs Balance Card */}
               <div className="customs-balance-card" style={{
-                background: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
-                color: "#10b981",
+                background: "var(--bg-card, #ffffff)",
+                color: "var(--text-color, #111827)",
                 padding: "8px 16px",
                 borderRadius: "8px",
-                border: "1px solid rgba(16, 185, 129, 0.2)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                border: "1px solid var(--border-color, #e5e7eb)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-end",
                 minWidth: "200px"
               }}>
-                <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Баланс счета таможни</span>
-                <strong style={{ fontSize: "18px", fontWeight: "600", marginTop: "2px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted, #6b7280)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Баланс счета таможни</span>
+                <strong style={{ fontSize: "18px", fontWeight: "600", marginTop: "2px", color: "#10b981" }}>
                   {balanceLoading ? "Загрузка..." : balance !== null ? `${Number(balance).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TJS` : "—"}
                 </strong>
               </div>
