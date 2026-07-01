@@ -237,14 +237,17 @@ export default function EQMSList() {
 
   const handlePay = async (transaction) => {
     const paymentStatus = getPaymentStatus(transaction);
+    const absStatus = transaction.statusABS || "Ожидает проверки";
 
-    if (paymentStatus === "already_paid") {
-      showAlert("Таможня уже оплачена ранее", "warning");
-      return;
-    }
-    if (paymentStatus === "paid") {
-      showAlert("Оплата уже была отправлена (статус Success)", "info");
-      return;
+    if (absStatus === "Оплачено в АБС") {
+      if (paymentStatus === "already_paid") {
+        showAlert("Таможня уже оплачена ранее", "warning");
+        return;
+      }
+      if (paymentStatus === "paid") {
+        showAlert("Оплата уже была отправлена (статус Success)", "info");
+        return;
+      }
     }
 
     setSinglePaymentData(transaction);
@@ -304,7 +307,8 @@ export default function EQMSList() {
   const handlePayAll = async () => {
     const toPay = sortedData.filter(
       (row) =>
-        selectedRows.includes(row.id) && getPaymentStatus(row) === "pending",
+        selectedRows.includes(row.id) &&
+        (getPaymentStatus(row) === "pending" || row.statusABS !== "Оплачено в АБС"),
     );
 
     if (toPay.length === 0) {
@@ -458,7 +462,7 @@ export default function EQMSList() {
     const ids = sortedData
       .filter(
         (row) =>
-          getPaymentStatus(row) === "pending" &&
+          (getPaymentStatus(row) === "pending" || row.statusABS !== "Оплачено в АБС") &&
           (row.status || "").toLowerCase() === "success",
       )
       .map((r) => r.id);
@@ -470,7 +474,7 @@ export default function EQMSList() {
     const ids = sortedData
       .filter(
         (row) =>
-          getPaymentStatus(row) !== "pending" &&
+          (getPaymentStatus(row) !== "pending" && row.statusABS === "Оплачено в АБС") &&
           (row.status || "").toLowerCase() === "success",
       )
       .map((r) => r.id);
@@ -1149,13 +1153,13 @@ export default function EQMSList() {
                           </td>
                           <td className="active-table">
                             <button
-                              className={`pay-button ${isPaid ? "paid" : ""}`}
+                              className={`pay-button ${isPaid && absStatus === "Оплачено в АБС" ? "paid" : ""}`}
                               onClick={() =>
                                 row.status === "success"
                                   ? handlePay(row)
                                   : toast.error("Таможня не оплачена")
                               }
-                              disabled={isPaying || isPaid}
+                              disabled={isPaying || (isPaid && absStatus === "Оплачено в АБС")}
                               style={{
                                 padding: "8px 12px",
                                 borderRadius: "6px",
@@ -1163,21 +1167,14 @@ export default function EQMSList() {
                                 cursor:
                                   row.status !== "success"
                                     ? "not-allowed"
-                                    : isPaid || isPaying
+                                    : (isPaid && absStatus === "Оплачено в АБС") || isPaying
                                       ? "not-allowed"
                                       : "pointer",
                                 opacity:
-                                  row.status === "success"
-                                    ? 1
-                                    : isPaying
-                                      ? 0.7
-                                      : isPaid
-                                        ? 0.6
-                                        : 0.6,
-                                color:
-                                  isPaid || isPaying
-                                    ? "var(--text-color)"
-                                    : "var(--text-color)",
+                                  isPaying || (isPaid && absStatus === "Оплачено в АБС")
+                                    ? 0.6
+                                    : 1,
+                                color: "var(--text-color)",
                                 fontWeight: "500",
                                 transition: "all 0.2s",
                                 minWidth: "120px",
@@ -1189,7 +1186,7 @@ export default function EQMSList() {
                             >
                               {isPaying ? (
                                 <>Оплачивается...</>
-                              ) : isPaid ? (
+                              ) : (isPaid && absStatus === "Оплачено в АБС") ? (
                                 <>
                                   <MdCheckCircle
                                     size={24}

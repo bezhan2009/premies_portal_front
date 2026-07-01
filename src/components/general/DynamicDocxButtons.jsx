@@ -233,7 +233,68 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       console.warn("Failed to fetch dynamic docx table data:", err);
     }
 
-    const finalPayload = buildDocxPayload(variant, finalData, {}, template.uniqueIdFormat || template.UniqueIdFormat);
+    // Format dates for period placeholders
+    const formatDateDDMMYYYY = (isoStr) => {
+      if (!isoStr) return "";
+      const parts = isoStr.split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+      }
+      return isoStr;
+    };
+
+    const formattedFromDate = formatDateDDMMYYYY(paramsModal.fromDate);
+    const formattedToDate = formatDateDDMMYYYY(paramsModal.toDate);
+    
+    let nowStr = "";
+    try {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, "0");
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const yyyy = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const min = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      nowStr = `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
+    } catch (e) {
+      nowStr = new Date().toLocaleString("ru-RU");
+    }
+
+    finalData.с = formattedFromDate;
+    finalData.по = formattedToDate;
+    finalData.dateFrom = formattedFromDate;
+    finalData.dateTo = formattedToDate;
+    finalData.statementDateFrom = formattedFromDate;
+    finalData.statementDateTo = formattedToDate;
+    finalData.fromDate = formattedFromDate;
+    finalData.toDate = formattedToDate;
+    finalData["дата выписки с"] = formattedFromDate;
+    finalData["дата выписки по"] = formattedToDate;
+    finalData["дата выписки"] = nowStr;
+    finalData["дата_выписки"] = nowStr;
+
+    // Define virtual keys to map transaction arrays into top-level flat slices (expected by backend replicateTableRows)
+    const virtualKeys = [
+      { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
+      { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "MOVD" },
+      { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "MOVC" },
+      { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "списания" },
+      { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "зачисления" },
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "TXTDSCR" },
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "Описание операции" },
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "детали" },
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "details" }
+    ];
+    
+    const virtualDocxKeys = new Set(virtualKeys.map(vk => vk.docxKey));
+    const cleanedExistingKeys = (variant.keys || []).filter(k => !virtualDocxKeys.has(k.docxKey));
+    
+    const modifiedVariant = {
+      ...variant,
+      keys: [...cleanedExistingKeys, ...virtualKeys]
+    };
+
+    const finalPayload = buildDocxPayload(modifiedVariant, finalData, {}, template.uniqueIdFormat || template.UniqueIdFormat);
     console.log("Built Final Payload:", finalPayload);
 
     try {
