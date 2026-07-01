@@ -39,6 +39,26 @@ export default function EQMSList() {
   const [showSinglePayConfirmation, setShowSinglePayConfirmation] =
     useState(false);
   const [singlePaymentData, setSinglePaymentData] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
+  const fetchBalance = async () => {
+    try {
+      setBalanceLoading(true);
+      const url = `${backendMain}/eqms/balance`;
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
+      const json = await resp.json();
+      setBalance(json.bal);
+    } catch (err) {
+      console.error("Ошибка загрузки баланса:", err);
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
 
   const showAlert = (message, type = "success") => {
     setAlert({ message, type });
@@ -479,12 +499,13 @@ export default function EQMSList() {
     recBankName: "Банк получателя",
     recBankCode: "Код банка получателя",
     recAcc: "recAcc",
+    statusABS: "Статус в АБС",
   };
 
   const tableHeaders = useMemo(() => {
     if (sortedData.length === 0) return [];
     const firstRow = sortedData[0];
-    const excludedHeaders = ["payedAt", "isPayed"];
+    const excludedHeaders = ["payedAt", "isPayed", "errorMsg"];
     const allKeys = Object.keys(firstRow).filter(
       (header) => !excludedHeaders.includes(header),
     );
@@ -492,8 +513,9 @@ export default function EQMSList() {
     const orderedKeys = [];
     if (allKeys.includes("id")) orderedKeys.push("id");
     if (allKeys.includes("status")) orderedKeys.push("status");
+    if (allKeys.includes("statusABS")) orderedKeys.push("statusABS");
     allKeys.forEach((key) => {
-      if (key !== "id" && key !== "status") {
+      if (key !== "id" && key !== "status" && key !== "statusABS") {
         orderedKeys.push(key);
       }
     });
@@ -524,6 +546,7 @@ export default function EQMSList() {
   useEffect(() => {
     if (data?.eqms_start_date && data?.eqms_end_date) {
       fetchData();
+      fetchBalance();
     }
   }, [data?.eqms_start_date, data?.eqms_end_date]);
 
@@ -590,73 +613,94 @@ export default function EQMSList() {
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
         >
           <main>
-            <div className="my-applications-header">
-              {!showStatement && (
+            <div className="my-applications-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                {!showStatement && (
+                  <button
+                    className={!showFilters ? "filter-toggle" : "Unloading"}
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    Фильтры
+                  </button>
+                )}
+                <pre> </pre>
+                {!showStatement && (
+                  <>
+                    <button
+                      className="Unloading"
+                      onClick={handleExport}
+                      disabled={selectedRows.length === 0}
+                    >
+                      Выгрузка EQMS
+                    </button>
+                    <button
+                      className="save"
+                      onClick={handlePayAll}
+                      disabled={selectedRows.length === 0 || payingIds.size > 0}
+                    >
+                      Оплатить всё
+                    </button>
+                    <button
+                      className={selectAll ? "selectAll-toggle" : ""}
+                      onClick={toggleSelectAll}
+                    >
+                      {selectAll ? "Снять выделение" : "Выбрать все"}
+                    </button>
+                    <button className="edit" onClick={selectAllUnpaid}>
+                      Выбрать все неоплаченные
+                    </button>
+                    <button className="save" onClick={selectAllPaid}>
+                      Выбрать все оплаченные
+                    </button>
+                  </>
+                )}
                 <button
-                  className={!showFilters ? "filter-toggle" : "Unloading"}
-                  onClick={() => setShowFilters(!showFilters)}
+                  className="Unloading"
+                  onClick={handleFetchStatement}
+                  disabled={statementLoading}
                 >
-                  Фильтры
+                  Просмотреть выписку с АБС
                 </button>
-              )}
-              <pre> </pre>
-              {!showStatement && (
-                <>
-                  <button
-                    className="Unloading"
-                    onClick={handleExport}
-                    disabled={selectedRows.length === 0}
-                  >
-                    Выгрузка EQMS
-                  </button>
-                  <button
-                    className="save"
-                    onClick={handlePayAll}
-                    disabled={selectedRows.length === 0 || payingIds.size > 0}
-                  >
-                    Оплатить всё
-                  </button>
-                  <button
-                    className={selectAll ? "selectAll-toggle" : ""}
-                    onClick={toggleSelectAll}
-                  >
-                    {selectAll ? "Снять выделение" : "Выбрать все"}
-                  </button>
-                  <button className="edit" onClick={selectAllUnpaid}>
-                    Выбрать все неоплаченные
-                  </button>
-                  <button className="save" onClick={selectAllPaid}>
-                    Выбрать все оплаченные
-                  </button>
-                </>
-              )}
-              <button
-                className="Unloading"
-                onClick={handleFetchStatement}
-                disabled={statementLoading}
-              >
-                Просмотреть выписку с АБС
-              </button>
-              {!showStatement && (
-                <div className="selection-stats-card">
-                  <div className="stat">
-                    <span className="label">Выбрано</span>
-                    <strong className="value">{totalSelected}</strong>
+                {!showStatement && (
+                  <div className="selection-stats-card">
+                    <div className="stat">
+                      <span className="label">Выбрано</span>
+                      <strong className="value">{totalSelected}</strong>
+                    </div>
+                    <div className="divider" />
+                    <div className="stat">
+                      <span className="label">Оплачено всего</span>
+                      <strong className="value paid">{totalPaid}</strong>
+                    </div>
+                    <div className="divider" />
+                    <div className="stat highlight">
+                      <span className="label">Сумма выбранных</span>
+                      <strong className="value amount">
+                        {totalAmountSelected.toLocaleString("ru-RU")} С
+                      </strong>
+                    </div>
                   </div>
-                  <div className="divider" />
-                  <div className="stat">
-                    <span className="label">Оплачено всего</span>
-                    <strong className="value paid">{totalPaid}</strong>
-                  </div>
-                  <div className="divider" />
-                  <div className="stat highlight">
-                    <span className="label">Сумма выбранных</span>
-                    <strong className="value amount">
-                      {totalAmountSelected.toLocaleString("ru-RU")} С
-                    </strong>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Customs Balance Card */}
+              <div className="customs-balance-card" style={{
+                background: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
+                color: "#10b981",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid rgba(16, 185, 129, 0.2)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                minWidth: "200px"
+              }}>
+                <span style={{ fontSize: "11px", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Баланс счета таможни</span>
+                <strong style={{ fontSize: "18px", fontWeight: "600", marginTop: "2px" }}>
+                  {balanceLoading ? "Загрузка..." : balance !== null ? `${Number(balance).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TJS` : "—"}
+                </strong>
+              </div>
             </div>
             {showFilters && !showStatement && (
               <div className="filters animate-slideIn">
@@ -951,12 +995,18 @@ export default function EQMSList() {
                         paymentStatus === "already_paid" ||
                         paymentStatus === "paid";
                       const isPaying = payingIds.has(row.id);
+                      const absStatus = row.statusABS || "Ожидает проверки";
+                      const rowBg = absStatus === "Оплачено в АБС"
+                        ? "rgba(39, 174, 96, 0.15)"
+                        : absStatus === "Ожидает проверки" && isPaid
+                          ? "rgba(245, 158, 11, 0.05)"
+                          : "transparent";
 
                       return (
                         <tr
                           key={row.id}
                           style={{
-                            backgroundColor: isPaid ? "#e6ffe6" : "transparent",
+                            backgroundColor: rowBg,
                           }}
                         >
                           <td>
@@ -982,6 +1032,43 @@ export default function EQMSList() {
                               value = formatDateForDisplay(value);
                             } else if (header === "resiFlg") {
                               value = value ? "Да" : "Нет";
+                            } else if (header === "statusABS") {
+                              const absStatusVal = row.statusABS || "Ожидает проверки";
+                              const errorMsg = row.errorMsg;
+                              let statusColor = "orange";
+                              let statusIcon = <FcProcess style={{ fontSize: 22 }} />;
+
+                              if (absStatusVal === "Оплачено в АБС") {
+                                statusColor = "green";
+                                statusIcon = <FcOk style={{ fontSize: 22 }} />;
+                              } else if (absStatusVal === "Ошибка АБС") {
+                                statusColor = "red";
+                                statusIcon = <FcCancel style={{ fontSize: 22 }} />;
+                              }
+
+                              return (
+                                <td key={header}>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                      {statusIcon}
+                                      <span style={{ color: statusColor, fontWeight: "500" }}>{absStatusVal}</span>
+                                    </div>
+                                    {errorMsg && absStatusVal === "Ошибка АБС" && (
+                                      <small style={{
+                                        color: "red",
+                                        display: "block",
+                                        marginTop: "2px",
+                                        maxWidth: "200px",
+                                        wordBreak: "break-word",
+                                        fontSize: "11px",
+                                        opacity: 0.9
+                                      }}>
+                                        Ошибка: {errorMsg}
+                                      </small>
+                                    )}
+                                  </div>
+                                </td>
+                              );
                             } else if (header === "status") {
                               return (
                                 <td key={header}>
