@@ -238,6 +238,12 @@ const TABLE_SOURCE_FIELDS = {
     { value: "stan", label: "STAN (stan)" },
     { value: "merchant", label: "Мерчант (merchant)" },
     { value: "status", label: "Статус (status)" },
+    { value: "MOVD", label: "Списания (MOVD)" },
+    { value: "MOVC", label: "Зачисления (MOVC)" },
+    { value: "списания", label: "Списания (списания)" },
+    { value: "зачисления", label: "Зачисления (зачисления)" },
+    { value: "TXTDSCR", label: "Описание операции (TXTDSCR)" },
+    { value: "Описание операции", label: "Описание операции (Описание операции)" },
   ],
   schedule: [
     { value: "date", label: "Дата платежа (date)" },

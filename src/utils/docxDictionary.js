@@ -215,6 +215,12 @@ export const docxDictionary = [
       { key: "transactions.stan", description: "STAN" },
       { key: "transactions.merchant", description: "Мерчант" },
       { key: "transactions.status", description: "Статус" },
+      { key: "transactions.MOVD", description: "Списания (MOVD)" },
+      { key: "transactions.MOVC", description: "Зачисления (MOVC)" },
+      { key: "transactions.списания", description: "Списания (списания)" },
+      { key: "transactions.зачисления", description: "Зачисления (зачисления)" },
+      { key: "transactions.TXTDSCR", description: "Описание операции (TXTDSCR)" },
+      { key: "transactions.Описание операции", description: "Описание операции (Описание операции)" },
     ],
   },
   {
