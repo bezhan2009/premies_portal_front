@@ -242,44 +242,85 @@ export const fetchCardServices = async (cardId) => {
 
 // Изменение статуса карты (блокировка)
 export const changeCardStatus = async (cardId, status, comment) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = `${GATEWAY_URL}/api/transactions/block-card`;
+    
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:cr="http://bus.colvir.com/service/cards/v1" 
+                  xmlns:s="http://bus.colvir.com/common/support/v1" 
+                  xmlns:dm="http://bus.colvir.com/common/domain/v1">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <cr:CardBlockRequest>
+            <s:head>
+                <s:params>
+                    <s:clientType>CBS</s:clientType>
+                    <s:interfaceVersion>1.0</s:interfaceVersion>
+                    <s:language>ru</s:language>
+                    <s:operationalDate>${new Date().toISOString().split('T')[0]}T08:00:00</s:operationalDate>
+                </s:params>
+            </s:head>
+            <cr:cardId>${cardId}</cr:cardId>
+            <cr:blockCode>${status}</cr:blockCode>
+            <cr:description>${comment || ""}</cr:description>
+      </cr:CardBlockRequest>
+   </soapenv:Body>
+</soapenv:Envelope>`;
+
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/block-card`, {
-            cardId: String(cardId),
-            reason: String(status),
-            hotCardStatus: String(status),
-            description: String(comment || "")
-        }, {
+        const response = await axios.post(url, xml, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/xml;charset=UTF-8',
                 'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
     } catch (error) {
-        console.error('Error changing card status:', error);
+        console.error('Error changing card status (SOAP):', error);
         throw error;
     }
 };
 
 // Разблокировка карты
 export const unblockCard = async (cardId, comment) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = `${GATEWAY_URL}/api/transactions/unblock-card`;
+    
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:cr="http://bus.colvir.com/service/cards/v1" 
+                  xmlns:s="http://bus.colvir.com/common/support/v1" 
+                  xmlns:dm="http://bus.colvir.com/common/domain/v1">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <cr:CardUnblockRequest>
+            <s:head>
+                <s:params>
+                    <s:clientType>CBS</s:clientType>
+                    <s:interfaceVersion>1.0</s:interfaceVersion>
+                    <s:language>ru</s:language>
+                    <s:operationalDate>${new Date().toISOString().split('T')[0]}T08:00:00</s:operationalDate>
+                </s:params>
+            </s:head>
+            <cr:cardId>${cardId}</cr:cardId>
+            <cr:description>${comment || ""}</cr:description>
+      </cr:CardUnblockRequest>
+   </soapenv:Body>
+</soapenv:Envelope>`;
+
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/unblock-card`, {
-            cardId: String(cardId),
-            description: String(comment || "")
-        }, {
+        const response = await axios.post(url, xml, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/xml;charset=UTF-8',
                 'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
     } catch (error) {
-        console.error('Error unblocking card:', error);
+        console.error('Error unblocking card (SOAP):', error);
         throw error;
     }
 };

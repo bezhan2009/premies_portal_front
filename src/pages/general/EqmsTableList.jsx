@@ -250,6 +250,11 @@ export default function EQMSList() {
       }
     }
 
+    if (absStatus === "Ожидает проверки" && paymentStatus === "already_paid") {
+      showAlert("Оплата уже отправлена и ожидает подтверждения от АБС. Пожалуйста, подождите.", "warning");
+      return;
+    }
+
     setSinglePaymentData(transaction);
     setShowSinglePayConfirmation(true);
   };
@@ -282,13 +287,22 @@ export default function EQMSList() {
     } catch (err) {
       console.error("Ошибка оплаты:", err);
 
-      if (isWorkingHours()) {
+      const errMsg = err?.message || "";
+      const isAlreadyPaid =
+        errMsg.toLowerCase().includes("уже оплачена") ||
+        errMsg.toLowerCase().includes("already_paid") ||
+        errMsg.toLowerCase().includes("already paid");
+
+      if (isAlreadyPaid) {
+        showAlert("Оплата уже была проведена или находится в обработке. Обновите страницу для проверки статуса.", "warning");
+        setTimeout(() => fetchData(), 1500);
+      } else if (isWorkingHours()) {
         showAlert(
-          `Платеж с ID ${transaction.id} завершился с ошибкой после нескольких попыток: ${err.message}`,
+          `Платеж с ID ${transaction.id} завершился с ошибкой после нескольких попыток: ${errMsg}`,
           "error",
         );
       } else {
-        showAlert(err.message || "Не удалось отправить оплату", "error");
+        showAlert(errMsg || "Не удалось отправить оплату", "error");
       }
     } finally {
       setPayingIds((prev) => {
@@ -1159,7 +1173,8 @@ export default function EQMSList() {
                                   ? handlePay(row)
                                   : toast.error("Таможня не оплачена")
                               }
-                              disabled={isPaying || (isPaid && absStatus === "Оплачено в АБС")}
+                              disabled={isPaying || (isPaid && absStatus === "Оплачено в АБС") || (isPaid && absStatus === "Ожидает проверки")}
+                              title={isPaid && absStatus === "Ожидает проверки" ? "Оплата уже отправлена, ожидаем подтверждения АБС" : undefined}
                               style={{
                                 padding: "8px 12px",
                                 borderRadius: "6px",
@@ -1167,11 +1182,11 @@ export default function EQMSList() {
                                 cursor:
                                   row.status !== "success"
                                     ? "not-allowed"
-                                    : (isPaid && absStatus === "Оплачено в АБС") || isPaying
+                                    : (isPaid && (absStatus === "Оплачено в АБС" || absStatus === "Ожидает проверки")) || isPaying
                                       ? "not-allowed"
                                       : "pointer",
                                 opacity:
-                                  isPaying || (isPaid && absStatus === "Оплачено в АБС")
+                                  isPaying || (isPaid && (absStatus === "Оплачено в АБС" || absStatus === "Ожидает проверки"))
                                     ? 0.6
                                     : 1,
                                 color: "var(--text-color)",
@@ -1193,6 +1208,11 @@ export default function EQMSList() {
                                     color="green"
                                   />
                                   Оплачено
+                                </>
+                              ) : (isPaid && absStatus === "Ожидает проверки") ? (
+                                <>
+                                  <MdPayment size={24} color="orange" />
+                                  Ожидает АБС...
                                 </>
                               ) : (
                                 <>

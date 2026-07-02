@@ -14,6 +14,8 @@ export const docxDictionary = [
       { key: "system.uniqueId", description: "Уникальный номер генерации" },
       { key: "system.sourcePage", description: "Страница, откуда запущена генерация" },
       { key: "system.generationReason", description: "Причина или комментарий к генерации" },
+      { key: "system.dateFrom", description: "Дата с" },
+      { key: "system.dateTo", description: "Дата по" },
     ],
   },
   {

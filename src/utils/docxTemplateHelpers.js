@@ -468,6 +468,10 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
   };
   const payload = {
     ...data,
+    "system.dateFrom": data.dateFrom || data.fromDate || data.statementDateFrom || data.с || "",
+    "system.dateTo": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
+    "date.from": data.dateFrom || data.fromDate || data.statementDateFrom || data.с || "",
+    "date.to": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
   };
   const keys = Array.isArray(variant.keys)
     ? variant.keys.map(normalizeDocxKeyMapping).filter((item) => item.docxKey)
