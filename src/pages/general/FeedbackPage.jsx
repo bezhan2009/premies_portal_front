@@ -2193,6 +2193,7 @@ export default function FeedbackPage() {
           }
         }
         .message-bubble {
+          min-width: 80px;
           max-width: 75%;
           padding: 12px 16px;
           border-radius: 16px;
@@ -2986,7 +2987,8 @@ export default function FeedbackPage() {
                         style={{
                           flex: 1,
                           display: "flex",
-                          justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                          justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                          minWidth: 0
                         }}>
                         <div
                           id={`msg-bubble-${msg.id}`}

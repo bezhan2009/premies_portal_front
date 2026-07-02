@@ -3012,7 +3012,8 @@ const MiniChatWindow = () => {
                                     <div style={{
                                       flex: 1,
                                       display: "flex",
-                                      justifyContent: isOut ? "flex-end" : "flex-start"
+                                      justifyContent: isOut ? "flex-end" : "flex-start",
+                                      minWidth: 0
                                     }}>
                                       <div 
                                         id={`msg-bubble-${msg.id}`}
@@ -3020,7 +3021,10 @@ const MiniChatWindow = () => {
                                         onContextMenu={(e) => triggerContextMenu(e, msg, "message")}
                                         className={shimmerMsgId === msg.id ? "msg-shimmer animating" : "animating"}
                                         style={{
+                                          minWidth: "80px",
                                           maxWidth: "80%",
+                                          wordBreak: "break-word",
+                                          overflowWrap: "break-word",
                                           background: isOut ? "#eb2525" : "var(--bg-surface, #ffffff)",
                                           color: isOut ? "#ffffff" : "var(--text-color, #1e293b)",
                                           padding: "10px 14px",

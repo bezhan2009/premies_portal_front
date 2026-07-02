@@ -2709,6 +2709,7 @@ export default function OperatorFeedbackPage() {
           margin-left: 12px;
         }
         .msg-bubble {
+          min-width: 80px;
           padding: 10px 14px;
           border-radius: 16px;
           font-size: 14.5px;
@@ -3788,7 +3789,8 @@ export default function OperatorFeedbackPage() {
                               style={{
                                 flex: 1,
                                 display: "flex",
-                                justifyContent: isOutgoing ? "flex-end" : "flex-start"
+                                justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                                minWidth: 0
                               }}>
                               <div 
                                 id={`msg-bubble-${msg.id}`}
