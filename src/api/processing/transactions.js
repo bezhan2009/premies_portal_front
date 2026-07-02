@@ -304,7 +304,7 @@ export const unblockCard = async (cardId, comment) => {
                   xmlns:v1="http://bus.colvir.com/service/cards/v1" 
                   xmlns:v11="http://bus.colvir.com/common/support/v1">
     <soapenv:Body>
-        <v1:CardBlockCancelRequest>
+        <v1:CardBlockCancel>
             <v11:head>
                 <v11:requestId>${uuid}</v11:requestId>
                 <v11:params>
@@ -316,7 +316,7 @@ export const unblockCard = async (cardId, comment) => {
             </v11:head>
             <v1:cardId>${cardId}</v1:cardId>
             <v1:description>${comment || ""}</v1:description>
-        </v1:CardBlockCancelRequest>
+        </v1:CardBlockCancel>
     </soapenv:Body>
 </soapenv:Envelope>`;
 
