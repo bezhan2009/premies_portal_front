@@ -180,9 +180,17 @@ export const getSystemDocxData = (uniqueIdFormat) => {
 
   return {
     "system.currentDate": now.toLocaleDateString("ru-RU"),
+    "system.currentdate": now.toLocaleDateString("ru-RU"),
+    "system.CurrentDate": now.toLocaleDateString("ru-RU"),
     "system.currentTime": now.toLocaleTimeString("ru-RU"),
+    "system.currenttime": now.toLocaleTimeString("ru-RU"),
+    "system.CurrentTime": now.toLocaleTimeString("ru-RU"),
     "system.currentDateTime": now.toLocaleString("ru-RU"),
+    "system.currentdatetime": now.toLocaleString("ru-RU"),
+    "system.CurrentDateTime": now.toLocaleString("ru-RU"),
     "system.currentYear": String(now.getFullYear()),
+    "system.currentyear": String(now.getFullYear()),
+    "system.CurrentYear": String(now.getFullYear()),
     "system.operatorName": storage?.getItem("operator_name") || storage?.getItem("username") || "Оператор",
     "system.operatorOffice": storage?.getItem("operator_office") || "",
     "system.operatorBranch": storage?.getItem("operator_branch") || "",
@@ -461,6 +469,149 @@ export const extractDocxClientData = (client) => {
   };
 };
 
+export const numberToWordsRU = (n) => {
+  const num = Number(n);
+  if (isNaN(num)) return "";
+  if (num === 0) return "ноль";
+
+  const units = ["", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"];
+  const teens = ["десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать", "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"];
+  const tens = ["", "", "двадцать", "тридцать", "сорок", "пятьдесят", "шестьдесят", "семьдесят", "восемьдесят", "девяносто"];
+  const hundreds = ["", "сто", "двести", "триста", "четыреста", "пятьсот", "шестьсот", "семьсот", "восемьсот", "девятьсот"];
+
+  const thousands = [
+    ["", "", ""],
+    ["тысяча", "тысячи", "тысяч"],
+    ["миллион", "миллиона", "миллионов"],
+    ["миллиард", "миллиарда", "миллиардов"],
+    ["триллион", "триллиона", "триллионов"]
+  ];
+
+  const getClass = (numStr, sex) => {
+    let n = parseInt(numStr, 10);
+    if (n === 0) return "";
+    let h = Math.floor(n / 100);
+    let t = Math.floor((n % 100) / 10);
+    let u = n % 10;
+
+    let res = "";
+    if (h > 0) res += hundreds[h] + " ";
+    if (t === 1) {
+      res += teens[u] + " ";
+    } else {
+      if (t > 1) res += tens[t] + " ";
+      if (u > 0) {
+        if (sex === "F") {
+          if (u === 1) res += "одна ";
+          else if (u === 2) res += "две ";
+          else res += units[u] + " ";
+        } else {
+          res += units[u] + " ";
+        }
+      }
+    }
+    return res;
+  };
+
+  const getEnding = (num, endings) => {
+    const n = Math.abs(num) % 100;
+    const n1 = n % 10;
+    if (n > 10 && n < 20) return endings[2];
+    if (n1 > 1 && n1 < 5) return endings[1];
+    if (n1 === 1) return endings[0];
+    return endings[2];
+  };
+
+  const parts = String(Math.abs(num)).split(".");
+  const intPart = parseInt(parts[0], 10);
+  const fracPartStr = parts[1] || "";
+
+  let result = "";
+  
+  if (intPart === 0) {
+    result = "ноль";
+  } else {
+    let numStr = String(intPart);
+    while (numStr.length % 3 !== 0) {
+      numStr = "0" + numStr;
+    }
+    const blocksCount = numStr.length / 3;
+    const blocks = [];
+    for (let i = 0; i < blocksCount; i++) {
+      blocks.push(numStr.substring(i * 3, (i + 1) * 3));
+    }
+
+    const words = [];
+    for (let i = 0; i < blocksCount; i++) {
+      const blockIdx = blocksCount - 1 - i;
+      const val = parseInt(blocks[i], 10);
+      if (val === 0) continue;
+      
+      const sex = blockIdx === 1 ? "F" : "M";
+      const classStr = getClass(blocks[i], sex);
+      
+      if (blockIdx === 0) {
+        words.push(classStr.trim());
+      } else {
+        const ending = getEnding(val, thousands[blockIdx]);
+        words.push((classStr + ending).trim());
+      }
+    }
+    result = words.join(" ").trim();
+  }
+
+  if (num < 0) {
+    result = "минус " + result;
+  }
+
+  if (fracPartStr) {
+    const fracVal = parseInt(fracPartStr, 10);
+    if (fracVal > 0) {
+      const fracLen = fracPartStr.length;
+      let fracWords = "";
+      
+      let fracStr = String(fracVal);
+      while (fracStr.length % 3 !== 0) {
+        fracStr = "0" + fracStr;
+      }
+      const fracBlocksCount = fracStr.length / 3;
+      const fracBlocks = [];
+      for (let i = 0; i < fracBlocksCount; i++) {
+        fracBlocks.push(fracStr.substring(i * 3, (i + 1) * 3));
+      }
+      const fracWordsArr = [];
+      for (let i = 0; i < fracBlocksCount; i++) {
+        const blockIdx = fracBlocksCount - 1 - i;
+        const val = parseInt(fracBlocks[i], 10);
+        if (val === 0) continue;
+        const classStr = getClass(fracBlocks[i], "F");
+        if (blockIdx === 0) {
+          fracWordsArr.push(classStr.trim());
+        } else {
+          const ending = getEnding(val, thousands[blockIdx]);
+          fracWordsArr.push((classStr + ending).trim());
+        }
+      }
+      fracWords = fracWordsArr.join(" ").trim();
+
+      let unitName = "";
+      if (fracLen === 1) {
+        unitName = getEnding(fracVal, ["десятая", "десятых", "десятых"]);
+      } else if (fracLen === 2) {
+        unitName = getEnding(fracVal, ["сотая", "сотых", "сотых"]);
+      } else if (fracLen === 3) {
+        unitName = getEnding(fracVal, ["тысячная", "тысячных", "тысячных"]);
+      } else {
+        unitName = "тысячных";
+      }
+
+      result += " целых " + fracWords + " " + unitName;
+    }
+  }
+
+  return result;
+};
+
 export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, uniqueIdFormat = "") => {
   const source = {
     ...getSystemDocxData(uniqueIdFormat),
@@ -486,7 +637,6 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
       ? overrideValue
       : getValueByDocxPath(source, mapping.systemKey);
 
-    // If the evaluated value is an array, map its elements but preserve it as an array
     if (Array.isArray(sourceValue)) {
       sourceValue = sourceValue.map(v => formatDocxValueByKey(mapping.systemKey, v));
     }
@@ -502,7 +652,29 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     }
   });
 
-  // Apply automatic formatting for date/time fields across the entire payload
+  // Automatically generate Russian spelling out words (прописью) for all number keys
+  const extraWordKeys = {};
+  Object.entries(payload).forEach(([key, value]) => {
+    let numVal = NaN;
+    if (typeof value === "number") {
+      numVal = value;
+    } else if (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+      numVal = parseFloat(value.trim());
+    }
+
+    if (!isNaN(numVal)) {
+      const words = numberToWordsRU(numVal);
+      if (words) {
+        extraWordKeys[`${key}Words`] = words;
+        extraWordKeys[`${key}Propis`] = words;
+        extraWordKeys[`${key}_words`] = words;
+        extraWordKeys[`${key}_propis`] = words;
+      }
+    }
+  });
+
+  Object.assign(payload, extraWordKeys);
+
   const formattedPayload = {};
   Object.entries(payload).forEach(([key, value]) => {
     formattedPayload[key] = formatDocxValueByKey(key, value);

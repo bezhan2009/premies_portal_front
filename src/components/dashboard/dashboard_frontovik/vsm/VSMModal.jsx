@@ -310,16 +310,43 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         });
     };
 
-    const isMerchantBlocked = (mrchName) => {
-        if (!mrchName) return false;
-        const normalized = mrchName.toLowerCase().replace(/[\s\-_]/g, "");
+    const isMerchantBlocked = (merchant) => {
+        if (!merchant) return false;
+        
+        const namesToMatch = new Set();
+        if (merchant.mrchName) namesToMatch.add(merchant.mrchName.toLowerCase().replace(/[\s\-_]/g, ""));
+        if (merchant.mrchDbaName) namesToMatch.add(merchant.mrchDbaName.toLowerCase().replace(/[\s\-_]/g, ""));
+        
+        const displayName = getMerchantDisplayName(merchant, transactions);
+        if (displayName) namesToMatch.add(displayName.toLowerCase().replace(/[\s\-_]/g, ""));
+        
+        const merchantCaid = String(merchant.cardAcceptorId || "").trim();
+        
         return stops.some(stop => {
             if (stop.status !== "Active") return false;
-            const stopMrchName = stop.merchantIdentifier?.merchantName || "";
-            if (stopMrchName.toLowerCase().replace(/[\s\-_]/g, "") === normalized) return true;
+            
+            // 1. Try matching by cardAcceptorId (CAID)
+            const stopCaid = String(stop.merchantIdentifier?.cardAcceptorId || "").trim();
+            if (stopCaid && merchantCaid && stopCaid === merchantCaid) {
+                return true;
+            }
+            
+            // 2. Try matching by normalized names
+            const stopMrchName = (stop.merchantIdentifier?.merchantName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            if (stopMrchName && namesToMatch.has(stopMrchName)) {
+                return true;
+            }
+            
+            // 3. Try matching by additional notes
             const notes = stop.additional?.additionalNotes || "";
             const match = notes.match(/merchant_name=([^|]+)/);
-            if (match && match[1].toLowerCase().replace(/[\s\-_]/g, "") === normalized) return true;
+            if (match) {
+                const notesName = match[1].toLowerCase().replace(/[\s\-_]/g, "");
+                if (notesName && namesToMatch.has(notesName)) {
+                    return true;
+                }
+            }
+            
             return false;
         });
     };
@@ -645,7 +672,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                 {(() => {
                                     const activeSubscriptions = cofData.filter(merchant => {
                                         const mrchName = getMerchantDisplayName(merchant, transactions);
-                                        return !isMerchantBlocked(mrchName) && isMerchantSubscription(merchant);
+                                        return !isMerchantBlocked(merchant) && isMerchantSubscription(merchant);
                                     });
 
                                     if (activeSubscriptions.length === 0) {
