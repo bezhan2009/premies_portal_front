@@ -304,7 +304,7 @@ export const unblockCard = async (cardId, comment) => {
                   xmlns:v1="http://bus.colvir.com/service/cards/v1" 
                   xmlns:v11="http://bus.colvir.com/common/support/v1">
     <soapenv:Body>
-        <v1:CardBlockCancel>
+        <v1:CardUnBlockRequest>
             <v11:head>
                 <v11:requestId>${uuid}</v11:requestId>
                 <v11:params>
@@ -316,7 +316,7 @@ export const unblockCard = async (cardId, comment) => {
             </v11:head>
             <v1:cardId>${cardId}</v1:cardId>
             <v1:description>${comment || ""}</v1:description>
-        </v1:CardBlockCancel>
+        </v1:CardUnBlockRequest>
     </soapenv:Body>
 </soapenv:Envelope>`;
 
@@ -331,6 +331,26 @@ export const unblockCard = async (cardId, comment) => {
         return response.data;
     } catch (error) {
         console.error('Error unblocking card (SOAP):', error);
+        throw error;
+    }
+};
+
+// Валидация/активация карты через ПЦ (Scenario B)
+export const validateCard = async (cardId) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/validate-card`, {
+            cardId: String(cardId)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error validating card (PC):', error);
         throw error;
     }
 };
