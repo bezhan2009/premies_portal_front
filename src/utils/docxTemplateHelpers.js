@@ -120,7 +120,9 @@ export const getValueByDocxPath = (source = {}, path = "") => {
             return ${expression};
           }
         } catch (e) {
-          console.error("Eval error in docx path:", e);
+          if (!(e instanceof ReferenceError)) {
+             console.error("Eval error in docx path:", e);
+          }
           return "";
         }
       `);
@@ -514,6 +516,7 @@ export const numberToWordsRU = (n) => {
   };
 
   const getEnding = (num, endings) => {
+    if (!endings) return "";
     const n = Math.abs(num) % 100;
     const n1 = n % 10;
     if (n > 10 && n < 20) return endings[2];
@@ -521,6 +524,8 @@ export const numberToWordsRU = (n) => {
     if (n1 === 1) return endings[0];
     return endings[2];
   };
+
+  if (Math.abs(num) >= 1e15) return ""; // Over 999 trillion is not supported
 
   const parts = String(Math.abs(num)).split(".");
   const intPart = parseInt(parts[0], 10);

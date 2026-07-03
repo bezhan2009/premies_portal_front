@@ -467,28 +467,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
     };
 
     const getMerchantDisplayName = (merchant, transactionsList) => {
-        const mccTxs = transactionsList.filter(tx => String(tx.mcc) === String(merchant.mCC));
-        if (mccTxs.length > 0) {
-            const counts = {};
-            let maxName = "";
-            let maxCount = 0;
-            mccTxs.forEach(tx => {
-                const name = tx.terminalAddress || "";
-                if (name) {
-                    counts[name] = (counts[name] || 0) + 1;
-                    if (counts[name] > maxCount) {
-                        maxCount = counts[name];
-                        maxName = name;
-                    }
-                }
-            });
-            if (maxName) {
-                const cleaned = cleanTerminalAddress(maxName);
-                if (cleaned && cleaned.length > 2) {
-                    return cleaned;
-                }
-            }
-        }
+        // Use only the name from Card-On-File datainfo
         return merchant.mrchName || merchant.mrchDbaName || "Неизвестный мерчант";
     };
 
