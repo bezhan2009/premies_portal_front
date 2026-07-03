@@ -355,6 +355,27 @@ export const validateCard = async (cardId) => {
     }
 };
 
+// Изменение статуса карты через ПЦ (REST) для сценария C активации
+export const changeCardStatusRest = async (cardId, hotCardStatus) => {
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    try {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/change-card-status`, {
+            cardId: String(cardId),
+            hotCardStatus: String(hotCardStatus)
+        }, {
+            headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error changing card status (REST):', error);
+        throw error;
+    }
+};
+
 // Сброс счетчика ПИН
 export const resetPinCounter = async (cardId) => {
     const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;

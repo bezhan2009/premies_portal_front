@@ -326,7 +326,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
 
     const isMerchantSubscription = (merchant) => {
         if (!merchant.tranTypeDetails || merchant.tranTypeDetails.length === 0) {
-            return true; // Default fallback to show if details are absent
+            return false; // Only show if we explicitly have details matching RECOMMENDED_TRAN_TYPES
         }
         return merchant.tranTypeDetails.some(detail => RECOMMENDED_TRAN_TYPES.has(detail.tranType));
     };

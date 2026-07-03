@@ -37,6 +37,7 @@ import {
     fetchCardLimits,
     activateCardSoap,
     validateCard,
+    changeCardStatusRest,
 } from "../../../api/processing/transactions.js";
 
 // Extracted Components
@@ -790,7 +791,7 @@ export default function ABSClientSearch() {
             } else if (scenario === 'B') {
                 await validateCard(card.cardId);
             } else if (scenario === 'C') {
-                await changeCardStatus(card.cardId, "24", "Блокировка для активации карты");
+                await changeCardStatusRest(card.cardId, "24");
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 await activateCardSoap(card.agreement, card.cardId);
             }
