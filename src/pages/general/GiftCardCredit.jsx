@@ -1,4 +1,4 @@
-﻿import RadioSelect from "../../components/elements/RadioSelect";
+import RadioSelect from "../../components/elements/RadioSelect";
 import { loanTypes, offis, statusCredit } from "../../const/defConst";
 import file from "../../assets/file.jpg";
 import back_side_of_the_passport_file from "../../assets/back-passport.jpg";
@@ -55,8 +55,22 @@ export default function GiftCardCredit({ edit = false }) {
 
     const formatDateForBackend = (dateStr) => {
         if (!dateStr) return "";
-        // Преобразует "2025-08-04" в ISO формат "2025-08-04T00:00:00Z"
-        return new Date(dateStr).toISOString();
+        try {
+            const parsed = new Date(dateStr);
+            if (isNaN(parsed.getTime())) {
+                const match = String(dateStr).match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+                if (match) {
+                    const parsedMatch = new Date(`${match[3]}-${match[2]}-${match[1]}`);
+                    if (!isNaN(parsedMatch.getTime())) {
+                        return parsedMatch.toISOString();
+                    }
+                }
+                return dateStr;
+            }
+            return parsed.toISOString();
+        } catch (e) {
+            return dateStr;
+        }
     };
 
     const onSend = async () => {

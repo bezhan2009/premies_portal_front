@@ -1027,7 +1027,22 @@ export default function GiftCard({ edit = false }) {
 
     const formatDateForBackend = (dateStr) => {
         if (!dateStr) return "";
-        return new Date(dateStr).toISOString();
+        try {
+            const parsed = new Date(dateStr);
+            if (isNaN(parsed.getTime())) {
+                const match = String(dateStr).match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+                if (match) {
+                    const parsedMatch = new Date(`${match[3]}-${match[2]}-${match[1]}`);
+                    if (!isNaN(parsedMatch.getTime())) {
+                        return parsedMatch.toISOString();
+                    }
+                }
+                return dateStr;
+            }
+            return parsed.toISOString();
+        } catch (e) {
+            return dateStr;
+        }
     };
 
     const downloadFile = (blob, filename) => {
@@ -1188,7 +1203,10 @@ export default function GiftCard({ edit = false }) {
         }
 
         const isValid = validate(ValidData);
-        if (!isValid) return false;
+        if (!isValid) {
+            showAlert("Пожалуйста, заполните все обязательные поля (Имя, Фамилия, Номер телефона) перед отправкой", "error", 5000);
+            return false;
+        }
 
         if (data.is_new_client) {
             if (!data.message_type) {
