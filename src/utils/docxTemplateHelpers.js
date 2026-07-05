@@ -644,6 +644,12 @@ const injectWordsIntoObject = (obj, visited = new Set()) => {
     if (!isNaN(numVal) && typeof numVal === "number") {
       const words = numberToWordsRU(numVal);
       if (words) {
+        // If the key name suggests it's a word-letters field, overwrite its value directly
+        const keyLower = key.toLowerCase();
+        if (keyLower.includes("word") || keyLower.includes("propis")) {
+          obj[key] = words;
+        }
+
         // Suffixes
         obj[`${key}Words`] = words;
         obj[`${key}Propis`] = words;
