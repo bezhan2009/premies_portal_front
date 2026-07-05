@@ -340,6 +340,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const handleButtonClick = (template, format = "pdf") => {
     const variants = template.parsedVariants || normalizeDocxVariants(template.variants);
 
+    setSelectedFormat(format);
+
     if (variants.length === 0) {
       alert("У данного шаблона нет настроенных вариантов генерации.");
       return;
@@ -350,7 +352,6 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       return;
     }
 
-    setSelectedFormat(format);
     setSelectedTemplate({
       ...template,
       parsedVariants: variants,
