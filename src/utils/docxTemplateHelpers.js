@@ -617,6 +617,86 @@ export const numberToWordsRU = (n) => {
   return result;
 };
 
+const numberToWordsEN = (num) => {
+  const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+  const teens = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const thousands = ["", "thousand", "million", "billion", "trillion"];
+
+  const getBlock = (n) => {
+    let res = "";
+    const h = Math.floor(n / 100);
+    const rem = n % 100;
+    const t = Math.floor(rem / 10);
+    const u = rem % 10;
+
+    if (h > 0) res += units[h] + " hundred ";
+    if (t === 1) {
+      res += teens[u] + " ";
+    } else {
+      if (t > 1) res += tens[t] + " ";
+      if (u > 0) res += units[u] + " ";
+    }
+    return res;
+  };
+
+  if (Math.abs(num) >= 1e15) return "";
+
+  const parts = String(Math.abs(num)).split(".");
+  const intPart = parseInt(parts[0], 10);
+  const fracPartStr = parts[1] || "";
+
+  let result = "";
+
+  if (intPart === 0) {
+    result = "zero";
+  } else {
+    let numStr = String(intPart);
+    while (numStr.length % 3 !== 0) {
+      numStr = "0" + numStr;
+    }
+    const blocksCount = numStr.length / 3;
+    const blocks = [];
+    for (let i = 0; i < blocksCount; i++) {
+      blocks.push(numStr.substring(i * 3, (i + 1) * 3));
+    }
+
+    const words = [];
+    for (let i = 0; i < blocksCount; i++) {
+      const blockIdx = blocksCount - 1 - i;
+      const val = parseInt(blocks[i], 10);
+      if (val === 0) continue;
+
+      const blockStr = getBlock(val).trim();
+      if (blockIdx === 0) {
+        words.push(blockStr);
+      } else {
+        words.push(blockStr + " " + thousands[blockIdx]);
+      }
+    }
+    result = words.join(" ").trim();
+  }
+
+  if (fracPartStr) {
+    const fracPartVal = parseInt(fracPartStr, 10);
+    if (fracPartVal > 0) {
+      let unitName = "cents";
+      if (fracPartStr.length === 1) {
+        unitName = "tenths";
+      } else if (fracPartStr.length === 2) {
+        unitName = "hundredths";
+      } else if (fracPartStr.length === 3) {
+        unitName = "thousandths";
+      }
+      
+      const fracWords = numberToWordsEN(fracPartVal);
+      result += " point " + fracWords + " " + unitName;
+    }
+  }
+
+  return result;
+};
+
 const injectWordsIntoObject = (obj, visited = new Set()) => {
   if (obj === null || typeof obj !== 'object' || visited.has(obj)) return;
   visited.add(obj);
@@ -642,34 +722,72 @@ const injectWordsIntoObject = (obj, visited = new Set()) => {
     }
 
     if (!isNaN(numVal) && typeof numVal === "number") {
-      const words = numberToWordsRU(numVal);
-      if (words) {
-        // If the key name suggests it's a word-letters field, overwrite its value directly
+      const wordsRU = numberToWordsRU(numVal);
+      const wordsEN = numberToWordsEN(numVal);
+
+      if (wordsRU) {
+        // If the key name suggests Russian word-letters, overwrite its value directly
         const keyLower = key.toLowerCase();
-        if (keyLower.includes("word") || keyLower.includes("propis")) {
-          obj[key] = words;
+        if (keyLower.includes("wordeng") || keyLower.includes("propiseng") || keyLower.includes("word_eng") || keyLower.includes("propis_eng")) {
+          // Skip Russian overwrite if it's explicitly an English key
+        } else if (keyLower.includes("word") || keyLower.includes("propis")) {
+          obj[key] = wordsRU;
         }
 
-        // Suffixes
-        obj[`${key}Words`] = words;
-        obj[`${key}Propis`] = words;
-        obj[`${key}_words`] = words;
-        obj[`${key}_propis`] = words;
-        // Prefixes
-        obj[`Word${key.charAt(0).toUpperCase() + key.slice(1)}`] = words;
-        obj[`word_${key}`] = words;
-        obj[`propis_${key}`] = words;
-        obj[`Word${key}`] = words;
+        // Russian Suffixes
+        obj[`${key}Words`] = wordsRU;
+        obj[`${key}Propis`] = wordsRU;
+        obj[`${key}_words`] = wordsRU;
+        obj[`${key}_propis`] = wordsRU;
+        // Russian Prefixes
+        obj[`Word${key.charAt(0).toUpperCase() + key.slice(1)}`] = wordsRU;
+        obj[`word_${key}`] = wordsRU;
+        obj[`propis_${key}`] = wordsRU;
+        obj[`Word${key}`] = wordsRU;
 
         // Handle dot-separated keys natively for prefixes (if any flat keys with dots)
         const dotIndex = key.lastIndexOf(".");
         if (dotIndex !== -1) {
           const prefix = key.slice(0, dotIndex + 1);
           const suffix = key.slice(dotIndex + 1);
-          obj[`${prefix}Word${suffix.charAt(0).toUpperCase() + suffix.slice(1)}`] = words;
-          obj[`${prefix}Word${suffix}`] = words;
-          obj[`${prefix}word_${suffix}`] = words;
-          obj[`${prefix}propis_${suffix}`] = words;
+          obj[`${prefix}Word${suffix.charAt(0).toUpperCase() + suffix.slice(1)}`] = wordsRU;
+          obj[`${prefix}Word${suffix}`] = wordsRU;
+          obj[`${prefix}word_${suffix}`] = wordsRU;
+          obj[`${prefix}propis_${suffix}`] = wordsRU;
+        }
+      }
+
+      if (wordsEN) {
+        const keyLower = key.toLowerCase();
+        if (keyLower.includes("wordeng") || keyLower.includes("propiseng") || keyLower.includes("word_eng") || keyLower.includes("propis_eng")) {
+          obj[key] = wordsEN;
+        }
+
+        // English Suffixes
+        obj[`${key}WordsEng`] = wordsEN;
+        obj[`${key}PropisEng`] = wordsEN;
+        obj[`${key}_words_eng`] = wordsEN;
+        obj[`${key}_propis_eng`] = wordsEN;
+        obj[`${key}Words_eng`] = wordsEN;
+        obj[`${key}Propis_eng`] = wordsEN;
+        
+        // English Prefixes
+        obj[`Wordeng${key.charAt(0).toUpperCase() + key.slice(1)}`] = wordsEN;
+        obj[`WordEng${key.charAt(0).toUpperCase() + key.slice(1)}`] = wordsEN;
+        obj[`wordeng_${key}`] = wordsEN;
+        obj[`word_eng_${key}`] = wordsEN;
+        obj[`Wordeng${key}`] = wordsEN;
+        obj[`WordEng${key}`] = wordsEN;
+
+        // Handle dot-separated keys natively for English prefixes
+        const dotIndex = key.lastIndexOf(".");
+        if (dotIndex !== -1) {
+          const prefix = key.slice(0, dotIndex + 1);
+          const suffix = key.slice(dotIndex + 1);
+          obj[`${prefix}Wordeng${suffix.charAt(0).toUpperCase() + suffix.slice(1)}`] = wordsEN;
+          obj[`${prefix}WordEng${suffix.charAt(0).toUpperCase() + suffix.slice(1)}`] = wordsEN;
+          obj[`${prefix}wordeng_${suffix}`] = wordsEN;
+          obj[`${prefix}word_eng_${suffix}`] = wordsEN;
         }
       }
     }
