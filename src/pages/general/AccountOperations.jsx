@@ -255,6 +255,19 @@ export default function DashboardAccountOperations() {
                         return parseTxDate(b) - parseTxDate(a);
                     });
 
+                    // Frontend Date Filtering (Fallback because backend may ignore startDate/endDate)
+                    if (fromDate || toDate) {
+                        // fromDate and toDate are in YYYY-MM-DD format
+                        const fromTime = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : 0;
+                        const toTime = toDate ? new Date(`${toDate}T23:59:59.999`).getTime() : Infinity;
+
+                        formattedTransactions = formattedTransactions.filter(tx => {
+                            const txTime = parseTxDate(tx);
+                            if (txTime === 0) return true; // Keep transactions with invalid dates to be safe
+                            return txTime >= fromTime && txTime <= toTime;
+                        });
+                    }
+
                     setTransactions(formattedTransactions);
                     showAlert(
                         `Загружено ${formattedTransactions.length} операций`,

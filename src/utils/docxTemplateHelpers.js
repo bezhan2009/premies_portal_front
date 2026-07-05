@@ -617,6 +617,59 @@ export const numberToWordsRU = (n) => {
   return result;
 };
 
+const injectWordsIntoObject = (obj, visited = new Set()) => {
+  if (obj === null || typeof obj !== 'object' || visited.has(obj)) return;
+  visited.add(obj);
+
+  if (Array.isArray(obj)) {
+    obj.forEach(item => injectWordsIntoObject(item, visited));
+    return;
+  }
+
+  const keys = Object.keys(obj);
+  keys.forEach(key => {
+    const value = obj[key];
+
+    if (value !== null && typeof value === 'object') {
+      injectWordsIntoObject(value, visited);
+    }
+
+    let numVal = NaN;
+    if (typeof value === "number") {
+      numVal = value;
+    } else if (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+      numVal = parseFloat(value.trim());
+    }
+
+    if (!isNaN(numVal) && typeof numVal === "number") {
+      const words = numberToWordsRU(numVal);
+      if (words) {
+        // Suffixes
+        obj[`${key}Words`] = words;
+        obj[`${key}Propis`] = words;
+        obj[`${key}_words`] = words;
+        obj[`${key}_propis`] = words;
+        // Prefixes
+        obj[`Word${key.charAt(0).toUpperCase() + key.slice(1)}`] = words;
+        obj[`word_${key}`] = words;
+        obj[`propis_${key}`] = words;
+        obj[`Word${key}`] = words;
+
+        // Handle dot-separated keys natively for prefixes (if any flat keys with dots)
+        const dotIndex = key.lastIndexOf(".");
+        if (dotIndex !== -1) {
+          const prefix = key.slice(0, dotIndex + 1);
+          const suffix = key.slice(dotIndex + 1);
+          obj[`${prefix}Word${suffix.charAt(0).toUpperCase() + suffix.slice(1)}`] = words;
+          obj[`${prefix}Word${suffix}`] = words;
+          obj[`${prefix}word_${suffix}`] = words;
+          obj[`${prefix}propis_${suffix}`] = words;
+        }
+      }
+    }
+  });
+};
+
 export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, uniqueIdFormat = "") => {
   const source = {
     ...getSystemDocxData(uniqueIdFormat),
@@ -657,28 +710,8 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     }
   });
 
-  // Automatically generate Russian spelling out words (прописью) for all number keys
-  const extraWordKeys = {};
-  Object.entries(payload).forEach(([key, value]) => {
-    let numVal = NaN;
-    if (typeof value === "number") {
-      numVal = value;
-    } else if (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim())) {
-      numVal = parseFloat(value.trim());
-    }
-
-    if (!isNaN(numVal)) {
-      const words = numberToWordsRU(numVal);
-      if (words) {
-        extraWordKeys[`${key}Words`] = words;
-        extraWordKeys[`${key}Propis`] = words;
-        extraWordKeys[`${key}_words`] = words;
-        extraWordKeys[`${key}_propis`] = words;
-      }
-    }
-  });
-
-  Object.assign(payload, extraWordKeys);
+  // Automatically generate Russian spelling out words (прописью) for all number keys deeply
+  injectWordsIntoObject(payload);
 
   const formattedPayload = {};
   Object.entries(payload).forEach(([key, value]) => {
