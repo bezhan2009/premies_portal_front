@@ -260,8 +260,6 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       nowStr = new Date().toLocaleString("ru-RU");
     }
 
-    finalData.с = formattedFromDate;
-    finalData.по = formattedToDate;
     finalData.dateFrom = formattedFromDate;
     finalData.dateTo = formattedToDate;
     finalData.statementDateFrom = formattedFromDate;
