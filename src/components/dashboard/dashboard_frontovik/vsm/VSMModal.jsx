@@ -281,21 +281,45 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
 
             const allMerchants = [merchant, ...duplicates];
 
+            // Find directly matched stops first (anchor stops)
+            const anchorStops = stops.filter(stop => 
+                stop.status === "Active" && 
+                allMerchants.some(m => isStopForMerchant(stop, m))
+            );
+
+            // Parse timestamp helper
+            const parseVisaDate = (dtStr) => {
+                if (!dtStr) return null;
+                const t = Date.parse(dtStr.replace(" ", "T"));
+                return isNaN(t) ? null : t;
+            };
+
+            const anchorTimestamps = anchorStops
+                .map(stop => parseVisaDate(stop.auditInformation?.creationDateTime))
+                .filter(t => t !== null);
+
             // Find all active stop instructions in VSM that match:
-            // - either MCC of merchant or its duplicates
-            // - or isStopForMerchant
+            // - either isStopForMerchant
+            // - or have a creationDateTime within 2 minutes of any anchor stop (same block batch)
+            // - or share the same MCC as the merchant or duplicates
             const stopsToCancel = stops.filter(stop => {
                 if (stop.status !== "Active") return false;
                 
-                const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
-                
-                // Match by MCC
-                if (stopMcc && allMerchants.some(m => m.mCC && String(m.mCC) === String(stopMcc))) {
+                // Match by name/CAID
+                if (allMerchants.some(m => isStopForMerchant(stop, m))) {
                     return true;
                 }
                 
-                // Match by name/CAID
-                if (allMerchants.some(m => isStopForMerchant(stop, m))) {
+                // Match by timestamp proximity (batch creation)
+                const stopTime = parseVisaDate(stop.auditInformation?.creationDateTime);
+                if (stopTime !== null && anchorTimestamps.length > 0) {
+                    const isSameBatch = anchorTimestamps.some(anchorTime => Math.abs(stopTime - anchorTime) <= 120000);
+                    if (isSameBatch) return true;
+                }
+
+                // Match by MCC
+                const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+                if (stopMcc && allMerchants.some(m => m.mCC && String(m.mCC) === String(stopMcc))) {
                     return true;
                 }
                 
