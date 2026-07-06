@@ -464,10 +464,31 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
     };
 
     const isMerchantSubscription = (merchant) => {
-        if (!merchant.tranTypeDetails || merchant.tranTypeDetails.length === 0) {
-            return false; // Only show if we explicitly have details matching RECOMMENDED_TRAN_TYPES
+        if (!merchant) return false;
+        
+        // 1. Check direct tranType property on merchant just in case
+        if (merchant.tranType) {
+            const t = String(merchant.tranType).trim().toUpperCase();
+            if (RECOMMENDED_TRAN_TYPES.has(t)) return true;
         }
-        return merchant.tranTypeDetails.some(detail => RECOMMENDED_TRAN_TYPES.has(detail.tranType));
+
+        // 2. Check tranTypeDetails
+        if (merchant.tranTypeDetails && Array.isArray(merchant.tranTypeDetails)) {
+            return merchant.tranTypeDetails.some(detail => {
+                if (!detail) return false;
+                // If detail is a string
+                if (typeof detail === "string") {
+                    return RECOMMENDED_TRAN_TYPES.has(detail.trim().toUpperCase());
+                }
+                // If detail is an object with tranType
+                if (detail.tranType) {
+                    return RECOMMENDED_TRAN_TYPES.has(String(detail.tranType).trim().toUpperCase());
+                }
+                return false;
+            });
+        }
+
+        return false;
     };
 
     const isFilterMerchantSub = (filter) => {
@@ -479,7 +500,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
     };
 
     const getStopMerchantNameFromCof = (stop) => {
-        if (!stop) return "Все транзакции";
+        if (!stop) return "Неизвестный мерчант";
         const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
         const stopMrchName = stop.merchantIdentifier?.merchantName || "";
         const notes = stop.additional?.additionalNotes || "";
@@ -504,7 +525,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
             found = cofData.find(m => String(m.mCC) === String(stopMcc));
         }
 
-        return found ? getMerchantDisplayName(found, transactions) : (displayMerchantName || "Все транзакции");
+        return found ? getMerchantDisplayName(found, transactions) : (displayMerchantName || "Неизвестный мерчант");
     };
 
     const getStopLogoUrl = (stop) => {
