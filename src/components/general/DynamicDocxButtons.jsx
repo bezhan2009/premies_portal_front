@@ -244,122 +244,6 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       console.warn("Failed to fetch dynamic docx table data:", err);
     }
 
-    // Post-process and enrich transactions for DOCX template mapping
-    if (Array.isArray(finalData.transactions)) {
-      // 1. Get exchange rates for nationalAmount calculation (TJS)
-      let exchangeRates = { USD: 10.9, EUR: 11.8 }; // Fallbacks
-      try {
-        const ratesToken = localStorage.getItem("exchangeRates");
-        if (ratesToken) {
-          const parsed = JSON.parse(ratesToken);
-          if (parsed && typeof parsed === "object") {
-            exchangeRates = { ...exchangeRates, ...parsed };
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to parse exchange rates for docx:", e);
-      }
-
-      // Helper functions for formatting
-      const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
-        const dataTrans = [
-          { label: "Списание", value: 2 },
-          { label: "Зачисление", value: 1 },
-          { label: "Блокировка", value: 2 },
-          { label: "Разблокировка", value: 1 },
-          { label: "Списание комиссии", value: 2 },
-          { label: "Списание процентов", value: 2 },
-          { label: "Списание штрафа", value: 2 }
-        ];
-        const found = dataTrans.find((e) => e.label === transactionType);
-        if (found) return found.value;
-        if (transactionTypeNumber !== undefined && transactionTypeNumber !== null) {
-          return transactionTypeNumber;
-        }
-        return undefined;
-      };
-
-      const formatAmount = (amount, transactionTypeValue) => {
-        if (amount === null || amount === undefined || amount === "") return "0.00";
-        let amountVal = Number(amount);
-        if (isNaN(amountVal)) return String(amount);
-        let absAmount = Math.abs(amountVal);
-        const amountStr = absAmount.toString();
-        let formattedAmount;
-        if (amountStr.length <= 2) {
-          formattedAmount = `0.${amountStr.padStart(2, "0")}`;
-        } else {
-          const integerPart = amountStr.slice(0, -2);
-          const decimalPart = amountStr.slice(-2);
-          formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}.${decimalPart}`;
-        }
-        if (transactionTypeValue === 1) return `+${formattedAmount}`;
-        if (transactionTypeValue === 2) return `-${formattedAmount}`;
-        if (amountVal < 0) return `-${formattedAmount}`;
-        return formattedAmount;
-      };
-
-      const formatCardNumber = (num) => {
-        return String(num || "").replace(/\s/g, "").replace(/(\d{4})/g, "$1 ").trim();
-      };
-
-      // Filter and map transactions
-      finalData.transactions = finalData.transactions
-        .filter(t => {
-          // Filter: Success status & amount > 0
-          const respCode = String(t.responseCode !== undefined ? t.responseCode : "").trim();
-          const respDesc = String(t.responseDescription || t.status || "").toLowerCase();
-          
-          // ABS transactions do not have responseCode, they are posted entries, so they are successful
-          const isABS = t.responseCode === undefined;
-          
-          const isSuccess = isABS || respCode === "-1" || respDesc.includes("успешно") || respDesc.includes("success");
-          
-          const amountVal = Number(t.amount || t.reqamt || t.conamt || t.MOVD || t.MOVC || 0);
-          return isSuccess && amountVal > 0;
-        })
-        .map(t => {
-          const txTypeValue = getTransactionTypeValue(t.transactionType, t.transactionTypeNumber);
-          
-          const amountFormatted = `${formatAmount(t.amount, txTypeValue)} ${getCurrencyCode(t.currency)}`;
-          const conamtFormatted = `${formatAmount(t.conamt, txTypeValue)} ${getCurrencyCode(t.conCurrency)}`;
-          
-          // Calculate nationalAmount (TJS)
-          const rate = t.conCurrency === 840
-            ? exchangeRates.USD
-            : t.conCurrency === 978
-              ? exchangeRates.EUR
-              : 1;
-          const amountTJS = Math.abs(Math.round((t.conamt || 0) * rate));
-          const nationalAmountFormatted = formatAmount(amountTJS);
-
-          return {
-            ...t,
-            date: t.localTransactionDate || t.date || "",
-            time: t.localTransactionTime || t.time || "",
-            date_time: `${t.localTransactionDate || t.date || ""} ${t.localTransactionTime || t.time || ""}`.trim(),
-            status: t.responseDescription || t.status || "Успешно",
-            cardNumber: t.cardNumber ? formatCardNumber(t.cardNumber) : "",
-            cardId: t.cardId || "",
-            transactionTypeName: t.transactionTypeName || t.transactionType || "N/A",
-            amount: amountFormatted,
-            conamt: conamtFormatted,
-            acctbal: formatAmount(t.acctbal || t.balance || 0),
-            utrnno: t.utrnno || "N/A",
-            terminalId: t.terminalId || "N/A",
-            atmId: t.atmId || "N/A",
-            reqamt: formatAmount(t.reqamt || t.amount || 0, txTypeValue),
-            terminalAddress: t.terminalAddress || "N/A",
-            mcc: t.mcc || "N/A",
-            account: t.account || "N/A",
-            nationalAmount: nationalAmountFormatted,
-            id: t.id || t.transactionId || "N/A",
-            MOVD: t.MOVD || 0,
-            MOVC: t.MOVC || 0
-          };
-        });
-    }
-
     // Format dates for period placeholders
     const formatDateDDMMYYYY = (isoStr) => {
       if (!isoStr) return "";
@@ -399,75 +283,13 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     finalData["дата_выписки"] = nowStr;
 
     const virtualKeys = [
-      // English keys
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
       { key: "eval: (transactions || []).map(t => t.time)", docxKey: "time" },
       { key: "eval: (transactions || []).map(t => t.date_time)", docxKey: "date_time" },
-      { key: "eval: (transactions || []).map(t => t.status)", docxKey: "status" },
-      { key: "eval: (transactions || []).map(t => t.cardNumber)", docxKey: "cardNumber" },
-      { key: "eval: (transactions || []).map(t => t.cardId)", docxKey: "cardId" },
-      { key: "eval: (transactions || []).map(t => t.transactionTypeName)", docxKey: "transactionTypeName" },
-      { key: "eval: (transactions || []).map(t => t.amount)", docxKey: "amount" },
-      { key: "eval: (transactions || []).map(t => t.conamt)", docxKey: "conamt" },
-      { key: "eval: (transactions || []).map(t => t.acctbal)", docxKey: "acctbal" },
-      { key: "eval: (transactions || []).map(t => t.utrnno)", docxKey: "utrnno" },
-      { key: "eval: (transactions || []).map(t => t.terminalId)", docxKey: "terminalId" },
-      { key: "eval: (transactions || []).map(t => t.atmId)", docxKey: "atmId" },
-      { key: "eval: (transactions || []).map(t => t.reqamt)", docxKey: "reqamt" },
-      { key: "eval: (transactions || []).map(t => t.terminalAddress)", docxKey: "terminalAddress" },
-      { key: "eval: (transactions || []).map(t => t.mcc)", docxKey: "mcc" },
-      { key: "eval: (transactions || []).map(t => t.account)", docxKey: "account" },
-      { key: "eval: (transactions || []).map(t => t.nationalAmount)", docxKey: "nationalAmount" },
-      { key: "eval: (transactions || []).map(t => t.id)", docxKey: "id" },
-
-      // Russian keys (with underscores, spaces, etc.)
-      { key: "eval: (transactions || []).map(t => t.date_time)", docxKey: "Дата" },
-      { key: "eval: (transactions || []).map(t => t.status)", docxKey: "Статус" },
-      { key: "eval: (transactions || []).map(t => t.cardNumber)", docxKey: "Номер_карты" },
-      { key: "eval: (transactions || []).map(t => t.cardNumber)", docxKey: "Номер карты" },
-      { key: "eval: (transactions || []).map(t => t.cardNumber)", docxKey: "НомерКарты" },
-      { key: "eval: (transactions || []).map(t => t.cardId)", docxKey: "ID_карты" },
-      { key: "eval: (transactions || []).map(t => t.cardId)", docxKey: "ID карты" },
-      { key: "eval: (transactions || []).map(t => t.cardId)", docxKey: "IDкарты" },
-      { key: "eval: (transactions || []).map(t => t.transactionTypeName)", docxKey: "Тип_операции" },
-      { key: "eval: (transactions || []).map(t => t.transactionTypeName)", docxKey: "Тип операции" },
-      { key: "eval: (transactions || []).map(t => t.transactionTypeName)", docxKey: "ТипОперации" },
-      { key: "eval: (transactions || []).map(t => t.amount)", docxKey: "Сумма_валюта" },
-      { key: "eval: (transactions || []).map(t => t.amount)", docxKey: "Сумма (валюта)" },
-      { key: "eval: (transactions || []).map(t => t.amount)", docxKey: "СуммаВалюта" },
-      { key: "eval: (transactions || []).map(t => t.conamt)", docxKey: "Сумма_в_валюте_карты" },
-      { key: "eval: (transactions || []).map(t => t.conamt)", docxKey: "Сумма в валюте карты" },
-      { key: "eval: (transactions || []).map(t => t.conamt)", docxKey: "СуммаВВалютеКарты" },
-      { key: "eval: (transactions || []).map(t => t.acctbal)", docxKey: "Доступный_баланс" },
-      { key: "eval: (transactions || []).map(t => t.acctbal)", docxKey: "Доступный баланс" },
-      { key: "eval: (transactions || []).map(t => t.acctbal)", docxKey: "ДоступныйБаланс" },
-      { key: "eval: (transactions || []).map(t => t.utrnno)", docxKey: "UTRNNO" },
-      { key: "eval: (transactions || []).map(t => t.terminalId)", docxKey: "ID_терминала" },
-      { key: "eval: (transactions || []).map(t => t.terminalId)", docxKey: "ID терминала" },
-      { key: "eval: (transactions || []).map(t => t.terminalId)", docxKey: "IDТерминала" },
-      { key: "eval: (transactions || []).map(t => t.atmId)", docxKey: "ID_ATM" },
-      { key: "eval: (transactions || []).map(t => t.atmId)", docxKey: "ID ATM" },
-      { key: "eval: (transactions || []).map(t => t.atmId)", docxKey: "IDATM" },
-      { key: "eval: (transactions || []).map(t => t.reqamt)", docxKey: "Запрошенная_сумма" },
-      { key: "eval: (transactions || []).map(t => t.reqamt)", docxKey: "Запрошенная сумма" },
-      { key: "eval: (transactions || []).map(t => t.reqamt)", docxKey: "ЗапрошеннаяСумма" },
-      { key: "eval: (transactions || []).map(t => t.terminalAddress)", docxKey: "Адрес_терминала" },
-      { key: "eval: (transactions || []).map(t => t.terminalAddress)", docxKey: "Адрес терминала" },
-      { key: "eval: (transactions || []).map(t => t.terminalAddress)", docxKey: "АдресТерминала" },
-      { key: "eval: (transactions || []).map(t => t.mcc)", docxKey: "MCC" },
-      { key: "eval: (transactions || []).map(t => t.account)", docxKey: "Счет" },
-      { key: "eval: (transactions || []).map(t => t.nationalAmount)", docxKey: "Сумма_в_нац_валюте" },
-      { key: "eval: (transactions || []).map(t => t.nationalAmount)", docxKey: "Сумма в нац. валюте" },
-      { key: "eval: (transactions || []).map(t => t.nationalAmount)", docxKey: "СуммаВНацВалюте" },
-      { key: "eval: (transactions || []).map(t => t.id)", docxKey: "ID_транзакции" },
-      { key: "eval: (transactions || []).map(t => t.id)", docxKey: "ID транзакции" },
-      { key: "eval: (transactions || []).map(t => t.id)", docxKey: "IDТранзакции" },
-
-      // Fallback keys for backward compatibility
       { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "MOVD" },
       { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "MOVC" },
-      { key: "eval: (transactions || []).map(t => t.status)", docxKey: "TXTDSCR" },
-      { key: "eval: (transactions || []).map(t => t.status)", docxKey: "details" }
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "TXTDSCR" },
+      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "details" }
     ];
     
     const virtualDocxKeys = new Set(virtualKeys.map(vk => vk.docxKey));
