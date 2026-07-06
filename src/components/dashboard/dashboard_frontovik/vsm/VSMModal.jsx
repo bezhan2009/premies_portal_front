@@ -239,6 +239,78 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         }
     };
 
+    const handleCancelMerchantStops = async (merchant) => {
+        if (!merchant) return;
+        
+        const targetMrchName = getMerchantDisplayName(merchant, transactions);
+        setLoading(true);
+        try {
+            const normalize = (str) => String(str || "").toLowerCase().replace(/[\s\-_]/g, "");
+            const isNameMatch = (m1, m2) => {
+                const names1 = [
+                    normalize(m1.mrchName),
+                    normalize(m1.mrchDbaName),
+                    normalize(getMerchantDisplayName(m1, transactions))
+                ].filter(Boolean);
+                const names2 = [
+                    normalize(m2.mrchName),
+                    normalize(m2.mrchDbaName),
+                    normalize(getMerchantDisplayName(m2, transactions))
+                ].filter(Boolean);
+                return names1.some(n1 => 
+                    names2.some(n2 => {
+                        if (n1.length < 3 || n2.length < 3) return n1 === n2;
+                        return n1.includes(n2) || n2.includes(n1);
+                    })
+                );
+            };
+
+            // Find all duplicate subscriptions from cofData
+            const duplicates = cofData.filter(m => {
+                if (m === merchant) return false;
+                if (!isNameMatch(merchant, m)) return false;
+                
+                if (merchant.cardAcceptorId && m.cardAcceptorId === merchant.cardAcceptorId) return true;
+                if (merchant.tokenReqstrId && m.tokenReqstrId === merchant.tokenReqstrId) return true;
+                if (merchant.mrchDbaId && m.mrchDbaId === merchant.mrchDbaId) return true;
+                if (merchant.mrchRef && m.mrchRef === merchant.mrchRef) return true;
+                if (merchant.mCC && m.mCC === merchant.mCC) return true;
+                
+                return false;
+            });
+
+            const allMerchants = [merchant, ...duplicates];
+
+            // Find all active stop instructions in VSM that match any of these merchants
+            const stopsToCancel = stops.filter(stop => 
+                stop.status === "Active" && 
+                allMerchants.some(m => isStopForMerchant(stop, m))
+            );
+
+            if (stopsToCancel.length === 0) {
+                message.info("Не найдено активных блокировок для этого мерчанта");
+                return;
+            }
+
+            const cancelIds = stopsToCancel.map(stop => stop.stopInstructionId);
+            
+            await cancelStopInstruction(card.cardId, cancelIds);
+            message.success(`Ограничения для ${targetMrchName} успешно отменены`);
+            
+            logAuditAction({
+                action: "Отмена ограничения подписки (VSM)",
+                card_number: card.cardId,
+                details: `Сняты ограничения VISA (всего ${cancelIds.length}) для мерчанта ${targetMrchName}`
+            });
+
+            fetchData(selectedAccount);
+        } catch (error) {
+            message.error("Ошибка при снятии ограничения: " + (error.response?.data?.error || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const [clearingCache, setClearingCache] = useState(false);
 
     const handleClearCache = async () => {
@@ -402,8 +474,8 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         });
     };
 
-    const isMerchantBlocked = (merchant) => {
-        if (!merchant) return false;
+    const isStopForMerchant = (stop, merchant) => {
+        if (!stop || !merchant) return false;
         
         const merchantCaid = String(merchant.cardAcceptorId || "").trim();
         
@@ -414,41 +486,42 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         const displayName = getMerchantDisplayName(merchant, transactions);
         if (displayName) namesToMatch.add(displayName.toLowerCase().replace(/[\s\-_]/g, ""));
         
-        return stops.some(stop => {
-            if (stop.status !== "Active") return false;
-            
-            // 1. Try matching by cardAcceptorId (CAID) first
-            const stopCaid = String(stop.merchantIdentifier?.cardAcceptorId || "").trim();
-            if (stopCaid && merchantCaid && stopCaid === merchantCaid) {
-                return true;
-            }
-            
-            // 2. Otherwise, match by name if name is present
-            const stopMrchName = (stop.merchantIdentifier?.merchantName || "").toLowerCase().replace(/[\s\-_]/g, "");
-            const notes = stop.additional?.additionalNotes || "";
-            const match = notes.match(/merchant_name=([^|]+)/);
-            const notesName = match ? match[1].toLowerCase().replace(/[\s\-_]/g, "") : "";
-            
-            let nameMatches = false;
-            if (stopMrchName) {
-                for (let name of namesToMatch) {
-                    if (stopMrchName.includes(name) || name.includes(stopMrchName)) {
-                        nameMatches = true;
-                        break;
-                    }
+        // 1. Try matching by cardAcceptorId (CAID) first
+        const stopCaid = String(stop.merchantIdentifier?.cardAcceptorId || "").trim();
+        if (stopCaid && merchantCaid && stopCaid === merchantCaid) {
+            return true;
+        }
+        
+        // 2. Otherwise, match by name if name is present
+        const stopMrchName = (stop.merchantIdentifier?.merchantName || "").toLowerCase().replace(/[\s\-_]/g, "");
+        const notes = stop.additional?.additionalNotes || "";
+        const match = notes.match(/merchant_name=([^|]+)/);
+        const notesName = match ? match[1].toLowerCase().replace(/[\s\-_]/g, "") : "";
+        
+        let nameMatches = false;
+        if (stopMrchName) {
+            for (let name of namesToMatch) {
+                if (stopMrchName.includes(name) || name.includes(stopMrchName)) {
+                    nameMatches = true;
+                    break;
                 }
             }
-            if (!nameMatches && notesName) {
-                for (let name of namesToMatch) {
-                    if (notesName.includes(name) || name.includes(notesName)) {
-                        nameMatches = true;
-                        break;
-                    }
+        }
+        if (!nameMatches && notesName) {
+            for (let name of namesToMatch) {
+                if (notesName.includes(name) || name.includes(notesName)) {
+                    nameMatches = true;
+                    break;
                 }
             }
-            
-            return nameMatches;
-        });
+        }
+        
+        return nameMatches;
+    };
+
+    const isMerchantBlocked = (merchant) => {
+        if (!merchant) return false;
+        return stops.some(stop => stop.status === "Active" && isStopForMerchant(stop, merchant));
     };
 
     const isMerchantSubscription = (merchant) => {
@@ -941,9 +1014,19 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                     Список действующих блокировок VISA на автосписания. Вы можете отменить любую из них для возобновления платежей.
                                 </p>
                                 {(() => {
-                                    const activeStops = stops.filter(stop => stop.status === "Active");
+                                    // 1. Blocked subscriptions from COF
+                                    const blockedSubscriptions = cofData.filter(merchant => {
+                                        return isMerchantSubscription(merchant) && isMerchantBlocked(merchant);
+                                    });
 
-                                    if (activeStops.length === 0) {
+                                    // 2. Unmatched stops (stops that do not map to any merchant in COF)
+                                    const unmatchedStops = stops.filter(stop => {
+                                        if (stop.status !== "Active") return false;
+                                        const hasCofMatch = cofData.some(merchant => isStopForMerchant(stop, merchant));
+                                        return !hasCofMatch;
+                                    });
+
+                                    if (blockedSubscriptions.length === 0 && unmatchedStops.length === 0) {
                                         return (
                                             <div style={{ textAlign: "center", padding: "40px 0", color: isDark ? "#64748b" : "#94a3b8", fontSize: "14px" }}>
                                                 Нет действующих блокировок
@@ -957,14 +1040,20 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                             flexDirection: "column", 
                                             gap: "12px" 
                                         }}>
-                                            {activeStops.map((stop, idx) => {
-                                                const displayMerchantName = getStopMerchantNameFromCof(stop);
+                                            {/* Render Blocked Subscriptions from COF */}
+                                            {blockedSubscriptions.map((merchant, idx) => {
+                                                const mrchName = getMerchantDisplayName(merchant, transactions);
                                                 
-                                                const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+                                                // Find all active stops matching this merchant
+                                                const merchantStops = stops.filter(stop => stop.status === "Active" && isStopForMerchant(stop, merchant));
+                                                const stopIds = merchantStops.map(stop => stop.stopInstructionId).join(", ");
+                                                const firstStop = merchantStops[0];
+                                                const startDate = firstStop ? firstStop.startDate : "-";
+                                                const endDate = firstStop ? firstStop.endDate : "-";
 
                                                 return (
                                                     <div 
-                                                        key={stop.stopInstructionId || idx}
+                                                        key={`blocked-cof-${merchant.cardAcceptorId || idx}`}
                                                         onMouseEnter={() => setHoveredBlockIdx(idx)}
                                                         onMouseLeave={() => setHoveredBlockIdx(null)}
                                                         style={{
@@ -984,11 +1073,117 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                     >
                                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", width: "100%", flexWrap: "wrap" }}>
                                                             <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
-                                                                {renderLogo(getStopLogoUrl(stop), displayMerchantName)}
+                                                                {renderLogo(merchant.mrchLogoURL, mrchName)}
                                                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                                                    <TruncatedTooltipText text={displayMerchantName} isDark={isDark} />
+                                                                    <TruncatedTooltipText text={mrchName} isDark={isDark} />
                                                                     <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
-                                                                        Активное ограничение ({getMccDescription(stopMcc)})
+                                                                        Активная блокировка ({getMccDescription(merchant.mCC)})
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ display: "flex", gap: "24px", flex: 3, fontSize: "13px", color: isDark ? "#cbd5e1" : "#475569" }}>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>ID инструкций ({merchantStops.length})</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{stopIds || "-"}</strong>
+                                                                </div>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата начала</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{startDate}</strong>
+                                                                </div>
+                                                                <div>
+                                                                    <span style={{ display: "block", fontSize: "11px", color: isDark ? "#64748b" : "#94a3b8" }}>Дата окончания</span>
+                                                                    <strong style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>{endDate}</strong>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ flex: 1.5, textAlign: "right", minWidth: "150px" }}>
+                                                                <Button 
+                                                                    type="primary"
+                                                                    ghost
+                                                                    style={{ 
+                                                                        borderRadius: "8px", 
+                                                                        fontWeight: "bold",
+                                                                        borderColor: "#10b981",
+                                                                        color: "#10b981",
+                                                                        borderWidth: "1.5px",
+                                                                        width: "100%"
+                                                                    }}
+                                                                    onClick={() => handleCancelMerchantStops(merchant)}
+                                                                >
+                                                                    Разблокировать
+                                                                </Button>
+                                                                <Button 
+                                                                    type="default"
+                                                                    style={{ 
+                                                                        borderRadius: "8px", 
+                                                                        fontWeight: "500",
+                                                                        width: "100%",
+                                                                        marginTop: "8px",
+                                                                        marginBottom: "8px"
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        setSelectedMerchantFilter(merchant);
+                                                                        setActiveTabKey("3");
+                                                                    }}
+                                                                >
+                                                                    Все транзакции
+                                                                </Button>
+                                                                <DynamicDocxButtons
+                                                                    page="VsmSearch"
+                                                                    section="Подписки VSM"
+                                                                    data={{
+                                                                        ...extractDocxClientData(selectedClient),
+                                                                        "card.cardId": card?.cardId || "",
+                                                                        "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
+                                                                        "vsm.merchantName": mrchName,
+                                                                        "vsm.merchantId": merchant.mCC || "",
+                                                                        "vsm.stopInstructionId": stopIds,
+                                                                        "vsm.startDate": startDate,
+                                                                        "vsm.endDate": endDate,
+                                                                        "vsm.status": "Active",
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {renderPreviousPayments(merchant.mCC, mrchName)}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Render Unmatched Stops */}
+                                            {unmatchedStops.map((stop, uidx) => {
+                                                const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+                                                const stopName = getStopMerchantNameFromCof(stop);
+                                                const stopLogo = getStopLogoUrl(stop);
+
+                                                return (
+                                                    <div 
+                                                        key={`blocked-unmatched-${stop.stopInstructionId || uidx}`}
+                                                        onMouseEnter={() => setHoveredBlockIdx(blockedSubscriptions.length + uidx)}
+                                                        onMouseLeave={() => setHoveredBlockIdx(null)}
+                                                        style={{
+                                                            background: isDark ? "#1e293b" : "#ffffff",
+                                                            border: `1px solid ${hoveredBlockIdx === (blockedSubscriptions.length + uidx) ? "#ef4444" : (isDark ? "#ef444420" : "#fee2e2")}`,
+                                                            borderRadius: "12px",
+                                                            padding: "16px",
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            gap: "12px",
+                                                            boxShadow: hoveredBlockIdx === (blockedSubscriptions.length + uidx)
+                                                                ? "0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -4px rgba(239, 68, 68, 0.1)"
+                                                                : (isDark ? "0 4px 6px rgba(0,0,0,0.15)" : "0 4px 6px rgba(239, 68, 68, 0.02)"),
+                                                            transform: hoveredBlockIdx === (blockedSubscriptions.length + uidx) ? "translateY(-2px)" : "none",
+                                                            transition: "all 0.2s ease-in-out"
+                                                        }}
+                                                    >
+                                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", width: "100%", flexWrap: "wrap" }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 2, minWidth: 0 }}>
+                                                                {renderLogo(stopLogo, stopName)}
+                                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                                    <TruncatedTooltipText text={stopName} isDark={isDark} />
+                                                                    <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600 }}>
+                                                                        Активная блокировка ({getMccDescription(stopMcc)})
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -1034,12 +1229,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                         marginBottom: "8px"
                                                                     }}
                                                                     onClick={() => {
-                                                                        const m = cofData.find(merchant => String(merchant.mCC) === String(stopMcc));
-                                                                        if (m) {
-                                                                            setSelectedMerchantFilter(m);
-                                                                        } else {
-                                                                            setSelectedMerchantFilter({ mCC: stopMcc, mrchName: displayMerchantName });
-                                                                        }
+                                                                        setSelectedMerchantFilter({ mCC: stopMcc, mrchName: stopName });
                                                                         setActiveTabKey("3");
                                                                     }}
                                                                 >
@@ -1052,7 +1242,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                         ...extractDocxClientData(selectedClient),
                                                                         "card.cardId": card?.cardId || "",
                                                                         "card.cardNumber": card?.CardNumber || card?.details?.cardNumberMask || card?.cardNumber || "",
-                                                                        "vsm.merchantName": displayMerchantName,
+                                                                        "vsm.merchantName": stopName,
                                                                         "vsm.merchantId": stop.merchantIdentifier?.merchantCategoryCode || "",
                                                                         "vsm.stopInstructionId": stop.stopInstructionId || "",
                                                                         "vsm.startDate": stop.startDate || "",
@@ -1062,7 +1252,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                 />
                                                             </div>
                                                         </div>
-                                                        {renderPreviousPayments(stopMcc, displayMerchantName)}
+                                                        {renderPreviousPayments(stopMcc, stopName)}
                                                     </div>
                                                 );
                                             })}
