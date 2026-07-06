@@ -1,6 +1,6 @@
 import React from "react";
 import { Table } from "../../table/FlexibleAntTable.jsx";
-import { Input as AntInput, Space, Button, message } from "antd";
+import { Input as AntInput, Space, Button, message, Modal } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import RequisitesModal from "./RequisitesModal.jsx";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons.jsx";
@@ -192,6 +192,8 @@ const ClientDataTabs = ({
 
   const [isVSMModalOpen, setIsVSMModalOpen] = React.useState(false);
   const [vsmCard, setVsmCard] = React.useState(null);
+  const [isTariffModalOpen, setIsTariffModalOpen] = React.useState(false);
+  const [tariffCardId, setTariffCardId] = React.useState("");
 
   const openAndHighlightTab = (tabName, elementId) => {
     setActiveTab(tabName);
@@ -572,13 +574,10 @@ const ClientDataTabs = ({
                   color: "white",
                   flex: 1,
                 }}
-                onClick={() =>
-                  window.open(
-                    "http://10.64.1.10/services/tariff_by_idn.php?idn=" +
-                      card.cardId,
-                    "_blank",
-                  )
-                }
+                onClick={() => {
+                  setTariffCardId(card.cardId);
+                  setIsTariffModalOpen(true);
+                }}
               >
                 Тариф
               </button>
@@ -1157,6 +1156,8 @@ const ClientDataTabs = ({
                             "account.type": acc.Type || "",
                             "account.pcBalance": rawPcBalance !== null && rawPcBalance !== undefined ? rawPcBalance : null,
                             "account.linkedCard": matchingCard ? (matchingCard.details?.cardNumberMask || matchingCard.CardNumber || matchingCard.cardNumber || "") : "",
+                            "account.ScaDeaReference": acc.ScaDeaReference || acc.AddInfo?.ScaDeaReference || "",
+                            "ScaDeaReference": acc.ScaDeaReference || acc.AddInfo?.ScaDeaReference || "",
                           }}
                         />
                       </div>
@@ -1413,7 +1414,10 @@ const ClientDataTabs = ({
                           <button className="card-action-btn outline-danger" onClick={() => onChangePin(card.cardId)}>Сменить ПИН</button>
                         )}
                         <button className="card-action-btn neutral" onClick={() => onOpenLimits(card.cardId, card.exId || card.cardExId || "")}>Лимиты</button>
-                        <button className="card-action-btn neutral" onClick={() => window.open(`http://10.64.1.10/services/tariff_by_idn.php?idn=${card.cardId}`, "_blank")}>Тарифы</button>
+                        <button className="card-action-btn neutral" onClick={() => {
+                           setTariffCardId(card.cardId);
+                           setIsTariffModalOpen(true);
+                         }}>Тарифы</button>
                         <button className="card-action-btn neutral" onClick={() => handleNavigateToTransactions(card.cardId)}>История</button>
                         <button className="card-action-btn neutral" onClick={() => onManageServices(card.cardId, card.services)}>Уведомления</button>
 
@@ -1430,6 +1434,8 @@ const ClientDataTabs = ({
                             "card.expireDate": card.details?.expirationDate || card.expirationDate || "",
                             "card.issueDate": card.details?.requestDate || card.requestDate || "",
                             "card.accountNumber": card.details?.accounts?.[0]?.number || card.accounts?.[0]?.accountNumber || "",
+                            "card.agreement": card.details?.agreement || card.agreement || "",
+                            "agreement": card.details?.agreement || card.agreement || "",
                           }}
                         />
                         {hasVsmAccess && (() => {
@@ -1879,6 +1885,8 @@ const ClientDataTabs = ({
                               data={{
                                 ...extractDocxClientData(selectedClient),
                                 "deposit.agreementId": agreement.ColvirReferenceId || "",
+                                "deposit.ColvirReferenceId": agreement.ColvirReferenceId || "",
+                                "ColvirReferenceId": agreement.ColvirReferenceId || "",
                                 "deposit.code": agreement.Code || "",
                                 "deposit.productName": agreement.Product?.Name || "",
                                 "deposit.amount": amount || "0.00",
@@ -1945,6 +1953,28 @@ const ClientDataTabs = ({
           selectedClient={selectedClient}
         />
       )}
+
+      <Modal
+        title="Тарифы карты"
+        open={isTariffModalOpen}
+        onCancel={() => {
+          setIsTariffModalOpen(false);
+          setTariffCardId("");
+        }}
+        footer={null}
+        width={1000}
+        centered
+        bodyStyle={{ height: "700px", padding: 0 }}
+      >
+        {isTariffModalOpen && tariffCardId && (
+          <iframe
+            src={`http://10.64.1.10/services/tariff_by_idn.php?idn=${tariffCardId}`}
+            width="100%"
+            height="100%"
+            style={{ border: "none" }}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

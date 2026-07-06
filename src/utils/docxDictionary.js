@@ -99,6 +99,7 @@ export const docxDictionary = [
       { key: "credit.scheduleStatus", description: "Статус графика платежей" },
       { key: "credit.lastPaymentDate", description: "Дата последнего платежа" },
       { key: "credit.lastPaymentAmount", description: "Сумма последнего платежа" },
+      { key: "contractNumber", description: "Номер договора кредита" },
     ],
   },
   {
@@ -121,6 +122,8 @@ export const docxDictionary = [
       { key: "card.isSmsEnabled", description: "Подключено ли SMS-информирование" },
       { key: "card.is3dsEnabled", description: "Подключен ли 3DS" },
       { key: "card.pinTryCount", description: "Количество попыток PIN" },
+      { key: "card.agreement", description: "Номер договора карты" },
+      { key: "agreement", description: "Номер договора карты" },
     ],
   },
   {
@@ -139,6 +142,8 @@ export const docxDictionary = [
       { key: "account.linkedCard", description: "Связанная карта" },
       { key: "account.linkedCredit", description: "Связанный кредит" },
       { key: "account.pcBalance", description: "Остаток в процессинге" },
+      { key: "account.ScaDeaReference", description: "Номер договора по счету" },
+      { key: "ScaDeaReference", description: "Номер договора по счету" },
     ],
   },
   {
@@ -159,6 +164,8 @@ export const docxDictionary = [
       { key: "deposit.interestAccount", description: "Счет процентов" },
       { key: "deposit.nextInterestDate", description: "Дата следующего начисления процентов" },
       { key: "deposit.nextInterestAmount", description: "Сумма следующего начисления процентов" },
+      { key: "deposit.ColvirReferenceId", description: "Номер договора депозита" },
+      { key: "ColvirReferenceId", description: "Номер договора депозита" },
     ],
   },
   {

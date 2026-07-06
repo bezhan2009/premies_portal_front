@@ -379,7 +379,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           const docxRoles = normalizeDocxRoles(template.docxRoles || template.DocxRoles);
           
           const canPdf = pdfRoles.length === 0 || pdfRoles.some(r => userRoles.includes(r));
-          const canDocx = docxRoles.length === 0 || docxRoles.some(r => userRoles.includes(r));
+          const canDocx = (docxRoles.length === 0 || docxRoles.some(r => userRoles.includes(r))) && userRoles.includes(3);
 
           if (!canPdf && !canDocx) return null;
 

@@ -234,6 +234,7 @@ const CreditDetails = ({ credit, selectedClient, onBack }) => {
                 "credit.purposeName": purposeName,
                 "credit.debtBalance": debtBalance,
                 "credit.contractNumber": params.contractNumber || credit.contractNumber || credit.referenceId || "",
+                "contractNumber": params.contractNumber || credit.contractNumber || credit.referenceId || "",
                 "credit.referenceId": credit.referenceId || "",
                 "credit.nextPaymentDate": params.nextPaymentDate || "",
                 "credit.paymentAccount": params.paymentAccount || params.repaymentAccount || "",
