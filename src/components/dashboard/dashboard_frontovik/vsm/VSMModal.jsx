@@ -258,20 +258,63 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         }
     };
 
-    const handleBlockMerchantDirectly = (mrchName) => {
-        let apiMrchName = String(mrchName || "").trim();
-        if (apiMrchName.length > 25) {
-            apiMrchName = apiMrchName.slice(0, 25).trim();
-        }
-        if (apiMrchName.length < 2) {
-            apiMrchName = "MERCHANT";
-        }
+    const handleBlockMerchantDirectly = (merchant) => {
+        if (!merchant) return;
+        
+        const targetMrchName = getMerchantDisplayName(merchant, transactions);
+        
+        // Find all duplicate subscriptions from cofData using the requested VSM parameters:
+        // cardAcceptor, id (tokenReqstrId), mcc, merchRef, merchantName
+        const duplicates = cofData.filter(m => {
+            if (m === merchant) return false;
+            
+            // "any of founded matchings"
+            if (merchant.cardAcceptorId && m.cardAcceptorId === merchant.cardAcceptorId) return true;
+            if (merchant.tokenReqstrId && m.tokenReqstrId === merchant.tokenReqstrId) return true;
+            if (merchant.mrchDbaId && m.mrchDbaId === merchant.mrchDbaId) return true;
+            if (merchant.mrchRef && m.mrchRef === merchant.mrchRef) return true;
+            
+            // For MCC and name combined matching (since MCC alone is too broad)
+            const n1 = (merchant.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            const n2 = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            if (n1 && n2 && (n1.includes(n2) || n2.includes(n1))) return true;
+            
+            return false;
+        });
+
+        const allToBlock = [merchant, ...duplicates];
+        
+        // Extract all unique merchant names and cardAcceptorIds to block
+        const merchantNamesSet = new Set();
+        const cardAcceptorIdsSet = new Set();
+        
+        allToBlock.forEach(m => {
+            if (m.mrchName) merchantNamesSet.add(m.mrchName);
+            if (m.mrchDbaName) merchantNamesSet.add(m.mrchDbaName);
+            if (m.cardAcceptorId) cardAcceptorIdsSet.add(m.cardAcceptorId);
+            const dispName = getMerchantDisplayName(m, transactions);
+            if (dispName) merchantNamesSet.add(dispName);
+        });
+
+        // Clean names per Visa constraints
+        const apiMerchantNames = Array.from(merchantNamesSet).map(name => {
+            let n = String(name || "").trim();
+            if (n.length > 25) n = n.slice(0, 25).trim();
+            if (n.length < 2) n = "MERCHANT";
+            return n;
+        });
+        const apiCardAcceptorIds = Array.from(cardAcceptorIdsSet).filter(id => id && String(id).trim().length > 0);
 
         modal.confirm({
-            title: `Заблокировать списания от ${mrchName}?`,
+            title: `Заблокировать списания от ${targetMrchName}?`,
             content: (
                 <div style={{ color: isDark ? "#cbd5e1" : "#475569" }}>
-                    <p>Будет отправлен запрос в VISA на ограничение списаний от <strong>{mrchName}</strong> сроком на 12 месяцев.</p>
+                    <p>Будет отправлен запрос в VISA на ограничение списаний от <strong>{targetMrchName}</strong> сроком на 12 месяцев.</p>
+                    {duplicates.length > 0 && (
+                        <p style={{ marginTop: 8, fontSize: '13px', color: '#f59e0b' }}>
+                            Найдены дубликаты подписок ({duplicates.length}). Они также будут заблокированы для синхронизации системы.
+                        </p>
+                    )}
                 </div>
             ),
             okText: "Заблокировать",
@@ -286,18 +329,19 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                         recurringAndInstallmentIndicator: true,
                         cancelSubscription: true,
                         merchantIdentifiers: {
-                            merchantNames: [apiMrchName],
+                            merchantNames: apiMerchantNames,
+                            cardAcceptorIds: apiCardAcceptorIds.length > 0 ? apiCardAcceptorIds : undefined
                         },
                         startDate: today
                     };
                     
                     await addMerchantStop(card.cardId, selectedAccount, payload);
-                    message.success(`Списания от ${mrchName} успешно заблокированы`);
+                    message.success(`Списания от ${targetMrchName} успешно заблокированы`);
                     
                     logAuditAction({
                         action: "Добавление остановки подписки (VSM)",
                         card_number: card.cardId,
-                        details: `Заблокировано списание от мерчанта ${mrchName} на 12 месяцев.`
+                        details: `Заблокировано списание от мерчанта ${targetMrchName} (включая ${duplicates.length} дубликатов) на 12 месяцев.`
                     });
                     
                     fetchData(selectedAccount);
@@ -726,7 +770,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                         fontWeight: "bold",
                                                                         width: "100%"
                                                                     }}
-                                                                    onClick={() => handleBlockMerchantDirectly(mrchName)}
+                                                                    onClick={() => handleBlockMerchantDirectly(merchant)}
                                                                 >
                                                                     Блокировать списания
                                                                 </Button>
