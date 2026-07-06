@@ -296,16 +296,15 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
             if (dispName) merchantNamesSet.add(dispName);
         });
 
-        // Clean names per Visa constraints (maximum of 10 unique names/IDs allowed)
+        // Clean names per Visa constraints
         const apiMerchantNames = Array.from(merchantNamesSet).map(name => {
             let n = String(name || "").trim();
             if (n.length > 25) n = n.slice(0, 25).trim();
             if (n.length < 2) n = "MERCHANT";
             return n;
-        }).slice(0, 10);
+        });
         const apiCardAcceptorIds = Array.from(cardAcceptorIdsSet)
-            .filter(id => id && String(id).trim().length > 0)
-            .slice(0, 10);
+            .filter(id => id && String(id).trim().length > 0);
 
         modal.confirm({
             title: `Заблокировать списания от ${targetMrchName}?`,
@@ -326,27 +325,55 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                 setLoading(true);
                 try {
                     const today = new Date().toISOString().split('T')[0];
-                    const payload = {
-                        duration: 12,
-                        recurringAndInstallmentIndicator: true,
-                        cancelSubscription: true,
-                        merchantIdentifiers: {
-                            merchantNames: apiMerchantNames,
-                            cardAcceptorIds: apiCardAcceptorIds.length > 0 ? apiCardAcceptorIds : undefined
-                        },
-                        startDate: today
-                    };
+                    const chunkSize = 5;
                     
-                    await addMerchantStop(card.cardId, selectedAccount, payload);
-                    message.success(`Списания от ${targetMrchName} успешно заблокированы`);
+                    // Chunk names
+                    const nameChunks = [];
+                    for (let i = 0; i < apiMerchantNames.length; i += chunkSize) {
+                        nameChunks.push(apiMerchantNames.slice(i, i + chunkSize));
+                    }
                     
-                    logAuditAction({
-                        action: "Добавление остановки подписки (VSM)",
-                        card_number: card.cardId,
-                        details: `Заблокировано списание от мерчанта ${targetMrchName} (включая ${duplicates.length} дубликатов) на 12 месяцев.`
-                    });
+                    // Chunk IDs
+                    const idChunks = [];
+                    for (let i = 0; i < apiCardAcceptorIds.length; i += chunkSize) {
+                        idChunks.push(apiCardAcceptorIds.slice(i, i + chunkSize));
+                    }
                     
-                    fetchData(selectedAccount);
+                    const totalChunks = Math.max(nameChunks.length, idChunks.length);
+                    let successCount = 0;
+                    
+                    for (let i = 0; i < totalChunks; i++) {
+                        const chunkNames = nameChunks[i] || [];
+                        const chunkIds = idChunks[i] || [];
+                        
+                        if (chunkNames.length === 0 && chunkIds.length === 0) continue;
+                        
+                        const payload = {
+                            duration: 12,
+                            recurringAndInstallmentIndicator: true,
+                            cancelSubscription: true,
+                            merchantIdentifiers: {
+                                merchantNames: chunkNames,
+                                cardAcceptorIds: chunkIds.length > 0 ? chunkIds : undefined
+                            },
+                            startDate: today
+                        };
+                        
+                        await addMerchantStop(card.cardId, selectedAccount, payload);
+                        successCount++;
+                    }
+                    
+                    if (successCount > 0) {
+                        message.success(`Списания от ${targetMrchName} успешно заблокированы`);
+                        
+                        logAuditAction({
+                            action: "Добавление остановки подписки (VSM)",
+                            card_number: card.cardId,
+                            details: `Заблокировано списание от мерчанта ${targetMrchName} (включая ${duplicates.length} дубликатов) на 12 месяцев.`
+                        });
+                        
+                        fetchData(selectedAccount);
+                    }
                 } catch (error) {
                     message.error("Ошибка при блокировке: " + (error.response?.data?.error || error.message));
                 } finally {
