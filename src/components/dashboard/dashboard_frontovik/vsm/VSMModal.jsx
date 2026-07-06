@@ -263,21 +263,40 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         
         const targetMrchName = getMerchantDisplayName(merchant, transactions);
         
+        const normalize = (str) => String(str || "").toLowerCase().replace(/[\s\-_]/g, "");
+        const isNameMatch = (m1, m2) => {
+            const names1 = [
+                normalize(m1.mrchName),
+                normalize(m1.mrchDbaName),
+                normalize(getMerchantDisplayName(m1, transactions))
+            ].filter(Boolean);
+            const names2 = [
+                normalize(m2.mrchName),
+                normalize(m2.mrchDbaName),
+                normalize(getMerchantDisplayName(m2, transactions))
+            ].filter(Boolean);
+            return names1.some(n1 => 
+                names2.some(n2 => {
+                    if (n1.length < 3 || n2.length < 3) return n1 === n2;
+                    return n1.includes(n2) || n2.includes(n1);
+                })
+            );
+        };
+
         // Find all duplicate subscriptions from cofData using the requested VSM parameters:
         // cardAcceptor, id (tokenReqstrId), mcc, merchRef, merchantName
         const duplicates = cofData.filter(m => {
             if (m === merchant) return false;
+            
+            // Name MUST match to be considered a duplicate subscription of the same merchant
+            if (!isNameMatch(merchant, m)) return false;
             
             // "any of founded matchings"
             if (merchant.cardAcceptorId && m.cardAcceptorId === merchant.cardAcceptorId) return true;
             if (merchant.tokenReqstrId && m.tokenReqstrId === merchant.tokenReqstrId) return true;
             if (merchant.mrchDbaId && m.mrchDbaId === merchant.mrchDbaId) return true;
             if (merchant.mrchRef && m.mrchRef === merchant.mrchRef) return true;
-            
-            // For MCC and name combined matching (since MCC alone is too broad)
-            const n1 = (merchant.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
-            const n2 = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
-            if (n1 && n2 && (n1.includes(n2) || n2.includes(n1))) return true;
+            if (merchant.mCC && m.mCC === merchant.mCC) return true;
             
             return false;
         });
@@ -398,6 +417,32 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         return stops.some(stop => {
             if (stop.status !== "Active") return false;
             
+            const stopMrchName = (stop.merchantIdentifier?.merchantName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            const notes = stop.additional?.additionalNotes || "";
+            const match = notes.match(/merchant_name=([^|]+)/);
+            const notesName = match ? match[1].toLowerCase().replace(/[\s\-_]/g, "") : "";
+            
+            // Validate name match first to avoid blocking Yandex when blocking Magnific
+            let nameMatches = false;
+            if (stopMrchName) {
+                for (let name of namesToMatch) {
+                    if (stopMrchName.includes(name) || name.includes(stopMrchName)) {
+                        nameMatches = true;
+                        break;
+                    }
+                }
+            }
+            if (!nameMatches && notesName) {
+                for (let name of namesToMatch) {
+                    if (notesName.includes(name) || name.includes(notesName)) {
+                        nameMatches = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!nameMatches) return false;
+            
             // 1. Try matching by cardAcceptorId (CAID)
             const stopCaid = String(stop.merchantIdentifier?.cardAcceptorId || "").trim();
             if (stopCaid && merchantCaid && stopCaid === merchantCaid) {
@@ -405,22 +450,16 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
             }
             
             // 2. Try matching by normalized names
-            const stopMrchName = (stop.merchantIdentifier?.merchantName || "").toLowerCase().replace(/[\s\-_]/g, "");
             if (stopMrchName && namesToMatch.has(stopMrchName)) {
                 return true;
             }
             
             // 3. Try matching by additional notes
-            const notes = stop.additional?.additionalNotes || "";
-            const match = notes.match(/merchant_name=([^|]+)/);
-            if (match) {
-                const notesName = match[1].toLowerCase().replace(/[\s\-_]/g, "");
-                if (notesName && namesToMatch.has(notesName)) {
-                    return true;
-                }
+            if (notesName && namesToMatch.has(notesName)) {
+                return true;
             }
             
-            return false;
+            return true; // Fallback: if name matches we assume it's blocked
         });
     };
 
@@ -437,6 +476,35 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
         const found = cofData.find(m => String(m.mCC) === String(filter.mCC));
         if (found) return isMerchantSubscription(found);
         return true;
+    };
+
+    const getStopMerchantNameFromCof = (stop) => {
+        if (!stop) return "Все транзакции";
+        const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
+        const stopMrchName = stop.merchantIdentifier?.merchantName || "";
+        const notes = stop.additional?.additionalNotes || "";
+        const match = notes.match(/merchant_name=([^|]+)/);
+        const displayMerchantName = match ? match[1] : (stopMrchName || "");
+
+        const normalizedStopName = displayMerchantName.toLowerCase().replace(/[\s\-_]/g, "");
+
+        let found = cofData.find(m => {
+            const mName = getMerchantDisplayName(m, transactions).toLowerCase().replace(/[\s\-_]/g, "");
+            if (mName && normalizedStopName && (mName.includes(normalizedStopName) || normalizedStopName.includes(mName))) {
+                return true;
+            }
+            const rawMName = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
+            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || rawMName.includes(rawMName))) {
+                return true;
+            }
+            return false;
+        });
+
+        if (!found && stopMcc) {
+            found = cofData.find(m => String(m.mCC) === String(stopMcc));
+        }
+
+        return found ? getMerchantDisplayName(found, transactions) : (displayMerchantName || "Все транзакции");
     };
 
     const getStopLogoUrl = (stop) => {
@@ -865,10 +933,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                             gap: "12px" 
                                         }}>
                                             {activeStops.map((stop, idx) => {
-                                                const stopMrchName = stop.merchantIdentifier?.merchantName || "";
-                                                const notes = stop.additional?.additionalNotes || "";
-                                                const match = notes.match(/merchant_name=([^|]+)/);
-                                                const displayMerchantName = match ? match[1] : (stopMrchName || "Все транзакции");
+                                                const displayMerchantName = getStopMerchantNameFromCof(stop);
                                                 
                                                 const stopMcc = stop.merchantIdentifier?.merchantCategoryCode || "";
 
