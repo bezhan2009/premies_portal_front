@@ -231,6 +231,8 @@ const getDictionaryItem = (key) => dictionaryItems.find((item) => item.key === k
 const TABLE_SOURCE_FIELDS = {
   transactions: [
     { value: "date", label: "Дата транзакции (date)" },
+    { value: "time", label: "Время транзакции (time)" },
+    { value: "date_time", label: "Дата и время транзакции (date_time)" },
     { value: "amount", label: "Сумма транзакции (amount)" },
     { value: "currency", label: "Валюта транзакции (currency)" },
     { value: "details", label: "Детали транзакции (details)" },

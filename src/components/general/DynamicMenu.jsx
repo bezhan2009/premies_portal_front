@@ -67,7 +67,7 @@ import {
 import SettingsModal from "./SettingsModal.jsx";
 import ProfileModal from "./ProfileModal.jsx";
 import useChatStore from "../../store/useChatStore.js";
-import { Tooltip, Dropdown, Menu } from "antd";
+import { Tooltip, Dropdown, Menu, Input } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
@@ -100,6 +100,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const muteUntil = useChatStore(state => state.muteUntil);
     const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
     const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const fetchUnreadFeedbackCount = useCallback(async () => {
         const token = localStorage.getItem("access_token");
@@ -968,6 +969,36 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications, unreadFeedbackCount, unreadGroupsCount]);
 
+    const filteredLinks = useMemo(() => {
+        if (!searchQuery.trim()) return links;
+
+        const query = searchQuery.toLowerCase();
+        return links
+            .map((link) => {
+                if (link.children) {
+                    const parentMatches = link.name.toLowerCase().includes(query);
+                    const matchingChildren = link.children.filter((child) =>
+                        child.name.toLowerCase().includes(query)
+                    );
+
+                    if (parentMatches || matchingChildren.length > 0) {
+                        return {
+                            ...link,
+                            children: parentMatches ? link.children : matchingChildren,
+                        };
+                    }
+                    return null;
+                }
+
+                if (link.name.toLowerCase().includes(query)) {
+                    return link;
+                }
+
+                return null;
+            })
+            .filter(Boolean);
+    }, [links, searchQuery]);
+
     const [openDropdowns, setOpenDropdowns] = useState({});
 
     useEffect(() => {
@@ -1118,10 +1149,23 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         <span></span>
                     </button>
                 </div>
+                {isOpen && (
+                    <div className="sidebar-search-container">
+                        <Input
+                            placeholder="Поиск по меню..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            allowClear
+                            prefix={<Search size={16} />}
+                        />
+                    </div>
+                )}
                 <nav className={`nav-links ${isOpen ? "visible" : "collapsed-nav"}`}>
-                    {links.map((link) => {
+                    {filteredLinks.map((link) => {
                         if (link.children) {
-                            const isDropdownOpen = openDropdowns[link.key] || false;
+                            const isDropdownOpen = searchQuery.trim()
+                                ? true
+                                : (openDropdowns[link.key] || false);
                             const isActive = link.children.some(
                                 (child) => child.key === activeLink,
                             );

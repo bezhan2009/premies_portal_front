@@ -11,6 +11,8 @@ import {
   evaluateDocxTemplateConditions,
 } from "../../utils/docxTemplateHelpers";
 import { fetchCreditGraphs } from "../../api/ABS_frotavik/getUserCredits";
+import { Modal, Button } from "antd";
+import { hasRole } from "../../api/roleHelper";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -21,6 +23,13 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
+  const [previewModal, setPreviewModal] = useState({
+    isOpen: false,
+    url: "",
+    name: "",
+    format: "",
+    blob: null,
+  });
   const [paramsModal, setParamsModal] = useState({
     isOpen: false,
     variant: null,
@@ -167,13 +176,15 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             data.forEach(day => {
               if (Array.isArray(day.Transactions)) {
                  day.Transactions.forEach(tx => {
-                   flatTransactions.push({
-                     ...tx,
-                     doper: day.DOPER,
-                     date: `${tx.DOCDOPER || day.DOPER || ""} ${tx.EXECDT || ""}`.trim(),
-                     MOVD: tx.MOVD || 0,
-                     MOVC: tx.MOVC || 0
-                   });
+                    flatTransactions.push({
+                      ...tx,
+                      doper: day.DOPER,
+                      date: tx.DOCDOPER || day.DOPER || "",
+                      time: tx.EXECDT || "",
+                      date_time: `${tx.DOCDOPER || day.DOPER || ""} ${tx.EXECDT || ""}`.trim(),
+                      MOVD: tx.MOVD || 0,
+                      MOVC: tx.MOVC || 0
+                    });
                  });
               }
             });
@@ -273,6 +284,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
     const virtualKeys = [
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
+      { key: "eval: (transactions || []).map(t => t.time)", docxKey: "time" },
+      { key: "eval: (transactions || []).map(t => t.date_time)", docxKey: "date_time" },
       { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "MOVD" },
       { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "MOVC" },
       { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "TXTDSCR" },
@@ -309,19 +322,21 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
         },
       );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      const downloadName = sanitizeDocxFileName(
-        variant.outputFileName || `${template.name}_${variant.name}`,
-        "generated",
-      );
-
-      link.href = url;
-      link.setAttribute("download", `${downloadName}.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+       const downloadName = sanitizeDocxFileName(
+         variant.outputFileName || `${template.name}_${variant.name}`,
+         "generated",
+       );
+       const mimeType = format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+       const blob = new Blob([response.data], { type: mimeType });
+       const url = window.URL.createObjectURL(blob);
+       
+       setPreviewModal({
+         isOpen: true,
+         url,
+         name: downloadName,
+         format,
+         blob,
+       });
     } catch (error) {
       console.error("Docx generation error:", error);
       alert("Ошибка при генерации документа. Проверьте шаблон и попробуйте еще раз.");
@@ -550,6 +565,59 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
         </AnimatePresence>,
         document.body
       )}
+
+      <Modal
+        title={`Просмотр документа: ${previewModal.name}`}
+        open={previewModal.isOpen}
+        onCancel={() => {
+          window.URL.revokeObjectURL(previewModal.url);
+          setPreviewModal({ isOpen: false, url: "", name: "", format: "", blob: null });
+        }}
+        width={1000}
+        centered
+        bodyStyle={{ height: "700px", padding: 0 }}
+        footer={[
+          <Button
+            key="download"
+            type="primary"
+            icon={<Download size={16} style={{ marginRight: '6px', display: 'inline-block', verticalAlign: 'middle' }} />}
+            onClick={() => {
+              const link = document.createElement("a");
+              link.href = previewModal.url;
+              link.setAttribute("download", `${previewModal.name}.${previewModal.format}`);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }}
+          >
+            Скачать файл
+          </Button>,
+          <Button
+            key="close"
+            onClick={() => {
+              window.URL.revokeObjectURL(previewModal.url);
+              setPreviewModal({ isOpen: false, url: "", name: "", format: "", blob: null });
+            }}
+          >
+            Закрыть
+          </Button>
+        ]}
+      >
+        {previewModal.format === "pdf" ? (
+          <iframe
+            src={previewModal.url}
+            width="100%"
+            height="100%"
+            style={{ border: "none" }}
+          />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b' }}>
+            <FileText size={64} style={{ marginBottom: '16px', color: '#3b82f6' }} />
+            <h3 style={{ color: '#0f172a', marginBottom: '8px' }}>Файл готов к скачиванию</h3>
+            <p>Предварительный просмотр DOCX в браузере недоступен. Пожалуйста, скачайте файл.</p>
+          </div>
+        )}
+      </Modal>
     </>
   );
 };

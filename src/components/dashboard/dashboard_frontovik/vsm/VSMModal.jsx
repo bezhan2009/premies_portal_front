@@ -296,14 +296,16 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
             if (dispName) merchantNamesSet.add(dispName);
         });
 
-        // Clean names per Visa constraints
+        // Clean names per Visa constraints (maximum of 10 unique names/IDs allowed)
         const apiMerchantNames = Array.from(merchantNamesSet).map(name => {
             let n = String(name || "").trim();
             if (n.length > 25) n = n.slice(0, 25).trim();
             if (n.length < 2) n = "MERCHANT";
             return n;
-        });
-        const apiCardAcceptorIds = Array.from(cardAcceptorIdsSet).filter(id => id && String(id).trim().length > 0);
+        }).slice(0, 10);
+        const apiCardAcceptorIds = Array.from(cardAcceptorIdsSet)
+            .filter(id => id && String(id).trim().length > 0)
+            .slice(0, 10);
 
         modal.confirm({
             title: `Заблокировать списания от ${targetMrchName}?`,

@@ -823,6 +823,49 @@
   padding: 0.5rem;
 }
 
+.sidebar-search-container {
+  padding: 0 0.5rem 0.75rem 0.5rem;
+  margin-bottom: 0.25rem;
+  transition: all 0.3s ease;
+
+  .ant-input-affix-wrapper {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px;
+    padding: 6px 12px;
+    box-shadow: none !important;
+
+    &:hover, &.ant-input-affix-wrapper-focused {
+      border-color: var(--primary-color, #f59e0b) !important;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1) !important;
+    }
+
+    .ant-input-prefix {
+      color: var(--text-muted, #94a3b8) !important;
+      margin-right: 8px;
+    }
+
+    input {
+      background: transparent !important;
+      color: var(--text-color, #f1f5f9) !important;
+      font-size: 13.5px;
+      border: none !important;
+
+      &::placeholder {
+        color: var(--text-muted, #94a3b8) !important;
+        opacity: 0.7;
+      }
+    }
+
+    .ant-input-clear-icon {
+      color: var(--text-muted, #94a3b8);
+      &:hover {
+        color: var(--text-color, #f1f5f9);
+      }
+    }
+  }
+}
+
 .sidebar-top {
   display: flex;
   align-items: center;
