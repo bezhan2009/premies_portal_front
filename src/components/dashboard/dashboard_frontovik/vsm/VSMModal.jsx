@@ -511,7 +511,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                 return true;
             }
             const rawMName = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
-            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || rawMName.includes(rawMName))) {
+            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || normalizedStopName.includes(rawMName))) {
                 return true;
             }
             return false;
@@ -548,7 +548,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                 return true;
             }
             const rawMName = (m.mrchName || "").toLowerCase().replace(/[\s\-_]/g, "");
-            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || rawMName.includes(rawMName))) {
+            if (rawMName && normalizedStopName && (rawMName.includes(normalizedStopName) || normalizedStopName.includes(rawMName))) {
                 return true;
             }
             return false;
