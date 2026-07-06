@@ -275,13 +275,13 @@ export const formatDocxValueByKey = (key, value) => {
   }
 
   if (value instanceof Date) {
-    if (keyLower.includes("datetime") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
+    if (keyLower.includes("datetime") || keyLower.includes("date_time") || keyLower.includes("дата_время") || keyLower.includes("дата время") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
       return formatDocxDateTime(value.toISOString());
     }
-    if (keyLower.includes("date")) {
+    if (keyLower.includes("date") || keyLower.includes("дата")) {
       return formatDocxDate(value.toISOString());
     }
-    if (keyLower.includes("time")) {
+    if (keyLower.includes("time") || keyLower.includes("время")) {
       return formatDocxTime(value.toISOString());
     }
   }
@@ -290,13 +290,13 @@ export const formatDocxValueByKey = (key, value) => {
     const isDatePattern = /^\d{4}-\d{2}-\d{2}/.test(value) || /^\d{4}\/\d{2}\/\d{2}/.test(value);
     
     if (isDatePattern) {
-      if (keyLower.includes("datetime") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
+      if (keyLower.includes("datetime") || keyLower.includes("date_time") || keyLower.includes("дата_время") || keyLower.includes("дата время") || keyLower.includes("createdat") || keyLower.includes("updatedat")) {
         return formatDocxDateTime(value);
       }
-      if (keyLower.includes("date")) {
+      if (keyLower.includes("date") || keyLower.includes("дата")) {
         return formatDocxDate(value);
       }
-      if (keyLower.includes("time")) {
+      if (keyLower.includes("time") || keyLower.includes("время")) {
         return formatDocxTime(value);
       }
     }
