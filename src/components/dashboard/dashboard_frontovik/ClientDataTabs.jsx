@@ -1143,7 +1143,6 @@ const ClientDataTabs = ({
 
                       <div className="card-actions-bar" style={{ marginTop: "auto", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                         <button className="card-action-btn outline-danger" onClick={() => handleNavigateToAccountOperations(acc.Number)}>Выписка (АБС)</button>
-                        <button className="card-action-btn neutral" onClick={() => handleOpenRequisitesModal(matchingCard || { cardId: "", details: { cardNumberMask: "" } })}>Скачать реквизиты</button>
                         <DynamicDocxButtons
                           page="AccountDetails"
                           section="Счета клиента в АБС"
@@ -1157,6 +1156,7 @@ const ClientDataTabs = ({
                             "account.branch": acc.Branch?.Name || "",
                             "account.type": acc.Type || "",
                             "account.pcBalance": rawPcBalance !== null && rawPcBalance !== undefined ? rawPcBalance : null,
+                            "account.linkedCard": matchingCard ? (matchingCard.details?.cardNumberMask || matchingCard.CardNumber || matchingCard.cardNumber || "") : "",
                           }}
                         />
                       </div>
@@ -1478,15 +1478,7 @@ const ClientDataTabs = ({
                 <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
                   <div className="flex items-center justify-between mb-4" style={{ width: "100%" }}>
                     <h3 className="text-lg font-bold text-slate-800">Договоры кредитования</h3>
-                    {isEligibleForDebtCertificate && (
-                      <Button 
-                        type="primary" 
-                        onClick={() => setIsDebtCertificateModalOpen(true)}
-                      >
-                        Справка об отсутствии долгов
-                      </Button>
-                    )}
-                    {creditsData?.length > 0 && !isEligibleForDebtCertificate && (
+                    {creditsData?.length > 0 && (
                       <button onClick={handleExportCredits} className="btn-tab-export">
                         Экспорт в Excel
                       </button>

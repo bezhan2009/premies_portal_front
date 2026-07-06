@@ -273,16 +273,11 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     finalData["дата выписки"] = nowStr;
     finalData["дата_выписки"] = nowStr;
 
-    // Define virtual keys to map transaction arrays into top-level flat slices (expected by backend replicateTableRows)
     const virtualKeys = [
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
       { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "MOVD" },
       { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "MOVC" },
-      { key: "eval: (transactions || []).map(t => t.MOVD)", docxKey: "списания" },
-      { key: "eval: (transactions || []).map(t => t.MOVC)", docxKey: "зачисления" },
       { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "TXTDSCR" },
-      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "Описание операции" },
-      { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "детали" },
       { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "details" }
     ];
     
