@@ -25,15 +25,16 @@ export default function AlertMessage({ message, type = "error", duration = 3000,
                     <div 
                         style={{ 
                             fontSize: "11px", 
-                            textDecoration: "underline", 
+                            textDecoration: "none", 
                             cursor: "pointer", 
                             color: "#ffffff",
-                            background: "rgba(255,255,255,0.18)",
-                            padding: "4px 8px",
+                            background: "#eb2525",
+                            padding: "6px 10px",
                             borderRadius: "4px",
                             textAlign: "center",
-                            marginTop: "4px",
-                            fontWeight: "bold"
+                            marginTop: "6px",
+                            fontWeight: "bold",
+                            border: "1px solid #c21818"
                         }} 
                         onClick={handleRedirect}
                     >
