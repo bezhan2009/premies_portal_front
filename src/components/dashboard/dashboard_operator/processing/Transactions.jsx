@@ -3,6 +3,7 @@ import { Input as AntInput, Space, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import Select from "../../../elements/Select";
 import AlertMessage from "../../../general/AlertMessage.jsx";
+import DynamicDocxButtons from "../../../general/DynamicDocxButtons.jsx";
 import {
   fetchTransactionsByCardId,
   fetchTransactionsByATM,
@@ -1368,10 +1369,30 @@ export default function DashboardOperatorProcessingTransactions() {
                       </span>
                     )}
                   </h2>
-                  <div className="table-header-actions">
+                  <div className="table-header-actions" style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={handleExport} className="export-excel-btn">
                       Экспорт в Excel
                     </button>
+                    <DynamicDocxButtons
+                      page="ProcessingTransactions"
+                      section="Транзакции процессинга"
+                      data={{
+                        processing_transactions: transactionTableData.map((t) => {
+                          const transactionTypeValue = getTransactionTypeValue(t.transactionType, t.transactionTypeNumber);
+                          const statusText = t.reversal ? "Возврат" : (t.responseDescription || "");
+                          return {
+                            date: `${t.localTransactionDate || "N/A"} ${t.localTransactionTime || "N/A"}`,
+                            status: statusText,
+                            cardNumber: t.cardNumber ? formatCardNumber(t.cardNumber) : "N/A",
+                            cardId: t.cardId || "N/A",
+                            operationType: t.transactionTypeName || "N/A",
+                            amountCurrency: `${formatAmount(t.amount, transactionTypeValue)} ${getCurrencyCode(t.currency)}`,
+                            amountCardCurrency: `${formatAmount(t.conamt, transactionTypeValue)} ${getCurrencyCode(t.conCurrency)}`,
+                            availableBalance: formatAmount(t.acctbal)
+                          };
+                        })
+                      }}
+                    />
                   </div>
                 </div>
 

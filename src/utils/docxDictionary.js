@@ -233,6 +233,19 @@ export const docxDictionary = [
     ],
   },
   {
+    category: "Транзакции процессинга (Динамическая таблица)",
+    keys: [
+      { key: "processing_transactions.date", description: "Дата" },
+      { key: "processing_transactions.status", description: "Статус" },
+      { key: "processing_transactions.cardNumber", description: "Номер карты" },
+      { key: "processing_transactions.cardId", description: "ID карты" },
+      { key: "processing_transactions.operationType", description: "Тип операции" },
+      { key: "processing_transactions.amountCurrency", description: "Сумма (в валюте)" },
+      { key: "processing_transactions.amountCardCurrency", description: "Сумма в валюте карты" },
+      { key: "processing_transactions.availableBalance", description: "Доступный баланс" },
+    ],
+  },
+  {
     category: "График платежей (Динамическая таблица)",
     keys: [
       { key: "schedule.date", description: "Дата платежа" },
