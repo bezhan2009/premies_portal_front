@@ -255,6 +255,16 @@ const TABLE_SOURCE_FIELDS = {
     { value: "balance", label: "Остаток долга (balance)" },
     { value: "status", label: "Статус платежа (status)" },
     { value: "type", label: "Тип платежа (type)" },
+  ],
+  processing_transactions: [
+    { value: "date", label: "Дата (date)" },
+    { value: "status", label: "Статус (status)" },
+    { value: "cardNumber", label: "Номер карты (cardNumber)" },
+    { value: "cardId", label: "ID карты (cardId)" },
+    { value: "operationType", label: "Тип операции (operationType)" },
+    { value: "amountCurrency", label: "Сумма в валюте (amountCurrency)" },
+    { value: "amountCardCurrency", label: "Сумма в валюте карты (amountCardCurrency)" },
+    { value: "availableBalance", label: "Доступный баланс (availableBalance)" },
   ]
 };
 
@@ -329,7 +339,12 @@ const buildSystemKeyFromBuilder = (state) => {
   if (state.type === "table") {
     const source = state.tableSource || "transactions";
     const field = state.tableField || "date";
-    const varName = source === "transactions" ? "t" : "s";
+    let varName = "s";
+    if (source === "transactions") {
+      varName = "t";
+    } else if (source === "processing_transactions") {
+      varName = "pt";
+    }
     
     let exprBody = `${varName}.${field}`;
     
@@ -2162,7 +2177,7 @@ const DocxGenerator = () => {
 
                     <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "8px", background: "#f9fafb" }}>
                       {dictionaryItems
-                        .filter(item => !item.key.startsWith("transactions.") && !item.key.startsWith("schedule."))
+                        .filter(item => !item.key.startsWith("transactions.") && !item.key.startsWith("schedule.") && !item.key.startsWith("processing_transactions."))
                         .map(item => (
                           <button
                             key={item.key}
@@ -2205,7 +2220,8 @@ const DocxGenerator = () => {
                           }}
                           options={[
                             { value: "transactions", label: "Транзакции (transactions)" },
-                            { value: "schedule", label: "График платежей (schedule)" }
+                            { value: "schedule", label: "График платежей (schedule)" },
+                            { value: "processing_transactions", label: "Транзакции процессинга (processing_transactions)" }
                           ]}
                         />
                       </div>
@@ -2247,7 +2263,7 @@ const DocxGenerator = () => {
                           placeholder="Например: t.amount + ' сум'"
                         />
                         <small style={{ color: "#6b7280" }}>
-                          Используйте переменную <strong>t</strong> (для транзакций) или <strong>s</strong> (для графика).
+                          Используйте переменную <strong>t</strong> (для транзакций), <strong>s</strong> (для графика) или <strong>pt</strong> (для процессинга).
                         </small>
                       </div>
                     )}
