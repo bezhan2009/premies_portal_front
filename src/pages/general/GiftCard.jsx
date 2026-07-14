@@ -33,6 +33,10 @@ import Spinner from "../../components/Spinner.jsx";
 import { formaterDate } from "../../api/utils/formateDate.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import ClientSelectorModal from "../../components/dashboard/dashboard_agent/clientSelectorModal.jsx";
+import ClientDocumentsTable from "../../components/client-documents/ClientDocumentsTable.jsx";
+import ClientDocumentUploadModal from "../../components/client-documents/ClientDocumentUploadModal.jsx";
+import DocumentPreviewModal from "../../components/client-documents/DocumentPreviewModal.jsx";
+import { getClientDocumentsByINN } from "../../api/clientsDataFiles/clientsDataFiles.js";
 
 const complianceScores = {
   "Пенсионер": 0, "Обслуживание": 0, "Студент": 0, "Домохозяйка/безработный": 0, "Фермер": 0, "Работники государственных учреждений/предприятий": 0,
@@ -359,6 +363,32 @@ export default function GiftCard({ edit = false }) {
 
     // --- NEW STATES FOR REFACTORING ---
     const [appOffices, setAppOffices] = useState([]);
+
+    // Client Documents states
+    const [clientDocuments, setClientDocuments] = useState([]);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [previewDocument, setPreviewDocument] = useState(null);
+    const [isFetchingDocuments, setIsFetchingDocuments] = useState(false);
+    
+    // Fetch documents when INN changes
+    useEffect(() => {
+        const fetchDocs = async () => {
+            if (!data.inn || data.inn.trim().length === 0) {
+                setClientDocuments([]);
+                return;
+            }
+            try {
+                setIsFetchingDocuments(true);
+                const docs = await getClientDocumentsByINN(data.inn);
+                setClientDocuments(docs);
+            } catch (err) {
+                console.error("Failed to load documents for INN", err);
+            } finally {
+                setIsFetchingDocuments(false);
+            }
+        };
+        fetchDocs();
+    }, [data.inn]);
     
     useEffect(() => {
         const fetchOffices = async () => {
@@ -1353,6 +1383,10 @@ export default function GiftCard({ edit = false }) {
                 formData.append(key, value);
             });
 
+            // Get operator name from localStorage and append it
+            const operatorFio = localStorage.getItem("full_name") || localStorage.getItem("username") || "Неизвестный оператор";
+            formData.append("operator_fio", operatorFio);
+
             const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
             let applicationId = data.ID;
 
@@ -1618,7 +1652,6 @@ export default function GiftCard({ edit = false }) {
 
     const totalComplianceScoreSum = 
         getScore(data.client_occupation) +
-        getScore(data.net_worth) +
         getScore(data.monthly_income) +
         getScore(data.total_outgoing_transactions_amount) +
         getScore(data.total_outgoing_transactions_count) +
@@ -1629,7 +1662,7 @@ export default function GiftCard({ edit = false }) {
         getBooleanScore(data.apl_pzl);
 
     // Get average score from 1 to 5
-    const totalComplianceScore = Math.max(1, Math.round(totalComplianceScoreSum / 9));
+    const totalComplianceScore = Math.max(1, Math.round(totalComplianceScoreSum / 8));
 
 
     return (
@@ -2456,6 +2489,43 @@ export default function GiftCard({ edit = false }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Client Documents Section */}
+                        {data.inn && (
+                            <div className="compliance-section" style={{ marginTop: '20px' }}>
+                                <div className="compliance-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div className="compliance-title-group">
+                                        <span className="compliance-icon">📁</span>
+                                        <h3>База документов клиента</h3>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setIsUploadModalOpen(true);
+                                        }}
+                                        style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+                                    >
+                                        Загрузить документ
+                                    </button>
+                                </div>
+                                <div style={{ padding: '15px' }}>
+                                    {isFetchingDocuments ? (
+                                        <div style={{ textAlign: "center", padding: "20px" }}>Загрузка документов...</div>
+                                    ) : clientDocuments.length > 0 ? (
+                                        <ClientDocumentsTable
+                                            documents={clientDocuments}
+                                            onPreview={(doc) => setPreviewDocument(doc)}
+                                        />
+                                    ) : (
+                                        <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                                            Нет загруженных документов
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <footer>
                             {requiresCompliance ? (
                                 <button
@@ -2535,6 +2605,30 @@ export default function GiftCard({ edit = false }) {
                         </div>
                     </div>
                 )}
+
+                <ClientDocumentUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    inn={data.inn}
+                    onUploadSuccess={async () => {
+                        setIsUploadModalOpen(false);
+                        try {
+                            setIsFetchingDocuments(true);
+                            const docs = await getClientDocumentsByINN(data.inn);
+                            setClientDocuments(docs);
+                        } catch (err) {
+                            console.error("Failed to load documents for INN", err);
+                        } finally {
+                            setIsFetchingDocuments(false);
+                        }
+                    }}
+                />
+
+                <DocumentPreviewModal
+                    isOpen={!!previewDocument}
+                    onClose={() => setPreviewDocument(null)}
+                    document={previewDocument}
+                />
             </div>
         </>
     );

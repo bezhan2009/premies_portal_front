@@ -1,51 +1,110 @@
-// ApplicationsList.jsx
-import React, { useEffect, useState, useCallback } from "react";
-import Input from "../../components/elements/Input";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+    Archive,
+    BriefcaseBusiness,
+    CalendarDays,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock3,
+    Download,
+    Eye,
+    Inbox,
+    Search,
+    SlidersHorizontal,
+    Trash2,
+    XCircle,
+} from "lucide-react";
 import { useFormStore } from "../../hooks/useFormState";
 import { status } from "../../const/defConst";
-import fileLogo from "../../assets/file_logo.png";
 import Select from "../../components/elements/Select";
-import HeaderAgent from "../../components/dashboard/dashboard_agent/MenuAgent.jsx";
 import Spinner from "../../components/Spinner.jsx";
-import { AiFillDelete, AiFillEdit } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 
-function ImagePreviewModal({ imageUrl, onClose }) {
-    if (!imageUrl) return null;
-    return (
-        <div className="custom-modal-overlay" onClick={onClose}>
-            <div
-                className="custom-modal-content animate-scaleIn"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <button className="custom-modal-close" onClick={onClose}>
-                    ×
-                </button>
-                <img
-                    src={imageUrl}
-                    alt="Предпросмотр"
-                    className="custom-modal-image"
-                />
-            </div>
-        </div>
+const PAGE_SIZE = 8;
+
+const STATUS_TABS = [
+    { key: "all", label: "Все", ids: null },
+    { key: "new", label: "Новые", ids: [1] },
+    { key: "review", label: "На проверке", ids: [2] },
+    { key: "approved", label: "Одобренные", ids: [8] },
+    { key: "rejected", label: "Отклоненные", ids: [5, 6, 7] },
+];
+
+const getStatusId = (row) =>
+    Number(
+        row?.application_status_id ??
+            row?.status_id ??
+            row?.statusId ??
+            row?.application_status?.ID ??
+            row?.application_status?.id ??
+            0,
     );
-}
+
+const getStatusGroup = (row) => {
+    const statusId = getStatusId(row);
+    if (statusId === 8) return "approved";
+    if ([5, 6, 7].includes(statusId)) return "rejected";
+    if (statusId === 2) return "review";
+    return "new";
+};
+
+const getStatusLabel = (row) => {
+    const statusId = getStatusId(row);
+    const explicitLabel =
+        row?.application_status?.name ||
+        row?.application_status?.Name ||
+        row?.application_status_name ||
+        row?.status_name ||
+        row?.status;
+
+    if (explicitLabel && explicitLabel !== "Статус") return explicitLabel;
+    if (statusId === 8) return "Одобрена";
+    if ([5, 6, 7].includes(statusId)) return "Отклонена";
+    if (statusId === 2) return "На проверке";
+    if (statusId === 1) return "Новая";
+
+    const option = [...status].reverse().find((item) => Number(item.value) === statusId);
+    return option?.label && option.label !== "Статус" ? option.label : "Новая";
+};
+
+const getFullName = (row) =>
+    [row?.surname, row?.name, row?.patronymic]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || "Без имени";
+
+const getInitials = (row) => {
+    const parts = [row?.surname, row?.name].filter(Boolean);
+    if (parts.length === 0) return "ЗК";
+    return parts.map((part) => String(part).charAt(0).toUpperCase()).join("");
+};
+
+const getStatusStats = (rows) =>
+    STATUS_TABS.reduce((acc, tab) => {
+        acc[tab.key] = tab.ids
+            ? rows.filter((row) => tab.ids.includes(getStatusId(row))).length
+            : rows.length;
+        return acc;
+    }, {});
 
 export default function ApplicationsList() {
     const { data, errors, setData } = useFormStore();
+    const navigate = useNavigate();
     const [selectedRows, setSelectedRows] = useState([]);
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [archive, setArchive] = useState(false);
-    const [selectAll, setSelectAll] = useState(false);
+    const [activeStatusTab, setActiveStatusTab] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
     const [nextId, setNextId] = useState(null);
-    const [fetching, setFetching] = useState(true);
+    const [fetching, setFetching] = useState(false);
     const [filters, setFilters] = useState({
+        query: "",
         fullName: "",
         phone: "",
         resident: "",
@@ -56,26 +115,24 @@ export default function ApplicationsList() {
         message: "",
         type: "info",
     });
-    const navigate = useNavigate();
 
     const wsUrl =
         import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + "/applications/portal";
 
-    // Вспомогательная функция для получения заголовков с токеном
-    const getAuthHeaders = () => {
+    const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem("access_token");
         return {
             Authorization: `Bearer ${token}`,
         };
-    };
+    }, []);
 
     const fetchData = useCallback(
-        async (nextId = null, reset = false) => {
+        async (after = null, reset = false) => {
             try {
                 setLoading(true);
                 const params = {};
 
-                if (nextId) params.after = nextId;
+                if (after) params.after = after;
                 if (data?.month) params.month = data.month;
                 if (data?.year) params.year = data.year;
                 if (data?.status) params.status_id = data.status;
@@ -84,12 +141,12 @@ export default function ApplicationsList() {
                     archive ? "/applications/archive" : "/applications",
                     {
                         params,
-                        headers: getAuthHeaders(), // 🔐 Добавлен токен
+                        headers: getAuthHeaders(),
                     },
                 );
                 const result = response.data || [];
 
-                if (reset || nextId === null) {
+                if (reset || after === null) {
                     setTableData(result);
                 } else {
                     setTableData((prev) => {
@@ -100,7 +157,6 @@ export default function ApplicationsList() {
                 }
 
                 setNextId(result?.[result?.length - 1]?.ID);
-                setFetching(false);
             } catch (error) {
                 console.log("Ошибка загрузки заявок:", error);
             } finally {
@@ -108,13 +164,11 @@ export default function ApplicationsList() {
                 setFetching(false);
             }
         },
-        [archive, data?.month, data?.year, data?.status],
+        [archive, data?.month, data?.year, data?.status, getAuthHeaders],
     );
 
     const handleNewApplication = useCallback(
         (newApplication) => {
-            console.log("Новая заявка получена:", newApplication);
-
             setAlert({
                 show: true,
                 message: `Новая заявка #${newApplication.ID} от ${newApplication.request_сreator}`,
@@ -159,17 +213,12 @@ export default function ApplicationsList() {
 
     const scrollHandler = (e) => {
         const target = e.target;
-        console.table({
-            name: "target",
-            scrollHeight: target.scrollHeight,
-            scrollTop: target.scrollTop,
-            clientHeight: target.clientHeight,
-        });
-
-        if (!fetching) {
-            if (target.scrollHeight - (target.scrollTop + target.clientHeight) < 1) {
-                setFetching(true);
-            }
+        if (
+            !fetching &&
+            nextId &&
+            target.scrollHeight - (target.scrollTop + target.clientHeight) < 12
+        ) {
+            setFetching(true);
         }
     };
 
@@ -177,78 +226,127 @@ export default function ApplicationsList() {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const applyFilters = (data, currentFilters) => {
-        if (!Array.isArray(data)) return [];
-
-        return data.filter((row) => {
-            const fullName =
-                `${row?.surname || ""} ${row?.name || ""} ${row?.patronymic || ""}`.toLowerCase();
-            return (
-                fullName?.includes(currentFilters?.fullName?.toLowerCase() || "") &&
-                row?.phone_number?.includes(currentFilters?.phone || "") &&
-                (!currentFilters?.resident ||
-                    (currentFilters?.resident === "Да"
-                        ? row?.is_resident
-                        : !row?.is_resident)) &&
-                (!currentFilters?.card ||
-                    row?.card_name
-                        ?.toLowerCase()
-                        ?.includes(currentFilters?.card?.toLowerCase() || ""))
-            );
-        });
-    };
-
-    const headers = [
-        "Телефон",
-        "Кодовое слово",
-        "Имя на карте",
-        "Пол",
-        "Резидент",
-        "Документ",
-        "ИНН",
-        "Адрес",
-        "Карта",
-    ];
-
-    const renderFileIcon = (path) => {
-        if (!path) return null;
-        const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
-        const fullUrl = `${backendUrl}/uploads/${path.replace(/\\/g, "/")}`;
-        return (
-            <button
-                className="file-icon-button"
-                onClick={() => setPreviewImage(fullUrl)}
-            >
-                <img src={fileLogo} alt="Файл" width={48} height={60} />
-            </button>
-        );
-    };
-
-    const formatDate = (date) => {
-        if (!date) return "";
-        const d = new Date(date);
-        if (isNaN(d)) return "";
-        return d.toISOString().split("T")[0];
-    };
-
     const deleteApplication = async (id) => {
         try {
-            // 🔐 Прямой вызов API с заголовком авторизации
             await apiClientApplication.delete(`/applications/${id}`, {
                 headers: getAuthHeaders(),
             });
-            setTimeout(() => fetchData(), 200);
+            setSelectedRows((prev) => prev.filter((selectedId) => selectedId !== id));
+            setTimeout(() => fetchData(null, true), 200);
         } catch (e) {
             console.error(e);
         }
     };
 
-    const filteredData = applyFilters(tableData, filters);
+    const filteredData = useMemo(() => {
+        if (!Array.isArray(tableData)) return [];
 
-    const upDateStatusApplications = async (status) => {
-        // Проверяем, есть ли среди выбранных заявок те, у которых статус "Не одобрено" (7)
+        const query = filters.query.trim().toLowerCase();
+        const fullNameFilter = filters.fullName.trim().toLowerCase();
+        const cardFilter = filters.card.trim().toLowerCase();
+
+        return tableData.filter((row) => {
+            const fullName = getFullName(row).toLowerCase();
+            const searchHaystack = [
+                row?.ID,
+                fullName,
+                row?.phone_number,
+                row?.card_name,
+                row?.card_type,
+                row?.last_card_numbers,
+                row?.receiving_office,
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            const matchesTab =
+                activeStatusTab === "all" || getStatusGroup(row) === activeStatusTab;
+            const matchesQuery = !query || searchHaystack.includes(query);
+            const matchesFullName = !fullNameFilter || fullName.includes(fullNameFilter);
+            const matchesPhone =
+                !filters.phone || String(row?.phone_number || "").includes(filters.phone);
+            const matchesResident =
+                !filters.resident ||
+                (filters.resident === "Да" ? row?.is_resident : !row?.is_resident);
+            const matchesCard =
+                !cardFilter || String(row?.card_name || "").toLowerCase().includes(cardFilter);
+
+            return (
+                matchesTab &&
+                matchesQuery &&
+                matchesFullName &&
+                matchesPhone &&
+                matchesResident &&
+                matchesCard
+            );
+        });
+    }, [activeStatusTab, filters, tableData]);
+
+    const statusCounts = useMemo(() => getStatusStats(tableData), [tableData]);
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+    const pageStart = (currentPage - 1) * PAGE_SIZE;
+    const visibleRows = filteredData.slice(pageStart, pageStart + PAGE_SIZE);
+    const allVisibleSelected =
+        visibleRows.length > 0 && visibleRows.every((row) => selectedRows.includes(row.ID));
+    const periodLabel =
+        data?.month || data?.year
+            ? [data?.month ? `Месяц ${data.month}` : null, data?.year ? `Год ${data.year}` : null]
+                  .filter(Boolean)
+                  .join(", ")
+            : "Весь период";
+
+    const paginationPages = useMemo(() => {
+        const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+        return [...pages]
+            .filter((page) => page >= 1 && page <= totalPages)
+            .sort((a, b) => a - b);
+    }, [currentPage, totalPages]);
+
+    const statsCards = [
+        {
+            key: "all",
+            label: "Всего заявок",
+            value: statusCounts.all || 0,
+            icon: Inbox,
+            tone: "neutral",
+        },
+        {
+            key: "review",
+            label: "На проверке",
+            value: statusCounts.review || 0,
+            icon: Clock3,
+            tone: "warning",
+        },
+        {
+            key: "approved",
+            label: "Одобренные",
+            value: statusCounts.approved || 0,
+            icon: CheckCircle2,
+            tone: "success",
+        },
+        {
+            key: "rejected",
+            label: "Отклоненные",
+            value: statusCounts.rejected || 0,
+            icon: XCircle,
+            tone: "danger",
+        },
+    ];
+
+    const toggleVisibleRows = (checked) => {
+        const visibleIds = visibleRows.map((row) => row.ID);
+        setSelectedRows((prev) => {
+            if (checked) {
+                return [...new Set([...prev, ...visibleIds])];
+            }
+            return prev.filter((id) => !visibleIds.includes(id));
+        });
+    };
+
+    const upDateStatusApplications = async (newStatus) => {
         const unapprovedSelected = tableData.filter(
-            (row) => selectedRows.includes(row.ID) && row.application_status_id === 7
+            (row) => selectedRows.includes(row.ID) && row.application_status_id === 7,
         );
         if (unapprovedSelected.length > 0) {
             setAlert({
@@ -260,21 +358,19 @@ export default function ApplicationsList() {
         }
 
         try {
-            // 🔐 Выполняем запросы с токеном
             await Promise.all(
                 selectedRows.map((id) =>
                     apiClientApplication.patch(
                         `/applications/${id}`,
-                        { application_status_id: +status },
-                        { headers: getAuthHeaders() }
-                    )
-                )
+                        { application_status_id: +newStatus },
+                        { headers: getAuthHeaders() },
+                    ),
+                ),
             );
 
             setData("status", "");
             fetchData(null, true);
             setSelectedRows([]);
-            setSelectAll(false);
         } catch (e) {
             console.error(e);
         }
@@ -282,11 +378,7 @@ export default function ApplicationsList() {
 
     useEffect(() => {
         fetchData(null, true);
-    }, [archive, fetchData]);
-
-    useEffect(() => {
-        fetchData(null, true);
-    }, [data?.month, data?.year, data?.status, fetchData]);
+    }, [fetchData]);
 
     useEffect(() => {
         if (fetching && nextId !== undefined) {
@@ -310,235 +402,349 @@ export default function ApplicationsList() {
         if (savedYear) setData("year", savedYear);
     }, [setData]);
 
-    return (
-        <>
-            <div className="applications-list content-page">
-                <main>
-                    {alert.show && (
-                        <AlertMessage
-                            message={alert.message}
-                            type={alert.type}
-                            onClose={() => setAlert({ ...alert, show: false })}
-                            duration={5000}
-                        />
-                    )}
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeStatusTab, filters, archive]);
 
-                    <div className="my-applications-header">
-                        <Select
-                            style={{ border: selectedRows.length && "4px solid #ff1a1a" }}
-                            id={"status"}
-                            value={data?.status}
-                            onChange={(e) => {
-                                if (!selectedRows.length) setData("status", e);
-                                else upDateStatusApplications(e);
-                            }}
-                            options={status}
-                            error={errors}
-                        />
-                        <button className="Unloading" onClick={handleExport}>
-                            Выгрузка для карт
-                        </button>
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
+    return (
+        <div className="applications-list content-page applications-list-redesign">
+            <main>
+                {alert.show && (
+                    <AlertMessage
+                        message={alert.message}
+                        type={alert.type}
+                        onClose={() => setAlert({ ...alert, show: false })}
+                        duration={5000}
+                    />
+                )}
+
+                <section className="applications-hero">
+                    <div>
+                        <h1>Заявки на карты</h1>
+                        <p>Обработка и проверка заявок клиентов на выпуск карт</p>
+                    </div>
+                </section>
+
+                <section className="applications-stats">
+                    {statsCards.map((card) => {
+                        const Icon = card.icon;
+                        return (
+                            <button
+                                type="button"
+                                key={card.key}
+                                className={`applications-stat applications-stat--${card.tone}`}
+                                onClick={() => setActiveStatusTab(card.key)}
+                            >
+                                <span className="applications-stat__icon">
+                                    <Icon size={20} />
+                                </span>
+                                <span>
+                                    <strong>{card.value}</strong>
+                                    <small>{card.label}</small>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </section>
+
+                <section className="applications-tabs" aria-label="Фильтр по статусу">
+                    {STATUS_TABS.map((tab) => (
                         <button
-                            className="filter-toggle"
-                            onClick={() => setShowFilters(!showFilters)}
+                            key={tab.key}
+                            type="button"
+                            className={activeStatusTab === tab.key ? "active" : ""}
+                            onClick={() => setActiveStatusTab(tab.key)}
                         >
+                            {tab.label}
+                            <span>{statusCounts[tab.key] || 0}</span>
+                        </button>
+                    ))}
+                </section>
+
+                <section className="applications-toolbar">
+                    <label className="applications-search">
+                        <Search size={19} />
+                        <input
+                            type="search"
+                            placeholder="Поиск: ФИО, телефон, ID, карта"
+                            value={filters.query}
+                            onChange={(e) => handleFilterChange("query", e.target.value)}
+                        />
+                    </label>
+
+                    <button
+                        type="button"
+                        className="applications-period-btn"
+                        onClick={() => setShowFilters((prev) => !prev)}
+                    >
+                        <CalendarDays size={18} />
+                        {periodLabel}
+                    </button>
+
+                    <div className="applications-toolbar__actions">
+                        <button
+                            type="button"
+                            className={showFilters ? "applications-action active" : "applications-action"}
+                            onClick={() => setShowFilters((prev) => !prev)}
+                        >
+                            <SlidersHorizontal size={18} />
                             Фильтры
                         </button>
                         <button
-                            className={archive ? "archive-toggle active" : "archive-toggle"}
-                            onClick={() => setArchive(!archive)}
+                            type="button"
+                            className={archive ? "applications-action active" : "applications-action"}
+                            onClick={() => setArchive((prev) => !prev)}
                         >
+                            <Archive size={18} />
                             Архив
                         </button>
                         <button
-                            className={selectAll ? "selectAll-toggle active" : "selectAll-toggle"}
-                            onClick={() => {
-                                const nextSelectAll = !selectAll;
-                                setSelectAll(nextSelectAll);
-                                if (nextSelectAll) {
-                                    setSelectedRows(filteredData.map((e) => e.ID));
-                                } else {
-                                    setSelectedRows([]);
-                                }
-                            }}
+                            type="button"
+                            className="applications-action applications-action--primary"
+                            onClick={handleExport}
                         >
-                            Выбрать все
+                            <Download size={18} />
+                            Выгрузка
                         </button>
                     </div>
+                </section>
 
-                    {showFilters && (
-                        <div className="filters animate-slideIn">
+                {showFilters && (
+                    <section className="applications-filters animate-slideIn">
+                        <label>
+                            <span>ФИО</span>
                             <input
-                                placeholder="ФИО"
+                                placeholder="Клиент"
                                 value={filters.fullName}
                                 onChange={(e) => handleFilterChange("fullName", e.target.value)}
                             />
+                        </label>
+                        <label>
+                            <span>Телефон</span>
                             <input
-                                placeholder="Телефон"
+                                placeholder="992..."
                                 value={filters.phone}
                                 onChange={(e) => handleFilterChange("phone", e.target.value)}
                             />
-                            <Select
+                        </label>
+                        <label>
+                            <span>Резидент</span>
+                            <select
                                 value={filters.resident}
-                                onChange={(val) => handleFilterChange("resident", val)}
-                                options={[
-                                    { value: "", label: "Резидент" },
-                                    { value: "Да", label: "Да" },
-                                    { value: "Нет", label: "Нет" },
-                                ]}
-                            />
+                                onChange={(e) => handleFilterChange("resident", e.target.value)}
+                            >
+                                <option value="">Все</option>
+                                <option value="Да">Да</option>
+                                <option value="Нет">Нет</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Карта</span>
                             <input
-                                placeholder="Карта"
+                                placeholder="Тип карты"
                                 value={filters.card}
                                 onChange={(e) => handleFilterChange("card", e.target.value)}
                             />
-                        </div>
-                    )}
-
-                    <div className="my-applications-sub-header">
-                        <div>
-                            Поиск по месяцам
-                            <Input
+                        </label>
+                        <label>
+                            <span>Месяц</span>
+                            <input
                                 type="number"
-                                placeholder={""}
-                                onChange={(e) => setData("month", e)}
-                                value={data?.month}
-                                id={"month"}
+                                min="1"
+                                max="12"
+                                value={data?.month || ""}
+                                onChange={(e) => setData("month", e.target.value)}
                             />
-                        </div>
-                        <div>
-                            Поиск по годам
-                            <Input
+                        </label>
+                        <label>
+                            <span>Год</span>
+                            <input
                                 type="number"
-                                placeholder={""}
-                                onChange={(e) => setData("year", e)}
-                                value={data?.year}
-                                id={"year"}
+                                min="2020"
+                                value={data?.year || ""}
+                                onChange={(e) => setData("year", e.target.value)}
                             />
-                        </div>
-                        {loading ? (
-                            <Spinner />
-                        ) : (
-                            <div>
-                                Показать{" "}
-                                <Input
-                                    type="number"
-                                    placeholder={""}
-                                    onChange={(e) => setData("limit", e)}
-                                    value={data?.limit}
-                                    id={"limit"}
-                                />{" "}
-                                записей
-                            </div>
-                        )}
-                    </div>
+                        </label>
+                    </section>
+                )}
 
-                    <div
-                        className="my-applications-content"
-                        onScroll={scrollHandler}
-                        style={{ position: "relative" }}
-                    >
-                        {filteredData.length === 0 ? (
-                            <div style={{ textAlign: "center", padding: "2rem", color: "gray" }}>
-                                Нет данных для отображения
-                            </div>
-                        ) : (
-                            <table>
-                                <thead>
+                {selectedRows.length > 0 && (
+                    <section className="applications-bulk">
+                        <span>Выбрано заявок: {selectedRows.length}</span>
+                        <Select
+                            style={{ border: "1px solid #d8dce3" }}
+                            id="status"
+                            value={data?.status}
+                            onChange={(value) => upDateStatusApplications(value)}
+                            options={status}
+                            error={errors}
+                        />
+                    </section>
+                )}
+
+                <section className="applications-table-card">
+                    <div className="applications-table-wrap" onScroll={scrollHandler}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <th>Выбрать</th>
+                                    <th className="applications-checkbox-cell">
+                                        <input
+                                            type="checkbox"
+                                            checked={allVisibleSelected}
+                                            onChange={(e) => toggleVisibleRows(e.target.checked)}
+                                            aria-label="Выбрать все заявки на странице"
+                                        />
+                                    </th>
                                     <th>ID</th>
-                                    <th>ФИО</th>
-                                    <th>Телефон</th>
+                                    <th>Клиент</th>
                                     <th>Карта</th>
-                                    <th>Адрес</th>
-                                    <th>Скан паспорта (лицевая)</th>
-                                    <th>Скан паспорта (задняя)</th>
-                                    <th>Скан паспорта (с лицом)</th>
-                                    <th>Получаемый оффис</th>
-                                    {headers.map((e, i) => (
-                                        <th key={i}>{e}</th>
-                                    ))}
-                                    <th>Заявка создана в</th>
-                                    <th>Заявка обновлена в</th>
-                                    <th>Последние цифры карты</th>
-                                    <th>Тип карты</th>
+                                    <th>Офис получения</th>
+                                    <th>Статус</th>
                                     <th>Действия</th>
                                 </tr>
-                                </thead>
-                                <tbody>
-                                {filteredData
-                                    ?.slice(0, data?.limit || filteredData?.length)
-                                    ?.map((row, index) => (
-                                        <tr key={index}>
-                                            <td>
+                            </thead>
+                            <tbody>
+                                {visibleRows.map((row) => {
+                                    const statusGroup = getStatusGroup(row);
+                                    const fullName = getFullName(row);
+
+                                    return (
+                                        <tr key={row.ID}>
+                                            <td className="applications-checkbox-cell">
                                                 <input
                                                     type="checkbox"
-                                                    className="custom-checkbox"
                                                     checked={selectedRows.includes(row.ID)}
                                                     onChange={(e) => {
-                                                        setSelectedRows(
+                                                        setSelectedRows((prev) =>
                                                             e.target.checked
-                                                                ? [...selectedRows, row.ID]
-                                                                : selectedRows.filter((id) => id !== row.ID),
+                                                                ? [...prev, row.ID]
+                                                                : prev.filter((id) => id !== row.ID),
                                                         );
                                                     }}
+                                                    aria-label={`Выбрать заявку ${row.ID}`}
                                                 />
                                             </td>
-                                            <td>{row.ID}</td>
-                                            <td>{`${row.surname} ${row.name} ${row.patronymic}`}</td>
-                                            <td>{row.phone_number}</td>
-                                            <td>{row.card_name}</td>
-                                            <td>{row.delivery_address}</td>
-                                            <td>{renderFileIcon(row.front_side_of_the_passport)}</td>
-                                            <td>{renderFileIcon(row.back_side_of_the_passport)}</td>
-                                            <td>{renderFileIcon(row.selfie_with_passport)}</td>
-                                            <td>{row.receiving_office}</td>
-                                            <td>{row.phone_number}</td>
-                                            <td>{row.secret_word}</td>
-                                            <td>{row.card_name}</td>
-                                            <td>{row.gender}</td>
-                                            <td>{row.is_resident ? "Да" : "Нет"}</td>
-                                            <td>{row.type_of_certificate}</td>
-                                            <td>{row.inn}</td>
-                                            <td>{row.delivery_address}</td>
-                                            <td>{row.card_code}</td>
-                                            <td>{formatDate(row.CreatedAt)}</td>
-                                            <td>{formatDate(row.UpdatedAt)}</td>
-                                            <td>{row.last_card_numbers}</td>
-                                            <td>{row.card_type}</td>
-                                            <td className="active-table">
-                                                <AiFillEdit
-                                                    onClick={() => navigate(`/agent/card/${row.ID}`)}
-                                                    style={{
-                                                        fontSize: 35,
-                                                        color: "green",
-                                                        cursor: "pointer",
-                                                        marginBottom: "10px",
-                                                    }}
-                                                />
-                                                <AiFillDelete
-                                                    onClick={() => deleteApplication(row.ID)}
-                                                    style={{
-                                                        fontSize: 35,
-                                                        color: "#c31414",
-                                                        cursor: "pointer",
-                                                    }}
-                                                />
+                                            <td className="applications-id">#{row.ID}</td>
+                                            <td>
+                                                <div className="applications-client">
+                                                    <span className="applications-avatar">
+                                                        {getInitials(row)}
+                                                    </span>
+                                                    <span>
+                                                        <strong>{fullName}</strong>
+                                                        <small>{row.phone_number || "Телефон не указан"}</small>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="applications-card-info">
+                                                    <strong>{row.card_name || row.card_type || "Карта не указана"}</strong>
+                                                    <small>{row.delivery_address || row.card_code || "Адрес не указан"}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="applications-office">
+                                                    <BriefcaseBusiness size={16} />
+                                                    {row.receiving_office || "Офис не указан"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`applications-status applications-status--${statusGroup}`}>
+                                                    {getStatusLabel(row)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="applications-row-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="applications-open-btn"
+                                                        onClick={() => navigate(`/agent/card/${row.ID}`)}
+                                                    >
+                                                        <Eye size={16} />
+                                                        Открыть
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="applications-delete-btn"
+                                                        onClick={() => deleteApplication(row.ID)}
+                                                        title="Удалить заявку"
+                                                        aria-label={`Удалить заявку ${row.ID}`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    );
+                                })}
+
+                                {!loading && visibleRows.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7}>
+                                            <div className="applications-empty">
+                                                Нет данных для отображения
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+
+                        {loading && (
+                            <div className="applications-loading">
+                                <Spinner />
+                            </div>
                         )}
                     </div>
-                </main>
-            </div>
 
-            <ImagePreviewModal
-                imageUrl={previewImage}
-                onClose={() => setPreviewImage(null)}
-            />
-        </>
+                    <footer className="applications-table-footer">
+                        <span>
+                            Показано{" "}
+                            {filteredData.length === 0
+                                ? "0"
+                                : `${pageStart + 1}-${Math.min(pageStart + PAGE_SIZE, filteredData.length)}`}{" "}
+                            из {filteredData.length} заявок
+                        </span>
+
+                        <div className="applications-pagination">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                disabled={currentPage === 1}
+                                aria-label="Предыдущая страница"
+                            >
+                                <ChevronLeft size={17} />
+                            </button>
+                            {paginationPages.map((page) => (
+                                <button
+                                    key={page}
+                                    type="button"
+                                    className={currentPage === page ? "active" : ""}
+                                    onClick={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setCurrentPage((page) => Math.min(totalPages, page + 1))
+                                }
+                                disabled={currentPage === totalPages}
+                                aria-label="Следующая страница"
+                            >
+                                <ChevronRight size={17} />
+                            </button>
+                        </div>
+                    </footer>
+                </section>
+            </main>
+        </div>
     );
 }

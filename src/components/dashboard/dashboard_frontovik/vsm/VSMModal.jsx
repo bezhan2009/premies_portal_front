@@ -458,23 +458,7 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                     const chunkSize = 5;
                     
                     // Chunk names
-                    const nameChunks = [];
-                    for (let i = 0; i < apiMerchantNames.length; i += chunkSize) {
-                        nameChunks.push(apiMerchantNames.slice(i, i + chunkSize));
-                    }
-                    
-                    // Chunk IDs
-                    const idChunks = [];
-                    for (let i = 0; i < apiCardAcceptorIds.length; i += chunkSize) {
-                        idChunks.push(apiCardAcceptorIds.slice(i, i + chunkSize));
-                    }
-                    
-                    const totalChunks = Math.max(nameChunks.length, idChunks.length);
-                    let successCount = 0;
-                    
-                    for (let i = 0; i < totalChunks; i++) {
-                        const chunkNames = nameChunks[i] || [];
-                        const chunkIds = idChunks[i] || [];
+
                         
                         if (chunkNames.length === 0 && chunkIds.length === 0) continue;
                         
@@ -974,7 +958,23 @@ const VSMModal = ({ isOpen, onClose, card, accountsData, selectedClient }) => {
                                                                 {renderLogo(merchant.mrchLogoURL, mrchName)}
                                                                 <div style={{ minWidth: 0, flex: 1 }}>
                                                                     <TruncatedTooltipText text={mrchName} isDark={isDark} />
-                                                                    <span style={{ fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b" }}>
+                                                                    <span style={{ fontSize: "11px", color: isDark ? "#94a                    const nameChunks = [];
+                    for (let i = 0; i < apiMerchantNames.length; i += chunkSize) {
+                        nameChunks.push(apiMerchantNames.slice(i, i + chunkSize));
+                    }
+                    
+                    // Chunk IDs
+                    const idChunks = [];
+                    for (let i = 0; i < apiCardAcceptorIds.length; i += chunkSize) {
+                        idChunks.push(apiCardAcceptorIds.slice(i, i + chunkSize));
+                    }
+                    
+                    const totalChunks = Math.max(nameChunks.length, idChunks.length);
+                    let successCount = 0;
+                    
+                    for (let i = 0; i < totalChunks; i++) {
+                        const chunkNames = nameChunks[i] || [];
+                        const chunkIds = idChunks[i] || [];3b8" : "#64748b" }}>
                                                                         Категория: {getMccDescription(merchant.mCC)}
                                                                     </span>
                                                                 </div>

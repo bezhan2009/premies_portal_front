@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
-import { ChevronRight, FileDown, Layers, Loader2, X, FileText, Download } from "lucide-react";
+import { ChevronRight, Layers, Loader2, X, FileText, Download } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildDocxPayload,
@@ -12,9 +12,104 @@ import {
 } from "../../utils/docxTemplateHelpers";
 import { fetchCreditGraphs } from "../../api/ABS_frotavik/getUserCredits";
 import { Modal, Button } from "antd";
-import { hasRole } from "../../api/roleHelper";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
+const PROCESSING_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL || "http://10.64.20.84:5003";
+
+const getCurrencyCode = (currencyCode) => {
+  if (!currencyCode) return "";
+  const code = String(currencyCode);
+  switch (code) {
+    case "972":
+      return "TJS";
+    case "840":
+      return "USD";
+    case "978":
+      return "EUR";
+    case "643":
+      return "RUB";
+    default:
+      return code;
+  }
+};
+
+const formatProcessingCardNumber = (value) =>
+  String(value || "")
+    .replace(/\s/g, "")
+    .replace(/(\d{4})/g, "$1 ")
+    .trim();
+
+const formatProcessingAmount = (amount, transactionTypeValue) => {
+  if (amount === null || amount === undefined || amount === "") return "N/A";
+
+  const numericAmount = Number(amount);
+  if (Number.isNaN(numericAmount)) {
+    return String(amount);
+  }
+
+  const absoluteValue = Math.abs(numericAmount);
+  const amountStr = String(Math.round(absoluteValue));
+  const formatted =
+    amountStr.length <= 2
+      ? `0,${amountStr.padStart(2, "0")}`
+      : `${amountStr.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${amountStr.slice(-2)}`;
+
+  if (Number(transactionTypeValue) === 1) return `+${formatted}`;
+  if (Number(transactionTypeValue) === 2) return `-${formatted}`;
+  return numericAmount < 0 ? `-${formatted}` : formatted;
+};
+
+const getProcessingTransactionRows = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.transactions)) return payload.transactions;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.transactions)) return payload.data.transactions;
+  return [];
+};
+
+const normalizeProcessingTransaction = (transaction) => {
+  const transactionTypeValue =
+    transaction?.transactionTypeNumber ?? transaction?.transactionType ?? transaction?.type;
+  const date = [
+    transaction?.localTransactionDate || transaction?.date,
+    transaction?.localTransactionTime || transaction?.time,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const amountCurrency = [
+    formatProcessingAmount(transaction?.amount, transactionTypeValue),
+    getCurrencyCode(transaction?.currency),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const amountCardCurrency = [
+    formatProcessingAmount(transaction?.conamt, transactionTypeValue),
+    getCurrencyCode(transaction?.conCurrency),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    date: date || "N/A",
+    status: transaction?.reversal ? "Возврат" : transaction?.responseDescription || transaction?.status || "N/A",
+    cardNumber: formatProcessingCardNumber(transaction?.cardNumber) || "N/A",
+    cardId: transaction?.cardId || "N/A",
+    operationType: transaction?.transactionTypeName || transaction?.operationType || "N/A",
+    amountCurrency,
+    amountCardCurrency,
+    availableBalance: formatProcessingAmount(transaction?.acctbal ?? transaction?.availableBalance),
+  };
+};
+
+const hasSystemKeySource = (variant, sourceName) =>
+  (variant.keys || []).some((mapping) => {
+    const systemKey = String(mapping.systemKey || mapping.key || mapping.docxKey || "").toLowerCase();
+    if (sourceName === "transactions") {
+      return systemKey.includes("transactions") && !systemKey.includes("processing_transactions");
+    }
+    return systemKey.includes(sourceName);
+  });
 
 const DynamicDocxButtons = ({ page, section, data = {} }) => {
   const [allTemplates, setAllTemplates] = useState([]);
@@ -98,25 +193,33 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
   const handleGenerate = async (template, variant, format = "pdf", skipParamsCheck = false) => {
     if (!skipParamsCheck) {
-      const hasTransactions = variant.keys.some((k) => {
-        const sk = String(k.systemKey || k.key || '').toLowerCase();
-        return sk.includes("transactions");
-      });
-      const hasSchedule = variant.keys.some((k) => {
-        const sk = String(k.systemKey || k.key || '').toLowerCase();
-        return sk.includes("schedule");
-      });
+      const hasProcessingTransactions = hasSystemKeySource(variant, "processing_transactions");
+      const hasTransactions = hasSystemKeySource(variant, "transactions");
+      const hasSchedule = hasSystemKeySource(variant, "schedule");
 
       // Skip params modal if schedule data is already available in the data prop
       const scheduleAlreadyAvailable = hasSchedule && Array.isArray(data.schedule) && data.schedule.length > 0;
-      const needsParams = hasTransactions || (hasSchedule && !scheduleAlreadyAvailable);
+      const processingAlreadyAvailable =
+        hasProcessingTransactions &&
+        Array.isArray(data.processing_transactions) &&
+        data.processing_transactions.length > 0;
+      const transactionsAlreadyAvailable =
+        hasTransactions && Array.isArray(data.transactions) && data.transactions.length > 0;
+      const needsParams =
+        (hasProcessingTransactions && !processingAlreadyAvailable) ||
+        (hasTransactions && !transactionsAlreadyAvailable) ||
+        (hasSchedule && !scheduleAlreadyAvailable);
 
       if (needsParams) {
         setParamsModal({
           isOpen: true,
           variant,
           template,
-          type: hasTransactions ? "transactions" : "schedule",
+          type: hasProcessingTransactions
+            ? "processing_transactions"
+            : hasTransactions
+              ? "transactions"
+              : "schedule",
           fromDate: "",
           toDate: "",
         });
@@ -138,13 +241,35 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
     // Fetch dynamic data if required
     try {
-      if (paramsModal.type === "transactions") {
+      if (paramsModal.type === "processing_transactions") {
+        if (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0) {
+          finalData.processing_transactions = finalData.processing_transactions.map((transaction) => ({
+            date: transaction.date || "N/A",
+            status: transaction.status || "N/A",
+            cardNumber: transaction.cardNumber || "N/A",
+            cardId: transaction.cardId || "N/A",
+            operationType: transaction.operationType || "N/A",
+            amountCurrency: transaction.amountCurrency || "N/A",
+            amountCardCurrency: transaction.amountCardCurrency || "N/A",
+            availableBalance: transaction.availableBalance || "N/A",
+          }));
+        } else {
+          const res = await axios.get(`${PROCESSING_URL}/api/Transactions/search-transactions`, {
+            params: {
+              fromDate: paramsModal.fromDate || undefined,
+              toDate: paramsModal.toDate || undefined,
+            },
+          });
+          finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
+            normalizeProcessingTransaction,
+          );
+        }
+      } else if (paramsModal.type === "transactions") {
         const cardId = finalData.card?.cardId || finalData.cardId;
         const accountNumber = finalData.account?.number || finalData["account.number"] || finalData.accountNumber;
         
         if (cardId) {
-          const procUrl = import.meta.env.VITE_BACKEND_PROCESSING_URL || "http://10.64.20.84:5003";
-          const res = await axios.get(`${procUrl}/api/Transactions/by-cards`, {
+          const res = await axios.get(`${PROCESSING_URL}/api/Transactions/by-cards`, {
             params: {
               cardIds: cardId,
               fromDate: paramsModal.fromDate || undefined,
@@ -282,7 +407,14 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     finalData["дата выписки"] = nowStr;
     finalData["дата_выписки"] = nowStr;
 
-    const virtualKeys = [
+    const usesProcessingTransactions =
+      hasSystemKeySource(variant, "processing_transactions") ||
+      (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0);
+    const usesTransactions =
+      hasSystemKeySource(variant, "transactions") ||
+      (Array.isArray(finalData.transactions) && finalData.transactions.length > 0);
+
+    const transactionVirtualKeys = [
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
       { key: "eval: (transactions || []).map(t => t.time)", docxKey: "time" },
       { key: "eval: (transactions || []).map(t => t.date_time)", docxKey: "date_time" },
@@ -291,13 +423,33 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "TXTDSCR" },
       { key: "eval: (transactions || []).map(t => t.TXTDSCR || t.txtDscr || t.description || '')", docxKey: "details" }
     ];
+
+    const processingTransactionVirtualKeys = [
+      { key: "eval: (processing_transactions || []).map(pt => pt.date)", docxKey: "date" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.status)", docxKey: "status" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.cardNumber)", docxKey: "cardNumber" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.cardId)", docxKey: "cardId" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.operationType)", docxKey: "operationType" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.amountCurrency)", docxKey: "amountCurrency" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.amountCardCurrency)", docxKey: "amountCardCurrency" },
+      { key: "eval: (processing_transactions || []).map(pt => pt.availableBalance)", docxKey: "availableBalance" },
+    ];
+
+    const virtualKeys =
+      usesProcessingTransactions && !usesTransactions
+        ? processingTransactionVirtualKeys
+        : usesTransactions && !usesProcessingTransactions
+          ? transactionVirtualKeys
+          : [];
     
-    const virtualDocxKeys = new Set(virtualKeys.map(vk => vk.docxKey));
-    const cleanedExistingKeys = (variant.keys || []).filter(k => !virtualDocxKeys.has(k.docxKey));
+    const existingDocxKeys = new Set((variant.keys || []).map((key) => key.docxKey).filter(Boolean));
     
     const modifiedVariant = {
       ...variant,
-      keys: [...cleanedExistingKeys, ...virtualKeys]
+      keys: [
+        ...(variant.keys || []),
+        ...virtualKeys.filter((key) => !existingDocxKeys.has(key.docxKey)),
+      ],
     };
 
     const finalPayload = buildDocxPayload(modifiedVariant, finalData, {}, template.uniqueIdFormat || template.UniqueIdFormat);
@@ -516,9 +668,11 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                     <span className="docx-eyebrow">Дополнительные параметры</span>
                     <h2>{paramsModal.template.name}</h2>
                     <p>
-                      {paramsModal.type === "transactions" 
-                        ? "Для этого шаблона необходимо указать период транзакций." 
-                        : "Для этого шаблона необходимо указать период графика платежей."}
+                      {paramsModal.type === "processing_transactions"
+                        ? "Для этого шаблона необходимо указать период транзакций процессинга."
+                        : paramsModal.type === "transactions"
+                          ? "Для этого шаблона необходимо указать период транзакций."
+                          : "Для этого шаблона необходимо указать период графика платежей."}
                     </p>
                   </div>
                   <button type="button" className="docx-icon-btn" onClick={() => setParamsModal(prev => ({ ...prev, isOpen: false }))}>

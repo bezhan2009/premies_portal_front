@@ -262,7 +262,7 @@ const TABLE_SOURCE_FIELDS = {
     { value: "cardNumber", label: "Номер карты (cardNumber)" },
     { value: "cardId", label: "ID карты (cardId)" },
     { value: "operationType", label: "Тип операции (operationType)" },
-    { value: "amountCurrency", label: "Сумма в валюте (amountCurrency)" },
+    { value: "amountCurrency", label: "Сумма (в валюте): (amountCurrency)" },
     { value: "amountCardCurrency", label: "Сумма в валюте карты (amountCardCurrency)" },
     { value: "availableBalance", label: "Доступный баланс (availableBalance)" },
   ]
