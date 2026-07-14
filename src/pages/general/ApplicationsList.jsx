@@ -10,6 +10,7 @@ import {
     Clock3,
     Download,
     Eye,
+    FileText,
     Inbox,
     Search,
     SlidersHorizontal,
@@ -23,6 +24,49 @@ import Spinner from "../../components/Spinner.jsx";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
+import Modal from "../../components/general/Modal.jsx";
+
+const FIELD_LABELS = {
+    ID: "ID заявки",
+    surname: "Фамилия",
+    name: "Имя",
+    patronymic: "Отчество",
+    phone_number: "Номер телефона",
+    inn: "ИНН",
+    card_name: "Название карты",
+    card_type: "Тип карты",
+    card_code: "Код карты",
+    last_card_numbers: "Последние цифры карты",
+    receiving_office: "Офис получения",
+    delivery_address: "Адрес доставки",
+    is_resident: "Резидент",
+    fatca: "Признак FATCA",
+    apl_pzl: "Признак АПЛ/ПЗЛ",
+    client_occupation: "Сфера деятельности",
+    net_worth: "Чистая стоимость / Оборот",
+    monthly_income: "Метод открытия счета",
+    total_outgoing_transactions_amount: "Ожидаемая сумма транзакций",
+    total_outgoing_transactions_count: "Ожидаемое количество транзакций",
+    total_cash_transactions_amount: "Ожидаемая сумма кассовых сделок",
+    total_cash_transactions_count: "Ожидаемое количество кассовых сделок",
+    compliance_score: "Балл комплаенса",
+    operator_fio: "ФИО Оператора",
+    CreatedAt: "Дата создания",
+    UpdatedAt: "Дата обновления",
+    rejection_reason: "Причина отклонения",
+    comment: "Комментарий",
+    status_name: "Статус",
+    application_status_name: "Статус заявки",
+    country: "Страна",
+    email: "Email",
+    passport_series: "Серия паспорта",
+    passport_number: "Номер паспорта",
+    passport_issued_by: "Кем выдан паспорт",
+    passport_issued_at: "Дата выдачи паспорта",
+    passport_deadline: "Срок действия паспорта",
+    birth_date: "Дата рождения",
+    gender: "Пол"
+};
 
 const PAGE_SIZE = 8;
 
@@ -97,6 +141,7 @@ export default function ApplicationsList() {
     const [selectedRows, setSelectedRows] = useState([]);
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [detailedApp, setDetailedApp] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [archive, setArchive] = useState(false);
     const [activeStatusTab, setActiveStatusTab] = useState("all");
@@ -684,6 +729,17 @@ export default function ApplicationsList() {
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        className="applications-details-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDetailedApp(row);
+                                                        }}
+                                                    >
+                                                        <FileText size={16} />
+                                                        Подробнее
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         className="applications-delete-btn"
                                                         onClick={() => deleteApplication(row.ID)}
                                                         title="Удалить заявку"
@@ -757,6 +813,32 @@ export default function ApplicationsList() {
                         </div>
                     </footer>
                 </section>
+                {detailedApp && (
+                    <Modal
+                        isOpen={!!detailedApp}
+                        onClose={() => setDetailedApp(null)}
+                        title={`Детали заявки #${detailedApp?.ID || ""}`}
+                    >
+                        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: "8px" }}>
+                            {Object.entries(detailedApp)
+                                .filter(([key, value]) => {
+                                    return FIELD_LABELS[key] !== undefined && value !== null && value !== undefined && value !== "";
+                                })
+                                .map(([key, value]) => {
+                                    let displayValue = String(value);
+                                    if (typeof value === "boolean") {
+                                        displayValue = value ? "Да" : "Нет";
+                                    }
+                                    return (
+                                        <div key={key} style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', padding: '10px 0', fontSize: '14px' }}>
+                                            <span style={{ fontWeight: '600', width: '40%', color: '#475569' }}>{FIELD_LABELS[key]}:</span>
+                                            <span style={{ width: '60%', color: '#0f172a', wordBreak: 'break-word' }}>{displayValue}</span>
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                    </Modal>
+                )}
             </main>
         </div>
     );

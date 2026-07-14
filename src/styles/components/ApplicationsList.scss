@@ -487,6 +487,7 @@
 }
 
 .applications-open-btn,
+.applications-details-btn,
 .applications-delete-btn {
   min-height: 36px;
   display: inline-flex;
@@ -503,7 +504,8 @@
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
-.applications-open-btn {
+.applications-open-btn,
+.applications-details-btn {
   padding: 0 14px;
 
   &:hover {
