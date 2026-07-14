@@ -435,12 +435,23 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       { key: "eval: (processing_transactions || []).map(pt => pt.availableBalance)", docxKey: "availableBalance" },
     ];
 
-    const virtualKeys =
-      usesProcessingTransactions && !usesTransactions
-        ? processingTransactionVirtualKeys
-        : usesTransactions && !usesProcessingTransactions
-          ? transactionVirtualKeys
-          : [];
+    let virtualKeys = [];
+    const hasProcessing = hasSystemKeySource(variant, "processing_transactions");
+    const hasRegular = hasSystemKeySource(variant, "transactions");
+
+    if (hasProcessing) {
+      virtualKeys = processingTransactionVirtualKeys;
+    } else if (hasRegular) {
+      virtualKeys = transactionVirtualKeys;
+    } else {
+      const dataHasProcessing = Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0;
+      const dataHasRegular = Array.isArray(finalData.transactions) && finalData.transactions.length > 0;
+      if (dataHasProcessing) {
+        virtualKeys = processingTransactionVirtualKeys;
+      } else if (dataHasRegular) {
+        virtualKeys = transactionVirtualKeys;
+      }
+    }
     
     const existingDocxKeys = new Set((variant.keys || []).map((key) => key.docxKey).filter(Boolean));
     
