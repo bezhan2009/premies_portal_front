@@ -615,7 +615,20 @@ export default function ApplicationsList() {
                                     const fullName = getFullName(row);
 
                                     return (
-                                        <tr key={row.ID}>
+                                        <tr 
+                                            key={row.ID}
+                                            onClick={(e) => {
+                                                if (
+                                                    e.target.closest('.applications-checkbox-cell') || 
+                                                    e.target.closest('.applications-row-actions') ||
+                                                    e.target.tagName === 'INPUT' ||
+                                                    e.target.closest('button')
+                                                ) {
+                                                    return;
+                                                }
+                                                navigate(`/agent/card/${row.ID}`);
+                                            }}
+                                        >
                                             <td className="applications-checkbox-cell">
                                                 <input
                                                     type="checkbox"
