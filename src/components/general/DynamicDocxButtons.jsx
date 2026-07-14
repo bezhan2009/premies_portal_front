@@ -254,16 +254,31 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             availableBalance: transaction.availableBalance || "N/A",
           }));
         } else {
-          const res = await axios.get(`${PROCESSING_URL}/api/Transactions/search-transactions`, {
-            params: {
-              fromDate: paramsModal.fromDate || undefined,
-              toDate: paramsModal.toDate || undefined,
-            },
-            timeout: 30000,
-          });
-          finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
-            normalizeProcessingTransaction,
-          );
+          const cardId = finalData["card.cardId"] || finalData.cardId || finalData.card?.cardId || finalData["card.cardNumber"] || finalData.cardNumber || finalData.card?.cardNumber;
+          if (cardId) {
+            const res = await axios.get(`${PROCESSING_URL}/api/Transactions/by-cards`, {
+              params: {
+                cardIds: cardId,
+                fromDate: paramsModal.fromDate || undefined,
+                toDate: paramsModal.toDate || undefined,
+              },
+              timeout: 30000,
+            });
+            finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
+              normalizeProcessingTransaction,
+            );
+          } else {
+            const res = await axios.get(`${PROCESSING_URL}/api/Transactions/search-transactions`, {
+              params: {
+                fromDate: paramsModal.fromDate || undefined,
+                toDate: paramsModal.toDate || undefined,
+              },
+              timeout: 30000,
+            });
+            finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
+              normalizeProcessingTransaction,
+            );
+          }
         }
       } else if (paramsModal.type === "transactions") {
         const cardId = finalData.card?.cardId || finalData.cardId;
