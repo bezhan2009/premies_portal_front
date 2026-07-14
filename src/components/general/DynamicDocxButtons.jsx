@@ -259,6 +259,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               fromDate: paramsModal.fromDate || undefined,
               toDate: paramsModal.toDate || undefined,
             },
+            timeout: 30000,
           });
           finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
             normalizeProcessingTransaction,
@@ -275,6 +276,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               fromDate: paramsModal.fromDate || undefined,
               toDate: paramsModal.toDate || undefined,
             },
+            timeout: 30000,
           });
           finalData.transactions = res.data?.data || res.data || [];
         } else if (accountNumber) {
@@ -292,7 +294,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           params.append("accountNumber", accountNumber);
           
           const res = await axios.get(`${absUrl}/account/operations?${params.toString()}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 30000,
           });
           
           const data = res.data;
@@ -482,6 +485,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             "Content-Type": "application/json",
           },
           responseType: "blob",
+          timeout: 30000,
         },
       );
 
