@@ -795,6 +795,10 @@ const injectWordsIntoObject = (obj, visited = new Set()) => {
 };
 
 export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, uniqueIdFormat = "") => {
+  const rawCardNumber = data["card.cardNumber"] || data.cardNumber || data.card?.cardNumber || "";
+  const cleanedCardNumber = String(rawCardNumber).replace(/\s/g, "");
+  const panNumberVal = cleanedCardNumber.length >= 4 ? cleanedCardNumber.slice(-4) : cleanedCardNumber;
+
   const source = {
     ...getSystemDocxData(uniqueIdFormat),
     ...data,
@@ -802,6 +806,8 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     "system.dateTo": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
     "date.from": data.dateFrom || data.fromDate || data.statementDateFrom || data.с || "",
     "date.to": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
+    "panNumber": panNumberVal,
+    "card.panNumber": panNumberVal,
   };
   const payload = {
     ...data,
@@ -809,6 +815,8 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     "system.dateTo": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
     "date.from": data.dateFrom || data.fromDate || data.statementDateFrom || data.с || "",
     "date.to": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
+    "panNumber": panNumberVal,
+    "card.panNumber": panNumberVal,
   };
   const keys = Array.isArray(variant.keys)
     ? variant.keys.map(normalizeDocxKeyMapping).filter((item) => item.docxKey)
