@@ -27,7 +27,33 @@ const getCurrencyCode = (currencyCode) => {
     case "978":
       return "EUR";
     case "643":
+    case "810":
       return "RUB";
+    case "860":
+      return "UZS";
+    case "704":
+      return "VND";
+    case "398":
+      return "KZT";
+    case "417":
+      return "KGS";
+    case "156":
+    case "960":
+      return "CNY";
+    case "933":
+      return "BYN";
+    case "980":
+      return "UAH";
+    case "826":
+      return "GBP";
+    case "392":
+      return "JPY";
+    case "756":
+      return "CHF";
+    case "949":
+      return "TRY";
+    case "784":
+      return "AED";
     default:
       return code;
   }
