@@ -681,7 +681,10 @@ export default function ApplicationsList() {
                                                 navigate(`/agent/card/${row.ID}`);
                                             }}
                                         >
-                                            <td className="applications-checkbox-cell">
+                                            <td 
+                                                className="applications-checkbox-cell"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedRows.includes(row.ID)}
@@ -692,6 +695,7 @@ export default function ApplicationsList() {
                                                                 : prev.filter((id) => id !== row.ID),
                                                         );
                                                     }}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     aria-label={`Выбрать заявку ${row.ID}`}
                                                 />
                                             </td>
