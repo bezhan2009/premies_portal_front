@@ -17,7 +17,15 @@ export default function HeaderAgent({ activeLink = 'reports' }) {
     const [alert, setAlert] = useState({ show: false, message: "", type: "info" });
 
     // WebSocket для новых заявок
-    const wsUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL_WS + '/applications/portal';
+    const getWsUrl = () => {
+        const envUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL_WS;
+        if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+            return envUrl + "/applications/portal";
+        }
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${protocol}//${window.location.hostname}:7676/applications/portal`;
+    };
+    const wsUrl = getWsUrl();
 
     const handleNewApplication = useCallback((newApplication) => {
         console.log('Новая заявка в хедере:', newApplication);

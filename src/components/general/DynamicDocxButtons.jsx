@@ -269,7 +269,12 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     try {
       if (paramsModal.type === "processing_transactions") {
         if (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0) {
-          finalData.processing_transactions = finalData.processing_transactions.map((transaction) => ({
+          const positiveNormalized = finalData.processing_transactions.filter((pt) => {
+            const amtStr = String(pt.amountCurrency || "");
+            return amtStr.startsWith("+") || (!amtStr.startsWith("-") && amtStr !== "N/A");
+          });
+
+          finalData.processing_transactions = positiveNormalized.map((transaction) => ({
             date: transaction.date || "N/A",
             status: transaction.status || "N/A",
             cardNumber: transaction.cardNumber || "N/A",
@@ -279,8 +284,24 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             amountCardCurrency: transaction.amountCardCurrency || "N/A",
             availableBalance: transaction.availableBalance || "N/A",
           }));
+
+          let sum = 0;
+          positiveNormalized.forEach((pt) => {
+            const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
+            const amt = Number(cleanStr);
+            if (!isNaN(amt)) {
+              sum += amt;
+            }
+          });
+          const formattedSum = formatProcessingAmount(sum, 0);
+          finalData.totalSum = formattedSum;
+          finalData.total_sum = formattedSum;
+          finalData.sum = formattedSum;
+          finalData.totalAmount = formattedSum;
+          finalData.total_amount = formattedSum;
         } else {
           const cardId = finalData["card.cardId"] || finalData.cardId || finalData.card?.cardId || finalData["card.cardNumber"] || finalData.cardNumber || finalData.card?.cardNumber;
+          let rawTransactions = [];
           if (cardId) {
             const res = await axios.get(`${PROCESSING_URL}/api/Transactions/by-cards`, {
               params: {
@@ -290,9 +311,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               },
               timeout: 30000,
             });
-            finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
-              normalizeProcessingTransaction,
-            );
+            rawTransactions = getProcessingTransactionRows(res.data);
           } else {
             const res = await axios.get(`${PROCESSING_URL}/api/Transactions/search-transactions`, {
               params: {
@@ -301,10 +320,29 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               },
               timeout: 30000,
             });
-            finalData.processing_transactions = getProcessingTransactionRows(res.data).map(
-              normalizeProcessingTransaction,
-            );
+            rawTransactions = getProcessingTransactionRows(res.data);
           }
+
+          // Filter only operations > 0
+          const positiveTransactions = rawTransactions.filter((t) => {
+            const typeVal = t?.transactionTypeNumber ?? t?.transactionType ?? t?.type;
+            const amt = Number(t?.amount);
+            if (Number(typeVal) === 1) return true;
+            if (Number(typeVal) === 2) return false;
+            return !isNaN(amt) && amt > 0;
+          });
+
+          finalData.processing_transactions = positiveTransactions.map(normalizeProcessingTransaction);
+
+          // Calculate sum
+          const sum = positiveTransactions.reduce((acc, curr) => acc + Number(curr?.amount || 0), 0);
+          const formattedSum = formatProcessingAmount(sum, 0);
+
+          finalData.totalSum = formattedSum;
+          finalData.total_sum = formattedSum;
+          finalData.sum = formattedSum;
+          finalData.totalAmount = formattedSum;
+          finalData.total_amount = formattedSum;
         }
       } else if (paramsModal.type === "transactions") {
         const cardId = finalData.card?.cardId || finalData.cardId;
