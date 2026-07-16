@@ -4,7 +4,7 @@ import "../../styles/animations.css";
 import { ResizableBox } from "react-resizable";
 import { 
   X, Send, Paperclip, Smile, Check, CheckCheck, 
-  Minus, ArrowLeft, Search, User, Shield, PlusCircle,
+  Minus, ArrowLeft, Search, User, Shield, PlusCircle, Users, MoreVertical,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown,
   CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Info
 } from "lucide-react";
@@ -234,7 +234,8 @@ const MiniChatWindow = () => {
   
   // Navigation & Views: "threads" | "chat" | "new_chat"
   const [currentView, setCurrentView] = useState("threads");
-  const [activeTab, setActiveTab] = useState("direct"); // "support" | "direct"
+  const [activeTab, setActiveTab] = useState("direct"); // "support" | "direct" | "group"
+  const [showMenuDropdown, setShowMenuDropdown] = useState(false);
 
   // Chat Data
   const [messages, setMessages] = useState([]);
@@ -1503,6 +1504,15 @@ const MiniChatWindow = () => {
     let source = [];
     if (activeTab === "support") {
       source = isOperator ? supportThreads : [];
+    } else if (activeTab === "group") {
+      source = groups.map(g => ({
+        user_id: g.id,
+        username: g.name || "Группа",
+        last_message_at: g.last_message_at || g.updated_at,
+        message: g.last_message || "",
+        unread_count: g.unread_count || 0,
+        isGroup: true,
+      }));
     } else {
       source = directThreads;
     }
@@ -2151,7 +2161,7 @@ const MiniChatWindow = () => {
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
                     <span style={{ fontWeight: 650, fontSize: "15px", color: "var(--text-color, #1e293b)" }}>
-                      {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : "Актив чат"}
+                      {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : `Чат: ${activeTab === "direct" ? "Личные" : activeTab === "group" ? "Группы" : "Обращения"}`}
                     </span>
                     {currentView === "chat" && (() => { const p = formatPresence(partnerPresence); return p.label ? (
                       <span style={{ fontSize: "10px", color: p.color, display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
@@ -2206,21 +2216,117 @@ const MiniChatWindow = () => {
                   )}
 
                   {currentView === "threads" && (
-                    <button 
-                      title="Начать новый чат"
-                      onClick={() => setCurrentView("new_chat")}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--text-secondary, #64748b)",
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "2px"
-                      }}
-                    >
-                      <PlusCircle size={18} />
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
+                      <button 
+                        title="Начать новый чат"
+                        onClick={() => setCurrentView("new_chat")}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--text-secondary, #64748b)",
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "2px"
+                        }}
+                      >
+                        <PlusCircle size={18} />
+                      </button>
+                      <button 
+                        title="Меню чатов"
+                        onClick={() => setShowMenuDropdown(!showMenuDropdown)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: showMenuDropdown ? "#eb2525" : "var(--text-secondary, #64748b)",
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "2px"
+                        }}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+
+                      {showMenuDropdown && (
+                        <div style={{
+                          position: "absolute",
+                          right: 0,
+                          top: "26px",
+                          background: "#fff",
+                          border: "1px solid var(--border-color, #e2e8f0)",
+                          borderRadius: "10px",
+                          boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+                          zIndex: 100,
+                          minWidth: "160px",
+                          padding: "6px 0",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px"
+                        }}>
+                          <button
+                            onClick={() => {
+                              setActiveTab("direct");
+                              setShowMenuDropdown(false);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 16px",
+                              textAlign: "left",
+                              background: activeTab === "direct" ? "rgba(235, 37, 37, 0.06)" : "transparent",
+                              border: "none",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              color: activeTab === "direct" ? "#eb2525" : "var(--text-color, #0f172a)",
+                              fontWeight: activeTab === "direct" ? 600 : 400,
+                              fontFamily: EMOJI_FONT_STACK,
+                            }}
+                          >
+                            Личные сообщения
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveTab("group");
+                              setShowMenuDropdown(false);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 16px",
+                              textAlign: "left",
+                              background: activeTab === "group" ? "rgba(235, 37, 37, 0.06)" : "transparent",
+                              border: "none",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              color: activeTab === "group" ? "#eb2525" : "var(--text-color, #0f172a)",
+                              fontWeight: activeTab === "group" ? 600 : 400,
+                              fontFamily: EMOJI_FONT_STACK,
+                            }}
+                          >
+                            Группы
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveTab("support");
+                              setShowMenuDropdown(false);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 16px",
+                              textAlign: "left",
+                              background: activeTab === "support" ? "rgba(235, 37, 37, 0.06)" : "transparent",
+                              border: "none",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              color: activeTab === "support" ? "#eb2525" : "var(--text-color, #0f172a)",
+                              fontWeight: activeTab === "support" ? 600 : 400,
+                              fontFamily: EMOJI_FONT_STACK,
+                            }}
+                          >
+                            Обращения
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <button onClick={closeMiniChat} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
                     <Minus size={16} />
@@ -2304,45 +2410,7 @@ const MiniChatWindow = () => {
                         </div>
                       )}
 
-                      {/* Tabs */}
-                      <div style={{
-                        display: "flex",
-                        borderBottom: "1px solid var(--border-color, #e2e8f0)",
-                        background: "var(--bg-sidebar, #f8fafc)"
-                      }}>
-                        <button
-                          onClick={() => setActiveTab("support")}
-                          style={{
-                            flex: 1,
-                            padding: "10px",
-                            background: "transparent",
-                            border: "none",
-                            borderBottom: activeTab === "support" ? "2px solid #eb2525" : "none",
-                            color: activeTab === "support" ? "#eb2525" : "var(--text-secondary)",
-                            fontWeight: activeTab === "support" ? 600 : 400,
-                            fontSize: "13px",
-                            cursor: "pointer"
-                          }}
-                        >
-                          {isOperator ? "Обращения" : "Поддержка"}
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("direct")}
-                          style={{
-                            flex: 1,
-                            padding: "10px",
-                            background: "transparent",
-                            border: "none",
-                            borderBottom: activeTab === "direct" ? "2px solid #eb2525" : "none",
-                            color: activeTab === "direct" ? "#eb2525" : "var(--text-secondary)",
-                            fontWeight: activeTab === "direct" ? 600 : 400,
-                            fontSize: "13px",
-                            cursor: "pointer"
-                          }}
-                        >
-                          Личные
-                        </button>
-                      </div>
+
 
                       {/* Threads Container */}
                       <div style={{ flex: 1, overflowY: "auto", padding: "10px", background: "var(--bg-color, #f1f5f9)" }}>
@@ -2468,7 +2536,7 @@ const MiniChatWindow = () => {
                                           color: "#64748b",
                                           flexShrink: 0
                                         }}>
-                                          <User size={18} />
+                                          {thread.isGroup ? <Users size={18} /> : activeTab === "support" ? <Shield size={18} /> : <User size={18} />}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
@@ -2569,7 +2637,7 @@ const MiniChatWindow = () => {
                                     color: "#64748b",
                                     flexShrink: 0
                                   }}>
-                                    <User size={18} />
+                                    {thread.isGroup ? <Users size={18} /> : activeTab === "support" ? <Shield size={18} /> : <User size={18} />}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>

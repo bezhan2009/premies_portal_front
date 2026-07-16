@@ -158,6 +158,9 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     type: null,
     fromDate: "",
     toDate: "",
+    amountOperator: "",
+    amountValue: "",
+    currencyFilter: "",
   });
 
   const getRoles = () => {
@@ -248,6 +251,9 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               : "schedule",
           fromDate: "",
           toDate: "",
+          amountOperator: "",
+          amountValue: "",
+          currencyFilter: "",
         });
         setShowVariantModal(false);
         return;
@@ -269,12 +275,44 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     try {
       if (paramsModal.type === "processing_transactions") {
         if (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0) {
-          const positiveNormalized = finalData.processing_transactions.filter((pt) => {
-            const amtStr = String(pt.amountCurrency || "");
-            return amtStr.startsWith("+") || (!amtStr.startsWith("-") && amtStr !== "N/A");
+          let filtered = finalData.processing_transactions.filter((pt) => {
+            const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
+            const amt = Number(cleanStr);
+            return amt !== 0;
           });
 
-          finalData.processing_transactions = positiveNormalized.map((transaction) => ({
+          if (paramsModal.amountOperator && paramsModal.amountValue !== "") {
+            const val = Number(paramsModal.amountValue);
+            if (!isNaN(val)) {
+              filtered = filtered.filter((pt) => {
+                const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d-]/g, "");
+                let amt = Number(cleanStr) / 100;
+                if (String(pt.amountCurrency || "").startsWith("-")) {
+                  amt = -Math.abs(amt);
+                }
+                switch (paramsModal.amountOperator) {
+                  case ">": return amt > val;
+                  case ">=": return amt >= val;
+                  case "<": return amt < val;
+                  case "<=": return amt <= val;
+                  case "==": return amt === val;
+                  case "!=": return amt !== val;
+                  default: return true;
+                }
+              });
+            }
+          }
+
+          if (paramsModal.currencyFilter && paramsModal.currencyFilter.trim() !== "") {
+            const cur = paramsModal.currencyFilter.trim().toUpperCase();
+            filtered = filtered.filter((pt) => {
+              const cleanStr = String(pt.amountCurrency || "").split(" ");
+              const code = cleanStr[cleanStr.length - 1] || "";
+              return code.toUpperCase() === cur;
+            });
+          }
+
+          finalData.processing_transactions = filtered.map((transaction) => ({
             date: transaction.date || "N/A",
             status: transaction.status || "N/A",
             cardNumber: transaction.cardNumber || "N/A",
@@ -286,7 +324,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
           }));
 
           let sum = 0;
-          positiveNormalized.forEach((pt) => {
+          filtered.forEach((pt) => {
             const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
             const amt = Number(cleanStr);
             if (!isNaN(amt)) {
@@ -323,19 +361,44 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             rawTransactions = getProcessingTransactionRows(res.data);
           }
 
-          // Filter only operations > 0
-          const positiveTransactions = rawTransactions.filter((t) => {
-            const typeVal = t?.transactionTypeNumber ?? t?.transactionType ?? t?.type;
-            const amt = Number(t?.amount);
-            if (Number(typeVal) === 1) return true;
-            if (Number(typeVal) === 2) return false;
-            return !isNaN(amt) && amt > 0;
+          // Base filter: remove garbage transactions (amount == 0)
+          let filtered = rawTransactions.filter((t) => {
+            const amt = Number(t?.amount || 0);
+            return amt !== 0;
           });
 
-          finalData.processing_transactions = positiveTransactions.map(normalizeProcessingTransaction);
+          // Apply amount condition if set
+          if (paramsModal.amountOperator && paramsModal.amountValue !== "") {
+            const val = Number(paramsModal.amountValue);
+            if (!isNaN(val)) {
+              filtered = filtered.filter((t) => {
+                const amt = Number(t?.amount || 0) / 100;
+                switch (paramsModal.amountOperator) {
+                  case ">": return amt > val;
+                  case ">=": return amt >= val;
+                  case "<": return amt < val;
+                  case "<=": return amt <= val;
+                  case "==": return amt === val;
+                  case "!=": return amt !== val;
+                  default: return true;
+                }
+              });
+            }
+          }
 
-          // Calculate sum
-          const sum = positiveTransactions.reduce((acc, curr) => acc + Number(curr?.amount || 0), 0);
+          // Apply currency condition if set
+          if (paramsModal.currencyFilter && paramsModal.currencyFilter.trim() !== "") {
+            const cur = paramsModal.currencyFilter.trim().toUpperCase();
+            filtered = filtered.filter((t) => {
+              const code = getCurrencyCode(t?.currency) || "";
+              return code.toUpperCase() === cur;
+            });
+          }
+
+          finalData.processing_transactions = filtered.map(normalizeProcessingTransaction);
+
+          // Calculate sum of the filtered transactions
+          const sum = filtered.reduce((acc, curr) => acc + Number(curr?.amount || 0), 0);
           const formattedSum = formatProcessingAmount(sum, 0);
 
           finalData.totalSum = formattedSum;
@@ -774,25 +837,71 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                   </button>
                 </div>
 
-                <div className="docx-variant-picker" style={{ padding: "1.5rem 1rem" }}>
-                  <div className="docx-form-group">
-                    <label>Дата начала (От)</label>
-                    <input 
-                      type="date" 
-                      className="docx-form-input"
-                      value={paramsModal.fromDate}
-                      onChange={(e) => setParamsModal(prev => ({ ...prev, fromDate: e.target.value }))}
-                    />
+                <div className="docx-variant-picker" style={{ padding: "1.5rem 1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <div className="docx-form-group" style={{ flex: 1 }}>
+                      <label>Дата начала (От)</label>
+                      <input 
+                        type="date" 
+                        className="docx-form-input"
+                        value={paramsModal.fromDate}
+                        onChange={(e) => setParamsModal(prev => ({ ...prev, fromDate: e.target.value }))}
+                      />
+                    </div>
+                    <div className="docx-form-group" style={{ flex: 1 }}>
+                      <label>Дата конца (До)</label>
+                      <input 
+                        type="date" 
+                        className="docx-form-input"
+                        value={paramsModal.toDate}
+                        onChange={(e) => setParamsModal(prev => ({ ...prev, toDate: e.target.value }))}
+                      />
+                    </div>
                   </div>
-                  <div className="docx-form-group">
-                    <label>Дата конца (До)</label>
-                    <input 
-                      type="date" 
-                      className="docx-form-input"
-                      value={paramsModal.toDate}
-                      onChange={(e) => setParamsModal(prev => ({ ...prev, toDate: e.target.value }))}
-                    />
-                  </div>
+
+                  {paramsModal.type === "processing_transactions" && (
+                    <>
+                      <div className="docx-form-group">
+                        <label>Условие на сумму (по желанию)</label>
+                        <div style={{ display: "flex", gap: "10px" }}>
+                          <select
+                            className="docx-form-input"
+                            style={{ width: "80px", padding: "8px", background: "#fff", border: "1px solid #d1d5db", borderRadius: "0.375rem" }}
+                            value={paramsModal.amountOperator}
+                            onChange={(e) => setParamsModal(prev => ({ ...prev, amountOperator: e.target.value }))}
+                          >
+                            <option value="">Все</option>
+                            <option value=">">&gt;</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<">&lt;</option>
+                            <option value="<=">&lt;=</option>
+                            <option value="==">==</option>
+                            <option value="!=">!=</option>
+                          </select>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="Сумма (например: 1)"
+                            className="docx-form-input"
+                            style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "0.375rem" }}
+                            value={paramsModal.amountValue}
+                            onChange={(e) => setParamsModal(prev => ({ ...prev, amountValue: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="docx-form-group">
+                        <label>Фильтр валюты (например: TJS)</label>
+                        <input
+                          type="text"
+                          placeholder="Все валюты"
+                          className="docx-form-input"
+                          style={{ padding: "8px", border: "1px solid #d1d5db", borderRadius: "0.375rem" }}
+                          value={paramsModal.currencyFilter}
+                          onChange={(e) => setParamsModal(prev => ({ ...prev, currencyFilter: e.target.value }))}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="docx-modal__footer">
