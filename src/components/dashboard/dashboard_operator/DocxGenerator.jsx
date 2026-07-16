@@ -279,18 +279,21 @@ const parseSystemKeyForBuilder = (systemKey) => {
       tableField: "date",
       tableFormat: "none",
       tableFormatCustom: "",
+      tableFilter: "",
       formulaExpression: "",
     };
   }
 
   const expr = normalized.slice(5).trim();
   
-  const tableMatch = expr.match(/^\(?([a-zA-Z0-9_]+)\s*\|\|\s*\[\]\)?\.map\(\s*([a-zA-Z0-9_]+)\s*=>\s*(.+)\)$/);
+  const tableMatch = expr.match(/^\(?([a-zA-Z0-9_]+)\s*\|\|\s*\[\]\)?(?:\.filter\(\s*([a-zA-Z0-9_]+)\s*=>\s*(.+?)\))?\.map\(\s*([a-zA-Z0-9_]+)\s*=>\s*(.+?)\)$/);
   
   if (tableMatch) {
     const source = tableMatch[1];
-    const varName = tableMatch[2];
-    const body = tableMatch[3].trim();
+    const hasFilter = tableMatch[2] !== undefined && tableMatch[3] !== undefined;
+    const filterExpr = hasFilter ? tableMatch[3] : "";
+    const varName = hasFilter ? tableMatch[4] : tableMatch[2];
+    const body = (hasFilter ? tableMatch[5] : tableMatch[3]).trim();
     
     const fieldMatch = body.match(new RegExp(`${varName}\\.([a-zA-Z0-9_]+)`));
     const field = fieldMatch ? fieldMatch[1] : "";
@@ -316,6 +319,7 @@ const parseSystemKeyForBuilder = (systemKey) => {
       tableField: field || "date",
       tableFormat: format,
       tableFormatCustom: custom,
+      tableFilter: filterExpr,
       formulaExpression: "",
     };
   }
@@ -356,6 +360,10 @@ const buildSystemKeyFromBuilder = (state) => {
       exprBody = `${varName}.${field} !== undefined ? ${varName}.${field} + ' UZS' : ''`;
     } else if (state.tableFormat === "custom") {
       exprBody = state.tableFormatCustom || `${varName}.${field}`;
+    }
+    
+    if (state.tableFilter && state.tableFilter.trim() !== "") {
+      return `eval: (${source} || []).filter(${varName} => ${state.tableFilter}).map(${varName} => ${exprBody})`;
     }
     
     return `eval: (${source} || []).map(${varName} => ${exprBody})`;
@@ -405,6 +413,7 @@ const DocxGenerator = () => {
     tableField: "date",
     tableFormat: "none",
     tableFormatCustom: "",
+    tableFilter: "",
     formulaExpression: "",
     defaultValue: "",
     required: false,
@@ -441,6 +450,7 @@ const DocxGenerator = () => {
       tableField: parsed.tableField,
       tableFormat: parsed.tableFormat,
       tableFormatCustom: parsed.tableFormatCustom,
+      tableFilter: parsed.tableFilter || "",
       formulaExpression: parsed.formulaExpression,
       defaultValue: normalized.defaultValue || "",
       required: normalized.required || false,
@@ -2267,6 +2277,22 @@ const DocxGenerator = () => {
                         </small>
                       </div>
                     )}
+
+                    <div className="docx-field">
+                      <span>JS-условие фильтрации строк (необязательно)</span>
+                      <input
+                        type="text"
+                        value={valueBuilder.tableFilter}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValueBuilder(prev => ({ ...prev, tableFilter: val }));
+                        }}
+                        placeholder="Например: Number(pt.amount) > 100 && pt.currency === '840'"
+                      />
+                      <small style={{ color: "#6b7280" }}>
+                        Используйте переменную <strong>t</strong> (для транзакций), <strong>s</strong> (для графика) или <strong>pt</strong> (для процессинга).
+                      </small>
+                    </div>
 
                     <div style={{ background: "#f3f4f6", padding: "12px", borderRadius: "8px" }}>
                       <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#6b7280", fontWeight: "600", display: "block", marginBottom: "4px" }}>
