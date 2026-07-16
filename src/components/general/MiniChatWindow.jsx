@@ -388,6 +388,19 @@ const MiniChatWindow = () => {
     return () => window.removeEventListener("mousedown", closeMenu);
   }, []);
 
+  // Close dropdown menu on outside click
+  useEffect(() => {
+    if (!showMenuDropdown) return;
+    const handleOutsideClick = (e) => {
+      const wrapper = document.getElementById("mini-chat-menu-wrapper");
+      if (wrapper && !wrapper.contains(e.target)) {
+        setShowMenuDropdown(false);
+      }
+    };
+    window.addEventListener("mousedown", handleOutsideClick);
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
+  }, [showMenuDropdown]);
+
   // Fetch threads data
   const fetchThreadsData = useCallback(async () => {
     if (!isMiniChatOpen || !token) return;
@@ -2216,7 +2229,7 @@ const MiniChatWindow = () => {
                   )}
 
                   {currentView === "threads" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
+                    <div id="mini-chat-menu-wrapper" style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }} onPointerDown={(e) => e.stopPropagation()}>
                       <button 
                         title="Начать новый чат"
                         onClick={() => setCurrentView("new_chat")}

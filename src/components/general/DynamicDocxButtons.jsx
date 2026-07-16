@@ -226,18 +226,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       const hasTransactions = hasSystemKeySource(variant, "transactions");
       const hasSchedule = hasSystemKeySource(variant, "schedule");
 
-      // Skip params modal if schedule data is already available in the data prop
-      const scheduleAlreadyAvailable = hasSchedule && Array.isArray(data.schedule) && data.schedule.length > 0;
-      const processingAlreadyAvailable =
-        hasProcessingTransactions &&
-        Array.isArray(data.processing_transactions) &&
-        data.processing_transactions.length > 0;
-      const transactionsAlreadyAvailable =
-        hasTransactions && Array.isArray(data.transactions) && data.transactions.length > 0;
-      const needsParams =
-        (hasProcessingTransactions && !processingAlreadyAvailable) ||
-        (hasTransactions && !transactionsAlreadyAvailable) ||
-        (hasSchedule && !scheduleAlreadyAvailable);
+      const needsParams = hasProcessingTransactions || hasTransactions || hasSchedule;
 
       if (needsParams) {
         setParamsModal({
