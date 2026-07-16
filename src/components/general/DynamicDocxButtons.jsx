@@ -125,6 +125,8 @@ const normalizeProcessingTransaction = (transaction) => {
     amountCurrency,
     amountCardCurrency,
     availableBalance: formatProcessingAmount(transaction?.acctbal ?? transaction?.availableBalance),
+    amount: transaction?.amount !== undefined && transaction?.amount !== null ? Number(transaction.amount) / 100 : 0,
+    currency: getCurrencyCode(transaction?.currency) || "",
   };
 };
 
@@ -259,6 +261,9 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       if (paramsModal.type === "processing_transactions") {
         if (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0) {
           const positiveNormalized = finalData.processing_transactions.filter((pt) => {
+            if (pt.amount !== undefined) {
+              return Number(pt.amount) !== 0;
+            }
             const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
             const amt = Number(cleanStr);
             return amt !== 0;
@@ -273,14 +278,20 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             amountCurrency: transaction.amountCurrency || "N/A",
             amountCardCurrency: transaction.amountCardCurrency || "N/A",
             availableBalance: transaction.availableBalance || "N/A",
+            amount: transaction.amount !== undefined ? transaction.amount : (Number(String(transaction.amountCurrency || "").replace(/[^\d]/g, "")) / 100),
+            currency: transaction.currency || "",
           }));
 
           let sum = 0;
           positiveNormalized.forEach((pt) => {
-            const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
-            const amt = Number(cleanStr);
-            if (!isNaN(amt)) {
-              sum += amt;
+            if (pt.amount !== undefined) {
+              sum += Math.round(Number(pt.amount) * 100);
+            } else {
+              const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
+              const amt = Number(cleanStr);
+              if (!isNaN(amt)) {
+                sum += amt;
+              }
             }
           });
           const formattedSum = formatProcessingAmount(sum, 0);
