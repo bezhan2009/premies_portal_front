@@ -292,8 +292,8 @@ const parseSystemKeyForBuilder = (systemKey) => {
     const source = tableMatch[1];
     const hasFilter = tableMatch[2] !== undefined && tableMatch[3] !== undefined;
     const filterExpr = hasFilter ? tableMatch[3] : "";
-    const varName = hasFilter ? tableMatch[4] : tableMatch[2];
-    const body = (hasFilter ? tableMatch[5] : tableMatch[3]).trim();
+    const varName = tableMatch[4];
+    const body = (tableMatch[5] || "").trim();
     
     const fieldMatch = body.match(new RegExp(`${varName}\\.([a-zA-Z0-9_]+)`));
     const field = fieldMatch ? fieldMatch[1] : "";
