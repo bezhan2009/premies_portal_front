@@ -126,6 +126,7 @@ const normalizeProcessingTransaction = (transaction) => {
     amountCardCurrency,
     availableBalance: formatProcessingAmount(transaction?.acctbal ?? transaction?.availableBalance),
     amount: transaction?.amount !== undefined && transaction?.amount !== null ? Number(transaction.amount) / 100 : 0,
+    conamt: transaction?.conamt !== undefined && transaction?.conamt !== null ? Number(transaction.conamt) / 100 : 0,
     currency: getCurrencyCode(transaction?.currency) || "",
   };
 };
@@ -261,12 +262,14 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
       if (paramsModal.type === "processing_transactions") {
         if (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0) {
           const positiveNormalized = finalData.processing_transactions.filter((pt) => {
-            if (pt.amount !== undefined) {
-              return Number(pt.amount) !== 0;
+            const amt = pt.amount !== undefined ? Number(pt.amount) : 0;
+            const conamt = pt.conamt !== undefined ? Number(pt.conamt) : 0;
+            if (pt.amount !== undefined || pt.conamt !== undefined) {
+              return amt !== 0 || conamt !== 0;
             }
             const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
-            const amt = Number(cleanStr);
-            return amt !== 0;
+            const cleanCardStr = String(pt.amountCardCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
+            return (Number(cleanStr) !== 0) || (Number(cleanCardStr) !== 0);
           });
 
           finalData.processing_transactions = positiveNormalized.map((transaction) => ({
@@ -279,13 +282,16 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             amountCardCurrency: transaction.amountCardCurrency || "N/A",
             availableBalance: transaction.availableBalance || "N/A",
             amount: transaction.amount !== undefined ? transaction.amount : (Number(String(transaction.amountCurrency || "").replace(/[^\d]/g, "")) / 100),
+            conamt: transaction.conamt !== undefined ? transaction.conamt : (Number(String(transaction.amountCardCurrency || "").replace(/[^\d]/g, "")) / 100),
             currency: transaction.currency || "",
           }));
 
           let sum = 0;
           positiveNormalized.forEach((pt) => {
-            if (pt.amount !== undefined) {
-              sum += Math.round(Number(pt.amount) * 100);
+            const amt = pt.amount !== undefined ? Number(pt.amount) : 0;
+            const conamt = pt.conamt !== undefined ? Number(pt.conamt) : 0;
+            if (pt.amount !== undefined || pt.conamt !== undefined) {
+              sum += Math.round((amt !== 0 ? amt : conamt) * 100);
             } else {
               const cleanStr = String(pt.amountCurrency || "").split(" ")[0].replace(/[^\d]/g, "");
               const amt = Number(cleanStr);
@@ -326,12 +332,17 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
 
           const positiveTransactions = rawTransactions.filter((t) => {
             const amt = Number(t?.amount || 0);
-            return amt !== 0;
+            const conamt = Number(t?.conamt || 0);
+            return amt !== 0 || conamt !== 0;
           });
 
           finalData.processing_transactions = positiveTransactions.map(normalizeProcessingTransaction);
 
-          const sum = positiveTransactions.reduce((acc, curr) => acc + Number(curr?.amount || 0), 0);
+          const sum = positiveTransactions.reduce((acc, curr) => {
+            const amt = Number(curr?.amount || 0);
+            const conamt = Number(curr?.conamt || 0);
+            return acc + (amt !== 0 ? amt : conamt);
+          }, 0);
           const formattedSum = formatProcessingAmount(sum, 0);
 
           finalData.totalSum = formattedSum;

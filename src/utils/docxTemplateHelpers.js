@@ -808,6 +808,12 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     "date.to": data.dateTo || data.toDate || data.statementDateTo || data.по || "",
     "panNumber": panNumberVal,
     "card.panNumber": panNumberVal,
+    // Scope helpers to prevent ReferenceErrors if operators omit quotes on currencies
+    USD: "USD",
+    EUR: "EUR",
+    TJS: "TJS",
+    UZS: "UZS",
+    RUB: "RUB",
   };
   const payload = {
     ...data,
