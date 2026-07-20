@@ -398,7 +398,7 @@ export default function ApplicationsList() {
 
     const upDateStatusApplications = async (newStatus) => {
         const unapprovedSelected = tableData.filter(
-            (row) => selectedRows.includes(row.ID) && row.application_status_id === 7,
+            (row) => selectedRows.includes(row.ID) && getStatusId(row) === 7,
         );
         if (unapprovedSelected.length > 0) {
             setAlert({
@@ -645,11 +645,18 @@ export default function ApplicationsList() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th className="applications-checkbox-cell">
+                                    <th 
+                                        className="applications-checkbox-cell"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleVisibleRows(!allVisibleSelected);
+                                        }}
+                                        style={{ cursor: "pointer" }}
+                                    >
                                         <input
                                             type="checkbox"
                                             checked={allVisibleSelected}
-                                            onChange={(e) => toggleVisibleRows(e.target.checked)}
+                                            readOnly
                                             aria-label="Выбрать все заявки на странице"
                                         />
                                     </th>
@@ -683,19 +690,20 @@ export default function ApplicationsList() {
                                         >
                                             <td 
                                                 className="applications-checkbox-cell"
-                                                onClick={(e) => e.stopPropagation()}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedRows((prev) =>
+                                                        prev.includes(row.ID)
+                                                            ? prev.filter((id) => id !== row.ID)
+                                                            : [...prev, row.ID]
+                                                    );
+                                                }}
+                                                style={{ cursor: "pointer" }}
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedRows.includes(row.ID)}
-                                                    onChange={(e) => {
-                                                        setSelectedRows((prev) =>
-                                                            e.target.checked
-                                                                ? [...prev, row.ID]
-                                                                : prev.filter((id) => id !== row.ID),
-                                                        );
-                                                    }}
-                                                    onClick={(e) => e.stopPropagation()}
+                                                    readOnly
                                                     aria-label={`Выбрать заявку ${row.ID}`}
                                                 />
                                             </td>
