@@ -213,6 +213,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
     // Функция для очистки localStorage и перенаправления на логин
     const clearStorageAndRedirect = useCallback(() => {
+        localStorage.removeItem("role_ids");
         navigate("/login");
     }, [navigate]);
 
@@ -362,32 +363,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             }
         };
     }, [fetchUserRoles, clearStorageAndRedirect]);
-
-    // Инициализация ролей из localStorage (резервный вариант)
-    useEffect(() => {
-        if (roles.length === 0) {
-            let storedRoles = [];
-            try {
-                const item = localStorage.getItem("role_ids");
-                if (item) {
-                    storedRoles = JSON.parse(item);
-                    if (!Array.isArray(storedRoles)) {
-                        storedRoles = [];
-                        localStorage.removeItem("role_ids");
-                    }
-                }
-            } catch (err) {
-                console.error("Error parsing role_ids from localStorage:", err);
-                storedRoles = [];
-                localStorage.removeItem("role_ids");
-            }
-
-            if (storedRoles.length > 0) {
-                setRoles(storedRoles);
-                console.log("Роли загружены из localStorage:", storedRoles);
-            }
-        }
-    }, [roles.length]);
 
     // WebSocket для новых заявок
     const getWsUrl = () => {

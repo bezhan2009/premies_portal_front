@@ -31,7 +31,7 @@ export default function UsersPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 24;
 
   // User edit modal states
   const [editingUser, setEditingUser] = useState(null);
@@ -74,7 +74,7 @@ export default function UsersPage() {
     setLoadingUsers(true);
     try {
       // 1. Fetch Users
-      const usersRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users`, {
+      const usersRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users?all=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (usersRes.ok) {

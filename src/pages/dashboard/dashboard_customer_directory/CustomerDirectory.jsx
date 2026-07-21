@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
+import Select from "../../../components/elements/Select.jsx";
 import "../../../styles/components/CustomerDirectory.scss";
 
 const INITIAL_FILTERS = {
@@ -359,10 +360,10 @@ export default function CustomerDirectory() {
 
       <section className="customer-directory__toolbar">
         <form className="customer-search" onSubmit={applySearch}><Search size={18} /><input value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="ФИО, ИНН, телефон или индекс клиента" /><button type="submit" title="Найти"><Search size={17} /></button></form>
-        <div className="customer-filter-group"><SlidersHorizontal size={17} /><select value={filters.resident} onChange={(event) => updateFilter("resident", event.target.value)}><option value="">Все клиенты</option><option value="true">Резиденты</option><option value="false">Нерезиденты</option></select></div>
-        <div className="customer-filter-group"><AlertTriangle size={17} /><select value={filters.overdue} onChange={(event) => updateFilter("overdue", event.target.value)}><option value="">Любой статус</option><option value="true">Просрочка</option></select></div>
-        <div className="customer-filter-group"><ShieldCheck size={17} /><select value={filters.terror} onChange={(event) => updateFilter("terror", event.target.value)}><option value="">Все проверки</option><option value="matched">Есть совпадение</option></select></div>
-        <div className="customer-filter-group"><Filter size={17} /><select value={filters.complianceScore} onChange={(event) => updateFilter("complianceScore", event.target.value)}><option value="">Все баллы</option>{[1, 2, 3, 4, 5].map((score) => <option value={score} key={score}>{score} балл</option>)}</select></div>
+        <div className="customer-filter-group"><SlidersHorizontal size={17} /><Select className="customer-filter-select" value={filters.resident} onChange={(value) => updateFilter("resident", value)} options={[{ value: "", label: "Все клиенты" }, { value: "true", label: "Резиденты" }, { value: "false", label: "Нерезиденты" }]} /></div>
+        <div className="customer-filter-group"><AlertTriangle size={17} /><Select className="customer-filter-select" value={filters.overdue} onChange={(value) => updateFilter("overdue", value)} options={[{ value: "", label: "Любой статус" }, { value: "true", label: "Просрочка" }]} /></div>
+        <div className="customer-filter-group"><ShieldCheck size={17} /><Select className="customer-filter-select" value={filters.terror} onChange={(value) => updateFilter("terror", value)} options={[{ value: "", label: "Все проверки" }, { value: "matched", label: "Есть совпадение" }]} /></div>
+        <div className="customer-filter-group"><Filter size={17} /><Select className="customer-filter-select" value={filters.complianceScore} onChange={(value) => updateFilter("complianceScore", value)} options={[{ value: "", label: "Все баллы" }, ...[1, 2, 3, 4, 5].map((score) => ({ value: String(score), label: `${score} балл` }))]} /></div>
         <button type="button" className="customer-reset-button" onClick={() => { setFilters(INITIAL_FILTERS); setDraftSearch(""); setPage(1); }} title="Сбросить фильтры"><X size={17} /></button>
       </section>
 
