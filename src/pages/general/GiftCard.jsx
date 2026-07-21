@@ -9,7 +9,6 @@ import {
     USTypes,
     visaCards,
 } from "../../const/defConst";
-import search_user from "../../assets/search_user.png";
 import file from "../../assets/file.jpg";
 import back_side_of_the_passport_file from "../../assets/back-passport.jpg";
 import front_side_of_the_passport_file from "../../assets/front-passport.jpg";
@@ -17,10 +16,7 @@ import personImg from "../../assets/person.svg";
 import visa from "../../assets/visa.jpg";
 import nc from "../../assets/nc.jpg";
 import mc from "../../assets/mc.jpg";
-import download from "../../assets/download.jpg";
-import share from "../../assets/share.jpg";
-import save from "../../assets/save.jpg";
-import offer from "../../assets/offer.png";
+import { Download, FileCheck2, Save as SaveIcon, Search, Send } from "lucide-react";
 import { useFormStore } from "../../hooks/useFormState";
 import File from "../../components/elements/File";
 import CheckBox from "../../components/elements/CheckBox";
@@ -230,6 +226,10 @@ export default function GiftCard({ edit = false }) {
         fullName: null,
         cardName: null
     });
+    const [terrorBestMatches, setTerrorBestMatches] = useState({
+        fullName: null,
+        cardName: null
+    });
     const [checkingTerror, setCheckingTerror] = useState({
         fullName: false,
         cardName: false
@@ -256,12 +256,14 @@ export default function GiftCard({ edit = false }) {
     const checkTerrorList = useCallback(async (name, birthDate, type) => {
         if (!name || name.trim().length < 2) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
+            setTerrorBestMatches(prev => ({ ...prev, [type]: null }));
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
             return;
         }
 
         if (data.application_status_id === 8) {
             setTerrorCheckResults(prev => ({ ...prev, [type]: false }));
+            setTerrorBestMatches(prev => ({ ...prev, [type]: null }));
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
             return;
         }
@@ -275,7 +277,7 @@ export default function GiftCard({ edit = false }) {
                 return;
             }
 
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/best-match`, {
                 method: "POST",
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
@@ -287,16 +289,20 @@ export default function GiftCard({ edit = false }) {
             if (!response.ok) {
                 if (response.status === 404) {
                     setTerrorCheckResults(prev => ({ ...prev, [type]: false }));
+                    setTerrorBestMatches(prev => ({ ...prev, [type]: null }));
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
             } else {
                 const result = await response.json();
-                setTerrorCheckResults(prev => ({ ...prev, [type]: result.is_match }));
+                const bestMatch = result.match || null;
+                setTerrorCheckResults(prev => ({ ...prev, [type]: Boolean(bestMatch) }));
+                setTerrorBestMatches(prev => ({ ...prev, [type]: bestMatch }));
             }
         } catch (error) {
             console.error(`Ошибка при проверке списка террористов (${type}):`, error);
             setTerrorCheckResults(prev => ({ ...prev, [type]: null }));
+            setTerrorBestMatches(prev => ({ ...prev, [type]: null }));
         } finally {
             setCheckingTerror(prev => ({ ...prev, [type]: false }));
         }
@@ -652,6 +658,7 @@ export default function GiftCard({ edit = false }) {
                 }
             } else {
                 setTerrorCheckResults({ fullName: false, cardName: false });
+                setTerrorBestMatches({ fullName: null, cardName: null });
             }
 
             showAlert("Данные клиента успешно загружены из АБС", "success", 5000);
@@ -1463,6 +1470,11 @@ export default function GiftCard({ edit = false }) {
         return `uploads/${path}`;
     };
 
+    const getBestTerrorMatch = () =>
+        [terrorBestMatches.fullName, terrorBestMatches.cardName]
+            .filter(Boolean)
+            .sort((a, b) => Number(b.similarity || 0) - Number(a.similarity || 0))[0] || null;
+
     const handleSendToCompliance = async () => {
         try {
             setLoading(true);
@@ -1475,6 +1487,8 @@ export default function GiftCard({ edit = false }) {
 
             const backendUrl = import.meta.env.VITE_BACKEND_URL;
             const fullName = `${data.surname || ''} ${data.name || ''} ${data.patronymic || ''}`.trim();
+            const bestTerrorMatch = getBestTerrorMatch();
+            const bestSimilarity = Number(bestTerrorMatch?.similarity || 0);
             
             const response = await fetch(`${backendUrl}/compliance/requests`, {
                 method: "POST",
@@ -1484,7 +1498,8 @@ export default function GiftCard({ edit = false }) {
                     client_full_name: fullName,
                     client_phone: data.phone_number || "",
                     client_birth_date: data.birth_date || "",
-                    match_similarity: 100.0,
+                    match_similarity: bestTerrorMatch ? bestSimilarity * 100 : 0,
+                    best_match: bestTerrorMatch ? JSON.stringify([bestTerrorMatch]) : "",
                     client_occupation: data.client_occupation || "",
                     net_worth: data.net_worth || "",
                     monthly_income: data.monthly_income || "",
@@ -1557,6 +1572,7 @@ export default function GiftCard({ edit = false }) {
                     }
                 } else {
                     setTerrorCheckResults({ fullName: false, cardName: false });
+                    setTerrorBestMatches({ fullName: null, cardName: null });
                 }
             } catch (e) {
                 console.error(e);
@@ -2533,6 +2549,7 @@ export default function GiftCard({ edit = false }) {
                                     disabled={loading}
                                     style={{ background: "#dc3545", color: "white" }}
                                 >
+                                    <Send size={18} />
                                     <span>Отправить в Комплаенс</span>
                                 </button>
                             ) : (
@@ -2541,23 +2558,23 @@ export default function GiftCard({ edit = false }) {
                                         onClick={() => onSend(false, false)}
                                         disabled={downloading || downloadingOffer || downloadingCompliance}
                                     >
-                                        <img src={save} alt="" />
+                                        <SaveIcon size={18} />
                                         <span>Сохранить</span>
                                     </button>
                             <button
                                 onClick={handleSaveAndDownloadOffer}
                                 disabled={downloading || downloadingOffer || downloadingCompliance}
                             >
-                                <img src={offer} alt="" />
+                                <Download size={18} />
                                 <span>
-                                    {downloadingOffer ? "Загрузка..." : "Загрузить оферту"}
+                                    {downloadingOffer ? "Скачивание..." : "Скачать оферту"}
                                 </span>
                             </button>
                             <button
                                 onClick={handleSaveAndDownload}
                                 disabled={downloading || downloadingOffer || downloadingCompliance}
                             >
-                                <img src={download} alt="" />
+                                <FileCheck2 size={18} />
                                 <span>
                                     {downloading ? "Скачивание..." : "Скачать анкету"}
                                 </span>
@@ -2566,19 +2583,15 @@ export default function GiftCard({ edit = false }) {
                                 onClick={handleSaveAndDownloadCompliance}
                                 disabled={downloading || downloadingOffer || downloadingCompliance}
                             >
-                                <img src={download} alt="" />
+                                <FileCheck2 size={18} />
                                 <span>
                                     {downloadingCompliance ? "Скачивание..." : "Скачать анкету комплайнс"}
                                 </span>
                             </button>
-                            <button disabled={downloading || downloadingOffer || downloadingCompliance}>
-                                <img src={share} alt="" />
-                                <span>Загрузить анкету</span>
-                            </button>
                                 </>
                             )}
                             <button onClick={handleSearchClient} disabled={searching}>
-                                <img src={search_user} alt="" />
+                                <Search size={18} />
                                 <span>{searching ? "Поиск..." : "Найти клиента в АБС"}</span>
                             </button>
                         </footer>

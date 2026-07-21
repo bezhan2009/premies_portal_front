@@ -144,6 +144,24 @@ export default function ComplianceRequests() {
         }
     };
 
+    const parseBestMatch = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === "object") return [value];
+
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [parsed];
+        } catch (error) {
+            return [];
+        }
+    };
+
+    const getBestMatch = (record) =>
+        parseBestMatch(record.best_match)
+            .filter(Boolean)
+            .sort((a, b) => Number(b.similarity || 0) - Number(a.similarity || 0))[0] || null;
+
     const columns = [
         {
             title: "ID",
@@ -165,6 +183,30 @@ export default function ComplianceRequests() {
             dataIndex: "match_similarity",
             key: "match_similarity",
             render: (val) => <Text type="danger">{val}%</Text>
+        },
+        {
+            title: "Совпадение",
+            key: "best_match",
+            width: 320,
+            render: (_, record) => {
+                const match = getBestMatch(record);
+                if (!match) {
+                    return <Text type="secondary">-</Text>;
+                }
+
+                return (
+                    <Space direction="vertical" size={2} style={{ maxWidth: 300 }}>
+                        <Text strong>{match.source || "-"}</Text>
+                        <Text>{match.data?.full_name || "-"}</Text>
+                        <Text type="secondary">
+                            similarity: {Number(match.similarity || 0).toFixed(2)}
+                        </Text>
+                        <Text code style={{ whiteSpace: "normal", wordBreak: "break-word" }}>
+                            {JSON.stringify([match])}
+                        </Text>
+                    </Space>
+                );
+            },
         },
         {
             title: "Балл комплаенса",

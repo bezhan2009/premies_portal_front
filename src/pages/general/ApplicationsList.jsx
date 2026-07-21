@@ -396,6 +396,28 @@ export default function ApplicationsList() {
         });
     };
 
+    const toggleRowSelection = (rowId) => {
+        setSelectedRows((prev) =>
+            prev.includes(rowId)
+                ? prev.filter((id) => id !== rowId)
+                : [...prev, rowId],
+        );
+    };
+
+    const toggleFilteredRows = () => {
+        const filteredIds = filteredData.map((row) => row.ID);
+        const allFilteredSelected =
+            filteredIds.length > 0 && filteredIds.every((id) => selectedRows.includes(id));
+
+        setSelectedRows((prev) => {
+            if (allFilteredSelected) {
+                return prev.filter((id) => !filteredIds.includes(id));
+            }
+
+            return [...new Set([...prev, ...filteredIds])];
+        });
+    };
+
     const upDateStatusApplications = async (newStatus) => {
         const unapprovedSelected = tableData.filter(
             (row) => selectedRows.includes(row.ID) && getStatusId(row) === 7,
@@ -558,6 +580,15 @@ export default function ApplicationsList() {
                         </button>
                         <button
                             type="button"
+                            className="applications-action"
+                            onClick={toggleFilteredRows}
+                            disabled={filteredData.length === 0}
+                        >
+                            <CheckCircle2 size={18} />
+                            Выбрать
+                        </button>
+                        <button
+                            type="button"
                             className="applications-action applications-action--primary"
                             onClick={handleExport}
                         >
@@ -629,14 +660,23 @@ export default function ApplicationsList() {
                 {selectedRows.length > 0 && (
                     <section className="applications-bulk">
                         <span>Выбрано заявок: {selectedRows.length}</span>
-                        <Select
-                            style={{ border: "1px solid #d8dce3" }}
-                            id="status"
-                            value={data?.status}
-                            onChange={(value) => upDateStatusApplications(value)}
-                            options={status}
-                            error={errors}
-                        />
+                        <div className="applications-bulk__actions">
+                            <Select
+                                style={{ border: "1px solid #d8dce3" }}
+                                id="status"
+                                value={data?.status}
+                                onChange={(value) => upDateStatusApplications(value)}
+                                options={status}
+                                error={errors}
+                            />
+                            <button
+                                type="button"
+                                className="applications-clear-selection"
+                                onClick={() => setSelectedRows([])}
+                            >
+                                Снять выбор
+                            </button>
+                        </div>
                     </section>
                 )}
 
@@ -676,6 +716,7 @@ export default function ApplicationsList() {
                                     return (
                                         <tr 
                                             key={row.ID}
+                                            className={selectedRows.includes(row.ID) ? "applications-row--selected" : ""}
                                             onClick={(e) => {
                                                 if (
                                                     e.target.closest('.applications-checkbox-cell') || 
@@ -685,18 +726,14 @@ export default function ApplicationsList() {
                                                 ) {
                                                     return;
                                                 }
-                                                navigate(`/agent/card/${row.ID}`);
+                                                toggleRowSelection(row.ID);
                                             }}
                                         >
                                             <td 
                                                 className="applications-checkbox-cell"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setSelectedRows((prev) =>
-                                                        prev.includes(row.ID)
-                                                            ? prev.filter((id) => id !== row.ID)
-                                                            : [...prev, row.ID]
-                                                    );
+                                                    toggleRowSelection(row.ID);
                                                 }}
                                                 style={{ cursor: "pointer" }}
                                             >
@@ -741,7 +778,10 @@ export default function ApplicationsList() {
                                                     <button
                                                         type="button"
                                                         className="applications-open-btn"
-                                                        onClick={() => navigate(`/agent/card/${row.ID}`)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/agent/card/${row.ID}`);
+                                                        }}
                                                     >
                                                         <Eye size={16} />
                                                         Открыть
@@ -760,7 +800,10 @@ export default function ApplicationsList() {
                                                     <button
                                                         type="button"
                                                         className="applications-delete-btn"
-                                                        onClick={() => deleteApplication(row.ID)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteApplication(row.ID);
+                                                        }}
                                                         title="Удалить заявку"
                                                         aria-label={`Удалить заявку ${row.ID}`}
                                                     >

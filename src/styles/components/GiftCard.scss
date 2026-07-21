@@ -141,6 +141,22 @@
         grid-column: auto !important;
       }
     }
+
+    footer {
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 0;
+
+        svg {
+          width: 18px;
+          height: 18px;
+          flex: 0 0 auto;
+        }
+      }
+    }
   }
 }
 
@@ -560,7 +576,9 @@
 
     .compliance-checkbox-group {
       display: flex;
-      flex-direction: column;
+      grid-column: 1 / -1;
+      flex-direction: row;
+      flex-wrap: wrap;
       gap: 12px;
       padding: 16px;
       background: var(--bg-color);
@@ -572,6 +590,11 @@
       .check-box {
         margin: 0;
         padding: 4px 8px;
+      }
+
+      .check-box-container {
+        flex: 1 1 220px;
+        min-width: 220px;
       }
     }
   }
@@ -593,6 +616,14 @@
 
     .compliance-grid {
       grid-template-columns: 1fr;
+
+      .compliance-checkbox-group {
+        flex-direction: column;
+
+        .check-box-container {
+          min-width: 0;
+        }
+      }
     }
   }
 }

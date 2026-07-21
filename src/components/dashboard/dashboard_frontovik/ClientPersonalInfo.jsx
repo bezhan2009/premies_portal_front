@@ -174,10 +174,12 @@ const ClientPersonalInfo = ({
                   <span style={{ fontSize: '14px', fontWeight: '500' }}>
                     {isMobile === null ? (
                       <span className="mobile-status-checking" style={{ color: '#888' }}>Неизвестно</span>
+                    ) : isMobile?.isMobileAppRegistered === true ? (
+                      <span className="mobile-status-connected" style={{ color: '#16a34a', fontWeight: 600 }}>Подключен</span>
+                    ) : isMobile?.isMobileAppRegistered === false ? (
+                      <span className="mobile-status-disconnected" style={{ color: '#e11d48', fontWeight: 600 }}>Не подключен</span>
                     ) : (isMobile && (typeof isMobile === 'string' || isMobile?.Iban || isMobile?.iban || isMobile?.account)) ? (
-                      <span className="mobile-status-connected" style={{ color: '#333' }}>
-                        Подключен IBAN:<br/>{typeof isMobile === 'string' ? isMobile : (isMobile?.Iban || isMobile?.iban || isMobile?.account || "-")}
-                      </span>
+                      <span className="mobile-status-connected" style={{ color: '#16a34a', fontWeight: 600 }}>Подключен</span>
                     ) : (
                       <span className="mobile-status-disconnected" style={{ color: '#e11d48', fontWeight: 600 }}>Не подключен</span>
                     )}

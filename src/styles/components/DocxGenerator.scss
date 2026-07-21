@@ -412,10 +412,24 @@
 
 .docx-card-actions {
   display: grid;
-  grid-template-columns: 1fr 1.2fr 42px;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 10px;
+  width: 100%;
+  min-width: 0;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
+
+  .docx-btn,
+  .docx-icon-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .docx-btn span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .docx-empty-state {
@@ -1372,4 +1386,3 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-

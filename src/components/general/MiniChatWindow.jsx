@@ -1262,8 +1262,10 @@ const MiniChatWindow = () => {
     setSending(true);
     try {
       for (const threadId of selectedChatIds) {
+        const thread = sortedThreads.find(t => t.user_id === threadId);
+        const type = thread?.chatType || activeTab;
         let url = `${API_URL}/api/feedback/chat`;
-        if (activeTab === "direct") {
+        if (type === "direct") {
           url += `?chatWith=${threadId}`;
         } else {
           url += `?userId=${threadId}`;
@@ -1514,39 +1516,48 @@ const MiniChatWindow = () => {
   // Filter threads and sort pinned to top
   const sortedThreads = useMemo(() => {
     const query = threadSearch.toLowerCase().trim();
-    let source = [];
-    if (activeTab === "support") {
-      source = isOperator ? supportThreads : [];
-    } else if (activeTab === "group") {
-      source = groups.map(g => ({
-        user_id: g.id,
-        username: g.name || "Группа",
-        last_message_at: g.last_message_at || g.updated_at,
-        message: g.last_message || "",
-        unread_count: g.unread_count || 0,
-        isGroup: true,
-      }));
-    } else {
-      source = directThreads;
-    }
+    
+    const groupsSource = groups.map(g => ({
+      user_id: g.id,
+      username: g.name || "Группа",
+      last_message_at: g.last_message_at || g.updated_at,
+      message: g.last_message || "",
+      unread_count: g.unread_count || 0,
+      isGroup: true,
+      chatType: "group",
+    }));
+
+    const supportSource = (isOperator ? supportThreads : []).map(s => ({
+      ...s,
+      chatType: "support",
+    }));
+
+    const directSource = directThreads.map(d => ({
+      ...d,
+      chatType: "direct",
+    }));
+
+    const source = [...groupsSource, ...supportSource, ...directSource];
     
     const filtered = source.filter(t => t.username?.toLowerCase().includes(query));
     
     // Sort: pinned first, then by date desc
     return [...filtered].sort((a, b) => {
-      const keyA = Number(isOperator && activeTab === "support" ? a.user_id : a.user_id);
-      const keyB = Number(isOperator && activeTab === "support" ? b.user_id : b.user_id);
-      const isPinnedA = pinnedChats.map(Number).includes(keyA);
-      const isPinnedB = pinnedChats.map(Number).includes(keyB);
+      const keyA = `${a.chatType}-${a.user_id}`;
+      const keyB = `${b.chatType}-${b.user_id}`;
+      const isPinnedA = pinnedChats.includes(keyA) || pinnedChats.map(Number).includes(Number(a.user_id));
+      const isPinnedB = pinnedChats.includes(keyB) || pinnedChats.map(Number).includes(Number(b.user_id));
       
       if (isPinnedA && isPinnedB) {
-        return pinnedChats.map(Number).indexOf(keyA) - pinnedChats.map(Number).indexOf(keyB);
+        const indexA = pinnedChats.includes(keyA) ? pinnedChats.indexOf(keyA) : pinnedChats.map(Number).indexOf(Number(a.user_id));
+        const indexB = pinnedChats.includes(keyB) ? pinnedChats.indexOf(keyB) : pinnedChats.map(Number).indexOf(Number(b.user_id));
+        return indexA - indexB;
       }
       if (isPinnedA && !isPinnedB) return -1;
       if (!isPinnedA && isPinnedB) return 1;
       return new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime();
     });
-  }, [activeTab, supportThreads, directThreads, threadSearch, isOperator, pinnedChats]);
+  }, [supportThreads, directThreads, groups, threadSearch, isOperator, pinnedChats]);
 
   const pinnedThreads = useMemo(() => {
     return sortedThreads.filter(t => pinnedChats.map(Number).includes(Number(t.user_id)));
@@ -2174,7 +2185,7 @@ const MiniChatWindow = () => {
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
                     <span style={{ fontWeight: 650, fontSize: "15px", color: "var(--text-color, #1e293b)" }}>
-                      {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : `Чат: ${activeTab === "direct" ? "Личные" : activeTab === "group" ? "Группы" : "Обращения"}`}
+                      {currentView === "chat" ? activeThreadName : currentView === "new_chat" ? "Новый чат" : "Чаты"}
                     </span>
                     {currentView === "chat" && (() => { const p = formatPresence(partnerPresence); return p.label ? (
                       <span style={{ fontSize: "10px", color: p.color, display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
@@ -2245,100 +2256,6 @@ const MiniChatWindow = () => {
                       >
                         <PlusCircle size={18} />
                       </button>
-                      <button 
-                        title="Меню чатов"
-                        onClick={() => setShowMenuDropdown(!showMenuDropdown)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: showMenuDropdown ? "#eb2525" : "var(--text-secondary, #64748b)",
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "2px"
-                        }}
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-
-                      {showMenuDropdown && (
-                        <div style={{
-                          position: "absolute",
-                          right: 0,
-                          top: "26px",
-                          background: "#fff",
-                          border: "1px solid var(--border-color, #e2e8f0)",
-                          borderRadius: "10px",
-                          boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-                          zIndex: 100,
-                          minWidth: "160px",
-                          padding: "6px 0",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "2px"
-                        }}>
-                          <button
-                            onClick={() => {
-                              setActiveTab("direct");
-                              setShowMenuDropdown(false);
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "8px 16px",
-                              textAlign: "left",
-                              background: activeTab === "direct" ? "rgba(235, 37, 37, 0.06)" : "transparent",
-                              border: "none",
-                              fontSize: "13px",
-                              cursor: "pointer",
-                              color: activeTab === "direct" ? "#eb2525" : "var(--text-color, #0f172a)",
-                              fontWeight: activeTab === "direct" ? 600 : 400,
-                              fontFamily: EMOJI_FONT_STACK,
-                            }}
-                          >
-                            Личные сообщения
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveTab("group");
-                              setShowMenuDropdown(false);
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "8px 16px",
-                              textAlign: "left",
-                              background: activeTab === "group" ? "rgba(235, 37, 37, 0.06)" : "transparent",
-                              border: "none",
-                              fontSize: "13px",
-                              cursor: "pointer",
-                              color: activeTab === "group" ? "#eb2525" : "var(--text-color, #0f172a)",
-                              fontWeight: activeTab === "group" ? 600 : 400,
-                              fontFamily: EMOJI_FONT_STACK,
-                            }}
-                          >
-                            Группы
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveTab("support");
-                              setShowMenuDropdown(false);
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "8px 16px",
-                              textAlign: "left",
-                              background: activeTab === "support" ? "rgba(235, 37, 37, 0.06)" : "transparent",
-                              border: "none",
-                              fontSize: "13px",
-                              cursor: "pointer",
-                              color: activeTab === "support" ? "#eb2525" : "var(--text-color, #0f172a)",
-                              fontWeight: activeTab === "support" ? 600 : 400,
-                              fontFamily: EMOJI_FONT_STACK,
-                            }}
-                          >
-                            Обращения
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                   <button onClick={closeMiniChat} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
@@ -2398,7 +2315,7 @@ const MiniChatWindow = () => {
                             <Trash2 size={18} />
                           </button>
                         </div>
-                      ) : !(activeTab === "support" && !isOperator) && (
+                      ) : (
                         <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
                           <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                             <Search size={14} style={{ position: "absolute", left: "10px", color: "var(--text-secondary, #94a3b8)" }} />
@@ -2429,7 +2346,7 @@ const MiniChatWindow = () => {
                       <div style={{ flex: 1, overflowY: "auto", padding: "10px", background: "var(--bg-color, #f1f5f9)" }}>
                         {loadingThreads ? (
                           <div style={{ textAlign: "center", marginTop: "30px", color: "var(--text-secondary)", fontSize: "13px" }}>Загрузка...</div>
-                        ) : activeTab === "support" && !isOperator ? (
+                        ) : false ? (
                           /* Technical Support Card for Clients */
                           <div 
                             onClick={() => {
@@ -2489,11 +2406,11 @@ const MiniChatWindow = () => {
                               <Reorder.Group axis="y" values={pinnedThreads} onReorder={handleReorderPinned} style={{ listStyle: "none", padding: 0, margin: 0 }}>
                                 {pinnedThreads.map(thread => {
                                   const threadId = thread.user_id;
-                                  const isSelected = recipientId === threadId && chatType === activeTab;
+                                  const isSelected = recipientId === threadId && chatType === thread.chatType;
                                   const isMuted = mutedChats.includes(threadId);
                                   return (
                                     <Reorder.Item
-                                      key={`${activeTab}-${threadId}`}
+                                      key={`${thread.chatType}-${threadId}`}
                                       value={thread}
                                       as="div"
                                       style={{ listStyle: "none", padding: 0, margin: 0 }}
@@ -2504,7 +2421,7 @@ const MiniChatWindow = () => {
                                           if (isChatSelectionMode) {
                                             handleSelectChat(threadId);
                                           } else {
-                                            setChatType(activeTab);
+                                            setChatType(thread.chatType);
                                             setRecipientId(threadId);
                                             setActiveThreadName(thread.username);
                                             setCurrentView("chat");
@@ -2549,7 +2466,7 @@ const MiniChatWindow = () => {
                                           color: "#64748b",
                                           flexShrink: 0
                                         }}>
-                                          {thread.isGroup ? <Users size={18} /> : activeTab === "support" ? <Shield size={18} /> : <User size={18} />}
+                                          {thread.isGroup ? <Users size={18} /> : thread.chatType === "support" ? <Shield size={18} /> : <User size={18} />}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
@@ -2591,12 +2508,12 @@ const MiniChatWindow = () => {
                             )}
                             {unpinnedThreads.map(thread => {
                               const threadId = thread.user_id;
-                              const isSelected = recipientId === threadId && chatType === activeTab;
+                              const isSelected = recipientId === threadId && chatType === thread.chatType;
                               const isMuted = mutedChats.includes(threadId);
                               return (
                                 <motion.div
                                   className="mini-chat-thread-row"
-                                  key={`${activeTab}-${threadId}`}
+                                  key={`${thread.chatType}-${threadId}`}
                                   layout
                                   initial={{ opacity: 0, x: -10 }}
                                   animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 350, damping: 28 } }}
@@ -2606,7 +2523,7 @@ const MiniChatWindow = () => {
                                     if (isChatSelectionMode) {
                                       handleSelectChat(threadId);
                                     } else {
-                                      setChatType(activeTab);
+                                      setChatType(thread.chatType);
                                       setRecipientId(threadId);
                                       setActiveThreadName(thread.username);
                                       setCurrentView("chat");
@@ -2650,7 +2567,7 @@ const MiniChatWindow = () => {
                                     color: "#64748b",
                                     flexShrink: 0
                                   }}>
-                                    {thread.isGroup ? <Users size={18} /> : activeTab === "support" ? <Shield size={18} /> : <User size={18} />}
+                                    {thread.isGroup ? <Users size={18} /> : thread.chatType === "support" ? <Shield size={18} /> : <User size={18} />}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>

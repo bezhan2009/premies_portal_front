@@ -1240,7 +1240,7 @@ const DocxGenerator = () => {
                       )}
                     </div>
 
-                    <div className="docx-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "8px", width: "100%" }}>
+                    <div className="docx-card-actions">
                       <button type="button" className="docx-btn docx-btn--secondary" onClick={() => handleStartEdit(template)}>
                         <Edit2 size={16} />
                         <span>Изменить</span>
