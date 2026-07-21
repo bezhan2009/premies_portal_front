@@ -69,18 +69,44 @@ export default function UsersPage() {
 
   const token = localStorage.getItem("access_token");
 
+  const fetchAllUsers = async () => {
+    const headers = { Authorization: `Bearer ${token}` };
+    const firstResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users?all=true`, { headers });
+    if (!firstResponse.ok) {
+      throw new Error(`Не удалось загрузить пользователей: ${firstResponse.status}`);
+    }
+
+    const firstData = await firstResponse.json();
+    const firstUsers = Array.isArray(firstData.users) ? firstData.users : [];
+
+    // New backend returns total with the complete list. Older deployments ignore
+    // `all=true`, so continue with the existing cursor endpoint in that case.
+    if (typeof firstData.total === "number") return firstUsers;
+
+    const allUsers = [...firstUsers];
+    let afterID = Number(allUsers.at(-1)?.id || 0);
+    while (allUsers.length && afterID > 0) {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users?after=${afterID}`, { headers });
+      if (!response.ok) throw new Error(`Не удалось загрузить пользователей: ${response.status}`);
+      const data = await response.json();
+      const nextUsers = Array.isArray(data.users) ? data.users : [];
+      if (!nextUsers.length) break;
+
+      const nextAfterID = Number(nextUsers.at(-1)?.id || 0);
+      allUsers.push(...nextUsers);
+      if (!nextAfterID || nextAfterID <= afterID) break;
+      afterID = nextAfterID;
+    }
+
+    return allUsers;
+  };
+
   // Fetch all data
   const loadData = async () => {
     setLoadingUsers(true);
     try {
       // 1. Fetch Users
-      const usersRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users?all=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(usersData.users || []);
-      }
+      setUsers(await fetchAllUsers());
 
       // 2. Fetch Roles
       const rolesRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles`, {

@@ -491,7 +491,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
-        if (roles.includes(3) || roles.includes(39)) {
+        if (roles.includes(39)) {
             additionalLinks.push({
                 name: "Клиенты",
                 href: "/customers",
