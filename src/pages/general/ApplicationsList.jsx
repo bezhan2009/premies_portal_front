@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Archive,
     BriefcaseBusiness,
@@ -138,6 +138,8 @@ const getStatusStats = (rows) =>
 export default function ApplicationsList() {
     const { data, errors, setData } = useFormStore();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const initialSearch = searchParams.get("search") || "";
     const [selectedRows, setSelectedRows] = useState([]);
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -149,7 +151,7 @@ export default function ApplicationsList() {
     const [nextId, setNextId] = useState(null);
     const [fetching, setFetching] = useState(false);
     const [filters, setFilters] = useState({
-        query: "",
+        query: initialSearch,
         fullName: "",
         phone: "",
         resident: "",
@@ -303,6 +305,7 @@ export default function ApplicationsList() {
                 row?.ID,
                 fullName,
                 row?.phone_number,
+                row?.inn,
                 row?.card_name,
                 row?.card_type,
                 row?.last_card_numbers,

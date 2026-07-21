@@ -15,7 +15,7 @@ import {
     fetchLoanDetails,
     repayLoanSoap,
 } from "../../../api/ABS_frotavik/getLoanDetails";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
@@ -79,6 +79,7 @@ const convertDiramToSomoni = (value) => {
 };
 
 export default function ABSClientSearch() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const { exportToExcel } = useExcelExport();
     const [isMobile, setIsMobile] = useState(null);
     const [activeTab, setActiveTab] = useState("cards");
@@ -391,18 +392,18 @@ export default function ABSClientSearch() {
 
         // getClientByCode is now imported from getUserCredits API
 
-    const handleSearchClient = async () => {
-        if (!phoneNumber) {
+    const handleSearchClient = async (searchValue = phoneNumber, searchType = selectTypeSearchClient) => {
+        if (!searchValue) {
             showAlert("Пожалуйста, введите данные для поиска", "error");
             return;
         }
 
-        let formattedPhone = phoneNumber.trim();
+        let formattedPhone = searchValue.trim();
 
         // Log audit action
         logAuditAction({
             action: "Поиск клиента",
-            details: `Поиск клиента по типу '${selectTypeSearchClient}' со значением '${formattedPhone}'`
+            details: `Поиск клиента по типу '${searchType}' со значением '${formattedPhone}'`
         });
 
         try {
@@ -410,12 +411,12 @@ export default function ABSClientSearch() {
             const token = localStorage.getItem("access_token");
 
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
-                (t) => t.value === selectTypeSearchClient,
+                (t) => t.value === searchType,
             );
 
             if (searchTypeIndex >= 3 && searchTypeIndex <= 6) {
                 const clientCodes = await searchViaATMService(
-                    selectTypeSearchClient,
+                    searchType,
                     formattedPhone,
                 );
 
@@ -449,7 +450,7 @@ export default function ABSClientSearch() {
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
-                const apiUrl = `${API_BASE_URL}/${selectTypeSearchClient}${formattedPhone}`;
+                const apiUrl = `${API_BASE_URL}/${searchType}${formattedPhone}`;
 
                 const response = await fetch(apiUrl, {
                     method: "GET",
@@ -478,13 +479,13 @@ export default function ABSClientSearch() {
                         normalizeClientData(client, TYPE_SEARCH_CLIENT[0].value)
                     );
                 } else if (searchTypeIndex === 1) {
-                    normalizedData = [normalizeClientData(data, selectTypeSearchClient)];
+                    normalizedData = [normalizeClientData(data, searchType)];
                 } else if (searchTypeIndex === 2) {
                     normalizedData = Array.isArray(data)
                         ? data.map((client) =>
-                            normalizeClientData(client, selectTypeSearchClient),
+                            normalizeClientData(client, searchType),
                         )
-                        : [normalizeClientData(data, selectTypeSearchClient)];
+                        : [normalizeClientData(data, searchType)];
                 }
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);
@@ -1447,6 +1448,18 @@ export default function ABSClientSearch() {
             setDepositsData(state.depositsData || []);
         }
     }, []);
+
+    useEffect(() => {
+        const clientIndex = searchParams.get("clientIndex")?.trim();
+        if (!clientIndex) return;
+
+        const clientIndexSearchType = TYPE_SEARCH_CLIENT[1].value;
+        setSelectTypeSearchClient(clientIndexSearchType);
+        setPhoneNumber(clientIndex);
+        setDisplayPhone(clientIndex);
+        handleSearchClient(clientIndex, clientIndexSearchType);
+        setSearchParams({}, { replace: true });
+    }, [searchParams, setSearchParams]);
 
     const userInfoPhone = async (phone) => {
         try {

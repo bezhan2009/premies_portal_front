@@ -17,6 +17,7 @@ import LogsPage from "../../pages/dashboard/LogsPage.jsx";
 import DailyTasksPage from "../../pages/dashboard/DailyTasksPage.jsx";
 import MailAgentPage from "../../pages/dashboard/dashboard_mail_agent/MailAgentPage.jsx";
 import AuditLogsPage from "../../pages/dashboard/AuditLogsPage.jsx";
+import CustomerDirectory from "../../pages/dashboard/dashboard_customer_directory/CustomerDirectory.jsx";
 
 const managementRoutes = (
   <>
@@ -50,10 +51,10 @@ const managementRoutes = (
       />
     </Route>
 
-    {/* Frontovik (Role 17) & Auditor (Role 35) */}
+    {/* Frontovik (Role 17), Auditor (Role 35), and Customers (Role 39) */}
     <Route
       element={
-        <RequireRole allowedRoles={[17, 35]}>
+        <RequireRole allowedRoles={[17, 35, 39]}>
           <Outlet />
         </RequireRole>
       }
@@ -62,6 +63,17 @@ const managementRoutes = (
         path="frontovik/abs-search"
         element={<DashboardFrontovikAbsSearch />}
       />
+    </Route>
+
+    {/* Customer directory (Role 39) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[3, 39]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="/customers" element={<CustomerDirectory />} />
     </Route>
 
     {/* Processing (Role 18) */}

@@ -516,6 +516,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(3) || roles.includes(39)) {
+            additionalLinks.push({
+                name: "Клиенты",
+                href: "/customers",
+                key: "customers",
+                icon: Users,
+            });
+        }
+
         if (roles.includes(10)) {
             additionalLinks.push({
                 name: "Заявки на карты",

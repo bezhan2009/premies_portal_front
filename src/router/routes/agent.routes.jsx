@@ -47,8 +47,17 @@ const agentRoutes = (
       <Route path="/agent/card" element={<GiftCard />} />
       <Route path="/agent/card/:id" element={<GiftCard edit={true} />} />
       <Route path="/agent/my-applications" element={<MyApplications />} />
-      <Route path="/agent/applications-list" element={<ApplicationsList />} />
       <Route path="/agent/knowledge-base" element={<DashboardAgentKB />} />
+    </Route>
+
+    <Route
+      element={
+        <RequireRole allowedRoles={[10, 39]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="/agent/applications-list" element={<ApplicationsList />} />
     </Route>
 
     {/* Agent Deposit (Role 12) */}

@@ -26,6 +26,7 @@ export default function UsersPage() {
   const [roles, setRoles] = useState([]);
   const [workOffices, setWorkOffices] = useState([]);
   const [appOffices, setAppOffices] = useState([]);
+  const [customerDepartments, setCustomerDepartments] = useState([]);
   const [loadingOffices, setLoadingOffices] = useState(false);
 
   // Pagination states
@@ -41,10 +42,10 @@ export default function UsersPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [complianceCode, setComplianceCode] = useState("");
-  const [isActive, setIsActive] = useState(true);
   
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedAppOffices, setSelectedAppOffices] = useState([]);
+  const [selectedCustomerDepartments, setSelectedCustomerDepartments] = useState([]);
 
   // Worker/Office details
   const [position, setPosition] = useState("");
@@ -103,6 +104,14 @@ export default function UsersPage() {
 
       // 4. Fetch Application Offices
       await fetchAppOffices();
+
+      const customerDepartmentsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/departments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (customerDepartmentsRes.ok) {
+        const customerDepartmentsData = await customerDepartmentsRes.json();
+        setCustomerDepartments(Array.isArray(customerDepartmentsData) ? customerDepartmentsData : []);
+      }
     } catch (err) {
       console.error(err);
       setError("Ошибка при загрузке данных");
@@ -143,7 +152,6 @@ export default function UsersPage() {
     setEmail(u.email || "");
     setPhone(u.phone || "");
     setComplianceCode(u.compliance_code || "");
-    setIsActive(u.is_active !== false);
 
     // Fetch user roles
     try {
@@ -156,6 +164,21 @@ export default function UsersPage() {
       }
     } catch (err) {
       console.error(err);
+    }
+
+    try {
+      const customerAccessRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/access/${u.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (customerAccessRes.ok) {
+        const customerAccessData = await customerAccessRes.json();
+        setSelectedCustomerDepartments(customerAccessData.department_codes || []);
+      } else {
+        setSelectedCustomerDepartments([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setSelectedCustomerDepartments([]);
     }
 
     // Fetch user application offices
@@ -203,6 +226,14 @@ export default function UsersPage() {
     }
   };
 
+  const handleCustomerDepartmentChange = (e, departmentCode) => {
+    if (e.target.checked) {
+      setSelectedCustomerDepartments((current) => [...current, departmentCode]);
+    } else {
+      setSelectedCustomerDepartments((current) => current.filter((code) => code !== departmentCode));
+    }
+  };
+
   const handleSaveUser = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
@@ -226,7 +257,6 @@ export default function UsersPage() {
           email: email,
           phone: phone,
           compliance_code: complianceCode,
-          is_active: isActive,
         }),
       });
 
@@ -259,6 +289,20 @@ export default function UsersPage() {
       if (!rolesRes.ok) {
         const errData = await rolesRes.json();
         throw new Error(errData.error || "Не удалось обновить роли сотрудника");
+      }
+
+      const accessRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/access/${editingUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ department_codes: selectedCustomerDepartments }),
+      });
+
+      if (!accessRes.ok) {
+        const errData = await accessRes.json();
+        throw new Error(errData.error || "Не удалось обновить доступ к клиентам");
       }
 
       setSuccess("Данные сотрудника успешно обновлены");
@@ -411,18 +455,13 @@ export default function UsersPage() {
               </div>
             ) : (
               <>
-                <div className="requests-grid">
+                <div className="requests-grid users-management-grid">
                   {users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((u) => (
-                    <div key={u.id} className={`request-list-card ${u.is_active === false ? "inactive-user" : ""}`}>
+                    <div key={u.id} className="request-list-card">
                       <div className="req-info-block">
                         <div className="req-user-row">
                           <span className="req-name">{u.full_name || "Без ФИО"}</span>
                           <span className="req-username">@{u.username}</span>
-                          {u.is_active === false && (
-                            <span className="status-badge status-blocked">
-                              Заблокирован
-                            </span>
-                          )}
                         </div>
                         <div className="req-details-row">
                           <span><FaPhoneAlt /> {u.phone || "Без телефона"}</span>
@@ -628,17 +667,6 @@ export default function UsersPage() {
                   <label>Код комплаенса</label>
                   <input type="text" value={complianceCode} onChange={(e) => setComplianceCode(e.target.value)} />
                 </div>
-                <div className="form-group-checkbox">
-                  <input
-                    type="checkbox"
-                    id="edit-isactive"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                  />
-                  <label htmlFor="edit-isactive">
-                    Активный аккаунт (сотрудник разблокирован)
-                  </label>
-                </div>
               </div>
 
               <div className="modal-section-title">
@@ -671,6 +699,25 @@ export default function UsersPage() {
                       onChange={(e) => handleAppOfficeChange(e, office.ID)}
                     />
                     <label htmlFor={`edit-appoffice-${office.ID}`}>{office.title}</label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="modal-section-title">
+                4. Доступ к подразделениям клиентов
+              </div>
+              <div className="roles-checklist customer-department-checklist">
+                {customerDepartments.map((department) => (
+                  <div key={department.department_code} className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id={`edit-customer-department-${department.department_code}`}
+                      checked={selectedCustomerDepartments.includes(department.department_code)}
+                      onChange={(e) => handleCustomerDepartmentChange(e, department.department_code)}
+                    />
+                    <label htmlFor={`edit-customer-department-${department.department_code}`}>
+                      {department.department_code} - {department.department_name}
+                    </label>
                   </div>
                 ))}
               </div>

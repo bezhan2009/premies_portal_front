@@ -34,6 +34,7 @@ const MainLayout = () => {
     if (pathname.includes("/operator/users")) return "users_operator";
     if (pathname.includes("/operator/access-requests")) return "access_requests_operator";
     if (pathname.includes("/operator/docx-generator")) return "docx_generator";
+    if (pathname.includes("/customers")) return "customers";
 
     // Worker pages
     if (pathname.includes("/worker/premies")) return "worker_premies";
