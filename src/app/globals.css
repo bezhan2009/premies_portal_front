@@ -460,6 +460,37 @@ tbody tr:hover { background: #fcfcfd; }
 .processing-skeleton { display: grid; padding: 15px 18px 21px; gap: 8px; }
 .processing-skeleton i { height: 56px; overflow: hidden; border-radius: 14px; background: linear-gradient(100deg, #eee 15%, #f8f8f8 36%, #eee 58%); background-size: 200% 100%; animation: skeleton 1.5s infinite; }
 
+/* Frontovik statements */
+.frontovik-page { display: grid; gap: 16px; }
+.frontovik-hero { padding: 28px 30px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: linear-gradient(135deg, #fff, #fbf7f8); box-shadow: var(--shadow-sm); }
+.frontovik-hero h1 { margin: 7px 0 4px; font-size: clamp(30px, 4vw, 44px); line-height: 1.05; letter-spacing: -.058em; }
+.frontovik-hero p { max-width: 720px; margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.7; }
+.frontovik-grid { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(360px, 1.1fr); gap: 14px; align-items: start; }
+.frontovik-search-card, .dynamic-docx-card { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; box-shadow: var(--shadow-sm); }
+.frontovik-search-card { display: grid; gap: 13px; }
+.frontovik-search-card label { display: grid; gap: 7px; }
+.frontovik-search-card label span { color: var(--ink-faint); font-size: 9px; font-weight: 760; letter-spacing: .055em; text-transform: uppercase; }
+.frontovik-search-card input { height: 44px; padding: 0 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 13px; outline: 0; background: #fafafd; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+.frontovik-search-card input:focus { border-color: rgba(213,28,63,.45); background: #fff; box-shadow: 0 0 0 4px rgba(213,28,63,.06); }
+.dynamic-docx-card { display: grid; gap: 15px; }
+.dynamic-docx-head { display: flex; align-items: center; gap: 12px; }
+.dynamic-docx-icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; color: var(--brand); border-radius: 14px; background: var(--brand-soft); }
+.dynamic-docx-head h2 { margin: 0 0 3px; font-size: 18px; letter-spacing: -.035em; }
+.dynamic-docx-head p { margin: 0; color: var(--ink-soft); font-size: 11px; }
+.docx-date-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: end; }
+.docx-date-field { display: grid; gap: 7px; min-width: 0; }
+.docx-date-field > span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-faint); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.docx-date-field.is-from > span { justify-content: flex-start; }
+.docx-date-field.is-to > span { justify-content: flex-end; }
+.docx-date-field input { width: 100%; height: 44px; padding: 0 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 13px; outline: 0; background: #fafafd; font-size: 12px; font-weight: 680; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+.docx-date-field.is-from input { text-align: left; }
+.docx-date-field.is-to input { text-align: right; }
+.docx-date-field input:focus { border-color: rgba(213,28,63,.45); background: #fff; box-shadow: 0 0 0 4px rgba(213,28,63,.06); }
+.docx-period-preview { display: flex; min-height: 38px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fafafd; }
+.docx-period-preview span { color: var(--ink-faint); font-size: 9px; font-weight: 760; letter-spacing: .055em; text-transform: uppercase; }
+.docx-period-preview strong { color: var(--ink); font-size: 11px; }
+.dynamic-docx-message { margin: 0; padding: 9px 11px; color: #775008; border: 1px solid #f1d9ac; border-radius: 11px; background: var(--warning-soft); font-size: 11px; }
+
 @media (max-width: 1180px) {
   :root { --sidebar-width: 240px; }
   .portal-main { padding: 23px 22px 38px; }
@@ -472,6 +503,7 @@ tbody tr:hover { background: #fcfcfd; }
   .applications-actions { flex-wrap: wrap; }
   .applications-period { width: 100%; justify-content: flex-start; }
   .processing-header { align-items: flex-start; flex-direction: column; }
+  .frontovik-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 920px) {
@@ -562,6 +594,9 @@ tbody tr:hover { background: #fcfcfd; }
   .applications-status-tabs button { min-height: 35px; padding: 0 11px; font-size: 9px; }
   .processing-toolbar { align-items: stretch; flex-direction: column; }
   .processing-toolbar > span { justify-content: center; }
+  .docx-date-range { grid-template-columns: 1fr; }
+  .docx-date-field.is-to > span { justify-content: flex-start; }
+  .docx-date-field.is-to input { text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {
