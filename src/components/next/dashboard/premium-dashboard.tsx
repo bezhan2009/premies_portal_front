@@ -19,7 +19,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useWorkers } from "@/hooks/next/use-workers";
 import { useReducedMotion } from "@/hooks/next/use-reduced-motion";
 import type { Worker } from "@/lib/next/types";
-import { AnimatedSphere } from "@/components/next/visual/animated-sphere";
 
 export type PremiumDashboardMode = "operator" | "worker" | "reports" | "data" | "executive";
 
@@ -135,7 +134,6 @@ export function PremiumDashboard({ mode, title, description }: PremiumDashboardP
           <div className="hero-progress"><i style={{ width: `${stats.attainment}%` }} /></div>
           <small><CheckCircle2 size={14} /> Показатели синхронизируются через защищённый шлюз</small>
         </div>
-        <div className="premium-hero-visual"><AnimatedSphere compact /><div className="orb-caption"><span>+12.4%</span><small>к прошлому периоду</small></div></div>
       </section>
 
       {query.isLoading && !demoEnabled ? <DashboardSkeleton /> : (

@@ -47,7 +47,7 @@ export const PORTAL_ROUTES: PortalRoute[] = [
   route("/worker/credits", "Кредитные показатели", "Премии", "wallet", [6, 8]),
   route("/worker/tests", "Мои тесты", "Премии", "activity", [6, 8]),
 
-  route("/operator/users", "Пользователи", "Администрирование", "users", [3]),
+  route("/users", "Пользователи", "Администрирование", "users", [3], "Управление пользователями, ролями и доступом к порталу", true),
   route("/operator/access-requests", "Заявки на доступ", "Администрирование", "shield", [3]),
   route("/operator/docx-generator", "Генератор документов", "Администрирование", "file", [3]),
   route("/auth/register", "Регистрация пользователя", "Администрирование", "users", [3]),

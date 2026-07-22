@@ -2,13 +2,11 @@
 
 import anime from "animejs";
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { apiRequest, ApiError } from "@/lib/next/api-client";
 import { useReducedMotion } from "@/hooks/next/use-reduced-motion";
 
 export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
-  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const reducedMotion = useReducedMotion();
   const [username, setUsername] = useState("");
@@ -39,8 +37,7 @@ export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
         body: JSON.stringify({ username, password }),
       });
       const safeTarget = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
-      router.replace(safeTarget);
-      router.refresh();
+      window.location.assign(safeTarget);
     } catch (caught) {
       const message = caught instanceof ApiError ? caught.message : "Сервис авторизации временно недоступен";
       setError(message);
@@ -55,9 +52,9 @@ export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
   return (
     <form ref={formRef} className="login-form" onSubmit={submit} noValidate>
       <div className="login-animate login-form-heading">
-        <span className="section-chip"><LockKeyhole size={14} /> Защищённый вход</span>
-        <h1>Добро пожаловать</h1>
-        <p>Войдите, чтобы продолжить работу с премиями и ежедневными операциями.</p>
+        <span className="section-chip"><LockKeyhole size={14} /> Внутренний портал</span>
+        <h1>Вход в систему</h1>
+        <p>Введите учётные данные, чтобы продолжить работу.</p>
       </div>
 
       <label className="login-animate field-label" htmlFor="username">Имя пользователя</label>
@@ -86,7 +83,7 @@ export function LoginForm({ returnTo = "/" }: { returnTo?: string }) {
         {loading ? <><LoaderCircle className="spin" size={18} /> Проверяем…</> : <>Войти в портал <span>→</span></>}
       </button>
 
-      <div className="login-animate login-support"><span className="status-pulse" /> Нужна помощь? Обратитесь к администратору доступа.</div>
+      <div className="login-animate login-support"><span className="status-pulse" /> Доступ выдаёт администратор системы.</div>
     </form>
   );
 }

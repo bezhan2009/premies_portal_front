@@ -18,5 +18,6 @@ export async function DELETE() {
 
   const response = NextResponse.json({ ok: true });
   Object.values(AUTH_COOKIES).forEach((name) => response.cookies.delete(name));
+  ["access_token", "refresh_token", "role_ids", "username"].forEach((name) => response.cookies.delete(name));
   return response;
 }

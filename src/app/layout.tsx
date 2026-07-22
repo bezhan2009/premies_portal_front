@@ -5,21 +5,21 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: { default: "Activ Daily · Премиальный портал", template: "%s · Activ Daily" },
-  description: "Защищённый портал ActivBank для расчёта премий и ежедневных банковских операций.",
+  title: { default: "Activ Daily", template: "%s · Activ Daily" },
+  description: "Защищённый внутренний портал ActivBank для ежедневных банковских операций.",
   applicationName: "Activ Daily",
   robots: { index: false, follow: false },
   openGraph: {
-    title: "Activ Daily · Премиальный портал",
-    description: "Премии и ежедневные операции в одном защищённом рабочем пространстве.",
+    title: "Activ Daily",
+    description: "Ежедневные операции в одном защищённом рабочем пространстве.",
     type: "website",
     locale: "ru_RU",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Activ Daily — премии, которые видно и понятно" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Activ Daily" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Activ Daily · Премиальный портал",
-    description: "Премии и ежедневные операции в одном защищённом рабочем пространстве.",
+    title: "Activ Daily",
+    description: "Ежедневные операции в одном защищённом рабочем пространстве.",
     images: ["/og.png"],
   },
 };

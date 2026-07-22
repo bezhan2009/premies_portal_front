@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, CircleGauge, LockKeyhole, Sparkles } from "lucide-react";
 import { concretePath, type PortalRoute } from "@/config/next-navigation";
-import { AnimatedSphere } from "@/components/next/visual/animated-sphere";
 
 export function ModuleWorkspace({ route, related }: { route: PortalRoute; related: PortalRoute[] }) {
   return (
@@ -13,7 +12,6 @@ export function ModuleWorkspace({ route, related }: { route: PortalRoute; relate
           <p>{route.description}. Раздел работает внутри новой защищённой оболочки и готов к подключению предметных виджетов.</p>
           <div className="module-status-row"><span><CheckCircle2 size={15} /> Маршрут доступен</span><span><LockKeyhole size={15} /> Сессия защищена</span><span><CircleGauge size={15} /> API под контролем</span></div>
         </div>
-        <AnimatedSphere compact />
       </section>
       <section className="module-grid">
         <article className="panel module-primary-card"><span className="card-overline">Рабочая область</span><h2>Единый, предсказуемый поток</h2><p>Навигация, ошибки, загрузка и повторные запросы теперь обрабатываются одинаково во всех модулях портала.</p><button type="button" className="primary-button">Начать работу <ArrowRight size={16} /></button></article>

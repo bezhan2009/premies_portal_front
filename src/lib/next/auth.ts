@@ -18,17 +18,17 @@ export function normalizeRoles(value: unknown): number[] {
 
 export async function getSession(): Promise<PortalSession | null> {
   const cookieStore = await cookies();
-  if (!cookieStore.get(AUTH_COOKIES.access)?.value) return null;
+  if (!(cookieStore.get(AUTH_COOKIES.access)?.value || cookieStore.get("access_token")?.value)) return null;
 
   let roles: number[] = [];
   try {
-    roles = normalizeRoles(JSON.parse(cookieStore.get(AUTH_COOKIES.roles)?.value ?? "[]"));
+    roles = normalizeRoles(JSON.parse(cookieStore.get(AUTH_COOKIES.roles)?.value ?? cookieStore.get("role_ids")?.value ?? "[]"));
   } catch {
     roles = [];
   }
 
   return {
-    username: cookieStore.get(AUTH_COOKIES.username)?.value || "Сотрудник",
+    username: cookieStore.get(AUTH_COOKIES.username)?.value || cookieStore.get("username")?.value || "Сотрудник",
     roles,
   };
 }
@@ -44,5 +44,6 @@ export function hasAnyRole(userRoles: number[], allowedRoles: number[]): boolean
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  return (await cookies()).get(AUTH_COOKIES.access)?.value ?? null;
+  const cookieStore = await cookies();
+  return cookieStore.get(AUTH_COOKIES.access)?.value ?? cookieStore.get("access_token")?.value ?? null;
 }
