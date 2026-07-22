@@ -1389,6 +1389,12 @@ export default function DashboardOperatorProcessingTransactions() {
                             amountCurrency: `${formatAmount(t.amount, transactionTypeValue)} ${getCurrencyCode(t.currency)}`,
                             amountCardCurrency: `${formatAmount(t.conamt, transactionTypeValue)} ${getCurrencyCode(t.conCurrency)}`,
                             availableBalance: formatAmount(t.acctbal),
+                            transactionType: t.transactionType,
+                            transactionTypeNumber: transactionTypeValue,
+                            amountRaw: t.amount,
+                            conamtRaw: t.conamt,
+                            currencyCode: getCurrencyCode(t.currency) || "",
+                            conCurrencyCode: getCurrencyCode(t.conCurrency) || "",
                             amount: t.amount !== undefined && t.amount !== null ? Number(t.amount) / 100 : 0,
                             conamt: t.conamt !== undefined && t.conamt !== null ? Number(t.conamt) / 100 : 0,
                             currency: getCurrencyCode(t.currency) || ""

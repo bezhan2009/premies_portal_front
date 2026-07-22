@@ -125,6 +125,12 @@ const normalizeProcessingTransaction = (transaction) => {
     amountCurrency,
     amountCardCurrency,
     availableBalance: formatProcessingAmount(transaction?.acctbal ?? transaction?.availableBalance),
+    transactionType: transaction?.transactionType,
+    transactionTypeNumber: transactionTypeValue,
+    amountRaw: transaction?.amount,
+    conamtRaw: transaction?.conamt,
+    currencyCode: getCurrencyCode(transaction?.currency) || "",
+    conCurrencyCode: getCurrencyCode(transaction?.conCurrency) || "",
     amount: transaction?.amount !== undefined && transaction?.amount !== null ? Number(transaction.amount) / 100 : 0,
     conamt: transaction?.conamt !== undefined && transaction?.conamt !== null ? Number(transaction.conamt) / 100 : 0,
     currency: getCurrencyCode(transaction?.currency) || "",
@@ -272,19 +278,40 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
             return (Number(cleanStr) !== 0) || (Number(cleanCardStr) !== 0);
           });
 
-          finalData.processing_transactions = positiveNormalized.map((transaction) => ({
-            date: transaction.date || "N/A",
-            status: transaction.status || "N/A",
-            cardNumber: transaction.cardNumber || "N/A",
-            cardId: transaction.cardId || "N/A",
-            operationType: transaction.operationType || "N/A",
-            amountCurrency: transaction.amountCurrency || "N/A",
-            amountCardCurrency: transaction.amountCardCurrency || "N/A",
-            availableBalance: transaction.availableBalance || "N/A",
-            amount: transaction.amount !== undefined ? transaction.amount : (Number(String(transaction.amountCurrency || "").replace(/[^\d]/g, "")) / 100),
-            conamt: transaction.conamt !== undefined ? transaction.conamt : (Number(String(transaction.amountCardCurrency || "").replace(/[^\d]/g, "")) / 100),
-            currency: transaction.currency || "",
-          }));
+          finalData.processing_transactions = positiveNormalized.map((transaction) => {
+            const transactionTypeValue =
+              transaction.transactionTypeNumber ?? transaction.transactionType ?? transaction.type;
+            const amountCurrency = transaction.amountRaw !== undefined && transaction.amountRaw !== null
+              ? [
+                  formatProcessingAmount(transaction.amountRaw, transactionTypeValue),
+                  transaction.currencyCode || transaction.currency,
+                ].filter(Boolean).join(" ")
+              : transaction.amountCurrency || "N/A";
+            const amountCardCurrency = transaction.conamtRaw !== undefined && transaction.conamtRaw !== null
+              ? [
+                  formatProcessingAmount(transaction.conamtRaw, transactionTypeValue),
+                  transaction.conCurrencyCode || transaction.currency,
+                ].filter(Boolean).join(" ")
+              : transaction.amountCardCurrency || "N/A";
+
+            return {
+              date: transaction.date || "N/A",
+              status: transaction.status || "N/A",
+              cardNumber: transaction.cardNumber || "N/A",
+              cardId: transaction.cardId || "N/A",
+              operationType: transaction.operationType || "N/A",
+              amountCurrency,
+              amountCardCurrency,
+              availableBalance: transaction.availableBalance || "N/A",
+              transactionType: transaction.transactionType,
+              transactionTypeNumber: transactionTypeValue,
+              amountRaw: transaction.amountRaw,
+              conamtRaw: transaction.conamtRaw,
+              amount: transaction.amount !== undefined ? transaction.amount : (Number(String(amountCurrency || "").replace(/[^\d]/g, "")) / 100),
+              conamt: transaction.conamt !== undefined ? transaction.conamt : (Number(String(amountCardCurrency || "").replace(/[^\d]/g, "")) / 100),
+              currency: transaction.currency || "",
+            };
+          });
 
           let sum = 0;
           positiveNormalized.forEach((pt) => {

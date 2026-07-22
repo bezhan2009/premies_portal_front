@@ -22,6 +22,7 @@ import Spinner from "../../../components/Spinner";
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users"); // "users" or "offices"
   const [users, setUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [roles, setRoles] = useState([]);
   const [workOffices, setWorkOffices] = useState([]);
@@ -31,7 +32,7 @@ export default function UsersPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 24;
+  const itemsPerPage = 30;
 
   // User edit modal states
   const [editingUser, setEditingUser] = useState(null);
@@ -68,6 +69,30 @@ export default function UsersPage() {
   const [success, setSuccess] = useState("");
 
   const token = localStorage.getItem("access_token");
+  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = users.filter((user) => {
+    if (!normalizedUserSearch) return true;
+
+    const searchableFields = [
+      user.full_name,
+      user.first_name,
+      user.last_name,
+      user.username,
+      user.email,
+      user.phone,
+      user.compliance_code,
+      ...(Array.isArray(user.roles) ? user.roles.map((role) => role?.Name) : []),
+    ];
+
+    return searchableFields.some((value) =>
+      String(value || "").toLowerCase().includes(normalizedUserSearch)
+    );
+  });
+  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const fetchAllUsers = async () => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -81,7 +106,9 @@ export default function UsersPage() {
 
     // New backend returns total with the complete list. Older deployments ignore
     // `all=true`, so continue with the existing cursor endpoint in that case.
-    if (typeof firstData.total === "number") return firstUsers;
+    if (typeof firstData.total === "number" && firstUsers.length >= firstData.total) {
+      return firstUsers;
+    }
 
     const allUsers = [...firstUsers];
     let afterID = Number(allUsers.at(-1)?.id || 0);
@@ -93,7 +120,10 @@ export default function UsersPage() {
       if (!nextUsers.length) break;
 
       const nextAfterID = Number(nextUsers.at(-1)?.id || 0);
-      allUsers.push(...nextUsers);
+      const knownUserIds = new Set(allUsers.map((user) => user.id));
+      const uniqueNextUsers = nextUsers.filter((user) => !knownUserIds.has(user.id));
+      allUsers.push(...uniqueNextUsers);
+      if (typeof firstData.total === "number" && allUsers.length >= firstData.total) break;
       if (!nextAfterID || nextAfterID <= afterID) break;
       afterID = nextAfterID;
     }
@@ -166,6 +196,16 @@ export default function UsersPage() {
   useEffect(() => {
     loadData();
   }, [token]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearch]);
+
+  useEffect(() => {
+    if (currentPage > totalUserPages) {
+      setCurrentPage(totalUserPages);
+    }
+  }, [currentPage, totalUserPages]);
 
   const handleOpenEdit = async (u) => {
     setError("");
@@ -481,8 +521,28 @@ export default function UsersPage() {
               </div>
             ) : (
               <>
+                <div className="users-toolbar">
+                  <input
+                    type="search"
+                    className="users-search-input"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Поиск по ФИО, username, email, телефону, роли"
+                  />
+                  <div className="users-toolbar-summary">
+                    Показано: {filteredUsers.length} из {users.length}
+                  </div>
+                </div>
+
+                {filteredUsers.length === 0 ? (
+                  <div className="empty-state">
+                    <FaFolderOpen />
+                    <h3>По вашему запросу ничего не найдено</h3>
+                  </div>
+                ) : (
+                  <>
                 <div className="requests-grid users-management-grid">
-                  {users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((u) => (
+                  {paginatedUsers.map((u) => (
                     <div key={u.id} className="request-list-card">
                       <div className="req-info-block">
                         <div className="req-user-row">
@@ -514,7 +574,7 @@ export default function UsersPage() {
                 </div>
 
                 {/* Pagination */}
-                {Math.ceil(users.length / itemsPerPage) > 1 && (
+                {totalUserPages > 1 && (
                   <div className="admin-pagination">
                     <button
                       onClick={() => setCurrentPage(1)}
@@ -532,7 +592,7 @@ export default function UsersPage() {
                     </button>
 
                     <div className="pagination-pages">
-                      {Array.from({ length: Math.ceil(users.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                      {Array.from({ length: totalUserPages }, (_, i) => i + 1).map((page) => (
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
@@ -544,24 +604,26 @@ export default function UsersPage() {
                     </div>
 
                     <button
-                      onClick={() => setCurrentPage(Math.min(Math.ceil(users.length / itemsPerPage), currentPage + 1))}
-                      disabled={currentPage === Math.ceil(users.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(Math.min(totalUserPages, currentPage + 1))}
+                      disabled={currentPage === totalUserPages}
                       className="pagination-btn"
                     >
                       Следующая →
                     </button>
                     <button
-                      onClick={() => setCurrentPage(Math.ceil(users.length / itemsPerPage))}
-                      disabled={currentPage === Math.ceil(users.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(totalUserPages)}
+                      disabled={currentPage === totalUserPages}
                       className="pagination-btn"
                     >
                       Последняя →
                     </button>
 
                     <div className="pagination-info">
-                      Стр. {currentPage} из {Math.ceil(users.length / itemsPerPage)} • Всего: {users.length}
+                      Стр. {currentPage} из {totalUserPages} • Всего: {filteredUsers.length}
                     </div>
                   </div>
+                )}
+                  </>
                 )}
               </>
             )}

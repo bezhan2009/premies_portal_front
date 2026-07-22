@@ -25,6 +25,13 @@ export default function DashboardAccountOperations() {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const formatDateInputValue = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
     useEffect(() => {
         if (!hasAccess) {
             // Проверяем, есть ли разрешенный номер счета в sessionStorage
@@ -85,9 +92,8 @@ export default function DashboardAccountOperations() {
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
-        const formatDate = (date) => date.toISOString().split("T")[0];
-        setFromDate(formatDate(thirtyDaysAgo));
-        setToDate(formatDate(today));
+        setFromDate(formatDateInputValue(thirtyDaysAgo));
+        setToDate(formatDateInputValue(today));
     }, []);
 
     // Проверяем URL параметры после установки дат
@@ -302,11 +308,11 @@ export default function DashboardAccountOperations() {
     };
 
     const clearFilters = () => {
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date();
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        setFromDate(thirtyDaysAgo.toISOString().split("T")[0]);
-        setToDate(today);
+        setFromDate(formatDateInputValue(thirtyDaysAgo));
+        setToDate(formatDateInputValue(today));
 
         // Очищаем URL параметр при очистке фильтров
         const searchParams = new URLSearchParams(location.search);

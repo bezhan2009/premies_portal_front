@@ -16,6 +16,7 @@ export default function DashboardAccountOperations() {
   const [accountNumber, setAccountNumber] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [initialSearchAccount, setInitialSearchAccount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [alert, setAlert] = useState({
@@ -25,6 +26,13 @@ export default function DashboardAccountOperations() {
   });
 
   const { exportToExcel } = useExcelExport();
+
+  const formatDateInputValue = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // Функция для форматирования суммы
   const formatAmount = (amount) => {
@@ -43,9 +51,8 @@ export default function DashboardAccountOperations() {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    const formatDate = (date) => date.toISOString().split("T")[0];
-    setFromDate(formatDate(thirtyDaysAgo));
-    setToDate(formatDate(today));
+    setFromDate(formatDateInputValue(thirtyDaysAgo));
+    setToDate(formatDateInputValue(today));
   }, []);
 
   const showAlert = (message, type = "success") => {
@@ -157,12 +164,13 @@ export default function DashboardAccountOperations() {
   );
 
   useEffect(() => {
-    if (initialAccount) {
+    if (initialAccount && fromDate && toDate && initialSearchAccount !== initialAccount) {
       setAccountNumber(initialAccount);
       setDisplayAccountNumber(initialAccount);
+      setInitialSearchAccount(initialAccount);
       handleAccountNumberSearch(initialAccount);
     }
-  }, [initialAccount, handleAccountNumberSearch]);
+  }, [initialAccount, fromDate, toDate, initialSearchAccount, handleAccountNumberSearch]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
@@ -178,11 +186,11 @@ export default function DashboardAccountOperations() {
   };
 
   const clearFilters = () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    setFromDate(thirtyDaysAgo.toISOString().split("T")[0]);
-    setToDate(today);
+    setFromDate(formatDateInputValue(thirtyDaysAgo));
+    setToDate(formatDateInputValue(today));
   };
 
   // Функция экспорта в Excel
