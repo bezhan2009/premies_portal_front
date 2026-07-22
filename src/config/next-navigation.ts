@@ -99,6 +99,7 @@ export const PORTAL_ROUTES: PortalRoute[] = [
   route("/frontovik/abs-search", "Поиск клиента в АБС", "Специализированные", "search", [17, 35, 39]),
   route("/client-documents", "Документы клиентов", "Специализированные", "file", [27]),
   route("/card-balance", "Баланс карты", "Специализированные", "card", [28]),
+  route("/account-reconciliation", "Сверка счетов", "Специализированные", "file", [40]),
   route("/agent/client-pins", "PIN-коды клиентов", "Специализированные", "shield", [36]),
   route("/compliance/settings", "Настройки комплаенса", "Специализированные", "settings", [33]),
   route("/compliance/requests", "Комплаенс-заявки", "Специализированные", "shield", [33]),
@@ -174,6 +175,7 @@ export function defaultRouteForRoles(roles: number[]): string {
     [[33], "/compliance/requests"],
     [[34], "/mail-agent"],
     [[36], "/agent/client-pins"],
+    [[40], "/account-reconciliation"],
     [[1], "/request-access"],
   ];
   return priorities.find(([roleSet]) => roleSet.some((roleId) => roles.includes(roleId)))?.[1] || "/user/knowledge-base";
@@ -211,4 +213,5 @@ export const ROLE_LABELS: Record<number, string> = {
   33: "Комплаенс",
   35: "Аудитор",
   39: "Клиентский сервис",
+  40: "Сверка счетов",
 };
