@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { useFormStore } from "../../hooks/useFormState";
 import { status } from "../../const/defConst";
-import Select from "../../components/elements/Select";
 import Spinner from "../../components/Spinner.jsx";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
@@ -152,7 +151,7 @@ const formatDate = (value) => {
 };
 
 export default function ApplicationsList() {
-    const { data, errors, setData } = useFormStore();
+    const { setData } = useFormStore();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const initialSearch = searchParams.get("search") || "";
@@ -404,14 +403,6 @@ export default function ApplicationsList() {
         });
     };
 
-    const toggleRowSelection = (rowId) => {
-        setSelectedRows((prev) =>
-            prev.includes(rowId)
-                ? prev.filter((id) => id !== rowId)
-                : [...prev, rowId],
-        );
-    };
-
     const setRowSelection = (rowId, checked) => {
         setSelectedRows((prev) => {
             if (checked) {
@@ -437,6 +428,10 @@ export default function ApplicationsList() {
     };
 
     const upDateStatusApplications = async (newStatus) => {
+        if (!newStatus || selectedRows.length === 0) {
+            return;
+        }
+
         const unapprovedSelected = tableData.filter(
             (row) => selectedRows.includes(row.ID) && getStatusId(row) === 7,
         );
@@ -681,14 +676,23 @@ export default function ApplicationsList() {
                     <section className="applications-bulk">
                         <span>Выбрано заявок: {selectedRows.length}</span>
                         <div className="applications-bulk__actions">
-                            <Select
-                                style={{ border: "1px solid #d8dce3" }}
-                                id="status"
-                                value={data?.status}
-                                onChange={(value) => upDateStatusApplications(value)}
-                                options={status}
-                                error={errors}
-                            />
+                            <select
+                                className="applications-bulk-status"
+                                value=""
+                                onChange={(event) => upDateStatusApplications(event.target.value)}
+                                aria-label="Изменить статус выбранных заявок"
+                            >
+                                <option value="" disabled>
+                                    Выберите статус
+                                </option>
+                                {status
+                                    .filter((item, index) => index > 0 && item.value)
+                                    .map((item) => (
+                                        <option key={`${item.value}-${item.label}`} value={item.value}>
+                                            {item.label}
+                                        </option>
+                                    ))}
+                            </select>
                             <button
                                 type="button"
                                 className="applications-clear-selection"
@@ -733,17 +737,6 @@ export default function ApplicationsList() {
                                         <tr 
                                             key={row.ID}
                                             className={selectedRows.includes(row.ID) ? "applications-row--selected" : ""}
-                                            onClick={(e) => {
-                                                if (
-                                                    e.target.closest('.applications-checkbox-cell') || 
-                                                    e.target.closest('.applications-row-actions') ||
-                                                    e.target.tagName === 'INPUT' ||
-                                                    e.target.closest('button')
-                                                ) {
-                                                    return;
-                                                }
-                                                toggleRowSelection(row.ID);
-                                            }}
                                         >
                                             <td 
                                                 className="applications-checkbox-cell"

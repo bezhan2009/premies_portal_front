@@ -351,6 +351,25 @@
   min-width: 0;
 }
 
+.applications-bulk-status {
+  min-width: 260px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d8dce3;
+  border-radius: 12px;
+  background: #fff;
+  color: #15171d;
+  font: inherit;
+  font-weight: 750;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: #d71920;
+    box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.11);
+  }
+}
+
 .applications-clear-selection {
   min-height: 42px;
   padding: 0 14px;
