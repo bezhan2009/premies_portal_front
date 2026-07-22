@@ -808,22 +808,22 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
                   </button>
                 </div>
 
-                <div className="docx-variant-picker" style={{ padding: "1.5rem 1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div style={{ display: "flex", gap: "1rem" }}>
-                    <div className="docx-form-group" style={{ flex: 1 }}>
+                <div className="docx-modal__body docx-period-body">
+                  <div className="docx-period-grid" aria-label="Период выписки">
+                    <div className="docx-field docx-period-field docx-period-field--from">
                       <label>Дата начала (От)</label>
                       <input 
                         type="date" 
-                        className="docx-form-input"
+                        className="docx-period-input"
                         value={paramsModal.fromDate}
                         onChange={(e) => setParamsModal(prev => ({ ...prev, fromDate: e.target.value }))}
                       />
                     </div>
-                    <div className="docx-form-group" style={{ flex: 1 }}>
+                    <div className="docx-field docx-period-field docx-period-field--to">
                       <label>Дата конца (До)</label>
                       <input 
                         type="date" 
-                        className="docx-form-input"
+                        className="docx-period-input"
                         value={paramsModal.toDate}
                         onChange={(e) => setParamsModal(prev => ({ ...prev, toDate: e.target.value }))}
                       />

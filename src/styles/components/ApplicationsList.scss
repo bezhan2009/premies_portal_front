@@ -429,12 +429,25 @@
 
 .applications-checkbox-cell {
   width: 58px;
+  text-align: center;
 
   input {
     width: 22px;
     height: 22px;
     accent-color: #d71920;
     cursor: pointer;
+    vertical-align: middle;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+    &:checked {
+      transform: scale(1.03);
+      box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.12);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(215, 25, 32, 0.55);
+      outline-offset: 3px;
+    }
   }
 }
 

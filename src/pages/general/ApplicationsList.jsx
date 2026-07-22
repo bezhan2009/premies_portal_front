@@ -412,6 +412,16 @@ export default function ApplicationsList() {
         );
     };
 
+    const setRowSelection = (rowId, checked) => {
+        setSelectedRows((prev) => {
+            if (checked) {
+                return prev.includes(rowId) ? prev : [...prev, rowId];
+            }
+
+            return prev.filter((id) => id !== rowId);
+        });
+    };
+
     const toggleFilteredRows = () => {
         const filteredIds = filteredData.map((row) => row.ID);
         const allFilteredSelected =
@@ -695,18 +705,12 @@ export default function ApplicationsList() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th 
-                                        className="applications-checkbox-cell"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleVisibleRows(!allVisibleSelected);
-                                        }}
-                                        style={{ cursor: "pointer" }}
-                                    >
+                                    <th className="applications-checkbox-cell">
                                         <input
                                             type="checkbox"
                                             checked={allVisibleSelected}
-                                            readOnly
+                                            onChange={(e) => toggleVisibleRows(e.target.checked)}
+                                            onClick={(e) => e.stopPropagation()}
                                             aria-label="Выбрать все заявки на странице"
                                         />
                                     </th>
@@ -743,16 +747,12 @@ export default function ApplicationsList() {
                                         >
                                             <td 
                                                 className="applications-checkbox-cell"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleRowSelection(row.ID);
-                                                }}
-                                                style={{ cursor: "pointer" }}
+                                                onClick={(e) => e.stopPropagation()}
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedRows.includes(row.ID)}
-                                                    readOnly
+                                                    onChange={(e) => setRowSelection(row.ID, e.target.checked)}
                                                     aria-label={`Выбрать заявку ${row.ID}`}
                                                 />
                                             </td>
