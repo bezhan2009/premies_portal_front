@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/next/api-client";
 import { useReducedMotion } from "@/hooks/next/use-reduced-motion";
@@ -281,10 +282,12 @@ export function AgentApplicationsListPage() {
     });
   }, [filteredApplications.length, reducedMotion]);
 
-  const allVisibleSelected = filteredApplications.length > 0 && filteredApplications.every((app) => selectedIds.has(appId(app)));
+  const selectableApplications = filteredApplications.filter((app) => appId(app) > 0);
+  const allVisibleSelected = selectableApplications.length > 0 && selectableApplications.every((app) => selectedIds.has(appId(app)));
   const selectedCount = selectedIds.size;
 
   function toggleSelected(id: number) {
+    if (!id) return;
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -296,10 +299,16 @@ export function AgentApplicationsListPage() {
   function toggleVisibleSelection() {
     setSelectedIds((current) => {
       const next = new Set(current);
-      if (allVisibleSelected) filteredApplications.forEach((app) => next.delete(appId(app)));
-      else filteredApplications.forEach((app) => next.add(appId(app)));
+      if (allVisibleSelected) selectableApplications.forEach((app) => next.delete(appId(app)));
+      else selectableApplications.forEach((app) => next.add(appId(app)));
       return next;
     });
+  }
+
+  function handleChoiceKeyDown(event: KeyboardEvent<HTMLLabelElement>, callback: () => void) {
+    if (event.key !== " " && event.key !== "Enter") return;
+    event.preventDefault();
+    callback();
   }
 
   async function goToApplication(app: CardApplication) {
@@ -394,8 +403,18 @@ export function AgentApplicationsListPage() {
               <thead>
                 <tr>
                   <th className="applications-check-cell">
-                    <label className="choice-input">
-                      <input type="checkbox" checked={allVisibleSelected} onChange={toggleVisibleSelection} />
+                    <label
+                      className="choice-input"
+                      role="checkbox"
+                      aria-checked={allVisibleSelected}
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        toggleVisibleSelection();
+                      }}
+                      onKeyDown={(event) => handleChoiceKeyDown(event, toggleVisibleSelection)}
+                    >
+                      <input type="checkbox" checked={allVisibleSelected} readOnly tabIndex={-1} />
                       <span />
                     </label>
                   </th>
@@ -415,8 +434,18 @@ export function AgentApplicationsListPage() {
                   return (
                     <tr key={`${id}-${createdAt(app)}-${index}`}>
                       <td className="applications-check-cell">
-                        <label className="choice-input">
-                          <input type="checkbox" checked={selectedIds.has(id)} onChange={() => toggleSelected(id)} />
+                        <label
+                          className="choice-input"
+                          role="checkbox"
+                          aria-checked={selectedIds.has(id)}
+                          tabIndex={id ? 0 : -1}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            toggleSelected(id);
+                          }}
+                          onKeyDown={(event) => handleChoiceKeyDown(event, () => toggleSelected(id))}
+                        >
+                          <input type="checkbox" checked={selectedIds.has(id)} readOnly tabIndex={-1} />
                           <span />
                         </label>
                       </td>
