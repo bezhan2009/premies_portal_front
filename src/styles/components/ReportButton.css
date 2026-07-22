@@ -1,0 +1,26 @@
+.report-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: #6a0dad;
+  opacity: 0.4;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.report-button:hover {
+  background-color: #5a009d;
+  transform: translateY(-2px);
+  opacity: 0.7;
+}
+.report-button:active {
+  transform: translateY(0);
+  opacity: 1;
+}/*# sourceMappingURL=ReportButton.css.map */

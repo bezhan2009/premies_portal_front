@@ -1,0 +1,668 @@
+import React, { useState, useRef, useCallback } from "react";
+import Spinner from "../../Spinner.jsx";
+import SearchBar from "../../general/SearchBar.jsx";
+import { calculateTotalPremia } from "../../../api/utils/calculate_premia.js";
+import { DownloadCloud } from "lucide-react";
+import Input from "../../elements/Input.jsx";
+import { fullUpdateWorkers } from "../../../api/workers/fullUpdateWorkers.js";
+import { useWorkers } from "../../../hooks/useWorkers";
+import DownloadModal from "./DownloadModal.jsx";
+import { useExcelExport } from "../../../hooks/useExcelExport.js";
+import { useTableSort } from "../../../hooks/useTableSort.js";
+import SortIcon from "../../general/SortIcon.jsx";
+
+const TablePremies = ({ month, year }) => {
+  const {
+    workers,
+    allWorkers,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    handleSearch,
+    loadMore,
+    refresh,
+  } = useWorkers(month, year);
+
+  const [edit, setEdit] = useState({ ID: null });
+  const observer = useRef();
+
+  // State for modal
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadUser, setDownloadUser] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState("");
+  const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
+  const { exportToExcel } = useExcelExport();
+
+  // Enhance workers with calculated values for easier sorting
+  const enhancedWorkers = React.useMemo(() => {
+    return workers.map((w) => ({
+      ...w,
+      totalPremia: calculateTotalPremia(w),
+    }));
+  }, [workers]);
+
+  const {
+    items: sortedWorkers,
+    requestSort,
+    sortConfig,
+  } = useTableSort(enhancedWorkers);
+
+  const monthOptions = [
+    { name: "Январь", value: 1 },
+    { name: "Февраль", value: 2 },
+    { name: "Март", value: 3 },
+    { name: "Апрель", value: 4 },
+    { name: "Май", value: 5 },
+    { name: "Июнь", value: 6 },
+    { name: "Июль", value: 7 },
+    { name: "Август", value: 8 },
+    { name: "Сентябрь", value: 9 },
+    { name: "Октябрь", value: 10 },
+    { name: "Ноябрь", value: 11 },
+    { name: "Декабрь", value: 12 },
+  ];
+
+  const lastRowRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loadingMore, hasMore, loadMore],
+  );
+
+  const upDateUserWorkers = async () => {
+    try {
+      await fullUpdateWorkers(edit, false);
+      setEdit({ ID: null });
+      refresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const onChangeEdit = (key, value) => {
+    setEdit((prev) => {
+      const keys = key.split(".");
+
+      let newState = { ...prev };
+      let current = newState;
+
+      keys.forEach((k, i) => {
+        const arrayMatch = k.match(/(\w+)\[(\d+)\]/);
+        if (arrayMatch) {
+          const [, arrKey, indexStr] = arrayMatch;
+          const index = Number(indexStr);
+
+          if (!Array.isArray(current[arrKey])) {
+            current[arrKey] = [];
+          }
+
+          current[arrKey] = [...current[arrKey]];
+          if (!current[arrKey][index]) {
+            current[arrKey][index] = {};
+          }
+
+          if (i === keys.length - 1) {
+            current[arrKey][index] = value;
+          } else {
+            current[arrKey][index] = { ...current[arrKey][index] };
+            current = current[arrKey][index];
+          }
+        } else {
+          if (i === keys.length - 1) {
+            current[k] = value;
+          } else {
+            current[k] = { ...current[k] };
+            current = current[k];
+          }
+        }
+      });
+
+      return newState;
+    });
+  };
+
+  // NEW: open modal for choosing month/year
+  const openDownloadModal = (user) => {
+    setDownloadUser(user);
+    setShowDownloadModal(true);
+    setDownloadMonth("");
+    setDownloadYear(new Date().getFullYear());
+  };
+
+  // NEW: execute download
+  const executeDownload = async () => {
+    if (!downloadMonth || !downloadYear) {
+      alert("Выберите месяц и год");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const url = `${import.meta.env.VITE_BACKEND_URL}/automation/reports/${
+        downloadUser.ID
+      }?month=${downloadMonth}&year=${downloadYear}`;
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Ошибка скачивания отчета.");
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.download = `report_${downloadUser.Username || downloadUser.ID}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(urlBlob);
+
+      setShowDownloadModal(false);
+      setDownloadUser(null);
+      setDownloadMonth("");
+      setDownloadYear(new Date().getFullYear());
+    } catch (e) {
+      console.error(e);
+      alert(`Не удалось скачать отчет: ${e.message}`);
+    }
+  };
+
+  const handleExport = () => {
+    const columns = [
+      { key: (row) => row.user?.full_name || "", label: "ФИО" },
+      { key: "plan", label: "План продаж (TJS)" },
+      {
+        key: (row) => row.CardSales?.[0]?.cards_sailed ?? "",
+        label: "Продано карт (шт)",
+      },
+      {
+        key: (row) => row.CardSales?.[0]?.cards_sailed_in_general ?? "",
+        label: "Карт за всё время",
+      },
+      {
+        key: (row) => row.MobileBank?.[0]?.mobile_bank_connects ?? "",
+        label: "Моб. банк (шт)",
+      },
+      { key: "salary_project", label: "ЗП проект (шт)" },
+      {
+        key: (row) => row.CardSales?.[0]?.deb_osd ?? "",
+        label: "Оборот по дебету (TJS)",
+      },
+      {
+        key: (row) => row.CardSales?.[0]?.out_balance ?? "",
+        label: "Остатки по картам (TJS)",
+      },
+      {
+        key: (row) =>
+          row.CardTurnovers?.[0]?.active_cards_perms?.toFixed(0) ?? "",
+        label: "Активные карты (шт)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.call_center ?? "",
+        label: "Оценка КЦ (балл)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.complaint ?? "",
+        label: "Жалобы (шт)",
+      },
+      {
+        key: (row) => row.ServiceQuality?.[0]?.tests ?? "",
+        label: "Тесты (балл)",
+      },
+      {
+        key: (row) => calculateTotalPremia(row).toFixed(1),
+        label: "Итого (TJS)",
+      },
+    ];
+    exportToExcel(allWorkers, columns, `Отчет_Премии_${month}_${year}`);
+  };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          transform: "scale(2)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: "100px",
+          width: "auto",
+        }}
+      >
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="report-table-container"
+        style={{ textAlign: "center", padding: "1rem", color: "red" }}
+      >
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  console.log("edit", edit);
+
+  return (
+    <div className="report-table-container">
+      <div className="table-header-actions">
+        <SearchBar allData={allWorkers} onSearch={handleSearch} />
+        <button className="export-excel-btn" onClick={handleExport}>
+          Экспорт в Excel
+        </button>
+      </div>
+
+      <div className="table-reports-div">
+        <table className="table-reports">
+          <thead>
+            <tr>
+              <th
+                onClick={() => requestSort("user.full_name")}
+                className="sortable-header"
+              >
+                ФИО{" "}
+                <SortIcon sortConfig={sortConfig} sortKey="user.full_name" />
+              </th>
+              <th
+                onClick={() => requestSort("plan")}
+                className="sortable-header"
+              >
+                План продаж (TJS){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="plan" />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.cards_sailed")}
+                className="sortable-header"
+              >
+                Продано карт (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.cards_sailed"
+                />
+              </th>
+              <th
+                onClick={() =>
+                  requestSort("CardSales.0.cards_sailed_in_general")
+                }
+                className="sortable-header"
+              >
+                Карт за всё время{" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.cards_sailed_in_general"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("MobileBank.0.mobile_bank_connects")}
+                className="sortable-header"
+              >
+                Моб. банк (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="MobileBank.0.mobile_bank_connects"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("salary_project")}
+                className="sortable-header"
+              >
+                ЗП проект (шт){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="salary_project" />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.deb_osd")}
+                className="sortable-header"
+              >
+                Оборот по дебету (TJS){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.deb_osd"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("CardSales.0.out_balance")}
+                className="sortable-header"
+              >
+                Остатки по картам (TJS){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardSales.0.out_balance"
+                />
+              </th>
+              <th
+                onClick={() =>
+                  requestSort("CardTurnovers.0.active_cards_perms")
+                }
+                className="sortable-header"
+              >
+                Активные карты (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="CardTurnovers.0.active_cards_perms"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.call_center")}
+                className="sortable-header"
+              >
+                Оценка КЦ (балл){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.call_center"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.complaint")}
+                className="sortable-header"
+              >
+                Жалобы (шт){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.complaint"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("ServiceQuality.0.tests")}
+                className="sortable-header"
+              >
+                Тесты (балл){" "}
+                <SortIcon
+                  sortConfig={sortConfig}
+                  sortKey="ServiceQuality.0.tests"
+                />
+              </th>
+              <th
+                onClick={() => requestSort("totalPremia")}
+                className="sortable-header"
+              >
+                Итого (TJS){" "}
+                <SortIcon sortConfig={sortConfig} sortKey="totalPremia" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedWorkers.map((w, idx) => {
+              const user = w.user || {};
+              const turnover = w.CardTurnovers?.[0] || {};
+              const service = w.ServiceQuality?.[0] || {};
+              const card_sales = w.CardSales?.[0] || {};
+              const mobile_bank = w.MobileBank?.[0] || {};
+
+              const totalPremia = w.totalPremia;
+              const isLast = idx === sortedWorkers.length - 1;
+
+              return (
+                <tr key={w.ID} ref={isLast ? lastRowRef : null}>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={edit?.user?.full_name || user.full_name}
+                        onChange={(e) => onChangeEdit("user.full_name", e)}
+                        value={edit?.user?.full_name}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      <div className="fio-cell">
+                        <span className="fio-text">{user.full_name}</span>
+                        <button
+                          className="download-report-btn"
+                          title="Скачать отчет рабочего"
+                          onClick={() => openDownloadModal(user)}
+                        >
+                          <DownloadCloud size={18} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={edit?.plan || w.plan}
+                        onChange={(e) => onChangeEdit("plan", e)}
+                        value={edit?.plan}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      w.plan
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.CardSales?.[0]?.cards_sailed ||
+                          card_sales.cards_sailed
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("CardSales[0].cards_sailed", e)
+                        }
+                        value={edit?.CardSales?.[0]?.cards_sailed || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      card_sales.cards_sailed
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.CardSales?.[0]?.cards_sailed_in_general ||
+                          card_sales.cards_sailed_in_general
+                        }
+                        onChange={(e) =>
+                          onChangeEdit(
+                            "CardSales[0].cards_sailed_in_general",
+                            e,
+                          )
+                        }
+                        value={
+                          edit?.CardSales?.[0]?.cards_sailed_in_general || ""
+                        }
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      card_sales.cards_sailed_in_general
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.MobileBank?.[0]?.mobile_bank_connects ||
+                          mobile_bank.mobile_bank_connects
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("MobileBank[0].mobile_bank_connects", e)
+                        }
+                        value={edit?.MobileBank?.[0]?.mobile_bank_connects}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      mobile_bank.mobile_bank_connects
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={edit?.salary_project || w.salary_project}
+                        onChange={(e) => onChangeEdit("salary_project", e)}
+                        value={edit?.salary_project || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      w.salary_project
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.CardSales?.[0]?.deb_osd || card_sales.deb_osd
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("CardSales[0].deb_osd", e)
+                        }
+                        value={edit?.CardSales?.[0]?.deb_osd || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      card_sales.deb_osd
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.CardSales?.[0]?.out_balance ||
+                          card_sales.out_balance
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("CardSales[0].out_balance", e)
+                        }
+                        value={edit?.CardSales?.[0]?.out_balance || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      card_sales.out_balance
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.CardTurnovers?.[0]?.active_cards_perms ||
+                          turnover.active_cards_perms?.toFixed(0)
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("CardTurnovers[0].active_cards_perms", e)
+                        }
+                        value={
+                          edit?.CardTurnovers?.[0]?.active_cards_perms || ""
+                        }
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      turnover.active_cards_perms?.toFixed(0)
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.ServiceQuality?.[0]?.call_center ||
+                          service.call_center
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("ServiceQuality[0].call_center", e)
+                        }
+                        value={edit?.ServiceQuality?.[0]?.call_center || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      service.call_center
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.ServiceQuality?.[0]?.complaint ||
+                          service.complaint
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("ServiceQuality[0].complaint", e)
+                        }
+                        value={edit?.ServiceQuality?.[0]?.complaint || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      service.complaint
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {edit?.user?.ID === user.ID ? (
+                      <Input
+                        type="text"
+                        defValue={
+                          edit?.ServiceQuality?.[0]?.tests || service.tests
+                        }
+                        onChange={(e) =>
+                          onChangeEdit("ServiceQuality[0].tests", e)
+                        }
+                        value={edit?.ServiceQuality?.[0]?.tests || ""}
+                        onEnter={upDateUserWorkers}
+                      />
+                    ) : (
+                      service.tests
+                    )}
+                  </td>
+                  <td onClick={() => !edit?.user?.ID && setEdit(w)}>
+                    {totalPremia.toFixed(1)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {!loading && workers.length === 0 && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <p>Ничего не найдено</p>
+        </div>
+      )}
+
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Spinner />
+        </div>
+      )}
+
+      <DownloadModal
+        show={showDownloadModal}
+        user={downloadUser}
+        month={downloadMonth}
+        year={downloadYear}
+        onMonthChange={setDownloadMonth}
+        onYearChange={setDownloadYear}
+        onDownload={executeDownload}
+        onClose={() => setShowDownloadModal(false)}
+        monthOptions={monthOptions}
+      />
+    </div>
+  );
+};
+
+export default TablePremies;

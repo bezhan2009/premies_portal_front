@@ -1,0 +1,46 @@
+
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+
+  input[type="text"] {
+    padding: 8px 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-color);
+    max-width: 300px;
+    width: 100%;
+    transition: 0.2s ease;
+
+    &:focus {
+      @include input-focus;
+    }
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+
+  button {
+    padding: 8px 16px;
+    font-size: 1rem;
+    border-radius: 6px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s ease;
+
+    &:hover {
+      background-color: var(--primary-hover);
+    }
+
+    &:active {
+      opacity: 0.8;
+      transform: scale(0.95);
+    }
+  }
+}

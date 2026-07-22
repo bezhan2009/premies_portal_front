@@ -1,0 +1,10 @@
+.block_info_prems {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    border-radius: 10px;
+    align-items: center;
+    background-color: var(--bg-surface);
+    overflow: auto;
+    box-shadow: var(--shadow-md);
+}

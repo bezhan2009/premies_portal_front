@@ -1,0 +1,68 @@
+:root {
+  /* Colors - Branding */
+  --primary-color: #e21a1c;
+  --primary-hover: #c31414;
+  --primary-rgb: 226, 26, 28;
+  
+  /* Colors - Backgrounds & Surfaces */
+  --bg-color: #f5f6f8;       /* App main background */
+  --bg-rgb: 245, 246, 248;
+  --bg-secondary: #ffffff;   /* Content area wrappers */
+  --bg-surface: #ffffff;     /* Cards, tables, inputs */
+  --bg-sidebar: #ffffff;     /* Sidebar background */
+  --bg-elevated: #ffffff;    /* Modals, dropdowns */
+  
+  /* Colors - Text */
+  --text-color: #1a1a1b;     /* Primary text */
+  --text-rgb: 26, 26, 27;
+  --text-secondary: #4b5563; /* Labels, descriptions */
+  --text-muted: #9ca3af;     /* Placeholders, disabled text */
+  --text-on-primary: #ffffff;
+  
+  /* Colors - Borders */
+  --border-color: #e5e7eb;
+  --border-input: #d1d5db;
+  
+  /* Sizes */
+  --font-size-base: 16px;
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 80px;
+  
+  /* Effects */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}
+
+[data-theme='dark'] {
+  /* Branding Overrides for Dark Mode - slightly softer */
+  --primary-color: #ff4d4f;
+  --primary-hover: #e03e3e;
+  
+  /* Backgrounds - comfortable dark palette */
+  --bg-color: #0f1115;       /* Very dark navy/grey */
+  --bg-rgb: 15, 17, 21;
+  --bg-secondary: #161a22;   /* Darker content area */
+  --bg-surface: #1e232d;     /* Elevated surfaces like cards */
+  --bg-sidebar: #161a22;
+  --bg-elevated: #282e3a;    /* Top level surfaces like modals */
+  
+  /* Text - high but soft contrast */
+  --text-color: #f1f5f9;     /* Off-white */
+  --text-rgb: 241, 245, 249;
+  --text-secondary: #94a3b8; /* Slate grey */
+  --text-muted: #64748b;     /* Muted grey */
+  
+  /* Borders - subtle dark borders */
+  --border-color: #2d3748;
+  --border-input: #3d4655;
+  
+  /* Effects Overrides */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9);
+}

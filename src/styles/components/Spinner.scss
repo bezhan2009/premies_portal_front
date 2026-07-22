@@ -1,0 +1,147 @@
+@import "../variables/spinner";
+
+
+.spinner-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+
+  &--center {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.spinner-state__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  animation: spinner-label-pulse 1.6s ease-in-out infinite;
+}
+
+.dot-spinner {
+  --uib-size: #{$size};
+  --uib-speed: #{$speed};
+  --uib-color: #{$color};
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+}
+
+.dot-spinner--sm {
+  --uib-size: 1.2rem;
+}
+
+.dot-spinner--md {
+  --uib-size: #{$size};
+}
+
+.dot-spinner--lg {
+  --uib-size: 2.25rem;
+}
+
+.dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  
+  &::before {
+    content: '';
+    height: 20%;
+    width: 20%;
+    border-radius: 50%;
+    background-color: var(--uib-color);
+    transform: scale(0);
+    opacity: 0.5;
+    animation: pulse0112 calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(24, 49, 83, 0.3); // цвет по аналогии, можно вместо этого использовать переменную
+  }
+}
+
+@keyframes spinner-label-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.dot-spinner__dot:nth-child(2) {
+  transform: rotate(45deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.875);
+  }
+}
+  
+.dot-spinner__dot:nth-child(3) {
+  transform: rotate(90deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.75);
+  }
+}
+
+.dot-spinner__dot:nth-child(4) {
+  transform: rotate(135deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.625);
+  }
+}
+
+.dot-spinner__dot:nth-child(5) {
+  transform: rotate(180deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.5);
+  }
+}
+
+.dot-spinner__dot:nth-child(6) {
+  transform: rotate(225deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.375);
+  }
+}
+
+.dot-spinner__dot:nth-child(7) {
+  transform: rotate(270deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.25);
+  }
+}
+
+.dot-spinner__dot:nth-child(8) {
+  transform: rotate(315deg);
+  &::before {
+    animation-delay: calc(var(--uib-speed) * -0.125);
+  }
+}
+
+@keyframes pulse0112 {
+  0%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

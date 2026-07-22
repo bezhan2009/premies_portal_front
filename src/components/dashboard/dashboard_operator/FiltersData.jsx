@@ -1,0 +1,61 @@
+import React from "react";
+
+const FiltersDatas = ({ onSelect }) => {
+  const buttons = [
+    { text: "Отделения", class: "reports_filter__button--grey", key: "office" },
+    {
+      text: "Сотрудники",
+      class: "reports_filter__button--purple",
+      key: "employees",
+    },
+    {
+      text: "Мерчанты",
+      class: "reports_filter__button--green",
+      key: "margents",
+    },
+    {
+      text: "Цены продуктов",
+      class: "reports_filter__button--cyan",
+      key: "prices",
+    },
+    {
+      text: "Пользователи",
+      class: "reports_filter__button--yellow",
+      key: "roles",
+    },
+      {
+          text: "Логи обновления ролей",
+          class: "reports_filter__button--aqua",
+          key: "role_logs",
+      },
+      {
+          text: "Журнал операций",
+          class: "reports_filter__button--purple-bright",
+          key: "journal",
+      },
+      {
+          text: "Документы пользователей",
+          class: "reports_filter__button--blue",
+          key: "user_documents",
+      },
+    // { text: "Роли", class: "reports_filter__button--yellow", key: "roles" },
+  ];
+
+  return (
+    <div className="reports_filter">
+      <div className="filters__left">
+        {buttons.map((btn) => (
+          <button
+            key={btn.key}
+            className={`reports_filter__button ${btn.class}`}
+            onClick={() => onSelect(btn.key)}
+          >
+            {btn.text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default FiltersDatas;

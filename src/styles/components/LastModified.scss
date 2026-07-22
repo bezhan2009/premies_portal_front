@@ -1,0 +1,165 @@
+
+.last-modified-container {
+  font-family: Arial, sans-serif;
+  color: var(--text-color);
+  margin: 0px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.last-modified {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  &__label {
+    font-size: 18px;
+    font-weight: 380;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
+  }
+
+  &__date {
+    font-size: 17px;
+    font-weight: bold;
+  }
+}
+
+.modification-desc {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  &__label {
+    font-size: 18px;
+    font-weight: 380;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
+  }
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  &__inputs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    input {
+      width: 6ch;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text-color);
+      border: none;
+      border-bottom: 1px solid grey;
+      background-color: transparent;
+      text-align: center;
+      padding: 0 2px;
+      outline: none;
+      transition: border-bottom 0.2s ease;
+
+      &:focus {
+        border-bottom: 1px solid #990000;
+      }
+
+      &__year-input {
+        width: 3.6ch;
+      }
+    }
+
+    span {
+      margin: 0 1px;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+  }
+
+  &__current {
+    font-size: 16px;
+    font-weight: 500;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  &__arrow {
+    background: #030303;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      opacity: 0.7;
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+}
+
+.arrow-icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+
+  .date-filter__arrow--left & {
+    border-width: 6px 10px 6px 0;
+    border-color: transparent #fff transparent transparent;
+    border-radius: 50%;
+  }
+
+  .date-filter__arrow--right & {
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent #fff;
+    border-radius: 50%;
+  }
+}
+
+.date-filter__select {
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: var(--text-color);
+  margin-right: 6px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  }
+}
+
+.date-filter__inputs__year-input {
+  padding: 4px 6px;
+  font-size: 14px;
+  width: 70px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.date-filter__inputs__year-input {
+  width: 100px;
+  padding: 4px 6px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+
+  &:focus {
+    @include input-focus;
+  }
+}

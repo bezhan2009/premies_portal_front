@@ -1,0 +1,66 @@
+@import 'variables/dashboard.scss';
+
+body {
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+
+  .main-content-wrapper {
+    flex: 1;
+    // margin-left: 280px;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: calc(100% - 280px);
+    background: var(--bg-color);
+  }
+
+  &.sidebar-collapsed {
+    .main-content-wrapper {
+      margin-left: 70px;
+      width: calc(100% - 70px);
+    }
+  }
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 1rem 2rem;
+}
+
+.page-content {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  margin: 1rem;
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .dashboard-container {
+    .main-content-wrapper {
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+  }
+
+  .page-content {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+}
+
+// ... other existing styles if needed

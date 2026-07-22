@@ -1,0 +1,66 @@
+.office-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.office-modal {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  padding: 30px;
+  border-radius: 12px;
+  width: 500px;
+  max-width: 90%;
+  color: #fff;
+  text-align: left;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+
+  h2, h3 {
+    margin-top: 0;
+    color: #fff;
+  }
+
+  p {
+    margin: 0.5rem 0;
+    font-size: 16px;
+  }
+
+  button {
+    margin-top: 20px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.3s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  .small-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+
+    th, td {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px;
+      color: #fff;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}

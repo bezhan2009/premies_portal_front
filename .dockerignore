@@ -1,9 +1,0 @@
-node_modules
-.next
-.git
-.idea
-.codebase-memory
-dist
-*.log
-.env*
-!\.env.example
