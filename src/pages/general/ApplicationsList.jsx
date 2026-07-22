@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { useFormStore } from "../../hooks/useFormState";
 import { status } from "../../const/defConst";
+import Select from "../../components/elements/Select";
+import CustomDateInput from "../../components/elements/CustomDateInput.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
@@ -161,6 +163,7 @@ export default function ApplicationsList() {
     const [detailedApp, setDetailedApp] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [archive, setArchive] = useState(false);
+    const [bulkStatus, setBulkStatus] = useState("");
     const [activeStatusTab, setActiveStatusTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [nextId, setNextId] = useState(null);
@@ -456,6 +459,7 @@ export default function ApplicationsList() {
             );
 
             setData("status", "");
+            setBulkStatus("");
             fetchData(null, true);
             setSelectedRows([]);
         } catch (e) {
@@ -565,18 +569,20 @@ export default function ApplicationsList() {
 
                     <div className="applications-period-range" aria-label="Период создания заявки">
                         <CalendarDays size={18} />
-                        <input
-                            type="date"
+                        <CustomDateInput
+                            id="applications-date-from"
                             value={filters.dateFrom}
-                            onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                            aria-label="Дата от"
+                            onChange={(value) => handleFilterChange("dateFrom", value)}
+                            placeholder="От"
+                            variant="compact"
                         />
                         <span>по</span>
-                        <input
-                            type="date"
+                        <CustomDateInput
+                            id="applications-date-to"
                             value={filters.dateTo}
-                            onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                            aria-label="Дата до"
+                            onChange={(value) => handleFilterChange("dateTo", value)}
+                            placeholder="До"
+                            variant="compact"
                         />
                     </div>
 
@@ -676,23 +682,19 @@ export default function ApplicationsList() {
                     <section className="applications-bulk">
                         <span>Выбрано заявок: {selectedRows.length}</span>
                         <div className="applications-bulk__actions">
-                            <select
-                                className="applications-bulk-status"
-                                value=""
-                                onChange={(event) => upDateStatusApplications(event.target.value)}
+                            <Select
+                                id="bulk-status"
+                                className="applications-bulk-status-select"
+                                value={bulkStatus}
+                                onChange={(value) => {
+                                    setBulkStatus(value);
+                                    upDateStatusApplications(value);
+                                }}
+                                options={status.filter((item, index) => index > 0 && item.value)}
+                                placeholder="Выберите статус"
+                                autoSelectFirst={false}
                                 aria-label="Изменить статус выбранных заявок"
-                            >
-                                <option value="" disabled>
-                                    Выберите статус
-                                </option>
-                                {status
-                                    .filter((item, index) => index > 0 && item.value)
-                                    .map((item) => (
-                                        <option key={`${item.value}-${item.label}`} value={item.value}>
-                                            {item.label}
-                                        </option>
-                                    ))}
-                            </select>
+                            />
                             <button
                                 type="button"
                                 className="applications-clear-selection"

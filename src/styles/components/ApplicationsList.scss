@@ -218,10 +218,16 @@
     font-weight: 700;
   }
 
-  span {
+  > span {
     color: #747983;
     font-size: 13px;
     font-weight: 750;
+  }
+
+  .custom-date-control.ant-picker {
+    width: 132px;
+    min-height: 38px;
+    background: transparent;
   }
 }
 
@@ -349,6 +355,10 @@
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
+}
+
+.applications-bulk-status-select {
+  min-width: 260px;
 }
 
 .applications-bulk-status {

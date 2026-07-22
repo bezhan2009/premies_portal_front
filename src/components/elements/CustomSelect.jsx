@@ -18,6 +18,7 @@ const CustomSelect = ({
   disabled = false,
   dropdownPosition = "auto",
   searchable = false,
+  autoSelectFirst = true,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
@@ -39,6 +40,10 @@ const CustomSelect = ({
     : options;
 
   useEffect(() => {
+    if (!autoSelectFirst) {
+      return;
+    }
+
     if (disabled || options.length === 0) {
       return;
     }
@@ -51,7 +56,7 @@ const CustomSelect = ({
     if (String(firstOptionValue) !== String(value)) {
       onChange(firstOptionValue);
     }
-  }, [disabled, onChange, options, selectedOption, value]);
+  }, [autoSelectFirst, disabled, onChange, options, selectedOption, value]);
 
   useEffect(() => {
     if (!isOpen) {
