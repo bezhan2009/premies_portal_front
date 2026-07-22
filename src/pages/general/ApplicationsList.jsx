@@ -2,19 +2,24 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Archive,
+    Building2,
     BriefcaseBusiness,
     CalendarDays,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Clock3,
+    CreditCard,
     Download,
     Eye,
+    ExternalLink,
     FileText,
+    FileImage,
     Inbox,
+    MapPin,
+    Phone,
     Search,
     SlidersHorizontal,
-    Trash2,
     XCircle,
 } from "lucide-react";
 import { useFormStore } from "../../hooks/useFormState";
@@ -24,58 +29,41 @@ import Spinner from "../../components/Spinner.jsx";
 import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
-import Modal from "../../components/general/Modal.jsx";
-
-const FIELD_LABELS = {
-    ID: "ID заявки",
-    surname: "Фамилия",
-    name: "Имя",
-    patronymic: "Отчество",
-    phone_number: "Номер телефона",
-    inn: "ИНН",
-    card_name: "Название карты",
-    card_type: "Тип карты",
-    card_code: "Код карты",
-    last_card_numbers: "Последние цифры карты",
-    receiving_office: "Офис получения",
-    delivery_address: "Адрес доставки",
-    is_resident: "Резидент",
-    fatca: "Признак FATCA",
-    apl_pzl: "Признак АПЛ/ПЗЛ",
-    client_occupation: "Сфера деятельности",
-    net_worth: "Чистая стоимость / Оборот",
-    monthly_income: "Метод открытия счета",
-    total_outgoing_transactions_amount: "Ожидаемая сумма транзакций",
-    total_outgoing_transactions_count: "Ожидаемое количество транзакций",
-    total_cash_transactions_amount: "Ожидаемая сумма кассовых сделок",
-    total_cash_transactions_count: "Ожидаемое количество кассовых сделок",
-    compliance_score: "Балл комплаенса",
-    operator_fio: "ФИО Оператора",
-    CreatedAt: "Дата создания",
-    UpdatedAt: "Дата обновления",
-    rejection_reason: "Причина отклонения",
-    comment: "Комментарий",
-    status_name: "Статус",
-    application_status_name: "Статус заявки",
-    country: "Страна",
-    email: "Email",
-    passport_series: "Серия паспорта",
-    passport_number: "Номер паспорта",
-    passport_issued_by: "Кем выдан паспорт",
-    passport_issued_at: "Дата выдачи паспорта",
-    passport_deadline: "Срок действия паспорта",
-    birth_date: "Дата рождения",
-    gender: "Пол"
-};
 
 const PAGE_SIZE = 8;
+const REQUEST_CREATOR_KEY = "request_\u0441reator";
 
 const STATUS_TABS = [
     { key: "all", label: "Все", ids: null },
-    { key: "new", label: "Новые", ids: [1] },
-    { key: "review", label: "На проверке", ids: [2] },
-    { key: "approved", label: "Одобренные", ids: [8] },
-    { key: "rejected", label: "Отклоненные", ids: [5, 6, 7] },
+    { key: "accepted", label: "Заявка принята", ids: [1] },
+    { key: "processed", label: "Заявка обработана", ids: [2] },
+    { key: "opened", label: "Карта открыта", ids: [3] },
+    { key: "activated", label: "Карта активирована", ids: [4] },
+    { key: "bad-data", label: "Недостоверные данные", ids: [5] },
+    { key: "card-denied", label: "Отказано в карте", ids: [6] },
+    { key: "not-approved", label: "Не одобрено", ids: [7] },
+    { key: "approved", label: "Одобрено", ids: [8] },
+];
+
+const RESIDENT_OPTIONS = [
+    { value: "", label: "Все" },
+    { value: "Да", label: "Да" },
+    { value: "Нет", label: "Нет" },
+];
+
+const PASSPORT_DOCUMENTS = [
+    {
+        key: "front_side_of_the_passport",
+        label: "Лицевая сторона",
+    },
+    {
+        key: "back_side_of_the_passport",
+        label: "Задняя сторона",
+    },
+    {
+        key: "selfie_with_passport",
+        label: "Скан с лицом",
+    },
 ];
 
 const getStatusId = (row) =>
@@ -90,7 +78,7 @@ const getStatusId = (row) =>
 
 const getStatusGroup = (row) => {
     const statusId = getStatusId(row);
-    if (statusId === 8) return "approved";
+    if ([3, 4, 8].includes(statusId)) return "approved";
     if ([5, 6, 7].includes(statusId)) return "rejected";
     if (statusId === 2) return "review";
     return "new";
@@ -106,13 +94,11 @@ const getStatusLabel = (row) => {
         row?.status;
 
     if (explicitLabel && explicitLabel !== "Статус") return explicitLabel;
-    if (statusId === 8) return "Одобрена";
-    if ([5, 6, 7].includes(statusId)) return "Отклонена";
-    if (statusId === 2) return "На проверке";
-    if (statusId === 1) return "Новая";
+    const tab = STATUS_TABS.find((item) => item.ids?.includes(statusId));
+    if (tab) return tab.label;
 
     const option = [...status].reverse().find((item) => Number(item.value) === statusId);
-    return option?.label && option.label !== "Статус" ? option.label : "Новая";
+    return option?.label && option.label !== "Статус" ? option.label : "Заявка принята";
 };
 
 const getFullName = (row) =>
@@ -135,6 +121,36 @@ const getStatusStats = (rows) =>
         return acc;
     }, {});
 
+const getRequestCreator = (row) => row?.[REQUEST_CREATOR_KEY] || row?.request_creator || "Не указан";
+
+const getUploadUrl = (path) => {
+    if (!path) return "";
+    const normalizedPath = String(path).replace(/\\/g, "/");
+    const backendUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL || "";
+    return `${backendUrl}/uploads/${normalizedPath}`;
+};
+
+const stringifyForSearch = (value) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") {
+        return Object.values(value).map(stringifyForSearch).join(" ");
+    }
+    return String(value);
+};
+
+const formatDate = (value) => {
+    if (!value) return "Не указана";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
 export default function ApplicationsList() {
     const { data, errors, setData } = useFormStore();
     const navigate = useNavigate();
@@ -156,6 +172,10 @@ export default function ApplicationsList() {
         phone: "",
         resident: "",
         card: "",
+        channel: "",
+        operator: "",
+        dateFrom: "",
+        dateTo: "",
     });
     const [alert, setAlert] = useState({
         show: false,
@@ -185,11 +205,12 @@ export default function ApplicationsList() {
             try {
                 setLoading(true);
                 const params = {};
+                const activeTab = STATUS_TABS.find((tab) => tab.key === activeStatusTab);
 
                 if (after) params.after = after;
-                if (data?.month) params.month = data.month;
-                if (data?.year) params.year = data.year;
-                if (data?.status) params.status_id = data.status;
+                if (activeTab?.ids?.length === 1) params.status_id = activeTab.ids[0];
+                if (filters.dateFrom) params.date_from = filters.dateFrom;
+                if (filters.dateTo) params.date_to = filters.dateTo;
 
                 const response = await apiClientApplication.get(
                     archive ? "/applications/archive" : "/applications",
@@ -218,14 +239,14 @@ export default function ApplicationsList() {
                 setFetching(false);
             }
         },
-        [archive, data?.month, data?.year, data?.status, getAuthHeaders],
+        [activeStatusTab, archive, filters.dateFrom, filters.dateTo, getAuthHeaders],
     );
 
     const handleNewApplication = useCallback(
         (newApplication) => {
             setAlert({
                 show: true,
-                message: `Новая заявка #${newApplication.ID} от ${newApplication.request_сreator}`,
+                message: `Новая заявка #${newApplication.ID} от ${getRequestCreator(newApplication)}`,
                 type: "info",
             });
 
@@ -280,43 +301,23 @@ export default function ApplicationsList() {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const deleteApplication = async (id) => {
-        try {
-            await apiClientApplication.delete(`/applications/${id}`, {
-                headers: getAuthHeaders(),
-            });
-            setSelectedRows((prev) => prev.filter((selectedId) => selectedId !== id));
-            setTimeout(() => fetchData(null, true), 200);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
     const filteredData = useMemo(() => {
         if (!Array.isArray(tableData)) return [];
 
         const query = filters.query.trim().toLowerCase();
         const fullNameFilter = filters.fullName.trim().toLowerCase();
         const cardFilter = filters.card.trim().toLowerCase();
+        const channelFilter = filters.channel.trim().toLowerCase();
+        const operatorFilter = filters.operator.trim().toLowerCase();
+        const activeTab = STATUS_TABS.find((tab) => tab.key === activeStatusTab);
 
         return tableData.filter((row) => {
             const fullName = getFullName(row).toLowerCase();
-            const searchHaystack = [
-                row?.ID,
-                fullName,
-                row?.phone_number,
-                row?.inn,
-                row?.card_name,
-                row?.card_type,
-                row?.last_card_numbers,
-                row?.receiving_office,
-            ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
+            const searchHaystack = stringifyForSearch(row).toLowerCase();
+            const statusId = getStatusId(row);
 
             const matchesTab =
-                activeStatusTab === "all" || getStatusGroup(row) === activeStatusTab;
+                activeStatusTab === "all" || activeTab?.ids?.includes(statusId);
             const matchesQuery = !query || searchHaystack.includes(query);
             const matchesFullName = !fullNameFilter || fullName.includes(fullNameFilter);
             const matchesPhone =
@@ -326,6 +327,11 @@ export default function ApplicationsList() {
                 (filters.resident === "Да" ? row?.is_resident : !row?.is_resident);
             const matchesCard =
                 !cardFilter || String(row?.card_name || "").toLowerCase().includes(cardFilter);
+            const matchesChannel =
+                !channelFilter || getRequestCreator(row).toLowerCase().includes(channelFilter);
+            const matchesOperator =
+                !operatorFilter ||
+                String(row?.operator_fio || "").toLowerCase().includes(operatorFilter);
 
             return (
                 matchesTab &&
@@ -333,7 +339,9 @@ export default function ApplicationsList() {
                 matchesFullName &&
                 matchesPhone &&
                 matchesResident &&
-                matchesCard
+                matchesCard &&
+                matchesChannel &&
+                matchesOperator
             );
         });
     }, [activeStatusTab, filters, tableData]);
@@ -344,13 +352,6 @@ export default function ApplicationsList() {
     const visibleRows = filteredData.slice(pageStart, pageStart + PAGE_SIZE);
     const allVisibleSelected =
         visibleRows.length > 0 && visibleRows.every((row) => selectedRows.includes(row.ID));
-    const periodLabel =
-        data?.month || data?.year
-            ? [data?.month ? `Месяц ${data.month}` : null, data?.year ? `Год ${data.year}` : null]
-                  .filter(Boolean)
-                  .join(", ")
-            : "Весь период";
-
     const paginationPages = useMemo(() => {
         const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
         return [...pages]
@@ -367,23 +368,27 @@ export default function ApplicationsList() {
             tone: "neutral",
         },
         {
-            key: "review",
-            label: "На проверке",
-            value: statusCounts.review || 0,
+            key: "processed",
+            label: "Обработано",
+            value: statusCounts.processed || 0,
             icon: Clock3,
             tone: "warning",
         },
         {
             key: "approved",
-            label: "Одобренные",
+            label: "Одобрено",
             value: statusCounts.approved || 0,
             icon: CheckCircle2,
             tone: "success",
         },
         {
             key: "rejected",
-            label: "Отклоненные",
-            value: statusCounts.rejected || 0,
+            tabKey: "bad-data",
+            label: "Отказ/риски",
+            value:
+                (statusCounts["bad-data"] || 0) +
+                (statusCounts["card-denied"] || 0) +
+                (statusCounts["not-approved"] || 0),
             icon: XCircle,
             tone: "danger",
         },
@@ -453,6 +458,20 @@ export default function ApplicationsList() {
         }
     };
 
+    const openApplication = async (row) => {
+        try {
+            await apiClientApplication.patch(
+                `/applications/${row.ID}`,
+                {},
+                { headers: getAuthHeaders() },
+            );
+        } catch (e) {
+            console.error("Ошибка записи оператора:", e);
+        } finally {
+            navigate(`/agent/card/${row.ID}`);
+        }
+    };
+
     useEffect(() => {
         fetchData(null, true);
     }, [fetchData]);
@@ -462,22 +481,6 @@ export default function ApplicationsList() {
             fetchData(nextId);
         }
     }, [fetching, nextId, fetchData]);
-
-    useEffect(() => {
-        if (data.month || data.month === "") {
-            localStorage.setItem("month", data.month);
-        }
-        if (data.year || data.year === "") {
-            localStorage.setItem("year", data.year);
-        }
-    }, [data]);
-
-    useEffect(() => {
-        const savedMonth = localStorage.getItem("month");
-        const savedYear = localStorage.getItem("year");
-        if (savedMonth) setData("month", savedMonth);
-        if (savedYear) setData("year", savedYear);
-    }, [setData]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -516,7 +519,7 @@ export default function ApplicationsList() {
                                 type="button"
                                 key={card.key}
                                 className={`applications-stat applications-stat--${card.tone}`}
-                                onClick={() => setActiveStatusTab(card.key)}
+                                onClick={() => setActiveStatusTab(card.tabKey || card.key)}
                             >
                                 <span className="applications-stat__icon">
                                     <Icon size={20} />
@@ -555,14 +558,22 @@ export default function ApplicationsList() {
                         />
                     </label>
 
-                    <button
-                        type="button"
-                        className="applications-period-btn"
-                        onClick={() => setShowFilters((prev) => !prev)}
-                    >
+                    <div className="applications-period-range" aria-label="Период создания заявки">
                         <CalendarDays size={18} />
-                        {periodLabel}
-                    </button>
+                        <input
+                            type="date"
+                            value={filters.dateFrom}
+                            onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                            aria-label="Дата от"
+                        />
+                        <span>по</span>
+                        <input
+                            type="date"
+                            value={filters.dateTo}
+                            onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                            aria-label="Дата до"
+                        />
+                    </div>
 
                     <div className="applications-toolbar__actions">
                         <button
@@ -621,14 +632,13 @@ export default function ApplicationsList() {
                         </label>
                         <label>
                             <span>Резидент</span>
-                            <select
+                            <Select
+                                id="resident"
                                 value={filters.resident}
-                                onChange={(e) => handleFilterChange("resident", e.target.value)}
-                            >
-                                <option value="">Все</option>
-                                <option value="Да">Да</option>
-                                <option value="Нет">Нет</option>
-                            </select>
+                                onChange={(value) => handleFilterChange("resident", value)}
+                                options={RESIDENT_OPTIONS}
+                                placeholder="Все"
+                            />
                         </label>
                         <label>
                             <span>Карта</span>
@@ -639,22 +649,19 @@ export default function ApplicationsList() {
                             />
                         </label>
                         <label>
-                            <span>Месяц</span>
+                            <span>Канал</span>
                             <input
-                                type="number"
-                                min="1"
-                                max="12"
-                                value={data?.month || ""}
-                                onChange={(e) => setData("month", e.target.value)}
+                                placeholder="Мобильный банк"
+                                value={filters.channel}
+                                onChange={(e) => handleFilterChange("channel", e.target.value)}
                             />
                         </label>
                         <label>
-                            <span>Год</span>
+                            <span>Оператор</span>
                             <input
-                                type="number"
-                                min="2020"
-                                value={data?.year || ""}
-                                onChange={(e) => setData("year", e.target.value)}
+                                placeholder="ФИО оператора"
+                                value={filters.operator}
+                                onChange={(e) => handleFilterChange("operator", e.target.value)}
                             />
                         </label>
                     </section>
@@ -705,9 +712,11 @@ export default function ApplicationsList() {
                                     </th>
                                     <th>ID</th>
                                     <th>Клиент</th>
-                                    <th>Карта</th>
                                     <th>Офис получения</th>
+                                    <th>Карта</th>
+                                    <th>Канал</th>
                                     <th>Статус</th>
+                                    <th>Оператор</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -760,15 +769,20 @@ export default function ApplicationsList() {
                                                 </div>
                                             </td>
                                             <td>
-                                                <div className="applications-card-info">
-                                                    <strong>{row.card_name || row.card_type || "Карта не указана"}</strong>
-                                                    <small>{row.delivery_address || row.card_code || "Адрес не указан"}</small>
-                                                </div>
-                                            </td>
-                                            <td>
                                                 <span className="applications-office">
                                                     <BriefcaseBusiness size={16} />
                                                     {row.receiving_office || "Офис не указан"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="applications-card-info">
+                                                    <strong>{row.card_name || row.card_type || "Карта не указана"}</strong>
+                                                    <small>{row.card_code || row.last_card_numbers || "Код не указан"}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="applications-channel">
+                                                    {getRequestCreator(row)}
                                                 </span>
                                             </td>
                                             <td>
@@ -777,18 +791,12 @@ export default function ApplicationsList() {
                                                 </span>
                                             </td>
                                             <td>
+                                                <span className="applications-operator">
+                                                    {row.operator_fio || "Не назначен"}
+                                                </span>
+                                            </td>
+                                            <td>
                                                 <div className="applications-row-actions">
-                                                    <button
-                                                        type="button"
-                                                        className="applications-open-btn"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            navigate(`/agent/card/${row.ID}`);
-                                                        }}
-                                                    >
-                                                        <Eye size={16} />
-                                                        Открыть
-                                                    </button>
                                                     <button
                                                         type="button"
                                                         className="applications-details-btn"
@@ -802,15 +810,14 @@ export default function ApplicationsList() {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        className="applications-delete-btn"
+                                                        className="applications-open-btn"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            deleteApplication(row.ID);
+                                                            openApplication(row);
                                                         }}
-                                                        title="Удалить заявку"
-                                                        aria-label={`Удалить заявку ${row.ID}`}
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <ExternalLink size={16} />
+                                                        Перейти к заявке
                                                     </button>
                                                 </div>
                                             </td>
@@ -820,7 +827,7 @@ export default function ApplicationsList() {
 
                                 {!loading && visibleRows.length === 0 && (
                                     <tr>
-                                        <td colSpan={7}>
+                                        <td colSpan={9}>
                                             <div className="applications-empty">
                                                 Нет данных для отображения
                                             </div>
@@ -879,30 +886,108 @@ export default function ApplicationsList() {
                     </footer>
                 </section>
                 {detailedApp && (
-                    <Modal
-                        isOpen={!!detailedApp}
-                        onClose={() => setDetailedApp(null)}
-                        title={`Детали заявки #${detailedApp?.ID || ""}`}
+                    <div
+                        className="application-details-overlay"
+                        onClick={() => setDetailedApp(null)}
                     >
-                        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: "8px" }}>
-                            {Object.entries(detailedApp)
-                                .filter(([key, value]) => {
-                                    return FIELD_LABELS[key] !== undefined && value !== null && value !== undefined && value !== "";
-                                })
-                                .map(([key, value]) => {
-                                    let displayValue = String(value);
-                                    if (typeof value === "boolean") {
-                                        displayValue = value ? "Да" : "Нет";
-                                    }
-                                    return (
-                                        <div key={key} style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', padding: '10px 0', fontSize: '14px' }}>
-                                            <span style={{ fontWeight: '600', width: '40%', color: '#475569' }}>{FIELD_LABELS[key]}:</span>
-                                            <span style={{ width: '60%', color: '#0f172a', wordBreak: 'break-word' }}>{displayValue}</span>
-                                        </div>
-                                    );
-                                })}
+                        <div
+                            className="application-details-modal"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <header className="application-details-modal__header">
+                                <div>
+                                    <div className="application-details-modal__title">
+                                        <h2>Заявка #{detailedApp?.ID || ""}</h2>
+                                        <span className={`applications-status applications-status--${getStatusGroup(detailedApp)}`}>
+                                            {getStatusLabel(detailedApp)}
+                                        </span>
+                                    </div>
+                                    <p>{getFullName(detailedApp)}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="application-details-modal__close"
+                                    onClick={() => setDetailedApp(null)}
+                                    aria-label="Закрыть"
+                                >
+                                    ×
+                                </button>
+                            </header>
+
+                            <div className="application-details-modal__grid">
+                                <div className="application-detail-card">
+                                    <Phone size={21} />
+                                    <span>Телефон</span>
+                                    <strong>{detailedApp.phone_number || "Не указан"}</strong>
+                                </div>
+                                <div className="application-detail-card">
+                                    <CreditCard size={21} />
+                                    <span>Карта</span>
+                                    <strong>{detailedApp.card_name || detailedApp.card_type || "Не указана"}</strong>
+                                </div>
+                                <div className="application-detail-card">
+                                    <MapPin size={21} />
+                                    <span>ИНН</span>
+                                    <strong>{detailedApp.inn || "Не указан"}</strong>
+                                </div>
+                                <div className="application-detail-card">
+                                    <Building2 size={21} />
+                                    <span>Офис получения</span>
+                                    <strong>{detailedApp.receiving_office || "Не указан"}</strong>
+                                </div>
+                                <div className="application-detail-card">
+                                    <CalendarDays size={21} />
+                                    <span>Дата создания</span>
+                                    <strong>{formatDate(detailedApp.CreatedAt)}</strong>
+                                </div>
+                                <div className="application-detail-card">
+                                    <Eye size={21} />
+                                    <span>Оператор</span>
+                                    <strong>{detailedApp.operator_fio || "Не назначен"}</strong>
+                                </div>
+                            </div>
+
+                            <section className="application-documents">
+                                <div className="application-documents__head">
+                                    <h3>Сканы паспорта</h3>
+                                    <span>
+                                        Загружено{" "}
+                                        {PASSPORT_DOCUMENTS.filter((doc) => detailedApp?.[doc.key]).length} из{" "}
+                                        {PASSPORT_DOCUMENTS.length}
+                                    </span>
+                                </div>
+
+                                <div className="application-documents__grid">
+                                    {PASSPORT_DOCUMENTS.map((doc) => {
+                                        const filePath = detailedApp?.[doc.key];
+                                        const url = getUploadUrl(filePath);
+
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={doc.key}
+                                                className={filePath ? "application-document" : "application-document application-document--empty"}
+                                                onClick={() => {
+                                                    if (url) window.open(url, "_blank");
+                                                }}
+                                                disabled={!filePath}
+                                            >
+                                                {filePath ? (
+                                                    <img src={url} alt={doc.label} />
+                                                ) : (
+                                                    <span>
+                                                        <FileImage size={34} />
+                                                        Нет файла
+                                                    </span>
+                                                )}
+                                                <small>{doc.label}</small>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </section>
                         </div>
-                    </Modal>
+                    </div>
                 )}
             </main>
         </div>
