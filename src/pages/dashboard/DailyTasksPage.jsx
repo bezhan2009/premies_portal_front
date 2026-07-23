@@ -95,7 +95,10 @@ const DailyTasksPage = () => {
 
   useEffect(() => {
     if (!backfillStatus?.running) return undefined;
-    const timer = window.setInterval(fetchBackfillStatus, 5000);
+    const timer = window.setInterval(() => {
+      fetchBackfillStatus();
+      fetchJobs();
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [backfillStatus?.running]);
 
@@ -151,10 +154,24 @@ const DailyTasksPage = () => {
   };
 
   const cancelBackfill = async () => {
+    setBackfillStatus((current) => current ? {
+      ...current,
+      running: false,
+      status: 'canceled',
+      active_jobs: [],
+      current_job: '',
+      job_progress: Object.fromEntries(
+        Object.entries(current.job_progress || {}).map(([jobId, progress]) => [
+          jobId,
+          { ...progress, running: false, status: progress.status === 'completed' ? 'completed' : 'canceled' },
+        ]),
+      ),
+    } : current);
     setBackfillLoading(true);
     try {
       const response = await apiClient.delete('/daily-tasks/jobs/backfill');
       setBackfillStatus(response.data);
+      fetchJobs();
       message.success('Backfill остановлен');
     } catch (error) {
       console.error('Failed to cancel backfill:', error);
@@ -219,6 +236,37 @@ const DailyTasksPage = () => {
       key: 'last_run',
       width: 220,
       render: formatDateTime,
+    },
+    {
+      title: 'Backfill time',
+      key: 'backfill_time',
+      width: 280,
+      render: (_, record) => {
+        if (record.backfill_time) {
+          const percent = record.backfill_progress_percentage || 0;
+          const running = record.backfill_running;
+          return (
+            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Space>
+                <Tag color={running ? 'processing' : record.backfill_status === 'completed' ? 'green' : 'default'}>
+                  {record.backfill_status || 'backfill'}
+                </Tag>
+                <Text>{formatDateTime(record.backfill_time)}</Text>
+              </Space>
+              <Progress
+                size="small"
+                percent={percent}
+                status={record.backfill_status === 'canceled' ? 'exception' : running ? 'active' : 'normal'}
+              />
+              <Text type="secondary">
+                {record.backfill_processed_steps || 0} / {record.backfill_total_steps || 0}
+              </Text>
+            </Space>
+          );
+        }
+
+        return <Text type="secondary">{formatDateTime(record.last_run)}</Text>;
+      },
     },
   ];
 
