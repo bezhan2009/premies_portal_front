@@ -14,6 +14,7 @@ import {
   Typography,
   message,
 } from 'antd';
+import dayjs from 'dayjs';
 import { apiClient } from '../../api/utils/apiClient';
 import { Clock3, Play, RefreshCw, RotateCcw } from 'lucide-react';
 
@@ -149,9 +150,25 @@ const DailyTasksPage = () => {
     }
   };
 
+  const cancelBackfill = async () => {
+    setBackfillLoading(true);
+    try {
+      const response = await apiClient.delete('/daily-tasks/jobs/backfill');
+      setBackfillStatus(response.data);
+      message.success('Backfill остановлен');
+    } catch (error) {
+      console.error('Failed to cancel backfill:', error);
+      message.error('Не удалось остановить backfill');
+    } finally {
+      setBackfillLoading(false);
+    }
+  };
+
   const backfillPercent = useMemo(() => {
-    if (!backfillStatus?.total_windows) return 0;
-    return Math.min(100, Math.round((backfillStatus.processed_windows / backfillStatus.total_windows) * 100));
+    const total = backfillStatus?.total_steps || backfillStatus?.total_windows || 0;
+    const processed = backfillStatus?.processed_steps || backfillStatus?.processed_windows || 0;
+    if (!total) return 0;
+    return Math.min(100, Math.round((processed / total) * 100));
   }, [backfillStatus]);
 
   const columns = [
@@ -236,6 +253,7 @@ const DailyTasksPage = () => {
               <DatePicker
                 showTime
                 allowClear={false}
+                value={dayjs(backfillStartAt, 'YYYY-MM-DD HH:mm:ss')}
                 format="YYYY-MM-DD HH:mm:ss"
                 onChange={(_, value) => setBackfillStartAt(value)}
                 placeholder="2026-07-23 02:05:05"
@@ -276,6 +294,18 @@ const DailyTasksPage = () => {
             >
               Запустить backfill
             </Button>
+
+            {backfillStatus?.running && (
+              <Button
+                danger
+                size="large"
+                loading={backfillLoading}
+                onClick={cancelBackfill}
+                style={{ marginTop: 22 }}
+              >
+                Остановить backfill
+              </Button>
+            )}
           </Space>
 
           <div>
@@ -296,12 +326,23 @@ const DailyTasksPage = () => {
                     {backfillStatus.status || 'idle'}
                   </Tag>
                   <Text><Clock3 size={14} style={{ verticalAlign: -2 }} /> Cursor: {formatDateTime(backfillStatus.cursor)}</Text>
-                  <Text>Текущая джоба: <strong>{backfillStatus.current_job || '—'}</strong></Text>
+                  <Text>
+                    Активные джобы:{' '}
+                    <strong>
+                      {(backfillStatus.active_jobs && backfillStatus.active_jobs.length > 0)
+                        ? backfillStatus.active_jobs.join(', ')
+                        : backfillStatus.current_job || '—'}
+                    </strong>
+                  </Text>
                 </Space>
                 <Progress percent={backfillPercent} status={backfillStatus.status === 'failed' ? 'exception' : 'active'} />
                 <Text type="secondary">
                   Окно: {formatDateTime(backfillStatus.window_from)} → {formatDateTime(backfillStatus.window_to)} ·
-                  {' '}обработано {backfillStatus.processed_windows || 0} из {backfillStatus.total_windows || 0}
+                  {' '}шагов {backfillStatus.processed_steps || backfillStatus.processed_windows || 0}
+                  {' '}из {backfillStatus.total_steps || backfillStatus.total_windows || 0}
+                </Text>
+                <Text type="secondary">
+                  Минутные окна: {backfillStatus.processed_windows || 0} из {backfillStatus.total_windows || 0}
                 </Text>
                 {backfillStatus.last_error && <Alert type="error" showIcon message={backfillStatus.last_error} />}
               </Space>
