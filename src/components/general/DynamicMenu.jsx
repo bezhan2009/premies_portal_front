@@ -799,6 +799,23 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(40)) {
+            additionalLinks.push({
+                name: "Сверка отчетов",
+                key: "account_reconciliation_group",
+                icon: FileSpreadsheet,
+                children: [
+                    {
+                        name: "Сверка счетов",
+                        href: "/account-reconciliation",
+                        key: "account_reconciliation",
+                        icon: CheckSquare,
+                        description: "Сверка операций по счету с процессингом",
+                    },
+                ],
+            });
+        }
+
         if (roles.includes(23)) {
             additionalLinks.push({
                 name: "Кэшбэк",

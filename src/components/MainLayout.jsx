@@ -84,6 +84,7 @@ const MainLayout = () => {
 
     // Account operations
     if (pathname.includes("account-operations")) return "account_operations";
+    if (pathname.includes("/account-reconciliation")) return "account_reconciliation";
 
     // ATM
     if (pathname.includes("/atm/table")) return "atm_table";

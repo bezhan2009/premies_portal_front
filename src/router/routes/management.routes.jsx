@@ -18,6 +18,7 @@ import DailyTasksPage from "../../pages/dashboard/DailyTasksPage.jsx";
 import MailAgentPage from "../../pages/dashboard/dashboard_mail_agent/MailAgentPage.jsx";
 import AuditLogsPage from "../../pages/dashboard/AuditLogsPage.jsx";
 import CustomerDirectory from "../../pages/dashboard/dashboard_customer_directory/CustomerDirectory.jsx";
+import AccountReconciliation from "../../pages/dashboard/account_reconciliation/AccountReconciliation.jsx";
 
 const managementRoutes = (
   <>
@@ -192,6 +193,17 @@ const managementRoutes = (
           }
       >
           <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+      </Route>
+
+      {/* Account reconciliation (Role 40) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[40]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/account-reconciliation" element={<AccountReconciliation />} />
       </Route>
   </>
 );
