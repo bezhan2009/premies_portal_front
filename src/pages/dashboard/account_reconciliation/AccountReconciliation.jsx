@@ -110,8 +110,24 @@ const AccountReconciliation = () => {
     }
   };
 
+  const [searchText, setSearchText] = useState("");
+
   const rows = result?.rows || [];
   const selectedRuleId = selectedRule?.ID || selectedRule?.id;
+
+  const filteredRows = useMemo(() => {
+    if (!searchText) return rows;
+    const lowercasedFilter = searchText.toLowerCase();
+    return rows.filter((item) => {
+      return Object.keys(item).some((key) => {
+        const val = item[key];
+        if (val !== null && val !== undefined) {
+          return val.toString().toLowerCase().includes(lowercasedFilter);
+        }
+        return false;
+      });
+    });
+  }, [rows, searchText]);
 
   const columns = useMemo(() => [
     {
@@ -119,19 +135,68 @@ const AccountReconciliation = () => {
       dataIndex: "payment_purpose",
       key: "payment_purpose",
       width: 360,
+      sorter: (a, b) => (a.payment_purpose || "").localeCompare(b.payment_purpose || ""),
       render: (value) => <Text style={{ maxWidth: 340 }} ellipsis={{ tooltip: value }}>{value || "—"}</Text>,
     },
-    { title: "Сумма операции", dataIndex: "operation_amount", key: "operation_amount", width: 140, render: (value) => <strong>{value || "—"}</strong> },
-    { title: "Плательщик", dataIndex: "payer", key: "payer", width: 220, render: (value) => value || "—" },
-    { title: "Дата операции", dataIndex: "operation_date", key: "operation_date", width: 140, render: (value) => value || "—" },
-    { title: "Номер операции в ОСОН", dataIndex: "oson_operation_number", key: "oson_operation_number", width: 170, render: (value) => value || "—" },
-    { title: "Время операции", dataIndex: "operation_time", key: "operation_time", width: 140, render: (value) => value || "—" },
-    { title: "Карта", dataIndex: "card", key: "card", width: 180, render: (value) => value || "—" },
+    { 
+      title: "Сумма операции", 
+      dataIndex: "operation_amount", 
+      key: "operation_amount", 
+      width: 140, 
+      sorter: (a, b) => parseFloat(a.operation_amount || 0) - parseFloat(b.operation_amount || 0),
+      render: (value) => <strong>{value || "—"}</strong> 
+    },
+    { 
+      title: "Плательщик", 
+      dataIndex: "payer", 
+      key: "payer", 
+      width: 220, 
+      sorter: (a, b) => (a.payer || "").localeCompare(b.payer || ""),
+      render: (value) => value || "—" 
+    },
+    { 
+      title: "Дата операции", 
+      dataIndex: "operation_date", 
+      key: "operation_date", 
+      width: 140, 
+      sorter: (a, b) => new Date(a.operation_date || 0) - new Date(b.operation_date || 0),
+      render: (value) => value || "—" 
+    },
+    { 
+      title: "Номер операции в ОСОН", 
+      dataIndex: "oson_operation_number", 
+      key: "oson_operation_number", 
+      width: 170, 
+      sorter: (a, b) => (a.oson_operation_number || "").localeCompare(b.oson_operation_number || ""),
+      render: (value) => value || "—" 
+    },
+    { 
+      title: "Время операции", 
+      dataIndex: "operation_time", 
+      key: "operation_time", 
+      width: 140, 
+      sorter: (a, b) => (a.operation_time || "").localeCompare(b.operation_time || ""),
+      render: (value) => value || "—" 
+    },
+    { 
+      title: "Карта", 
+      dataIndex: "card", 
+      key: "card", 
+      width: 180, 
+      sorter: (a, b) => (a.card || "").localeCompare(b.card || ""),
+      render: (value) => value || "—" 
+    },
     {
       title: "Возмещение получено",
       dataIndex: "reimbursement_found",
       key: "reimbursement_found",
       width: 170,
+      filters: [
+        { text: "Да", value: true },
+        { text: "Нет", value: false },
+      ],
+      onFilter: (value, record) => record.reimbursement_found === value,
+      sorter: (a, b) => (a.reimbursement_found === b.reimbursement_found ? 0 : a.reimbursement_found ? -1 : 1),
       render: (value) => <Tag color={value ? "green" : "red"}>{value ? "Да" : "Нет"}</Tag>,
     },
   ], []);
@@ -197,8 +262,19 @@ const AccountReconciliation = () => {
             </div>
           )}
 
-          <Card title="Результат сверки" style={{ borderRadius: 16 }}>
-            <Table rowKey={(record, index) => `${record.rrn || "no-rrn"}-${index}`} dataSource={rows} columns={columns} loading={running} scroll={{ x: 1500 }} pagination={{ pageSize: 20, showSizeChanger: true }} />
+          <Card 
+            title="Результат сверки" 
+            style={{ borderRadius: 16 }}
+            extra={
+              <Input.Search
+                placeholder="Поиск по результатам..."
+                allowClear
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 300 }}
+              />
+            }
+          >
+            <Table rowKey={(record, index) => `${record.rrn || "no-rrn"}-${index}`} dataSource={filteredRows} columns={columns} loading={running} scroll={{ x: 1500 }} pagination={{ pageSize: 20, showSizeChanger: true }} />
           </Card>
         </Space>
       </div>
