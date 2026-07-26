@@ -852,6 +852,9 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     }
   });
 
+  // Automatically normalize transaction (+ / -) signs and reversal logic
+  normalizeFrontendTransactionSigns(payload);
+
   // Automatically generate Russian spelling out words (прописью) for all number keys deeply
   injectWordsIntoObject(payload);
 
@@ -861,6 +864,51 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
   });
 
   return formattedPayload;
+};
+
+export const normalizeFrontendTransactionSigns = (obj) => {
+  if (!obj || typeof obj !== "object") return;
+
+  const processTx = (tx) => {
+    if (!tx || typeof tx !== "object") return;
+    const tranType = String(tx.tran_type || tx.trans_type || tx.tran_code || tx.code || tx.type || tx.op_type || tx.Code || "");
+    const terminal = String(tx.terminal || tx.terminal_id || tx.atm_id || tx.atm || tx.AtmId || "");
+    const isReversal = String(tx.reversal || tx.is_reversal || tx.isReversal || tx.Reversal || "") === "1" || String(tx.reversal || tx.is_reversal || tx.isReversal || tx.Reversal || "").toLowerCase() === "true";
+
+    let sign = "";
+    if (tranType.includes("760")) {
+      sign = "+";
+    } else if (tranType.includes("659")) {
+      sign = "-";
+    } else if (terminal.includes("M1000001")) {
+      sign = tranType.includes("760") ? "+" : "-";
+    }
+
+    if (isReversal && sign) {
+      sign = sign === "+" ? "-" : "+";
+    }
+
+    if (sign) {
+      tx.sign = sign;
+      const amtKeys = ["amount", "amount_formatted", "amountFormatted", "amt", "con_amt", "conAmt", "sum", "MOVD", "MOVC"];
+      amtKeys.forEach((key) => {
+        if (tx[key] !== undefined && tx[key] !== null) {
+          const rawStr = String(tx[key]).trim().replace(/^[+-]\s*/, "");
+          if (rawStr) {
+            tx[key] = sign + rawStr;
+            tx[`${key}_signed`] = sign + rawStr;
+          }
+        }
+      });
+    }
+  };
+
+  const txKeys = ["transactions", "processing_transactions", "operations", "txs", "items", "tx_list", "Transactions"];
+  txKeys.forEach((key) => {
+    if (Array.isArray(obj[key])) {
+      obj[key].forEach(processTx);
+    }
+  });
 };
 
 export const sanitizeDocxFileName = (value, fallback = "document") => {

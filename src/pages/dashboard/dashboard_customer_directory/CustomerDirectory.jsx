@@ -231,6 +231,14 @@ export default function CustomerDirectory() {
   useEffect(() => { loadDepartments().catch((requestError) => setError(requestError.message)); }, [loadDepartments]);
   useEffect(() => { loadCustomers(); }, [loadCustomers]);
 
+  // Auto-polling every 60 seconds (1 minute) so operators instantly see new clients
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadCustomers();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [loadCustomers]);
+
   const applySearch = (event) => {
     event.preventDefault();
     setPage(1);
@@ -346,13 +354,39 @@ export default function CustomerDirectory() {
     } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
   };
 
+  const runBulkComplianceCheck = async () => {
+    if (!window.confirm("Запустить массовую проверку всех клиентов по базам комплайнса?")) return;
+    setActionLoading("bulk-compliance");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/check-compliance-all`, { method: "POST", headers: authHeaders() });
+      if (!response.ok) throw new Error("Не удалось запустить проверку комплайнса");
+      alert("Массовая проверка комплайнса запущена в фоновом режиме.");
+    } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
+  };
+
+  const runBulkMobileCheck = async () => {
+    if (!window.confirm("Запустить массовую проверку статуса мобильного банка по всем клиентам?")) return;
+    setActionLoading("bulk-mobile");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/check-mobile-all`, { method: "POST", headers: authHeaders() });
+      if (!response.ok) throw new Error("Не удалось запустить проверку мобильного банка");
+      alert("Массовая проверка наличия мобильного банка запущена в фоновом режиме.");
+    } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
+  };
+
   const totalPages = Math.max(1, Math.ceil((result.total || 0) / (result.limit || 30)));
 
   return (
     <main className="customer-directory content-page">
       <header className="customer-directory__header">
-        <div><p>Единый реестр</p><h1>Клиенты</h1><span>{Number(result.total || 0).toLocaleString("ru-RU")} записей по доступным подразделениям</span></div>
+        <div>
+          <p>Единый реестр</p>
+          <h1>Клиенты</h1>
+          <span>{Number(result.total || 0).toLocaleString("ru-RU")} записей по доступным подразделениям · <small style={{ color: "#16a34a", fontWeight: "600" }}>Автообновление каждую 1 мин</small></span>
+        </div>
         <div className="customer-directory__header-actions">
+          {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkComplianceCheck} disabled={actionLoading === "bulk-compliance"}><ShieldCheck size={17} className={actionLoading === "bulk-compliance" ? "customer-spin" : ""} />Проверить комплайнс (все)</button>}
+          {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkMobileCheck} disabled={actionLoading === "bulk-mobile"}><RefreshCw size={17} className={actionLoading === "bulk-mobile" ? "customer-spin" : ""} />Проверить мобильный банк (все)</button>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={loadSettings}><Settings2 size={17} />Настройки</button>}
           {isOperator && <button type="button" className="customer-button customer-button--primary" onClick={requestGlobalRefresh} disabled={actionLoading === "global-refresh"}><RefreshCw size={17} className={actionLoading === "global-refresh" ? "customer-spin" : ""} />Обновить данные</button>}
         </div>
@@ -375,19 +409,103 @@ export default function CustomerDirectory() {
 
       <section className="customer-table-wrap">
         <table className="customer-table">
-          <thead><tr><th>Клиент</th><th>Подразделение</th><th>Контакты</th><th>Статусы</th><th>Комплайнс</th><th>Синхронизация</th><th>Действия</th></tr></thead>
+          <thead>
+            <tr>
+              <th>ФИО, ИНН, Телефон, Резидент</th>
+              <th>Офис, Кто открыл</th>
+              <th>Карты</th>
+              <th>Кредиты</th>
+              <th>Депозиты</th>
+              <th>Счета</th>
+              <th>Мобильный банк</th>
+              <th>Совпадение по базе комплайнс</th>
+              <th>Просрочка</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
           <tbody>
-            {loading ? <tr><td colSpan="7" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => (
-              <tr key={customer.client_index}>
-                <td><strong>{customer.full_name || "Без ФИО"}</strong><span>{customer.client_index}</span><small>{customer.birth_date || "Дата рождения не указана"}</small></td>
-                <td><strong>{customer.department_code}</strong><span>{customer.department_name}</span></td>
-                <td><strong>{customer.phone || "Телефон не указан"}</strong><span>ИНН: {customer.inn || "нет"}</span><small>{customer.creator_username || "Создатель не указан"}</small></td>
-                <td><div className="customer-statuses"><span className={customer.is_resident ? "customer-status customer-status--ok" : "customer-status customer-status--warn"}>{customer.is_resident ? "Резидент" : "Нерезидент"}</span>{customer.is_overdue && <span className="customer-status customer-status--danger">Просрочка</span>}{Number(customer.terror_similarity) > 0 && <span className="customer-status customer-status--danger">Списки {(Number(customer.terror_similarity) * 100).toFixed(0)}%</span>}</div></td>
-                <td><strong>{customer.compliance_score} / 5</strong><span>{customer.compliance_score_source === "manual" ? "Вручную" : "По заявке"}</span></td>
-                <td><span>{formatDateTime(customer.last_synced_at)}</span></td>
-                <td><div className="customer-actions"><button type="button" onClick={() => navigate(`/frontovik/abs-search?clientIndex=${encodeURIComponent(customer.client_index)}`)}><ExternalLink size={15} />Фронтовик</button><button type="button" onClick={() => openCustomer(customer.client_index)} disabled={actionLoading === `detail-${customer.client_index}`}><Eye size={15} />Подробнее</button><button type="button" onClick={() => openScoreEditor(customer)} disabled={actionLoading === `score-${customer.client_index}`}><ShieldCheck size={15} />Обновить балл комплайнса</button><button type="button" onClick={() => refreshCustomer(customer)} disabled={actionLoading === `refresh-${customer.client_index}`}><RefreshCw size={15} />Обновить данные клиента</button><button type="button" onClick={() => openDocuments(customer)}><FileText size={15} />Документы</button><button type="button" onClick={() => navigate(`/agent/applications-list?search=${encodeURIComponent(customer.inn || customer.client_index)}`)}><ClipboardList size={15} />Заявки</button></div></td>
-              </tr>
-            )) : <tr><td colSpan="7" className="customer-table__empty"><Users size={24} />Клиенты по заданным фильтрам не найдены.</td></tr>}
+            {loading ? <tr><td colSpan="10" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
+              const cards = parseJson(customer.cards);
+              const credits = parseJson(customer.credits);
+              const deposits = parseJson(customer.deposits);
+              const accounts = parseJson(customer.accounts);
+              const hasMatch = Number(customer.terror_similarity) > 0;
+              const terrorMatch = parseJson(customer.terror_match, null);
+              const dbName = terrorMatch?.target?.source || terrorMatch?.source || terrorMatch?.list_name || terrorMatch?.source_name || "Перечень террористов/экстремистов";
+
+              return (
+                <tr key={customer.client_index}>
+                  <td>
+                    <strong>{customer.full_name || "Без ФИО"}</strong>
+                    <span>{customer.client_index}</span>
+                    <span>ИНН: {customer.inn || "не указан"}</span>
+                    <span>Тел: {customer.phone || "не указан"}</span>
+                    <small style={{ marginTop: "4px", display: "inline-block" }}>
+                      <span className={customer.is_resident ? "customer-status customer-status--ok" : "customer-status customer-status--warn"}>
+                        {customer.is_resident ? "Резидент" : "Нерезидент"}
+                      </span>
+                    </small>
+                  </td>
+                  <td>
+                    <strong>{customer.department_code}</strong>
+                    <span>{customer.department_name}</span>
+                    <small style={{ marginTop: "4px", display: "block" }}>
+                      Открыл: {customer.creator_username || "не указан"}
+                    </small>
+                  </td>
+                  <td>
+                    <span className={`customer-badge ${cards.length ? "customer-badge--info" : "customer-badge--muted"}`}>
+                      {cards.length ? `${cards.length} карт(ы)` : "Нет карт"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`customer-badge ${credits.length ? "customer-badge--info" : "customer-badge--muted"}`}>
+                      {credits.length ? `${credits.length} кредит(ов)` : "Нет кредитов"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`customer-badge ${deposits.length ? "customer-badge--info" : "customer-badge--muted"}`}>
+                      {deposits.length ? `${deposits.length} депозит(ов)` : "Нет депозитов"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`customer-badge ${accounts.length ? "customer-badge--info" : "customer-badge--muted"}`}>
+                      {accounts.length ? `${accounts.length} счет(а)` : "Нет счетов"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={customer.is_mobile_app_registered ? "customer-status customer-status--ok" : "customer-status customer-status--danger"}>
+                      {customer.is_mobile_app_registered ? "Есть" : "Нет"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={hasMatch ? "customer-status customer-status--danger" : "customer-status customer-status--ok"}>
+                      {hasMatch ? "Есть" : "Нет"}
+                    </span>
+                    {hasMatch && (
+                      <small style={{ display: "block", marginTop: "4px", color: "#dc2626", fontWeight: "600" }}>
+                        {(Number(customer.terror_similarity) * 100).toFixed(0)}% ({dbName})
+                      </small>
+                    )}
+                  </td>
+                  <td>
+                    <span className={customer.is_overdue ? "customer-status customer-status--danger" : "customer-status customer-status--ok"}>
+                      {customer.is_overdue ? "Есть" : "Нет"}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="customer-actions">
+                      <button type="button" onClick={() => navigate(`/frontovik/abs-search?clientIndex=${encodeURIComponent(customer.client_index)}`)}><ExternalLink size={15} />Фронтовик</button>
+                      <button type="button" onClick={() => openCustomer(customer.client_index)} disabled={actionLoading === `detail-${customer.client_index}`}><Eye size={15} />Подробнее</button>
+                      <button type="button" onClick={() => openScoreEditor(customer)} disabled={actionLoading === `score-${customer.client_index}`}><ShieldCheck size={15} />Обновить балл</button>
+                      <button type="button" onClick={() => refreshCustomer(customer)} disabled={actionLoading === `refresh-${customer.client_index}`}><RefreshCw size={15} />Обновить данные клиента</button>
+                      <button type="button" onClick={() => openDocuments(customer)}><FileText size={15} />Документы</button>
+                      <button type="button" onClick={() => navigate(`/agent/applications-list?search=${encodeURIComponent(customer.inn || customer.client_index)}`)}><ClipboardList size={15} />Заявки</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            }) : <tr><td colSpan="10" className="customer-table__empty"><Users size={24} />Клиенты по заданным фильтрам не найдены.</td></tr>}
           </tbody>
         </table>
       </section>
