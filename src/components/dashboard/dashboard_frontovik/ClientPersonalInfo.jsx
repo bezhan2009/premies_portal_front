@@ -41,6 +41,17 @@ const ClientPersonalInfo = ({
   const code = selectedClient.client_code || "Не указан";
   const phone = selectedClient.phone || "Не указан";
   const inn = selectedClient.tax_code || "Не указан";
+  const isMobileRegistered =
+    isMobile?.isMobileAppRegistered === true ||
+    isMobile?.is_mobile_app_registered === true ||
+    String(isMobile?.isMobileAppRegistered).toLowerCase() === "true";
+  const mainMobileAccount =
+    isMobile?.iban ||
+    isMobile?.Iban ||
+    isMobile?.account ||
+    isMobile?.mainAccount ||
+    isMobile?.main_mobile_account ||
+    "—";
   
   const typeVal = selectedClient.client_type?.toLowerCase();
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
@@ -174,7 +185,7 @@ const ClientPersonalInfo = ({
                   <span style={{ fontSize: '14px', fontWeight: '500' }}>
                     {isMobile === null ? (
                       <span className="mobile-status-checking" style={{ color: '#888' }}>Неизвестно</span>
-                    ) : (isMobile?.isMobileAppRegistered === true || isMobile?.is_mobile_app_registered === true || String(isMobile?.isMobileAppRegistered).toLowerCase() === "true") ? (
+                    ) : isMobileRegistered ? (
                       <span className="mobile-status-connected" style={{ color: '#16a34a', fontWeight: 600 }}>Подключен</span>
                     ) : (
                       <span className="mobile-status-disconnected" style={{ color: '#e11d48', fontWeight: 600 }}>Не подключен</span>
@@ -185,7 +196,7 @@ const ClientPersonalInfo = ({
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>Основной счет</span>
                   <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>
-                    {isMobile?.iban || isMobile?.Iban || isMobile?.account || "—"}
+                    {mainMobileAccount}
                   </span>
                 </div>
 

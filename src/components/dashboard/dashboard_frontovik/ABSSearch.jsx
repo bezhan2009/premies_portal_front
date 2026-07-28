@@ -1463,18 +1463,20 @@ export default function ABSClientSearch() {
 
     const userInfoPhone = async (phone) => {
         try {
-            let isMobile = null;
+            const mobileProfile = await getUserInfoPhone(phone);
+            const isRegistered =
+                mobileProfile?.isMobileAppRegistered === true ||
+                mobileProfile?.is_mobile_app_registered === true ||
+                String(mobileProfile?.isMobileAppRegistered).toLowerCase() === "true";
 
-            isMobile = await getUserInfoPhone(phone);
-
-            if (isMobile && (typeof isMobile === 'string' || isMobile.Iban || isMobile.iban || isMobile.account)) {
-                setIsMobile(isMobile);
+            if (mobileProfile && typeof mobileProfile === "object") {
+                setIsMobile({ ...mobileProfile, isMobileAppRegistered: isRegistered });
             } else {
-                setIsMobile(false);
+                setIsMobile({ isMobileAppRegistered: false });
             }
         } catch (e) {
             console.error(e);
-            setIsMobile(false);
+            setIsMobile({ isMobileAppRegistered: false });
         }
     };
 
@@ -1513,6 +1515,9 @@ export default function ABSClientSearch() {
         if (selectedClient?.phone) {
             userInfoPhone(selectedClient.phone);
             fetchTelegramUser(selectedClient.phone);
+        } else {
+            setIsMobile(null);
+            setTelegramData(null);
         }
         setActiveTab("cards");
     }, [selectedClient]);

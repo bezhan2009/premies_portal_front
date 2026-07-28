@@ -1037,8 +1037,19 @@ const ClientDataTabs = ({
                     }
                   }
 
-                  // Mobile connection
-                  const isMobileAcc = isMobile && isMobile.Iban === acc.Number;
+                  // Mobile-bank main account comes from the ABS default_account XML response.
+                  const mobileMainAccount =
+                    isMobile?.iban ||
+                    isMobile?.Iban ||
+                    isMobile?.account ||
+                    isMobile?.mainAccount ||
+                    isMobile?.main_mobile_account ||
+                    "";
+                  const isMobileRegistered =
+                    isMobile?.isMobileAppRegistered === true ||
+                    isMobile?.is_mobile_app_registered === true ||
+                    String(isMobile?.isMobileAppRegistered).toLowerCase() === "true";
+                  const isMobileAcc = isMobileRegistered && String(mobileMainAccount).trim() === String(acc.Number || "").trim();
 
                   const badgeStyle = { 
                     fontSize: "12px", 
