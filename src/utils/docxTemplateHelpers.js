@@ -1,3 +1,5 @@
+import { getProcessingAmountSign } from "./processingAmountFormatter";
+
 export const parseDocxJsonField = (value, fallback = []) => {
   if (Array.isArray(value)) {
     return value;
@@ -871,26 +873,26 @@ export const normalizeFrontendTransactionSigns = (obj) => {
 
   const processTx = (tx) => {
     if (!tx || typeof tx !== "object") return;
-    const tranType = String(tx.tran_type || tx.trans_type || tx.tran_code || tx.code || tx.type || tx.op_type || tx.Code || "");
-    const terminal = String(tx.terminal || tx.terminal_id || tx.atm_id || tx.atm || tx.AtmId || "");
-    const isReversal = String(tx.reversal || tx.is_reversal || tx.isReversal || tx.Reversal || "") === "1" || String(tx.reversal || tx.is_reversal || tx.isReversal || tx.Reversal || "").toLowerCase() === "true";
-
-    let sign = "";
-    if (tranType.includes("760")) {
-      sign = "+";
-    } else if (tranType.includes("659")) {
-      sign = "-";
-    } else if (terminal.includes("M1000001")) {
-      sign = tranType.includes("760") ? "+" : "-";
-    }
-
-    if (isReversal && sign) {
-      sign = sign === "+" ? "-" : "+";
-    }
+    const sign = getProcessingAmountSign(tx);
 
     if (sign) {
       tx.sign = sign;
-      const amtKeys = ["amount", "amount_formatted", "amountFormatted", "amt", "con_amt", "conAmt", "sum", "MOVD", "MOVC"];
+      const amtKeys = [
+        "amount",
+        "amountRaw",
+        "amountCurrency",
+        "amount_formatted",
+        "amountFormatted",
+        "amountCardCurrency",
+        "amt",
+        "conamt",
+        "conamtRaw",
+        "con_amt",
+        "conAmt",
+        "sum",
+        "MOVD",
+        "MOVC",
+      ];
       amtKeys.forEach((key) => {
         if (tx[key] !== undefined && tx[key] !== null) {
           const rawStr = String(tx[key]).trim().replace(/^[+-]\s*/, "");

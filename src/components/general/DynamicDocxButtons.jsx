@@ -10,6 +10,7 @@ import {
   sanitizeDocxFileName,
   evaluateDocxTemplateConditions,
 } from "../../utils/docxTemplateHelpers";
+import { formatProcessingAmount as formatSignedProcessingAmount } from "../../utils/processingAmountFormatter";
 import { fetchCreditGraphs } from "../../api/ABS_frotavik/getUserCredits";
 import { Modal, Button } from "antd";
 
@@ -65,25 +66,13 @@ const formatProcessingCardNumber = (value) =>
     .replace(/(\d{4})/g, "$1 ")
     .trim();
 
-const formatProcessingAmount = (amount, transactionTypeValue) => {
-  if (amount === null || amount === undefined || amount === "") return "N/A";
-
-  const numericAmount = Number(amount);
-  if (Number.isNaN(numericAmount)) {
-    return String(amount);
-  }
-
-  const absoluteValue = Math.abs(numericAmount);
-  const amountStr = String(Math.round(absoluteValue));
-  const formatted =
-    amountStr.length <= 2
-      ? `0,${amountStr.padStart(2, "0")}`
-      : `${amountStr.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${amountStr.slice(-2)}`;
-
-  if (Number(transactionTypeValue) === 1) return `+${formatted}`;
-  if (Number(transactionTypeValue) === 2) return `-${formatted}`;
-  return numericAmount < 0 ? `-${formatted}` : formatted;
-};
+const formatProcessingAmount = (amount, transactionContext) =>
+  formatSignedProcessingAmount(
+    amount,
+    transactionContext && typeof transactionContext === "object"
+      ? transactionContext
+      : { transactionTypeNumber: transactionContext }
+  );
 
 const getProcessingTransactionRows = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -104,13 +93,13 @@ const normalizeProcessingTransaction = (transaction) => {
     .join(" ")
     .trim();
   const amountCurrency = [
-    formatProcessingAmount(transaction?.amount, transactionTypeValue),
+    formatProcessingAmount(transaction?.amount, transaction),
     getCurrencyCode(transaction?.currency),
   ]
     .filter(Boolean)
     .join(" ");
   const amountCardCurrency = [
-    formatProcessingAmount(transaction?.conamt, transactionTypeValue),
+    formatProcessingAmount(transaction?.conamt, transaction),
     getCurrencyCode(transaction?.conCurrency),
   ]
     .filter(Boolean)
@@ -127,6 +116,8 @@ const normalizeProcessingTransaction = (transaction) => {
     availableBalance: formatProcessingAmount(transaction?.acctbal ?? transaction?.availableBalance),
     transactionType: transaction?.transactionType,
     transactionTypeNumber: transactionTypeValue,
+    reversal: transaction?.reversal,
+    atmId: transaction?.atmId,
     amountRaw: transaction?.amount,
     conamtRaw: transaction?.conamt,
     currencyCode: getCurrencyCode(transaction?.currency) || "",
@@ -283,13 +274,13 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               transaction.transactionTypeNumber ?? transaction.transactionType ?? transaction.type;
             const amountCurrency = transaction.amountRaw !== undefined && transaction.amountRaw !== null
               ? [
-                  formatProcessingAmount(transaction.amountRaw, transactionTypeValue),
+                  formatProcessingAmount(transaction.amountRaw, transaction),
                   transaction.currencyCode || transaction.currency,
                 ].filter(Boolean).join(" ")
               : transaction.amountCurrency || "N/A";
             const amountCardCurrency = transaction.conamtRaw !== undefined && transaction.conamtRaw !== null
               ? [
-                  formatProcessingAmount(transaction.conamtRaw, transactionTypeValue),
+                  formatProcessingAmount(transaction.conamtRaw, transaction),
                   transaction.conCurrencyCode || transaction.currency,
                 ].filter(Boolean).join(" ")
               : transaction.amountCardCurrency || "N/A";
@@ -305,6 +296,8 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
               availableBalance: transaction.availableBalance || "N/A",
               transactionType: transaction.transactionType,
               transactionTypeNumber: transactionTypeValue,
+              reversal: transaction.reversal,
+              atmId: transaction.atmId,
               amountRaw: transaction.amountRaw,
               conamtRaw: transaction.conamtRaw,
               amount: transaction.amount !== undefined ? transaction.amount : (Number(String(amountCurrency || "").replace(/[^\d]/g, "")) / 100),

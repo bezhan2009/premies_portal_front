@@ -25,6 +25,7 @@ import { fetchConversionRates } from "../../../../api/conversion/conversion.js";
 import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import TransactionsChart from "../../../graph/graph.jsx";
+import { formatProcessingAmount as formatSignedProcessingAmount } from "../../../../utils/processingAmountFormatter.js";
 
 const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
@@ -163,40 +164,13 @@ export default function DashboardOperatorProcessingTransactions() {
   }, [hasAccess, id, navigate]);
 
   // Функция для форматирования суммы
-  const formatAmount = (amount, transactionTypeValue) => {
-    if (amount === null || amount === undefined || amount === "") return "N/A";
-
-    let amountVal = Number(amount);
-    if (isNaN(amountVal)) {
-      return amount.toString();
-    }
-
-    const isPositiveType = transactionTypeValue === 1;
-    const isNegativeType = transactionTypeValue === 2;
-
-    let absAmount = Math.abs(amountVal);
-    const amountStr = absAmount.toString();
-    let formattedAmount;
-
-    if (amountStr.length <= 2) {
-      formattedAmount = `0,${amountStr.padStart(2, "0")}`;
-    } else {
-      const integerPart = amountStr.slice(0, -2);
-      const decimalPart = amountStr.slice(-2);
-      formattedAmount = `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimalPart}`;
-    }
-
-    if (isPositiveType) {
-      return `+${formattedAmount}`;
-    } else if (isNegativeType) {
-      return `-${formattedAmount}`;
-    }
-
-    if (amountVal < 0) {
-      return `-${formattedAmount}`;
-    }
-    return formattedAmount;
-  };
+  const formatAmount = (amount, transactionContext) =>
+    formatSignedProcessingAmount(
+      amount,
+      transactionContext && typeof transactionContext === "object"
+        ? transactionContext
+        : { transactionTypeNumber: transactionContext }
+    );
 
   // Устанавливаем даты по умолчанию (последние 30 дней)
   useEffect(() => {
@@ -636,7 +610,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
           return (
             <span className="amount-value">
-              {formatAmount(transaction.amount, transactionTypeValue)}{" "}
+              {formatAmount(transaction.amount, { ...transaction, transactionTypeNumber: transactionTypeValue })}{" "}
               {getCurrencyCode(transaction.currency)}
             </span>
           );
@@ -653,7 +627,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
           return (
             <span className="amount-value">
-              {formatAmount(transaction.conamt, transactionTypeValue)}{" "}
+              {formatAmount(transaction.conamt, { ...transaction, transactionTypeNumber: transactionTypeValue })}{" "}
               {getCurrencyCode(transaction.conCurrency)}
             </span>
           );
@@ -700,7 +674,7 @@ export default function DashboardOperatorProcessingTransactions() {
 
           return (
             <span className="amount-value">
-              {formatAmount(transaction.reqamt, transactionTypeValue)}
+              {formatAmount(transaction.reqamt, { ...transaction, transactionTypeNumber: transactionTypeValue })}
             </span>
           );
         },
@@ -760,7 +734,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) => {
           const amountFormatted = formatAmount(
             row.amount,
-            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
+            { ...row, transactionTypeNumber: getTransactionTypeValue(row.transactionType, row.transactionTypeNumber) },
           );
           const currencyCode = getCurrencyCode(row.currency);
           return `${amountFormatted} ${currencyCode}`;
@@ -771,7 +745,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) => {
           const conamtFormatted = formatAmount(
             row.conamt,
-            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
+            { ...row, transactionTypeNumber: getTransactionTypeValue(row.transactionType, row.transactionTypeNumber) },
           );
           const conCurrencyCode = getCurrencyCode(row.conCurrency);
           return `${conamtFormatted} ${conCurrencyCode}`;
@@ -786,7 +760,7 @@ export default function DashboardOperatorProcessingTransactions() {
         key: (row) =>
           formatAmount(
             row.reqamt,
-            getTransactionTypeValue(row.transactionType, row.transactionTypeNumber),
+            { ...row, transactionTypeNumber: getTransactionTypeValue(row.transactionType, row.transactionTypeNumber) },
           ),
         label: "Запрошенная сумма",
       },
@@ -802,7 +776,10 @@ export default function DashboardOperatorProcessingTransactions() {
                 ? exchangeRates.EUR
                 : 1;
           const amountTJS = Math.abs(Math.round((row.conamt || 0) * rate));
-          return formatAmount(amountTJS);
+          return formatAmount(
+            amountTJS,
+            { ...row, transactionTypeNumber: getTransactionTypeValue(row.transactionType, row.transactionTypeNumber) },
+          );
         },
         label: "Сумма в нац. валюте (TJS)",
       },
@@ -1386,11 +1363,13 @@ export default function DashboardOperatorProcessingTransactions() {
                             cardNumber: t.cardNumber ? formatCardNumber(t.cardNumber) : "N/A",
                             cardId: t.cardId || "N/A",
                             operationType: t.transactionTypeName || "N/A",
-                            amountCurrency: `${formatAmount(t.amount, transactionTypeValue)} ${getCurrencyCode(t.currency)}`,
-                            amountCardCurrency: `${formatAmount(t.conamt, transactionTypeValue)} ${getCurrencyCode(t.conCurrency)}`,
+                            amountCurrency: `${formatAmount(t.amount, { ...t, transactionTypeNumber: transactionTypeValue })} ${getCurrencyCode(t.currency)}`,
+                            amountCardCurrency: `${formatAmount(t.conamt, { ...t, transactionTypeNumber: transactionTypeValue })} ${getCurrencyCode(t.conCurrency)}`,
                             availableBalance: formatAmount(t.acctbal),
                             transactionType: t.transactionType,
                             transactionTypeNumber: transactionTypeValue,
+                            reversal: t.reversal,
+                            atmId: t.atmId,
                             amountRaw: t.amount,
                             conamtRaw: t.conamt,
                             currencyCode: getCurrencyCode(t.currency) || "",
