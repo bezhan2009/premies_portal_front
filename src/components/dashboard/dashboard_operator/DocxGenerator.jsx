@@ -44,6 +44,27 @@ import {
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
+const MOBILE_DOCUMENT_TYPES = [
+  { value: "", label: "Не использовать в мобильном приложении" },
+  { value: "processing_statement", label: "Выписка из ПЦ" },
+  { value: "balance_certificate", label: "Справка об остатке" },
+  { value: "account_details", label: "Реквизиты счета" },
+  { value: "credit_certificate", label: "Справка о кредите" },
+  { value: "no_credit_certificate", label: "Справка об отсутствии кредита" },
+  { value: "deposit_agreement", label: "Договор на депозит" },
+  { value: "deposit_certificate", label: "Справка о депозите" },
+  { value: "card_payment_receipt", label: "Квитанция по оплате картой" },
+  { value: "account_statement", label: "Выписка по счету" },
+  { value: "salary_certificate", label: "Справка о зарплате" },
+];
+
+const MOBILE_DOCUMENT_LANGUAGES = [
+  { value: "", label: "Язык не задан" },
+  { value: "ru", label: "Русский" },
+  { value: "tg", label: "Тоҷикӣ" },
+  { value: "en", label: "English" },
+];
+
 const SYSTEM_ROLES = [
   { id: 1, name: "Новый пользователь" },
   { id: 3, name: "Оператор" },
@@ -204,6 +225,7 @@ const getInitialVariant = () => ({
   description: "",
   outputFileName: "",
   templatePath: "",
+  language: "ru",
   keys: [],
 });
 
@@ -211,6 +233,8 @@ const getInitialFormState = () => ({
   name: "",
   description: "",
   uniqueIdFormat: "",
+  mobileDocumentType: "",
+  mobileEnabled: false,
   page: BUTTON_PLACEMENTS[0].page,
   section: BUTTON_PLACEMENTS[0].section,
   roles: [3, 17],
@@ -494,6 +518,7 @@ const DocxGenerator = () => {
           description: sourceVariant.description || "",
           outputFileName: sourceVariant.outputFileName ? `${sourceVariant.outputFileName}_copy` : "",
           templatePath: sourceVariant.templatePath || "",
+          language: sourceVariant.language || "",
           keys: inheritedKeys,
         },
       ],
@@ -599,6 +624,8 @@ const DocxGenerator = () => {
     setActiveTemplate({
       ...template,
       uniqueIdFormat: template.uniqueIdFormat || template.UniqueIdFormat || "",
+      mobileDocumentType: template.mobileDocumentType || template.MobileDocumentType || "",
+      mobileEnabled: Boolean(template.mobileEnabled ?? template.MobileEnabled),
       roles: normalizeDocxRoles(template.roles),
       pdfRoles: normalizeDocxRoles(template.pdfRoles || template.PdfRoles),
       docxRoles: normalizeDocxRoles(template.docxRoles || template.DocxRoles),
@@ -882,6 +909,24 @@ const DocxGenerator = () => {
           variantIndex,
         ),
       });
+    }
+
+    if (activeTemplate.mobileEnabled) {
+      if (!activeTemplate.mobileDocumentType) {
+        alert("Выберите тип документа для мобильного приложения");
+        return;
+      }
+      const mobileLanguages = cleanedVariants.map((variant) =>
+        String(variant.language || "").trim().toLowerCase(),
+      );
+      if (mobileLanguages.some((language) => !language)) {
+        alert("Укажите язык для каждого варианта мобильного документа");
+        return;
+      }
+      if (new Set(mobileLanguages).size !== mobileLanguages.length) {
+        alert("Для одного мобильного документа нельзя настроить два варианта с одинаковым языком");
+        return;
+      }
     }
 
     const rawConditions = Array.isArray(activeTemplate.conditions)
@@ -1347,6 +1392,41 @@ const DocxGenerator = () => {
                       Формат для system.uniqueId. Токены: <strong>YYYY</strong> (год), <strong>YY</strong> (год 2 знака), <strong>MM</strong> (месяц), <strong>DD</strong> (день), <strong>HH</strong> (часы), <strong>mm</strong> (минуты), <strong>ss</strong> (секунды), <strong>RAND</strong> (случайные 4 цифры), <strong>SEQ</strong> (хвост таймстампа 6 цифр).
                     </small>
                   </label>
+                  <label className="docx-field">
+                    <span>Тип документа для мобильного приложения</span>
+                    <CustomSelect
+                      value={activeTemplate.mobileDocumentType || ""}
+                      onChange={(value) =>
+                        setActiveTemplate({
+                          ...activeTemplate,
+                          mobileDocumentType: value,
+                          mobileEnabled: Boolean(value),
+                        })
+                      }
+                      options={MOBILE_DOCUMENT_TYPES}
+                      placeholder="Выберите тип документа"
+                    />
+                    <small style={{ color: "#6b7280", marginTop: "4px", fontSize: "11px" }}>
+                      Один тип должен быть привязан только к одному активному шаблону.
+                    </small>
+                  </label>
+                  <label className="docx-field">
+                    <span>Доступен мобильному приложению</span>
+                    <div style={{ minHeight: "42px", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(activeTemplate.mobileEnabled)}
+                        disabled={!activeTemplate.mobileDocumentType}
+                        onChange={(event) =>
+                          setActiveTemplate({ ...activeTemplate, mobileEnabled: event.target.checked })
+                        }
+                        style={{ width: "18px", height: "18px" }}
+                      />
+                      <span style={{ color: "#475569", fontSize: "13px" }}>
+                        {activeTemplate.mobileEnabled ? "Включен в универсальном API" : "Отключен"}
+                      </span>
+                    </div>
+                  </label>
                 </div>
               </section>
 
@@ -1711,6 +1791,15 @@ const DocxGenerator = () => {
                                 updateVariant(variantIndex, { description: event.target.value })
                               }
                               placeholder="Например: Печатная форма с подписью филиала"
+                            />
+                          </label>
+                          <label className="docx-field" style={{ marginTop: "12px" }}>
+                            <span>Язык для мобильного приложения</span>
+                            <CustomSelect
+                              value={variant.language || ""}
+                              onChange={(value) => updateVariant(variantIndex, { language: value })}
+                              options={MOBILE_DOCUMENT_LANGUAGES}
+                              placeholder="Выберите язык"
                             />
                           </label>
 

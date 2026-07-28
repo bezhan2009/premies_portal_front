@@ -68,6 +68,7 @@ export const normalizeDocxVariant = (variant = {}, index = 0) => ({
   description: variant.description || "",
   outputFileName: variant.outputFileName || "",
   templatePath: variant.templatePath || "",
+  language: variant.language || variant.Language || "",
   keys: Array.isArray(variant.keys)
     ? variant.keys.map(normalizeDocxKeyMapping).filter((item) => item.docxKey || item.systemKey)
     : [],

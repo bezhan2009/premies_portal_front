@@ -2,14 +2,49 @@ import React, { useRef, useState, useMemo } from "react";
 import { X, Download, FileJson, Link as LinkIcon, Info, CheckCircle2 } from "lucide-react";
 import html2pdf from "html2pdf.js";
 
+const MOBILE_REQUEST_EXAMPLES = {
+  processing_statement: {
+    cardId: "100002602016",
+    fromDate: "2026-07-01",
+    toDate: "2026-07-22",
+  },
+  balance_certificate: { accountNumber: "20202972881304387302" },
+  account_details: { accountNumber: "20202972881304387302" },
+  credit_certificate: { creditId: "63_40631080" },
+  no_credit_certificate: { clientId: "00012345" },
+  deposit_agreement: { clientId: "00012345", depositId: "63_40631080" },
+  deposit_certificate: { clientId: "00012345", depositId: "63_40631080" },
+  card_payment_receipt: { transactionId: "388544145" },
+  account_statement: {
+    accountNumber: "20202972881304387302",
+    fromDate: "2026-07-01",
+    toDate: "2026-07-22",
+  },
+  salary_certificate: {
+    accountNumber: "20202972881304387302",
+    fromDate: "2026-07-01",
+    toDate: "2026-07-22",
+  },
+};
+
 const ApiDocsModal = ({ isOpen, onClose, template }) => {
   const contentRef = useRef(null);
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
 
   const variants = template?.parsedVariants || (typeof template?.variants === 'string' ? JSON.parse(template.variants) : template?.variants) || [];
   const activeVariant = variants[selectedVariantIdx] || null;
+  const mobileDocumentType = template?.mobileDocumentType || template?.MobileDocumentType || "";
+  const isMobileTemplate = Boolean(mobileDocumentType);
 
   const simpleJsonExample = useMemo(() => {
+    if (isMobileTemplate) {
+      return {
+        documentType: mobileDocumentType,
+        language: activeVariant?.language || "ru",
+        format: "pdf",
+        ...(MOBILE_REQUEST_EXAMPLES[mobileDocumentType] || {}),
+      };
+    }
     return {
       clientCode: "00012345",
       templateId: template?.ID || template?.id || 1,
@@ -17,7 +52,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
       fromDate: "2026-01-01",
       toDate: "2026-12-31"
     };
-  }, [template]);
+  }, [activeVariant?.language, isMobileTemplate, mobileDocumentType, template]);
 
   const customJsonExample = useMemo(() => {
     if (!activeVariant) return {};
@@ -118,7 +153,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
               </h2>
               <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", fontFamily: "monospace", fontSize: "14px" }}>
                 <span style={{ color: "#2563eb", fontWeight: "bold", marginRight: "10px" }}>POST</span>
-                <span>/api/docx/generate</span>
+                <span>{isMobileTemplate ? "/api/mobile/documents/generate" : "/api/docx/generate"}</span>
               </div>
             </div>
 
@@ -138,6 +173,12 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>Authorization</td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>Bearer &lt;token&gt;</td>
                   </tr>
+                  {isMobileTemplate && (
+                    <tr>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>X-Mobile-Documents-Key</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>Сервисный ключ мобильного приложения (вместо portal JWT)</td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>Content-Type</td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>application/json</td>
