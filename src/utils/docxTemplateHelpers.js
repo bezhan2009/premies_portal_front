@@ -1,4 +1,4 @@
-import { getProcessingAmountSign } from "./processingAmountFormatter";
+import { getProcessingAmountSign } from "./processingAmountFormatter.js";
 
 export const parseDocxJsonField = (value, fallback = []) => {
   if (Array.isArray(value)) {
@@ -826,6 +826,15 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
     "panNumber": panNumberVal,
     "card.panNumber": panNumberVal,
   };
+
+  // Eval mappings such as
+  // (processing_transactions || []).map(pt => pt.amountCurrency)
+  // are resolved below. Normalize signs before resolving them, otherwise
+  // the DOCX top-level arrays can keep unsigned values while the table rows
+  // themselves are normalized later.
+  normalizeFrontendTransactionSigns(source);
+  normalizeFrontendTransactionSigns(payload);
+
   const keys = Array.isArray(variant.keys)
     ? variant.keys.map(normalizeDocxKeyMapping).filter((item) => item.docxKey)
     : [];
