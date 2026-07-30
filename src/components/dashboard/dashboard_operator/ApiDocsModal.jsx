@@ -214,6 +214,11 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
               <pre style={{ background: "#0f172a", color: "#f8fafc", padding: "16px", borderRadius: "10px", overflowX: "auto", fontSize: "13px", lineHeight: "1.5" }}>
                 {JSON.stringify(simpleJsonExample, null, 2)}
               </pre>
+              {isMobileTemplate && (
+                <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "12px", background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#166534", fontSize: "13px", lineHeight: 1.45 }}>
+                  Для внешнего API не нужно передавать весь объект data. Укажите только обязательные поля для типа документа: например, для выписки из ПЦ достаточно cardId, fromDate, toDate и language. Сервис сам подтянет данные клиента, карты, счёта и операции из Фронтовика/ABS/ПЦ.
+                </div>
+              )}
               {!isMobileTemplate && dynamicRequirements.length > 0 && (
                 <div style={{ marginTop: "14px", padding: "14px", borderRadius: "12px", background: "#fff7ed", border: "1px solid #fed7aa" }}>
                   <div style={{ fontWeight: 700, color: "#9a3412", marginBottom: "8px", fontSize: "13.5px" }}>
