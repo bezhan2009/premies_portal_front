@@ -4,7 +4,8 @@ import {
   Send, MessageSquare, Search, User, Clock, ArrowLeft, Shield, Info, 
   Paperclip, Smile, UserPlus, X, Check, CheckCheck,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
-  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Square, CalendarDays
+  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Square, CalendarDays,
+  MessageSquareText, Megaphone, Sparkles
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import Spinner from "../../../components/Spinner.jsx";
@@ -1651,14 +1652,22 @@ export default function OperatorFeedbackPage() {
     }
 
     if (!button) return;
+    if (
+      button.classList.contains("mini-chat-date-divider") ||
+      button.classList.contains("icon-btn") ||
+      button.closest(".chat-header") ||
+      button.closest(".chat-input-form")
+    ) {
+      return;
+    }
 
     if (window.getComputedStyle(button).position === "static") {
       button.style.position = "relative";
     }
-    button.style.overflow = "hidden";
+    const previousOverflow = button.style.overflow;
 
     const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const diameter = Math.max(button.offsetWidth, button.offsetHeight, 32);
     const radius = diameter / 2;
 
     circle.style.width = circle.style.height = `${diameter}px`;
@@ -1675,6 +1684,7 @@ export default function OperatorFeedbackPage() {
     circle.style.borderRadius = "50%";
     circle.style.transform = "scale(0)";
     circle.style.pointerEvents = "none";
+    circle.style.zIndex = "0";
 
     circle.animate(
       [
@@ -1690,6 +1700,7 @@ export default function OperatorFeedbackPage() {
     button.appendChild(circle);
     setTimeout(() => {
       circle.remove();
+      button.style.overflow = previousOverflow;
     }, 500);
   };
 
@@ -3012,6 +3023,261 @@ export default function OperatorFeedbackPage() {
           opacity: 0.9;
         }
 
+        /* Telegram-style operator chat redesign */
+        .feedback-container {
+          background:
+            radial-gradient(circle at 12% 8%, rgba(235, 37, 37, 0.10), transparent 26%),
+            radial-gradient(circle at 84% 18%, rgba(248, 113, 113, 0.12), transparent 30%),
+            linear-gradient(135deg, #f8fafc 0%, #fff5f5 45%, #f1f5f9 100%) !important;
+          padding: 18px !important;
+          gap: 16px !important;
+          isolation: isolate;
+        }
+
+        .feedback-container button {
+          min-height: 34px !important;
+          box-sizing: border-box !important;
+          flex-shrink: 0 !important;
+          line-height: 1 !important;
+        }
+
+        .feedback-container .chat-header button,
+        .feedback-container .chat-input-form button {
+          min-width: 36px !important;
+          width: 36px;
+          height: 36px;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 12px !important;
+          transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease !important;
+        }
+
+        .feedback-container .chat-header button:hover,
+        .feedback-container .chat-input-form button:hover {
+          background: rgba(235, 37, 37, 0.09) !important;
+          color: #eb2525 !important;
+          transform: translateY(-1px);
+        }
+
+        .feedback-sidebar {
+          background: rgba(255, 255, 255, 0.84) !important;
+          border: 1px solid rgba(255, 255, 255, 0.72) !important;
+          border-radius: 28px !important;
+          box-shadow: 0 22px 60px rgba(15, 23, 42, 0.12) !important;
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
+        .sidebar-header {
+          padding: 20px 20px 0 20px !important;
+        }
+
+        .sidebar-header h2 {
+          font-size: 22px !important;
+          font-weight: 850 !important;
+          margin-bottom: 16px !important;
+        }
+
+        .search-wrapper input {
+          padding: 11px 14px 11px 38px !important;
+          background: rgba(248, 250, 252, 0.92) !important;
+          border: 1px solid rgba(226, 232, 240, 0.9) !important;
+          border-radius: 999px !important;
+          transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .search-wrapper input:focus {
+          border-color: rgba(235, 37, 37, 0.55) !important;
+          box-shadow: 0 0 0 4px rgba(235, 37, 37, 0.10) !important;
+        }
+
+        .tabs-container {
+          gap: 6px !important;
+          padding: 4px !important;
+          border: 1px solid rgba(226, 232, 240, 0.86) !important;
+          border-radius: 16px !important;
+          background: rgba(248, 250, 252, 0.72) !important;
+          margin-bottom: 10px !important;
+        }
+
+        .tab-btn {
+          min-height: 38px !important;
+          padding: 10px 8px !important;
+          border-radius: 12px !important;
+          border-bottom: 0 !important;
+          font-weight: 750 !important;
+          transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+        }
+
+        .tab-btn.active {
+          color: #eb2525 !important;
+          background: #ffffff !important;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        .thread-item {
+          min-height: 68px !important;
+          padding: 12px !important;
+          border-radius: 18px !important;
+          transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease !important;
+          position: relative;
+        }
+
+        .thread-item:hover {
+          background: rgba(255, 255, 255, 0.72) !important;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        }
+
+        .thread-item.active {
+          background: linear-gradient(135deg, rgba(235, 37, 37, 0.13), rgba(255, 255, 255, 0.88)) !important;
+          border-color: rgba(235, 37, 37, 0.22) !important;
+          box-shadow: inset 4px 0 0 #eb2525, 0 12px 30px rgba(235, 37, 37, 0.10) !important;
+        }
+
+        .thread-avatar {
+          width: 46px !important;
+          height: 46px !important;
+          border-radius: 16px !important;
+          background: linear-gradient(135deg, #fee2e2, #ffffff) !important;
+          color: #eb2525 !important;
+        }
+
+        .thread-avatar--announcement {
+          background: linear-gradient(135deg, #ef4444, #c8102e) !important;
+          color: #ffffff !important;
+          box-shadow: 0 10px 24px rgba(200, 16, 46, 0.24);
+        }
+
+        .announcement-badge {
+          display: inline-flex !important;
+          align-items: center;
+          min-height: 18px;
+          padding: 2px 7px !important;
+          border-radius: 999px !important;
+          background: rgba(239, 68, 68, 0.12) !important;
+          color: #b91c1c !important;
+          font-weight: 800;
+        }
+
+        .unread-badge {
+          min-height: 18px;
+          background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+          box-shadow: 0 6px 14px rgba(185, 28, 28, 0.22);
+        }
+
+        .feedback-chat {
+          background: rgba(255, 255, 255, 0.76) !important;
+          border: 1px solid rgba(255, 255, 255, 0.72) !important;
+          border-radius: 30px !important;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14) !important;
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
+        .chat-header {
+          padding: 15px 18px !important;
+          border-bottom: 1px solid rgba(226, 232, 240, 0.72) !important;
+          background: rgba(255, 255, 255, 0.88) !important;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+
+        .chat-title-info h3 {
+          font-size: 18px !important;
+          font-weight: 850 !important;
+        }
+
+        .chat-instructions-banner {
+          background: rgba(254, 242, 242, 0.76) !important;
+          border-bottom: 1px solid rgba(235, 37, 37, 0.10) !important;
+          padding: 8px 18px !important;
+          color: #991b1b !important;
+        }
+
+        .chat-messages {
+          padding: 22px 24px !important;
+          background:
+            radial-gradient(circle at 20px 20px, rgba(235,37,37,0.07) 0 1px, transparent 1.5px),
+            radial-gradient(circle at 66px 54px, rgba(15,23,42,0.045) 0 1px, transparent 1.5px),
+            linear-gradient(135deg, rgba(248,250,252,0.88), rgba(255,241,242,0.78)) !important;
+          background-size: 94px 94px, 94px 94px, auto !important;
+        }
+
+        .msg-bubble-wrapper {
+          max-width: 72% !important;
+        }
+
+        .msg-bubble {
+          min-width: 92px !important;
+          padding: 10px 14px 8px !important;
+          border-radius: 18px !important;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07) !important;
+          transition: background 0.25s ease, border-color 0.25s ease, transform 0.18s ease !important;
+        }
+
+        .msg-bubble:hover {
+          transform: translateY(-1px);
+        }
+
+        .outgoing .msg-bubble {
+          background: linear-gradient(135deg, #ef4444 0%, #c8102e 100%) !important;
+          border-bottom-right-radius: 7px !important;
+          box-shadow: 0 10px 26px rgba(200, 16, 46, 0.24) !important;
+        }
+
+        .incoming .msg-bubble {
+          background: rgba(255, 255, 255, 0.96) !important;
+          border-bottom-left-radius: 7px !important;
+        }
+
+        .msg-sender {
+          margin-left: 14px !important;
+          font-weight: 700;
+        }
+
+        .chat-input-bar {
+          padding: 12px 18px 18px 18px !important;
+          background: rgba(255, 255, 255, 0.78) !important;
+          border-top: 1px solid rgba(226, 232, 240, 0.72);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+
+        .chat-input-form {
+          gap: 10px !important;
+          background: #ffffff !important;
+          border: 1px solid rgba(226, 232, 240, 0.92) !important;
+          border-radius: 24px !important;
+          padding: 8px 10px 8px 14px !important;
+          box-shadow: 0 12px 34px rgba(15,23,42,0.10) !important;
+        }
+
+        .chat-input-form:focus-within {
+          border-color: rgba(235, 37, 37, 0.45) !important;
+          box-shadow: 0 12px 36px rgba(235,37,37,0.14) !important;
+        }
+
+        .icon-btn {
+          width: 38px !important;
+          height: 38px !important;
+          min-width: 38px !important;
+          min-height: 38px !important;
+          background: rgba(248, 250, 252, 0.9) !important;
+          border-radius: 14px !important;
+        }
+
+        .chat-send-btn {
+          width: 42px !important;
+          height: 42px !important;
+          min-width: 42px !important;
+          min-height: 42px !important;
+          border-radius: 15px !important;
+          background: linear-gradient(135deg, #ef4444, #c8102e) !important;
+          box-shadow: 0 10px 22px rgba(200, 16, 46, 0.25) !important;
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -3039,8 +3305,9 @@ export default function OperatorFeedbackPage() {
       <div className="feedback-sidebar">
         <div className="sidebar-header">
           <h2>
-            <MessageSquare size={20} />
+            <MessageSquareText size={22} />
             <span>Панель обращений</span>
+            <Sparkles size={16} style={{ color: "#eb2525" }} />
           </h2>
           <div className="search-wrapper">
             <Search size={16} />
@@ -3109,9 +3376,13 @@ export default function OperatorFeedbackPage() {
                      </div>
                    )}
 
-                   {group.avatar_url ? (
-                     <img src={`${API_URL}${group.avatar_url}`} alt={group.name} className="thread-avatar" style={{ objectFit: "cover" }} />
-                   ) : (
+                    {group.is_announcement ? (
+                      <div className="thread-avatar thread-avatar--announcement">
+                        <Megaphone size={20} />
+                      </div>
+                    ) : group.avatar_url ? (
+                      <img src={`${API_URL}${group.avatar_url}`} alt={group.name} className="thread-avatar" style={{ objectFit: "cover" }} />
+                    ) : (
                      <div className="thread-avatar" style={{ backgroundColor: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"][group.id % 7], color: "white" }}>
                        {initials}
                      </div>

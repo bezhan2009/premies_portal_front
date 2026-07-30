@@ -872,14 +872,22 @@ const MiniChatWindow = () => {
     }
 
     if (!button) return;
+    if (
+      button.classList.contains("mini-chat-date-divider") ||
+      button.classList.contains("icon-btn") ||
+      button.closest(".mini-chat-header") ||
+      button.closest(".chat-input-form")
+    ) {
+      return;
+    }
 
     if (window.getComputedStyle(button).position === "static") {
       button.style.position = "relative";
     }
-    button.style.overflow = "hidden";
+    const previousOverflow = button.style.overflow;
 
     const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const diameter = Math.max(button.offsetWidth, button.offsetHeight, 32);
     const radius = diameter / 2;
 
     circle.style.width = circle.style.height = `${diameter}px`;
@@ -896,6 +904,7 @@ const MiniChatWindow = () => {
     circle.style.borderRadius = "50%";
     circle.style.transform = "scale(0)";
     circle.style.pointerEvents = "none";
+    circle.style.zIndex = "0";
 
     circle.animate(
       [
@@ -911,6 +920,7 @@ const MiniChatWindow = () => {
     button.appendChild(circle);
     setTimeout(() => {
       circle.remove();
+      button.style.overflow = previousOverflow;
     }, 500);
   };
 
