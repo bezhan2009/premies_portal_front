@@ -233,9 +233,7 @@ const LoadingSkeleton = () => {
         alignSelf: "flex-start", 
         width: "65%", 
         height: "42px", 
-        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(226,232,240,0.82)",
         borderRadius: "14px 14px 14px 4px",
         border: "1px solid rgba(226,232,240,0.5)"
       }} />
@@ -243,18 +241,14 @@ const LoadingSkeleton = () => {
         alignSelf: "flex-end", 
         width: "50%", 
         height: "36px", 
-        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(254,226,226,0.86)",
         borderRadius: "14px 14px 4px 14px"
       }} />
       <div style={{ 
         alignSelf: "flex-start", 
         width: "75%", 
         height: "48px", 
-        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(226,232,240,0.82)",
         borderRadius: "14px 14px 14px 4px",
         border: "1px solid rgba(226,232,240,0.5)"
       }} />
@@ -262,9 +256,7 @@ const LoadingSkeleton = () => {
         alignSelf: "flex-end", 
         width: "60%", 
         height: "40px", 
-        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(254,226,226,0.86)",
         borderRadius: "14px 14px 4px 14px"
       }} />
     </div>
@@ -711,6 +703,8 @@ export default function OperatorFeedbackPage() {
 
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
+  const dateVisibilityTimerRef = useRef(null);
+  const [isUserScrollingMessages, setIsUserScrollingMessages] = useState(false);
   const textareaRef = useRef(null);
 
   const adjustTextareaHeight = (element) => {
@@ -940,7 +934,7 @@ export default function OperatorFeedbackPage() {
   }, [fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
   const scrollToBottom = (behavior = "smooth") => {
-    if (!localSearchActive) {
+    if (!localSearchActive && !selectedDateFilter) {
       messagesEndRef.current?.scrollIntoView({ behavior });
     }
   };
@@ -1064,12 +1058,25 @@ export default function OperatorFeedbackPage() {
       markAsRead(activeChatType, activeThreadId);
       setTimeout(() => scrollToBottom("smooth"), 50);
     }
-  }, [messages.length, markAsRead]);
+  }, [messages.length, markAsRead, selectedDateFilter, localSearchActive]);
 
   const handleMessagesScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     setShowScrollBottomBtn(scrollHeight - scrollTop - clientHeight > 300);
+    setIsUserScrollingMessages(true);
+    if (dateVisibilityTimerRef.current) {
+      clearTimeout(dateVisibilityTimerRef.current);
+    }
+    dateVisibilityTimerRef.current = setTimeout(() => {
+      setIsUserScrollingMessages(false);
+    }, 1400);
   };
+
+  useEffect(() => () => {
+    if (dateVisibilityTimerRef.current) {
+      clearTimeout(dateVisibilityTimerRef.current);
+    }
+  }, []);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -2939,7 +2946,7 @@ export default function OperatorFeedbackPage() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+          background: var(--primary-color);
           color: #ffffff;
           border: none;
           border-radius: 10px;
@@ -2955,10 +2962,10 @@ export default function OperatorFeedbackPage() {
 
         /* Telegram-style operator chat redesign */
         .feedback-container {
-          background:
-            radial-gradient(circle at 12% 8%, rgba(235, 37, 37, 0.10), transparent 26%),
-            radial-gradient(circle at 84% 18%, rgba(248, 113, 113, 0.12), transparent 30%),
-            linear-gradient(135deg, #f8fafc 0%, #fff5f5 45%, #f1f5f9 100%) !important;
+          background-color: #f6f7fb !important;
+          background-image:
+            radial-gradient(circle at 12% 8%, rgba(235, 37, 37, 0.08), transparent 26%),
+            radial-gradient(circle at 84% 18%, rgba(248, 113, 113, 0.08), transparent 30%) !important;
           padding: 18px !important;
           gap: 16px !important;
           isolation: isolate;
@@ -3061,7 +3068,7 @@ export default function OperatorFeedbackPage() {
         }
 
         .thread-item.active {
-          background: linear-gradient(135deg, rgba(235, 37, 37, 0.13), rgba(255, 255, 255, 0.88)) !important;
+          background: rgba(254, 242, 242, 0.94) !important;
           border-color: rgba(235, 37, 37, 0.22) !important;
           box-shadow: inset 4px 0 0 #eb2525, 0 12px 30px rgba(235, 37, 37, 0.10) !important;
         }
@@ -3070,12 +3077,12 @@ export default function OperatorFeedbackPage() {
           width: 46px !important;
           height: 46px !important;
           border-radius: 16px !important;
-          background: linear-gradient(135deg, #fee2e2, #ffffff) !important;
+          background: #fee2e2 !important;
           color: #eb2525 !important;
         }
 
         .thread-avatar--announcement {
-          background: linear-gradient(135deg, #ef4444, #c8102e) !important;
+          background: #eb2525 !important;
           color: #ffffff !important;
           box-shadow: 0 10px 24px rgba(200, 16, 46, 0.24);
         }
@@ -3093,7 +3100,7 @@ export default function OperatorFeedbackPage() {
 
         .unread-badge {
           min-height: 18px;
-          background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+          background: #eb2525 !important;
           box-shadow: 0 6px 14px rgba(185, 28, 28, 0.22);
         }
 
@@ -3128,11 +3135,11 @@ export default function OperatorFeedbackPage() {
 
         .chat-messages {
           padding: 22px 24px !important;
-          background:
+          background-color: rgba(248,250,252,0.92) !important;
+          background-image:
             radial-gradient(circle at 20px 20px, rgba(235,37,37,0.07) 0 1px, transparent 1.5px),
-            radial-gradient(circle at 66px 54px, rgba(15,23,42,0.045) 0 1px, transparent 1.5px),
-            linear-gradient(135deg, rgba(248,250,252,0.88), rgba(255,241,242,0.78)) !important;
-          background-size: 94px 94px, 94px 94px, auto !important;
+            radial-gradient(circle at 66px 54px, rgba(15,23,42,0.045) 0 1px, transparent 1.5px) !important;
+          background-size: 94px 94px, 94px 94px !important;
         }
 
         .msg-bubble-wrapper {
@@ -3152,7 +3159,7 @@ export default function OperatorFeedbackPage() {
         }
 
         .outgoing .msg-bubble {
-          background: linear-gradient(135deg, #ef4444 0%, #c8102e 100%) !important;
+          background: #eb2525 !important;
           border-bottom-right-radius: 7px !important;
           box-shadow: 0 10px 26px rgba(200, 16, 46, 0.24) !important;
         }
@@ -3204,7 +3211,7 @@ export default function OperatorFeedbackPage() {
           min-width: 42px !important;
           min-height: 42px !important;
           border-radius: 15px !important;
-          background: linear-gradient(135deg, #ef4444, #c8102e) !important;
+          background: #eb2525 !important;
           box-shadow: 0 10px 22px rgba(200, 16, 46, 0.25) !important;
         }
 
@@ -3776,7 +3783,7 @@ export default function OperatorFeedbackPage() {
               <LoadingSkeleton />
             ) : (
               <div
-                className="chat-messages chat-background-animated"
+                className={`chat-messages chat-background-animated ${isUserScrollingMessages ? "is-user-scrolling" : ""}`}
                 ref={messagesScrollRef}
                 onScroll={handleMessagesScroll}
                 onContextMenu={(e) => {

@@ -119,9 +119,7 @@ const LoadingSkeleton = () => {
         alignSelf: "flex-start", 
         width: "65%", 
         height: "42px", 
-        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(226,232,240,0.82)",
         borderRadius: "14px 14px 14px 4px",
         border: "1px solid rgba(226,232,240,0.5)"
       }} />
@@ -129,18 +127,14 @@ const LoadingSkeleton = () => {
         alignSelf: "flex-end", 
         width: "50%", 
         height: "36px", 
-        background: "linear-gradient(90deg, rgba(254,226,226,0.8) 25%, rgba(254,242,242,0.8) 50%, rgba(254,226,226,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(254,226,226,0.86)",
         borderRadius: "14px 14px 4px 14px"
       }} />
       <div style={{ 
         alignSelf: "flex-start", 
         width: "75%", 
         height: "48px", 
-        background: "linear-gradient(90deg, rgba(226,232,240,0.8) 25%, rgba(241,245,249,0.8) 50%, rgba(226,232,240,0.8) 75%)", 
-        backgroundSize: "200% 100%", 
-        animation: "shimmer 1.5s infinite linear", 
+        background: "rgba(226,232,240,0.82)",
         borderRadius: "14px 14px 14px 4px",
         border: "1px solid rgba(226,232,240,0.5)"
       }} />
@@ -519,6 +513,8 @@ export default function FeedbackPage() {
 
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
+  const dateVisibilityTimerRef = useRef(null);
+  const [isUserScrollingMessages, setIsUserScrollingMessages] = useState(false);
 
   const getRoles = () => {
     try { return JSON.parse(localStorage.getItem("role_ids") || "[]"); } 
@@ -861,10 +857,10 @@ export default function FeedbackPage() {
     if (messages.length > 0) {
       markAsRead();
     }
-    if (!localSearchActive) {
+    if (!localSearchActive && !selectedDateFilter) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length, localSearchActive]);
+  }, [messages.length, localSearchActive, selectedDateFilter]);
 
   useEffect(() => {
     setSelectedDateFilter(null);
@@ -873,7 +869,20 @@ export default function FeedbackPage() {
   const handleMessagesScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     setShowScrollBottomBtn(scrollHeight - scrollTop - clientHeight > 300);
+    setIsUserScrollingMessages(true);
+    if (dateVisibilityTimerRef.current) {
+      clearTimeout(dateVisibilityTimerRef.current);
+    }
+    dateVisibilityTimerRef.current = setTimeout(() => {
+      setIsUserScrollingMessages(false);
+    }, 1400);
   };
+
+  useEffect(() => () => {
+    if (dateVisibilityTimerRef.current) {
+      clearTimeout(dateVisibilityTimerRef.current);
+    }
+  }, []);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -2098,7 +2107,7 @@ export default function FeedbackPage() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          background: linear-gradient(135deg, var(--primary-color, #eb2525) 0%, var(--primary-hover, #eb2525) 100%);
+          background: var(--primary-color, #eb2525);
           color: #ffffff;
           border: none;
           border-radius: 10px;
@@ -2735,7 +2744,7 @@ export default function FeedbackPage() {
 
         {/* MESSAGES LIST */}
         <div
-          className="chat-messages chat-background-animated"
+          className={`chat-messages chat-background-animated ${isUserScrollingMessages ? "is-user-scrolling" : ""}`}
           ref={messagesScrollRef}
           onScroll={handleMessagesScroll}
           onContextMenu={(e) => {

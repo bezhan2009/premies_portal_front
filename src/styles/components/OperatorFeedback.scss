@@ -1,16 +1,16 @@
 
 .chat-background-animated {
-  background:
+  background-color: #f4f6f9;
+  background-image:
     radial-gradient(circle at 18px 18px, rgba(235, 37, 37, 0.055) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 68px 54px, rgba(15, 23, 42, 0.045) 0 1px, transparent 1.6px),
-    linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
-  background-size: 96px 96px, 96px 96px, 100% 100%;
+    radial-gradient(circle at 68px 54px, rgba(15, 23, 42, 0.045) 0 1px, transparent 1.6px);
+  background-size: 96px 96px, 96px 96px;
 }
 
 [data-theme="dark"] .chat-background-animated {
-  background:
+  background-color: #121a29;
+  background-image:
     radial-gradient(circle at 18px 18px, rgba(248, 113, 113, 0.08) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 68px 54px, rgba(226, 232, 240, 0.045) 0 1px, transparent 1.6px),
-    linear-gradient(135deg, #111827 0%, #172033 100%);
-  background-size: 96px 96px, 96px 96px, 100% 100%;
+    radial-gradient(circle at 68px 54px, rgba(226, 232, 240, 0.045) 0 1px, transparent 1.6px);
+  background-size: 96px 96px, 96px 96px;
 }

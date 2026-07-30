@@ -1522,7 +1522,7 @@ button:active {
   gap: 8px;
   padding: 8px 14px;
   border-bottom: 1px solid rgba(235, 37, 37, 0.12);
-  background: linear-gradient(135deg, rgba(254, 226, 226, 0.92), rgba(255, 255, 255, 0.78));
+  background: rgba(254, 242, 242, 0.96);
   color: #991b1b;
   font-size: 12px;
   font-weight: 800;
@@ -1613,7 +1613,7 @@ button:active {
 .feedback-chat-container .message-outgoing,
 .feedback-container .message-outgoing {
   border-bottom-right-radius: 6px !important;
-  background: linear-gradient(135deg, #ef4444 0%, #d71920 100%) !important;
+  background: #eb2525 !important;
 }
 
 .feedback-chat-container .message-incoming,
@@ -1662,12 +1662,18 @@ button:active {
   font-weight: 800;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.16s ease, border-color 0.16s ease;
 }
 
+.chat-messages.is-user-scrolling .main-chat-date-divider,
 .main-chat-date-divider:hover,
 .main-chat-date-divider.active {
-  transform: translateY(-1px);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
   border-color: rgba(235, 37, 37, 0.36);
   background: rgba(254, 226, 226, 0.98);
 }
@@ -1690,7 +1696,7 @@ button:active {
   gap: 10px;
   padding: 9px 18px;
   border-bottom: 1px solid rgba(235, 37, 37, 0.14);
-  background: linear-gradient(135deg, rgba(254, 226, 226, 0.96), rgba(255, 255, 255, 0.86));
+  background: rgba(254, 242, 242, 0.97);
   color: #991b1b;
   font-size: 13px;
   font-weight: 800;

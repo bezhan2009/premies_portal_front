@@ -1095,8 +1095,13 @@ const DocxGenerator = () => {
       }
 
       setIsTestGenerating(true);
+      const endpoint =
+        testMode === "external"
+          ? `${API_URL}/api/docx/external/generate`
+          : `${API_URL}/api/docx/generate`;
+
       const response = await axios.post(
-        `${API_URL}/api/docx/generate`,
+        endpoint,
         requestBody,
         {
           headers: {
@@ -1122,7 +1127,17 @@ const DocxGenerator = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("Ошибка генерации тестового файла");
+      let errorText = "Ошибка генерации тестового файла";
+      if (err.response?.data instanceof Blob) {
+        try {
+          const raw = await err.response.data.text();
+          const parsed = JSON.parse(raw);
+          errorText = parsed.error || parsed.message || errorText;
+        } catch (_) {}
+      } else if (err.response?.data?.error || err.response?.data?.message) {
+        errorText = err.response.data.error || err.response.data.message;
+      }
+      alert(errorText);
     } finally {
       setIsTestGenerating(false);
     }
@@ -2227,7 +2242,8 @@ const DocxGenerator = () => {
                           <div>
                             <strong>Внешний API-тест</strong>
                             <span>
-                              Отправляет компактный payload: clientCode и только обязательные идентификаторы для поиска динамических данных.
+                              Отправляет компактный payload во внешний endpoint <code>/api/docx/external/generate</code>: clientCode и только обязательные идентификаторы для поиска динамических данных.
+                              Внешние сервисы должны передавать ключ в <code>X-Mobile-Documents-Key</code>, <code>X-API-Key</code> или <code>Authorization: Bearer service-key</code>.
                             </span>
                           </div>
                         </div>
