@@ -843,87 +843,6 @@ const MiniChatWindow = () => {
     }
   };
 
-  const handleGlobalRipple = (e) => {
-    let target = e.target;
-    let button = null;
-    while (target && target !== e.currentTarget) {
-      if (
-        target.tagName === "BUTTON" || 
-        target.classList.contains("ripple-btn") || 
-        target.classList.contains("thread-item") ||
-        target.classList.contains("modal-user-item") ||
-        target.classList.contains("mini-chat-thread-card")
-      ) {
-        button = target;
-        break;
-      }
-      target = target.parentElement;
-    }
-    if (!button) {
-      target = e.target;
-      while (target && target !== e.currentTarget) {
-        const style = window.getComputedStyle(target);
-        if (style.cursor === "pointer" || style.cursor === "grab") {
-          button = target;
-          break;
-        }
-        target = target.parentElement;
-      }
-    }
-
-    if (!button) return;
-    if (
-      button.classList.contains("mini-chat-date-divider") ||
-      button.classList.contains("icon-btn") ||
-      button.closest(".mini-chat-header") ||
-      button.closest(".chat-input-form")
-    ) {
-      return;
-    }
-
-    if (window.getComputedStyle(button).position === "static") {
-      button.style.position = "relative";
-    }
-    const previousOverflow = button.style.overflow;
-
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.offsetWidth, button.offsetHeight, 32);
-    const radius = diameter / 2;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    const rect = button.getBoundingClientRect();
-    circle.style.left = `${e.clientX - rect.left - radius}px`;
-    circle.style.top = `${e.clientY - rect.top - radius}px`;
-
-    const isDarkBg = button.classList.contains("primary") || 
-                     button.style.background === "#eb2525" || 
-                     button.style.backgroundColor === "rgb(235, 37, 37)" ||
-                     button.getAttribute("style")?.includes("#eb2525");
-    circle.style.background = isDarkBg ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.15)";
-    circle.style.position = "absolute";
-    circle.style.borderRadius = "50%";
-    circle.style.transform = "scale(0)";
-    circle.style.pointerEvents = "none";
-    circle.style.zIndex = "0";
-
-    circle.animate(
-      [
-        { transform: "scale(0)", opacity: 1 },
-        { transform: "scale(4)", opacity: 0 }
-      ],
-      {
-        duration: 500,
-        easing: "ease-out"
-      }
-    );
-
-    button.appendChild(circle);
-    setTimeout(() => {
-      circle.remove();
-      button.style.overflow = previousOverflow;
-    }, 500);
-  };
-
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
   };
@@ -2143,7 +2062,6 @@ const MiniChatWindow = () => {
 
       <AnimatePresence>
         <motion.div
-          onMouseDown={handleGlobalRipple}
           initial={{ opacity: 0, y: 40, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 40, scale: 0.95 }}
