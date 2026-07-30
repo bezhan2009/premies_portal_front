@@ -2198,11 +2198,11 @@ const DocxGenerator = () => {
                   />
                 </label>
 
-                <div className="docx-test-mode-switch">
-                  {[
-                    { value: "external", label: "External API test" },
-                    { value: "manual", label: "Manual placeholder test" },
-                  ].map((option) => (
+                  <div className="docx-test-mode-switch">
+                    {[
+                      { value: "external", label: "Внешний API-тест" },
+                      { value: "manual", label: "Ручной тест плейсхолдеров" },
+                    ].map((option) => (
                     <button
                       key={option.value}
                       type="button"
@@ -2225,9 +2225,9 @@ const DocxGenerator = () => {
                         <div className="docx-test-mode-note">
                           <Database size={18} />
                           <div>
-                            <strong>External API test</strong>
+                            <strong>Внешний API-тест</strong>
                             <span>
-                              Sends compact payload: clientCode and only required identifiers for dynamic data lookup.
+                              Отправляет компактный payload: clientCode и только обязательные идентификаторы для поиска динамических данных.
                             </span>
                           </div>
                         </div>
@@ -2236,7 +2236,7 @@ const DocxGenerator = () => {
                           <label className="docx-test-key">
                             <span>
                               <code>clientCode</code>
-                              <small>Required client code for Frontovik/ABS data lookup.</small>
+                              <small>Обязательный код клиента для поиска данных во Фронтовике/ABS.</small>
                             </span>
                             <input
                               type="text"
@@ -2292,7 +2292,7 @@ const DocxGenerator = () => {
                         ) : (
                           <div className="docx-mapping-empty">
                             <Info size={24} />
-                            <span>For this variant clientCode is enough. No dynamic table identifiers were detected.</span>
+                            <span>Для этого варианта достаточно clientCode. Динамические табличные идентификаторы не найдены.</span>
                           </div>
                         )}
                       </div>

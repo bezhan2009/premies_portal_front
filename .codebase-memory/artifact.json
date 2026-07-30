@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "222f0b3b2cf7264623a019e1601224a8323ae4e1",
-    "indexed_at": "2026-07-30T21:43:29Z",
+    "commit": "26948d61e412f5815c82285218c3b1afb5cb8efc",
+    "indexed_at": "2026-07-30T21:45:33Z",
     "project": "D-Work-Activ-bank-activ-daily-premies_portal_front",
     "nodes": 3580,
     "edges": 7744,
     "original_size": 10289152,
-    "compressed_size": 1006865,
+    "compressed_size": 1008662,
     "compression_level": 3
 }
