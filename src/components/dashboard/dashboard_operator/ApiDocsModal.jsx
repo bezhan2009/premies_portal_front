@@ -1,6 +1,11 @@
 import React, { useRef, useState, useMemo } from "react";
 import { X, Download, FileJson, Link as LinkIcon, Info, CheckCircle2 } from "lucide-react";
 import html2pdf from "html2pdf.js";
+import CustomSelect from "../../elements/CustomSelect";
+import {
+  buildDocxApiDataExample,
+  getVariantDynamicRequirements,
+} from "../../../utils/docxApiRequirements";
 
 const MOBILE_REQUEST_EXAMPLES = {
   processing_statement: {
@@ -35,6 +40,10 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
   const activeVariant = variants[selectedVariantIdx] || null;
   const mobileDocumentType = template?.mobileDocumentType || template?.MobileDocumentType || "";
   const isMobileTemplate = Boolean(mobileDocumentType);
+  const dynamicRequirements = useMemo(
+    () => getVariantDynamicRequirements(activeVariant || {}),
+    [activeVariant],
+  );
 
   const simpleJsonExample = useMemo(() => {
     if (isMobileTemplate) {
@@ -45,14 +54,21 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
         ...(MOBILE_REQUEST_EXAMPLES[mobileDocumentType] || {}),
       };
     }
-    return {
+    const apiDataExample = buildDocxApiDataExample(dynamicRequirements);
+    const request = {
       clientCode: "00012345",
       templateId: template?.ID || template?.id || 1,
       format: "pdf",
       fromDate: "2026-01-01",
       toDate: "2026-12-31"
     };
-  }, [activeVariant?.language, isMobileTemplate, mobileDocumentType, template]);
+
+    if (Object.keys(apiDataExample).length > 0) {
+      request.data = apiDataExample;
+    }
+
+    return request;
+  }, [activeVariant?.language, dynamicRequirements, isMobileTemplate, mobileDocumentType, template]);
 
   const customJsonExample = useMemo(() => {
     if (!activeVariant) return {};
@@ -120,15 +136,16 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", background: "#f8fafc", padding: "12px 16px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontWeight: 600, fontSize: "14px", color: "#334155" }}>Вариант шаблона:</span>
-              <select 
-                value={selectedVariantIdx} 
-                onChange={e => setSelectedVariantIdx(Number(e.target.value))}
-                style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", background: "#fff" }}
-              >
-                {variants.map((v, idx) => (
-                  <option key={idx} value={idx}>{v.name}</option>
-                ))}
-              </select>
+              <CustomSelect
+                value={String(selectedVariantIdx)}
+                onChange={(value) => setSelectedVariantIdx(Number(value))}
+                options={variants.map((v, idx) => ({
+                  value: String(idx),
+                  label: v.name || `Variant ${idx + 1}`,
+                }))}
+                autoSelectFirst={false}
+                style={{ minWidth: "220px" }}
+              />
             </div>
             <button 
               onClick={handleDownloadPdf}
@@ -197,6 +214,33 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
               <pre style={{ background: "#0f172a", color: "#f8fafc", padding: "16px", borderRadius: "10px", overflowX: "auto", fontSize: "13px", lineHeight: "1.5" }}>
                 {JSON.stringify(simpleJsonExample, null, 2)}
               </pre>
+              {!isMobileTemplate && dynamicRequirements.length > 0 && (
+                <div style={{ marginTop: "14px", padding: "14px", borderRadius: "12px", background: "#fff7ed", border: "1px solid #fed7aa" }}>
+                  <div style={{ fontWeight: 700, color: "#9a3412", marginBottom: "8px", fontSize: "13.5px" }}>
+                    Required search keys for this template
+                  </div>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    {dynamicRequirements.map((requirement) => (
+                      <div key={requirement.source} style={{ color: "#7c2d12", fontSize: "13px", lineHeight: 1.45 }}>
+                        <strong>{requirement.title}</strong>
+                        <div>{requirement.description}</div>
+                        <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
+                          {requirement.fields.map((field) => (
+                            <li key={`${requirement.source}-${field.key}`}>
+                              <code>{field.key}</code>{field.required ? " *" : ""}{field.dataAliases ? ` → data: ${field.dataAliases.join(", ")}` : " → root request field"}
+                            </li>
+                          ))}
+                          {requirement.oneOf && (
+                            <li>
+                              one of: <code>{requirement.oneOf.join(" / ")}</code>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: "24px" }}>

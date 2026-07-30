@@ -41,6 +41,12 @@ import {
   sanitizeDocxFileName,
   parseDocxJsonField,
 } from "../../../utils/docxTemplateHelpers";
+import {
+  buildExternalDocxApiPayload,
+  createExternalDocxTestInputs,
+  getVariantDynamicRequirements,
+  validateExternalDocxInputs,
+} from "../../../utils/docxApiRequirements";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -409,6 +415,43 @@ const createTestInputs = (variant) =>
     return acc;
   }, {});
 
+const parseAuditPayload = (log = {}) => {
+  const rawPayload =
+    log.payload ??
+    log.data ??
+    log.requestData ??
+    log.requestPayload ??
+    log.body ??
+    null;
+
+  if (rawPayload === null || rawPayload === undefined || rawPayload === "") {
+    return null;
+  }
+
+  if (typeof rawPayload === "string") {
+    try {
+      return JSON.parse(rawPayload);
+    } catch (error) {
+      return rawPayload;
+    }
+  }
+
+  return rawPayload;
+};
+
+const formatAuditTimestamp = (timestamp) => {
+  if (!timestamp) {
+    return "—";
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return String(timestamp);
+  }
+
+  return date.toLocaleString("ru-RU");
+};
+
 const DocxGenerator = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -424,6 +467,8 @@ const DocxGenerator = () => {
   const [testTemplate, setTestTemplate] = useState(null);
   const [testVariantIdx, setTestVariantIdx] = useState(0);
   const [testInputs, setTestInputs] = useState({});
+  const [testMode, setTestMode] = useState("external");
+  const [externalTestInputs, setExternalTestInputs] = useState({});
   const [isTestGenerating, setIsTestGenerating] = useState(false);
   const [collapsedVariants, setCollapsedVariants] = useState({});
   const [valueBuilder, setValueBuilder] = useState({
@@ -459,6 +504,7 @@ const DocxGenerator = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [auditTemplate, setAuditTemplate] = useState(null);
+  const [expandedAuditLog, setExpandedAuditLog] = useState(null);
 
   const openValueBuilder = (variantIndex, keyIndex, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
@@ -972,6 +1018,7 @@ const DocxGenerator = () => {
     setAuditTemplate(template);
     setShowAuditModal(true);
     setIsLoadingAudit(true);
+    setExpandedAuditLog(null);
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("access_token");
       const res = await axios.get(`${API_URL}/api/docx/audit?templateId=${template.ID || template.id}`, {
@@ -1001,6 +1048,8 @@ const DocxGenerator = () => {
     });
     setTestVariantIdx(0);
     setTestInputs(createTestInputs(variants[0]));
+    setExternalTestInputs(createExternalDocxTestInputs(variants[0]));
+    setTestMode("external");
     setShowTestModal(true);
   };
 
@@ -1008,6 +1057,7 @@ const DocxGenerator = () => {
     const variants = testTemplate.parsedVariants || normalizeDocxVariants(testTemplate.variants);
     setTestVariantIdx(variantIndex);
     setTestInputs(createTestInputs(variants[variantIndex]));
+    setExternalTestInputs(createExternalDocxTestInputs(variants[variantIndex]));
   };
 
   const handleRunTestGenerate = async () => {
@@ -1018,16 +1068,36 @@ const DocxGenerator = () => {
       return;
     }
 
-    setIsTestGenerating(true);
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      const dynamicRequirements = getVariantDynamicRequirements(variant);
+      const requestBody =
+        testMode === "external"
+          ? buildExternalDocxApiPayload({
+              templateId: testTemplate.ID || testTemplate.id,
+              templatePath: variant.templatePath,
+              format: "pdf",
+              inputs: externalTestInputs,
+              requirements: dynamicRequirements,
+            })
+          : {
+              templatePath: variant.templatePath,
+              data: buildDocxPayload(variant, {}, testInputs, testTemplate.uniqueIdFormat || testTemplate.UniqueIdFormat),
+              format: "pdf",
+            };
+
+      if (testMode === "external") {
+        const missing = validateExternalDocxInputs(dynamicRequirements, externalTestInputs);
+        if (missing.length > 0) {
+          alert(`Заполните обязательные поля: ${missing.join(", ")}`);
+          return;
+        }
+      }
+
+      setIsTestGenerating(true);
       const response = await axios.post(
         `${API_URL}/api/docx/generate`,
-        {
-          templatePath: variant.templatePath,
-          data: buildDocxPayload(variant, {}, testInputs, testTemplate.uniqueIdFormat || testTemplate.UniqueIdFormat),
-          format: "pdf",
-        },
+        requestBody,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -2128,9 +2198,106 @@ const DocxGenerator = () => {
                   />
                 </label>
 
+                <div className="docx-test-mode-switch">
+                  {[
+                    { value: "external", label: "External API test" },
+                    { value: "manual", label: "Manual placeholder test" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={testMode === option.value ? "active" : ""}
+                      onClick={() => setTestMode(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
                 {(() => {
                   const variant = (testTemplate.parsedVariants || [])[testVariantIdx];
+                  const dynamicRequirements = getVariantDynamicRequirements(variant || {});
                   const keys = variant?.keys || [];
+
+                  if (testMode === "external") {
+                    return (
+                      <div className="docx-external-test">
+                        <div className="docx-test-mode-note">
+                          <Database size={18} />
+                          <div>
+                            <strong>External API test</strong>
+                            <span>
+                              Sends compact payload: clientCode and only required identifiers for dynamic data lookup.
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="docx-external-fields">
+                          <label className="docx-test-key">
+                            <span>
+                              <code>clientCode</code>
+                              <small>Required client code for Frontovik/ABS data lookup.</small>
+                            </span>
+                            <input
+                              type="text"
+                              value={externalTestInputs.clientCode ?? ""}
+                              onChange={(event) =>
+                                setExternalTestInputs({
+                                  ...externalTestInputs,
+                                  clientCode: event.target.value,
+                                })
+                              }
+                              placeholder="00012345"
+                            />
+                          </label>
+
+                          {dynamicRequirements.map((requirement) =>
+                            requirement.fields.map((field) => (
+                              <label key={`${requirement.source}-${field.key}`} className="docx-test-key">
+                                <span>
+                                  <code>{field.key}{field.required ? " *" : ""}</code>
+                                  <small>
+                                    {requirement.title}
+                                    {field.dataAliases ? ` · data: ${field.dataAliases.join(", ")}` : " · root request field"}
+                                  </small>
+                                </span>
+                                <input
+                                  type={field.type || "text"}
+                                  value={externalTestInputs[field.key] ?? ""}
+                                  onChange={(event) =>
+                                    setExternalTestInputs({
+                                      ...externalTestInputs,
+                                      [field.key]: event.target.value,
+                                    })
+                                  }
+                                  placeholder={field.placeholder || ""}
+                                />
+                              </label>
+                            )),
+                          )}
+                        </div>
+
+                        {dynamicRequirements.length > 0 ? (
+                          <div className="docx-required-source-list">
+                            {dynamicRequirements.map((requirement) => (
+                              <div key={requirement.source} className="docx-required-source">
+                                <strong>{requirement.title}</strong>
+                                <span>{requirement.description}</span>
+                                {requirement.oneOf && (
+                                  <small>Required: one of {requirement.oneOf.join(" / ")}</small>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="docx-mapping-empty">
+                            <Info size={24} />
+                            <span>For this variant clientCode is enough. No dynamic table identifiers were detected.</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
 
                   if (keys.length === 0) {
                     return (
@@ -2522,14 +2689,17 @@ const DocxGenerator = () => {
         {showAuditModal && (
           <div className="docx-modal-layer">
             <motion.div
-              className="docx-modal-container"
-              style={{ maxWidth: "1000px" }}
+              className="docx-modal docx-audit-modal"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <div className="docx-modal-header">
-                <h2>История генераций: {auditTemplate?.name}</h2>
+              <div className="docx-modal__header docx-audit-modal__header">
+                <div>
+                  <span className="docx-eyebrow">История действий</span>
+                  <h2>История генераций</h2>
+                  <p>{auditTemplate?.name || "Шаблон документа"}</p>
+                </div>
                 <button
                   type="button"
                   className="docx-icon-btn"
@@ -2538,49 +2708,94 @@ const DocxGenerator = () => {
                   <X size={20} />
                 </button>
               </div>
-              <div className="docx-modal-content">
+              <div className="docx-modal__body docx-audit-modal__body">
                 {isLoadingAudit ? (
-                  <div style={{ padding: "40px", textAlign: "center" }}>
-                    <Loader2 className="docx-spin" size={32} color="#3b82f6" style={{ margin: "0 auto 16px" }} />
+                  <div className="docx-audit-loading">
+                    <Loader2 className="docx-spin" size={34} />
                     <p>Загрузка истории...</p>
                   </div>
                 ) : auditLogs.length === 0 ? (
                   <div className="docx-empty-state">
-                    <Clock size={48} color="#94a3b8" style={{ marginBottom: "16px" }} />
-                    <h3>Истории пока нет</h3>
-                    <p>Документ еще ни разу не генерировался</p>
+                    <Clock size={48} />
+                    <strong>Истории пока нет</strong>
+                    <p>Документ еще ни разу не генерировался.</p>
                   </div>
                 ) : (
-                  <div className="docx-table-container">
-                    <table className="docx-table">
-                      <thead>
-                        <tr>
-                          <th>Дата и Время</th>
-                          <th>Пользователь</th>
-                          <th>ID Шаблона</th>
-                          <th>Формат</th>
-                          <th>Данные</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {auditLogs.map((log, idx) => (
-                          <tr key={idx}>
-                            <td>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
-                            <td>{log.username} (ID: {log.userId})</td>
-                            <td>{log.templateId}</td>
-                            <td><span className={`docx-badge ${log.format === 'pdf' ? 'docx-badge--danger' : 'docx-badge--primary'}`}>{log.format?.toUpperCase()}</span></td>
-                            <td>
-                              <details>
-                                <summary style={{ cursor: "pointer", color: "#3b82f6" }}>Посмотреть данные</summary>
-                                <pre style={{ fontSize: "11px", backgroundColor: "#f1f5f9", padding: "8px", borderRadius: "4px", marginTop: "8px", maxHeight: "200px", overflow: "auto" }}>
-                                  {JSON.stringify(log.data, null, 2)}
-                                </pre>
-                              </details>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="docx-audit-list">
+                    {auditLogs.map((log, idx) => {
+                      const payload = parseAuditPayload(log);
+                      const rowKey = log.id || log._id || `${log.timestamp || "audit"}-${idx}`;
+                      const isExpanded = expandedAuditLog === rowKey;
+                      const format = String(log.format || "docx").toLowerCase();
+
+                      return (
+                        <article key={rowKey} className={`docx-audit-card ${isExpanded ? "is-open" : ""}`}>
+                          <div className="docx-audit-card__timeline">
+                            <span />
+                          </div>
+                          <div className="docx-audit-card__main">
+                            <div className="docx-audit-card__top">
+                              <div>
+                                <strong>{formatAuditTimestamp(log.timestamp)}</strong>
+                                <span>
+                                  {log.username || "Неизвестный пользователь"}
+                                  {log.userId ? ` · ID ${log.userId}` : ""}
+                                </span>
+                              </div>
+                              <span className={`docx-badge ${format === "pdf" ? "docx-badge--danger" : "docx-badge--primary"}`}>
+                                {format.toUpperCase()}
+                              </span>
+                            </div>
+
+                            <div className="docx-audit-meta">
+                              <span>
+                                <small>Template ID</small>
+                                <b>{log.templateId || auditTemplate?.ID || auditTemplate?.id || "—"}</b>
+                              </span>
+                              <span>
+                                <small>Template</small>
+                                <b>{log.templateName || auditTemplate?.name || "—"}</b>
+                              </span>
+                              <span>
+                                <small>Payload</small>
+                                <b>{payload ? "Есть данные" : "Нет данных"}</b>
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="docx-audit-data-toggle"
+                              onClick={() => setExpandedAuditLog(isExpanded ? null : rowKey)}
+                            >
+                              <FileJson size={16} />
+                              <span>{isExpanded ? "Скрыть данные" : "Посмотреть данные"}</span>
+                              <ChevronRight size={16} />
+                            </button>
+
+                            <AnimatePresence initial={false}>
+                              {isExpanded && (
+                                <motion.div
+                                  className="docx-audit-payload"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.22 }}
+                                >
+                                  {payload ? (
+                                    <pre>{typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)}</pre>
+                                  ) : (
+                                    <div className="docx-audit-payload__empty">
+                                      <Info size={18} />
+                                      <span>В этой записи нет сохраненного payload.</span>
+                                    </div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
               </div>

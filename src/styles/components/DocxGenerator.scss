@@ -1099,10 +1099,350 @@
   background: var(--bg-secondary);
 }
 
+.docx-audit-modal {
+  width: min(980px, calc(100vw - 32px));
+  max-height: min(860px, calc(100vh - 32px));
+}
+
+.docx-audit-modal__header {
+  align-items: flex-start;
+
+  h2 {
+    margin: 4px 0 4px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+}
+
+.docx-audit-modal__body {
+  padding: 20px 22px 24px;
+}
+
+.docx-audit-loading {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+
+  svg {
+    color: #c8102e;
+  }
+}
+
+.docx-audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.docx-audit-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--bg-surface), var(--bg-secondary));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &.is-open {
+    border-color: rgba(200, 16, 46, 0.32);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.1);
+  }
+}
+
+.docx-audit-card__timeline {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 26px;
+    bottom: -22px;
+    width: 2px;
+    border-radius: 999px;
+    background: var(--border-color);
+  }
+
+  span {
+    width: 12px;
+    height: 12px;
+    border: 3px solid #fee2e2;
+    border-radius: 999px;
+    background: #c8102e;
+    box-shadow: 0 0 0 5px rgba(200, 16, 46, 0.08);
+    z-index: 1;
+  }
+}
+
+.docx-audit-card:last-child .docx-audit-card__timeline::before {
+  display: none;
+}
+
+.docx-audit-card__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.docx-audit-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--text-color);
+    font-size: 15px;
+  }
+
+  span:not(.docx-badge) {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+}
+
+.docx-audit-meta {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 120px;
+  gap: 10px;
+
+  > span {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.68);
+  }
+
+  small {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  b {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-color);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.docx-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.docx-badge--danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.docx-badge--primary {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.docx-audit-data-toggle {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid rgba(200, 16, 46, 0.22);
+  border-radius: 999px;
+  background: rgba(200, 16, 46, 0.06);
+  color: #c8102e;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: rgba(200, 16, 46, 0.42);
+    background: rgba(200, 16, 46, 0.1);
+    transform: translateY(-1px);
+  }
+
+  svg:last-child {
+    transition: transform 0.2s ease;
+  }
+}
+
+.docx-audit-card.is-open .docx-audit-data-toggle svg:last-child {
+  transform: rotate(90deg);
+}
+
+.docx-audit-payload {
+  overflow: hidden;
+
+  pre {
+    max-height: 320px;
+    margin: 0;
+    padding: 14px;
+    overflow: auto;
+    border: 1px solid #1e293b;
+    border-radius: 14px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.docx-audit-payload__empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .docx-test-key-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.docx-test-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+
+  button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+    &.active {
+      background: var(--bg-surface);
+      color: #c8102e;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    }
+  }
+}
+
+.docx-external-test {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.docx-test-mode-note {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(200, 16, 46, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(200, 16, 46, 0.08), rgba(255, 255, 255, 0.72));
+  color: var(--text-color);
+
+  svg {
+    flex: 0 0 auto;
+    color: #c8102e;
+    margin-top: 2px;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  strong {
+    font-size: 14px;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+.docx-external-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.docx-required-source-list {
+  display: grid;
+  gap: 10px;
+}
+
+.docx-required-source {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #7c2d12;
+
+  strong {
+    font-size: 13px;
+  }
+
+  span,
+  small {
+    font-size: 12px;
+    line-height: 1.45;
+  }
 }
 
 .docx-test-key {
@@ -1321,7 +1661,8 @@
   .docx-form-grid,
   .docx-period-grid,
   .docx-variant-title-fields,
-  .docx-test-key-list {
+  .docx-test-key-list,
+  .docx-external-fields {
     grid-template-columns: 1fr;
   }
 
@@ -1343,6 +1684,10 @@
   }
 
   .docx-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .docx-audit-meta {
     grid-template-columns: 1fr;
   }
 }
@@ -1373,6 +1718,22 @@
 
   .docx-modal__footer {
     flex-direction: column-reverse;
+  }
+
+  .docx-test-mode-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .docx-audit-card {
+    grid-template-columns: 1fr;
+  }
+
+  .docx-audit-card__timeline {
+    display: none;
+  }
+
+  .docx-audit-card__top {
+    flex-direction: column;
   }
 }
 

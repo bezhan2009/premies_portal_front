@@ -1484,3 +1484,86 @@ button:active {
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
+
+.mini-chat-date-divider {
+  align-self: center;
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 12px;
+  border: 1px solid rgba(235, 37, 37, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #b91c1c;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.mini-chat-date-divider:hover,
+.mini-chat-date-divider.active {
+  transform: translateY(-1px);
+  border-color: rgba(235, 37, 37, 0.34);
+  background: rgba(254, 226, 226, 0.96);
+}
+
+.mini-chat-date-filter {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(235, 37, 37, 0.12);
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.92), rgba(255, 255, 255, 0.78));
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mini-chat-date-filter span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-chat-date-filter button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(185, 28, 28, 0.1);
+  color: #991b1b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-header button,
+.thread-item button,
+.chat-messages button {
+  min-height: 32px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.chat-header button {
+  min-width: 32px;
+  border-radius: 10px;
+}
+
+.thread-item {
+  min-height: 58px;
+  box-sizing: border-box;
+}

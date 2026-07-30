@@ -6,7 +6,8 @@ import {
   X, Send, Paperclip, Smile, Check, CheckCheck, 
   Minus, ArrowLeft, Search, User, Shield, PlusCircle, Users, MoreVertical,
   Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown,
-  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Info
+  CheckSquare, CheckCircle2, CornerUpRight, Copy, AlertCircle, CheckCircle, Info,
+  CalendarDays, MessageSquareText, Megaphone, Sparkles
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
@@ -16,6 +17,7 @@ import ImageModal from "../modal/ImageModal";
 import PasteFileModal from "../modal/PasteFileModal";
 import { useLocation } from "react-router-dom";
 import filePng from "../../assets/file.png";
+import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
 import "react-resizable/css/styles.css";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -310,6 +312,7 @@ const MiniChatWindow = () => {
   // Advanced Features: Active Chat Search
   const [localSearchActive, setLocalSearchActive] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
   
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -578,6 +581,7 @@ const MiniChatWindow = () => {
   useEffect(() => {
     handleExitMessageSelection();
     handleExitChatSelection();
+    setSelectedDateFilter(null);
   }, [currentView, recipientId, chatType]);
 
   // Reset userSearchQuery when exiting new_chat view
@@ -1287,24 +1291,37 @@ const MiniChatWindow = () => {
     }
   };
 
-  const handleDeleteChat = async (threadId) => {
-    if (!window.confirm("Вы уверены, что хотите удалить весь чат?")) return;
+  const handleDeleteChat = async (threadId, targetChatType = chatType) => {
+    const targetThread = sortedThreads.find(t => Number(t.user_id) === Number(threadId) && t.chatType === targetChatType);
+    const isAnnouncementChannel = targetChatType === "group" && targetThread?.is_announcement;
+    const confirmMessage = isAnnouncementChannel
+      ? "Удалить канал «Объявления»? Это действие удалит канал и его сообщения."
+      : targetChatType === "group"
+        ? "Вы уверены, что хотите удалить эту группу?"
+        : "Вы уверены, что хотите удалить весь чат?";
+
+    if (!window.confirm(confirmMessage)) return;
     try {
-      let url = `${API_URL}/api/feedback/chat`;
-      if (chatType === "direct") {
-        url += `?chatWith=${threadId}`;
+      let url = "";
+      if (targetChatType === "group") {
+        url = `${API_URL}/api/groups/${threadId}`;
+      } else if (targetChatType === "direct") {
+        url = `${API_URL}/api/feedback/chat?chatWith=${threadId}`;
       } else {
-        url += `?userId=${threadId}`;
+        url = `${API_URL}/api/feedback/chat?userId=${threadId}`;
       }
       await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
       
       if (recipientId === threadId) {
         setRecipientId(0);
         setMessages([]);
+        setCurrentView("threads");
       }
       fetchThreadsData();
+      setNotification({ type: "success", message: isAnnouncementChannel ? "Канал «Объявления» удален" : "Чат удален" });
     } catch (err) {
       console.error("Error deleting chat:", err);
+      setNotification({ type: "error", message: "Не удалось удалить чат" });
     }
   };
 
@@ -1524,6 +1541,7 @@ const MiniChatWindow = () => {
       message: g.last_message || "",
       unread_count: g.unread_count || 0,
       isGroup: true,
+      is_announcement: Boolean(g.is_announcement),
       chatType: "group",
     }));
 
@@ -1575,10 +1593,16 @@ const MiniChatWindow = () => {
 
   // Filter messages based on local query search
   const filteredMessages = useMemo(() => {
-    if (!localSearchActive || !localSearchQuery.trim()) return messages;
+    let source = messages;
+
+    if (selectedDateFilter) {
+      source = source.filter(m => getMessageDayKey(m.created_at) === selectedDateFilter);
+    }
+
+    if (!localSearchActive || !localSearchQuery.trim()) return source;
     const query = localSearchQuery.toLowerCase().trim();
-    return messages.filter(m => m.message?.toLowerCase().includes(query));
-  }, [messages, localSearchActive, localSearchQuery]);
+    return source.filter(m => m.message?.toLowerCase().includes(query));
+  }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
 
   // Filter users list
   const filteredUsers = useMemo(() => {
@@ -2081,7 +2105,7 @@ const MiniChatWindow = () => {
               </button>
               <button 
                 onClick={() => {
-                  handleDeleteChat(contextMenu.target.user_id);
+                  handleDeleteChat(contextMenu.target.user_id, contextMenu.target.chatType);
                   setContextMenu({ ...contextMenu, visible: false });
                 }}
                 style={{
@@ -2099,7 +2123,7 @@ const MiniChatWindow = () => {
                   textAlign: "left"
                 }}
               >
-                <Trash2 size={14} /> Удалить чат
+                <Trash2 size={14} /> {contextMenu.target?.chatType === "group" ? "Удалить канал" : "Удалить чат"}
               </button>
             </>
           )}
@@ -2640,6 +2664,23 @@ const MiniChatWindow = () => {
                         </div>
                       )}
 
+                      {selectedDateFilter && (
+                        <motion.div
+                          className="mini-chat-date-filter"
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                        >
+                          <CalendarDays size={14} />
+                          <span>
+                            Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}
+                          </span>
+                          <button type="button" onClick={() => setSelectedDateFilter(null)} title="Сбросить фильтр">
+                            <X size={13} />
+                          </button>
+                        </motion.div>
+                      )}
+
                       {/* PINNED MESSAGES BAR */}
                       {pinnedMessages.length > 0 && pinnedBarVisible && (
                         <div 
@@ -2766,6 +2807,7 @@ const MiniChatWindow = () => {
 
                       {/* Messages scroll content */}
                       <div 
+                        className="mini-chat-messages-scroll"
                         onScroll={handleMessagesScroll}
                         onContextMenu={(e) => {
                           // Only show chatArea menu when right-clicking on the background itself
@@ -2785,7 +2827,7 @@ const MiniChatWindow = () => {
                           display: "flex",
                           flexDirection: "column",
                           gap: "10px",
-                          background: "var(--bg-color, #f1f5f9)"
+                          background: "linear-gradient(135deg, rgba(248, 250, 252, 0.92), rgba(254, 242, 242, 0.74))"
                         }}
                       >
                         {loading ? (
@@ -2797,8 +2839,27 @@ const MiniChatWindow = () => {
                             {(() => {
                               const groups = [];
                               let currentAlbum = null;
-                              
+                              let currentDayKey = null;
+                              const flushAlbum = () => {
+                                if (currentAlbum) {
+                                  groups.push(currentAlbum);
+                                  currentAlbum = null;
+                                }
+                              };
+                               
                               filteredMessages.forEach((msg) => {
+                                const dayKey = getMessageDayKey(msg.created_at);
+                                if (dayKey && dayKey !== currentDayKey) {
+                                  flushAlbum();
+                                  currentDayKey = dayKey;
+                                  groups.push({
+                                    type: "date",
+                                    id: `date-${dayKey}`,
+                                    dayKey,
+                                    label: formatChatDayLabel(msg.created_at),
+                                  });
+                                }
+
                                 const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
                                 const hasText = !!msg.message;
                                 
@@ -2815,16 +2876,33 @@ const MiniChatWindow = () => {
                                     }
                                   }
                                 } else {
-                                  if (currentAlbum) {
-                                    groups.push(currentAlbum);
-                                    currentAlbum = null;
-                                  }
+                                  flushAlbum();
                                   groups.push({ type: 'single', ...msg });
                                 }
                               });
-                              if (currentAlbum) groups.push(currentAlbum);
+                              flushAlbum();
 
                               return groups.map(group => {
+                                if (group.type === "date") {
+                                  const isSelectedDay = selectedDateFilter === group.dayKey;
+                                  return (
+                                    <motion.button
+                                      key={group.id}
+                                      type="button"
+                                      className={`mini-chat-date-divider ${isSelectedDay ? "active" : ""}`}
+                                      onClick={() => setSelectedDateFilter(isSelectedDay ? null : group.dayKey)}
+                                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                                      transition={{ duration: 0.2 }}
+                                      title={isSelectedDay ? "Сбросить фильтр даты" : "Показать сообщения за этот день"}
+                                    >
+                                      <CalendarDays size={13} />
+                                      <span>{group.label}</span>
+                                    </motion.button>
+                                  );
+                                }
+
                                 if (group.type === 'album') {
                                   let isOut = false;
                                   if (chatType === "direct") {
@@ -3905,6 +3983,124 @@ const MiniChatWindow = () => {
       )}
 
       <style>{`
+        .mini-chat-header button,
+        .mini-chat-messages-scroll button,
+        .mini-chat-selection-bar button,
+        .mini-chat-context-menu > button {
+          min-height: 32px;
+          box-sizing: border-box;
+          flex-shrink: 0;
+        }
+        .mini-chat-header button {
+          min-width: 32px;
+          border-radius: 10px !important;
+        }
+        .mini-chat-header button:hover,
+        .mini-chat-messages-scroll button:hover {
+          background: rgba(235, 37, 37, 0.08) !important;
+        }
+        .mini-chat-messages-scroll {
+          position: relative;
+        }
+        .mini-chat-messages-scroll::before {
+          content: "";
+          position: sticky;
+          top: 0;
+          display: block;
+          height: 0;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .mini-chat-messages-scroll::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          opacity: 0.35;
+          background-image:
+            radial-gradient(circle at 18px 18px, rgba(235, 37, 37, 0.08) 0 1px, transparent 1.5px),
+            radial-gradient(circle at 64px 52px, rgba(15, 23, 42, 0.05) 0 1px, transparent 1.5px);
+          background-size: 92px 92px;
+        }
+        .mini-chat-date-divider {
+          align-self: center;
+          position: sticky;
+          top: 8px;
+          z-index: 2;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 28px;
+          padding: 5px 12px;
+          border: 1px solid rgba(235, 37, 37, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.82);
+          color: #b91c1c;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          font-size: 11px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        }
+        .mini-chat-date-divider:hover,
+        .mini-chat-date-divider.active {
+          transform: translateY(-1px);
+          border-color: rgba(235, 37, 37, 0.34);
+          background: rgba(254, 226, 226, 0.94);
+        }
+        .mini-chat-date-filter {
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-bottom: 1px solid rgba(235, 37, 37, 0.12);
+          background: linear-gradient(135deg, rgba(254, 226, 226, 0.92), rgba(255, 255, 255, 0.78));
+          color: #991b1b;
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .mini-chat-date-filter span {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .mini-chat-date-filter button {
+          width: 28px;
+          min-width: 28px;
+          height: 28px;
+          border: 0;
+          border-radius: 50%;
+          background: rgba(185, 28, 28, 0.1);
+          color: #991b1b;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .mini-chat-thread-row {
+          position: relative;
+          isolation: isolate;
+        }
+        .mini-chat-thread-row::after {
+          content: "";
+          position: absolute;
+          inset: 8px;
+          z-index: -1;
+          border-radius: 16px;
+          background: rgba(235, 37, 37, 0.06);
+          opacity: 0;
+          transform: scale(0.96);
+          transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .mini-chat-thread-row:hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
         .mini-chat-selection-bar {
           min-height: 52px;
           box-sizing: border-box;

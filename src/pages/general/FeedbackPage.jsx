@@ -4,7 +4,7 @@ import axios from "axios";
 import { 
   Send, AlertCircle, Paperclip, Smile, Check, CheckCheck,
   Search, Shield, Mic, Trash2, CornerUpLeft, Edit3, Pin, Bell, BellOff, ArrowUp, ArrowDown, PlusCircle,
-  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle, Info, MessageSquare, ArrowLeft, Users
+  CheckSquare, X, CheckCircle2, CornerUpRight, Copy, CheckCircle, Info, MessageSquare, ArrowLeft, Users, CalendarDays
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Helmet } from "react-helmet";
@@ -15,6 +15,7 @@ import PasteFileModal from "../../components/modal/PasteFileModal";
 import filePng from "../../assets/file.png";
 import CreateGroupModal from "../../components/general/CreateGroupModal";
 import GroupMembersModal from "../../components/general/GroupMembersModal";
+import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -514,6 +515,7 @@ export default function FeedbackPage() {
   const [mutedChats, setMutedChats] = useState([]);
   const [localSearchActive, setLocalSearchActive] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -863,6 +865,10 @@ export default function FeedbackPage() {
     }
   }, [messages.length, localSearchActive]);
 
+  useEffect(() => {
+    setSelectedDateFilter(null);
+  }, [recipientId, activeChatType, activeGroup?.id]);
+
   const handleMessagesScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     setShowScrollBottomBtn(scrollHeight - scrollTop - clientHeight > 300);
@@ -1045,6 +1051,23 @@ export default function FeedbackPage() {
       fetchMessages();
     } catch (err) {
       setErrorMsg("Не удалось очистить историю сообщений.");
+    }
+  };
+
+  const handleDeleteAnnouncementChannel = async () => {
+    if (!activeGroup?.id) return;
+    if (!window.confirm("Удалить канал «Объявления»? Это действие удалит канал и его сообщения.")) return;
+    try {
+      await axios.delete(`${API_URL}/api/groups/${activeGroup.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActiveGroup(null);
+      setGroupDetails(null);
+      setMessages([]);
+      setActiveChatType("support");
+      fetchGroups();
+    } catch (err) {
+      setErrorMsg("Не удалось удалить канал объявлений.");
     }
   };
 
@@ -1292,10 +1315,14 @@ export default function FeedbackPage() {
 
   // Filter messages based on local query search
   const filteredMessages = useMemo(() => {
-    if (!localSearchActive || !localSearchQuery.trim()) return messages;
+    let source = messages;
+    if (selectedDateFilter) {
+      source = source.filter(m => getMessageDayKey(m.created_at) === selectedDateFilter);
+    }
+    if (!localSearchActive || !localSearchQuery.trim()) return source;
     const query = localSearchQuery.toLowerCase().trim();
-    return messages.filter(m => m.message?.toLowerCase().includes(query));
-  }, [messages, localSearchActive, localSearchQuery]);
+    return source.filter(m => m.message?.toLowerCase().includes(query));
+  }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
 
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
@@ -2527,7 +2554,29 @@ export default function FeedbackPage() {
                 <span>Участники</span>
               </button>
             )}
-            
+            {activeChatType === "group" && activeGroup?.is_announcement && (
+              <button
+                onClick={handleDeleteAnnouncementChannel}
+                title="Удалить канал объявлений"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.16)",
+                  padding: "6px 12px",
+                  borderRadius: "14px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#ef4444"
+                }}
+              >
+                <Trash2 size={14} />
+                <span>Удалить канал</span>
+              </button>
+            )}
+             
             {/* Search in chat toggle */}
             <button 
               onClick={() => setLocalSearchActive(!localSearchActive)}
@@ -2592,6 +2641,21 @@ export default function FeedbackPage() {
               }}
             />
           </div>
+        )}
+
+        {selectedDateFilter && (
+          <motion.div
+            className="mini-chat-date-filter"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
+            <CalendarDays size={14} />
+            <span>Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}</span>
+            <button type="button" onClick={() => setSelectedDateFilter(null)} title="Сбросить фильтр">
+              <X size={13} />
+            </button>
+          </motion.div>
         )}
 
         {/* PINNED MESSAGES BAR */}
@@ -2754,8 +2818,27 @@ export default function FeedbackPage() {
               {(() => {
                 const groups = [];
                 let currentAlbum = null;
+                let currentDayKey = null;
+                const flushAlbum = () => {
+                  if (currentAlbum) {
+                    groups.push(currentAlbum);
+                    currentAlbum = null;
+                  }
+                };
                 
                 filteredMessages.forEach((msg) => {
+                  const dayKey = getMessageDayKey(msg.created_at);
+                  if (dayKey && dayKey !== currentDayKey) {
+                    flushAlbum();
+                    currentDayKey = dayKey;
+                    groups.push({
+                      type: "date",
+                      id: `date-${dayKey}`,
+                      dayKey,
+                      label: formatChatDayLabel(msg.created_at),
+                    });
+                  }
+
                   const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
                   const hasText = !!msg.message;
                   
@@ -2772,16 +2855,32 @@ export default function FeedbackPage() {
                       }
                     }
                   } else {
-                    if (currentAlbum) {
-                      groups.push(currentAlbum);
-                      currentAlbum = null;
-                    }
+                    flushAlbum();
                     groups.push({ type: 'single', ...msg });
                   }
                 });
-                if (currentAlbum) groups.push(currentAlbum);
+                flushAlbum();
 
                 return groups.map(group => {
+                  if (group.type === "date") {
+                    const isSelectedDay = selectedDateFilter === group.dayKey;
+                    return (
+                      <motion.button
+                        key={group.id}
+                        type="button"
+                        className={`mini-chat-date-divider ${isSelectedDay ? "active" : ""}`}
+                        onClick={() => setSelectedDateFilter(isSelectedDay ? null : group.dayKey)}
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <CalendarDays size={13} />
+                        <span>{group.label}</span>
+                      </motion.button>
+                    );
+                  }
+
                   if (group.type === 'album') {
                     const isOutgoing = group.user_id === currentUserId && !group.is_operator;
                     return (
