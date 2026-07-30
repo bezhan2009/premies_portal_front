@@ -518,6 +518,7 @@ export default function FeedbackPage() {
   const [selectedDateFilter, setSelectedDateFilter] = useState(null);
 
   const messagesEndRef = useRef(null);
+  const messagesScrollRef = useRef(null);
 
   const getRoles = () => {
     try { return JSON.parse(localStorage.getItem("role_ids") || "[]"); } 
@@ -1252,6 +1253,16 @@ export default function FeedbackPage() {
     const query = localSearchQuery.toLowerCase().trim();
     return source.filter(m => m.message?.toLowerCase().includes(query));
   }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
+
+  const handleToggleDateFilter = (dayKey) => {
+    const nextFilter = selectedDateFilter === dayKey ? null : dayKey;
+    setSelectedDateFilter(nextFilter);
+    if (nextFilter) {
+      requestAnimationFrame(() => {
+        messagesScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+  };
 
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
@@ -2574,14 +2585,14 @@ export default function FeedbackPage() {
 
         {selectedDateFilter && (
           <motion.div
-            className="mini-chat-date-filter"
+            className="main-chat-date-filter"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
             <CalendarDays size={14} />
             <span>Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}</span>
-            <button type="button" onClick={() => setSelectedDateFilter(null)} title="Сбросить фильтр">
+            <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDateFilter(null); }} title="Сбросить фильтр">
               <X size={13} />
             </button>
           </motion.div>
@@ -2725,6 +2736,7 @@ export default function FeedbackPage() {
         {/* MESSAGES LIST */}
         <div
           className="chat-messages chat-background-animated"
+          ref={messagesScrollRef}
           onScroll={handleMessagesScroll}
           onContextMenu={(e) => {
             const clickedOnBackground = e.target === e.currentTarget ||
@@ -2797,8 +2809,12 @@ export default function FeedbackPage() {
                       <motion.button
                         key={group.id}
                         type="button"
-                        className={`mini-chat-date-divider ${isSelectedDay ? "active" : ""}`}
-                        onClick={() => setSelectedDateFilter(isSelectedDay ? null : group.dayKey)}
+                        className={`main-chat-date-divider ${isSelectedDay ? "active" : ""}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleToggleDateFilter(group.dayKey);
+                        }}
                         initial={{ opacity: 0, y: 8, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.96 }}
