@@ -1,6 +1,6 @@
 import React from "react";
 import useChatStore from "../../store/useChatStore.js";
-import { MessageSquareText, Sparkles } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,23 +31,19 @@ const ChatWidgetOverlay = () => {
         className="chat-widget-btn"
         onClick={toggleMiniChat}
         title={isMiniChatOpen ? "Закрыть чат" : "Открыть Актив чат"}
-        whileHover={{ scale: 1.08, y: -3, rotate: -1, transition: { type: "spring", stiffness: 420, damping: 22 } }}
-        whileTap={{ scale: 0.96 }}
+        whileHover={{ scale: 1.1, y: -2, transition: { type: "spring", stiffness: 400, damping: 20 } }}
+        whileTap={{ scale: 0.9 }}
         animate={{
-          background: isMiniChatOpen
-            ? "linear-gradient(135deg, rgba(235, 37, 37, 0.85) 0%, rgba(200, 20, 20, 0.95) 100%)"
-            : "linear-gradient(135deg, rgba(235, 37, 37, 0.75) 0%, rgba(200, 20, 20, 0.85) 100%)",
+          backgroundColor: isMiniChatOpen ? "rgba(235, 37, 37, 0.95)" : "rgba(235, 37, 37, 0.85)",
           boxShadow: isMiniChatOpen
             ? "0 8px 24px rgba(235, 37, 37, 0.45)"
             : "0 8px 24px rgba(200, 20, 20, 0.30)",
         }}
         transition={{ duration: 0.3 }}
         style={{
-          width: "56px",
-          minWidth: "56px",
-          height: "56px",
-          minHeight: "56px",
-          borderRadius: "18px",
+          width: "50px",
+          height: "50px",
+          borderRadius: "50%",
           color: "white",
           border: "1px solid rgba(255, 255, 255, 0.25)",
           display: "flex",
@@ -58,32 +54,10 @@ const ChatWidgetOverlay = () => {
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
           overflow: "visible", // Ensure badge is never clipped
-          outline: "none",
-          isolation: "isolate"
+          outline: "none"
         }}
       >
-        <motion.span
-          aria-hidden="true"
-          animate={{ rotate: isMiniChatOpen ? 0 : [0, -6, 6, 0] }}
-          transition={{ duration: 2.4, repeat: isMiniChatOpen ? 0 : Infinity, repeatDelay: 2.6 }}
-          style={{
-            position: "absolute",
-            inset: "8px",
-            borderRadius: "15px",
-            background: "rgba(255,255,255,0.12)",
-            zIndex: -1,
-          }}
-        />
-        <MessageSquareText size={25} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" }} />
-        <Sparkles
-          size={13}
-          style={{
-            position: "absolute",
-            top: "11px",
-            right: "11px",
-            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.18))",
-          }}
-        />
+        <MessageCircle size={24} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" }} />
 
         {/* Animated unread badge */}
         <AnimatePresence>

@@ -127,14 +127,16 @@ export const getVariantDynamicRequirements = (variant = {}) => {
     });
   });
 
+  if (usedSources.has("processing_transactions")) {
+    usedSources.delete("transactions");
+  }
+
   return Array.from(usedSources).map((source) => SOURCE_DEFINITIONS[source]);
 };
 
 export const createExternalDocxTestInputs = (variant = {}) => {
   const requirements = getVariantDynamicRequirements(variant);
-  const inputs = {
-    clientCode: ROOT_DEFAULTS.clientCode,
-  };
+  const inputs = {};
 
   requirements.forEach((requirement) => {
     requirement.fields.forEach((field) => {
@@ -180,8 +182,11 @@ export const buildExternalDocxApiPayload = ({
 }) => {
   const payload = {
     format,
-    clientCode: inputs.clientCode || ROOT_DEFAULTS.clientCode,
   };
+
+  if (String(inputs.clientCode || "").trim()) {
+    payload.clientCode = String(inputs.clientCode).trim();
+  }
 
   if (templateId) {
     payload.templateId = templateId;
@@ -227,10 +232,6 @@ export const buildExternalDocxApiPayload = ({
 export const validateExternalDocxInputs = (requirements = [], inputs = {}) => {
   const missing = [];
 
-  if (!String(inputs.clientCode || "").trim()) {
-    missing.push("clientCode");
-  }
-
   requirements.forEach((requirement) => {
     requirement.fields
       .filter((field) => field.required)
@@ -250,4 +251,3 @@ export const validateExternalDocxInputs = (requirements = [], inputs = {}) => {
 
   return missing;
 };
-

@@ -2242,31 +2242,13 @@ const DocxGenerator = () => {
                           <div>
                             <strong>Внешний API-тест</strong>
                             <span>
-                              Отправляет компактный payload во внешний endpoint <code>/api/docx/external/generate</code>: clientCode и только обязательные идентификаторы для поиска динамических данных.
+                              Отправляет компактный payload во внешний endpoint <code>/api/docx/external/generate</code>: только обязательные идентификаторы для выбранного шаблона.
                               Внешние сервисы должны передавать ключ в <code>X-Mobile-Documents-Key</code>, <code>X-API-Key</code> или <code>Authorization: Bearer service-key</code>.
                             </span>
                           </div>
                         </div>
 
                         <div className="docx-external-fields">
-                          <label className="docx-test-key">
-                            <span>
-                              <code>clientCode</code>
-                              <small>Обязательный код клиента для поиска данных во Фронтовике/ABS.</small>
-                            </span>
-                            <input
-                              type="text"
-                              value={externalTestInputs.clientCode ?? ""}
-                              onChange={(event) =>
-                                setExternalTestInputs({
-                                  ...externalTestInputs,
-                                  clientCode: event.target.value,
-                                })
-                              }
-                              placeholder="00012345"
-                            />
-                          </label>
-
                           {dynamicRequirements.map((requirement) =>
                             requirement.fields.map((field) => (
                               <label key={`${requirement.source}-${field.key}`} className="docx-test-key">
@@ -2308,7 +2290,7 @@ const DocxGenerator = () => {
                         ) : (
                           <div className="docx-mapping-empty">
                             <Info size={24} />
-                            <span>Для этого варианта достаточно clientCode. Динамические табличные идентификаторы не найдены.</span>
+                            <span>Для этого варианта дополнительные табличные идентификаторы не найдены. Заполните только поля, которые требует конкретный шаблон.</span>
                           </div>
                         )}
                       </div>
