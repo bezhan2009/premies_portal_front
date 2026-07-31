@@ -1811,3 +1811,252 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.docx-filter-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.docx-filter-builder__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  strong {
+    color: #172033;
+    font-size: 15px;
+  }
+
+  small {
+    color: #64748b;
+    line-height: 1.45;
+  }
+}
+
+.docx-filter-builder__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c8102e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.docx-filter-mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+
+  > span {
+    padding: 0 6px;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  button {
+    min-height: 34px;
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+
+    &:hover {
+      background: #f1f5f9;
+    }
+
+    &.is-active {
+      border-color: rgba(200, 16, 46, 0.18);
+      background: rgba(200, 16, 46, 0.08);
+      color: #a70e28;
+    }
+  }
+}
+
+.docx-filter-empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 22px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+
+  strong {
+    color: #334155;
+  }
+
+  span {
+    font-size: 12px;
+  }
+
+  &:hover {
+    border-color: rgba(200, 16, 46, 0.45);
+    background: rgba(200, 16, 46, 0.025);
+    color: #c8102e;
+  }
+}
+
+.docx-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.docx-filter-row {
+  display: grid;
+  grid-template-columns: 28px minmax(180px, 1.25fr) minmax(170px, 1fr) minmax(150px, 0.9fr) 36px;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.docx-filter-row__number {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.docx-filter-row__field,
+.docx-filter-row__operator,
+.docx-filter-row__value {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+
+  > small {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+.docx-filter-row__value {
+  position: relative;
+
+  input {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid #dbe2ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    outline: none;
+
+    &:focus {
+      border-color: rgba(200, 16, 46, 0.55);
+      box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.08);
+    }
+
+    &:disabled {
+      background: #f1f5f9;
+      color: transparent;
+    }
+  }
+
+  &.is-disabled::after {
+    content: "не требуется";
+    position: absolute;
+    margin: 35px 0 0 11px;
+    color: #94a3b8;
+    font-size: 12px;
+    pointer-events: none;
+  }
+}
+
+.docx-filter-row__remove {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 42px;
+  border: 1px solid #fee2e2;
+  border-radius: 9px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+
+  &:hover {
+    background: #fef2f2;
+  }
+}
+
+.docx-filter-legacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 780px) {
+  .docx-filter-builder__header {
+    flex-direction: column;
+  }
+
+  .docx-filter-builder__header .docx-btn {
+    width: 100%;
+  }
+
+  .docx-filter-row {
+    grid-template-columns: 28px 1fr 36px;
+  }
+
+  .docx-filter-row__field,
+  .docx-filter-row__operator,
+  .docx-filter-row__value {
+    grid-column: 2;
+  }
+
+  .docx-filter-row__number {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .docx-filter-row__remove {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}

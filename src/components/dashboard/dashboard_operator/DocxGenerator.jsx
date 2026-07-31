@@ -13,6 +13,7 @@ import {
   Eye,
   FileJson,
   FileText,
+  Filter,
   Info,
   Layers,
   Loader2,
@@ -47,6 +48,12 @@ import {
   getVariantDynamicRequirements,
   validateExternalDocxInputs,
 } from "../../../utils/docxApiRequirements";
+import {
+  createDocxTableFilter,
+  DOCX_FILTER_OPERATORS,
+  docxFilterNeedsValue,
+  normalizeDocxTableFilters,
+} from "../../../utils/docxTableFilters";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -264,12 +271,24 @@ const TABLE_SOURCE_FIELDS = {
     { value: "time", label: "Время транзакции (time)" },
     { value: "date_time", label: "Дата и время транзакции (date_time)" },
     { value: "amount", label: "Сумма транзакции (amount)" },
+    { value: "conamt", label: "Сумма в валюте расчёта (conamt)" },
     { value: "currency", label: "Валюта транзакции (currency)" },
+    { value: "conCurrency", label: "Валюта расчёта (conCurrency)" },
     { value: "details", label: "Детали транзакции (details)" },
     { value: "card", label: "Карта транзакции (card)" },
     { value: "stan", label: "STAN (stan)" },
     { value: "merchant", label: "Мерчант (merchant)" },
     { value: "status", label: "Статус (status)" },
+    { value: "transactionType", label: "Код операции (transactionType)" },
+    { value: "transactionTypeNumber", label: "Номер типа операции (transactionTypeNumber)" },
+    { value: "transactionTypeName", label: "Название операции (transactionTypeName)" },
+    { value: "responseCode", label: "Код ответа (responseCode)" },
+    { value: "reversal", label: "Признак отмены (reversal)" },
+    { value: "atmId", label: "Терминал (atmId)" },
+    { value: "account", label: "Счёт (account)" },
+    { value: "utrnno", label: "Номер операции (utrnno)" },
+    { value: "localTransactionDate", label: "Локальная дата (localTransactionDate)" },
+    { value: "localTransactionTime", label: "Локальное время (localTransactionTime)" },
     { value: "MOVD", label: "Списания (MOVD)" },
     { value: "MOVC", label: "Зачисления (MOVC)" },
     { value: "списания", label: "Списания (списания)" },
@@ -295,6 +314,20 @@ const TABLE_SOURCE_FIELDS = {
     { value: "amountCurrency", label: "Сумма (в валюте): (amountCurrency)" },
     { value: "amountCardCurrency", label: "Сумма в валюте карты (amountCardCurrency)" },
     { value: "availableBalance", label: "Доступный баланс (availableBalance)" },
+    { value: "amount", label: "Сумма операции (amount)" },
+    { value: "conamt", label: "Сумма расчёта (conamt)" },
+    { value: "currency", label: "Валюта (currency)" },
+    { value: "conCurrency", label: "Валюта расчёта (conCurrency)" },
+    { value: "transactionType", label: "Код операции (transactionType)" },
+    { value: "transactionTypeNumber", label: "Номер типа операции (transactionTypeNumber)" },
+    { value: "transactionTypeName", label: "Название операции (transactionTypeName)" },
+    { value: "responseCode", label: "Код ответа (responseCode)" },
+    { value: "reversal", label: "Признак отмены (reversal)" },
+    { value: "atmId", label: "Терминал (atmId)" },
+    { value: "account", label: "Счёт (account)" },
+    { value: "utrnno", label: "Номер операции (utrnno)" },
+    { value: "localTransactionDate", label: "Локальная дата (localTransactionDate)" },
+    { value: "localTransactionTime", label: "Локальное время (localTransactionTime)" },
   ]
 };
 
@@ -309,7 +342,7 @@ const parseSystemKeyForBuilder = (systemKey) => {
       tableField: "date",
       tableFormat: "none",
       tableFormatCustom: "",
-      tableFilter: "",
+      legacyTableFilter: "",
       formulaExpression: "",
     };
   }
@@ -349,7 +382,7 @@ const parseSystemKeyForBuilder = (systemKey) => {
       tableField: field || "date",
       tableFormat: format,
       tableFormatCustom: custom,
-      tableFilter: filterExpr,
+      legacyTableFilter: filterExpr,
       formulaExpression: "",
     };
   }
@@ -361,6 +394,7 @@ const parseSystemKeyForBuilder = (systemKey) => {
     tableField: "date",
     tableFormat: "none",
     tableFormatCustom: "",
+    legacyTableFilter: "",
     formulaExpression: expr,
   };
 };
@@ -392,8 +426,8 @@ const buildSystemKeyFromBuilder = (state) => {
       exprBody = state.tableFormatCustom || `${varName}.${field}`;
     }
     
-    if (state.tableFilter && state.tableFilter.trim() !== "") {
-      return `eval: (${source} || []).filter(${varName} => ${state.tableFilter}).map(${varName} => ${exprBody})`;
+    if (state.legacyTableFilter && state.legacyTableFilter.trim() !== "") {
+      return `eval: (${source} || []).filter(${varName} => ${state.legacyTableFilter}).map(${varName} => ${exprBody})`;
     }
     
     return `eval: (${source} || []).map(${varName} => ${exprBody})`;
@@ -439,6 +473,88 @@ const parseAuditPayload = (log = {}) => {
   return rawPayload;
 };
 
+const TABLE_SOURCE_OPTIONS = [
+  { value: "transactions", label: "Транзакции" },
+  { value: "processing_transactions", label: "Транзакции ПЦ" },
+  { value: "schedule", label: "График кредита" },
+];
+
+const NUMBER_FILTER_FIELDS = new Set([
+  "amount",
+  "principal",
+  "interest",
+  "balance",
+  "amountCurrency",
+  "amountCardCurrency",
+  "availableBalance",
+  "MOVD",
+  "MOVC",
+  "conamt",
+  "transactionType",
+  "transactionTypeNumber",
+  "reversal",
+  "utrnno",
+]);
+
+const DATE_FILTER_FIELDS = new Set(["date", "date_time", "localTransactionDate"]);
+
+const getTableFilterFieldType = (field) => {
+  if (NUMBER_FILTER_FIELDS.has(field)) return "number";
+  if (DATE_FILTER_FIELDS.has(field)) return "date";
+  return "text";
+};
+
+const getTableFilterFields = (source) =>
+  (TABLE_SOURCE_FIELDS[source] || []).map((field) => ({
+    ...field,
+    type: getTableFilterFieldType(field.value),
+  }));
+
+const parseLegacyTableFilters = (expression, source) => {
+  const normalized = String(expression || "").trim();
+  if (!normalized) {
+    return { filters: [], filterMode: "all", recognized: true };
+  }
+
+  const hasAnd = normalized.includes("&&");
+  const hasOr = normalized.includes("||");
+  if (hasAnd && hasOr) {
+    return { filters: [], filterMode: "all", recognized: false };
+  }
+
+  const operatorMap = {
+    "===": "eq",
+    "==": "eq",
+    "!==": "neq",
+    "!=": "neq",
+    ">": "gt",
+    ">=": "gte",
+    "<": "lt",
+    "<=": "lte",
+  };
+  const parts = normalized.split(hasOr ? /\|\|/u : /&&/u).map((part) => part.trim());
+  const fields = getTableFilterFields(source);
+  const filters = [];
+
+  for (const part of parts) {
+    const match = part.match(
+      /^(?:Number\(\s*)?[A-Za-z_][A-Za-z0-9_]*\.([A-Za-z_][A-Za-z0-9_]*)(?:\s*\))?\s*(===|!==|==|!=|>=|<=|>|<)\s*(.+)$/u,
+    );
+    if (!match) {
+      return { filters: [], filterMode: "all", recognized: false };
+    }
+    const field = fields.find((item) => item.value === match[1]);
+    const rawValue = match[3].trim().replace(/^(['"])(.*)\1$/u, "$2");
+    filters.push({
+      ...createDocxTableFilter(match[1], field?.type || "text"),
+      operator: operatorMap[match[2]],
+      value: rawValue,
+    });
+  }
+
+  return { filters, filterMode: hasOr ? "any" : "all", recognized: true };
+};
+
 const formatAuditTimestamp = (timestamp) => {
   if (!timestamp) {
     return "—";
@@ -482,7 +598,9 @@ const DocxGenerator = () => {
     tableField: "date",
     tableFormat: "none",
     tableFormatCustom: "",
-    tableFilter: "",
+    tableFilters: [],
+    filterMode: "all",
+    legacyTableFilter: "",
     formulaExpression: "",
     defaultValue: "",
     required: false,
@@ -509,6 +627,22 @@ const DocxGenerator = () => {
   const openValueBuilder = (variantIndex, keyIndex, mapping) => {
     const normalized = normalizeDocxKeyMapping(mapping);
     const parsed = parseSystemKeyForBuilder(normalized.systemKey);
+    const siblingMapping = parsed.type === "table"
+      ? activeTemplate?.variants?.[variantIndex]?.keys
+          ?.map(normalizeDocxKeyMapping)
+          .find((item, itemIndex) => {
+            if (itemIndex === keyIndex || normalizeDocxTableFilters(item.filters).length === 0) return false;
+            const siblingParsed = parseSystemKeyForBuilder(item.systemKey);
+            return siblingParsed.type === "table" && siblingParsed.tableSource === parsed.tableSource;
+          })
+      : null;
+    const filterOwner = normalizeDocxTableFilters(normalized.filters).length > 0
+      ? normalized
+      : siblingMapping || normalized;
+    const savedFilters = normalizeDocxTableFilters(filterOwner.filters);
+    const migratedLegacy = savedFilters.length === 0
+      ? parseLegacyTableFilters(parsed.legacyTableFilter, parsed.tableSource)
+      : { filters: savedFilters, filterMode: filterOwner.filterMode, recognized: true };
     setValueBuilder({
       isOpen: true,
       variantIndex,
@@ -520,7 +654,9 @@ const DocxGenerator = () => {
       tableField: parsed.tableField,
       tableFormat: parsed.tableFormat,
       tableFormatCustom: parsed.tableFormatCustom,
-      tableFilter: parsed.tableFilter || "",
+      tableFilters: migratedLegacy.filters,
+      filterMode: migratedLegacy.filterMode || filterOwner.filterMode || "all",
+      legacyTableFilter: migratedLegacy.recognized ? "" : parsed.legacyTableFilter || "",
       formulaExpression: parsed.formulaExpression,
       defaultValue: normalized.defaultValue || "",
       required: normalized.required || false,
@@ -528,6 +664,16 @@ const DocxGenerator = () => {
   };
 
   const handleApplyValueBuilder = () => {
+    const incompleteFilter = valueBuilder.type === "table"
+      ? valueBuilder.tableFilters.find(
+          (filter) => docxFilterNeedsValue(filter.operator) && String(filter.value ?? "").trim() === "",
+        )
+      : null;
+    if (incompleteFilter) {
+      alert("Заполните значение условия или удалите незавершённое условие.");
+      return;
+    }
+
     const finalSystemKey = buildSystemKeyFromBuilder(valueBuilder);
     
     let finalDocxKey = valueBuilder.docxKey;
@@ -537,14 +683,73 @@ const DocxGenerator = () => {
       finalDocxKey = `${valueBuilder.tableSource}_${valueBuilder.tableField}`;
     }
 
-    updateKeyMapping(valueBuilder.variantIndex, valueBuilder.keyIndex, {
+    const mappingPatch = {
       systemKey: finalSystemKey,
       docxKey: finalDocxKey,
       defaultValue: valueBuilder.defaultValue,
       required: valueBuilder.required,
-    });
+      filters: valueBuilder.type === "table"
+        ? normalizeDocxTableFilters(valueBuilder.tableFilters)
+        : [],
+      filterMode: valueBuilder.filterMode === "any" ? "any" : "all",
+    };
+
+    if (valueBuilder.type === "table") {
+      setActiveTemplate((current) => {
+        const variants = [...current.variants];
+        const variant = variants[valueBuilder.variantIndex];
+        const sharedFilterPatch = {
+          filters: mappingPatch.filters,
+          filterMode: mappingPatch.filterMode,
+        };
+        const keys = (variant.keys || []).map((key, index) => {
+          if (index === valueBuilder.keyIndex) {
+            return { ...key, ...mappingPatch };
+          }
+          const parsedKey = parseSystemKeyForBuilder(normalizeDocxKeyMapping(key).systemKey);
+          return parsedKey.type === "table" && parsedKey.tableSource === valueBuilder.tableSource
+            ? { ...key, ...sharedFilterPatch }
+            : key;
+        });
+        variants[valueBuilder.variantIndex] = { ...variant, keys };
+        return { ...current, variants };
+      });
+    } else {
+      updateKeyMapping(valueBuilder.variantIndex, valueBuilder.keyIndex, mappingPatch);
+    }
     
     setValueBuilder((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const addValueBuilderFilter = () => {
+    const field = getTableFilterFields(valueBuilder.tableSource)[0];
+    if (!field) return;
+    setValueBuilder((prev) => ({
+      ...prev,
+      legacyTableFilter: "",
+      tableFilters: [
+        ...prev.tableFilters,
+        createDocxTableFilter(field.value, field.type),
+      ],
+    }));
+  };
+
+  const updateValueBuilderFilter = (filterId, patch) => {
+    setValueBuilder((prev) => ({
+      ...prev,
+      legacyTableFilter: "",
+      tableFilters: prev.tableFilters.map((filter) =>
+        filter.id === filterId ? { ...filter, ...patch } : filter,
+      ),
+    }));
+  };
+
+  const removeValueBuilderFilter = (filterId) => {
+    setValueBuilder((prev) => ({
+      ...prev,
+      legacyTableFilter: "",
+      tableFilters: prev.tableFilters.filter((filter) => filter.id !== filterId),
+    }));
   };
 
   const inheritVariant = (srcIndex) => {
@@ -2370,7 +2575,7 @@ const DocxGenerator = () => {
           <div className="docx-modal-layer" style={{ zIndex: 100000 }}>
             <motion.div
               className="docx-modal"
-              style={{ maxWidth: "600px" }}
+              style={{ maxWidth: "860px" }}
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -2481,18 +2686,21 @@ const DocxGenerator = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", gap: "12px" }}>
                       <div className="docx-field" style={{ flex: 1 }}>
-                        <span>Источник данных (Массив)</span>
+                        <span>Какие данные использовать</span>
                         <CustomSelect
                           value={valueBuilder.tableSource}
                           onChange={(val) => {
-                            const defaultField = val === "transactions" ? "date" : "date";
-                            setValueBuilder(prev => ({ ...prev, tableSource: val, tableField: defaultField }));
+                            const firstField = getTableFilterFields(val)[0];
+                            setValueBuilder(prev => ({
+                              ...prev,
+                              tableSource: val,
+                              tableField: firstField?.value || "date",
+                              tableFilters: [],
+                              legacyTableFilter: "",
+                            }));
                           }}
-                          options={[
-                            { value: "transactions", label: "Транзакции (transactions)" },
-                            { value: "schedule", label: "График платежей (schedule)" },
-                            { value: "processing_transactions", label: "Транзакции процессинга (processing_transactions)" }
-                          ]}
+                          options={TABLE_SOURCE_OPTIONS}
+                          autoSelectFirst={false}
                         />
                       </div>
                       <div className="docx-field" style={{ flex: 1 }}>
@@ -2501,6 +2709,7 @@ const DocxGenerator = () => {
                           value={valueBuilder.tableField}
                           onChange={(val) => setValueBuilder(prev => ({ ...prev, tableField: val }))}
                           options={TABLE_SOURCE_FIELDS[valueBuilder.tableSource] || []}
+                          autoSelectFirst={false}
                         />
                       </div>
                     </div>
@@ -2538,30 +2747,117 @@ const DocxGenerator = () => {
                       </div>
                     )}
 
-                    <div className="docx-field">
-                      <span>JS-условие фильтрации строк (необязательно)</span>
-                      <input
-                        type="text"
-                        value={valueBuilder.tableFilter}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValueBuilder(prev => ({ ...prev, tableFilter: val }));
-                        }}
-                        placeholder="Например: Number(pt.amount) > 100 && pt.currency === '840'"
-                      />
-                      <small style={{ color: "#6b7280" }}>
-                        Используйте переменную <strong>t</strong> (для транзакций), <strong>s</strong> (для графика) или <strong>pt</strong> (для процессинга).
-                      </small>
-                    </div>
+                    <section className="docx-filter-builder">
+                      <div className="docx-filter-builder__header">
+                        <div>
+                          <span className="docx-filter-builder__eyebrow"><Filter size={14} /> Отбор строк</span>
+                          <strong>Какие строки попадут в документ</strong>
+                          <small>Правила применятся ко всем колонкам этой таблицы. Программировать ничего не нужно.</small>
+                        </div>
+                        <button type="button" className="docx-btn docx-btn--secondary" onClick={addValueBuilderFilter}>
+                          <Plus size={16} />
+                          <span>Добавить условие</span>
+                        </button>
+                      </div>
 
-                    <div style={{ background: "#f3f4f6", padding: "12px", borderRadius: "8px" }}>
-                      <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#6b7280", fontWeight: "600", display: "block", marginBottom: "4px" }}>
-                        Результат сборки в системный ключ:
-                      </span>
-                      <code style={{ fontSize: "12px", color: "#111827", wordBreak: "break-all" }}>
-                        {buildSystemKeyFromBuilder(valueBuilder)}
-                      </code>
-                    </div>
+                      {valueBuilder.tableFilters.length > 1 && (
+                        <div className="docx-filter-mode" role="group" aria-label="Способ объединения условий">
+                          <span>Оставлять строку, если:</span>
+                          <button
+                            type="button"
+                            className={valueBuilder.filterMode === "all" ? "is-active" : ""}
+                            onClick={() => setValueBuilder((prev) => ({ ...prev, filterMode: "all" }))}
+                          >
+                            выполнены все условия
+                          </button>
+                          <button
+                            type="button"
+                            className={valueBuilder.filterMode === "any" ? "is-active" : ""}
+                            onClick={() => setValueBuilder((prev) => ({ ...prev, filterMode: "any" }))}
+                          >
+                            выполнено хотя бы одно
+                          </button>
+                        </div>
+                      )}
+
+                      {valueBuilder.tableFilters.length === 0 ? (
+                        <button type="button" className="docx-filter-empty" onClick={addValueBuilderFilter}>
+                          <Filter size={24} />
+                          <strong>Сейчас попадут все строки</strong>
+                          <span>Например, можно оставить только операции с суммой больше 200.</span>
+                        </button>
+                      ) : (
+                        <div className="docx-filter-list">
+                          {valueBuilder.tableFilters.map((filter, filterIndex) => {
+                            const fields = getTableFilterFields(valueBuilder.tableSource);
+                            const operators = DOCX_FILTER_OPERATORS[filter.type] || DOCX_FILTER_OPERATORS.text;
+                            return (
+                              <div className="docx-filter-row" key={filter.id}>
+                                <span className="docx-filter-row__number">{filterIndex + 1}</span>
+                                <div className="docx-filter-row__field">
+                                  <small>Поле</small>
+                                  <CustomSelect
+                                    value={filter.field}
+                                    options={fields}
+                                    searchable
+                                    autoSelectFirst={false}
+                                    onChange={(fieldValue) => {
+                                      const nextField = fields.find((item) => item.value === fieldValue);
+                                      const nextType = nextField?.type || "text";
+                                      updateValueBuilderFilter(filter.id, {
+                                        field: fieldValue,
+                                        type: nextType,
+                                        operator: nextType === "number" ? "gt" : "eq",
+                                        value: "",
+                                      });
+                                    }}
+                                  />
+                                </div>
+                                <div className="docx-filter-row__operator">
+                                  <small>Условие</small>
+                                  <CustomSelect
+                                    value={filter.operator}
+                                    options={operators}
+                                    autoSelectFirst={false}
+                                    onChange={(operator) => updateValueBuilderFilter(filter.id, { operator })}
+                                  />
+                                </div>
+                                <label className={`docx-filter-row__value ${!docxFilterNeedsValue(filter.operator) ? "is-disabled" : ""}`}>
+                                  <small>Значение</small>
+                                  <input
+                                    type={filter.type === "date" ? "date" : "text"}
+                                    inputMode={filter.type === "number" ? "decimal" : undefined}
+                                    value={filter.value}
+                                    disabled={!docxFilterNeedsValue(filter.operator)}
+                                    onChange={(event) => updateValueBuilderFilter(filter.id, { value: event.target.value })}
+                                    placeholder={filter.type === "number" ? "Например, 200" : "Введите значение"}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  className="docx-filter-row__remove"
+                                  onClick={() => removeValueBuilderFilter(filter.id)}
+                                  aria-label={`Удалить условие ${filterIndex + 1}`}
+                                  title="Удалить условие"
+                                >
+                                  <Trash2 size={17} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {valueBuilder.legacyTableFilter && (
+                        <div className="docx-filter-legacy">
+                          <AlertTriangle size={17} />
+                          <span>
+                            В шаблоне сохранено старое сложное условие. Оно продолжит работать. Чтобы заменить его,
+                            добавьте новое условие кнопкой выше.
+                          </span>
+                        </div>
+                      )}
+                    </section>
                   </div>
                 )}
 

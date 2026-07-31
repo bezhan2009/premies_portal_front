@@ -1,4 +1,8 @@
 import { getProcessingAmountSign } from "./processingAmountFormatter.js";
+import {
+  applyDocxMappingFilters,
+  normalizeDocxTableFilters,
+} from "./docxTableFilters.js";
 
 export const parseDocxJsonField = (value, fallback = []) => {
   if (Array.isArray(value)) {
@@ -60,6 +64,8 @@ export const normalizeDocxKeyMapping = (mapping = {}) => {
     systemKey,
     defaultValue: mapping.defaultValue ?? "",
     required: Boolean(mapping.required),
+    filters: normalizeDocxTableFilters(mapping.filters),
+    filterMode: mapping.filterMode === "any" ? "any" : "all",
   };
 };
 
@@ -847,7 +853,7 @@ export const buildDocxPayload = (variant = {}, data = {}, overrides = {}, unique
       : undefined;
     let sourceValue = overrideValue !== undefined
       ? overrideValue
-      : getValueByDocxPath(source, mapping.systemKey);
+      : getValueByDocxPath(applyDocxMappingFilters(source, mapping), mapping.systemKey);
 
     if (Array.isArray(sourceValue)) {
       sourceValue = sourceValue.map(v => formatDocxValueByKey(mapping.systemKey, v));
