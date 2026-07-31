@@ -15,6 +15,7 @@ import PasteFileModal from "../../components/modal/PasteFileModal";
 import filePng from "../../assets/file.png";
 import CreateGroupModal from "../../components/general/CreateGroupModal";
 import GroupMembersModal from "../../components/general/GroupMembersModal";
+import ChatDatePicker from "../../components/general/ChatDatePicker";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -531,6 +532,7 @@ export default function FeedbackPage() {
   const [localSearchActive, setLocalSearchActive] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
@@ -893,6 +895,7 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     setSelectedDateFilter(null);
+    setDatePickerOpen(false);
   }, [recipientId, activeChatType, activeGroup?.id]);
 
   const handleMessagesScroll = (e) => {
@@ -1298,8 +1301,12 @@ export default function FeedbackPage() {
     return map;
   }, [messages]);
 
+  const availableMessageDayKeys = useMemo(() => {
+    return [...new Set(messages.map((message) => getMessageDayKey(message.created_at)).filter(Boolean))].sort();
+  }, [messages]);
+
   const handleToggleDateFilter = (dayKey) => {
-    const nextFilter = selectedDateFilter === dayKey ? null : dayKey;
+    const nextFilter = dayKey;
     setSelectedDateFilter(nextFilter);
     if (nextFilter) {
       requestAnimationFrame(() => {
@@ -1670,7 +1677,7 @@ export default function FeedbackPage() {
                 alignItems: "center",
                 flexWrap: "wrap",
                 background: "rgba(248, 250, 252, 0.5)",
-                borderRadius: "8px 8px 0 0"
+                borderRadius: "999px"
               }}>
                 {POPULAR_EMOJIS.map(emoji => {
                   const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
@@ -1682,7 +1689,7 @@ export default function FeedbackPage() {
                       style={{
                         background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                         border: "none",
-                        borderRadius: "6px",
+                        borderRadius: "50%",
                         padding: "0",
                         width: "24px",
                         height: "24px",
@@ -1715,7 +1722,7 @@ export default function FeedbackPage() {
                   style={{
                     background: "transparent",
                     border: "none",
-                    borderRadius: "6px",
+                    borderRadius: "50%",
                     width: "24px",
                     height: "24px",
                     flexShrink: 0,
@@ -1871,7 +1878,8 @@ export default function FeedbackPage() {
                     >
                       <CornerUpRight size={14} /> Переслать
                     </button>
-                    {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)) && (
+                    {((!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId) ||
+                      (activeChatType === "group" && activeGroup?.is_announcement && isOperator)) && (
                       <>
                         <button 
                           onClick={() => {
@@ -2629,17 +2637,45 @@ export default function FeedbackPage() {
 
         {selectedDateFilter && (
           <motion.div
-            className="main-chat-date-filter"
+            className="main-chat-date-filter mini-chat-date-filter"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
-            <CalendarDays size={14} />
+            <button
+              type="button"
+              className="chat-date-filter__calendar-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDatePickerOpen((open) => !open);
+              }}
+              title="Открыть календарь"
+            >
+              <CalendarDays size={14} />
+            </button>
             <span>Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}</span>
-            <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDateFilter(null); }} title="Сбросить фильтр">
+            <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDateFilter(null); setDatePickerOpen(false); }} title="Сбросить фильтр">
               <X size={13} />
             </button>
+            <ChatDatePicker
+              isOpen={datePickerOpen}
+              availableDayKeys={availableMessageDayKeys}
+              selectedDay={selectedDateFilter}
+              onSelect={handleToggleDateFilter}
+              onClose={() => setDatePickerOpen(false)}
+            />
           </motion.div>
+        )}
+        {!selectedDateFilter && datePickerOpen && (
+          <div className="chat-date-filter-standalone">
+            <ChatDatePicker
+              isOpen={datePickerOpen}
+              availableDayKeys={availableMessageDayKeys}
+              selectedDay={selectedDateFilter}
+              onSelect={handleToggleDateFilter}
+              onClose={() => setDatePickerOpen(false)}
+            />
+          </div>
         )}
 
         {/* PINNED MESSAGES BAR */}
@@ -2857,7 +2893,7 @@ export default function FeedbackPage() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleToggleDateFilter(group.dayKey);
+                          setDatePickerOpen((open) => !open);
                         }}
                         initial={{ opacity: 0, y: 8, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -2945,7 +2981,7 @@ export default function FeedbackPage() {
                                         border: hasMyReaction
                                           ? (isOutgoing ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(235,37,37,0.3)")
                                           : "1px solid transparent",
-                                        borderRadius: "12px",
+                                        borderRadius: "999px",
                                         padding: "2px 7px",
                                         fontSize: "11px",
                                         display: "flex",
@@ -3228,7 +3264,7 @@ export default function FeedbackPage() {
                                     ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
                                     : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
                                   border: "none",
-                                  borderRadius: "12px",
+                                  borderRadius: "999px",
                                   padding: "2px 6px",
                                   fontSize: "11px",
                                   color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),

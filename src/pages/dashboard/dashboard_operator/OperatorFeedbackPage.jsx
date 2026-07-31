@@ -16,6 +16,7 @@ import ImageModal from "../../../components/modal/ImageModal";
 import PasteFileModal from "../../../components/modal/PasteFileModal";
 import CreateGroupModal from "../../../components/general/CreateGroupModal";
 import GroupMembersModal from "../../../components/general/GroupMembersModal";
+import ChatDatePicker from "../../../components/general/ChatDatePicker";
 import filePng from "../../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../../utils/chatDateUtils";
 
@@ -721,6 +722,7 @@ export default function OperatorFeedbackPage() {
   const [localSearchActive, setLocalSearchActive] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
@@ -1046,6 +1048,7 @@ export default function OperatorFeedbackPage() {
     handleExitMessageSelection();
     handleExitChatSelection();
     setSelectedDateFilter(null);
+    setDatePickerOpen(false);
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -1716,8 +1719,12 @@ export default function OperatorFeedbackPage() {
     return map;
   }, [messages]);
 
+  const availableMessageDayKeys = useMemo(() => {
+    return [...new Set(messages.map((message) => getMessageDayKey(message.created_at)).filter(Boolean))].sort();
+  }, [messages]);
+
   const handleToggleDateFilter = (dayKey) => {
-    const nextFilter = selectedDateFilter === dayKey ? null : dayKey;
+    const nextFilter = dayKey;
     setSelectedDateFilter(nextFilter);
     if (nextFilter) {
       requestAnimationFrame(() => {
@@ -2096,7 +2103,7 @@ export default function OperatorFeedbackPage() {
                   alignItems: "center",
                   flexWrap: "wrap",
                   background: "rgba(248, 250, 252, 0.5)",
-                  borderRadius: "8px 8px 0 0"
+                  borderRadius: "999px"
                 }}>
                   {POPULAR_EMOJIS.map(emoji => {
                     const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
@@ -2108,7 +2115,7 @@ export default function OperatorFeedbackPage() {
                         style={{
                           background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                           border: "none",
-                          borderRadius: "6px",
+                          borderRadius: "50%",
                           padding: "0",
                           width: "24px",
                           height: "24px",
@@ -2141,7 +2148,7 @@ export default function OperatorFeedbackPage() {
                     style={{
                       background: "transparent",
                       border: "none",
-                      borderRadius: "6px",
+                      borderRadius: "50%",
                       width: "24px",
                       height: "24px",
                       flexShrink: 0,
@@ -2292,6 +2299,7 @@ export default function OperatorFeedbackPage() {
                       <CornerUpRight size={14} /> Переслать
                     </button>
                     {((activeChatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                      (activeChatType === "group" && groupDetails?.is_announcement) ||
                       (activeChatType === "support" && contextMenu.target.is_operator)) && (
                       <>
                         <button 
@@ -3722,17 +3730,45 @@ export default function OperatorFeedbackPage() {
 
             {selectedDateFilter && (
               <motion.div
-                className="main-chat-date-filter"
+                className="main-chat-date-filter mini-chat-date-filter"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                <CalendarDays size={14} />
+                <button
+                  type="button"
+                  className="chat-date-filter__calendar-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDatePickerOpen((open) => !open);
+                  }}
+                  title="Открыть календарь"
+                >
+                  <CalendarDays size={14} />
+                </button>
                 <span>Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}</span>
-                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDateFilter(null); }} title="Сбросить фильтр">
+                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDateFilter(null); setDatePickerOpen(false); }} title="Сбросить фильтр">
                   <X size={13} />
                 </button>
+                <ChatDatePicker
+                  isOpen={datePickerOpen}
+                  availableDayKeys={availableMessageDayKeys}
+                  selectedDay={selectedDateFilter}
+                  onSelect={handleToggleDateFilter}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               </motion.div>
+            )}
+            {!selectedDateFilter && datePickerOpen && (
+              <div className="chat-date-filter-standalone">
+                <ChatDatePicker
+                  isOpen={datePickerOpen}
+                  availableDayKeys={availableMessageDayKeys}
+                  selectedDay={selectedDateFilter}
+                  onSelect={handleToggleDateFilter}
+                  onClose={() => setDatePickerOpen(false)}
+                />
+              </div>
             )}
 
             {/* PINNED MESSAGES BAR */}
@@ -3903,7 +3939,7 @@ export default function OperatorFeedbackPage() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                handleToggleDateFilter(group.dayKey);
+                                setDatePickerOpen((open) => !open);
                               }}
                               initial={{ opacity: 0, y: 8, scale: 0.96 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -3999,7 +4035,7 @@ export default function OperatorFeedbackPage() {
                                                 border: hasMyReaction
                                                   ? (isOutgoing ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(235,37,37,0.3)")
                                                   : "1px solid transparent",
-                                                borderRadius: "12px",
+                                                borderRadius: "999px",
                                                 padding: "2px 7px",
                                                 fontSize: "11px",
                                                 display: "flex",
@@ -4280,7 +4316,7 @@ export default function OperatorFeedbackPage() {
                                           ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
                                           : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
                                         border: "none",
-                                        borderRadius: "12px",
+                                        borderRadius: "999px",
                                         padding: "2px 6px",
                                         fontSize: "11px",
                                         color: isOutgoing ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),

@@ -15,6 +15,7 @@ import useThemeStore from "../../store/useThemeStore";
 import useChatStore from "../../store/useChatStore";
 import ImageModal from "../modal/ImageModal";
 import PasteFileModal from "../modal/PasteFileModal";
+import ChatDatePicker from "./ChatDatePicker";
 import { useLocation } from "react-router-dom";
 import filePng from "../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
@@ -313,6 +314,7 @@ const MiniChatWindow = () => {
   const [localSearchActive, setLocalSearchActive] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -582,6 +584,7 @@ const MiniChatWindow = () => {
     handleExitMessageSelection();
     handleExitChatSelection();
     setSelectedDateFilter(null);
+    setDatePickerOpen(false);
   }, [currentView, recipientId, chatType]);
 
   // Reset userSearchQuery when exiting new_chat view
@@ -1533,6 +1536,19 @@ const MiniChatWindow = () => {
     return source.filter(m => m.message?.toLowerCase().includes(query));
   }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
 
+  const availableMessageDayKeys = useMemo(() => {
+    return [...new Set(messages.map((message) => getMessageDayKey(message.created_at)).filter(Boolean))].sort();
+  }, [messages]);
+
+  const handleSelectDateFilter = (dayKey) => {
+    setSelectedDateFilter(dayKey);
+    if (dayKey) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.parentElement?.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+  };
+
   // Filter users list
   const filteredUsers = useMemo(() => {
     const query = userSearchQuery.toLowerCase().trim();
@@ -1644,7 +1660,7 @@ const MiniChatWindow = () => {
                 alignItems: "center",
                 flexWrap: "wrap",
                 background: "rgba(248, 250, 252, 0.5)",
-                borderRadius: "8px 8px 0 0"
+                borderRadius: "999px"
               }}>
                 {POPULAR_EMOJIS.map(emoji => {
                   const parsedReactions = parseMessageReactions(contextMenu.target.reactions);
@@ -1659,7 +1675,7 @@ const MiniChatWindow = () => {
                       style={{
                         background: isSelected ? "rgba(235, 37, 37, 0.15)" : "transparent",
                         border: "none",
-                        borderRadius: "6px",
+                        borderRadius: "50%",
                         padding: "0",
                         width: "24px",
                         height: "24px",
@@ -1691,7 +1707,7 @@ const MiniChatWindow = () => {
                   style={{
                     background: "transparent",
                     border: "none",
-                    borderRadius: "6px",
+                    borderRadius: "50%",
                     width: "24px",
                     height: "24px",
                     flexShrink: 0,
@@ -1842,6 +1858,7 @@ const MiniChatWindow = () => {
                     <CornerUpRight size={14} /> Переслать
                   </button>
                   {((chatType === "direct" && contextMenu.target.user_id === currentUserId) ||
+                    (chatType === "group" && activeGroup?.is_announcement && isOperator) ||
                     (chatType === "support" && (isOperator ? contextMenu.target.is_operator : (!contextMenu.target.is_operator && contextMenu.target.user_id === currentUserId)))) && (
                     <>
                       <button 
@@ -2599,14 +2616,44 @@ const MiniChatWindow = () => {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -8 }}
                         >
-                          <CalendarDays size={14} />
+                          <button
+                            type="button"
+                            className="chat-date-filter__calendar-btn"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDatePickerOpen((open) => !open);
+                            }}
+                            title="Открыть календарь"
+                          >
+                            <CalendarDays size={14} />
+                          </button>
                           <span>
                             Показаны сообщения за {formatChatDayLabel(`${selectedDateFilter}T12:00:00`)}
                           </span>
-                          <button type="button" onClick={() => setSelectedDateFilter(null)} title="Сбросить фильтр">
+                          <button type="button" onClick={() => { setSelectedDateFilter(null); setDatePickerOpen(false); }} title="Сбросить фильтр">
                             <X size={13} />
                           </button>
+                          <ChatDatePicker
+                            isOpen={datePickerOpen}
+                            availableDayKeys={availableMessageDayKeys}
+                            selectedDay={selectedDateFilter}
+                            onSelect={handleSelectDateFilter}
+                            onClose={() => setDatePickerOpen(false)}
+                            className="chat-date-popover--mini"
+                          />
                         </motion.div>
+                      )}
+                      {!selectedDateFilter && datePickerOpen && (
+                        <div className="chat-date-filter-standalone">
+                          <ChatDatePicker
+                            isOpen={datePickerOpen}
+                            availableDayKeys={availableMessageDayKeys}
+                            selectedDay={selectedDateFilter}
+                            onSelect={handleSelectDateFilter}
+                            onClose={() => setDatePickerOpen(false)}
+                            className="chat-date-popover--mini"
+                          />
+                        </div>
                       )}
 
                       {/* PINNED MESSAGES BAR */}
@@ -2818,7 +2865,11 @@ const MiniChatWindow = () => {
                                       key={group.id}
                                       type="button"
                                       className={`mini-chat-date-divider ${isSelectedDay ? "active" : ""}`}
-                                      onClick={() => setSelectedDateFilter(isSelectedDay ? null : group.dayKey)}
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        setDatePickerOpen((open) => !open);
+                                      }}
                                       initial={{ opacity: 0, y: 8, scale: 0.96 }}
                                       animate={{ opacity: 1, y: 0, scale: 1 }}
                                       exit={{ opacity: 0, y: -6, scale: 0.96 }}
@@ -2932,7 +2983,7 @@ const MiniChatWindow = () => {
                                                         border: hasMyReaction
                                                           ? (isOut ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(235,37,37,0.3)")
                                                           : "1px solid transparent",
-                                                        borderRadius: "12px",
+                                                        borderRadius: "999px",
                                                         padding: "2px 7px",
                                                         fontSize: "11px",
                                                         display: "flex",
@@ -3168,7 +3219,7 @@ const MiniChatWindow = () => {
                                                   ? (hasMyReaction ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.12)")
                                                   : (hasMyReaction ? "rgba(235, 37, 37, 0.08)" : "rgba(0, 0, 0, 0.04)"),
                                                 border: "none",
-                                                borderRadius: "12px",
+                                                borderRadius: "999px",
                                                 padding: "2px 6px",
                                                 fontSize: "11px",
                                                 color: isOut ? "#ffffff" : (hasMyReaction ? "#eb2525" : "inherit"),
