@@ -1,13 +1,15 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
 const ImageModal = ({ isOpen, imageUrl, onClose }) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
+        className="chat-image-modal-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -19,7 +21,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => {
           width: '100vw',
           height: '100vh',
           backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          zIndex: 10000,
+          zIndex: 2147483000,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -38,7 +40,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => {
             color: 'white',
             cursor: 'pointer',
             padding: '10px',
-            zIndex: 10001
+            zIndex: 2147483001
           }}
         >
           <X size={32} />
@@ -61,7 +63,8 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => {
           }}
         />
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

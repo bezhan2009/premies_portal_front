@@ -21,6 +21,27 @@ import { formatChatDayLabel, getMessageDayKey } from "../../../utils/chatDateUti
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
+const buildChatItemsSignature = (items = []) => items
+  .map((item) => [
+    item.id,
+    item.user_id,
+    item.name || item.username || "",
+    item.unread_count || 0,
+    item.last_message_at || "",
+    item.created_at,
+    item.updated_at || item.UpdatedAt || "",
+    item.message || "",
+    item.attachment_url || "",
+    item.reactions || "",
+    item.is_read ? 1 : 0,
+    item.is_pinned ? 1 : 0,
+  ].join(":"))
+  .join("|");
+
+const areChatItemsSame = (current = [], next = []) => (
+  current.length === next.length && buildChatItemsSignature(current) === buildChatItemsSignature(next)
+);
+
 const POPULAR_EMOJIS = ["👍", "❤️", "🔥", "😂", "😮", "😢", "🙏", "🎉", "👏"];
 
 const parseMessageReactions = (reactionsStr) => {
@@ -726,9 +747,9 @@ export default function OperatorFeedbackPage() {
     }
   };
 
-  const axiosConfig = {
+  const axiosConfig = useMemo(() => ({
     headers: { Authorization: `Bearer ${token}` }
-  };
+  }), [token]);
 
   // Close context menu on window click
   useEffect(() => {
@@ -760,11 +781,12 @@ export default function OperatorFeedbackPage() {
     if (!token) return;
     try {
       const res = await axios.get(`${API_URL}/api/groups`, axiosConfig);
-      setGroups(res.data || []);
+      const nextGroups = res.data || [];
+      setGroups(prev => areChatItemsSame(prev, nextGroups) ? prev : nextGroups);
     } catch (err) {
       console.error("Error fetching groups:", err);
     }
-  }, [token]);
+  }, [axiosConfig, token]);
 
   const fetchGroupDetails = useCallback(async (groupId) => {
     if (!groupId || !token) return;
@@ -774,16 +796,17 @@ export default function OperatorFeedbackPage() {
     } catch (err) {
       console.error("Error loading group details:", err);
     }
-  }, [token]);
+  }, [axiosConfig, token]);
 
   const fetchUsers = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/users/emails`, axiosConfig);
-      setUsersList(res.data.users || []);
+      const nextUsers = res.data.users || [];
+      setUsersList(prev => areChatItemsSame(prev, nextUsers) ? prev : nextUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
     }
-  }, []);
+  }, [axiosConfig]);
 
   const fetchTotalUnread = useCallback(async () => {
     try {
@@ -792,31 +815,33 @@ export default function OperatorFeedbackPage() {
     } catch (err) {
       console.error("Error fetching total unread:", err);
     }
-  }, []);
+  }, [axiosConfig]);
 
   const fetchSupportThreads = useCallback(async (showLoading = false) => {
     if (showLoading) setLoadingThreads(true);
     try {
       const res = await axios.get(`${API_URL}/api/feedback/threads`, axiosConfig);
-      setSupportThreads(res.data || []);
+      const nextThreads = res.data || [];
+      setSupportThreads(prev => areChatItemsSame(prev, nextThreads) ? prev : nextThreads);
     } catch (err) {
       console.error("Error fetching support threads:", err);
     } finally {
       if (showLoading) setLoadingThreads(false);
     }
-  }, []);
+  }, [axiosConfig]);
 
   const fetchDirectThreads = useCallback(async (showLoading = false) => {
     if (showLoading) setLoadingThreads(true);
     try {
       const res = await axios.get(`${API_URL}/api/feedback/direct-threads`, axiosConfig);
-      setDirectThreads(res.data || []);
+      const nextThreads = res.data || [];
+      setDirectThreads(prev => areChatItemsSame(prev, nextThreads) ? prev : nextThreads);
     } catch (err) {
       console.error("Error fetching direct threads:", err);
     } finally {
       if (showLoading) setLoadingThreads(false);
     }
-  }, []);
+  }, [axiosConfig]);
 
   const fetchPinnedMessages = useCallback(async (type, threadId) => {
     if (!threadId || !token) return;
@@ -827,11 +852,12 @@ export default function OperatorFeedbackPage() {
           ? `${API_URL}/api/feedback/pins?userId=${threadId}`
           : `${API_URL}/api/feedback/pins?chatWith=${threadId}`;
       const res = await axios.get(url, axiosConfig);
-      setPinnedMessages(res.data || []);
+      const nextPins = res.data || [];
+      setPinnedMessages(prev => areChatItemsSame(prev, nextPins) ? prev : nextPins);
     } catch (err) {
       console.error("Error fetching pinned messages:", err);
     }
-  }, [token]);
+  }, [axiosConfig, token]);
 
   const handlePinMessage = async (msgId) => {
     try {
@@ -886,10 +912,11 @@ export default function OperatorFeedbackPage() {
           : `${API_URL}/api/feedback?chatWith=${threadId}`;
       const res = await axios.get(url, axiosConfig);
       
+      const nextMessages = res.data || [];
       setMessages(prevMessages => {
          // Check for new incoming messages to show notification
-         if (prevMessages.length > 0 && res.data && res.data.length > prevMessages.length) {
-            const newMsg = res.data[res.data.length - 1];
+         if (prevMessages.length > 0 && nextMessages.length > prevMessages.length) {
+            const newMsg = nextMessages[nextMessages.length - 1];
             const isMuted = mutedChats.includes(threadId);
 
             if (!isMuted && ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId))) {
@@ -903,14 +930,14 @@ export default function OperatorFeedbackPage() {
                }
             }
          }
-         return res.data || [];
+         return areChatItemsSame(prevMessages, nextMessages) ? prevMessages : nextMessages;
       });
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
       if (showLoading) setLoadingChat(false);
     }
-  }, [mutedChats, currentUserId]);
+  }, [axiosConfig, mutedChats, currentUserId]);
 
   const markAsRead = useCallback(async (type, threadId) => {
     if (!threadId) return;
@@ -986,6 +1013,7 @@ export default function OperatorFeedbackPage() {
 
   useEffect(() => {
     const chatInterval = setInterval(() => {
+      if (document.hidden) return;
       if (activeChatType && activeThreadId) {
         fetchMessages(activeChatType, activeThreadId);
         fetchPinnedMessages(activeChatType, activeThreadId);
@@ -993,20 +1021,21 @@ export default function OperatorFeedbackPage() {
           fetchGroupDetails(activeThreadId);
         }
       }
-    }, 4000);
+    }, 9000);
 
     const listsInterval = setInterval(() => {
+      if (document.hidden) return;
       fetchSupportThreads();
       fetchDirectThreads();
       fetchGroups();
       fetchTotalUnread();
-    }, 8000);
+    }, 18000);
 
     return () => {
       clearInterval(chatInterval);
       clearInterval(listsInterval);
     };
-  }, [activeChatType, activeThreadId, fetchMessages, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
+  }, [activeChatType, activeThreadId, fetchMessages, fetchPinnedMessages, fetchGroupDetails, fetchGroups, fetchSupportThreads, fetchDirectThreads, fetchTotalUnread]);
 
   // Scroll to bottom instantly on chat switch and clear selections
   useEffect(() => {
@@ -1540,7 +1569,7 @@ export default function OperatorFeedbackPage() {
     }
   };
 
-  const filteredUsers = usersList.filter((u) => {
+  const filteredUsers = useMemo(() => usersList.filter((u) => {
     if (u.id === currentUserId) return false;
     const query = userSearchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -1551,7 +1580,15 @@ export default function OperatorFeedbackPage() {
       u.first_name?.toLowerCase().includes(query) ||
       u.last_name?.toLowerCase().includes(query)
     );
-  });
+  }), [usersList, currentUserId, userSearchQuery]);
+
+  const pinnedChatIds = useMemo(() => pinnedChats.map(Number), [pinnedChats]);
+  const pinnedChatSet = useMemo(() => new Set(pinnedChatIds), [pinnedChatIds]);
+  const pinnedChatIndexMap = useMemo(() => {
+    const map = new Map();
+    pinnedChatIds.forEach((id, index) => map.set(id, index));
+    return map;
+  }, [pinnedChatIds]);
 
   // Filter threads and sort pinned to top with strict type safety and deduplication
   const displayThreads = useMemo(() => {
@@ -1581,12 +1618,12 @@ export default function OperatorFeedbackPage() {
     
     // Sort: Pinned first, then by date desc
     return unique.sort((a, b) => {
-      const isPinnedA = pinnedChats.map(Number).includes(Number(a.id));
-      const isPinnedB = pinnedChats.map(Number).includes(Number(b.id));
+      const isPinnedA = pinnedChatSet.has(Number(a.id));
+      const isPinnedB = pinnedChatSet.has(Number(b.id));
       if (isPinnedA && isPinnedB) {
         // Sort by index in pinnedChats array
-        const idxA = pinnedChats.map(Number).indexOf(Number(a.id));
-        const idxB = pinnedChats.map(Number).indexOf(Number(b.id));
+        const idxA = pinnedChatIndexMap.get(Number(a.id)) ?? 0;
+        const idxB = pinnedChatIndexMap.get(Number(b.id)) ?? 0;
         return idxA - idxB;
       }
       if (isPinnedA && !isPinnedB) return -1;
@@ -1596,15 +1633,15 @@ export default function OperatorFeedbackPage() {
       const timeB = new Date(b.last_message_at || 0).getTime();
       return timeB - timeA;
     });
-  }, [activeTab, supportThreads, directThreads, threadSearch, pinnedChats]);
+  }, [activeTab, supportThreads, directThreads, threadSearch, pinnedChatSet, pinnedChatIndexMap]);
 
   const pinnedThreads = useMemo(() => {
-    return displayThreads.filter(t => pinnedChats.map(Number).includes(Number(t.id)));
-  }, [displayThreads, pinnedChats]);
+    return displayThreads.filter(t => pinnedChatSet.has(Number(t.id)));
+  }, [displayThreads, pinnedChatSet]);
 
   const unpinnedThreads = useMemo(() => {
-    return displayThreads.filter(t => !pinnedChats.map(Number).includes(Number(t.id)));
-  }, [displayThreads, pinnedChats]);
+    return displayThreads.filter(t => !pinnedChatSet.has(Number(t.id)));
+  }, [displayThreads, pinnedChatSet]);
 
   const handleReorderPinned = (newOrder) => {
     const newPinnedIds = newOrder.map(t => Number(t.id));
@@ -1622,6 +1659,62 @@ export default function OperatorFeedbackPage() {
     const query = localSearchQuery.toLowerCase().trim();
     return source.filter(m => m.message?.toLowerCase().includes(query));
   }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
+
+  const messageRenderGroups = useMemo(() => {
+    const groups = [];
+    let currentAlbum = null;
+    let currentDayKey = null;
+
+    const flushAlbum = () => {
+      if (currentAlbum) {
+        groups.push(currentAlbum);
+        currentAlbum = null;
+      }
+    };
+
+    filteredMessages.forEach((msg) => {
+      const dayKey = getMessageDayKey(msg.created_at);
+      if (dayKey && dayKey !== currentDayKey) {
+        flushAlbum();
+        currentDayKey = dayKey;
+        groups.push({
+          type: "date",
+          id: `date-${dayKey}`,
+          dayKey,
+          label: formatChatDayLabel(msg.created_at),
+        });
+      }
+
+      const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
+      const hasText = !!msg.message;
+
+      if (isImg && !hasText && !msg.reply_to_id && !msg.is_system) {
+        if (!currentAlbum) {
+          currentAlbum = { type: "album", id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
+        } else {
+          const diff = new Date(msg.created_at) - new Date(currentAlbum.messages[currentAlbum.messages.length - 1].created_at);
+          if (msg.user_id === currentAlbum.user_id && msg.is_operator === currentAlbum.is_operator && diff < 60000) {
+            currentAlbum.messages.push(msg);
+          } else {
+            groups.push(currentAlbum);
+            currentAlbum = { type: "album", id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
+          }
+        }
+      } else {
+        flushAlbum();
+        groups.push({ type: "single", ...msg });
+      }
+    });
+
+    flushAlbum();
+    return groups;
+  }, [filteredMessages]);
+
+  const messageById = useMemo(() => {
+    const map = new Map();
+    messages.forEach((message) => map.set(message.id, message));
+    return map;
+  }, [messages]);
 
   const handleToggleDateFilter = (dayKey) => {
     const nextFilter = selectedDateFilter === dayKey ? null : dayKey;
@@ -2322,9 +2415,9 @@ export default function OperatorFeedbackPage() {
                     textAlign: "left"
                   }}
                 >
-                  <Pin size={14} /> {pinnedChats.map(Number).includes(Number(contextMenu.target.id)) ? "Открепить" : "Закрепить"}
+                  <Pin size={14} /> {pinnedChatSet.has(Number(contextMenu.target.id)) ? "Открепить" : "Закрепить"}
                 </button>
-                {pinnedChats.map(Number).includes(Number(contextMenu.target.id)) && (
+                {pinnedChatSet.has(Number(contextMenu.target.id)) && (
                   <>
                     <button 
                       onClick={() => { movePinnedChat(contextMenu.target.id, "up"); setContextMenu({ ...contextMenu, visible: false }); }}
@@ -2827,7 +2920,7 @@ export default function OperatorFeedbackPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 2147481000;
           animation: fadeIn 0.2s ease-out;
         }
         .new-chat-modal {
@@ -2968,7 +3061,6 @@ export default function OperatorFeedbackPage() {
             radial-gradient(circle at 84% 18%, rgba(248, 113, 113, 0.08), transparent 30%) !important;
           padding: 18px !important;
           gap: 16px !important;
-          isolation: isolate;
         }
 
         .feedback-container button {
@@ -3579,7 +3671,7 @@ export default function OperatorFeedbackPage() {
                       onClick={() => handleTogglePin(activeThreadId)}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
                     >
-                      <Pin size={18} style={{ transform: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "rotate(45deg)" : "none", color: pinnedChats.map(Number).includes(Number(activeThreadId)) ? "#3b82f6" : "inherit" }} />
+                      <Pin size={18} style={{ transform: pinnedChatSet.has(Number(activeThreadId)) ? "rotate(45deg)" : "none", color: pinnedChatSet.has(Number(activeThreadId)) ? "#3b82f6" : "inherit" }} />
                     </button>
                     {/* Delete Chat toggle */}
                     <button 
@@ -3800,53 +3892,7 @@ export default function OperatorFeedbackPage() {
                   <div className="chat-empty-state"><MessageSquare size={48} /><h3>Обращение пусто</h3></div>
                 ) : (
                   <AnimatePresence initial={false}>
-                    {(() => {
-                      const groups = [];
-                      let currentAlbum = null;
-                      let currentDayKey = null;
-                      const flushAlbum = () => {
-                        if (currentAlbum) {
-                          groups.push(currentAlbum);
-                          currentAlbum = null;
-                        }
-                      };
-                       
-                      filteredMessages.forEach((msg) => {
-                        const dayKey = getMessageDayKey(msg.created_at);
-                        if (dayKey && dayKey !== currentDayKey) {
-                          flushAlbum();
-                          currentDayKey = dayKey;
-                          groups.push({
-                            type: "date",
-                            id: `date-${dayKey}`,
-                            dayKey,
-                            label: formatChatDayLabel(msg.created_at),
-                          });
-                        }
-
-                        const isImg = msg.attachment_url && msg.attachment_url.match(/\.(jpeg|jpg|gif|png)$/i);
-                        const hasText = !!msg.message;
-                        
-                        if (isImg && !hasText && !msg.reply_to_id && !msg.is_system) {
-                          if (!currentAlbum) {
-                            currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
-                          } else {
-                            const diff = new Date(msg.created_at) - new Date(currentAlbum.messages[currentAlbum.messages.length - 1].created_at);
-                            if (msg.user_id === currentAlbum.user_id && msg.is_operator === currentAlbum.is_operator && diff < 60000) {
-                              currentAlbum.messages.push(msg);
-                            } else {
-                              groups.push(currentAlbum);
-                              currentAlbum = { type: 'album', id: `album-${msg.id}`, user_id: msg.user_id, is_operator: msg.is_operator, created_at: msg.created_at, messages: [msg] };
-                            }
-                          }
-                        } else {
-                          flushAlbum();
-                          groups.push({ type: 'single', ...msg });
-                        }
-                      });
-                      flushAlbum();
-
-                      return groups.map(group => {
+                    {messageRenderGroups.map(group => {
                         if (group.type === "date") {
                           const isSelectedDay = selectedDateFilter === group.dayKey;
                           return (
@@ -4158,11 +4204,11 @@ export default function OperatorFeedbackPage() {
                                   }}
                                 >
                                   <span style={{ fontWeight: 600 }}>
-                                    {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                                    {messageById.get(msg.reply_to_id)?.username || "Сообщение"}
                                   </span>
                                   <div 
                                     style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                    dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                                    dangerouslySetInnerHTML={{ __html: formatMessageText(messageById.get(msg.reply_to_id)?.message || "Вложение") }}
                                   />
                                 </div>
                               )}
@@ -4270,8 +4316,7 @@ export default function OperatorFeedbackPage() {
                         </div>
                       </motion.div>
                     );
-                      });
-                    })()}
+                    })}
                   </AnimatePresence>
                 )}
                 <div ref={messagesEndRef} />

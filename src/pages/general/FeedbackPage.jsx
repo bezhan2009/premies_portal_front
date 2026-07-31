@@ -19,6 +19,27 @@ import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils"
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
+const buildChatItemsSignature = (items = []) => items
+  .map((item) => [
+    item.id,
+    item.user_id,
+    item.name || item.username || "",
+    item.unread_count || 0,
+    item.last_message_at || "",
+    item.created_at,
+    item.updated_at || item.UpdatedAt || "",
+    item.message || "",
+    item.attachment_url || "",
+    item.reactions || "",
+    item.is_read ? 1 : 0,
+    item.is_pinned ? 1 : 0,
+  ].join(":"))
+  .join("|");
+
+const areChatItemsSame = (current = [], next = []) => (
+  current.length === next.length && buildChatItemsSignature(current) === buildChatItemsSignature(next)
+);
+
 const POPULAR_EMOJIS = ["👍", "❤️", "🔥", "😂", "😮", "😢", "🙏", "🎉", "👏"];
 
 const parseMessageReactions = (reactionsStr) => {
@@ -589,11 +610,12 @@ export default function FeedbackPage() {
       const res = await axios.get(`${API_URL}/api/groups`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setGroups(res.data || []);
+      const nextGroups = res.data || [];
+      setGroups(prev => areChatItemsSame(prev, nextGroups) ? prev : nextGroups);
       
       // Update active group details locally if it changed
       if (activeGroup) {
-        const updatedActive = res.data.find(g => g.id === activeGroup.id);
+        const updatedActive = nextGroups.find(g => g.id === activeGroup.id);
         if (updatedActive) {
           setActiveGroup(updatedActive);
         }
@@ -630,22 +652,25 @@ export default function FeedbackPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Check for new messages to show notification
-      if (messages.length > 0 && res.data && res.data.length > messages.length) {
-        const newMsg = res.data[res.data.length - 1];
-        const isMuted = mutedChats.includes(recipientId);
+      const nextMessages = res.data || [];
+      setMessages(prevMessages => {
+        // Check for new messages to show notification
+        if (prevMessages.length > 0 && nextMessages.length > prevMessages.length) {
+          const newMsg = nextMessages[nextMessages.length - 1];
+          const isMuted = mutedChats.includes(recipientId);
 
-        if (newMsg.user_id !== currentUserId && "Notification" in window && !isMuted) {
-           if (Notification.permission === "granted") {
-              const notif = new Notification("Новое сообщение от поддержки", { body: newMsg.message || "Вложение" });
-              notif.onclick = () => window.focus();
-           } else if (Notification.permission !== "denied") {
-              Notification.requestPermission();
-           }
+          if (newMsg.user_id !== currentUserId && "Notification" in window && !isMuted) {
+             if (Notification.permission === "granted") {
+                const notif = new Notification("Новое сообщение от поддержки", { body: newMsg.message || "Вложение" });
+                notif.onclick = () => window.focus();
+             } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+             }
+          }
         }
-      }
-      
-      setMessages(res.data || []);
+
+        return areChatItemsSame(prevMessages, nextMessages) ? prevMessages : nextMessages;
+      });
       setErrorMsg("");
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -687,7 +712,8 @@ export default function FeedbackPage() {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPinnedMessages(res.data || []);
+      const nextPins = res.data || [];
+      setPinnedMessages(prev => areChatItemsSame(prev, nextPins) ? prev : nextPins);
     } catch (err) {
       console.error("Error fetching pinned messages:", err);
     }
@@ -753,7 +779,9 @@ export default function FeedbackPage() {
     }
 
     fetchGroups();
-    const listInterval = setInterval(fetchGroups, 10000);
+    const listInterval = setInterval(() => {
+      if (!document.hidden) fetchGroups();
+    }, 18000);
     return () => clearInterval(listInterval);
   }, []);
 
@@ -764,12 +792,13 @@ export default function FeedbackPage() {
       fetchGroupDetails(activeGroup.id);
     }
     const interval = setInterval(() => {
+      if (document.hidden) return;
       fetchMessages();
       fetchPinnedMessages();
       if (activeChatType === "group" && activeGroup) {
         fetchGroupDetails(activeGroup.id);
       }
-    }, 4000);
+    }, 9000);
     return () => clearInterval(interval);
   }, [recipientId, activeChatType, activeGroup?.id]);
 
@@ -1262,6 +1291,12 @@ export default function FeedbackPage() {
     const query = localSearchQuery.toLowerCase().trim();
     return source.filter(m => m.message?.toLowerCase().includes(query));
   }, [messages, localSearchActive, localSearchQuery, selectedDateFilter]);
+
+  const messageById = useMemo(() => {
+    const map = new Map();
+    messages.forEach((message) => map.set(message.id, message));
+    return map;
+  }, [messages]);
 
   const handleToggleDateFilter = (dayKey) => {
     const nextFilter = selectedDateFilter === dayKey ? null : dayKey;
@@ -3108,11 +3143,11 @@ export default function FeedbackPage() {
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>
-                              {messages.find(m => m.id === msg.reply_to_id)?.username || "Сообщение"}
+                              {messageById.get(msg.reply_to_id)?.username || "Сообщение"}
                             </span>
                             <div 
                               style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                              dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                              dangerouslySetInnerHTML={{ __html: formatMessageText(messageById.get(msg.reply_to_id)?.message || "Вложение") }}
                             />
                           </div>
                         )}

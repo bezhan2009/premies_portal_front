@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Paintbrush, Undo } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
@@ -151,7 +152,7 @@ const PasteFileModal = ({ isOpen, file, onClose, onSend }) => {
 
   if (!isOpen || !file) return null;
 
-  return (
+  return createPortal(
     <div style={{
       position: 'fixed',
       top: 0,
@@ -159,7 +160,7 @@ const PasteFileModal = ({ isOpen, file, onClose, onSend }) => {
       width: '100vw',
       height: '100vh',
       backgroundColor: 'rgba(0,0,0,0.7)',
-      zIndex: 100000,
+      zIndex: 2147482000,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -325,7 +326,8 @@ const PasteFileModal = ({ isOpen, file, onClose, onSend }) => {
           </div>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
