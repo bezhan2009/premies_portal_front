@@ -1077,6 +1077,12 @@ const DocxGenerator = () => {
               templateId: testTemplate.ID || testTemplate.id,
               templatePath: variant.templatePath,
               format: "pdf",
+              documentType:
+                testTemplate.mobileDocumentType ||
+                testTemplate.MobileDocumentType ||
+                "",
+              language: variant.language || "ru",
+              variantName: variant.name || "",
               inputs: externalTestInputs,
               requirements: dynamicRequirements,
             })

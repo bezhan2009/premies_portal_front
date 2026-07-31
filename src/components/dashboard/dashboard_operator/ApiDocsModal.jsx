@@ -3,7 +3,8 @@ import { X, Download, FileJson, Link as LinkIcon, Info, CheckCircle2 } from "luc
 import html2pdf from "html2pdf.js";
 import CustomSelect from "../../elements/CustomSelect";
 import {
-  buildDocxApiDataExample,
+  buildExternalDocxApiPayload,
+  createExternalDocxTestInputs,
   getVariantDynamicRequirements,
 } from "../../../utils/docxApiRequirements";
 
@@ -54,21 +55,17 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
         ...(MOBILE_REQUEST_EXAMPLES[mobileDocumentType] || {}),
       };
     }
-    const apiDataExample = buildDocxApiDataExample(dynamicRequirements);
-    const request = {
-      clientCode: "00012345",
+    return buildExternalDocxApiPayload({
       templateId: template?.ID || template?.id || 1,
+      templatePath: activeVariant?.templatePath,
       format: "pdf",
-      fromDate: "2026-01-01",
-      toDate: "2026-12-31"
-    };
-
-    if (Object.keys(apiDataExample).length > 0) {
-      request.data = apiDataExample;
-    }
-
-    return request;
-  }, [activeVariant?.language, dynamicRequirements, isMobileTemplate, mobileDocumentType, template]);
+      documentType: mobileDocumentType,
+      language: activeVariant?.language || "ru",
+      variantName: activeVariant?.name || "",
+      inputs: createExternalDocxTestInputs(activeVariant || {}),
+      requirements: dynamicRequirements,
+    });
+  }, [activeVariant, dynamicRequirements, isMobileTemplate, mobileDocumentType, template]);
 
   const customJsonExample = useMemo(() => {
     if (!activeVariant) return {};
@@ -170,7 +167,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
               </h2>
               <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", fontFamily: "monospace", fontSize: "14px" }}>
                 <span style={{ color: "#2563eb", fontWeight: "bold", marginRight: "10px" }}>POST</span>
-                <span>{isMobileTemplate ? "/api/mobile/documents/generate" : "/api/docx/generate"}</span>
+                <span>{isMobileTemplate ? "/api/mobile/documents/generate" : "/api/docx/external/generate"}</span>
               </div>
             </div>
 
@@ -190,12 +187,10 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>Authorization</td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>Bearer &lt;token&gt;</td>
                   </tr>
-                  {isMobileTemplate && (
-                    <tr>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>X-Mobile-Documents-Key</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>Сервисный ключ мобильного приложения (вместо portal JWT)</td>
-                    </tr>
-                  )}
+                  <tr>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>X-Mobile-Documents-Key</td>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>Сервисный ключ внешнего приложения (вместо portal JWT)</td>
+                  </tr>
                   <tr>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>Content-Type</td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>application/json</td>
@@ -206,10 +201,10 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
 
             <div style={{ marginBottom: "24px" }}>
               <h2 style={{ fontSize: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", color: "#0f172a" }}>
-                <CheckCircle2 size={18} style={{ color: "#16a34a" }} /> Способ 1 (Рекомендуемый): По коду клиента (clientCode)
+                <CheckCircle2 size={18} style={{ color: "#16a34a" }} /> Способ 1 (рекомендуемый): Автоматическая загрузка данных
               </h2>
               <p style={{ fontSize: "13.5px", color: "#475569", marginBottom: "12px", lineHeight: 1.5 }}>
-                Передайте параметр <code>clientCode</code>. Система автоматически соберет все данные из Фронтовика (персональные данные, счета, карты, кредиты, графики платежей, депозиты, выписки транзакций), подставит в шаблон, сгенерирует и вернет PDF-файл.
+                Передайте только ключи поиска, указанные для выбранного шаблона. Например, для выписки из ПЦ достаточно <code>cardId</code>, <code>fromDate</code> и <code>toDate</code>. Система сама найдёт клиента, загрузит данные из АБС/ПЦ, заполнит поля и таблицы и вернёт готовый файл.
               </p>
               <pre style={{ background: "#0f172a", color: "#f8fafc", padding: "16px", borderRadius: "10px", overflowX: "auto", fontSize: "13px", lineHeight: "1.5" }}>
                 {JSON.stringify(simpleJsonExample, null, 2)}
@@ -222,7 +217,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
               {!isMobileTemplate && dynamicRequirements.length > 0 && (
                 <div style={{ marginTop: "14px", padding: "14px", borderRadius: "12px", background: "#fff7ed", border: "1px solid #fed7aa" }}>
                   <div style={{ fontWeight: 700, color: "#9a3412", marginBottom: "8px", fontSize: "13.5px" }}>
-                    Required search keys for this template
+                    Обязательные ключи поиска для этого шаблона
                   </div>
                   <div style={{ display: "grid", gap: "10px" }}>
                     {dynamicRequirements.map((requirement) => (
@@ -237,7 +232,7 @@ const ApiDocsModal = ({ isOpen, onClose, template }) => {
                           ))}
                           {requirement.oneOf && (
                             <li>
-                              one of: <code>{requirement.oneOf.join(" / ")}</code>
+                              одно из полей: <code>{requirement.oneOf.join(" / ")}</code>
                             </li>
                           )}
                         </ul>

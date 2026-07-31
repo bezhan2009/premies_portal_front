@@ -177,6 +177,9 @@ export const buildExternalDocxApiPayload = ({
   templateId,
   templatePath,
   format = "pdf",
+  documentType,
+  language,
+  variantName,
   inputs = {},
   requirements = [],
 }) => {
@@ -194,6 +197,18 @@ export const buildExternalDocxApiPayload = ({
 
   if (templatePath) {
     payload.templatePath = templatePath;
+  }
+
+  if (documentType) {
+    payload.documentType = documentType;
+  }
+
+  if (language) {
+    payload.language = language;
+  }
+
+  if (variantName) {
+    payload.variantName = variantName;
   }
 
   if (inputs.fromDate) {
@@ -215,6 +230,10 @@ export const buildExternalDocxApiPayload = ({
       if (!value) {
         return;
       }
+
+      // Identifiers must also be sent at the request root. The external
+      // backend builder uses these fields to load the full client/card data.
+      payload[field.key] = value;
 
       field.dataAliases.forEach((alias) => {
         data[alias] = value;
