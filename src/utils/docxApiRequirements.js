@@ -1,4 +1,19 @@
 const SOURCE_DEFINITIONS = {
+  account: {
+    title: "Данные счёта",
+    source: "account",
+    description:
+      "Шаблон использует данные конкретного счёта. Укажите номер счёта — по нему сервис найдёт клиента и заполнит реквизиты, валюту, дату открытия и связанные данные.",
+    fields: [
+      {
+        key: "accountNumber",
+        label: "Номер счёта",
+        required: true,
+        placeholder: "20202972881304387302",
+        dataAliases: ["accountNumber", "account.number"],
+      },
+    ],
+  },
   processing_transactions: {
     title: "Выписка из ПЦ",
     source: "processing_transactions",
@@ -129,6 +144,12 @@ export const getVariantDynamicRequirements = (variant = {}) => {
 
   if (usedSources.has("processing_transactions")) {
     usedSources.delete("transactions");
+    // A processing statement is resolved by cardId. Requiring a second
+    // account identifier would make the external API needlessly difficult.
+    usedSources.delete("account");
+  } else if (usedSources.has("transactions")) {
+    // The transaction requirement already offers accountNumber/cardId.
+    usedSources.delete("account");
   }
 
   return Array.from(usedSources).map((source) => SOURCE_DEFINITIONS[source]);

@@ -59,6 +59,15 @@ const authHeaders = () => ({
   "Content-Type": "application/json",
 });
 
+const readResponseError = async (response, fallback) => {
+  try {
+    const payload = await response.json();
+    return payload?.error || payload?.message || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 function DetailModal({ customer, onClose, onUpdateScore, onOpenDocuments }) {
   if (!customer) return null;
 
@@ -197,6 +206,7 @@ export default function CustomerDirectory() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState("");
+  const [notice, setNotice] = useState("");
   const isOperator = useMemo(() => readRoles().includes(3), []);
 
   const loadDepartments = useCallback(async () => {
@@ -231,13 +241,14 @@ export default function CustomerDirectory() {
   useEffect(() => { loadDepartments().catch((requestError) => setError(requestError.message)); }, [loadDepartments]);
   useEffect(() => { loadCustomers(); }, [loadCustomers]);
 
-  // Auto-polling every 60 seconds (1 minute) so operators instantly see new clients
+  // Keep both the table and durable cursor diagnostics current.
   useEffect(() => {
     const interval = setInterval(() => {
       loadCustomers();
+      loadDepartments().catch(() => {});
     }, 60000);
     return () => clearInterval(interval);
-  }, [loadCustomers]);
+  }, [loadCustomers, loadDepartments]);
 
   const applySearch = (event) => {
     event.preventDefault();
@@ -348,9 +359,12 @@ export default function CustomerDirectory() {
     if (!window.confirm("Запустить обновление следующей сбалансированной пачки по всем подразделениям?")) return;
     if (!window.confirm("Подтвердите запуск. Работа выполнится в фоне и не обновляет 200 000 клиентов одним HTTP-запросом.")) return;
     setActionLoading("global-refresh");
+    setNotice("");
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/refresh`, { method: "POST", headers: authHeaders() });
-      if (!response.ok) throw new Error("Не удалось запланировать обновление");
+      if (!response.ok) throw new Error(await readResponseError(response, "Не удалось запланировать обновление"));
+      setNotice("Синхронизация продолжена с последней сохранённой позиции. Новые клиенты появятся автоматически.");
+      window.setTimeout(() => loadDepartments().catch(() => {}), 1500);
     } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
   };
 
@@ -375,6 +389,7 @@ export default function CustomerDirectory() {
   };
 
   const totalPages = Math.max(1, Math.ceil((result.total || 0) / (result.limit || 30)));
+  const syncIssues = departments.filter((department) => String(department.last_error || "").trim());
 
   return (
     <main className="customer-directory content-page">
@@ -402,10 +417,22 @@ export default function CustomerDirectory() {
       </section>
 
       <section className="customer-departments" aria-label="Подразделения">
-        {departments.map((department) => <button type="button" key={department.department_code} className={filters.departments.includes(department.department_code) ? "active" : ""} onClick={() => toggleDepartment(department.department_code)}>{department.department_code}<span>{department.department_name}</span></button>)}
+        {departments.map((department) => <button type="button" key={department.department_code} className={filters.departments.includes(department.department_code) ? "active" : ""} onClick={() => toggleDepartment(department.department_code)} title={department.last_error || `Следующий индекс: ${department.department_code}.${String(department.next_sequence || 0).padStart(6, "0")}`}>{department.department_code}<span>{department.department_name}</span></button>)}
       </section>
 
+      {notice && <div className="customer-directory__notice">{notice}<button type="button" onClick={() => setNotice("")} title="Закрыть"><X size={15} /></button></div>}
       {error && <div className="customer-directory__error">{error}<button type="button" onClick={() => setError("")} title="Закрыть"><X size={15} /></button></div>}
+      {syncIssues.length > 0 && (
+        <section className="customer-sync-errors" aria-live="polite">
+          <header><AlertTriangle size={17} /><strong>Синхронизация остановлена в {syncIssues.length} подразделении(ях)</strong></header>
+          {syncIssues.map((department) => (
+            <div key={department.department_code}>
+              <strong>{department.department_code} · {department.last_client_code || "позиция не сохранена"}</strong>
+              <span>{department.last_error}</span>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="customer-table-wrap">
         <table className="customer-table">
