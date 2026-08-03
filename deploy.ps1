@@ -1,5 +1,6 @@
 # General Activ Daily deployment controller and the single deployment entry point.
-# GitHub is the source of truth; GitLab is the bank-network deployment mirror.
+# GitHub is preferred as the source of truth; repositories unavailable there
+# are cloned and deployed from the authenticated bank GitLab mirror.
 # Run from the workspace root or directly from premies_portal_front:
 #   powershell -ExecutionPolicy Bypass -File .\premies_portal_front\deploy.ps1
 # With no -Services argument, all configured services are cloned if necessary
@@ -19,7 +20,7 @@ $Projects = @(
         ServiceName   = "go-backend"
         DefaultBranch = "main"
         GitHubUrl     = "https://github.com/bezhan2009/premies_portal.git"
-        GitlabProject = "Bejan/premies_portal.git"
+        GitlabProject = "Bejan/activ_daily_premies_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/go-backend", "/home/bkarimov/daily_activ/premies_portal")
     },
     @{
@@ -51,7 +52,7 @@ $Projects = @(
         ServiceName   = "daily_tasks"
         DefaultBranch = "main"
         GitHubUrl     = "https://github.com/bezhan2009/daily_tasks.git"
-        GitlabProject = "Bejan/daily_tasks.git"
+        GitlabProject = "Bejan/activ_daily_tasks_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/daily_tasks")
     },
     @{
@@ -61,14 +62,6 @@ $Projects = @(
         GitHubUrl     = "https://github.com/bezhan2009/applications_portal.git"
         GitlabProject = "Bejan/activ_daily_applications_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/applications_portal")
-    },
-    @{
-        LocalName     = "deposits_portal"
-        ServiceName   = "deposits_portal"
-        DefaultBranch = "main"
-        GitHubUrl     = "https://github.com/bezhan2009/deposits_portal.git"
-        GitlabProject = "Bejan/deposits_portal.git"
-        RemotePaths   = @("/home/bkarimov/daily_activ/deposits_portal")
     },
     @{
         LocalName     = "abs_service"
@@ -209,7 +202,10 @@ function Add-RemoteDirectorySelection {
     param(
         [System.Collections.Generic.List[string]]$Lines,
         [string[]]$Paths,
-        [string]$ProjectName
+        [string]$ProjectName,
+        [string]$RepositoryUrl,
+        [string]$Branch,
+        [string]$AuthHeader
     )
 
     for ($index = 0; $index -lt $Paths.Count; $index++) {
@@ -224,9 +220,50 @@ function Add-RemoteDirectorySelection {
         $Lines.Add("  cd $quotedPath")
     }
     $Lines.Add("else")
-    $Lines.Add("  echo $(ConvertTo-BashLiteral "[ERROR] Server directory for $ProjectName was not found.")")
-    $Lines.Add("  exit 21")
+    $primaryPath = $Paths[0]
+    $parentPath = $primaryPath.Substring(0, $primaryPath.LastIndexOf('/'))
+    $quotedPrimaryPath = ConvertTo-BashLiteral $primaryPath
+    $quotedParentPath = ConvertTo-BashLiteral $parentPath
+    $quotedRepositoryUrl = ConvertTo-BashLiteral $RepositoryUrl
+    $quotedBranch = ConvertTo-BashLiteral $Branch
+    $quotedHeader = ConvertTo-BashLiteral "http.extraHeader=Authorization: Basic $AuthHeader"
+    $Lines.Add("  echo $(ConvertTo-BashLiteral "[CLONE] Server directory for $ProjectName is missing; cloning it.")")
+    $Lines.Add("  mkdir -p $quotedParentPath")
+    $Lines.Add("  git -c credential.helper= -c $quotedHeader clone --branch $quotedBranch --single-branch $quotedRepositoryUrl $quotedPrimaryPath")
+    $Lines.Add("  cd $quotedPrimaryPath")
     $Lines.Add("fi")
+}
+
+function Invoke-AuthenticatedGitLabClone {
+    param(
+        [string]$RepositoryUrl,
+        [string]$Branch,
+        [string]$Destination,
+        [string]$AuthHeader
+    )
+
+    & git -c credential.helper= -c "http.extraHeader=Authorization: Basic $AuthHeader" clone --branch $Branch --single-branch $RepositoryUrl $Destination | Out-Host
+    $cloneExitCode = $LASTEXITCODE
+    return ($cloneExitCode -eq 0)
+}
+
+function Remove-FailedCloneDirectory {
+    param(
+        [string]$Path,
+        [string]$WorkspaceRoot
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+
+    $resolvedWorkspace = [System.IO.Path]::GetFullPath($WorkspaceRoot).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    $resolvedPath = [System.IO.Path]::GetFullPath($Path)
+    if (-not $resolvedPath.StartsWith($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove clone directory outside the Activ Daily workspace: $resolvedPath"
+    }
+
+    Remove-Item -LiteralPath $resolvedPath -Recurse -Force
 }
 
 function Read-DeployState {
@@ -398,14 +435,23 @@ foreach ($projectDefinition in $Projects) {
 
     $localPath = Join-Path $WorkspaceRoot $projectDefinition.LocalName
     if (-not (Test-Path -LiteralPath $localPath)) {
-        Write-Host "[CLONE] $($projectDefinition.LocalName) is missing; cloning origin/$($projectDefinition.DefaultBranch)..." -ForegroundColor Yellow
+        $gitLabCloneUrl = "https://$GitLabHost/$($projectDefinition.GitlabProject)"
+        Write-Host "[CLONE] $($projectDefinition.LocalName) is missing; trying GitHub origin/$($projectDefinition.DefaultBranch)..." -ForegroundColor Yellow
         & git clone --branch $projectDefinition.DefaultBranch --single-branch $projectDefinition.GitHubUrl $localPath
-        if ($LASTEXITCODE -ne 0) {
-            $message = "Cannot clone $($projectDefinition.LocalName) from GitHub."
+        $cloneSucceeded = ($LASTEXITCODE -eq 0)
+        if (-not $cloneSucceeded) {
+            Remove-FailedCloneDirectory -Path $localPath -WorkspaceRoot $WorkspaceRoot
+            Write-Host "[CLONE] GitHub is unavailable for $($projectDefinition.LocalName); cloning the GitLab mirror..." -ForegroundColor Yellow
+            $cloneSucceeded = Invoke-AuthenticatedGitLabClone -RepositoryUrl $gitLabCloneUrl -Branch $projectDefinition.DefaultBranch -Destination $localPath -AuthHeader $GitLabAuthHeader
+        }
+        if (-not $cloneSucceeded) {
+            Remove-FailedCloneDirectory -Path $localPath -WorkspaceRoot $WorkspaceRoot
+            $message = "Cannot clone $($projectDefinition.LocalName) from GitHub or GitLab."
             Write-Host "[ERROR] $message" -ForegroundColor Red
             $DiscoveryErrors += $message
             continue
         }
+        Write-Host "[CLONE] $($projectDefinition.LocalName) was created in $localPath." -ForegroundColor Green
     }
     if (-not (Test-Path -LiteralPath (Join-Path $localPath ".git"))) {
         $message = "$localPath exists but is not a Git repository."
@@ -427,13 +473,24 @@ foreach ($projectDefinition in $Projects) {
         & git -C $localPath remote add gitlab $project.GitLabUrl
     }
 
+    $originUrl = Get-StringSha @(& git -C $localPath remote get-url origin 2>$null)
+    $originIsGitLab = $originUrl -like "*$GitLabHost*"
     Write-Host "[$($project.LocalName)] Fetching origin/$($project.Branch)..." -ForegroundColor Gray
-    & git -C $localPath fetch origin $project.Branch
+    if ($originIsGitLab) {
+        & git -C $localPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" fetch origin $project.Branch
+    } else {
+        & git -C $localPath fetch origin $project.Branch
+    }
     if ($LASTEXITCODE -ne 0) {
-        $message = "Cannot fetch origin for $($project.LocalName)."
-        Write-Host "[ERROR] $message" -ForegroundColor Red
-        $DiscoveryErrors += $message
-        continue
+        Write-Host "[WARN] GitHub origin is unavailable for $($project.LocalName); using the GitLab mirror as the deployment source." -ForegroundColor Yellow
+        $fallbackRefspec = "+refs/heads/$($project.Branch):refs/remotes/origin/$($project.Branch)"
+        & git -C $localPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" fetch --no-tags $project.GitLabUrl $fallbackRefspec
+        if ($LASTEXITCODE -ne 0) {
+            $message = "Cannot fetch $($project.LocalName) from GitHub or GitLab."
+            Write-Host "[ERROR] $message" -ForegroundColor Red
+            $DiscoveryErrors += $message
+            continue
+        }
     }
 
     $originSha = Get-StringSha @(& git -C $localPath rev-parse "refs/remotes/origin/$($project.Branch)" 2>$null)
@@ -581,7 +638,7 @@ $bashLines.Add("echo '[DEPLOY] Updating application repositories...'")
 
 foreach ($project in $ReadyProjects) {
     $bashLines.Add("echo $(ConvertTo-BashLiteral "[DEPLOY] $($project.LocalName) @ $($project.OriginSha)")")
-    Add-RemoteDirectorySelection -Lines $bashLines -Paths $project.RemotePaths -ProjectName $project.LocalName
+    Add-RemoteDirectorySelection -Lines $bashLines -Paths $project.RemotePaths -ProjectName $project.LocalName -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $project.GitLabAuthHeader
     $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=no)" ]; then')
     $bashLines.Add("  echo $(ConvertTo-BashLiteral "[ERROR] Tracked server files are modified in $($project.LocalName); deployment stopped.")")
     $bashLines.Add("  exit 22")
