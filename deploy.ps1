@@ -639,10 +639,13 @@ $bashLines.Add("echo '[DEPLOY] Updating application repositories...'")
 foreach ($project in $ReadyProjects) {
     $bashLines.Add("echo $(ConvertTo-BashLiteral "[DEPLOY] $($project.LocalName) @ $($project.OriginSha)")")
     Add-RemoteDirectorySelection -Lines $bashLines -Paths $project.RemotePaths -ProjectName $project.LocalName -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $project.GitLabAuthHeader
-    $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then')
+    # Back up only tracked changes. Runtime files such as TLS private keys,
+    # .env files and logs must remain untouched on the server and may not be
+    # readable by the deployment user.
+    $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=no)" ]; then')
     $stashMessage = ConvertTo-BashLiteral "auto-deploy backup for $($project.LocalName)"
     $bashLines.Add("  echo $(ConvertTo-BashLiteral "[BACKUP] Server files in $($project.LocalName) are modified; saving them before deployment.")")
-    $bashLines.Add("  if ! git stash push --include-untracked -m $stashMessage; then")
+    $bashLines.Add("  if ! git stash push -m $stashMessage; then")
     $bashLines.Add("    echo $(ConvertTo-BashLiteral "[ERROR] Could not back up server changes in $($project.LocalName); deployment stopped without overwriting them.")")
     $bashLines.Add("    exit 22")
     $bashLines.Add("  fi")
