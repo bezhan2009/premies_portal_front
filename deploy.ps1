@@ -150,41 +150,53 @@ function Invoke-SSHWithPassword {
     param($Command)
     
     $cleanCommand = $Command -replace "`r", ""
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tempFile, $cleanCommand + "`n", $utf8NoBom)
     
-    # Try using sshpass (if installed)
-    $sshpassPath = Get-Command sshpass -ErrorAction SilentlyContinue
-    if ($sshpassPath) {
-        & sshpass -p $PASSWORD ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" $cleanCommand
-        return
-    }
-    
-    # Try using plink (if installed or downloaded)
-    $localPlinkPath = "$env:USERPROFILE\plink.exe"
-    $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
-    if (-not $plinkPath -and (Test-Path $localPlinkPath)) {
-        $plinkPath = $localPlinkPath
-    }
-    
-    if (-not $plinkPath) {
-        Write-Host "[DEPLOY] plink.exe not found. Downloading PuTTY Link (plink.exe) to automate password entry..." -ForegroundColor Yellow
-        try {
-            $webClient = New-Object System.Net.WebClient
-            $webClient.DownloadFile("https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe", $localPlinkPath)
-            $plinkPath = $localPlinkPath
-            Write-Host "[DEPLOY] plink.exe successfully downloaded!" -ForegroundColor Green
-        } catch {
-            Write-Host "[ERROR] Failed to download plink.exe: $_" -ForegroundColor Red
+    try {
+        # Send the remote command as a script file. Passing it as a command-line
+        # argument makes Windows/plink remove the quotes around the Git auth header.
+        $sshpassPath = Get-Command sshpass -ErrorAction SilentlyContinue
+        if ($sshpassPath) {
+            $previousSshPass = $env:SSHPASS
+            try {
+                $env:SSHPASS = $PASSWORD
+                Get-Content -Raw -LiteralPath $tempFile | & $sshpassPath -e ssh -p $SERVER_PORT -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "bash -s"
+            } finally {
+                $env:SSHPASS = $previousSshPass
+            }
+            return
         }
+
+        $localPlinkPath = "$env:USERPROFILE\plink.exe"
+        $plinkPath = Get-Command plink -ErrorAction SilentlyContinue
+        if (-not $plinkPath -and (Test-Path $localPlinkPath)) {
+            $plinkPath = $localPlinkPath
+        }
+
+        if (-not $plinkPath) {
+            Write-Host "[DEPLOY] plink.exe not found. Downloading PuTTY Link (plink.exe) to automate password entry..." -ForegroundColor Yellow
+            try {
+                $webClient = New-Object System.Net.WebClient
+                $webClient.DownloadFile("https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe", $localPlinkPath)
+                $plinkPath = $localPlinkPath
+                Write-Host "[DEPLOY] plink.exe successfully downloaded!" -ForegroundColor Green
+            } catch {
+                Write-Host "[ERROR] Failed to download plink.exe: $_" -ForegroundColor Red
+            }
+        }
+
+        if ($plinkPath) {
+            & $plinkPath -batch -ssh -P $SERVER_PORT -pw $PASSWORD -m $tempFile "$SERVER_USER@$SERVER_IP"
+            return
+        }
+
+        Write-Host "[WARN] plink.exe and sshpass were not found. Trying OpenSSH with the current authentication setup." -ForegroundColor Yellow
+        Get-Content -Raw -LiteralPath $tempFile | & ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" "bash -s"
+    } finally {
+        Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
     }
-    
-    if ($plinkPath) {
-        & echo y | & $plinkPath -ssh -P $SERVER_PORT -pw $PASSWORD "$SERVER_USER@$SERVER_IP" $cleanCommand
-        return
-    }
-    
-    # Fallback to interactive SSH
-    Write-Host "[WARN] Using fallback interactive SSH (manual password entry needed)" -ForegroundColor Yellow
-    ssh -p $SERVER_PORT "$SERVER_USER@$SERVER_IP" $cleanCommand
 }
 
 # Run deploy
