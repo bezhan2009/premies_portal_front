@@ -92,12 +92,14 @@ function Get-GitLabRemoteUrl {
         exit 1
     }
 
-    $encodedUsername = [uri]::EscapeDataString($username)
-    $encodedToken = [uri]::EscapeDataString($token)
-    return "https://${encodedUsername}:${encodedToken}@${GITLAB_HOST}/${ProjectPath}"
+    $script:GitLabUsername = $username
+    $script:GitLabToken = $token
+    return "https://${GITLAB_HOST}/${ProjectPath}"
 }
 # ===== AUTO-AUTHENTICATION FOR GITLAB =====
 $GITLAB_URL = Get-GitLabRemoteUrl -ProjectPath $GITLAB_PROJECT
+$gitLabCredential = [string]::Concat($script:GitLabUsername, ":", $script:GitLabToken)
+$GITLAB_AUTH_HEADER = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($gitLabCredential))
 $GITLAB_PUBLIC_URL = "https://${GITLAB_HOST}/${GITLAB_PROJECT}"
 $remotes = git -C "$PSScriptRoot" remote 2>$null
 if ($remotes -contains "gitlab") {
@@ -120,7 +122,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "[GIT] Pushing changes to gitlab ($GITLAB_BRANCH)..." -ForegroundColor Yellow
-git -C "$PSScriptRoot" push $GITLAB_URL "$GITLAB_BRANCH"
+git -C "$PSScriptRoot" -c credential.helper= -c "http.extraHeader=Authorization: Basic $GITLAB_AUTH_HEADER" push $GITLAB_URL "$GITLAB_BRANCH"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Local git push gitlab failed! Aborting deploy." -ForegroundColor Red
     exit 1
@@ -133,7 +135,7 @@ $PASSWORD = Get-ServerPassword
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
 # Create remote commands sequence for server (evaluated client-side via formatting operator)
-$remoteScript = 'cd "{0}" && git pull "{4}" "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME, $GITLAB_URL
+$remoteScript = 'cd "{0}" && git -c credential.helper= -c "http.extraHeader=Authorization: Basic {5}" pull "{4}" "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME, $GITLAB_URL, $GITLAB_AUTH_HEADER
 
 # Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
