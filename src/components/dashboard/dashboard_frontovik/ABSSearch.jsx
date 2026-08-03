@@ -66,6 +66,7 @@ import {
     getClientSelfieDocument,
     resolveClientDocumentUrl,
 } from "../../../utils/clientDocuments.js";
+import { hasOverdueCreditDebt } from "../../../utils/creditDebtBalance.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
@@ -1142,6 +1143,7 @@ export default function ABSClientSearch() {
     const selectedClientINN = selectedClient?.tax_code?.trim() || "";
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
+    const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
 
     useEffect(() => {
         const checkTerror = async () => {
@@ -1591,6 +1593,11 @@ export default function ABSClientSearch() {
                                 ) : terrorMatch === false ? (
                                     <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
                                 ) : null}
+                                {hasOverdueDebt && (
+                                    <div className="terror-banner terror-danger">
+                                        Имеется просроченная задолженность по кредиту
+                                    </div>
+                                )}
                             </div>
                         )}
 

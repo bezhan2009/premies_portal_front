@@ -183,6 +183,8 @@
 /* ── TERROR BANNERS ── */
 .terror-check-banner-wrapper {
   width: 100%;
+  display: grid;
+  gap: 10px;
 }
 
 .terror-banner {

@@ -1,5 +1,6 @@
 const USD_CURRENCIES = new Set(["USD", "840"]);
 const USD_DEBT_NPS = new Set(["10914", "17533"]);
+const OVERDUE_CREDIT_ACCOUNT_PREFIXES = ["10923", "10935"];
 
 const readField = (account, camelCase, pascalCase) =>
   account?.[camelCase] ?? account?.[pascalCase] ?? "";
@@ -45,3 +46,25 @@ export const calculateUsdCreditDebtBalance = (balances, referenceId = "") => {
   }, 0);
 };
 
+export const hasOverdueCreditDebt = (accounts) => {
+  if (!Array.isArray(accounts)) return false;
+
+  return accounts.some((account) => {
+    const accountNumber = String(
+      account?.Number ??
+      account?.number ??
+      account?.AccountNumber ??
+      account?.accountNumber ??
+      account?.AccCode ??
+      account?.accCode ??
+      "",
+    ).trim();
+    const balance = parseBalance(account?.Balance ?? account?.balance);
+
+    return (
+      OVERDUE_CREDIT_ACCOUNT_PREFIXES.some((prefix) =>
+        accountNumber.startsWith(prefix),
+      ) && balance > 0
+    );
+  });
+};
