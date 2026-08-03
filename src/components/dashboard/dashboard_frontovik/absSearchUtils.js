@@ -1,5 +1,25 @@
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 
+export const getClientEmployeeUsername = (client) => {
+  const rawRiskValues =
+    client?.ClientRiskValuesList?.ClientRiskValue ??
+    client?.clientRiskValuesList?.clientRiskValue;
+  const riskValues = Array.isArray(rawRiskValues)
+    ? rawRiskValues
+    : rawRiskValues
+      ? [rawRiskValues]
+      : [];
+
+  for (const riskValue of riskValues) {
+    const username = String(
+      riskValue?.UserName ?? riskValue?.userName ?? "",
+    ).trim();
+    if (username) return username;
+  }
+
+  return "";
+};
+
 /**
  * Нормализует данные клиента в зависимости от типа поиска.
  * @param {Object} client - Данные клиента из API

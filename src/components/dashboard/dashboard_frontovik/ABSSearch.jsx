@@ -1622,7 +1622,6 @@ export default function ABSClientSearch() {
                             onOpenClientPhoto={handleOpenClientPhoto}
                             onOpenClientDocuments={handleOpenClientDocuments}
                             documentsCount={clientDocuments.length}
-                            selectedClientINN={selectedClientINN}
                             isSalaryClient={accountsData?.some(acc => 
                                 acc?.Name === "Договора СКС зарплатные карты" || 
                                 acc?.AddInfo?.ScaDeaProduct?.Name === "Договора СКС зарплатные карты"

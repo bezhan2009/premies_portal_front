@@ -7,6 +7,7 @@ import {
 import { serviceCodes } from "../../../utils/serviceCodes";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
 import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
+import { getClientEmployeeUsername } from "./absSearchUtils";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -28,7 +29,6 @@ const ClientPersonalInfo = ({
   onOpenClientPhoto,
   onOpenClientDocuments,
   documentsCount = 0,
-  selectedClientINN,
   isSalaryClient,
   verifiedClientCodes = [],
   onPromptPin,
@@ -41,6 +41,7 @@ const ClientPersonalInfo = ({
   const code = selectedClient.client_code || "Не указан";
   const phone = selectedClient.phone || "Не указан";
   const inn = selectedClient.tax_code || "Не указан";
+  const employeeUsername = getClientEmployeeUsername(selectedClient) || "Не указан";
   const isMobileRegistered =
     isMobile?.isMobileAppRegistered === true ||
     isMobile?.is_mobile_app_registered === true ||
@@ -161,7 +162,7 @@ const ClientPersonalInfo = ({
               {/* Metadata fields Grid inside Identity info to align with FIO */}
               <div className="summary-metadata-grid" style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(6, 1fr)', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: '15px', 
                 marginTop: '10px' 
               }}>
@@ -219,6 +220,13 @@ const ClientPersonalInfo = ({
                     ) : (
                       <span className="mobile-status-disconnected" style={{ color: '#333' }}>Не подключен</span>
                     )}
+                  </span>
+                </div>
+
+                <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '12px', color: '#888' }}>Сотрудник</span>
+                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>
+                    {employeeUsername}
                   </span>
                 </div>
               </div>
