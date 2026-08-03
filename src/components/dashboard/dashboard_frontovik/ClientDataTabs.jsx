@@ -14,6 +14,10 @@ import { generateCardRequisites } from "../../../api/ABS_frotavik/requisites.js"
 import { logAuditAction } from "../../../utils/auditLogger.js";
 import { serviceCodes } from "../../../utils/serviceCodes.js";
 import { formatDateDisplay } from "../../../utils/dateFormatter.js";
+import {
+  calculateUsdCreditDebtBalance,
+  isUsdCredit,
+} from "../../../utils/creditDebtBalance.js";
 import activeLogoImg from "../../../assets/active_logo.png";
 
 const getPcStatusData = (code) => {
@@ -1569,8 +1573,12 @@ const ClientDataTabs = ({
                       const department = params.department || card.department || "Неизвестно";
                       const interestRate = params.interestRate || "0";
 
-                      const debtAccounts = balances.filter(b => b.currCode === "TJS" && b.activeFl === "dt");
-                      const debtBalance = debtAccounts.reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
+                      const referenceId = params.referenceId || card.referenceId || "";
+                      const debtBalance = isUsdCredit(currency)
+                        ? calculateUsdCreditDebtBalance(balances, referenceId)
+                        : balances
+                          .filter(b => b.currCode === "TJS" && b.activeFl === "dt")
+                          .reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
                       const repaid = Math.max(0, Number(amount) - debtBalance);
                       const percentage = Number(amount) > 0 ? Math.min((repaid / Number(amount)) * 100, 100) : 0;
 

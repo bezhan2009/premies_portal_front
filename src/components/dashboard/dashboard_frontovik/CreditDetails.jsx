@@ -4,6 +4,10 @@ import * as XLSX from "xlsx";
 import "../../../styles/ABSSearch.scss";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
 import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
+import {
+  calculateUsdCreditDebtBalance,
+  isUsdCredit,
+} from "../../../utils/creditDebtBalance.js";
 
 
 const CreditDetails = ({ credit, selectedClient, onBack }) => {
@@ -28,8 +32,12 @@ const CreditDetails = ({ credit, selectedClient, onBack }) => {
   const purposeName = params.creditPurpose || "Не указана";
 
   // Compute Debt Balance
-  const debtAccounts = balances.filter(b => b.nps && (String(b.nps).startsWith("1753") || String(b.nps).startsWith("1091")));
-  const debtBalance = debtAccounts.reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
+  const referenceId = params.referenceId || credit.referenceId || "";
+  const debtBalance = isUsdCredit(currency)
+    ? calculateUsdCreditDebtBalance(balances, referenceId)
+    : balances
+      .filter(b => b.nps && (String(b.nps).startsWith("1753") || String(b.nps).startsWith("1091")))
+      .reduce((acc, curr) => acc + Number(curr.balance || 0), 0);
 
   // Compute Progress
   let progressPercent = 0;
