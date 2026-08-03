@@ -115,10 +115,18 @@ if ($remotes -contains "gitlab") {
 
 # ===== LOCAL GIT SYNC =====
 Write-Host "[GIT] Pulling latest changes from origin ($GITLAB_BRANCH)..." -ForegroundColor Yellow
+$revisionBeforePull = git -C "$PSScriptRoot" rev-parse HEAD 2>$null
 git -C "$PSScriptRoot" pull origin "$GITLAB_BRANCH"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Local git pull origin failed! Aborting deploy." -ForegroundColor Red
     exit 1
+}
+$revisionAfterPull = git -C "$PSScriptRoot" rev-parse HEAD 2>$null
+if ($revisionBeforePull -and $revisionAfterPull -and $revisionBeforePull -ne $revisionAfterPull) {
+    Write-Host "[GIT] Deploy script may have changed; restarting with the latest revision..." -ForegroundColor Yellow
+    $powerShellExecutable = (Get-Process -Id $PID).Path
+    & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath
+    exit $LASTEXITCODE
 }
 
 Write-Host "[GIT] Pushing changes to gitlab ($GITLAB_BRANCH)..." -ForegroundColor Yellow
