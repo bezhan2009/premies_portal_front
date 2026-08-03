@@ -639,15 +639,25 @@ $bashLines.Add("echo '[DEPLOY] Updating application repositories...'")
 foreach ($project in $ReadyProjects) {
     $bashLines.Add("echo $(ConvertTo-BashLiteral "[DEPLOY] $($project.LocalName) @ $($project.OriginSha)")")
     Add-RemoteDirectorySelection -Lines $bashLines -Paths $project.RemotePaths -ProjectName $project.LocalName -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $project.GitLabAuthHeader
-    $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=no)" ]; then')
-    $bashLines.Add("  echo $(ConvertTo-BashLiteral "[ERROR] Tracked server files are modified in $($project.LocalName); deployment stopped.")")
-    $bashLines.Add("  exit 22")
+    $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then')
+    $stashMessage = ConvertTo-BashLiteral "auto-deploy backup for $($project.LocalName)"
+    $bashLines.Add("  echo $(ConvertTo-BashLiteral "[BACKUP] Server files in $($project.LocalName) are modified; saving them before deployment.")")
+    $bashLines.Add("  if ! git stash push --include-untracked -m $stashMessage; then")
+    $bashLines.Add("    echo $(ConvertTo-BashLiteral "[ERROR] Could not back up server changes in $($project.LocalName); deployment stopped without overwriting them.")")
+    $bashLines.Add("    exit 22")
+    $bashLines.Add("  fi")
+    $bashLines.Add('  echo "[BACKUP] Saved as stash $(git rev-parse --short refs/stash)."')
     $bashLines.Add("fi")
     $quotedHeader = ConvertTo-BashLiteral "http.extraHeader=Authorization: Basic $($project.GitLabAuthHeader)"
     $quotedUrl = ConvertTo-BashLiteral $project.GitLabUrl
     $quotedBranch = ConvertTo-BashLiteral $project.Branch
+    $gitLabTrackingRef = "refs/remotes/gitlab/$($project.Branch)"
+    $quotedGitLabTrackingRef = ConvertTo-BashLiteral $gitLabTrackingRef
+    $quotedFetchRefspec = ConvertTo-BashLiteral "+refs/heads/$($project.Branch):$gitLabTrackingRef"
     $bashLines.Add("if git remote get-url gitlab >/dev/null 2>&1; then")
     $bashLines.Add("  git remote set-url gitlab $quotedUrl")
+    $bashLines.Add("else")
+    $bashLines.Add("  git remote add gitlab $quotedUrl")
     $bashLines.Add("fi")
     $bashLines.Add('origin_url=""')
     $bashLines.Add("if git remote get-url origin >/dev/null 2>&1; then")
@@ -656,14 +666,15 @@ foreach ($project in $ReadyProjects) {
     $bashLines.Add('case "$origin_url" in')
     $bashLines.Add("  *gl.abank.tj*) git remote set-url origin $quotedUrl ;;")
     $bashLines.Add("esac")
-    $bashLines.Add("git -c credential.helper= -c $quotedHeader fetch --no-tags $quotedUrl $quotedBranch")
+    $bashLines.Add("git -c credential.helper= -c $quotedHeader fetch --no-tags $quotedUrl $quotedFetchRefspec")
     $bashLines.Add('old_sha="$(git rev-parse HEAD)"')
-    $bashLines.Add('new_sha="$(git rev-parse FETCH_HEAD)"')
+    $bashLines.Add("new_sha=`$(git rev-parse $quotedGitLabTrackingRef)")
     $bashLines.Add('if [ "$old_sha" != "$new_sha" ]; then')
     $bashLines.Add(('  backup_ref="deploy-backup/{0}-$(date +%Y%m%d%H%M%S)"' -f $project.Branch))
     $bashLines.Add('  if ! git branch -f "$backup_ref" "$old_sha"; then true; fi')
     $bashLines.Add("fi")
     $bashLines.Add('git checkout -B ' + $quotedBranch + ' "$new_sha"')
+    $bashLines.Add("git branch --set-upstream-to=gitlab/$($project.Branch) $quotedBranch >/dev/null 2>&1 || true")
 }
 
 $quotedProjectDir = ConvertTo-BashLiteral $ServerProjectDir
