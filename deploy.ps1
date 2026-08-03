@@ -16,6 +16,9 @@ $CONTAINER_NAME = "frontend"
 
 # Password Storage File
 $PasswordFile = "$env:USERPROFILE\.deploy_passwd"
+$GITLAB_PROJECT = "Bejan/activ_daily_frontend.git"
+$GITLAB_HOST = "gl.abank.tj.tajikistan.tj"
+$DEFAULT_GITLAB_USERNAME = "bkarimov@activban.tj"
 
 # ===== GET PASSWORD =====
 function Get-ServerPassword {
@@ -46,8 +49,41 @@ function Get-ServerPassword {
     )
     return $Password
 }
+
+function Convert-SecureStringToPlainText {
+    param([Security.SecureString]$SecureValue)
+    return [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureValue)
+    )
+}
+
+function Get-GitLabRemoteUrl {
+    param([string]$ProjectPath)
+
+    $username = $env:GITLAB_USERNAME
+    if ([string]::IsNullOrWhiteSpace($username)) {
+        $username = $env:GITLAB_USER
+    }
+    if ([string]::IsNullOrWhiteSpace($username)) {
+        $username = $DEFAULT_GITLAB_USERNAME
+    }
+
+    $token = $env:GITLAB_TOKEN
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        $secureToken = Read-Host "GitLab token for $username@$GITLAB_HOST" -AsSecureString
+        $token = Convert-SecureStringToPlainText $secureToken
+    }
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        Write-Host "[ERROR] GitLab token is required. Set `$env:GITLAB_TOKEN or enter it when prompted." -ForegroundColor Red
+        exit 1
+    }
+
+    $encodedUsername = [uri]::EscapeDataString($username)
+    $encodedToken = [uri]::EscapeDataString($token)
+    return "https://${encodedUsername}:${encodedToken}@${GITLAB_HOST}/${ProjectPath}"
+}
 # ===== AUTO-AUTHENTICATION FOR GITLAB =====
-$GITLAB_URL = "https://bkarimov%40activban.tj:Y%21E0lc3%7D0%7Er9e6%40%23%29s@gl.abank.tj.tajikistan.tj/Bejan/activ_daily_frontend.git"
+$GITLAB_URL = Get-GitLabRemoteUrl -ProjectPath $GITLAB_PROJECT
 $remotes = git -C "$PSScriptRoot" remote 2>$null
 if ($remotes -contains "gitlab") {
     $currentUrl = git -C "$PSScriptRoot" remote get-url gitlab 2>$null
@@ -82,7 +118,7 @@ $PASSWORD = Get-ServerPassword
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
 # Create remote commands sequence for server (evaluated client-side via formatting operator)
-$remoteScript = 'cd "{0}" && git pull gitlab "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME
+$remoteScript = 'cd "{0}" && (git remote | grep -q "^gitlab$" && git remote set-url gitlab "{4}" || git remote add gitlab "{4}") && git pull gitlab "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME, $GITLAB_URL
 
 # Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
