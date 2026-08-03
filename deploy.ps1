@@ -2,6 +2,8 @@
 # GitHub is the source of truth; GitLab is the bank-network deployment mirror.
 # Run from the workspace root or directly from premies_portal_front:
 #   powershell -ExecutionPolicy Bypass -File .\premies_portal_front\deploy.ps1
+# With no -Services argument, all configured services are cloned if necessary
+# and deployed. Use -Services only when an explicit subset is required.
 
 param(
     [switch]$Force,
@@ -16,6 +18,7 @@ $Projects = @(
         LocalName     = "premies_portal"
         ServiceName   = "go-backend"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/premies_portal.git"
         GitlabProject = "Bejan/premies_portal.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/go-backend", "/home/bkarimov/daily_activ/premies_portal")
     },
@@ -23,6 +26,7 @@ $Projects = @(
         LocalName     = "premies_automation"
         ServiceName   = "python-backend"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/premies_automation.git"
         GitlabProject = "Bejan/activ_daily_automation_backend.git"
         RemotePaths   = @(
             "/home/bkarimov/daily_activ/premies_automation",
@@ -34,6 +38,7 @@ $Projects = @(
         LocalName     = "premies_portal_front"
         ServiceName   = "frontend"
         DefaultBranch = "master"
+        GitHubUrl     = "https://github.com/bezhan2009/premies_portal_front.git"
         GitlabProject = "Bejan/activ_daily_frontend.git"
         RemotePaths   = @(
             "/home/bkarimov/daily_activ/premies_portal_front",
@@ -45,6 +50,7 @@ $Projects = @(
         LocalName     = "daily_tasks"
         ServiceName   = "daily_tasks"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/daily_tasks.git"
         GitlabProject = "Bejan/daily_tasks.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/daily_tasks")
     },
@@ -52,6 +58,7 @@ $Projects = @(
         LocalName     = "applications_portal"
         ServiceName   = "applications_portal"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/applications_portal.git"
         GitlabProject = "Bejan/activ_daily_applications_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/applications_portal")
     },
@@ -59,6 +66,7 @@ $Projects = @(
         LocalName     = "deposits_portal"
         ServiceName   = "deposits_portal"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/deposits_portal.git"
         GitlabProject = "Bejan/deposits_portal.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/deposits_portal")
     },
@@ -66,6 +74,7 @@ $Projects = @(
         LocalName     = "abs_service"
         ServiceName   = "abs_service"
         DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/abs_service.git"
         GitlabProject = "Bejan/activ_daily_abs_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/abs_service")
     }
@@ -171,7 +180,20 @@ function Get-GitLabBranchSha {
     if ($LASTEXITCODE -ne 0 -or $result.Count -eq 0) {
         return ""
     }
-    return (($result[0] -split "\s+")[0]).Trim()
+
+    $remoteSha = (($result[0] -split "\s+")[0]).Trim()
+    $trackingRef = "refs/remotes/gitlab/$Branch"
+    $fetchRefspec = "+refs/heads/${Branch}:$trackingRef"
+    & git -C $RepositoryPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $AuthHeader" fetch --no-tags $RepositoryUrl $fetchRefspec 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return ""
+    }
+
+    $fetchedSha = Get-StringSha @(& git -C $RepositoryPath rev-parse $trackingRef 2>$null)
+    if ([string]::IsNullOrWhiteSpace($fetchedSha)) {
+        return $remoteSha
+    }
+    return $fetchedSha
 }
 
 function ConvertTo-BashLiteral {
@@ -364,6 +386,7 @@ if (-not [string]::IsNullOrWhiteSpace($Services)) {
 Write-Host "[SCAN] Workspace: $WorkspaceRoot" -ForegroundColor Cyan
 $Candidates = @()
 $FoundTargetServices = @()
+$DiscoveryErrors = @()
 
 foreach ($projectDefinition in $Projects) {
     if ($TargetServices.Count -gt 0 -and $TargetServices -notcontains $projectDefinition.ServiceName) {
@@ -375,11 +398,19 @@ foreach ($projectDefinition in $Projects) {
 
     $localPath = Join-Path $WorkspaceRoot $projectDefinition.LocalName
     if (-not (Test-Path -LiteralPath $localPath)) {
-        Write-Host "[WARN] $($projectDefinition.LocalName) is not present locally; skipped." -ForegroundColor Yellow
-        continue
+        Write-Host "[CLONE] $($projectDefinition.LocalName) is missing; cloning origin/$($projectDefinition.DefaultBranch)..." -ForegroundColor Yellow
+        & git clone --branch $projectDefinition.DefaultBranch --single-branch $projectDefinition.GitHubUrl $localPath
+        if ($LASTEXITCODE -ne 0) {
+            $message = "Cannot clone $($projectDefinition.LocalName) from GitHub."
+            Write-Host "[ERROR] $message" -ForegroundColor Red
+            $DiscoveryErrors += $message
+            continue
+        }
     }
     if (-not (Test-Path -LiteralPath (Join-Path $localPath ".git"))) {
-        Write-Host "[WARN] $localPath is not a Git repository; skipped." -ForegroundColor Yellow
+        $message = "$localPath exists but is not a Git repository."
+        Write-Host "[ERROR] $message" -ForegroundColor Red
+        $DiscoveryErrors += $message
         continue
     }
 
@@ -399,16 +430,21 @@ foreach ($projectDefinition in $Projects) {
     Write-Host "[$($project.LocalName)] Fetching origin/$($project.Branch)..." -ForegroundColor Gray
     & git -C $localPath fetch origin $project.Branch
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERROR] Cannot fetch origin for $($project.LocalName); skipped." -ForegroundColor Red
+        $message = "Cannot fetch origin for $($project.LocalName)."
+        Write-Host "[ERROR] $message" -ForegroundColor Red
+        $DiscoveryErrors += $message
         continue
     }
 
     $originSha = Get-StringSha @(& git -C $localPath rev-parse "refs/remotes/origin/$($project.Branch)" 2>$null)
     if ([string]::IsNullOrWhiteSpace($originSha)) {
-        Write-Host "[ERROR] origin/$($project.Branch) was not found for $($project.LocalName); skipped." -ForegroundColor Red
+        $message = "origin/$($project.Branch) was not found for $($project.LocalName)."
+        Write-Host "[ERROR] $message" -ForegroundColor Red
+        $DiscoveryErrors += $message
         continue
     }
     $project.OriginSha = $originSha
+    $project.OriginTree = Get-StringSha @(& git -C $localPath rev-parse "$originSha`^{tree}" 2>$null)
 
     $workingTreeChanges = @(& git -C $localPath status --porcelain 2>$null)
     $localSha = Get-StringSha @(& git -C $localPath rev-parse HEAD 2>$null)
@@ -429,6 +465,10 @@ foreach ($projectDefinition in $Projects) {
 
     $gitLabSha = Get-GitLabBranchSha -RepositoryPath $localPath -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $GitLabAuthHeader
     $project.GitLabSha = $gitLabSha
+    $project.GitLabTree = ""
+    if (-not [string]::IsNullOrWhiteSpace($gitLabSha)) {
+        $project.GitLabTree = Get-StringSha @(& git -C $localPath rev-parse "$gitLabSha`^{tree}" 2>$null)
+    }
 
     $lastDeployedSha = ""
     if ($DeployState.ContainsKey($project.ServiceName)) {
@@ -439,11 +479,13 @@ foreach ($projectDefinition in $Projects) {
     if ($Force) {
         $reasons += "forced"
     }
-    if ($TargetServices.Count -gt 0) {
+    if ($TargetServices.Count -eq 0) {
+        $reasons += "default full deployment"
+    } else {
         $reasons += "explicitly selected"
     }
-    if ($gitLabSha -ne $originSha) {
-        $reasons += "GitLab mirror differs from GitHub"
+    if ($project.GitLabTree -ne $project.OriginTree) {
+        $reasons += "GitLab content differs from GitHub"
     }
     if ($lastDeployedSha -ne $originSha) {
         $reasons += "server deployment state differs"
@@ -460,9 +502,15 @@ foreach ($projectDefinition in $Projects) {
 if ($TargetServices.Count -gt 0) {
     foreach ($target in $TargetServices) {
         if ($FoundTargetServices -notcontains $target) {
-            Write-Host "[WARN] Unknown service requested: $target" -ForegroundColor Yellow
+            $message = "Unknown service requested: $target"
+            Write-Host "[ERROR] $message" -ForegroundColor Red
+            $DiscoveryErrors += $message
         }
     }
+}
+
+if ($DiscoveryErrors.Count -gt 0) {
+    throw "Deployment scan failed: $($DiscoveryErrors -join ' ')"
 }
 
 if ($Candidates.Count -eq 0) {
@@ -478,23 +526,53 @@ if ($DryRun) {
 
 Write-Host "[MIRROR] Synchronizing canonical GitHub commits to GitLab..." -ForegroundColor Yellow
 $ReadyProjects = @()
+$MirrorErrors = @()
 foreach ($project in $Candidates) {
+    $mirrorSucceeded = $true
     $refspec = "refs/remotes/origin/$($project.Branch):refs/heads/$($project.Branch)"
     if ([string]::IsNullOrWhiteSpace($project.GitLabSha)) {
         & git -C $project.LocalPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" push $project.GitLabUrl $refspec
+        $mirrorSucceeded = ($LASTEXITCODE -eq 0)
+        $project.GitLabDeploySha = $project.OriginSha
+    } elseif ($project.GitLabTree -eq $project.OriginTree) {
+        Write-Host "[MIRROR] $($project.LocalName): GitLab already has the canonical GitHub content." -ForegroundColor Gray
+        $project.GitLabDeploySha = $project.GitLabSha
     } else {
-        $lease = "--force-with-lease=refs/heads/$($project.Branch):$($project.GitLabSha)"
-        & git -C $project.LocalPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" push $lease $project.GitLabUrl $refspec
+        & git -C $project.LocalPath merge-base --is-ancestor $project.GitLabSha $project.OriginSha 2>$null
+        $canFastForwardGitLab = ($LASTEXITCODE -eq 0)
+        if ($canFastForwardGitLab) {
+            & git -C $project.LocalPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" push $project.GitLabUrl $refspec
+            $mirrorSucceeded = ($LASTEXITCODE -eq 0)
+            $project.GitLabDeploySha = $project.OriginSha
+        } else {
+            # Protected GitLab branches reject force pushes. Create a regular
+            # merge commit whose tree is exactly the canonical GitHub tree and
+            # whose second parent preserves the existing GitLab history.
+            $mergeMessage = "chore(deploy): synchronize $($project.LocalName) from GitHub $($project.OriginSha.Substring(0, 12))"
+            $mirrorCommit = Get-StringSha @(& git -C $project.LocalPath -c user.name="Activ Daily Deploy" -c user.email="deploy@activ.local" commit-tree $project.OriginTree -p $project.OriginSha -p $project.GitLabSha -m $mergeMessage)
+            if ([string]::IsNullOrWhiteSpace($mirrorCommit)) {
+                $message = "Could not create a protected-branch synchronization commit for $($project.LocalName)."
+                Write-Host "[ERROR] $message" -ForegroundColor Red
+                $MirrorErrors += $message
+                continue
+            }
+            $mergeRefspec = "${mirrorCommit}:refs/heads/$($project.Branch)"
+            & git -C $project.LocalPath -c credential.helper= -c "http.extraHeader=Authorization: Basic $GitLabAuthHeader" push $project.GitLabUrl $mergeRefspec
+            $mirrorSucceeded = ($LASTEXITCODE -eq 0)
+            $project.GitLabDeploySha = $mirrorCommit
+        }
     }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERROR] GitLab mirror failed for $($project.LocalName); service will not be deployed." -ForegroundColor Red
+    if (-not $mirrorSucceeded) {
+        $message = "GitLab mirror failed for $($project.LocalName)."
+        Write-Host "[ERROR] $message" -ForegroundColor Red
+        $MirrorErrors += $message
         continue
     }
     $ReadyProjects += $project
 }
 
-if ($ReadyProjects.Count -eq 0) {
-    throw "No project was synchronized with GitLab. Deployment aborted."
+if ($MirrorErrors.Count -gt 0 -or $ReadyProjects.Count -ne $Candidates.Count) {
+    throw "GitLab synchronization failed. Nothing was deployed: $($MirrorErrors -join ' ')"
 }
 
 $bashLines = New-Object 'System.Collections.Generic.List[string]'
