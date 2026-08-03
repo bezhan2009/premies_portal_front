@@ -18,7 +18,8 @@ $CONTAINER_NAME = "frontend"
 $PasswordFile = "$env:USERPROFILE\.deploy_passwd"
 $GITLAB_PROJECT = "Bejan/activ_daily_frontend.git"
 $GITLAB_HOST = "gl.abank.tj.tajikistan.tj"
-$DEFAULT_GITLAB_USERNAME = "bkarimov@activban.tj"
+$DEFAULT_GITLAB_USERNAME = "bkarimov"
+$GitLabTokenFile = "$env:USERPROFILE\.deploy_gitlab_token"
 
 # ===== GET PASSWORD =====
 function Get-ServerPassword {
@@ -69,9 +70,22 @@ function Get-GitLabRemoteUrl {
     }
 
     $token = $env:GITLAB_TOKEN
+    if ([string]::IsNullOrWhiteSpace($token) -and (Test-Path -LiteralPath $GitLabTokenFile)) {
+        try {
+            $secureToken = (Get-Content -Raw -LiteralPath $GitLabTokenFile).Trim() | ConvertTo-SecureString
+            $token = Convert-SecureStringToPlainText $secureToken
+            Write-Host "[OK] Using saved GitLab token" -ForegroundColor Green
+        } catch {
+            Write-Host "[WARN] Saved GitLab token is corrupted, requesting a new one" -ForegroundColor Yellow
+        }
+    }
     if ([string]::IsNullOrWhiteSpace($token)) {
         $secureToken = Read-Host "GitLab token for $username@$GITLAB_HOST" -AsSecureString
         $token = Convert-SecureStringToPlainText $secureToken
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $secureToken | ConvertFrom-SecureString | Set-Content -LiteralPath $GitLabTokenFile
+            Write-Host "[OK] GitLab token saved encrypted to $GitLabTokenFile" -ForegroundColor Green
+        }
     }
     if ([string]::IsNullOrWhiteSpace($token)) {
         Write-Host "[ERROR] GitLab token is required. Set `$env:GITLAB_TOKEN or enter it when prompted." -ForegroundColor Red
@@ -84,16 +98,17 @@ function Get-GitLabRemoteUrl {
 }
 # ===== AUTO-AUTHENTICATION FOR GITLAB =====
 $GITLAB_URL = Get-GitLabRemoteUrl -ProjectPath $GITLAB_PROJECT
+$GITLAB_PUBLIC_URL = "https://${GITLAB_HOST}/${GITLAB_PROJECT}"
 $remotes = git -C "$PSScriptRoot" remote 2>$null
 if ($remotes -contains "gitlab") {
     $currentUrl = git -C "$PSScriptRoot" remote get-url gitlab 2>$null
-    if ($currentUrl -ne $GITLAB_URL) {
-        Write-Host "[GIT] Updating gitlab remote URL to HTTPS..." -ForegroundColor Yellow
-        git -C "$PSScriptRoot" remote set-url gitlab $GITLAB_URL 2>$null
+    if ($currentUrl -ne $GITLAB_PUBLIC_URL) {
+        Write-Host "[GIT] Updating credential-free gitlab remote URL..." -ForegroundColor Yellow
+        git -C "$PSScriptRoot" remote set-url gitlab $GITLAB_PUBLIC_URL 2>$null
     }
 } else {
-    Write-Host "[GIT] Adding gitlab remote URL..." -ForegroundColor Yellow
-    git -C "$PSScriptRoot" remote add gitlab $GITLAB_URL 2>$null
+    Write-Host "[GIT] Adding credential-free gitlab remote URL..." -ForegroundColor Yellow
+    git -C "$PSScriptRoot" remote add gitlab $GITLAB_PUBLIC_URL 2>$null
 }
 
 # ===== LOCAL GIT SYNC =====
@@ -105,7 +120,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "[GIT] Pushing changes to gitlab ($GITLAB_BRANCH)..." -ForegroundColor Yellow
-git -C "$PSScriptRoot" push gitlab "$GITLAB_BRANCH"
+git -C "$PSScriptRoot" push $GITLAB_URL "$GITLAB_BRANCH"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Local git push gitlab failed! Aborting deploy." -ForegroundColor Red
     exit 1
@@ -118,7 +133,7 @@ $PASSWORD = Get-ServerPassword
 Write-Host "[DEPLOY] Starting deploy to ${SERVER_USER}@${SERVER_IP}:${SERVER_PORT}" -ForegroundColor Green
 
 # Create remote commands sequence for server (evaluated client-side via formatting operator)
-$remoteScript = 'cd "{0}" && (git remote | grep -q "^gitlab$" && git remote set-url gitlab "{4}" || git remote add gitlab "{4}") && git pull gitlab "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME, $GITLAB_URL
+$remoteScript = 'cd "{0}" && git pull "{4}" "{1}" && cd "{2}" && docker-compose up --build -d --no-deps "{3}" && sleep 5 && docker-compose ps "{3}" && docker image prune -f' -f $SERVICE_DIR, $GITLAB_BRANCH, $PROJECT_DIR, $CONTAINER_NAME, $GITLAB_URL
 
 # Function for connecting via SSH with password and streaming output in real-time
 function Invoke-SSHWithPassword {
