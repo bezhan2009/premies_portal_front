@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -28,6 +29,8 @@ const INITIAL_FILTERS = {
   overdue: "",
   terror: "",
   complianceScore: "",
+  sortBy: "created_at",
+  sortOrder: "desc",
 };
 
 const readRoles = () => {
@@ -98,6 +101,8 @@ function DetailModal({ customer, onClose, onUpdateScore, onOpenDocuments }) {
           <div><span>Дата рождения</span><strong>{customer.birth_date || "Нет данных"}</strong></div>
           <div><span>Резидент</span><strong>{customer.is_resident ? "Да" : "Нет"}</strong></div>
           <div><span>Создал</span><strong>{customer.creator_username || "Нет данных"}</strong></div>
+          <div><span>Клиент создан</span><strong>{formatDateTime(customer.created_at)}</strong></div>
+          <div><span>Клиент изменён</span><strong>{formatDateTime(customer.updated_at)}</strong></div>
           <div><span>Балл комплайнса</span><strong>{customer.compliance_score} / 5</strong></div>
           <div><span>Последняя синхронизация</span><strong>{formatDateTime(customer.last_synced_at)}</strong></div>
         </div>
@@ -227,6 +232,8 @@ export default function CustomerDirectory() {
       if (filters.overdue) params.set("overdue", filters.overdue);
       if (filters.terror) params.set("terror", filters.terror);
       if (filters.complianceScore) params.set("compliance_score", filters.complianceScore);
+      params.set("sort_by", filters.sortBy);
+      params.set("sort_order", filters.sortOrder);
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, { headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось загрузить клиентов");
       setResult(await response.json());
@@ -413,6 +420,8 @@ export default function CustomerDirectory() {
         <div className="customer-filter-group"><AlertTriangle size={17} /><Select className="customer-filter-select" value={filters.overdue} onChange={(value) => updateFilter("overdue", value)} options={[{ value: "", label: "Любой статус" }, { value: "true", label: "Просрочка" }]} /></div>
         <div className="customer-filter-group"><ShieldCheck size={17} /><Select className="customer-filter-select" value={filters.terror} onChange={(value) => updateFilter("terror", value)} options={[{ value: "", label: "Все проверки" }, { value: "matched", label: "Есть совпадение" }]} /></div>
         <div className="customer-filter-group"><Filter size={17} /><Select className="customer-filter-select" value={filters.complianceScore} onChange={(value) => updateFilter("complianceScore", value)} options={[{ value: "", label: "Все баллы" }, ...[1, 2, 3, 4, 5].map((score) => ({ value: String(score), label: `${score} балл` }))]} /></div>
+        <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortBy} onChange={(value) => updateFilter("sortBy", value)} options={[{ value: "created_at", label: "По дате создания" }, { value: "updated_at", label: "По дате изменения" }]} /></div>
+        <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortOrder} onChange={(value) => updateFilter("sortOrder", value)} options={[{ value: "desc", label: "Сначала новые" }, { value: "asc", label: "Сначала старые" }]} /></div>
         <button type="button" className="customer-reset-button" onClick={() => { setFilters(INITIAL_FILTERS); setDraftSearch(""); setPage(1); }} title="Сбросить фильтры"><X size={17} /></button>
       </section>
 
@@ -447,11 +456,12 @@ export default function CustomerDirectory() {
               <th>Мобильный банк</th>
               <th>Совпадение по базе комплайнс</th>
               <th>Просрочка</th>
+              <th>Создан / изменён</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan="10" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
+            {loading ? <tr><td colSpan="11" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
               const cards = parseJson(customer.cards);
               const credits = parseJson(customer.credits);
               const deposits = parseJson(customer.deposits);
@@ -520,6 +530,10 @@ export default function CustomerDirectory() {
                       {customer.is_overdue ? "Есть" : "Нет"}
                     </span>
                   </td>
+                  <td className="customer-date-cell">
+                    <span><b>Создан:</b> {formatDateTime(customer.created_at)}</span>
+                    <span><b>Изменён:</b> {formatDateTime(customer.updated_at)}</span>
+                  </td>
                   <td>
                     <div className="customer-actions">
                       <button type="button" onClick={() => navigate(`/frontovik/abs-search?clientIndex=${encodeURIComponent(customer.client_index)}`)}><ExternalLink size={15} />Фронтовик</button>
@@ -532,7 +546,7 @@ export default function CustomerDirectory() {
                   </td>
                 </tr>
               );
-            }) : <tr><td colSpan="10" className="customer-table__empty"><Users size={24} />Клиенты по заданным фильтрам не найдены.</td></tr>}
+            }) : <tr><td colSpan="11" className="customer-table__empty"><Users size={24} />Клиенты по заданным фильтрам не найдены.</td></tr>}
           </tbody>
         </table>
       </section>

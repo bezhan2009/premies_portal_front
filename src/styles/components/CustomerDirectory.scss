@@ -159,6 +159,8 @@
   button { border: 0; background: transparent; color: inherit; cursor: pointer; }
 }
 
+.customer-filter-group--sort { flex-basis: 190px; }
+
 .customer-directory__notice {
   display: flex;
   justify-content: space-between;
@@ -191,7 +193,7 @@
 }
 
 .customer-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid #dfe3e8; border-radius: 8px; background: #fff; }
-.customer-table { width: 100%; min-width: max(1180px, 100%); border-collapse: collapse; }
+.customer-table { width: 100%; min-width: max(1340px, 100%); border-collapse: collapse; }
 .customer-table th { padding: 14px 15px; color: #76808b; background: #fafbfc; border-bottom: 1px solid #dfe3e8; font-size: 11px; font-weight: 800; letter-spacing: 0; text-align: left; text-transform: uppercase; }
 .customer-table td { padding: 15px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
 .customer-table tbody tr:last-child td { border-bottom: 0; }
@@ -199,6 +201,11 @@
 .customer-table td > strong { color: #222a34; font-size: 14px; }
 .customer-table td > span, .customer-table td > small { margin-top: 3px; color: #77818c; font-size: 12px; }
 .customer-table__empty { height: 210px; color: #77818c; text-align: center; }
+
+.customer-date-cell { min-width: 180px; white-space: nowrap; }
+.customer-date-cell span { margin-top: 0 !important; line-height: 1.45; }
+.customer-date-cell span + span { margin-top: 5px !important; }
+.customer-date-cell b { color: #4b5563; font-weight: 700; }
 
 .customer-statuses { align-items: flex-start; flex-wrap: wrap; gap: 6px; }
 .customer-status { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
