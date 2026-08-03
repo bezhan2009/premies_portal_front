@@ -735,6 +735,47 @@ foreach ($databaseService in @("go-backend", "daily_tasks", "applications_portal
 }
 $bashLines.Add('DEPLOY_COMPOSE_OVERRIDE')
 $bashLines.Add('echo "[DATABASE] Services will use PostgreSQL database ''$selected_db''."')
+$databaseConfigCompatibility = @()
+if ($ReadyProjects.ServiceName -contains "daily_tasks") {
+    $databaseConfigCompatibility += @{
+        Name = "daily_tasks"
+        Path = "/home/bkarimov/daily_activ/daily_tasks/configs/docker/configs.json"
+    }
+}
+if ($ReadyProjects.ServiceName -contains "abs_service") {
+    $databaseConfigCompatibility += @{
+        Name = "abs_service"
+        Path = "/home/bkarimov/daily_activ/abs_service/configs/docker/configs.json"
+    }
+}
+if ($databaseConfigCompatibility.Count -gt 0) {
+    foreach ($compatibilityConfig in $databaseConfigCompatibility) {
+        $variableName = $compatibilityConfig.Name
+        $bashLines.Add("${variableName}_config=''")
+        $bashLines.Add("${variableName}_config_backup=''")
+    }
+    $bashLines.Add('restore_deploy_database_configs() {')
+    foreach ($compatibilityConfig in $databaseConfigCompatibility) {
+        $variableName = $compatibilityConfig.Name
+        $bashLines.Add(('  if [ -n "${0}_config_backup" ] && [ -f "${0}_config_backup" ]; then' -f $variableName))
+        $bashLines.Add(('    cp -p "${0}_config_backup" "${0}_config"' -f $variableName))
+        $bashLines.Add(('    rm -f "${0}_config_backup"' -f $variableName))
+        $bashLines.Add('  fi')
+    }
+    $bashLines.Add('}')
+    $bashLines.Add('trap restore_deploy_database_configs EXIT')
+    foreach ($compatibilityConfig in $databaseConfigCompatibility) {
+        $variableName = $compatibilityConfig.Name
+        $quotedConfigPath = ConvertTo-BashLiteral $compatibilityConfig.Path
+        $bashLines.Add("${variableName}_config=$quotedConfigPath")
+        $bashLines.Add(('if [ ! -f "${0}_config" ]; then echo ''[ERROR] Docker database config for {0} was not found.''; exit 25; fi' -f $variableName))
+        $bashLines.Add(('{0}_config_backup="$(mktemp)"' -f $variableName))
+        $bashLines.Add(('cp -p "${0}_config" "${0}_config_backup"' -f $variableName))
+        $bashLines.Add(('sed -i -E "s/(\"database\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1${{selected_db}}\2/" "${0}_config"' -f $variableName))
+        $bashLines.Add(('if ! grep -Eq "\"database\"[[:space:]]*:[[:space:]]*\"${{selected_db}}\"" "${0}_config"; then echo ''[ERROR] Could not prepare Docker database config for {0}.''; exit 25; fi' -f $variableName))
+    }
+    $bashLines.Add("echo '[DATABASE] Docker build configs prepared; originals will be restored automatically.'")
+}
 $bashLines.Add("echo '[DEPLOY] Building changed services...'")
 $bashLines.Add("if ! `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml up --build -d --no-deps $serviceArguments; then")
 $bashLines.Add("  echo '[ERROR] One or more services failed to start. Recent container logs:'")
@@ -744,6 +785,10 @@ $bashLines.Add("  exit 24")
 $bashLines.Add("fi")
 $bashLines.Add("sleep 5")
 $bashLines.Add("`$compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $serviceArguments")
+if ($databaseConfigCompatibility.Count -gt 0) {
+    $bashLines.Add('restore_deploy_database_configs')
+    $bashLines.Add('trap - EXIT')
+}
 $bashLines.Add("docker image prune -f")
 $bashLines.Add("echo '[DEPLOY] Completed successfully.'")
 $remoteScript = $bashLines -join "`n"
