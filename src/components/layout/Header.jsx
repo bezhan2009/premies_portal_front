@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X } from 'lucide-react';
+import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User } from 'lucide-react';
 import useNavigationStore from '../../store/useNavigationStore';
 import useTabsStore from '../../store/useTabsStore';
 import useChatStore from '../../store/useChatStore';
 import LogoImageComponent from '../Logo';
+import LogoutButton from "../general/Logout.jsx";
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
 
@@ -45,6 +46,7 @@ const Header = ({ toggleSidebar }) => {
 
   const handleOpenSettings = () => window.dispatchEvent(new CustomEvent('open-settings'));
   const handleOpenProfile = () => window.dispatchEvent(new CustomEvent('open-profile'));
+  const handleChangePassword = () => window.dispatchEvent(new CustomEvent('open-change-password'));
 
   return (
     <header className="app-header">
@@ -107,15 +109,18 @@ const Header = ({ toggleSidebar }) => {
         <button className="icon-btn" aria-label="Mini Chat" onClick={handleOpenMiniChat}>
           <MessageSquare size={22} />
         </button>
-        <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings}>
+        <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings} title="Настройки интерфейса">
           <Settings size={22} />
+        </button>
+        <button className="icon-btn" aria-label="Profile" onClick={handleOpenProfile} title="Мой профиль">
+          <User size={22} />
         </button>
         <button className="icon-btn notification-btn" aria-label="Notifications">
           <Bell size={22} />
           <span className="notification-badge"></span>
         </button>
-        <div className="user-avatar" onClick={handleOpenProfile}>
-          <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" />
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '8px' }}>
+          <LogoutButton iconSize={{ width: 22, height: 22 }} />
         </div>
       </div>
     </header>

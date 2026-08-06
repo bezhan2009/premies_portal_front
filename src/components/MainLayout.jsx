@@ -3,7 +3,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./general/DynamicMenu.jsx";
 import useSidebar from "../hooks/useSideBar.js";
 import CurrencyRatesWidget from "./general/CurrencyRatesWidget.jsx";
-import ChatWidgetOverlay from "./general/ChatWidgetOverlay.jsx";
 import MiniChatWindow from "./general/MiniChatWindow.jsx";
 import useThemeStore from "../store/useThemeStore.js";
 import { useEffect } from "react";
@@ -175,7 +174,6 @@ const MainLayout = () => {
         </div>
       </div>
       <CurrencyRatesWidget />
-      <ChatWidgetOverlay />
       <MiniChatWindow />
     </div>
   );

@@ -1293,46 +1293,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         ) : linkContent;
                     })}
                 </nav>
-                <div className={`sidebar-bottom ${isOpen ? "" : "collapsed"}`}>
-                    <div className="username-wrapper">
-            <span>
-              Пользователь: <strong>{displayName}</strong>
-            </span>
-                        <button
-                            className="change-password-btn"
-                            onClick={() => setIsProfileOpen(true)}
-                        >
-                            <User
-                                className="settings-icon"
-                                size={27}
-                                title="Мой профиль"
-                            />
-                        </button>
-                        <button
-                            className="change-password-btn"
-                            onClick={() => setIsSettingsOpen(true)}
-                        >
-                            <Settings
-                                className="settings-icon"
-                                size={27}
-                                title="Настройки интерфейса"
-                            />
-                        </button>
-                        <button
-                            className="change-password-btn"
-                            onClick={handleChangePassword}
-                        >
-                            <MdPassword
-                                size={27}
-                                title="Изменить пароль"
-                            />
-                        </button>
-                        <LogoutButton
-                            className="change-password-btn"
-                            iconSize={{ width: 27, height: 27 }}
-                        />
-                    </div>
-                </div>
             </aside>
             {isModalOpen && (
                 <div className="modal-overlay">
