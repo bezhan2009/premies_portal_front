@@ -1432,3 +1432,5 @@
   justify-content: center;
   cursor: pointer;
 }
+
+.dashboard-container .sidebar { margin: 0; height: 100%; border-radius: 0; position: static; box-shadow: none; border-right: 1px solid var(--border-color, #eaeaea); } .dashboard-container { gap: 0 !important; }

@@ -159,17 +159,19 @@ const MainLayout = () => {
   }, [location.pathname, flatLinks, addTab]);
 
   return (
-    <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-      <Sidebar
-        activeLink={activeLink}
-        isOpen={isSidebarOpen}
-        toggle={toggleSidebar}
-      />
-      <div className="main-content-wrapper" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <Header toggleSidebar={toggleSidebar} />
-        <TabsBar />
-        <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-          <Outlet />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Header toggleSidebar={toggleSidebar} />
+      <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`} style={{ flex: 1, overflow: 'hidden', padding: 0, margin: 0, display: 'flex', gap: 0 }}>
+        <Sidebar
+          activeLink={activeLink}
+          isOpen={isSidebarOpen}
+          toggle={toggleSidebar}
+        />
+        <div className="main-content-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
+          <TabsBar />
+          <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <Outlet />
+          </div>
         </div>
       </div>
       <CurrencyRatesWidget />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X } from 'lucide-react';
 import useNavigationStore from '../../store/useNavigationStore';
 import useTabsStore from '../../store/useTabsStore';
+import useChatStore from '../../store/useChatStore';
 import LogoImageComponent from '../Logo';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
@@ -12,6 +13,7 @@ const Header = ({ toggleSidebar }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { flatLinks } = useNavigationStore();
   const { addTab } = useTabsStore();
+  const { openMiniChat } = useChatStore();
   const navigate = useNavigate();
   const searchRef = useRef(null);
 
@@ -38,11 +40,11 @@ const Header = ({ toggleSidebar }) => {
   };
 
   const handleOpenMiniChat = () => {
-    // Logic to open MiniChatWindow. 
-    // It seems there's a global state for it, or it listens to custom events.
-    // For now, let's dispatch a custom event if there's no direct store method found yet.
-    window.dispatchEvent(new CustomEvent('open-mini-chat'));
+    openMiniChat();
   };
+
+  const handleOpenSettings = () => window.dispatchEvent(new CustomEvent('open-settings'));
+  const handleOpenProfile = () => window.dispatchEvent(new CustomEvent('open-profile'));
 
   return (
     <header className="app-header">
@@ -51,7 +53,7 @@ const Header = ({ toggleSidebar }) => {
           <Menu size={24} />
         </button>
         <div className="header-logo">
-          <LogoImageComponent />
+          <LogoImageComponent width={42} height={36} />
         </div>
       </div>
 
@@ -105,14 +107,14 @@ const Header = ({ toggleSidebar }) => {
         <button className="icon-btn" aria-label="Mini Chat" onClick={handleOpenMiniChat}>
           <MessageSquare size={22} />
         </button>
-        <button className="icon-btn" aria-label="Settings">
+        <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings}>
           <Settings size={22} />
         </button>
         <button className="icon-btn notification-btn" aria-label="Notifications">
           <Bell size={22} />
           <span className="notification-badge"></span>
         </button>
-        <div className="user-avatar">
+        <div className="user-avatar" onClick={handleOpenProfile}>
           <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" />
         </div>
       </div>

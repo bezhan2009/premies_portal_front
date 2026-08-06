@@ -5,8 +5,8 @@
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color, #eaeaea);
   padding: 6px 16px 0 16px;
-  position: sticky;
-  top: 64px; /* below header */
+  position: relative;
+  top: 0; /* below header */
   z-index: 99;
   width: 100%;
 }

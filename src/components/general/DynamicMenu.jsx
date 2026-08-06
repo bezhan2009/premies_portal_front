@@ -183,7 +183,18 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             }
         }
         prevUnreadCountRef.current = unreadFeedbackCount;
-    }, [unreadFeedbackCount, roles, navigate, muteUntil]);
+    }, [unreadFeedbackCount, muteUntil, navigate, roles]);
+
+    useEffect(() => {
+        const handleOpenSettings = () => setIsSettingsOpen(true);
+        const handleOpenProfile = () => setIsProfileOpen(true);
+        window.addEventListener('open-settings', handleOpenSettings);
+        window.addEventListener('open-profile', handleOpenProfile);
+        return () => {
+            window.removeEventListener('open-settings', handleOpenSettings);
+            window.removeEventListener('open-profile', handleOpenProfile);
+        };
+    }, []);
 
     useEffect(() => {
         if (unreadGroupsCount > prevGroupsUnreadCountRef.current) {
