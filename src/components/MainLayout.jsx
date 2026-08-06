@@ -7,6 +7,10 @@ import ChatWidgetOverlay from "./general/ChatWidgetOverlay.jsx";
 import MiniChatWindow from "./general/MiniChatWindow.jsx";
 import useThemeStore from "../store/useThemeStore.js";
 import { useEffect } from "react";
+import Header from "./layout/Header.jsx";
+import TabsBar from "./layout/TabsBar.jsx";
+import useTabsStore from "../store/useTabsStore.js";
+import useNavigationStore from "../store/useNavigationStore.js";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -136,6 +140,24 @@ const MainLayout = () => {
 
   const activeLink = getActiveLink(location.pathname);
 
+  const { addTab } = useTabsStore();
+  const { flatLinks } = useNavigationStore();
+
+  useEffect(() => {
+    if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/404') return;
+    
+    const link = flatLinks.find(l => l.href === location.pathname);
+    if (link) {
+      addTab({ href: location.pathname, name: link.name });
+    } else {
+      const parts = location.pathname.split('/').filter(Boolean);
+      const fallbackName = parts.length > 0 ? parts[parts.length - 1] : "Вкладка";
+      // We capitalize the fallback name slightly
+      const prettyName = fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1);
+      addTab({ href: location.pathname, name: prettyName });
+    }
+  }, [location.pathname, flatLinks, addTab]);
+
   return (
     <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
       <Sidebar
@@ -143,8 +165,12 @@ const MainLayout = () => {
         isOpen={isSidebarOpen}
         toggle={toggleSidebar}
       />
-      <div className="main-content-wrapper">
-        <Outlet />
+      <div className="main-content-wrapper" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <Header toggleSidebar={toggleSidebar} />
+        <TabsBar />
+        <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+          <Outlet />
+        </div>
       </div>
       <CurrencyRatesWidget />
       <ChatWidgetOverlay />

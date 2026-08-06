@@ -67,6 +67,7 @@ import {
 import SettingsModal from "./SettingsModal.jsx";
 import ProfileModal from "./ProfileModal.jsx";
 import useChatStore from "../../store/useChatStore.js";
+import useNavigationStore from "../../store/useNavigationStore.js";
 import { Tooltip, Dropdown, Menu, Input } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
@@ -977,6 +978,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         return [...baseLinks, ...additionalLinks];
     }, [roles, hasNewApplications, unreadFeedbackCount, unreadGroupsCount]);
 
+    const setNavigationLinks = useNavigationStore(state => state.setLinks);
+    useEffect(() => {
+        setNavigationLinks(links);
+    }, [links, setNavigationLinks]);
+
     const filteredLinks = useMemo(() => {
         if (!searchQuery.trim()) return links;
 
@@ -1141,22 +1147,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 className={`sidebar ${isOpen ? "open" : "collapsed"}`}
                 style={sidebarStyle}
             >
-                <div className="sidebar-top">
-                    <Link to="/" onClick={handleLinkClick}>
-                        <LogoImageComponent
-                            width={isOpen ? 75 : 53}
-                            height={isOpen ? 65 : 46}
-                        />
-                    </Link>
-                    <button
-                        className={`sidebar-toggle ${isOpen ? "open" : ""}`}
-                        onClick={toggle}
-                    >
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                </div>
+
                 {isOpen && (
                     <div className="sidebar-search-container">
                         <Input

@@ -1,0 +1,215 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+  background-color: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #eaeaea);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.header-right {
+  justify-content: flex-end;
+}
+
+.header-center {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background-color: var(--hover-bg, #f5f5f5);
+  color: var(--text-primary, #333);
+}
+
+.menu-btn {
+  margin-right: 8px;
+}
+
+.header-logo {
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  height: 44px;
+  background-color: var(--search-bg, #f0f2f5);
+  border: 1px solid transparent;
+  border-radius: 22px;
+  padding: 0 16px;
+  transition: all 0.2s ease;
+}
+
+.search-container.focused {
+  background-color: var(--bg-primary, #ffffff);
+  border-color: var(--primary-color, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.search-icon {
+  color: var(--text-tertiary, #999);
+  margin-right: 12px;
+}
+
+.search-container.focused .search-icon {
+  color: var(--primary-color, #1890ff);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  color: var(--text-primary, #333);
+}
+
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary, #999);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-primary, #333);
+  background-color: rgba(0,0,0,0.05);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 52px;
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--bg-primary, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color, #eaeaea);
+  overflow: hidden;
+  z-index: 101;
+  padding: 8px 0;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.search-result-item:hover {
+  background-color: var(--hover-bg, #f5f5f5);
+}
+
+.result-icon {
+  color: var(--text-tertiary, #999);
+  margin-right: 16px;
+}
+
+.result-name {
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  margin-right: 12px;
+  flex: 1;
+}
+
+.result-path {
+  font-size: 12px;
+  color: var(--text-tertiary, #999);
+}
+
+.notification-btn {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--error-color, #ff4d4f);
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary, #ffffff);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.user-avatar:hover {
+  border-color: var(--primary-color, #1890ff);
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Dark mode adjustments (Assuming you have dark mode classes) */
+.dark-mode .app-header {
+  background-color: #1f1f1f;
+  border-bottom-color: #333;
+}
+.dark-mode .search-container {
+  background-color: #2a2a2a;
+}
+.dark-mode .search-container.focused {
+  background-color: #1f1f1f;
+  border-color: #177ddc;
+}
+.dark-mode .search-dropdown {
+  background-color: #1f1f1f;
+  border-color: #333;
+}
+.dark-mode .search-result-item:hover {
+  background-color: #2a2a2a;
+}
+.dark-mode .icon-btn:hover {
+  background-color: #2a2a2a;
+}
