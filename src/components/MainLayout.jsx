@@ -10,6 +10,7 @@ import Header from "./layout/Header.jsx";
 import TabsBar from "./layout/TabsBar.jsx";
 import useTabsStore from "../store/useTabsStore.js";
 import useNavigationStore from "../store/useNavigationStore.js";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -139,7 +140,7 @@ const MainLayout = () => {
 
   const activeLink = getActiveLink(location.pathname);
 
-  const { addTab } = useTabsStore();
+  const { addTab, splitTabHref, clearSplitTab } = useTabsStore();
   const { flatLinks } = useNavigationStore();
 
   useEffect(() => {
@@ -157,6 +158,16 @@ const MainLayout = () => {
     }
   }, [location.pathname, flatLinks, addTab]);
 
+  const isBareMode = location.search.includes("bare=true");
+
+  if (isBareMode) {
+    return (
+      <div style={{ flex: 1, padding: '16px', height: '100vh', overflowY: 'auto' }}>
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header toggleSidebar={toggleSidebar} />
@@ -168,9 +179,42 @@ const MainLayout = () => {
         />
         <div className="main-content-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
           <TabsBar />
-          <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-            <Outlet />
+          
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px', position: 'relative' }}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={location.pathname}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ minHeight: '100%' }}
+                >
+                  <Outlet />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            
+            {splitTabHref && (
+              <div style={{ flex: 1, borderLeft: '1px solid var(--border-color, #eaeaea)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px', background: 'var(--bg-secondary, #f9f9f9)', borderBottom: '1px solid var(--border-color, #eaeaea)' }}>
+                  <button 
+                    onClick={clearSplitTab}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '12px', color: 'var(--text-secondary, #666)' }}
+                  >
+                    Закрыть сплит-экран ✕
+                  </button>
+                </div>
+                <iframe 
+                  src={`${splitTabHref}?bare=true`} 
+                  style={{ flex: 1, border: 'none', width: '100%' }} 
+                  title="Parallel View"
+                />
+              </div>
+            )}
           </div>
+          
         </div>
       </div>
       <CurrencyRatesWidget />

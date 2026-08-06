@@ -8,6 +8,7 @@ const useTabsStore = create(
     (set, get) => ({
       tabs: [],
       activeTabId: null, // We'll use the 'href' (path) as the unique ID for the tab
+      splitTabHref: null, // Store the href for the parallel split view
 
       // Add a new tab or just set it as active if it already exists
       addTab: (tab) => {
@@ -56,9 +57,17 @@ const useTabsStore = create(
         set({ activeTabId: tabHref });
       },
 
+      setSplitTab: (tabHref) => {
+        set({ splitTabHref: tabHref });
+      },
+
+      clearSplitTab: () => {
+        set({ splitTabHref: null });
+      },
+
       // Clear all tabs (e.g. on logout)
       clearTabs: () => {
-        set({ tabs: [], activeTabId: null });
+        set({ tabs: [], activeTabId: null, splitTabHref: null });
       }
     }),
     {

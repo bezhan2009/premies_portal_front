@@ -1,17 +1,27 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, SplitSquareHorizontal } from 'lucide-react';
 import useTabsStore from '../../store/useTabsStore';
 import useNavigationStore from '../../store/useNavigationStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import './TabsBar.css';
 
 const TabsBar = () => {
-  const { tabs, activeTabId, removeTab, setActiveTab } = useTabsStore();
+  const { tabs, activeTabId, removeTab, setActiveTab, setSplitTab } = useTabsStore();
   const { flatLinks } = useNavigationStore();
   const navigate = useNavigate();
   const location = useLocation();
   const scrollContainerRef = useRef(null);
+  
+  const [contextMenu, setContextMenu] = useState(null);
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Sync active tab with location.pathname if it changes externally
   useEffect(() => {
@@ -59,6 +69,23 @@ const TabsBar = () => {
     }
   }, [activeTabId, tabs.length]);
 
+  const handleContextMenu = (e, tabHref) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      tabHref
+    });
+  };
+
+  const handleSplitView = (e) => {
+    e.stopPropagation();
+    if (contextMenu?.tabHref) {
+      setSplitTab(contextMenu.tabHref);
+    }
+    setContextMenu(null);
+  };
+
   if (tabs.length === 0) return null;
 
   return (
@@ -77,8 +104,9 @@ const TabsBar = () => {
                 key={tab.href}
                 className={`tab-item ${isActive ? 'active' : ''}`}
                 onClick={() => handleTabClick(tab.href)}
+                onContextMenu={(e) => handleContextMenu(e, tab.href)}
                 initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
-                animate={{ opacity: 1, width: 'auto', paddingLeft: 16, paddingRight: 16 }}
+                animate={{ opacity: 1, width: 'auto', paddingLeft: 12, paddingRight: 12 }}
                 exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0, margin: 0, overflow: 'hidden' }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 layout
@@ -100,6 +128,27 @@ const TabsBar = () => {
           })}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {contextMenu && (
+          <motion.div
+            className="tab-context-menu"
+            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              left: Math.min(contextMenu.x, window.innerWidth - 300), // Prevent overflow
+              top: contextMenu.y
+            }}
+          >
+            <button onClick={handleSplitView}>
+              <SplitSquareHorizontal size={16} />
+              Открыть параллельный просмотр
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

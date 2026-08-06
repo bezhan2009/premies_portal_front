@@ -6,12 +6,15 @@ import useTabsStore from '../../store/useTabsStore';
 import useChatStore from '../../store/useChatStore';
 import LogoImageComponent from '../Logo';
 import LogoutButton from "../general/Logout.jsx";
+import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
 
 const Header = ({ toggleSidebar }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  
   const { flatLinks } = useNavigationStore();
   const { addTab } = useTabsStore();
   const { openMiniChat } = useChatStore();
@@ -55,7 +58,7 @@ const Header = ({ toggleSidebar }) => {
           <Menu size={24} />
         </button>
         <div className="header-logo">
-          <LogoImageComponent width={42} height={36} />
+          <LogoImageComponent width={130} height={"auto"} />
         </div>
       </div>
 
@@ -103,10 +106,10 @@ const Header = ({ toggleSidebar }) => {
       </div>
 
       <div className="header-right">
-        <button className="icon-btn" aria-label="Courses">
+        <button className="icon-btn" aria-label="Knowledge Base" onClick={() => navigate('/user/knowledge-base')} title="База знаний">
           <GraduationCap size={22} />
         </button>
-        <button className="icon-btn" aria-label="Mini Chat" onClick={handleOpenMiniChat}>
+        <button className="icon-btn" aria-label="Mini Chat" onClick={handleOpenMiniChat} title="Мини-чат">
           <MessageSquare size={22} />
         </button>
         <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings} title="Настройки интерфейса">
@@ -115,10 +118,21 @@ const Header = ({ toggleSidebar }) => {
         <button className="icon-btn" aria-label="Profile" onClick={handleOpenProfile} title="Мой профиль">
           <User size={22} />
         </button>
-        <button className="icon-btn notification-btn" aria-label="Notifications">
-          <Bell size={22} />
-          <span className="notification-badge"></span>
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="icon-btn notification-btn" 
+            aria-label="Notifications" 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            title="Уведомления"
+          >
+            <Bell size={22} />
+            <span className="notification-badge"></span>
+          </button>
+          <NotificationsDropdown 
+            isOpen={isNotificationsOpen} 
+            onClose={() => setIsNotificationsOpen(false)} 
+          />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', marginLeft: '8px' }}>
           <LogoutButton iconSize={{ width: 22, height: 22 }} />
         </div>

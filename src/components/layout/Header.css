@@ -75,7 +75,7 @@
 .search-container.focused {
   background-color: var(--bg-primary, #ffffff);
   border-color: var(--primary-color, #1890ff);
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  
 }
 
 .search-icon {
