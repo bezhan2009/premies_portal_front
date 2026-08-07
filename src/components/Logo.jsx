@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/active_logo.png';
+import logo from '../assets/new_logo.jpg';
 
 const LogoImageComponent = ({ width, height }) => {
   return (
