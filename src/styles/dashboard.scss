@@ -33,9 +33,7 @@ body {
   transition: padding-left 0.2s ease;
 }
 
-.dashboard-container.sidebar-collapsed .dashboard-header {
-  padding-left: 80px; /* Room for the global toggle button */
-}
+
 
 .page-content {
   background: var(--bg-surface);

@@ -57,10 +57,12 @@
   height: 36px;
   display: flex;
   align-items: center;
+  background: transparent;
 }
 .header-logo img {
   max-height: 100%;
   object-fit: contain;
+  background: transparent;
 }
 
 .search-container {

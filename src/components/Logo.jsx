@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../assets/new_logo.jpg';
+import logo from '../assets/new_logo.png';
 
 const LogoImageComponent = ({ width, height }) => {
   return (
@@ -7,7 +7,7 @@ const LogoImageComponent = ({ width, height }) => {
       className='logo-image'
       src={logo}
       alt="Логотип"
-      style={{ width: width, height: height }}
+      style={{ width: width, height: height, background: 'transparent' }}
     />
   );
 };

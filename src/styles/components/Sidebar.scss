@@ -12,14 +12,16 @@
   overflow: hidden;
 
   &.collapsed {
-    width: 0;
-    padding-left: 0;
-    padding-right: 0;
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateX(-10px);
-    border-right: none;
+    overflow: hidden !important;
+    border: none !important;
   }
 
   .sidebar-header {

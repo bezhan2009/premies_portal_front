@@ -18,7 +18,7 @@ import {
   calculateUsdCreditDebtBalance,
   isUsdCredit,
 } from "../../../utils/creditDebtBalance.js";
-import activeLogoImg from "../../../assets/active_logo.png";
+import activeLogoImg from "../../../assets/new_logo.png";
 
 const getPcStatusData = (code) => {
   const statusMap = {
