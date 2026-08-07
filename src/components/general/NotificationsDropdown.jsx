@@ -1,15 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, AlertTriangle, Info, CheckCircle } from 'lucide-react';
-
-const mockNotifications = [
-  { id: 1, type: 'info', title: 'Обновление системы', message: 'Система была успешно обновлена до версии 2.4.1', time: '10 мин назад' },
-  { id: 2, type: 'warning', title: 'Внимание', message: 'Замечена подозрительная активность в вашем аккаунте', time: '1 час назад' },
-  { id: 3, type: 'success', title: 'Успешно', message: 'Отчет за прошлый месяц успешно сгенерирован', time: 'Вчера' }
-];
+import useNotificationStore from '../../store/useNotificationStore';
 
 const NotificationsDropdown = ({ isOpen, onClose }) => {
   const dropdownRef = useRef(null);
+  const { notifications, markAllAsRead } = useNotificationStore();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -60,22 +56,30 @@ const NotificationsDropdown = ({ isOpen, onClose }) => {
         >
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #eaeaea)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--text-primary, #333)' }}>Уведомления</h3>
-            <span style={{ fontSize: '12px', color: 'var(--primary-color, #1890ff)', cursor: 'pointer' }}>Прочитать все</span>
+            {notifications.length > 0 && (
+              <span onClick={markAllAsRead} style={{ fontSize: '12px', color: 'var(--primary-color, #1890ff)', cursor: 'pointer' }}>Прочитать все</span>
+            )}
           </div>
           
           <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {mockNotifications.map(notif => (
-              <div key={notif.id} style={{ display: 'flex', padding: '12px 16px', borderBottom: '1px solid var(--border-color, #eaeaea)', gap: '12px', cursor: 'pointer', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg, #f5f5f5)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <div style={{ marginTop: '2px' }}>
-                  {getIcon(notif.type)}
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary, #333)', marginBottom: '4px' }}>{notif.title}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary, #666)', marginBottom: '4px' }}>{notif.message}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-tertiary, #999)' }}>{notif.time}</div>
-                </div>
+            {notifications.length === 0 ? (
+              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-tertiary, #999)', fontSize: '13px' }}>
+                Нет новых уведомлений
               </div>
-            ))}
+            ) : (
+              notifications.map(notif => (
+                <div key={notif.id} style={{ display: 'flex', padding: '12px 16px', borderBottom: '1px solid var(--border-color, #eaeaea)', gap: '12px', cursor: 'pointer', transition: 'background-color 0.2s', backgroundColor: notif.read ? 'transparent' : 'var(--highlight-bg, rgba(24, 144, 255, 0.05))' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg, #f5f5f5)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notif.read ? 'transparent' : 'var(--highlight-bg, rgba(24, 144, 255, 0.05))'}>
+                  <div style={{ marginTop: '2px' }}>
+                    {getIcon(notif.type)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary, #333)', marginBottom: '4px' }}>{notif.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary, #666)', marginBottom: '4px' }}>{notif.message}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary, #999)' }}>{notif.time}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
           
           <div style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid var(--border-color, #eaeaea)' }}>

@@ -1,14 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, SplitSquareHorizontal } from 'lucide-react';
+import { X, SplitSquareHorizontal, Pin, PinOff, Trash2 } from 'lucide-react';
 import useTabsStore from '../../store/useTabsStore';
 import useNavigationStore from '../../store/useNavigationStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
 import './TabsBar.css';
 
 const TabsBar = () => {
-  const { tabs, activeTabId, removeTab, setActiveTab, setSplitTab } = useTabsStore();
+  const { tabs, activeTabId, removeTab, setActiveTab, setSplitTab, togglePinTab } = useTabsStore();
   const { flatLinks } = useNavigationStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,13 +85,36 @@ const TabsBar = () => {
     setContextMenu(null);
   };
 
+  const handleTogglePin = (e) => {
+    e.stopPropagation();
+    if (contextMenu?.tabHref) {
+      togglePinTab(contextMenu.tabHref);
+    }
+    setContextMenu(null);
+  };
+
+  const handleCloseFromMenu = (e) => {
+    e.stopPropagation();
+    if (contextMenu?.tabHref) {
+      handleCloseTab(e, contextMenu.tabHref);
+    }
+    setContextMenu(null);
+  };
+
   if (tabs.length === 0) return null;
+
+  // Sort tabs so pinned tabs appear first
+  const sortedTabs = [...tabs].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0;
+  });
 
   return (
     <div className="tabs-bar-container">
       <div className="tabs-scroll-area" ref={scrollContainerRef}>
         <AnimatePresence initial={false}>
-          {tabs.map((tab) => {
+          {sortedTabs.map((tab) => {
             const isActive = activeTabId === tab.href;
             
             // Find icon from flatLinks
@@ -102,27 +124,31 @@ const TabsBar = () => {
             return (
               <motion.div
                 key={tab.href}
-                className={`tab-item ${isActive ? 'active' : ''}`}
+                className={`tab-item ${isActive ? 'active' : ''} ${tab.pinned ? 'pinned' : ''}`}
                 onClick={() => handleTabClick(tab.href)}
                 onContextMenu={(e) => handleContextMenu(e, tab.href)}
                 initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
-                animate={{ opacity: 1, width: 'auto', paddingLeft: 12, paddingRight: 12 }}
+                animate={{ opacity: 1, width: tab.pinned ? 40 : 'auto', paddingLeft: 12, paddingRight: 12 }}
                 exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0, margin: 0, overflow: 'hidden' }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 layout
               >
                 {Icon && <Icon size={14} className="tab-icon" />}
-                <span className="tab-title" title={tab.name}>
-                  {tab.name}
-                </span>
-                
-                <button 
-                  className="tab-close-btn" 
-                  onClick={(e) => handleCloseTab(e, tab.href)}
-                  aria-label="Close Tab"
-                >
-                  <X size={14} />
-                </button>
+                {!tab.pinned && (
+                  <>
+                    <span className="tab-title" title={tab.name}>
+                      {tab.name}
+                    </span>
+                    
+                    <button 
+                      className="tab-close-btn" 
+                      onClick={(e) => handleCloseTab(e, tab.href)}
+                      aria-label="Close Tab"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                )}
               </motion.div>
             );
           })}
@@ -138,13 +164,25 @@ const TabsBar = () => {
             exit={{ opacity: 0, scale: 0.95, y: -5 }}
             transition={{ duration: 0.15 }}
             style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 300), // Prevent overflow
+              left: Math.min(contextMenu.x, window.innerWidth - 280), // Prevent overflow
               top: contextMenu.y
             }}
           >
             <button onClick={handleSplitView}>
               <SplitSquareHorizontal size={16} />
               Открыть параллельный просмотр
+            </button>
+            <button onClick={handleTogglePin}>
+              {tabs.find(t => t.href === contextMenu.tabHref)?.pinned ? (
+                <><PinOff size={16} /> Открепить вкладку</>
+              ) : (
+                <><Pin size={16} /> Закрепить вкладку</>
+              )}
+            </button>
+            <div style={{ height: '1px', background: 'var(--border-color, #eaeaea)', margin: '4px 0' }} />
+            <button onClick={handleCloseFromMenu} style={{ color: 'var(--error-color, #ff4d4f)' }}>
+              <Trash2 size={16} />
+              Закрыть вкладку
             </button>
           </motion.div>
         )}

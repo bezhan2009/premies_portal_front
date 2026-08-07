@@ -65,6 +65,14 @@ const useTabsStore = create(
         set({ splitTabHref: null });
       },
 
+      togglePinTab: (tabHref) => {
+        set((state) => ({
+          tabs: state.tabs.map(t => 
+            t.href === tabHref ? { ...t, pinned: !t.pinned } : t
+          )
+        }));
+      },
+
       // Clear all tabs (e.g. on logout)
       clearTabs: () => {
         set({ tabs: [], activeTabId: null, splitTabHref: null });

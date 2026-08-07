@@ -75,7 +75,8 @@
 .search-container.focused {
   background-color: var(--bg-primary, #ffffff);
   border-color: var(--primary-color, #1890ff);
-  
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
 .search-icon {
@@ -91,9 +92,14 @@
   flex: 1;
   border: none;
   background: transparent;
-  outline: none;
+  outline: none !important;
   font-size: 15px;
   color: var(--text-primary, #333);
+}
+
+.search-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .clear-search-btn {

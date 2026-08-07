@@ -4,6 +4,7 @@ import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User } f
 import useNavigationStore from '../../store/useNavigationStore';
 import useTabsStore from '../../store/useTabsStore';
 import useChatStore from '../../store/useChatStore';
+import useNotificationStore from '../../store/useNotificationStore';
 import LogoImageComponent from '../Logo';
 import LogoutButton from "../general/Logout.jsx";
 import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
@@ -18,8 +19,15 @@ const Header = ({ toggleSidebar }) => {
   const { flatLinks } = useNavigationStore();
   const { addTab } = useTabsStore();
   const { openMiniChat } = useChatStore();
+  const { unreadCount, connect, disconnect } = useNotificationStore();
   const navigate = useNavigate();
   const searchRef = useRef(null);
+
+  // Connect to global notifications WebSocket
+  useEffect(() => {
+    connect();
+    return () => disconnect();
+  }, [connect, disconnect]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -55,10 +63,10 @@ const Header = ({ toggleSidebar }) => {
     <header className="app-header">
       <div className="header-left">
         <button className="icon-btn menu-btn" onClick={toggleSidebar} aria-label="Toggle Menu">
-          <Menu size={24} />
+          <Menu size={22} />
         </button>
         <div className="header-logo">
-          <LogoImageComponent width={130} height={"auto"} />
+          <LogoImageComponent width={110} height={"auto"} />
         </div>
       </div>
 
@@ -122,11 +130,11 @@ const Header = ({ toggleSidebar }) => {
           <button 
             className="icon-btn notification-btn" 
             aria-label="Notifications" 
-            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            onClick={(e) => { e.stopPropagation(); setIsNotificationsOpen(!isNotificationsOpen); }}
             title="Уведомления"
           >
             <Bell size={22} />
-            <span className="notification-badge"></span>
+            {unreadCount > 0 && <span className="notification-badge"></span>}
           </button>
           <NotificationsDropdown 
             isOpen={isNotificationsOpen} 
