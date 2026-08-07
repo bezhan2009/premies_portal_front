@@ -18,7 +18,7 @@ const Header = ({ toggleSidebar }) => {
   
   const { flatLinks } = useNavigationStore();
   const { addTab } = useTabsStore();
-  const { openMiniChat } = useChatStore();
+  const { toggleMiniChat } = useChatStore();
   const { unreadCount, connect, disconnect } = useNotificationStore();
   const navigate = useNavigate();
   const searchRef = useRef(null);
@@ -66,7 +66,7 @@ const Header = ({ toggleSidebar }) => {
           <Menu size={22} />
         </button>
         <div className="header-logo">
-          <LogoImageComponent width={110} height={"auto"} />
+          <LogoImageComponent width={145} height={"auto"} />
         </div>
       </div>
 
@@ -117,7 +117,7 @@ const Header = ({ toggleSidebar }) => {
         <button className="icon-btn" aria-label="Knowledge Base" onClick={() => navigate('/user/knowledge-base')} title="База знаний">
           <GraduationCap size={22} />
         </button>
-        <button className="icon-btn" aria-label="Mini Chat" onClick={handleOpenMiniChat} title="Мини-чат">
+        <button className="icon-btn" aria-label="Mini Chat" onClick={toggleMiniChat} title="Мини-чат">
           <MessageSquare size={22} />
         </button>
         <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings} title="Настройки интерфейса">

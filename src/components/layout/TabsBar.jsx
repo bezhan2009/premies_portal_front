@@ -159,13 +159,13 @@ const TabsBar = () => {
         {contextMenu && (
           <motion.div
             className="tab-context-menu"
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            initial={{ opacity: 0, scale: 0.9, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-            transition={{ duration: 0.15 }}
+            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 280), // Prevent overflow
-              top: contextMenu.y
+              left: Math.min(contextMenu.x, window.innerWidth - 270),
+              top: Math.min(contextMenu.y, window.innerHeight - 160)
             }}
           >
             <button onClick={handleSplitView}>

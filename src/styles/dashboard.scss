@@ -26,8 +26,8 @@ body {
 
   &.sidebar-open {
     .main-content-wrapper {
-      margin-left: 280px;
-      width: calc(100% - 280px);
+      margin-left: 0;
+      width: 100%;
     }
   }
 

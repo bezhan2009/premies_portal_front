@@ -80,7 +80,7 @@
   background-color: var(--bg-primary, #ffffff);
   border-color: var(--primary-color, #1890ff);
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: none !important;
 }
 
 .search-icon {
@@ -92,18 +92,18 @@
   color: var(--primary-color, #1890ff);
 }
 
-.search-input {
+.search-input,
+.search-input:focus,
+.search-input:focus-visible,
+.search-input:active {
   flex: 1;
-  border: none;
+  border: none !important;
   background: transparent;
   outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
   font-size: 15px;
   color: var(--text-primary, #333);
-}
-
-.search-input:focus {
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 .clear-search-btn {
