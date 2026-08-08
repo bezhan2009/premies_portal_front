@@ -64,10 +64,10 @@ import {
     Clock,
     User
 } from "lucide-react";
-import SettingsModal from "./SettingsModal.jsx";
 import ProfileModal from "./ProfileModal.jsx";
 import useChatStore from "../../store/useChatStore.js";
 import useNavigationStore from "../../store/useNavigationStore.js";
+import useNotificationStore from "../../store/useNotificationStore.js";
 import { Tooltip, Dropdown, Menu, Input } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
@@ -94,7 +94,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [roles, setRoles] = useState([]);
     const [ws, setWs] = useState(null);
     const [forcePasswordChange, setForcePasswordChange] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const setChatStoreUnreadCount = useChatStore(state => state.setUnreadCount);
     const setChatStoreGroupsUnreadCount = useChatStore(state => state.setGroupsUnreadCount);
@@ -102,6 +101,51 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
     const [unreadGroupsCount, setUnreadGroupsCount] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
+    const addNotification = useNotificationStore((state) => state.addNotification);
+
+    const notifyLatestUnreadChat = useCallback(async (kind) => {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        try {
+            const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+            let candidates = [];
+            if (kind === "group") {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups`, { headers });
+                if (response.ok) {
+                    candidates = (await response.json()).map((group) => ({
+                        user_id: group.id,
+                        username: group.name || "Группа",
+                        unread_count: group.unread_count || 0,
+                        last_message_at: group.last_message_at || group.updated_at,
+                        chatType: "group",
+                    }));
+                }
+            } else {
+                const endpoints = roles.includes(3)
+                    ? [["/api/feedback/threads", "support"], ["/api/feedback/direct-threads", "direct"]]
+                    : [["/api/feedback/direct-threads", "direct"]];
+                const responses = await Promise.all(endpoints.map(async ([endpoint, chatType]) => {
+                    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}${endpoint}`, { headers });
+                    if (!response.ok) return [];
+                    return (await response.json()).map((thread) => ({ ...thread, chatType }));
+                }));
+                candidates = responses.flat();
+            }
+            const latest = candidates
+                .filter((item) => Number(item.unread_count || 0) > 0)
+                .sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0))[0];
+            if (!latest) return;
+            addNotification({
+                id: `chat-${latest.chatType}-${latest.user_id}-${latest.last_message_at || Date.now()}`,
+                type: "chat",
+                title: kind === "group" ? `Новое сообщение в «${latest.username}»` : `Сообщение от ${latest.username || "пользователя"}`,
+                message: latest.message || "Нажмите, чтобы открыть диалог в мини-чате",
+                action: { kind: "chat", chatType: latest.chatType, userId: Number(latest.user_id), name: latest.username || "Чат" },
+            });
+        } catch (error) {
+            console.error("Не удалось определить чат с новым сообщением:", error);
+        }
+    }, [addNotification, roles]);
 
     const fetchUnreadFeedbackCount = useCallback(async () => {
         const token = localStorage.getItem("access_token");
@@ -171,27 +215,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             const isMuted = muteUntil && new Date() < new Date(muteUntil);
             
             if (!isChatPage && !isMuted) {
-                const isOperatorUser = roles.includes(3);
-                setAlert({
-                    show: true,
-                    message: "У вас новое сообщение в Актив чате! Нажмите, чтобы открыть.",
-                    type: "info",
-                    onClick: () => {
-                        navigate(isOperatorUser ? "/operator/feedback" : "/feedback");
-                    }
-                });
+                notifyLatestUnreadChat("chat");
             }
         }
         prevUnreadCountRef.current = unreadFeedbackCount;
-    }, [unreadFeedbackCount, muteUntil, navigate, roles]);
+    }, [unreadFeedbackCount, muteUntil, notifyLatestUnreadChat]);
 
     useEffect(() => {
-        const handleOpenSettings = () => setIsSettingsOpen(true);
         const handleOpenProfile = () => setIsProfileOpen(true);
-        window.addEventListener('open-settings', handleOpenSettings);
         window.addEventListener('open-profile', handleOpenProfile);
         return () => {
-            window.removeEventListener('open-settings', handleOpenSettings);
             window.removeEventListener('open-profile', handleOpenProfile);
         };
     }, []);
@@ -202,19 +235,11 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             const isMuted = muteUntil && new Date() < new Date(muteUntil);
             
             if (!isGroupsPage && !isMuted) {
-                const isOperatorUser = roles.includes(3);
-                setAlert({
-                    show: true,
-                    message: "У вас новое сообщение в Группе! Нажмите, чтобы открыть.",
-                    type: "info",
-                    onClick: () => {
-                        navigate(isOperatorUser ? "/operator/feedback?tab=groups" : "/feedback?tab=groups");
-                    }
-                });
+                notifyLatestUnreadChat("group");
             }
         }
         prevGroupsUnreadCountRef.current = unreadGroupsCount;
-    }, [unreadGroupsCount, roles, navigate, muteUntil]);
+    }, [unreadGroupsCount, muteUntil, notifyLatestUnreadChat]);
 
 
 
@@ -1046,32 +1071,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         setOpenDropdowns((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const createRipple = (event) => {
-        const element = event.currentTarget;
-        const circle = document.createElement("span");
-        const diameter = Math.max(element.clientWidth, element.clientHeight);
-        const radius = diameter / 2;
-        circle.style.width = circle.style.height = `${diameter}px`;
-        circle.style.left = `${
-            event.clientX - element.getBoundingClientRect().left - radius
-        }px`;
-        circle.style.top = `${
-            event.clientY - element.getBoundingClientRect().top - radius
-        }px`;
-        circle.classList.add("ripple-effect");
-
-        const existingRipple = element.querySelector(".ripple-effect");
-        if (existingRipple) {
-            existingRipple.remove();
-        }
-
-        element.appendChild(circle);
-
-        setTimeout(() => {
-            circle.remove();
-        }, 600);
-    };
-
     const handleChangePassword = () => {
         setIsModalOpen(true);
         setModalError("");
@@ -1184,10 +1183,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 <div key={link.key} className="dropdown-wrapper">
                                     <button
                                         className={`dropdown-toggle ${isActive ? "active" : ""} ${!isOpen ? "collapsed-btn" : ""}`}
-                                        onClick={(e) => {
-                                            createRipple(e);
-                                            toggleDropdown(link.key);
-                                        }}
+                                        onClick={() => toggleDropdown(link.key)}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: isOpen ? 'flex-start' : 'center', width: '100%' }}>
                                             {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
@@ -1212,10 +1208,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                                     className={`sub-link ${
                                                         child.key === activeLink ? "active" : ""
                                                     }`}
-                                                    onClick={(e) => {
-                                                        createRipple(e);
-                                                        handleLinkClick();
-                                                    }}
+                                                    onClick={handleLinkClick}
                                                 >
                                                     {child.icon && <child.icon size={18} style={{ marginRight: '10px' }} />}
                                                     {child.name}
@@ -1269,8 +1262,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 to={link.href}
                                 className={`${link.key === activeLink ? "active" : ""} ${!isOpen ? "collapsed-link" : ""}`}
                                 style={{ justifyContent: isOpen ? 'flex-start' : 'center' }}
-                                onClick={(e) => {
-                                    createRipple(e);
+                                onClick={() => {
                                     if (link.key === "applications") {
                                         handleApplicationsClick();
                                     } else {
@@ -1293,6 +1285,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         ) : linkContent;
                     })}
                 </nav>
+                <div className={`sidebar-quick-actions ${isOpen ? "" : "collapsed"}`}>
+                    <button type="button" className={activeLink === "settings" ? "active" : ""} onClick={() => navigate("/settings")} title="Настройки">
+                        <Settings size={19} />
+                        {isOpen && <span>Настройки</span>}
+                    </button>
+                    <button type="button" onClick={() => setIsProfileOpen(true)} title="Профиль">
+                        <User size={19} />
+                        {isOpen && <span>Профиль</span>}
+                    </button>
+                </div>
             </aside>
             {isModalOpen && (
                 <div className="modal-overlay">
@@ -1367,11 +1369,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                     </div>
                 </div>
             )}
-
-            <SettingsModal
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-            />
 
             <ProfileModal
                 isOpen={isProfileOpen}

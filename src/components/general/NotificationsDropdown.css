@@ -1,0 +1,15 @@
+.notifications-panel { position: absolute; top: 50px; right: -8px; width: min(380px, calc(100vw - 24px)); color: var(--text-color); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; z-index: 10020; }
+.notifications-panel header, .notifications-panel header > div, .notifications-panel footer { display: flex; align-items: center; }
+.notifications-panel header { justify-content: space-between; gap: 12px; padding: 14px 15px; border-bottom: 1px solid var(--border-color); }
+.notifications-panel header > div { gap: 8px; } .notifications-panel h3 { margin: 0; font-size: 15px; }
+.notifications-panel header button, .notifications-panel footer button { display: inline-flex; align-items: center; gap: 6px; padding: 6px; color: var(--primary-color); background: transparent; border: 0; cursor: pointer; font-size: 12px; }
+.notifications-panel header button:disabled { opacity: .45; cursor: default; }
+.notifications-panel__list { max-height: 420px; overflow-y: auto; }
+.notification-item { position: relative; width: 100%; display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; color: inherit; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+.notification-item:hover { background: var(--hover-bg); } .notification-item.unread { background: rgba(var(--primary-rgb), .055); }
+.notification-item__icon { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; color: var(--primary-color); background: rgba(var(--primary-rgb), .09); border-radius: 10px; }
+.notification-item__copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.notification-item__copy strong { font-size: 13px; } .notification-item__copy small { color: var(--text-secondary); line-height: 1.4; } .notification-item__copy time { color: var(--text-muted); font-size: 10px; }
+.notification-item > i { position: absolute; top: 16px; right: 12px; width: 7px; height: 7px; background: var(--primary-color); border-radius: 50%; }
+.notifications-panel__empty { min-height: 150px; display: grid; place-content: center; justify-items: center; gap: 9px; color: var(--text-muted); font-size: 13px; }
+.notifications-panel footer { justify-content: center; padding: 7px; }

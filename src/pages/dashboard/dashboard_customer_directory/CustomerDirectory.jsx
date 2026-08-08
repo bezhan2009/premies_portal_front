@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -194,8 +194,10 @@ function DocumentsModal({ customer, documents, loading, onClose }) {
 
 export default function CustomerDirectory() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [draftSearch, setDraftSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search")?.trim() || "";
+  const [filters, setFilters] = useState(() => ({ ...INITIAL_FILTERS, search: initialSearch }));
+  const [draftSearch, setDraftSearch] = useState(initialSearch);
   const [departments, setDepartments] = useState([]);
   const [result, setResult] = useState({ items: [], total: 0, page: 1, limit: 30 });
   const [page, setPage] = useState(1);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User } from 'lucide-react';
 import useNavigationStore from '../../store/useNavigationStore';
@@ -10,6 +10,19 @@ import LogoutButton from "../general/Logout.jsx";
 import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
+
+const normalizeSearchText = (value = '') => String(value)
+  .toLocaleLowerCase('ru-RU')
+  .replace(/ё/g, 'е')
+  .replace(/[^a-zа-я0-9]+/gi, ' ')
+  .trim();
+
+const SEARCH_SCOPES = [
+  { name: 'Искать в заявках', href: '/agent/applications-list', param: 'search', description: 'ФИО, телефон, ID, карта, офис' },
+  { name: 'Искать среди клиентов', href: '/customers', param: 'search', description: 'ФИО, ИНН, телефон, индекс клиента' },
+  { name: 'Открыть поиск во Фронтовике', href: '/frontovik/abs-search', param: 'clientIndex', description: 'Индекс клиента и продукты в АБС' },
+  { name: 'Искать транзакции', href: '/processing-search/transactions', param: 'search', description: 'Карта, сумма, RRN и другие поля' },
+];
 
 const Header = ({ toggleSidebar }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,24 +53,37 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const searchResults = searchQuery.trim() === '' ? [] : flatLinks.filter(link => 
-    link.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 8); // limit to 8 results
+  const searchResults = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(searchQuery);
+    if (!normalizedQuery) return [];
+    const tokens = normalizedQuery.split(' ').filter(Boolean);
+    const pages = flatLinks
+      .map((link) => {
+        const haystack = normalizeSearchText(`${link.name || ''} ${link.key || ''} ${link.href || ''} ${link.parentName || ''}`);
+        if (!tokens.every((token) => haystack.includes(token))) return null;
+        const name = normalizeSearchText(link.name);
+        const score = name === normalizedQuery ? 100 : name.startsWith(normalizedQuery) ? 70 : name.includes(normalizedQuery) ? 50 : 20;
+        return { ...link, score, kind: 'page', description: link.parentName || 'Раздел портала' };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 7);
+    const scopes = SEARCH_SCOPES.map((scope) => ({ ...scope, kind: 'scope', query: searchQuery.trim() }));
+    return [...pages, ...scopes].slice(0, 10);
+  }, [flatLinks, searchQuery]);
 
   const handleResultClick = (result) => {
-    addTab({ href: result.href, name: result.name });
-    navigate(result.href);
+    const href = result.kind === 'scope'
+      ? `${result.href}?${result.param || 'search'}=${encodeURIComponent(result.query)}`
+      : result.href;
+    addTab({ href, name: result.name });
+    navigate(href);
     setSearchQuery('');
     setIsSearchFocused(false);
   };
 
-  const handleOpenMiniChat = () => {
-    openMiniChat();
-  };
-
-  const handleOpenSettings = () => window.dispatchEvent(new CustomEvent('open-settings'));
+  const handleOpenSettings = () => navigate('/settings');
   const handleOpenProfile = () => window.dispatchEvent(new CustomEvent('open-profile'));
-  const handleChangePassword = () => window.dispatchEvent(new CustomEvent('open-change-password'));
 
   return (
     <header className="app-header">
@@ -75,10 +101,14 @@ const Header = ({ toggleSidebar }) => {
           <Search className="search-icon" size={20} />
           <input
             type="text"
-            placeholder="Search functionality..."
+            placeholder="Поиск по порталу, клиентам, заявкам и операциям…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && searchResults[0]) handleResultClick(searchResults[0]);
+              if (event.key === 'Escape') setIsSearchFocused(false);
+            }}
             className="search-input"
           />
           {searchQuery && (
@@ -104,8 +134,11 @@ const Header = ({ toggleSidebar }) => {
                   onClick={() => handleResultClick(result)}
                 >
                   <Search size={16} className="result-icon" />
-                  <span className="result-name">{result.name}</span>
-                  <span className="result-path">{result.href}</span>
+                  <span className="result-copy">
+                    <span className="result-name">{result.name}</span>
+                    <span className="result-description">{result.description}</span>
+                  </span>
+                  <span className="result-path">{result.kind === 'scope' ? 'Поиск' : result.href}</span>
                 </div>
               ))}
             </motion.div>
@@ -134,7 +167,7 @@ const Header = ({ toggleSidebar }) => {
             title="Уведомления"
           >
             <Bell size={22} />
-            {unreadCount > 0 && <span className="notification-badge"></span>}
+            {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>}
           </button>
           <NotificationsDropdown 
             isOpen={isNotificationsOpen} 

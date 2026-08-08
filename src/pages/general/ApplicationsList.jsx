@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Archive,
@@ -31,7 +31,7 @@ import { apiClientApplication } from "../../api/utils/apiClientApplication.js";
 import { useWebSocket } from "../../api/application/wsnotifications.js";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 const REQUEST_CREATOR_KEY = "request_\u0441reator";
 
 const STATUS_TABS = [
@@ -166,8 +166,12 @@ export default function ApplicationsList() {
     const [bulkStatus, setBulkStatus] = useState("");
     const [activeStatusTab, setActiveStatusTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
-    const [nextId, setNextId] = useState(null);
-    const [fetching, setFetching] = useState(false);
+    const [totalItems, setTotalItems] = useState(0);
+    const [allItemsTotal, setAllItemsTotal] = useState(0);
+    const [serverTotalPages, setServerTotalPages] = useState(1);
+    const [serverStatusCounts, setServerStatusCounts] = useState({});
+    const [debouncedQuery, setDebouncedQuery] = useState(initialSearch);
+    const requestIdRef = useRef(0);
     const [filters, setFilters] = useState({
         query: initialSearch,
         fullName: "",
@@ -203,16 +207,17 @@ export default function ApplicationsList() {
     }, []);
 
     const fetchData = useCallback(
-        async (after = null, reset = false) => {
+        async () => {
+            const requestId = ++requestIdRef.current;
             try {
                 setLoading(true);
-                const params = {};
+                const params = { with_meta: true, page: currentPage, page_size: PAGE_SIZE };
                 const activeTab = STATUS_TABS.find((tab) => tab.key === activeStatusTab);
 
-                if (after) params.after = after;
                 if (activeTab?.ids?.length === 1) params.status_id = activeTab.ids[0];
                 if (filters.dateFrom) params.date_from = filters.dateFrom;
                 if (filters.dateTo) params.date_to = filters.dateTo;
+                if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
 
                 const response = await apiClientApplication.get(
                     archive ? "/applications/archive" : "/applications",
@@ -221,27 +226,21 @@ export default function ApplicationsList() {
                         headers: getAuthHeaders(),
                     },
                 );
-                const result = response.data || [];
-
-                if (reset || after === null) {
-                    setTableData(result);
-                } else {
-                    setTableData((prev) => {
-                        const existingIds = new Set(prev.map((item) => item.ID));
-                        const newItems = result.filter((item) => !existingIds.has(item.ID));
-                        return [...prev, ...newItems];
-                    });
-                }
-
-                setNextId(result?.[result?.length - 1]?.ID);
+                if (requestId !== requestIdRef.current) return;
+                const result = response.data || {};
+                const items = Array.isArray(result) ? result : result.items || [];
+                setTableData(items);
+                setTotalItems(Array.isArray(result) ? items.length : Number(result.total || 0));
+                setAllItemsTotal(Array.isArray(result) ? items.length : Number(result.all_total || 0));
+                setServerTotalPages(Array.isArray(result) ? 1 : Math.max(1, Number(result.total_pages || 1)));
+                setServerStatusCounts(Array.isArray(result) ? {} : result.status_counts || {});
             } catch (error) {
                 console.log("Ошибка загрузки заявок:", error);
             } finally {
-                setLoading(false);
-                setFetching(false);
+                if (requestId === requestIdRef.current) setLoading(false);
             }
         },
-        [activeStatusTab, archive, filters.dateFrom, filters.dateTo, getAuthHeaders],
+        [activeStatusTab, archive, currentPage, debouncedQuery, filters.dateFrom, filters.dateTo, getAuthHeaders],
     );
 
     const handleNewApplication = useCallback(
@@ -253,7 +252,7 @@ export default function ApplicationsList() {
             });
 
             if (!archive) {
-                fetchData(null, true);
+                fetchData();
             }
         },
         [archive, fetchData],
@@ -285,17 +284,6 @@ export default function ApplicationsList() {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Ошибка выгрузки:", error);
-        }
-    };
-
-    const scrollHandler = (e) => {
-        const target = e.target;
-        if (
-            !fetching &&
-            nextId &&
-            target.scrollHeight - (target.scrollTop + target.clientHeight) < 12
-        ) {
-            setFetching(true);
         }
     };
 
@@ -348,10 +336,18 @@ export default function ApplicationsList() {
         });
     }, [activeStatusTab, filters, tableData]);
 
-    const statusCounts = useMemo(() => getStatusStats(tableData), [tableData]);
-    const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+    const statusCounts = useMemo(() => {
+        if (!Object.keys(serverStatusCounts).length) return getStatusStats(tableData);
+        return STATUS_TABS.reduce((acc, tab) => {
+            acc[tab.key] = tab.ids
+                ? tab.ids.reduce((sum, id) => sum + Number(serverStatusCounts[id] || 0), 0)
+                : allItemsTotal;
+            return acc;
+        }, {});
+    }, [allItemsTotal, serverStatusCounts, tableData]);
+    const totalPages = serverTotalPages;
     const pageStart = (currentPage - 1) * PAGE_SIZE;
-    const visibleRows = filteredData.slice(pageStart, pageStart + PAGE_SIZE);
+    const visibleRows = filteredData;
     const allVisibleSelected =
         visibleRows.length > 0 && visibleRows.every((row) => selectedRows.includes(row.ID));
     const paginationPages = useMemo(() => {
@@ -460,7 +456,7 @@ export default function ApplicationsList() {
 
             setData("status", "");
             setBulkStatus("");
-            fetchData(null, true);
+            fetchData();
             setSelectedRows([]);
         } catch (e) {
             console.error(e);
@@ -482,18 +478,17 @@ export default function ApplicationsList() {
     };
 
     useEffect(() => {
-        fetchData(null, true);
+        fetchData();
     }, [fetchData]);
 
     useEffect(() => {
-        if (fetching && nextId !== undefined) {
-            fetchData(nextId);
-        }
-    }, [fetching, nextId, fetchData]);
+        const timer = window.setTimeout(() => setDebouncedQuery(filters.query), 350);
+        return () => window.clearTimeout(timer);
+    }, [filters.query]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeStatusTab, filters, archive]);
+    }, [activeStatusTab, archive, debouncedQuery, filters.dateFrom, filters.dateTo]);
 
     useEffect(() => {
         if (currentPage > totalPages) {
@@ -598,7 +593,12 @@ export default function ApplicationsList() {
                         <button
                             type="button"
                             className={archive ? "applications-action active" : "applications-action"}
-                            onClick={() => setArchive((prev) => !prev)}
+                            onClick={() => {
+                                setArchive((prev) => !prev);
+                                setActiveStatusTab("all");
+                                setCurrentPage(1);
+                                setSelectedRows([]);
+                            }}
                         >
                             <Archive size={18} />
                             Архив
@@ -707,7 +707,7 @@ export default function ApplicationsList() {
                 )}
 
                 <section className="applications-table-card">
-                    <div className="applications-table-wrap" onScroll={scrollHandler}>
+                    <div className="applications-table-wrap">
                         <table>
                             <thead>
                                 <tr>
@@ -842,10 +842,10 @@ export default function ApplicationsList() {
                     <footer className="applications-table-footer">
                         <span>
                             Показано{" "}
-                            {filteredData.length === 0
+                            {visibleRows.length === 0
                                 ? "0"
-                                : `${pageStart + 1}-${Math.min(pageStart + PAGE_SIZE, filteredData.length)}`}{" "}
-                            из {filteredData.length} заявок
+                                : `${pageStart + 1}-${Math.min(pageStart + visibleRows.length, totalItems)}`}{" "}
+                            из {totalItems} заявок
                         </span>
 
                         <div className="applications-pagination">

@@ -123,6 +123,7 @@ const MainLayout = () => {
     if (pathname.includes("/admin/logs")) return "logs_viewer";
     if (pathname.includes("/admin/daily-tasks")) return "dt_management";
     if (pathname.includes("/mail-agent")) return "mail_agent_send";
+    if (pathname === "/settings") return "settings";
 
     if (pathname.includes("/agent/client-pins")) return "client_pins_list";
     
@@ -151,7 +152,9 @@ const MainLayout = () => {
       addTab({ href: location.pathname, name: link.name });
     } else {
       const parts = location.pathname.split('/').filter(Boolean);
-      const fallbackName = parts.length > 0 ? parts[parts.length - 1] : "Вкладка";
+      const fallbackName = location.pathname === "/settings"
+        ? "Настройки"
+        : (parts.length > 0 ? parts[parts.length - 1] : "Вкладка");
       // We capitalize the fallback name slightly
       const prettyName = fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1);
       addTab({ href: location.pathname, name: prettyName });
@@ -182,16 +185,13 @@ const MainLayout = () => {
           
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px', position: 'relative' }}>
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={location.pathname}
-                  initial={{ opacity: 0, scale: 0.97, y: 15 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.97, y: -15 }}
-                  transition={{ 
-                    duration: 0.25, 
-                    ease: [0.25, 0.1, 0.25, 1.0] // cubic-bezier smooth out
-                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.14, ease: "easeOut" }}
                   style={{ minHeight: '100%', width: '100%' }}
                 >
                   <Outlet />

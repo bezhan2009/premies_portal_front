@@ -11,6 +11,11 @@
   --bg-surface: #ffffff;     /* Cards, tables, inputs */
   --bg-sidebar: #ffffff;     /* Sidebar background */
   --bg-elevated: #ffffff;    /* Modals, dropdowns */
+  --bg-primary: var(--bg-surface);
+  --hover-bg: #f1f3f6;
+  --search-bg: #f1f3f6;
+  --tabs-bg: #f6f7f9;
+  --highlight-bg: rgba(var(--primary-rgb), 0.07);
   
   /* Colors - Text */
   --text-color: #1a1a1b;     /* Primary text */
@@ -18,10 +23,14 @@
   --text-secondary: #4b5563; /* Labels, descriptions */
   --text-muted: #9ca3af;     /* Placeholders, disabled text */
   --text-on-primary: #ffffff;
+  --text-primary: var(--text-color);
+  --text-tertiary: var(--text-muted);
   
   /* Colors - Borders */
   --border-color: #e5e7eb;
   --border-input: #d1d5db;
+  --tab-border: rgba(15, 23, 42, 0.12);
+  --tab-hover-bg: rgba(15, 23, 42, 0.05);
   
   /* Sizes */
   --font-size-base: 16px;
@@ -50,16 +59,25 @@
   --bg-surface: #1e232d;     /* Elevated surfaces like cards */
   --bg-sidebar: #161a22;
   --bg-elevated: #282e3a;    /* Top level surfaces like modals */
+  --bg-primary: var(--bg-surface);
+  --hover-bg: #252b36;
+  --search-bg: #202630;
+  --tabs-bg: #151922;
+  --highlight-bg: rgba(var(--primary-rgb), 0.12);
   
   /* Text - high but soft contrast */
   --text-color: #f1f5f9;     /* Off-white */
   --text-rgb: 241, 245, 249;
   --text-secondary: #94a3b8; /* Slate grey */
   --text-muted: #64748b;     /* Muted grey */
+  --text-primary: var(--text-color);
+  --text-tertiary: var(--text-muted);
   
   /* Borders - subtle dark borders */
   --border-color: #2d3748;
   --border-input: #3d4655;
+  --tab-border: rgba(255, 255, 255, 0.12);
+  --tab-hover-bg: rgba(255, 255, 255, 0.06);
   
   /* Effects Overrides */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);

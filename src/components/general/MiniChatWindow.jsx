@@ -227,7 +227,7 @@ const AudioPlayer = ({ src, isOut }) => {
 };
 
 const MiniChatWindow = () => {
-  const { isMiniChatOpen, closeMiniChat, setUnreadCount } = useChatStore();
+  const { isMiniChatOpen, closeMiniChat, setUnreadCount, pendingConversation, consumePendingConversation } = useChatStore();
   const { theme } = useThemeStore();
   const location = useLocation();
   const dragControls = useDragControls();
@@ -1517,6 +1517,22 @@ const MiniChatWindow = () => {
     return sortedThreads.filter(t => !pinnedChats.map(Number).includes(Number(t.user_id)));
   }, [sortedThreads, pinnedChats]);
 
+  useEffect(() => {
+    if (!isMiniChatOpen || !pendingConversation || sortedThreads.length === 0) return;
+    const requestedId = Number(pendingConversation.userId || 0);
+    const target = sortedThreads.find((thread) =>
+      thread.chatType === pendingConversation.chatType &&
+      (!requestedId || Number(thread.user_id) === requestedId)
+    ) || sortedThreads.find((thread) => Number(thread.unread_count || 0) > 0);
+    if (!target) return;
+    setActiveTab(target.chatType);
+    setChatType(target.chatType);
+    setRecipientId(Number(target.user_id));
+    setActiveThreadName(target.username || pendingConversation.name || "Чат");
+    setCurrentView("chat");
+    consumePendingConversation();
+  }, [consumePendingConversation, isMiniChatOpen, pendingConversation, sortedThreads]);
+
   const handleReorderPinned = (newOrder) => {
     const normalized = newOrder.map(Number);
     setPinnedChats(normalized);
@@ -1561,10 +1577,7 @@ const MiniChatWindow = () => {
     );
   }, [usersList, userSearchQuery, currentUserId]);
 
-  const isExcludedPath = 
-    location.pathname.includes("/feedback") ||
-    location.pathname.includes("/operator/feedback") ||
-    location.pathname.includes("/submit-feedback");
+  const isExcludedPath = location.pathname.includes("/submit-feedback");
 
   if (isExcludedPath || !isMiniChatOpen) {
     return null;
@@ -2103,7 +2116,7 @@ const MiniChatWindow = () => {
             resizeHandles={['se']}
             onResize={(e, { size }) => setDimensions({ width: size.width, height: size.height })}
           >
-            <div style={{
+            <div className="mini-chat-window" style={{
               width: `${dimensions.width}px`,
               height: `${dimensions.height}px`,
               background: "var(--bg-surface, rgba(255, 255, 255, 0.85))",
@@ -2483,11 +2496,9 @@ const MiniChatWindow = () => {
                                 <motion.div
                                   className="mini-chat-thread-row"
                                   key={`${thread.chatType}-${threadId}`}
-                                  layout
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0, transition: { type: "spring", stiffness: 350, damping: 28 } }}
-                                  whileHover={!isChatSelectionMode ? { backgroundColor: isSelected ? "rgba(235, 37, 37, 0.12)" : "rgba(235, 37, 37, 0.05)", x: 2, transition: { duration: 0.15 } } : {}}
-                                  whileTap={{ scale: 0.98 }}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ duration: .12 }}
                                   onClick={() => {
                                     if (isChatSelectionMode) {
                                       handleSelectChat(threadId);
@@ -3990,17 +4001,6 @@ const MiniChatWindow = () => {
           pointer-events: none;
           z-index: 0;
         }
-        .mini-chat-messages-scroll::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          opacity: 0.35;
-          background-image:
-            radial-gradient(circle at 18px 18px, rgba(235, 37, 37, 0.08) 0 1px, transparent 1.5px),
-            radial-gradient(circle at 64px 52px, rgba(15, 23, 42, 0.05) 0 1px, transparent 1.5px);
-          background-size: 92px 92px;
-        }
         .mini-chat-date-divider {
           align-self: center;
           position: sticky;
@@ -4036,7 +4036,7 @@ const MiniChatWindow = () => {
           gap: 8px;
           padding: 8px 12px;
           border-bottom: 1px solid rgba(235, 37, 37, 0.12);
-          background: linear-gradient(135deg, rgba(254, 226, 226, 0.92), rgba(255, 255, 255, 0.78));
+          background: var(--bg-elevated, #ffffff);
           color: #991b1b;
           font-size: 12px;
           font-weight: 800;
@@ -4061,25 +4061,9 @@ const MiniChatWindow = () => {
           align-items: center;
           justify-content: center;
         }
-        .mini-chat-thread-row {
-          position: relative;
-          isolation: isolate;
-        }
-        .mini-chat-thread-row::after {
-          content: "";
-          position: absolute;
-          inset: 8px;
-          z-index: -1;
-          border-radius: 16px;
-          background: rgba(235, 37, 37, 0.06);
-          opacity: 0;
-          transform: scale(0.96);
-          transition: opacity 0.18s ease, transform 0.18s ease;
-        }
-        .mini-chat-thread-row:hover::after {
-          opacity: 1;
-          transform: scale(1);
-        }
+        .mini-chat-thread-row { position: relative; transition: background-color .14s ease, border-color .14s ease !important; }
+        .mini-chat-thread-row:hover { background: rgba(235, 37, 37, 0.055) !important; border-color: rgba(235, 37, 37, 0.18) !important; }
+        .mini-chat-window button:active { transform: none !important; }
         .mini-chat-selection-bar {
           min-height: 52px;
           box-sizing: border-box;

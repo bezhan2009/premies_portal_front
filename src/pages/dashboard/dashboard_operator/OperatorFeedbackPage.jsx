@@ -3063,10 +3063,8 @@ export default function OperatorFeedbackPage() {
 
         /* Telegram-style operator chat redesign */
         .feedback-container {
-          background-color: #f6f7fb !important;
-          background-image:
-            radial-gradient(circle at 12% 8%, rgba(235, 37, 37, 0.08), transparent 26%),
-            radial-gradient(circle at 84% 18%, rgba(248, 113, 113, 0.08), transparent 30%) !important;
+          background-color: var(--bg-color) !important;
+          background-image: none !important;
           padding: 18px !important;
           gap: 16px !important;
         }
@@ -3098,12 +3096,11 @@ export default function OperatorFeedbackPage() {
         }
 
         .feedback-sidebar {
-          background: rgba(255, 255, 255, 0.84) !important;
-          border: 1px solid rgba(255, 255, 255, 0.72) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-color) !important;
           border-radius: 28px !important;
           box-shadow: 0 22px 60px rgba(15, 23, 42, 0.12) !important;
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
+          backdrop-filter: none;
         }
 
         .sidebar-header {

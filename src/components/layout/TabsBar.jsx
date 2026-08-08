@@ -70,9 +70,12 @@ const TabsBar = () => {
 
   const handleContextMenu = (e, tabHref) => {
     e.preventDefault();
+    e.stopPropagation();
+    const menuWidth = 248;
+    const menuHeight = 156;
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
+      x: Math.max(8, Math.min(e.clientX + 6, window.innerWidth - menuWidth - 8)),
+      y: Math.max(8, Math.min(e.clientY + 6, window.innerHeight - menuHeight - 8)),
       tabHref
     });
   };
@@ -127,11 +130,10 @@ const TabsBar = () => {
                 className={`tab-item ${isActive ? 'active' : ''} ${tab.pinned ? 'pinned' : ''}`}
                 onClick={() => handleTabClick(tab.href)}
                 onContextMenu={(e) => handleContextMenu(e, tab.href)}
-                initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }}
-                animate={{ opacity: 1, width: tab.pinned ? 40 : 'auto', paddingLeft: 12, paddingRight: 12 }}
-                exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0, margin: 0, overflow: 'hidden' }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                layout
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
               >
                 {Icon && <Icon size={14} className="tab-icon" />}
                 {!tab.pinned && (
@@ -164,8 +166,8 @@ const TabsBar = () => {
             exit={{ opacity: 0, scale: 0.9, y: -8 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 270),
-              top: Math.min(contextMenu.y, window.innerHeight - 160)
+              left: contextMenu.x,
+              top: contextMenu.y
             }}
           >
             <button onClick={handleSplitView}>

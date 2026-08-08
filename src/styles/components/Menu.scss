@@ -1174,6 +1174,62 @@
   background-color: #fff;
 }
 
+/* Flat workspace navigation, aligned with the SmartVision shell. */
+.dashboard-container { background: var(--bg-color); }
+.sidebar {
+  align-self: stretch;
+  width: 264px;
+  height: 100%;
+  min-width: 264px;
+  margin: 0;
+  padding: 12px 10px;
+  top: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--border-color);
+  box-shadow: none;
+  overflow: hidden;
+  background: var(--bg-sidebar);
+  transition: width .18s ease, min-width .18s ease, padding .18s ease;
+}
+.sidebar.collapsed { width: 64px; min-width: 64px; padding: 10px 8px; }
+.sidebar-search-container { padding: 0 2px 10px; }
+.sidebar-search-container .ant-input-affix-wrapper {
+  min-height: 38px;
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  border-radius: 10px;
+}
+.nav-links { gap: 3px; padding: 0 2px; }
+.nav-links a, .dropdown-toggle {
+  min-height: 40px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  transform: none;
+  transition: color .14s ease, background-color .14s ease;
+}
+.nav-links a:hover, .dropdown-toggle:hover {
+  color: var(--text-color);
+  background: var(--hover-bg);
+  transform: none;
+}
+.nav-links a.active, .dropdown-toggle.active {
+  color: var(--primary-color);
+  background: rgba(var(--primary-rgb), .09);
+  box-shadow: inset 3px 0 0 var(--primary-color);
+}
+.dropdown-toggle:active { transform: none; }
+.sub-menu { margin: 3px 0 6px 18px; padding-left: 8px; border-left: 1px solid var(--border-color); animation-duration: .16s; }
+.sub-link:hover { transform: none; }
+.nav-links.collapsed-nav { gap: 5px; padding-top: 0; }
+.nav-links.collapsed-nav .collapsed-link,
+.nav-links.collapsed-nav .collapsed-btn { width: 44px; height: 44px; padding: 0; border-radius: 10px; transition: color .14s ease, background-color .14s ease; }
+.nav-links.collapsed-nav .collapsed-link:hover,
+.nav-links.collapsed-nav .collapsed-btn:hover { transform: none; box-shadow: none; }
+.sidebar-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 10px 2px 0; margin-top: 8px; border-top: 1px solid var(--border-color); }
+.sidebar-quick-actions button { min-width: 0; min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--text-secondary); background: transparent; border: 1px solid transparent; border-radius: 9px; cursor: pointer; }
+.sidebar-quick-actions button:hover, .sidebar-quick-actions button.active { color: var(--primary-color); background: rgba(var(--primary-rgb), .07); border-color: rgba(var(--primary-rgb), .15); }
+.sidebar-quick-actions.collapsed { grid-template-columns: 1fr; }
+
 .username-wrapper {
   position: relative;
   display: flex;

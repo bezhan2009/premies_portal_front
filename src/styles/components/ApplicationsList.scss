@@ -990,3 +990,33 @@
     }
   }
 }
+[data-theme='dark'] .applications-list-redesign {
+  color: var(--text-color);
+
+  .applications-stat,
+  .applications-tabs,
+  .applications-toolbar,
+  .applications-filters,
+  .applications-table-card,
+  .application-details-modal,
+  .application-detail-card,
+  .application-document-card {
+    color: var(--text-color);
+    background: var(--bg-surface);
+    border-color: var(--border-color);
+  }
+
+  input,
+  .applications-search,
+  .applications-period-range,
+  .applications-action {
+    color: var(--text-color);
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  table thead th { background: var(--bg-secondary); color: var(--text-secondary); }
+  table tbody tr:hover { background: var(--hover-bg); }
+  table tbody td { border-color: var(--border-color); }
+  .applications-table-footer { background: var(--bg-surface); border-color: var(--border-color); }
+}
