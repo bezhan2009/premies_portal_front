@@ -49,6 +49,11 @@
   color: var(--text-primary, #333);
 }
 
+.live-share-header-btn.active {
+  background: rgba(235, 37, 37, 0.1);
+  color: #eb2525;
+}
+
 .menu-btn {
   margin-right: 8px;
 }

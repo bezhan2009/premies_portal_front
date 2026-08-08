@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User } from 'lucide-react';
+import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User, Share2 } from 'lucide-react';
 import useNavigationStore from '../../store/useNavigationStore';
 import useTabsStore from '../../store/useTabsStore';
 import useChatStore from '../../store/useChatStore';
@@ -8,6 +8,7 @@ import useNotificationStore from '../../store/useNotificationStore';
 import LogoImageComponent from '../Logo';
 import LogoutButton from "../general/Logout.jsx";
 import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
+import { useLiveWorkflow } from '../live-workflow/LiveWorkflowProvider.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
 
@@ -33,6 +34,7 @@ const Header = ({ toggleSidebar }) => {
   const { addTab } = useTabsStore();
   const { toggleMiniChat } = useChatStore();
   const { unreadCount, connect, disconnect } = useNotificationStore();
+  const { session: liveWorkflowSession, openShareDialog } = useLiveWorkflow();
   const navigate = useNavigate();
   const searchRef = useRef(null);
 
@@ -152,6 +154,14 @@ const Header = ({ toggleSidebar }) => {
         </button>
         <button className="icon-btn" aria-label="Mini Chat" onClick={toggleMiniChat} title="Мини-чат">
           <MessageSquare size={22} />
+        </button>
+        <button
+          className={`icon-btn live-share-header-btn ${liveWorkflowSession ? 'active' : ''}`}
+          aria-label="Share workflow"
+          onClick={openShareDialog}
+          title="Поделиться workflow"
+        >
+          <Share2 size={21} />
         </button>
         <button className="icon-btn" aria-label="Settings" onClick={handleOpenSettings} title="Настройки интерфейса">
           <Settings size={22} />

@@ -16,6 +16,7 @@ import useChatStore from "../../store/useChatStore";
 import ImageModal from "../modal/ImageModal";
 import PasteFileModal from "../modal/PasteFileModal";
 import ChatDatePicker from "./ChatDatePicker";
+import { LiveWorkflowInvitationCard } from "../live-workflow/LiveWorkflowProvider.jsx";
 import { useLocation } from "react-router-dom";
 import filePng from "../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
@@ -3030,6 +3031,7 @@ const MiniChatWindow = () => {
                                 }
 
                                 const fwdInfo = parseForwardedMessage(msg.message);
+                                const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
                                 const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
                                 const isSelected = selectedMessageIds.includes(msg.id);
 
@@ -3184,7 +3186,10 @@ const MiniChatWindow = () => {
                                       )}
 
                                       {/* Main text content */}
-                                      {fwdInfo.cleanText && !isVoice && (
+                                      {isLiveWorkflowInvite && !isVoice && (
+                                        <LiveWorkflowInvitationCard message={fwdInfo.cleanText} compact />
+                                      )}
+                                      {fwdInfo.cleanText && !isVoice && !isLiveWorkflowInvite && (
                                         <motion.div 
                                           key={fwdInfo.cleanText}
                                           initial={{ scale: 0.97, opacity: 0.9 }}

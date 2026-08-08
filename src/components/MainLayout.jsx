@@ -11,6 +11,7 @@ import TabsBar from "./layout/TabsBar.jsx";
 import useTabsStore from "../store/useTabsStore.js";
 import useNavigationStore from "../store/useNavigationStore.js";
 import { motion, AnimatePresence } from "framer-motion";
+import LiveWorkflowProvider from "./live-workflow/LiveWorkflowProvider.jsx";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -172,6 +173,7 @@ const MainLayout = () => {
   }
 
   return (
+    <LiveWorkflowProvider>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header toggleSidebar={toggleSidebar} />
       <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`} style={{ flex: 1, overflow: 'hidden', padding: 0, margin: 0, display: 'flex', gap: 0 }}>
@@ -223,6 +225,7 @@ const MainLayout = () => {
       <CurrencyRatesWidget />
       <MiniChatWindow />
     </div>
+    </LiveWorkflowProvider>
   );
 };
 

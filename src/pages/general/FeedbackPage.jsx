@@ -16,6 +16,7 @@ import filePng from "../../assets/file.png";
 import CreateGroupModal from "../../components/general/CreateGroupModal";
 import GroupMembersModal from "../../components/general/GroupMembersModal";
 import ChatDatePicker from "../../components/general/ChatDatePicker";
+import { LiveWorkflowInvitationCard } from "../../components/live-workflow/LiveWorkflowProvider";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -3069,6 +3070,7 @@ export default function FeedbackPage() {
                     );
                   }
                   const fwdInfo = parseForwardedMessage(msg.message);
+                  const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
                   const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
                   const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
                   const isSelected = selectedMessageIds.includes(msg.id);
@@ -3228,7 +3230,10 @@ export default function FeedbackPage() {
                         )}
 
                         {/* Main text content */}
-                        {fwdInfo.cleanText && !isVoice && (
+                        {isLiveWorkflowInvite && !isVoice && (
+                          <LiveWorkflowInvitationCard message={fwdInfo.cleanText} />
+                        )}
+                        {fwdInfo.cleanText && !isVoice && !isLiveWorkflowInvite && (
                           <motion.div 
                             key={fwdInfo.cleanText}
                             initial={{ scale: 0.97, opacity: 0.9 }}

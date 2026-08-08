@@ -14,6 +14,7 @@ import FeedbackPage from "../pages/general/FeedbackPage.jsx";
 import SubmitFeedbackPage from "../pages/general/SubmitFeedbackPage.jsx";
 import GroupsPage from "../pages/general/GroupsPage.jsx";
 import SettingsPage from "../pages/general/SettingsPage.jsx";
+import LiveWorkflowJoinPage from "../pages/general/LiveWorkflowJoinPage.jsx";
 
 // Modularized routes
 import operatorRoutes from "./routes/operator.routes";
@@ -63,6 +64,7 @@ export default function AppRouter() {
           {/* Группы */}
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/live-session/:token" element={<LiveWorkflowJoinPage />} />
 
           {/* Подготовленные страницы */}
           <Route path="/under/development" element={<UnderDevelopmentPage />} />

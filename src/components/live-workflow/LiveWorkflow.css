@@ -1,0 +1,416 @@
+.live-cursors-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100020;
+  pointer-events: none;
+}
+
+.live-remote-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate3d(0, 0, 0);
+  color: #eb2525;
+  filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.18));
+}
+
+.live-remote-cursor svg {
+  fill: #eb2525;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.live-remote-cursor span {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eb2525;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.live-workflow-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 100015;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 7px 9px 7px 12px;
+  border: 1px solid rgba(235, 37, 37, 0.18);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-surface, #fff) 92%, transparent);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.live-workflow-bar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color, #172033);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.live-workflow-bar > div:first-child svg {
+  color: #eb2525;
+}
+
+.live-workflow-bar button,
+.live-share-modal button {
+  flex-shrink: 0;
+}
+
+.live-workflow-bar button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: rgba(235, 37, 37, 0.09);
+  color: #eb2525;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.live-workflow-bar button.danger {
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-workflow-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.live-workflow-avatars span,
+.live-share-access span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  border: 2px solid var(--bg-surface, #fff);
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.live-workflow-avatars span:first-child {
+  margin-left: 0;
+}
+
+.live-workflow-avatars span.online,
+.live-share-access span.online {
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-workflow-avatars small {
+  margin-left: 5px;
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.live-share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(6px);
+}
+
+.live-share-modal {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 36px));
+  overflow: hidden auto;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 18px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-color, #172033);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.25);
+}
+
+.live-share-modal header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-share-modal header > div {
+  display: flex;
+  gap: 12px;
+}
+
+.live-share-modal header span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(235, 37, 37, 0.1);
+  color: #eb2525;
+}
+
+.live-share-modal h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.live-share-modal p {
+  margin: 4px 0 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 13px;
+}
+
+.live-share-modal header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+}
+
+.live-share-section {
+  padding: 16px 20px 0;
+}
+
+.live-share-section label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.live-share-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-color, #f8fafc);
+}
+
+.live-share-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-color, #172033);
+}
+
+.live-share-users,
+.live-share-access {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.live-share-users button,
+.live-share-access div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-color, #172033);
+}
+
+.live-share-users button {
+  cursor: pointer;
+  text-align: left;
+}
+
+.live-share-users button.selected {
+  border-color: rgba(235, 37, 37, 0.35);
+  background: rgba(235, 37, 37, 0.06);
+}
+
+.live-share-users button span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.live-share-users button strong,
+.live-share-access strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.live-share-access small {
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+}
+
+.live-share-modal footer {
+  display: flex;
+  gap: 10px;
+  padding: 18px 20px 12px;
+}
+
+.live-share-modal footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-color, #172033);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.live-share-modal footer button.primary {
+  border-color: #eb2525;
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-share-modal footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.live-share-security,
+.live-share-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 20px 18px;
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+}
+
+.live-share-status {
+  margin-top: -8px;
+  color: #eb2525;
+  font-weight: 800;
+}
+
+.live-workflow-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: min(340px, 100%);
+  padding: 12px;
+  border: 1px solid rgba(235, 37, 37, 0.18);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-surface, #fff) 94%, #eb2525 6%);
+  color: var(--text-color, #172033);
+}
+
+.live-workflow-card.compact {
+  min-width: 0;
+  padding: 10px;
+}
+
+.live-workflow-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-workflow-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.live-workflow-card__body strong {
+  font-size: 13px;
+}
+
+.live-workflow-card__body span,
+.live-workflow-card__body small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+}
+
+.live-workflow-card button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #eb2525;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.spin {
+  animation: live-workflow-spin 0.8s linear infinite;
+}
+
+@keyframes live-workflow-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .live-workflow-bar {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    border-radius: 16px;
+    justify-content: space-between;
+  }
+
+  .live-share-modal footer {
+    flex-direction: column;
+  }
+}

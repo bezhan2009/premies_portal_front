@@ -1,0 +1,49 @@
+import { apiClient } from "./utils/apiClient";
+
+export const getLiveWorkflowUsers = async () => {
+  const { data } = await apiClient.get("/users/emails");
+  return data?.users || [];
+};
+
+export const createLiveWorkflowSession = async ({ route, context = {} }) => {
+  const { data } = await apiClient.post("/api/live-workflows", { route, context });
+  return data;
+};
+
+export const getLiveWorkflowSession = async (sessionId) => {
+  const { data } = await apiClient.get(`/api/live-workflows/${sessionId}`);
+  return data;
+};
+
+export const inviteLiveWorkflowUser = async (sessionId, targetUserId) => {
+  const payload = targetUserId ? { target_user_id: Number(targetUserId) } : {};
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/invite`, payload);
+  return data;
+};
+
+export const joinLiveWorkflowByToken = async (token) => {
+  const { data } = await apiClient.post("/api/live-workflows/join", { token });
+  return data;
+};
+
+export const createLiveWorkflowWsTicket = async (sessionId) => {
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/ws-ticket`);
+  return data;
+};
+
+export const updateLiveWorkflowFollowMode = async (sessionId, isFollowing) => {
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/follow`, { is_following: Boolean(isFollowing) });
+  return data;
+};
+
+export const endLiveWorkflowSession = async (sessionId) => {
+  await apiClient.delete(`/api/live-workflows/${sessionId}`);
+};
+
+export const sendLiveWorkflowChatInvite = async ({ recipientId, message }) => {
+  const { data } = await apiClient.post("/api/feedback", {
+    message,
+    recipient_id: Number(recipientId),
+  });
+  return data;
+};

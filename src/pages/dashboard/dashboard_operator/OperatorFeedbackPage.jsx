@@ -17,6 +17,7 @@ import PasteFileModal from "../../../components/modal/PasteFileModal";
 import CreateGroupModal from "../../../components/general/CreateGroupModal";
 import GroupMembersModal from "../../../components/general/GroupMembersModal";
 import ChatDatePicker from "../../../components/general/ChatDatePicker";
+import { LiveWorkflowInvitationCard } from "../../../components/live-workflow/LiveWorkflowProvider";
 import filePng from "../../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../../utils/chatDateUtils";
 
@@ -4124,6 +4125,7 @@ export default function OperatorFeedbackPage() {
                           );
                         }
                         const fwdInfo = parseForwardedMessage(msg.message);
+                        const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
                         const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
                         const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
@@ -4281,7 +4283,10 @@ export default function OperatorFeedbackPage() {
                                 </div>
                               )}
 
-                              {fwdInfo.cleanText && !isVoice && (
+                              {isLiveWorkflowInvite && !isVoice && (
+                                <LiveWorkflowInvitationCard message={fwdInfo.cleanText} />
+                              )}
+                              {fwdInfo.cleanText && !isVoice && !isLiveWorkflowInvite && (
                                 <motion.div 
                                   key={fwdInfo.cleanText}
                                   initial={{ scale: 0.97, opacity: 0.9 }}
