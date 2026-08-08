@@ -61,6 +61,18 @@ const getParticipantColor = (userId) => {
   return LIVE_WORKFLOW_CURSOR_COLORS[Math.abs(numericId) % LIVE_WORKFLOW_CURSOR_COLORS.length];
 };
 
+const isSameLiveUser = (left, right) => {
+  const leftUser = left?.user || left;
+  const rightUser = right?.user || right;
+  if (!leftUser || !rightUser) return false;
+  if (Number(leftUser.id) > 0 && Number(rightUser.id) > 0) {
+    return Number(leftUser.id) === Number(rightUser.id);
+  }
+  const leftUsername = String(leftUser.username || "").trim().toLowerCase();
+  const rightUsername = String(rightUser.username || "").trim().toLowerCase();
+  return Boolean(leftUsername && rightUsername && leftUsername === rightUsername);
+};
+
 const getSessionUserRoutesMap = (targetSession) => (
   (targetSession?.user_routes || []).reduce((acc, item) => {
     if (item?.user_id && item?.route) {
@@ -84,6 +96,31 @@ const getFollowSnapshot = (targetSession, targetUserId) => {
     };
   }
   return null;
+};
+
+const decodeJwtPayload = (token) => {
+  try {
+    if (!token || !token.includes(".")) return null;
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), "=");
+    return JSON.parse(window.atob(padded));
+  } catch {
+    return null;
+  }
+};
+
+const getStoredCurrentUser = () => {
+  if (typeof window === "undefined") return null;
+  const payload = decodeJwtPayload(localStorage.getItem("access_token"));
+  const id = Number(payload?.user_id || payload?.id || localStorage.getItem("user_id") || 0);
+  const username = payload?.username || localStorage.getItem("username") || "";
+  const fullName = localStorage.getItem("full_name") || payload?.full_name || username;
+  if (!id && !username) return null;
+  return {
+    id,
+    username,
+    full_name: fullName,
+  };
 };
 
 export const buildLiveWorkflowInvitationMessage = (payload) => JSON.stringify({
@@ -138,7 +175,7 @@ export default function LiveWorkflowProvider({ children }) {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
   const [remoteCursors, setRemoteCursors] = useState({});
   const [isShareOpen, setShareOpen] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -185,12 +222,16 @@ export default function LiveWorkflowProvider({ children }) {
     let mounted = true;
     apiClient.get("/user").then(({ data }) => {
       if (!mounted) return;
+      const userData = data?.user || data?.data || data || {};
+      const fallback = getStoredCurrentUser();
       setCurrentUser({
-        id: data.id || data.ID,
-        username: data.username,
-        full_name: data.full_name || data.fullName || data.username,
+        id: userData.id || userData.ID || fallback?.id || 0,
+        username: userData.username || fallback?.username || "",
+        full_name: userData.full_name || userData.fullName || userData.FullName || fallback?.full_name || userData.username || fallback?.username || "",
       });
-    }).catch(() => {});
+    }).catch(() => {
+      setCurrentUser((prev) => prev || getStoredCurrentUser());
+    });
     return () => { mounted = false; };
   }, []);
 
@@ -262,6 +303,30 @@ export default function LiveWorkflowProvider({ children }) {
     });
   }, []);
 
+  const markParticipantOnline = useCallback((user) => {
+    if (!user?.id && !user?.username) return;
+    setParticipants((prev) => prev.map((participant) => (
+      isSameLiveUser(participant, user)
+        ? { ...participant, online: true, last_seen_at: new Date().toISOString() }
+        : participant
+    )));
+  }, []);
+
+  const sendCurrentNavigation = useCallback((socket = wsRef.current) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const route = getCurrentRoute();
+    const context = {
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    };
+    socket.send(JSON.stringify({
+      type: "navigation.change",
+      payload: { route, context },
+    }));
+    mergeUserRouteIntoSession(currentUserRef.current?.id, route, context);
+    markParticipantOnline(currentUserRef.current);
+  }, [markParticipantOnline, mergeUserRouteIntoSession]);
+
   const connect = useCallback(async (targetSession) => {
     if (!targetSession?.id) return;
     disconnect(true);
@@ -275,6 +340,8 @@ export default function LiveWorkflowProvider({ children }) {
       socket.onopen = () => {
         reconnectAttemptRef.current = 0;
         setStatusMessage("Live workflow подключен");
+        sendCurrentNavigation(socket);
+        window.setTimeout(() => sendCurrentNavigation(socket), 400);
       };
 
       socket.onmessage = (event) => {
@@ -294,6 +361,10 @@ export default function LiveWorkflowProvider({ children }) {
         }
         if (msg.type === "cursor.moved" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
           const color = getParticipantColor(msg.user?.id);
+          markParticipantOnline(msg.user);
+          if (msg.payload?.route) {
+            mergeUserRouteIntoSession(msg.user.id, msg.payload.route, msg.payload);
+          }
           setRemoteCursors((prev) => ({
             ...prev,
             [msg.user.id]: {
@@ -319,6 +390,7 @@ export default function LiveWorkflowProvider({ children }) {
         if (msg.type === "navigation.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
           const route = msg.payload?.route;
           const context = msg.payload?.context || {};
+          markParticipantOnline(msg.user);
           if (route) {
             userRoutesRef.current = {
               ...userRoutesRef.current,
@@ -334,6 +406,7 @@ export default function LiveWorkflowProvider({ children }) {
         if (msg.type === "viewport.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
           const route = msg.payload?.route;
           const context = msg.payload?.context || {};
+          markParticipantOnline(msg.user);
           if (route) {
             userRoutesRef.current = {
               ...userRoutesRef.current,
@@ -368,7 +441,7 @@ export default function LiveWorkflowProvider({ children }) {
     } catch {
       setStatusMessage("Не удалось подключить Live workflow");
     }
-  }, [applyRemoteSnapshot, applySessionState, disconnect, mergeUserRouteIntoSession, syncRemoteViewport]);
+  }, [applyRemoteSnapshot, applySessionState, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentNavigation, syncRemoteViewport]);
 
   const openShareDialog = useCallback(async () => {
     setShareOpen(true);
@@ -486,20 +559,10 @@ export default function LiveWorkflowProvider({ children }) {
     if (!session?.id || !wsRef.current || applyingRemoteRouteRef.current) return undefined;
     if (routeTimerRef.current) window.clearTimeout(routeTimerRef.current);
     routeTimerRef.current = window.setTimeout(() => {
-      if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-      wsRef.current.send(JSON.stringify({
-        type: "navigation.change",
-        payload: {
-          route: `${location.pathname}${location.search}${location.hash}`,
-          context: {
-            scrollX: window.scrollX,
-            scrollY: window.scrollY,
-          },
-        },
-      }));
+      sendCurrentNavigation();
     }, 180);
     return () => window.clearTimeout(routeTimerRef.current);
-  }, [location.hash, location.pathname, location.search, session?.id]);
+  }, [location.hash, location.pathname, location.search, sendCurrentNavigation, session?.id]);
 
   useEffect(() => {
     if (!session?.id) return undefined;
@@ -535,18 +598,20 @@ export default function LiveWorkflowProvider({ children }) {
         return;
       }
       lastViewportSentRef.current = now;
+      const route = getCurrentRoute();
+      const context = {
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+      };
       wsRef.current.send(JSON.stringify({
         type: "viewport.change",
-        payload: {
-          route: getCurrentRoute(),
-          scrollX: window.scrollX,
-          scrollY: window.scrollY,
-        },
+        payload: { route, ...context },
       }));
+      mergeUserRouteIntoSession(currentUserRef.current?.id, route, context);
     };
     window.addEventListener("scroll", handleViewportChange, { passive: true });
     return () => window.removeEventListener("scroll", handleViewportChange);
-  }, [session?.id]);
+  }, [mergeUserRouteIntoSession, session?.id]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -653,16 +718,22 @@ function LiveWorkflowPeopleBar({
       </button>
       <div className="live-workflow-avatars">
         {visibleParticipants.map((item) => (
-          <button
-            type="button"
-            key={item.user.id}
-            title={getParticipantName(item)}
-            className={`${item.online ? "online" : ""} ${Number(item.user.id) === Number(followTargetId) ? "following" : ""}`}
-            style={{ "--avatar-color": getParticipantColor(item.user.id) }}
-            onClick={() => setPeopleOpen((prev) => !prev)}
-          >
-            {getParticipantInitials(item)}
-          </button>
+          (() => {
+            const isCurrentUser = isSameLiveUser(item, currentUser);
+            const isOnline = Boolean(item.online || isCurrentUser);
+            return (
+              <button
+                type="button"
+                key={item.user.id}
+                title={getParticipantName(item)}
+                className={`${isOnline ? "online" : ""} ${Number(item.user.id) === Number(followTargetId) ? "following" : ""}`}
+                style={{ "--avatar-color": getParticipantColor(item.user.id) }}
+                onClick={() => setPeopleOpen((prev) => !prev)}
+              >
+                {getParticipantInitials(item)}
+              </button>
+            );
+          })()
         ))}
         {participants.length > visibleParticipants.length && <small>+{participants.length - visibleParticipants.length}</small>}
       </div>
@@ -685,13 +756,18 @@ function LiveWorkflowPeopleBar({
             </header>
             <div className="live-workflow-people-list">
               {participants.map((item) => {
-                const isCurrentUser = Number(item.user?.id) === Number(currentUser?.id);
+                const isCurrentUser = isSameLiveUser(item, currentUser);
+                const isOnline = Boolean(item.online || isCurrentUser);
                 const isFollowTarget = Number(item.user?.id) === Number(followTargetId);
-                const hasRoute = Boolean(userRoutesById?.[Number(item.user?.id)]?.route || Number(item.user?.id) === Number(session.presenter_user_id));
+                const hasRoute = Boolean(
+                  isCurrentUser ||
+                  userRoutesById?.[Number(item.user?.id)]?.route ||
+                  Number(item.user?.id) === Number(session.presenter_user_id)
+                );
                 return (
                   <div key={item.user.id} className={`live-workflow-person ${isFollowTarget ? "is-follow-target" : ""}`}>
                     <span
-                      className={`live-workflow-person__avatar ${item.online ? "online" : ""}`}
+                      className={`live-workflow-person__avatar ${isOnline ? "online" : ""}`}
                       style={{ "--avatar-color": getParticipantColor(item.user.id) }}
                     >
                       {getParticipantInitials(item)}
@@ -702,8 +778,8 @@ function LiveWorkflowPeopleBar({
                         {Number(item.user?.id) === Number(session.presenter_user_id) && <em>Presenter</em>}
                       </strong>
                       <small>
-                        {item.online ? "онлайн" : "не в сети"}
-                        {hasRoute ? " · можно следовать" : " · ждём маршрут"}
+                        {isOnline ? "онлайн" : "не в сети"}
+                        {isCurrentUser ? " · текущая страница" : hasRoute ? " · можно следовать" : " · ждём маршрут"}
                       </small>
                     </div>
                     {isCurrentUser ? (
