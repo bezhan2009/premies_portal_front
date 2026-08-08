@@ -3022,17 +3022,3 @@ html, body, #root { background: var(--bg-color); color: var(--text-color); }
 [data-theme='dark'] table,
 [data-theme='dark'] th,
 [data-theme='dark'] td { color: var(--text-color); border-color: var(--border-color); }
-
-/* Chat pages fill the workspace instead of changing the document height on actions. */
-.page-content:has(.feedback-container),
-.page-content:has(.feedback-chat-container) { padding: 0 !important; overflow: hidden !important; }
-.page-content .feedback-container,
-.page-content .feedback-chat-container { height: 100% !important; min-height: 0 !important; background: var(--bg-color) !important; background-image: none !important; }
-.feedback-container button,
-.feedback-chat-container button { box-sizing: border-box; flex-shrink: 0; }
-.feedback-container button:active,
-.feedback-chat-container button:active { transform: none !important; }
-.feedback-container .chat-header button,
-.feedback-container .chat-input-form button,
-.feedback-chat-container .chat-header button,
-.feedback-chat-container .chat-input-form button { width: 36px !important; min-width: 36px !important; height: 36px !important; min-height: 36px !important; }

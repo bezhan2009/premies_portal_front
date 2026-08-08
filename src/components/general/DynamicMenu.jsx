@@ -1071,6 +1071,25 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         setOpenDropdowns((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
+    const createRipple = (event) => {
+        const element = event.currentTarget;
+        const circle = document.createElement("span");
+        const diameter = Math.max(element.clientWidth, element.clientHeight);
+        const radius = diameter / 2;
+        const rect = element.getBoundingClientRect();
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - rect.left - radius}px`;
+        circle.style.top = `${event.clientY - rect.top - radius}px`;
+        circle.classList.add("ripple-effect");
+
+        const existingRipple = element.querySelector(".ripple-effect");
+        if (existingRipple) existingRipple.remove();
+
+        element.appendChild(circle);
+        window.setTimeout(() => circle.remove(), 600);
+    };
+
     const handleChangePassword = () => {
         setIsModalOpen(true);
         setModalError("");
@@ -1183,7 +1202,10 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 <div key={link.key} className="dropdown-wrapper">
                                     <button
                                         className={`dropdown-toggle ${isActive ? "active" : ""} ${!isOpen ? "collapsed-btn" : ""}`}
-                                        onClick={() => toggleDropdown(link.key)}
+                                        onClick={(e) => {
+                                            createRipple(e);
+                                            toggleDropdown(link.key);
+                                        }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: isOpen ? 'flex-start' : 'center', width: '100%' }}>
                                             {link.icon && <link.icon size={20} style={{ marginRight: isOpen ? '12px' : '0' }} />}
@@ -1208,7 +1230,10 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                                     className={`sub-link ${
                                                         child.key === activeLink ? "active" : ""
                                                     }`}
-                                                    onClick={handleLinkClick}
+                                                    onClick={(e) => {
+                                                        createRipple(e);
+                                                        handleLinkClick();
+                                                    }}
                                                 >
                                                     {child.icon && <child.icon size={18} style={{ marginRight: '10px' }} />}
                                                     {child.name}
@@ -1262,7 +1287,8 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                                 to={link.href}
                                 className={`${link.key === activeLink ? "active" : ""} ${!isOpen ? "collapsed-link" : ""}`}
                                 style={{ justifyContent: isOpen ? 'flex-start' : 'center' }}
-                                onClick={() => {
+                                onClick={(e) => {
+                                    createRipple(e);
                                     if (link.key === "applications") {
                                         handleApplicationsClick();
                                     } else {
