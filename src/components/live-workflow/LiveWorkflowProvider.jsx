@@ -6,6 +6,7 @@ import {
   createLiveWorkflowSession,
   createLiveWorkflowWsTicket,
   endLiveWorkflowSession,
+  getLiveWorkflowSession,
   getLiveWorkflowUsers,
   inviteLiveWorkflowUser,
   joinLiveWorkflowByToken,
@@ -13,10 +14,12 @@ import {
   updateLiveWorkflowFollowMode,
 } from "../../api/liveWorkflow";
 import { apiClient } from "../../api/utils/apiClient";
+import { parseLiveWorkflowInvitation } from "../../utils/liveWorkflowMessages";
 import "./LiveWorkflow.css";
 
 const LiveWorkflowContext = createContext(null);
 const CURSOR_SEND_INTERVAL = 40;
+const LIVE_WORKFLOW_SESSION_STORAGE_KEY = "live_workflow_active_session_id";
 
 const getCurrentRoute = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
@@ -31,22 +34,13 @@ const backendToWsURL = (sessionId, ticket) => {
 
 const buildAbsoluteJoinUrl = (joinPath) => `${window.location.origin}${joinPath}`;
 
-const safeParseInvitation = (message) => {
-  try {
-    const parsed = JSON.parse(message);
-    return parsed?.type === "live_workflow_invitation" ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
 export const buildLiveWorkflowInvitationMessage = (payload) => JSON.stringify({
   type: "live_workflow_invitation",
   ...payload,
 });
 
 export const LiveWorkflowInvitationCard = ({ message, compact = false }) => {
-  const invitation = typeof message === "string" ? safeParseInvitation(message) : message;
+  const invitation = parseLiveWorkflowInvitation(message);
   if (!invitation) return null;
 
   const route = invitation.route || "Текущий маршрут BPM";
@@ -59,7 +53,7 @@ export const LiveWorkflowInvitationCard = ({ message, compact = false }) => {
         <small>{route}</small>
       </div>
       <button type="button" onClick={() => { window.location.href = invitation.joinPath || `/live-session/${invitation.token}`; }}>
-        Join
+        Войти
       </button>
     </div>
   );
@@ -150,6 +144,11 @@ export default function LiveWorkflowProvider({ children }) {
   const applySessionState = useCallback((nextSession) => {
     setSession(nextSession);
     setParticipants(nextSession?.participants || []);
+    if (nextSession?.id && nextSession.status === "ACTIVE") {
+      localStorage.setItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY, nextSession.id);
+    } else {
+      localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
+    }
   }, []);
 
   const connect = useCallback(async (targetSession) => {
@@ -171,6 +170,16 @@ export default function LiveWorkflowProvider({ children }) {
         const msg = JSON.parse(event.data);
         if (msg.type === "session.state") {
           applySessionState(msg.payload);
+          const me = msg.payload?.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
+          const shouldFollowPresenter = Boolean(
+            me?.is_following &&
+            Number(msg.payload?.presenter_user_id) !== Number(currentUserRef.current?.id)
+          );
+          if (shouldFollowPresenter && msg.payload?.current_route && msg.payload.current_route !== getCurrentRoute()) {
+            applyingRemoteRouteRef.current = true;
+            navigate(msg.payload.current_route);
+            window.setTimeout(() => { applyingRemoteRouteRef.current = false; }, 300);
+          }
           return;
         }
         if (msg.type === "participant.joined" || msg.type === "participant.left") {
@@ -197,6 +206,7 @@ export default function LiveWorkflowProvider({ children }) {
           setSession(null);
           setParticipants([]);
           setRemoteCursors({});
+          localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
           disconnect(false);
         }
       };
@@ -246,6 +256,33 @@ export default function LiveWorkflowProvider({ children }) {
     }
   }, [applySessionState, connect, navigate]);
 
+  useEffect(() => {
+    if (!currentUser?.id || session?.id || location.pathname.startsWith("/live-session/")) return undefined;
+
+    const savedSessionId = localStorage.getItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
+    if (!savedSessionId) return undefined;
+
+    let cancelled = false;
+    getLiveWorkflowSession(savedSessionId)
+      .then((restoredSession) => {
+        if (cancelled || !restoredSession?.id || restoredSession.status !== "ACTIVE") return;
+        applySessionState(restoredSession);
+        connect(restoredSession);
+
+        const me = restoredSession.participants?.find((item) => Number(item.user?.id) === Number(currentUser.id));
+        if (me?.is_following && restoredSession.current_route && restoredSession.current_route !== getCurrentRoute()) {
+          applyingRemoteRouteRef.current = true;
+          navigate(restoredSession.current_route, { replace: true });
+          window.setTimeout(() => { applyingRemoteRouteRef.current = false; }, 300);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
+      });
+
+    return () => { cancelled = true; };
+  }, [applySessionState, connect, currentUser?.id, location.pathname, navigate, session?.id]);
+
   const copyLink = useCallback(async () => {
     let invite = invitation;
     if (!invite && session?.id) {
@@ -270,7 +307,6 @@ export default function LiveWorkflowProvider({ children }) {
       expiresAt: invite.expires_at,
     });
     await sendLiveWorkflowChatInvite({ recipientId: selectedEmployeeId, message });
-    setInvitation(invite);
     setStatusMessage("Приглашение отправлено в чат");
   }, [currentUser, selectedEmployeeId, session]);
 
@@ -293,6 +329,7 @@ export default function LiveWorkflowProvider({ children }) {
     setSession(null);
     setParticipants([]);
     setRemoteCursors({});
+    localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
     disconnect(false);
   }, [disconnect, session?.id]);
 

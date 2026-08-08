@@ -20,6 +20,7 @@ import ChatDatePicker from "../../../components/general/ChatDatePicker";
 import { LiveWorkflowInvitationCard } from "../../../components/live-workflow/LiveWorkflowProvider";
 import filePng from "../../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../../utils/chatDateUtils";
+import { getLiveWorkflowMessagePreview, isLiveWorkflowInvitationMessage } from "../../../utils/liveWorkflowMessages";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -925,7 +926,7 @@ export default function OperatorFeedbackPage() {
             if (!isMuted && ((type === "support" && !newMsg.is_operator) || (type === "direct" && newMsg.user_id !== currentUserId))) {
                if ("Notification" in window) {
                   if (Notification.permission === "granted") {
-                     const notif = new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: newMsg.message || "Вложение" });
+                     const notif = new Notification(`Новое сообщение от ${newMsg.username || "Пользователя"}`, { body: getLiveWorkflowMessagePreview(newMsg.message, "Вложение") });
                      notif.onclick = () => window.focus();
                   } else if (Notification.permission !== "denied") {
                      Notification.requestPermission();
@@ -3434,7 +3435,7 @@ export default function OperatorFeedbackPage() {
                        {group.last_message_at && <span className="thread-time">{formatTime(group.last_message_at)}</span>}
                      </div>
                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                       <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(group.last_message) || "Нет сообщений" }} />
+                       <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(group.last_message, "Нет сообщений")) }} />
                        {group.unread_count > 0 && <span className="unread-badge">{group.unread_count}</span>}
                      </div>
                    </div>
@@ -3485,7 +3486,7 @@ export default function OperatorFeedbackPage() {
                               <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || "Вложение/Диалог начат" }} />
+                              <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(thread.message, "Вложение/Диалог начат")) }} />
                               {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
                             </div>
                           </div>
@@ -3524,7 +3525,7 @@ export default function OperatorFeedbackPage() {
                         <span className="thread-time">{formatTime(thread.last_message_at)}</span>
                       </div>
                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || "Вложение/Диалог начат" }} />
+                        <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(thread.message, "Вложение/Диалог начат")) }} />
                         {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
                       </div>
                     </div>
@@ -3826,7 +3827,7 @@ export default function OperatorFeedbackPage() {
                   {(() => {
                     const currentPin = pinnedMessages[currentPinIndex];
                     if (!currentPin) return null;
-                    const cleanText = parseForwardedMessage(currentPin.message).cleanText || (currentPin.attachment_url ? "Вложение" : "");
+                    const cleanText = getLiveWorkflowMessagePreview(currentPin.message, currentPin.attachment_url ? "Вложение" : "");
                     const truncatedText = cleanText.length > 60 ? cleanText.substring(0, 60) + "..." : cleanText;
                     return (
                       <div style={{ fontSize: "12px", color: theme === "dark" ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -4125,7 +4126,7 @@ export default function OperatorFeedbackPage() {
                           );
                         }
                         const fwdInfo = parseForwardedMessage(msg.message);
-                        const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
+                        const isLiveWorkflowInvite = isLiveWorkflowInvitationMessage(fwdInfo.cleanText);
                         const isOutgoing = activeChatType === "support" ? msg.is_operator : msg.user_id === currentUserId;
                         const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
 
@@ -4246,7 +4247,7 @@ export default function OperatorFeedbackPage() {
                                   </span>
                                   <div 
                                     style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                    dangerouslySetInnerHTML={{ __html: formatMessageText(messageById.get(msg.reply_to_id)?.message || "Вложение") }}
+                                    dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(messageById.get(msg.reply_to_id)?.message, "Вложение")) }}
                                   />
                                 </div>
                               )}
@@ -4525,7 +4526,7 @@ export default function OperatorFeedbackPage() {
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
+                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(replyingTo.message, "Вложение")) }} />
                       </div>
                       <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                         <X size={14} />
@@ -4548,7 +4549,7 @@ export default function OperatorFeedbackPage() {
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
+                        <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(editingMessage.message, "")) }} />
                       </div>
                       <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                         <X size={14} />
@@ -4825,7 +4826,7 @@ export default function OperatorFeedbackPage() {
 
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "4px" }}>
               {pinnedMessages.map((msg) => {
-                const cleanText = parseForwardedMessage(msg.message).cleanText || (msg.attachment_url ? "Вложение" : "");
+                const cleanText = getLiveWorkflowMessagePreview(msg.message, msg.attachment_url ? "Вложение" : "");
                 return (
                   <div 
                     key={msg.id}

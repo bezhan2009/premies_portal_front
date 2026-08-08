@@ -20,6 +20,7 @@ import { LiveWorkflowInvitationCard } from "../live-workflow/LiveWorkflowProvide
 import { useLocation } from "react-router-dom";
 import filePng from "../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
+import { getLiveWorkflowMessagePreview, isLiveWorkflowInvitationMessage } from "../../utils/liveWorkflowMessages";
 import "react-resizable/css/styles.css";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
@@ -2452,7 +2453,7 @@ const MiniChatWindow = () => {
                                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <span 
                                               style={{ fontSize: "12px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "10px" }}
-                                              dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || (thread.attachment_url ? "Вложение" : "Нет сообщений") }}
+                                              dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(thread.message, thread.attachment_url ? "Вложение" : "Нет сообщений")) }}
                                             />
                                             {thread.unread_count > 0 && (
                                               <span style={{
@@ -2552,7 +2553,7 @@ const MiniChatWindow = () => {
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                       <span 
                                         style={{ fontSize: "12px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "10px" }}
-                                        dangerouslySetInnerHTML={{ __html: formatMessageText(thread.message) || (thread.attachment_url ? "Вложение" : "Нет сообщений") }}
+                                        dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(thread.message, thread.attachment_url ? "Вложение" : "Нет сообщений")) }}
                                       />
                                       {thread.unread_count > 0 && (
                                         <span style={{
@@ -2711,7 +2712,7 @@ const MiniChatWindow = () => {
                             {(() => {
                               const currentPin = pinnedMessages[currentPinIndex];
                               if (!currentPin) return null;
-                              const cleanText = parseForwardedMessage(currentPin.message).cleanText || (currentPin.attachment_url ? "Вложение" : "");
+                              const cleanText = getLiveWorkflowMessagePreview(currentPin.message, currentPin.attachment_url ? "Вложение" : "");
                               const truncatedText = cleanText.length > 35 ? cleanText.substring(0, 35) + "..." : cleanText;
                               return (
                                 <div style={{ color: theme === "dark" ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -3031,7 +3032,7 @@ const MiniChatWindow = () => {
                                 }
 
                                 const fwdInfo = parseForwardedMessage(msg.message);
-                                const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
+                                const isLiveWorkflowInvite = isLiveWorkflowInvitationMessage(fwdInfo.cleanText);
                                 const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
                                 const isSelected = selectedMessageIds.includes(msg.id);
 
@@ -3141,7 +3142,7 @@ const MiniChatWindow = () => {
                                           </span>
                                           <div 
                                             style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                            dangerouslySetInnerHTML={{ __html: formatMessageText(messages.find(m => m.id === msg.reply_to_id)?.message || "Вложение") }}
+                                            dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(messages.find(m => m.id === msg.reply_to_id)?.message, "Вложение")) }}
                                           />
                                         </div>
                                       )}
@@ -3370,7 +3371,7 @@ const MiniChatWindow = () => {
                           }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                               <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
+                               <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(replyingTo.message, "Вложение")) }} />
                              </div>
                             <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                               <X size={14} />
@@ -3393,7 +3394,7 @@ const MiniChatWindow = () => {
                           }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                              <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
+                              <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(editingMessage.message, "")) }} />
                             </div>
                             <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                               <X size={14} />
@@ -4177,7 +4178,7 @@ const MiniChatWindow = () => {
 
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "4px" }}>
               {pinnedMessages.map((msg) => {
-                const cleanText = parseForwardedMessage(msg.message).cleanText || (msg.attachment_url ? "Вложение" : "");
+                const cleanText = getLiveWorkflowMessagePreview(msg.message, msg.attachment_url ? "Вложение" : "");
                 return (
                   <div 
                     key={msg.id}

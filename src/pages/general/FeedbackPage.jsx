@@ -18,6 +18,7 @@ import GroupMembersModal from "../../components/general/GroupMembersModal";
 import ChatDatePicker from "../../components/general/ChatDatePicker";
 import { LiveWorkflowInvitationCard } from "../../components/live-workflow/LiveWorkflowProvider";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
+import { getLiveWorkflowMessagePreview, isLiveWorkflowInvitationMessage } from "../../utils/liveWorkflowMessages";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -287,13 +288,19 @@ export default function FeedbackPage() {
   
   // Groups chat state
   const [groups, setGroups] = useState([]);
+  const [directThreads, setDirectThreads] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   const [activeGroup, setActiveGroup] = useState(null);
   const [groupDetails, setGroupDetails] = useState(null);
-  const [activeTab, setActiveTab] = useState("support"); // "support" | "groups"
+  const [activeTab, setActiveTab] = useState("support"); // "support" | "direct" | "groups"
   const [groupSearch, setGroupSearch] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [loadingThreads, setLoadingThreads] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [activeChatType, setActiveChatType] = useState("support"); // "support" | "group"
+  const [activeChatType, setActiveChatType] = useState("support"); // "support" | "direct" | "group"
+  const [activeThreadName, setActiveThreadName] = useState("Служба поддержки");
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -640,6 +647,34 @@ export default function FeedbackPage() {
     }
   };
 
+  const fetchDirectThreads = async (showLoading = false) => {
+    if (!token) return;
+    if (showLoading) setLoadingThreads(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/feedback/direct-threads`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const nextThreads = res.data || [];
+      setDirectThreads(prev => areChatItemsSame(prev, nextThreads) ? prev : nextThreads);
+    } catch (err) {
+      console.error("Error fetching direct threads:", err);
+    } finally {
+      if (showLoading) setLoadingThreads(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_URL}/users/emails`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsersList(res.data.users || []);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
   const fetchMessages = async () => {
     if (!token) return;
     try {
@@ -664,7 +699,7 @@ export default function FeedbackPage() {
 
           if (newMsg.user_id !== currentUserId && "Notification" in window && !isMuted) {
              if (Notification.permission === "granted") {
-                const notif = new Notification("Новое сообщение от поддержки", { body: newMsg.message || "Вложение" });
+                const notif = new Notification("Новое сообщение от поддержки", { body: getLiveWorkflowMessagePreview(newMsg.message, "Вложение") });
                 notif.onclick = () => window.focus();
              } else if (Notification.permission !== "denied") {
                 Notification.requestPermission();
@@ -692,9 +727,11 @@ export default function FeedbackPage() {
         });
         fetchGroups();
       } else {
-        await axios.post(`${API_URL}/api/feedback/mark-read`, {}, {
+        const payload = activeChatType === "direct" ? { chat_with: recipientId } : {};
+        await axios.post(`${API_URL}/api/feedback/mark-read`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (activeChatType === "direct") fetchDirectThreads();
       }
     } catch (err) {
       console.error("Error marking as read:", err);
@@ -777,13 +814,21 @@ export default function FeedbackPage() {
     const tabParam = searchParams.get("tab");
     if (tabParam === "groups") {
       setActiveTab("groups");
+    } else if (tabParam === "direct") {
+      setActiveTab("direct");
+      setActiveChatType("direct");
     } else {
       setActiveTab("support");
     }
 
     fetchGroups();
+    fetchDirectThreads(true);
+    fetchUsers();
     const listInterval = setInterval(() => {
-      if (!document.hidden) fetchGroups();
+      if (!document.hidden) {
+        fetchGroups();
+        fetchDirectThreads();
+      }
     }, 18000);
     return () => clearInterval(listInterval);
   }, []);
@@ -920,6 +965,10 @@ export default function FeedbackPage() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() && !file) return;
+    if (activeChatType === "direct" && !recipientId) {
+      setShowNewChatModal(true);
+      return;
+    }
 
     setSending(true);
     
@@ -984,6 +1033,7 @@ export default function FeedbackPage() {
       setReplyingTo(null);
       setShowEmojiPicker(false);
       fetchMessages();
+      if (activeChatType === "direct") fetchDirectThreads();
     } catch (err) {
       setErrorMsg("Не удалось отправить сообщение. Попробуйте еще раз.");
     } finally {
@@ -1005,6 +1055,10 @@ export default function FeedbackPage() {
   const handleSendPastedFile = async (readyFile, fileMessage) => {
     setPasteModalOpen(false);
     if (!readyFile) return;
+    if (activeChatType === "direct" && !recipientId) {
+      setShowNewChatModal(true);
+      return;
+    }
     setSending(true);
     try {
       const formData = new FormData();
@@ -1028,6 +1082,7 @@ export default function FeedbackPage() {
       
       setReplyingTo(null);
       fetchMessages();
+      if (activeChatType === "direct") fetchDirectThreads();
     } catch (err) {
       console.error("Error sending pasted file:", err);
       setErrorMsg("Не удалось отправить файл. Попробуйте еще раз.");
@@ -1049,6 +1104,7 @@ export default function FeedbackPage() {
         });
       }
       fetchMessages();
+      if (activeChatType === "direct") fetchDirectThreads();
     } catch (err) {
       setErrorMsg("Не удалось удалить сообщение.");
     }
@@ -1087,11 +1143,15 @@ export default function FeedbackPage() {
   const handleDeleteChat = async () => {
     if (!window.confirm("Вы уверены, что хотите очистить всю историю сообщений?")) return;
     try {
-      await axios.delete(`${API_URL}/api/feedback/chat`, {
+      const url = activeChatType === "direct"
+        ? `${API_URL}/api/feedback/chat?chatWith=${recipientId}`
+        : `${API_URL}/api/feedback/chat`;
+      await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages([]);
       fetchMessages();
+      if (activeChatType === "direct") fetchDirectThreads();
     } catch (err) {
       setErrorMsg("Не удалось очистить историю сообщений.");
     }
@@ -1112,6 +1172,50 @@ export default function FeedbackPage() {
     } catch (err) {
       setErrorMsg("Не удалось удалить канал объявлений.");
     }
+  };
+
+  const handleSelectDirectThread = (thread) => {
+    const threadId = thread.user_id || thread.id;
+    if (!threadId) return;
+    setActiveTab("direct");
+    setActiveChatType("direct");
+    setRecipientId(threadId);
+    setActiveThreadName(thread.username || thread.name || "Личные сообщения");
+    setActiveGroup(null);
+    setGroupDetails(null);
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setLocalSearchActive(false);
+    setLocalSearchQuery("");
+    setMobileShowChat(true);
+  };
+
+  const handleStartDirectChat = (user) => {
+    if (!user?.id) return;
+    const name = user.full_name || user.username || user.email || "Сотрудник";
+    setActiveTab("direct");
+    setActiveChatType("direct");
+    setRecipientId(user.id);
+    setActiveThreadName(name);
+    setActiveGroup(null);
+    setGroupDetails(null);
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setLocalSearchActive(false);
+    setLocalSearchQuery("");
+    setShowNewChatModal(false);
+    setMobileShowChat(true);
+
+    setDirectThreads(prev => {
+      if (prev.some(thread => Number(thread.user_id) === Number(user.id))) return prev;
+      return [{
+        user_id: user.id,
+        username: name,
+        message: "",
+        unread_count: 0,
+        last_message_at: new Date().toISOString(),
+      }, ...prev];
+    });
   };
 
   const onEmojiClick = (emojiObject) => {
@@ -1316,6 +1420,29 @@ export default function FeedbackPage() {
     }
   };
 
+  const filteredDirectThreads = useMemo(() => {
+    const query = groupSearch.toLowerCase().trim();
+    return directThreads
+      .filter(thread => !query || [thread.username, thread.name, thread.message]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query))
+      .sort((a, b) => new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime());
+  }, [directThreads, groupSearch]);
+
+  const filteredUsers = useMemo(() => {
+    const query = userSearchQuery.toLowerCase().trim();
+    return usersList
+      .filter(user => Number(user.id) !== Number(currentUserId))
+      .filter(user => !query || [user.full_name, user.username, user.email]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query))
+      .slice(0, 40);
+  }, [currentUserId, userSearchQuery, usersList]);
+
   const isSendActive = newMessage.trim() !== "" || file !== null;
 
   return (
@@ -1332,6 +1459,71 @@ export default function FeedbackPage() {
         onClose={() => { setPasteModalOpen(false); setPastedFile(null); }}
         onSend={handleSendPastedFile}
       />
+
+      {showNewChatModal && (
+        <div className="modal-overlay" onClick={() => setShowNewChatModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Новый личный чат</h3>
+                <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>
+                  Выберите сотрудника, которому хотите написать.
+                </p>
+              </div>
+              <button type="button" className="icon-btn" onClick={() => setShowNewChatModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="search-wrapper" style={{ marginBottom: 12 }}>
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="ФИО, username или email"
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
+              {filteredUsers.length === 0 ? (
+                <div style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: 18 }}>
+                  Сотрудники не найдены
+                </div>
+              ) : filteredUsers.map((user) => {
+                const name = user.full_name || user.username || user.email || "Сотрудник";
+                return (
+                  <button
+                    type="button"
+                    key={user.id}
+                    onClick={() => handleStartDirectChat(user)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: 12,
+                      background: "var(--bg-surface)",
+                      color: "var(--text-color)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span className="thread-avatar" style={{ width: 34, height: 34, background: "#f1f5f9", color: "#475569" }}>
+                      {name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                      <strong style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</strong>
+                      {user.email && <small style={{ color: "var(--text-secondary)" }}>{user.email}</small>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FORWARD CHAT MODAL */}
       <AnimatePresence>
@@ -2127,6 +2319,32 @@ export default function FeedbackPage() {
           overflow: hidden;
           text-overflow: ellipsis;
         }
+
+        .thread-empty-state {
+          margin: 12px;
+          padding: 18px 14px;
+          border: 1px dashed var(--border-color);
+          border-radius: 14px;
+          color: var(--text-secondary);
+          text-align: center;
+          font-size: 13px;
+        }
+
+        .thread-empty-state p {
+          margin: 0 0 10px;
+        }
+
+        .thread-empty-state button,
+        .new-direct-chat-btn {
+          border: none;
+          border-radius: 999px;
+          background: #eb2525;
+          color: #fff;
+          padding: 8px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+        }
         
         .unread-badge {
           background: #ef4444;
@@ -2382,6 +2600,20 @@ export default function FeedbackPage() {
              <button className={`tab-btn ${activeTab === "support" ? "active" : ""}`} onClick={() => { setActiveTab("support"); setActiveChatType("support"); }}>
                Обращения
              </button>
+             <button className={`tab-btn ${activeTab === "direct" ? "active" : ""}`} onClick={() => {
+               setActiveTab("direct");
+               const firstThread = filteredDirectThreads[0];
+               if (firstThread) {
+                 handleSelectDirectThread(firstThread);
+               } else {
+                 setActiveChatType("direct");
+                 setRecipientId(0);
+                 setActiveThreadName("Личные сообщения");
+                 setMessages([]);
+               }
+             }}>
+               Личные сообщения
+             </button>
              <button className={`tab-btn ${activeTab === "groups" ? "active" : ""}`} onClick={() => { setActiveTab("groups"); if (activeGroup) { setActiveChatType("group"); } }}>
                Группы
              </button>
@@ -2395,6 +2627,8 @@ export default function FeedbackPage() {
               className={`thread-item ${activeChatType === "support" ? "active" : ""}`}
               onClick={() => {
                 setActiveChatType("support");
+                setActiveThreadName("Служба поддержки");
+                setActiveGroup(null);
                 setMobileShowChat(true);
               }}
             >
@@ -2410,6 +2644,44 @@ export default function FeedbackPage() {
                 </div>
               </div>
             </div>
+          ) : activeTab === "direct" ? (
+            loadingThreads ? (
+              <div className="thread-empty-state">Загрузка личных сообщений...</div>
+            ) : filteredDirectThreads.length === 0 ? (
+              <div className="thread-empty-state">
+                <p>Личных сообщений пока нет</p>
+                <button type="button" onClick={() => { fetchUsers(); setShowNewChatModal(true); }}>
+                  Начать чат
+                </button>
+              </div>
+            ) : (
+              filteredDirectThreads.map(thread => {
+                const threadId = thread.user_id || thread.id;
+                const isActive = activeChatType === "direct" && Number(recipientId) === Number(threadId);
+                const initials = (thread.username || "ЛС").slice(0, 2).toUpperCase();
+                return (
+                  <div
+                    key={`direct-${threadId}`}
+                    className={`thread-item ${isActive ? "active" : ""}`}
+                    onClick={() => handleSelectDirectThread(thread)}
+                  >
+                    <div className="thread-avatar" style={{ background: "#f1f5f9", color: "#475569" }}>
+                      {initials}
+                    </div>
+                    <div className="thread-info">
+                      <div className="thread-meta">
+                        <span className="thread-name">{thread.username || thread.name || "Сотрудник"}</span>
+                        {thread.last_message_at && <span className="thread-time">{formatTime(thread.last_message_at)}</span>}
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(thread.message, thread.attachment_url ? "Вложение" : "Диалог начат")) }} />
+                        {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )
           ) : (
             groups.filter(g => g.name.toLowerCase().includes(groupSearch.toLowerCase())).map(group => {
               const isActive = activeChatType === "group" && activeGroup?.id === group.id;
@@ -2444,7 +2716,7 @@ export default function FeedbackPage() {
                       {group.last_message_at && <span className="thread-time">{formatTime(group.last_message_at)}</span>}
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(group.last_message) || "Нет сообщений" }} />
+                      <span className="thread-msg" dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(group.last_message, "Нет сообщений")) }} />
                       {group.unread_count > 0 && <span className="unread-badge">{group.unread_count}</span>}
                     </div>
                   </div>
@@ -2455,6 +2727,14 @@ export default function FeedbackPage() {
         </div>
 
         {/* Footer Button */}
+        {activeTab === "direct" && (
+          <div className="new-chat-trigger-container">
+            <button className="new-chat-trigger-btn" onClick={() => { fetchUsers(); setShowNewChatModal(true); }}>
+              <PlusCircle size={18} />
+              <span>Новый личный чат</span>
+            </button>
+          </div>
+        )}
         {activeTab === "groups" && (
           <div className="new-chat-trigger-container">
             <button className="new-chat-trigger-btn" onClick={() => setIsCreateModalOpen(true)}>
@@ -2514,7 +2794,7 @@ export default function FeedbackPage() {
               </>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                <h2 style={{ margin: 0 }}>Служба поддержки</h2>
+                <h2 style={{ margin: 0 }}>{activeChatType === "direct" ? activeThreadName : "Служба поддержки"}</h2>
                 {(() => { const p = formatPresence(partnerPresence); return p.label ? (
                   <span style={{ fontSize: "11px", color: p.color, display: "flex", alignItems: "center", gap: "4px", lineHeight: 1 }}>
                     <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: p.color, display: "inline-block", flexShrink: 0 }} />
@@ -2733,7 +3013,7 @@ export default function FeedbackPage() {
               {(() => {
                 const currentPin = pinnedMessages[currentPinIndex];
                 if (!currentPin) return null;
-                const cleanText = parseForwardedMessage(currentPin.message).cleanText || (currentPin.attachment_url ? "Вложение" : "");
+                const cleanText = getLiveWorkflowMessagePreview(currentPin.message, currentPin.attachment_url ? "Вложение" : "");
                 const truncatedText = cleanText.length > 60 ? cleanText.substring(0, 60) + "..." : cleanText;
                 return (
                   <div style={{ fontSize: "12px", color: theme === "dark" ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -3070,7 +3350,7 @@ export default function FeedbackPage() {
                     );
                   }
                   const fwdInfo = parseForwardedMessage(msg.message);
-                  const isLiveWorkflowInvite = fwdInfo.cleanText?.trim().startsWith('{"type":"live_workflow_invitation"');
+                  const isLiveWorkflowInvite = isLiveWorkflowInvitationMessage(fwdInfo.cleanText);
                   const isOutgoing = msg.user_id === currentUserId && !msg.is_operator;
                   const isVoice = msg.attachment_url && msg.attachment_url.match(/\.(webm|wav|ogg|mp3|m4a|caf)$/i);
                   const isSelected = selectedMessageIds.includes(msg.id);
@@ -3185,7 +3465,7 @@ export default function FeedbackPage() {
                             </span>
                             <div 
                               style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                              dangerouslySetInnerHTML={{ __html: formatMessageText(messageById.get(msg.reply_to_id)?.message || "Вложение") }}
+                              dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(messageById.get(msg.reply_to_id)?.message, "Вложение")) }}
                             />
                           </div>
                         )}
@@ -3475,7 +3755,7 @@ export default function FeedbackPage() {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <span style={{ fontWeight: 600 }}>Ответ на: </span>
-                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(replyingTo.message) || "Вложение" }} />
+                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(replyingTo.message, "Вложение")) }} />
                 </div>
                 <button type="button" onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                   <X size={14} />
@@ -3498,7 +3778,7 @@ export default function FeedbackPage() {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   <span style={{ fontWeight: 600 }}>Редактирование: </span>
-                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(editingMessage.message) || "" }} />
+                  <span dangerouslySetInnerHTML={{ __html: formatMessageText(getLiveWorkflowMessagePreview(editingMessage.message, "")) }} />
                 </div>
                 <button type="button" onClick={() => { setEditingMessage(null); setNewMessage(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "red" }}>
                   <X size={14} />
@@ -3658,7 +3938,7 @@ export default function FeedbackPage() {
 
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "4px" }}>
               {pinnedMessages.map((msg) => {
-                const cleanText = parseForwardedMessage(msg.message).cleanText || (msg.attachment_url ? "Вложение" : "");
+                const cleanText = getLiveWorkflowMessagePreview(msg.message, msg.attachment_url ? "Вложение" : "");
                 return (
                   <div 
                     key={msg.id}
