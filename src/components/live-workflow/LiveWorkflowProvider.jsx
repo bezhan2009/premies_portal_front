@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 import { Check, Copy, Eye, Link2, Radio, Search, Send, ShieldCheck, UserRoundCheck, Users, X } from "lucide-react";
 import {
   createLiveWorkflowSession,
@@ -15,6 +15,8 @@ import {
 } from "../../api/liveWorkflow";
 import { apiClient } from "../../api/utils/apiClient";
 import { parseLiveWorkflowInvitation } from "../../utils/liveWorkflowMessages";
+import useNavigationStore from "../../store/useNavigationStore";
+import useTabsStore from "../../store/useTabsStore";
 import "./LiveWorkflow.css";
 
 const LiveWorkflowContext = createContext(null);
@@ -45,7 +47,7 @@ const LIVE_WORKFLOW_CURSOR_COLORS = [
   "#4f46e5",
 ];
 
-const getParticipantName = (participantOrUser, fallback = "Сотрудник") => {
+const getParticipantName = (participantOrUser, fallback = "РЎРѕС‚СЂСѓРґРЅРёРє") => {
   const user = participantOrUser?.user || participantOrUser;
   return user?.full_name || user?.username || user?.email || fallback;
 };
@@ -123,6 +125,33 @@ const getStoredCurrentUser = () => {
   };
 };
 
+const sanitizeWorkflowMenuLinks = (items = [], depth = 0) => {
+  if (!Array.isArray(items) || depth > 3) return [];
+  return items
+    .filter(Boolean)
+    .map((item) => ({
+      name: item.name || item.title || item.key || item.href || "Р Р°Р·РґРµР»",
+      href: item.href || "",
+      key: item.key || item.href || item.name || "",
+      hasNotification: Boolean(item.hasNotification),
+      children: sanitizeWorkflowMenuLinks(item.children || [], depth + 1),
+    }))
+    .slice(0, 80);
+};
+
+const sanitizeWorkflowTabs = (items = []) => (
+  Array.isArray(items)
+    ? items
+      .filter((item) => item?.href)
+      .map((item) => ({
+        href: item.href,
+        name: item.name || item.href,
+        pinned: Boolean(item.pinned),
+      }))
+      .slice(0, 12)
+    : []
+);
+
 export const buildLiveWorkflowInvitationMessage = (payload) => JSON.stringify({
   type: "live_workflow_invitation",
   ...payload,
@@ -132,17 +161,17 @@ export const LiveWorkflowInvitationCard = ({ message, compact = false }) => {
   const invitation = parseLiveWorkflowInvitation(message);
   if (!invitation) return null;
 
-  const route = invitation.route || "Текущий маршрут BPM";
+  const route = invitation.route || "РўРµРєСѓС‰РёР№ РјР°СЂС€СЂСѓС‚ BPM";
   return (
     <div className={`live-workflow-card ${compact ? "compact" : ""}`}>
       <div className="live-workflow-card__icon"><Radio size={18} /></div>
       <div className="live-workflow-card__body">
         <strong>Live BPM session</strong>
-        <span>{invitation.invitedBy || "Сотрудник"} приглашает вас следовать за workflow.</span>
+        <span>{invitation.invitedBy || "РЎРѕС‚СЂСѓРґРЅРёРє"} РїСЂРёРіР»Р°С€Р°РµС‚ РІР°СЃ СЃР»РµРґРѕРІР°С‚СЊ Р·Р° workflow.</span>
         <small>{route}</small>
       </div>
       <button type="button" onClick={() => { window.location.href = invitation.joinPath || `/live-session/${invitation.token}`; }}>
-        Войти
+        Р’РѕР№С‚Рё
       </button>
     </div>
   );
@@ -183,12 +212,18 @@ export default function LiveWorkflowProvider({ children }) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [invitation, setInvitation] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
+  const workflowTabs = useTabsStore((state) => state.tabs);
+  const workflowActiveTabId = useTabsStore((state) => state.activeTabId);
+  const workflowSplitTabHref = useTabsStore((state) => state.splitTabHref);
+  const workflowMenuLinks = useNavigationStore((state) => state.links);
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(false);
   const lastCursorSentRef = useRef(0);
   const lastViewportSentRef = useRef(0);
+  const shellTimerRef = useRef(null);
+  const lastPointerRef = useRef({ x: 0.5, y: 0.5 });
   const routeTimerRef = useRef(null);
   const applyingRemoteRouteRef = useRef(false);
   const applyingRemoteViewportRef = useRef(false);
@@ -209,6 +244,8 @@ export default function LiveWorkflowProvider({ children }) {
   const followTargetParticipant = useMemo(() => (
     participants.find((item) => Number(item.user?.id) === Number(followTargetId))
   ), [followTargetId, participants]);
+  const followedRouteSnapshot = followTargetId ? userRoutesById[followTargetId] : null;
+  const followedShellSnapshot = followedRouteSnapshot?.context?.shell || null;
 
   useEffect(() => {
     isFollowingRef.current = isFollowing;
@@ -217,6 +254,21 @@ export default function LiveWorkflowProvider({ children }) {
     sessionRef.current = session;
     currentUserRef.current = currentUser;
   }, [currentUser, followTargetId, isFollowing, session, userRoutesById]);
+
+  const buildShellSnapshot = useCallback(() => ({
+    route: getCurrentRoute(),
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+    tabs: sanitizeWorkflowTabs(workflowTabs),
+    activeTabId: workflowActiveTabId || getCurrentRoute(),
+    splitTabHref: workflowSplitTabHref || "",
+    menuLinks: sanitizeWorkflowMenuLinks(workflowMenuLinks),
+    updatedAt: new Date().toISOString(),
+  }), [workflowActiveTabId, workflowMenuLinks, workflowSplitTabHref, workflowTabs]);
 
   useEffect(() => {
     let mounted = true;
@@ -289,10 +341,27 @@ export default function LiveWorkflowProvider({ children }) {
   const mergeUserRouteIntoSession = useCallback((userId, route, context = {}) => {
     const numericUserId = Number(userId);
     if (!numericUserId || !route) return;
-    const nextRoute = { user_id: numericUserId, route, context, updated_at: Date.now() };
     setSession((prev) => {
+      const existingRoutes = prev?.user_routes || [];
+      const existingRoute = existingRoutes.find((item) => Number(item.user_id) === numericUserId);
+      const existingRefRoute = userRoutesRef.current?.[numericUserId];
+      const previousContext = existingRoute?.context || existingRefRoute?.context || {};
+      const nextContext = {
+        ...previousContext,
+        ...context,
+      };
+
+      if (!context?.shell && previousContext?.shell) {
+        nextContext.shell = previousContext.shell;
+      }
+
+      const nextRoute = { user_id: numericUserId, route, context: nextContext, updated_at: Date.now() };
+      userRoutesRef.current = {
+        ...userRoutesRef.current,
+        [numericUserId]: nextRoute,
+      };
+
       if (!prev?.id) return prev;
-      const existingRoutes = prev.user_routes || [];
       return {
         ...prev,
         user_routes: [
@@ -318,6 +387,7 @@ export default function LiveWorkflowProvider({ children }) {
     const context = {
       scrollX: window.scrollX,
       scrollY: window.scrollY,
+      shell: buildShellSnapshot(),
     };
     socket.send(JSON.stringify({
       type: "navigation.change",
@@ -325,6 +395,48 @@ export default function LiveWorkflowProvider({ children }) {
     }));
     mergeUserRouteIntoSession(currentUserRef.current?.id, route, context);
     markParticipantOnline(currentUserRef.current);
+  }, [buildShellSnapshot, markParticipantOnline, mergeUserRouteIntoSession]);
+
+  const sendCurrentCursor = useCallback((socket = wsRef.current) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const pointer = lastPointerRef.current || { x: 0.5, y: 0.5 };
+    socket.send(JSON.stringify({
+      type: "cursor.move",
+      payload: {
+        x: Math.max(0, Math.min(1, Number(pointer.x) || 0.5)),
+        y: Math.max(0, Math.min(1, Number(pointer.y) || 0.5)),
+        route: getCurrentRoute(),
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+      },
+    }));
+  }, []);
+
+  const applyCursorSnapshots = useCallback((cursorSnapshots = []) => {
+    if (!Array.isArray(cursorSnapshots) || cursorSnapshots.length === 0) return;
+    setRemoteCursors((prev) => {
+      const next = { ...prev };
+      cursorSnapshots.forEach((item) => {
+        const user = item.user || {};
+        if (!user.id || Number(user.id) === Number(currentUserRef.current?.id)) return;
+        const payload = item.payload || {};
+        next[user.id] = {
+          user,
+          x: Number(payload.x) || 0.5,
+          y: Number(payload.y) || 0.5,
+          route: payload.route,
+          scrollX: payload.scrollX,
+          scrollY: payload.scrollY,
+          color: getParticipantColor(user.id),
+          seenAt: Date.now(),
+        };
+        if (payload.route) {
+          mergeUserRouteIntoSession(user.id, payload.route, payload);
+        }
+        markParticipantOnline(user);
+      });
+      return next;
+    });
   }, [markParticipantOnline, mergeUserRouteIntoSession]);
 
   const connect = useCallback(async (targetSession) => {
@@ -339,15 +451,18 @@ export default function LiveWorkflowProvider({ children }) {
 
       socket.onopen = () => {
         reconnectAttemptRef.current = 0;
-        setStatusMessage("Live workflow подключен");
+        setStatusMessage("Live workflow РїРѕРґРєР»СЋС‡РµРЅ");
         sendCurrentNavigation(socket);
+        sendCurrentCursor(socket);
         window.setTimeout(() => sendCurrentNavigation(socket), 400);
+        window.setTimeout(() => sendCurrentCursor(socket), 450);
       };
 
       socket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === "session.state") {
           applySessionState(msg.payload);
+          applyCursorSnapshots(msg.payload?.cursors);
           const me = msg.payload?.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
           const targetId = Number(me?.follow_target_id || msg.payload?.presenter_user_id || 0);
           const shouldFollowTarget = Boolean(me?.is_following && targetId && targetId !== Number(currentUserRef.current?.id));
@@ -356,7 +471,13 @@ export default function LiveWorkflowProvider({ children }) {
           }
           return;
         }
-        if (msg.type === "participant.joined" || msg.type === "participant.left") {
+        if (msg.type === "participant.joined") {
+          markParticipantOnline(msg.user);
+          sendCurrentNavigation();
+          sendCurrentCursor();
+          return;
+        }
+        if (msg.type === "participant.left") {
           return;
         }
         if (msg.type === "cursor.moved" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
@@ -420,7 +541,7 @@ export default function LiveWorkflowProvider({ children }) {
           return;
         }
         if (msg.type === "session.ended") {
-          setStatusMessage("Live workflow session завершён");
+          setStatusMessage("Live workflow session Р·Р°РІРµСЂС€С‘РЅ");
           setSession(null);
           setParticipants([]);
           setRemoteCursors({});
@@ -437,11 +558,11 @@ export default function LiveWorkflowProvider({ children }) {
         reconnectTimerRef.current = window.setTimeout(() => connect(sessionRef.current), timeout);
       };
 
-      socket.onerror = () => setStatusMessage("Live assistance временно недоступен");
+      socket.onerror = () => setStatusMessage("Live assistance РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ");
     } catch {
-      setStatusMessage("Не удалось подключить Live workflow");
+      setStatusMessage("РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРєР»СЋС‡РёС‚СЊ Live workflow");
     }
-  }, [applyRemoteSnapshot, applySessionState, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentNavigation, syncRemoteViewport]);
+  }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentCursor, sendCurrentNavigation, syncRemoteViewport]);
 
   const openShareDialog = useCallback(async () => {
     setShareOpen(true);
@@ -457,22 +578,24 @@ export default function LiveWorkflowProvider({ children }) {
       try {
         const response = await createLiveWorkflowSession({ route: getCurrentRoute(), context: {} });
         applySessionState(response.session);
+        applyCursorSnapshots(response.session?.cursors);
         setInvitation(response.invitation);
         connect(response.session);
       } catch {
-        setStatusMessage("Не удалось создать live session");
+        setStatusMessage("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ live session");
       }
     }
-  }, [applySessionState, connect]);
+  }, [applyCursorSnapshots, applySessionState, connect]);
 
   const joinByToken = useCallback(async (token) => {
     const joined = await joinLiveWorkflowByToken(token);
     applySessionState(joined);
+    applyCursorSnapshots(joined?.cursors);
     await connect(joined);
     const me = joined.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
     const targetId = Number(me?.follow_target_id || joined.presenter_user_id || 0);
     applyRemoteSnapshot(getFollowSnapshot(joined, targetId), { replace: true });
-  }, [applyRemoteSnapshot, applySessionState, connect]);
+  }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, connect]);
 
   useEffect(() => {
     if (!currentUser?.id || session?.id || location.pathname.startsWith("/live-session/")) return undefined;
@@ -485,6 +608,7 @@ export default function LiveWorkflowProvider({ children }) {
       .then((restoredSession) => {
         if (cancelled || !restoredSession?.id || restoredSession.status !== "ACTIVE") return;
         applySessionState(restoredSession);
+        applyCursorSnapshots(restoredSession?.cursors);
         connect(restoredSession);
 
         const me = restoredSession.participants?.find((item) => Number(item.user?.id) === Number(currentUser.id));
@@ -498,7 +622,7 @@ export default function LiveWorkflowProvider({ children }) {
       });
 
     return () => { cancelled = true; };
-  }, [applyRemoteSnapshot, applySessionState, connect, currentUser?.id, location.pathname, session?.id]);
+  }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, connect, currentUser?.id, location.pathname, session?.id]);
 
   const copyLink = useCallback(async () => {
     let invite = invitation;
@@ -508,7 +632,7 @@ export default function LiveWorkflowProvider({ children }) {
     }
     if (!invite?.join_path) return;
     await navigator.clipboard.writeText(buildAbsoluteJoinUrl(invite.join_path));
-    setStatusMessage("Ссылка скопирована");
+    setStatusMessage("РЎСЃС‹Р»РєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°");
   }, [invitation, session?.id]);
 
   const sendViaChat = useCallback(async () => {
@@ -519,12 +643,12 @@ export default function LiveWorkflowProvider({ children }) {
       token: invite.token,
       joinPath: invite.join_path,
       route: getCurrentRoute(),
-      invitedBy: currentUser?.full_name || currentUser?.username || "Сотрудник",
+      invitedBy: currentUser?.full_name || currentUser?.username || "РЎРѕС‚СЂСѓРґРЅРёРє",
       createdAt: new Date().toISOString(),
       expiresAt: invite.expires_at,
     });
     await sendLiveWorkflowChatInvite({ recipientId: selectedEmployeeId, message });
-    setStatusMessage("Приглашение отправлено в чат");
+    setStatusMessage("РџСЂРёРіР»Р°С€РµРЅРёРµ РѕС‚РїСЂР°РІР»РµРЅРѕ РІ С‡Р°С‚");
   }, [currentUser, selectedEmployeeId, session]);
 
   const stopFollowing = useCallback(async () => {
@@ -567,23 +691,35 @@ export default function LiveWorkflowProvider({ children }) {
   useEffect(() => {
     if (!session?.id) return undefined;
     const handleMove = (event) => {
+      lastPointerRef.current = {
+        x: Math.max(0, Math.min(1, event.clientX / Math.max(window.innerWidth, 1))),
+        y: Math.max(0, Math.min(1, event.clientY / Math.max(window.innerHeight, 1))),
+      };
       const now = Date.now();
-      if (now - lastCursorSentRef.current < CURSOR_SEND_INTERVAL || wsRef.current?.readyState !== WebSocket.OPEN) return;
+      if (now - lastCursorSentRef.current < CURSOR_SEND_INTERVAL) return;
       lastCursorSentRef.current = now;
-      wsRef.current.send(JSON.stringify({
-        type: "cursor.move",
-        payload: {
-          x: Math.max(0, Math.min(1, event.clientX / Math.max(window.innerWidth, 1))),
-          y: Math.max(0, Math.min(1, event.clientY / Math.max(window.innerHeight, 1))),
-          route: getCurrentRoute(),
-          scrollX: window.scrollX,
-          scrollY: window.scrollY,
-        },
-      }));
+      sendCurrentCursor();
     };
     window.addEventListener("pointermove", handleMove, { passive: true });
     return () => window.removeEventListener("pointermove", handleMove);
-  }, [session?.id]);
+  }, [sendCurrentCursor, session?.id]);
+
+  useEffect(() => {
+    if (!session?.id) return undefined;
+    const timer = window.setInterval(() => {
+      sendCurrentCursor();
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [sendCurrentCursor, session?.id]);
+
+  useEffect(() => {
+    if (!session?.id || applyingRemoteRouteRef.current) return undefined;
+    if (shellTimerRef.current) window.clearTimeout(shellTimerRef.current);
+    shellTimerRef.current = window.setTimeout(() => {
+      sendCurrentNavigation();
+    }, 260);
+    return () => window.clearTimeout(shellTimerRef.current);
+  }, [sendCurrentNavigation, session?.id, workflowActiveTabId, workflowMenuLinks, workflowSplitTabHref, workflowTabs]);
 
   useEffect(() => {
     if (!session?.id) return undefined;
@@ -652,6 +788,11 @@ export default function LiveWorkflowProvider({ children }) {
   return (
     <LiveWorkflowContext.Provider value={value}>
       {children}
+      <LiveWorkflowMirrorShell
+        visible={isFollowing && Boolean(followedShellSnapshot)}
+        shell={followedShellSnapshot}
+        targetName={getParticipantName(followTargetParticipant, "СѓС‡Р°СЃС‚РЅРёРєРѕРј")}
+      />
       <RemoteCursors cursors={Object.values(remoteCursors)} />
       <LiveWorkflowPeopleBar
         session={session}
@@ -684,7 +825,6 @@ export default function LiveWorkflowProvider({ children }) {
     </LiveWorkflowContext.Provider>
   );
 }
-
 function LiveWorkflowPeopleBar({
   session,
   participants,
@@ -705,10 +845,10 @@ function LiveWorkflowPeopleBar({
   const followTarget = participants.find((item) => Number(item.user?.id) === Number(followTargetId));
   const visibleParticipants = participants.slice(0, 5);
   const title = isFollowing
-    ? `Следуете за ${getParticipantName(followTarget, "участником")}`
+    ? `РЎР»РµРґСѓРµС‚Рµ Р·Р° ${getParticipantName(followTarget, "СѓС‡Р°СЃС‚РЅРёРєРѕРј")}`
     : isPresenter
-      ? "Вы показываете workflow"
-      : "Самостоятельный просмотр";
+      ? "Р’С‹ РїРѕРєР°Р·С‹РІР°РµС‚Рµ workflow"
+      : "РЎР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅС‹Р№ РїСЂРѕСЃРјРѕС‚СЂ";
 
   return (
     <div className="live-workflow-bar">
@@ -738,20 +878,20 @@ function LiveWorkflowPeopleBar({
         {participants.length > visibleParticipants.length && <small>+{participants.length - visibleParticipants.length}</small>}
       </div>
       {isFollowing
-        ? <button type="button" onClick={onStopFollowing}>Стоп</button>
-        : <button type="button" onClick={onResumeFollowing} disabled={!presenter || Number(presenter.user?.id) === Number(currentUser?.id)}>Следовать</button>}
-      {isPresenter && <button type="button" className="danger" onClick={onEnd}>Завершить</button>}
+        ? <button type="button" onClick={onStopFollowing}>РЎС‚РѕРї</button>
+        : <button type="button" onClick={onResumeFollowing} disabled={!presenter || Number(presenter.user?.id) === Number(currentUser?.id)}>РЎР»РµРґРѕРІР°С‚СЊ</button>}
+      {isPresenter && <button type="button" className="danger" onClick={onEnd}>Р—Р°РІРµСЂС€РёС‚СЊ</button>}
 
       <AnimatePresence>
         {isPeopleOpen && (
-          <motion.div
+          <Motion.div
             className="live-workflow-people-panel"
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
           >
             <header>
-              <strong><Users size={16} /> Участники live workflow</strong>
+              <strong><Users size={16} /> РЈС‡Р°СЃС‚РЅРёРєРё live workflow</strong>
               <button type="button" onClick={() => setPeopleOpen(false)}><X size={15} /></button>
             </header>
             <div className="live-workflow-people-list">
@@ -778,27 +918,100 @@ function LiveWorkflowPeopleBar({
                         {Number(item.user?.id) === Number(session.presenter_user_id) && <em>Presenter</em>}
                       </strong>
                       <small>
-                        {isOnline ? "онлайн" : "не в сети"}
-                        {isCurrentUser ? " · текущая страница" : hasRoute ? " · можно следовать" : " · ждём маршрут"}
+                        {isOnline ? "РѕРЅР»Р°Р№РЅ" : "РЅРµ РІ СЃРµС‚Рё"}
+                        {isCurrentUser ? " В· С‚РµРєСѓС‰Р°СЏ СЃС‚СЂР°РЅРёС†Р°" : hasRoute ? " В· РјРѕР¶РЅРѕ СЃР»РµРґРѕРІР°С‚СЊ" : " В· Р¶РґС‘Рј РјР°СЂС€СЂСѓС‚"}
                       </small>
                     </div>
                     {isCurrentUser ? (
-                      <span className="live-workflow-person__self">Это вы</span>
+                      <span className="live-workflow-person__self">Р­С‚Рѕ РІС‹</span>
                     ) : isFollowTarget ? (
-                      <span className="live-workflow-person__following"><UserRoundCheck size={14} /> Следуете</span>
+                      <span className="live-workflow-person__following"><UserRoundCheck size={14} /> РЎР»РµРґСѓРµС‚Рµ</span>
                     ) : (
                       <button type="button" disabled={!hasRoute} onClick={() => onFollowUser(item.user.id)}>
-                        <Eye size={14} /> Следовать
+                        <Eye size={14} /> РЎР»РµРґРѕРІР°С‚СЊ
                       </button>
                     )}
                   </div>
                 );
               })}
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function LiveWorkflowMirrorShell({ visible, shell, targetName }) {
+  if (!visible || !shell) return null;
+
+  const route = shell.route || "";
+  const tabs = Array.isArray(shell.tabs) ? shell.tabs : [];
+  const menuLinks = Array.isArray(shell.menuLinks) ? shell.menuLinks : [];
+  const activeTabId = shell.activeTabId || route;
+
+  const renderMenuLinks = (items = [], depth = 0) => (
+    items.slice(0, depth > 0 ? 8 : 14).map((item, index) => {
+      const isActive = Boolean(item.href && route && (item.href === route || route.startsWith(`${item.href}/`)));
+      return (
+        <div key={`${item.key || item.href || item.name || "menu"}-${depth}-${index}`} className={`live-workflow-shell__menu-item ${isActive ? "active" : ""}`} style={{ "--depth": depth }}>
+          <span>
+            {item.hasNotification && <i />}
+            {item.name || item.href || "Р Р°Р·РґРµР»"}
+          </span>
+          {item.children?.length > 0 && (
+            <div className="live-workflow-shell__submenu">
+              {renderMenuLinks(item.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    })
+  );
+
+  return (
+    <Motion.aside
+      className="live-workflow-shell"
+      initial={{ opacity: 0, x: -12, scale: 0.98 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -12, scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      aria-hidden="true"
+    >
+      <header className="live-workflow-shell__header">
+        <div>
+          <Radio size={14} />
+          <strong>Workflow: {targetName}</strong>
+        </div>
+        <small>{route || "РјР°СЂС€СЂСѓС‚ РµС‰С‘ РЅРµ РїРѕР»СѓС‡РµРЅ"}</small>
+      </header>
+
+      <div className="live-workflow-shell__content">
+        <nav className="live-workflow-shell__menu">
+          {menuLinks.length ? renderMenuLinks(menuLinks) : <span className="live-workflow-shell__empty">РњРµРЅСЋ РµС‰С‘ РЅРµ СЃРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°РЅРѕ</span>}
+        </nav>
+
+        <section className="live-workflow-shell__workspace">
+          <div className="live-workflow-shell__tabs">
+            {tabs.length ? tabs.map((tab) => {
+              const isActive = tab.href === activeTabId || tab.href === route;
+              return (
+                <span key={tab.href} className={isActive ? "active" : ""}>
+                  {tab.pinned && <b>в…</b>}
+                  {tab.name || tab.href}
+                </span>
+              );
+            }) : <span className="live-workflow-shell__empty">РћС‚РєСЂС‹С‚С‹С… РІРєР»Р°РґРѕРє РїРѕРєР° РЅРµС‚</span>}
+          </div>
+          {shell.splitTabHref && (
+            <div className="live-workflow-shell__split">
+              <strong>RMP</strong>
+              <span>{shell.splitTabHref}</span>
+            </div>
+          )}
+        </section>
+      </div>
+    </Motion.aside>
   );
 }
 
@@ -806,7 +1019,7 @@ function RemoteCursors({ cursors }) {
   return (
     <div className="live-cursors-layer" aria-hidden="true">
       {cursors.map((cursor) => (
-        <motion.div
+        <Motion.div
           key={cursor.user.id}
           className="live-remote-cursor"
           style={{ "--cursor-color": cursor.color || getParticipantColor(cursor.user.id) }}
@@ -815,7 +1028,7 @@ function RemoteCursors({ cursors }) {
         >
           <svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 1.5 16.5 8 10 9.4 7.1 16.5 2 1.5Z" /></svg>
           <span>{getParticipantName(cursor.user)}</span>
-        </motion.div>
+        </Motion.div>
       ))}
     </div>
   );
@@ -828,7 +1041,7 @@ function LiveWorkflowBar({ session, participants, isPresenter, isFollowing, onSt
     <div className="live-workflow-bar">
       <div>
         <Radio size={16} />
-        <span>{isPresenter ? "Вы показываете workflow" : isFollowing ? `Следуете за ${presenter?.user?.full_name || "presenter"}` : "Вы смотрите самостоятельно"}</span>
+        <span>{isPresenter ? "Р’С‹ РїРѕРєР°Р·С‹РІР°РµС‚Рµ workflow" : isFollowing ? `РЎР»РµРґСѓРµС‚Рµ Р·Р° ${presenter?.user?.full_name || "presenter"}` : "Р’С‹ СЃРјРѕС‚СЂРёС‚Рµ СЃР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅРѕ"}</span>
       </div>
       <div className="live-workflow-avatars">
         {participants.slice(0, 4).map((item) => (
@@ -839,9 +1052,9 @@ function LiveWorkflowBar({ session, participants, isPresenter, isFollowing, onSt
         {participants.length > 4 && <small>+{participants.length - 4}</small>}
       </div>
       {!isPresenter && (isFollowing
-        ? <button type="button" onClick={onStopFollowing}>Стоп</button>
-        : <button type="button" onClick={onResumeFollowing}>Следовать</button>)}
-      {isPresenter && <button type="button" className="danger" onClick={onEnd}>Завершить</button>}
+        ? <button type="button" onClick={onStopFollowing}>РЎС‚РѕРї</button>
+        : <button type="button" onClick={onResumeFollowing}>РЎР»РµРґРѕРІР°С‚СЊ</button>)}
+      {isPresenter && <button type="button" className="danger" onClick={onEnd}>Р—Р°РІРµСЂС€РёС‚СЊ</button>}
     </div>
   );
 }
@@ -864,24 +1077,24 @@ function ShareWorkflowModal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="live-share-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <motion.div className="live-share-modal" initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}>
+        <Motion.div className="live-share-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <Motion.div className="live-share-modal" initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}>
             <header>
               <div>
                 <span><Users size={18} /></span>
                 <div>
                   <h2>Share workflow</h2>
-                  <p>Пригласите сотрудника следовать за вашей BPM-сессией.</p>
+                  <p>РџСЂРёРіР»Р°СЃРёС‚Рµ СЃРѕС‚СЂСѓРґРЅРёРєР° СЃР»РµРґРѕРІР°С‚СЊ Р·Р° РІР°С€РµР№ BPM-СЃРµСЃСЃРёРµР№.</p>
                 </div>
               </div>
               <button type="button" onClick={onClose}><X size={18} /></button>
             </header>
 
             <section className="live-share-section">
-              <label>Поиск сотрудника</label>
+              <label>РџРѕРёСЃРє СЃРѕС‚СЂСѓРґРЅРёРєР°</label>
               <div className="live-share-search">
                 <Search size={16} />
-                <input value={employeeQuery} onChange={(event) => onQueryChange(event.target.value)} placeholder="ФИО, username или email" />
+                <input value={employeeQuery} onChange={(event) => onQueryChange(event.target.value)} placeholder="Р¤РРћ, username РёР»Рё email" />
               </div>
               <div className="live-share-users">
                 {employees.map((user) => (
@@ -920,10 +1133,10 @@ function ShareWorkflowModal({
                 <Send size={16} /> Send through chat
               </button>
             </footer>
-            <div className="live-share-security"><ShieldCheck size={15} /> Session expires: {invitation?.expires_at ? new Date(invitation.expires_at).toLocaleString("ru-RU") : "создаётся..."}</div>
+            <div className="live-share-security"><ShieldCheck size={15} /> Session expires: {invitation?.expires_at ? new Date(invitation.expires_at).toLocaleString("ru-RU") : "СЃРѕР·РґР°С‘С‚СЃСЏ..."}</div>
             {statusMessage && <div className="live-share-status"><Link2 size={14} /> {statusMessage}</div>}
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       )}
     </AnimatePresence>
   );

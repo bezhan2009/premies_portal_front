@@ -1,3 +1,191 @@
+.live-workflow-shell {
+  position: fixed;
+  left: 16px;
+  top: 74px;
+  z-index: 100010;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 148px));
+  overflow: hidden;
+  pointer-events: none;
+  border: 1px solid rgba(235, 37, 37, 0.16);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--bg-surface, #fff) 90%, transparent);
+  color: var(--text-color, #172033);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.live-workflow-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-workflow-shell__header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.live-workflow-shell__header svg {
+  flex-shrink: 0;
+  color: #eb2525;
+}
+
+.live-workflow-shell__header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.live-workflow-shell__header small {
+  max-width: 220px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.live-workflow-shell__content {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.42fr) minmax(0, 1fr);
+  min-height: 190px;
+  max-height: min(460px, calc(100vh - 210px));
+}
+
+.live-workflow-shell__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden auto;
+  padding: 10px;
+  border-right: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-workflow-shell__menu-item {
+  border-radius: 12px;
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.live-workflow-shell__menu-item > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 9px;
+  padding-left: calc(9px + (var(--depth, 0) * 10px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+.live-workflow-shell__menu-item.active > span {
+  background: rgba(235, 37, 37, 0.1);
+  color: #eb2525;
+}
+
+.live-workflow-shell__menu-item i {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eb2525;
+  box-shadow: 0 0 0 4px rgba(235, 37, 37, 0.12);
+}
+
+.live-workflow-shell__submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.live-workflow-shell__workspace {
+  min-width: 0;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(235, 37, 37, 0.08), transparent 32%),
+    color-mix(in srgb, var(--bg-color, #f8fafc) 82%, transparent);
+}
+
+.live-workflow-shell__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.live-workflow-shell__tabs span,
+.live-workflow-shell__split {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 999px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.live-workflow-shell__tabs span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-workflow-shell__tabs span.active {
+  border-color: rgba(235, 37, 37, 0.24);
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-workflow-shell__tabs b {
+  font-size: 10px;
+}
+
+.live-workflow-shell__split {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 14px;
+  justify-content: flex-start;
+}
+
+.live-workflow-shell__split strong {
+  color: #eb2525;
+}
+
+.live-workflow-shell__split span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-workflow-shell__empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .live-cursors-layer {
   position: fixed;
   inset: 0;
@@ -595,6 +783,25 @@
     transform: none;
     border-radius: 16px;
     justify-content: space-between;
+  }
+
+  .live-workflow-shell {
+    left: 10px;
+    right: 10px;
+    top: 68px;
+    width: auto;
+    max-height: 42vh;
+  }
+
+  .live-workflow-shell__content {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .live-workflow-shell__menu {
+    max-height: 140px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
   }
 
   .live-workflow-people-panel {
