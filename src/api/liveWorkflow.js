@@ -31,8 +31,12 @@ export const createLiveWorkflowWsTicket = async (sessionId) => {
   return data;
 };
 
-export const updateLiveWorkflowFollowMode = async (sessionId, isFollowing) => {
-  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/follow`, { is_following: Boolean(isFollowing) });
+export const updateLiveWorkflowFollowMode = async (sessionId, isFollowing, followTargetId = null) => {
+  const payload = { is_following: Boolean(isFollowing) };
+  if (followTargetId) {
+    payload.follow_target_id = Number(followTargetId);
+  }
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/follow`, payload);
   return data;
 };
 

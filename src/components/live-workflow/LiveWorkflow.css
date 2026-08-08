@@ -13,12 +13,12 @@
   align-items: center;
   gap: 6px;
   transform: translate3d(0, 0, 0);
-  color: #eb2525;
+  color: var(--cursor-color, #eb2525);
   filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.18));
 }
 
 .live-remote-cursor svg {
-  fill: #eb2525;
+  fill: var(--cursor-color, #eb2525);
   stroke: #fff;
   stroke-width: 1.5;
 }
@@ -30,7 +30,7 @@
   white-space: nowrap;
   padding: 4px 8px;
   border-radius: 999px;
-  background: #eb2525;
+  background: var(--cursor-color, #eb2525);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -54,16 +54,26 @@
   backdrop-filter: blur(14px);
 }
 
-.live-workflow-bar > div:first-child {
+.live-workflow-bar__status {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-color, #172033);
   font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
 }
 
-.live-workflow-bar > div:first-child svg {
+.live-workflow-bar__status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-workflow-bar__status svg {
   color: #eb2525;
 }
 
@@ -83,6 +93,17 @@
   cursor: pointer;
 }
 
+.live-workflow-bar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.live-workflow-bar .live-workflow-bar__status {
+  padding: 0;
+  background: transparent;
+  color: var(--text-color, #172033);
+}
+
 .live-workflow-bar button.danger {
   background: #eb2525;
   color: #fff;
@@ -93,6 +114,7 @@
   align-items: center;
 }
 
+.live-workflow-avatars button,
 .live-workflow-avatars span,
 .live-share-access span {
   display: inline-flex;
@@ -109,8 +131,27 @@
   font-weight: 800;
 }
 
+.live-workflow-avatars button {
+  padding: 0;
+  background: #f1f5f9;
+}
+
 .live-workflow-avatars span:first-child {
   margin-left: 0;
+}
+
+.live-workflow-avatars button:first-child {
+  margin-left: 0;
+}
+
+.live-workflow-avatars button.following {
+  outline: 2px solid rgba(235, 37, 37, 0.35);
+  outline-offset: 2px;
+}
+
+.live-workflow-avatars button.online {
+  background: var(--avatar-color, #eb2525);
+  color: #fff;
 }
 
 .live-workflow-avatars span.online,
@@ -124,6 +165,152 @@
   color: var(--text-secondary, #64748b);
   font-size: 12px;
   font-weight: 800;
+}
+
+.live-workflow-people-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: min(420px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 18px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-color, #172033);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.live-workflow-people-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-workflow-people-panel header strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.live-workflow-people-panel header button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+}
+
+.live-workflow-people-list {
+  display: grid;
+  gap: 6px;
+  max-height: min(360px, 58vh);
+  overflow: auto;
+  padding: 8px;
+}
+
+.live-workflow-person {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--bg-color, #f8fafc);
+}
+
+.live-workflow-person.is-follow-target {
+  border-color: rgba(235, 37, 37, 0.24);
+  background: rgba(235, 37, 37, 0.06);
+}
+
+.live-workflow-person__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.live-workflow-person__avatar.online {
+  background: var(--avatar-color, #eb2525);
+  color: #fff;
+}
+
+.live-workflow-person > div {
+  min-width: 0;
+}
+
+.live-workflow-person strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.live-workflow-person em {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(235, 37, 37, 0.1);
+  color: #eb2525;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.live-workflow-person small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+}
+
+.live-workflow-person button,
+.live-workflow-person__self,
+.live-workflow-person__following {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.live-workflow-person button {
+  border: 0;
+  background: #eb2525;
+  color: #fff;
+  cursor: pointer;
+}
+
+.live-workflow-person__self {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--text-secondary, #64748b);
+}
+
+.live-workflow-person__following {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
 }
 
 .live-share-backdrop {
@@ -408,6 +595,13 @@
     transform: none;
     border-radius: 16px;
     justify-content: space-between;
+  }
+
+  .live-workflow-people-panel {
+    left: 0;
+    right: 0;
+    width: auto;
+    transform: none;
   }
 
   .live-share-modal footer {

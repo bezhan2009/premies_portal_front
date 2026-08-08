@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Link2, Radio, Search, Send, ShieldCheck, Users, X } from "lucide-react";
+import { Check, Copy, Eye, Link2, Radio, Search, Send, ShieldCheck, UserRoundCheck, Users, X } from "lucide-react";
 import {
   createLiveWorkflowSession,
   createLiveWorkflowWsTicket,
@@ -33,6 +33,58 @@ const backendToWsURL = (sessionId, ticket) => {
 };
 
 const buildAbsoluteJoinUrl = (joinPath) => `${window.location.origin}${joinPath}`;
+
+const LIVE_WORKFLOW_CURSOR_COLORS = [
+  "#eb2525",
+  "#2563eb",
+  "#7c3aed",
+  "#059669",
+  "#d97706",
+  "#0891b2",
+  "#be185d",
+  "#4f46e5",
+];
+
+const getParticipantName = (participantOrUser, fallback = "Сотрудник") => {
+  const user = participantOrUser?.user || participantOrUser;
+  return user?.full_name || user?.username || user?.email || fallback;
+};
+
+const getParticipantInitials = (participantOrUser) => {
+  const user = participantOrUser?.user || participantOrUser;
+  const name = getParticipantName(user, "U");
+  return user?.initials || name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
+};
+
+const getParticipantColor = (userId) => {
+  const numericId = Number(userId) || 0;
+  return LIVE_WORKFLOW_CURSOR_COLORS[Math.abs(numericId) % LIVE_WORKFLOW_CURSOR_COLORS.length];
+};
+
+const getSessionUserRoutesMap = (targetSession) => (
+  (targetSession?.user_routes || []).reduce((acc, item) => {
+    if (item?.user_id && item?.route) {
+      acc[Number(item.user_id)] = item;
+    }
+    return acc;
+  }, {})
+);
+
+const getFollowSnapshot = (targetSession, targetUserId) => {
+  const numericTargetId = Number(targetUserId);
+  if (!targetSession?.id || !numericTargetId) return null;
+  const userRoutes = getSessionUserRoutesMap(targetSession);
+  if (userRoutes[numericTargetId]) return userRoutes[numericTargetId];
+  if (Number(targetSession.presenter_user_id) === numericTargetId && targetSession.current_route) {
+    return {
+      user_id: numericTargetId,
+      route: targetSession.current_route,
+      context: targetSession.current_context || {},
+      updated_at: Date.parse(targetSession.created_at || "") || Date.now(),
+    };
+  }
+  return null;
+};
 
 export const buildLiveWorkflowInvitationMessage = (payload) => JSON.stringify({
   type: "live_workflow_invitation",
@@ -69,10 +121,12 @@ export const useLiveWorkflow = () => {
       remoteCursors: [],
       isPresenter: false,
       isFollowing: false,
+      followTargetId: 0,
       openShareDialog: () => {},
       joinByToken: async () => {},
       stopFollowing: async () => {},
       resumeFollowing: async () => {},
+      followUser: async () => {},
       endSession: async () => {},
     };
   }
@@ -97,10 +151,13 @@ export default function LiveWorkflowProvider({ children }) {
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(false);
   const lastCursorSentRef = useRef(0);
+  const lastViewportSentRef = useRef(0);
   const routeTimerRef = useRef(null);
   const applyingRemoteRouteRef = useRef(false);
-  const isPresenterRef = useRef(false);
+  const applyingRemoteViewportRef = useRef(false);
   const isFollowingRef = useRef(false);
+  const followTargetIdRef = useRef(0);
+  const userRoutesRef = useRef({});
   const sessionRef = useRef(null);
   const currentUserRef = useRef(null);
 
@@ -108,15 +165,21 @@ export default function LiveWorkflowProvider({ children }) {
     participants.find((item) => Number(item.user?.id) === Number(currentUser?.id))
   ), [participants, currentUser]);
 
+  const userRoutesById = useMemo(() => getSessionUserRoutesMap(session), [session]);
   const isPresenter = !!session && Number(session.presenter_user_id) === Number(currentUser?.id);
-  const isFollowing = !!myParticipant?.is_following && !isPresenter;
+  const followTargetId = Number(myParticipant?.is_following ? (myParticipant.follow_target_id || session?.presenter_user_id || 0) : 0);
+  const isFollowing = !!myParticipant?.is_following && !!followTargetId && Number(followTargetId) !== Number(currentUser?.id);
+  const followTargetParticipant = useMemo(() => (
+    participants.find((item) => Number(item.user?.id) === Number(followTargetId))
+  ), [followTargetId, participants]);
 
   useEffect(() => {
-    isPresenterRef.current = isPresenter;
     isFollowingRef.current = isFollowing;
+    followTargetIdRef.current = followTargetId;
+    userRoutesRef.current = userRoutesById;
     sessionRef.current = session;
     currentUserRef.current = currentUser;
-  }, [currentUser, isPresenter, isFollowing, session]);
+  }, [currentUser, followTargetId, isFollowing, session, userRoutesById]);
 
   useEffect(() => {
     let mounted = true;
@@ -141,6 +204,37 @@ export default function LiveWorkflowProvider({ children }) {
     }
   }, []);
 
+  const syncRemoteViewport = useCallback((context = {}) => {
+    const scrollX = Number(context?.scrollX);
+    const scrollY = Number(context?.scrollY);
+    if (!Number.isFinite(scrollX) && !Number.isFinite(scrollY)) return;
+    const left = Number.isFinite(scrollX) ? Math.max(0, scrollX) : window.scrollX;
+    const top = Number.isFinite(scrollY) ? Math.max(0, scrollY) : window.scrollY;
+    if (Math.abs(window.scrollX - left) < 24 && Math.abs(window.scrollY - top) < 24) return;
+    applyingRemoteViewportRef.current = true;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ left, top, behavior: "smooth" });
+      window.setTimeout(() => {
+        applyingRemoteViewportRef.current = false;
+      }, 260);
+    });
+  }, []);
+
+  const applyRemoteSnapshot = useCallback((snapshot, options = {}) => {
+    if (!snapshot?.route) return;
+    const context = snapshot.context || {};
+    if (snapshot.route !== getCurrentRoute()) {
+      applyingRemoteRouteRef.current = true;
+      navigate(snapshot.route, { replace: Boolean(options.replace) });
+      window.setTimeout(() => {
+        applyingRemoteRouteRef.current = false;
+        syncRemoteViewport(context);
+      }, 350);
+      return;
+    }
+    syncRemoteViewport(context);
+  }, [navigate, syncRemoteViewport]);
+
   const applySessionState = useCallback((nextSession) => {
     setSession(nextSession);
     setParticipants(nextSession?.participants || []);
@@ -149,6 +243,23 @@ export default function LiveWorkflowProvider({ children }) {
     } else {
       localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
     }
+  }, []);
+
+  const mergeUserRouteIntoSession = useCallback((userId, route, context = {}) => {
+    const numericUserId = Number(userId);
+    if (!numericUserId || !route) return;
+    const nextRoute = { user_id: numericUserId, route, context, updated_at: Date.now() };
+    setSession((prev) => {
+      if (!prev?.id) return prev;
+      const existingRoutes = prev.user_routes || [];
+      return {
+        ...prev,
+        user_routes: [
+          ...existingRoutes.filter((item) => Number(item.user_id) !== numericUserId),
+          nextRoute,
+        ],
+      };
+    });
   }, []);
 
   const connect = useCallback(async (targetSession) => {
@@ -171,14 +282,10 @@ export default function LiveWorkflowProvider({ children }) {
         if (msg.type === "session.state") {
           applySessionState(msg.payload);
           const me = msg.payload?.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
-          const shouldFollowPresenter = Boolean(
-            me?.is_following &&
-            Number(msg.payload?.presenter_user_id) !== Number(currentUserRef.current?.id)
-          );
-          if (shouldFollowPresenter && msg.payload?.current_route && msg.payload.current_route !== getCurrentRoute()) {
-            applyingRemoteRouteRef.current = true;
-            navigate(msg.payload.current_route);
-            window.setTimeout(() => { applyingRemoteRouteRef.current = false; }, 300);
+          const targetId = Number(me?.follow_target_id || msg.payload?.presenter_user_id || 0);
+          const shouldFollowTarget = Boolean(me?.is_following && targetId && targetId !== Number(currentUserRef.current?.id));
+          if (shouldFollowTarget) {
+            applyRemoteSnapshot(getFollowSnapshot(msg.payload, targetId));
           }
           return;
         }
@@ -186,18 +293,56 @@ export default function LiveWorkflowProvider({ children }) {
           return;
         }
         if (msg.type === "cursor.moved" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
+          const color = getParticipantColor(msg.user?.id);
           setRemoteCursors((prev) => ({
             ...prev,
-            [msg.user.id]: { user: msg.user, x: msg.payload?.x || 0, y: msg.payload?.y || 0, seenAt: Date.now() },
+            [msg.user.id]: {
+              user: msg.user,
+              x: msg.payload?.x || 0,
+              y: msg.payload?.y || 0,
+              route: msg.payload?.route,
+              scrollX: msg.payload?.scrollX,
+              scrollY: msg.payload?.scrollY,
+              color,
+              seenAt: Date.now(),
+            },
           }));
+          if (isFollowingRef.current && Number(msg.user?.id) === Number(followTargetIdRef.current)) {
+            if (msg.payload?.route && msg.payload.route !== getCurrentRoute()) {
+              applyRemoteSnapshot({ route: msg.payload.route, context: msg.payload });
+            } else {
+              syncRemoteViewport(msg.payload);
+            }
+          }
           return;
         }
-        if (msg.type === "navigation.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id) && isFollowingRef.current) {
+        if (msg.type === "navigation.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
           const route = msg.payload?.route;
-          if (route && route !== getCurrentRoute()) {
-            applyingRemoteRouteRef.current = true;
-            navigate(route);
-            window.setTimeout(() => { applyingRemoteRouteRef.current = false; }, 300);
+          const context = msg.payload?.context || {};
+          if (route) {
+            userRoutesRef.current = {
+              ...userRoutesRef.current,
+              [Number(msg.user.id)]: { user_id: Number(msg.user.id), route, context, updated_at: Date.now() },
+            };
+            mergeUserRouteIntoSession(msg.user.id, route, context);
+          }
+          if (route && isFollowingRef.current && Number(msg.user?.id) === Number(followTargetIdRef.current)) {
+            applyRemoteSnapshot({ route, context });
+          }
+          return;
+        }
+        if (msg.type === "viewport.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
+          const route = msg.payload?.route;
+          const context = msg.payload?.context || {};
+          if (route) {
+            userRoutesRef.current = {
+              ...userRoutesRef.current,
+              [Number(msg.user.id)]: { user_id: Number(msg.user.id), route, context, updated_at: Date.now() },
+            };
+            mergeUserRouteIntoSession(msg.user.id, route, context);
+          }
+          if (route && isFollowingRef.current && Number(msg.user?.id) === Number(followTargetIdRef.current)) {
+            applyRemoteSnapshot({ route, context });
           }
           return;
         }
@@ -223,7 +368,7 @@ export default function LiveWorkflowProvider({ children }) {
     } catch {
       setStatusMessage("Не удалось подключить Live workflow");
     }
-  }, [applySessionState, disconnect, navigate]);
+  }, [applyRemoteSnapshot, applySessionState, disconnect, mergeUserRouteIntoSession, syncRemoteViewport]);
 
   const openShareDialog = useCallback(async () => {
     setShareOpen(true);
@@ -251,10 +396,10 @@ export default function LiveWorkflowProvider({ children }) {
     const joined = await joinLiveWorkflowByToken(token);
     applySessionState(joined);
     await connect(joined);
-    if (joined.current_route) {
-      navigate(joined.current_route, { replace: true });
-    }
-  }, [applySessionState, connect, navigate]);
+    const me = joined.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
+    const targetId = Number(me?.follow_target_id || joined.presenter_user_id || 0);
+    applyRemoteSnapshot(getFollowSnapshot(joined, targetId), { replace: true });
+  }, [applyRemoteSnapshot, applySessionState, connect]);
 
   useEffect(() => {
     if (!currentUser?.id || session?.id || location.pathname.startsWith("/live-session/")) return undefined;
@@ -270,10 +415,9 @@ export default function LiveWorkflowProvider({ children }) {
         connect(restoredSession);
 
         const me = restoredSession.participants?.find((item) => Number(item.user?.id) === Number(currentUser.id));
-        if (me?.is_following && restoredSession.current_route && restoredSession.current_route !== getCurrentRoute()) {
-          applyingRemoteRouteRef.current = true;
-          navigate(restoredSession.current_route, { replace: true });
-          window.setTimeout(() => { applyingRemoteRouteRef.current = false; }, 300);
+        const targetId = Number(me?.follow_target_id || restoredSession.presenter_user_id || 0);
+        if (me?.is_following && targetId && targetId !== Number(currentUser.id)) {
+          applyRemoteSnapshot(getFollowSnapshot(restoredSession, targetId), { replace: true });
         }
       })
       .catch(() => {
@@ -281,7 +425,7 @@ export default function LiveWorkflowProvider({ children }) {
       });
 
     return () => { cancelled = true; };
-  }, [applySessionState, connect, currentUser?.id, location.pathname, navigate, session?.id]);
+  }, [applyRemoteSnapshot, applySessionState, connect, currentUser?.id, location.pathname, session?.id]);
 
   const copyLink = useCallback(async () => {
     let invite = invitation;
@@ -301,7 +445,7 @@ export default function LiveWorkflowProvider({ children }) {
       sessionId: session.id,
       token: invite.token,
       joinPath: invite.join_path,
-      route: session.current_route,
+      route: getCurrentRoute(),
       invitedBy: currentUser?.full_name || currentUser?.username || "Сотрудник",
       createdAt: new Date().toISOString(),
       expiresAt: invite.expires_at,
@@ -312,16 +456,21 @@ export default function LiveWorkflowProvider({ children }) {
 
   const stopFollowing = useCallback(async () => {
     if (!session?.id) return;
-    const updated = await updateLiveWorkflowFollowMode(session.id, false);
+    const updated = await updateLiveWorkflowFollowMode(session.id, false, null);
     applySessionState(updated);
   }, [applySessionState, session?.id]);
 
+  const followUser = useCallback(async (targetUserId) => {
+    if (!session?.id || !targetUserId || Number(targetUserId) === Number(currentUser?.id)) return;
+    const updated = await updateLiveWorkflowFollowMode(session.id, true, targetUserId);
+    applySessionState(updated);
+    applyRemoteSnapshot(getFollowSnapshot(updated, targetUserId));
+  }, [applyRemoteSnapshot, applySessionState, currentUser?.id, session?.id]);
+
   const resumeFollowing = useCallback(async () => {
     if (!session?.id) return;
-    const updated = await updateLiveWorkflowFollowMode(session.id, true);
-    applySessionState(updated);
-    if (updated.current_route) navigate(updated.current_route);
-  }, [applySessionState, navigate, session?.id]);
+    await followUser(session.presenter_user_id);
+  }, [followUser, session?.id, session?.presenter_user_id]);
 
   const endSession = useCallback(async () => {
     if (!session?.id) return;
@@ -334,17 +483,23 @@ export default function LiveWorkflowProvider({ children }) {
   }, [disconnect, session?.id]);
 
   useEffect(() => {
-    if (!session?.id || !wsRef.current || !isPresenter || applyingRemoteRouteRef.current) return undefined;
+    if (!session?.id || !wsRef.current || applyingRemoteRouteRef.current) return undefined;
     if (routeTimerRef.current) window.clearTimeout(routeTimerRef.current);
     routeTimerRef.current = window.setTimeout(() => {
       if (wsRef.current?.readyState !== WebSocket.OPEN) return;
       wsRef.current.send(JSON.stringify({
         type: "navigation.change",
-        payload: { route: `${location.pathname}${location.search}${location.hash}`, context: {} },
+        payload: {
+          route: `${location.pathname}${location.search}${location.hash}`,
+          context: {
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+          },
+        },
       }));
     }, 180);
     return () => window.clearTimeout(routeTimerRef.current);
-  }, [isPresenter, location.hash, location.pathname, location.search, session?.id]);
+  }, [location.hash, location.pathname, location.search, session?.id]);
 
   useEffect(() => {
     if (!session?.id) return undefined;
@@ -357,11 +512,40 @@ export default function LiveWorkflowProvider({ children }) {
         payload: {
           x: Math.max(0, Math.min(1, event.clientX / Math.max(window.innerWidth, 1))),
           y: Math.max(0, Math.min(1, event.clientY / Math.max(window.innerHeight, 1))),
+          route: getCurrentRoute(),
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
         },
       }));
     };
     window.addEventListener("pointermove", handleMove, { passive: true });
     return () => window.removeEventListener("pointermove", handleMove);
+  }, [session?.id]);
+
+  useEffect(() => {
+    if (!session?.id) return undefined;
+    const handleViewportChange = () => {
+      const now = Date.now();
+      if (
+        applyingRemoteRouteRef.current ||
+        applyingRemoteViewportRef.current ||
+        now - lastViewportSentRef.current < 160 ||
+        wsRef.current?.readyState !== WebSocket.OPEN
+      ) {
+        return;
+      }
+      lastViewportSentRef.current = now;
+      wsRef.current.send(JSON.stringify({
+        type: "viewport.change",
+        payload: {
+          route: getCurrentRoute(),
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
+        },
+      }));
+    };
+    window.addEventListener("scroll", handleViewportChange, { passive: true });
+    return () => window.removeEventListener("scroll", handleViewportChange);
   }, [session?.id]);
 
   useEffect(() => {
@@ -390,24 +574,31 @@ export default function LiveWorkflowProvider({ children }) {
     remoteCursors: Object.values(remoteCursors),
     isPresenter,
     isFollowing,
+    followTargetId,
+    followTargetParticipant,
     openShareDialog,
     joinByToken,
     stopFollowing,
     resumeFollowing,
+    followUser,
     endSession,
-  }), [currentUser, endSession, isFollowing, isPresenter, joinByToken, openShareDialog, participants, remoteCursors, resumeFollowing, session, stopFollowing]);
+  }), [currentUser, endSession, followTargetId, followTargetParticipant, followUser, isFollowing, isPresenter, joinByToken, openShareDialog, participants, remoteCursors, resumeFollowing, session, stopFollowing]);
 
   return (
     <LiveWorkflowContext.Provider value={value}>
       {children}
       <RemoteCursors cursors={Object.values(remoteCursors)} />
-      <LiveWorkflowBar
+      <LiveWorkflowPeopleBar
         session={session}
         participants={participants}
+        currentUser={currentUser}
         isPresenter={isPresenter}
         isFollowing={isFollowing}
+        followTargetId={followTargetId}
+        userRoutesById={userRoutesById}
         onStopFollowing={stopFollowing}
         onResumeFollowing={resumeFollowing}
+        onFollowUser={followUser}
         onEnd={endSession}
       />
       <ShareWorkflowModal
@@ -429,6 +620,112 @@ export default function LiveWorkflowProvider({ children }) {
   );
 }
 
+function LiveWorkflowPeopleBar({
+  session,
+  participants,
+  currentUser,
+  isPresenter,
+  isFollowing,
+  followTargetId,
+  userRoutesById,
+  onStopFollowing,
+  onResumeFollowing,
+  onFollowUser,
+  onEnd,
+}) {
+  const [isPeopleOpen, setPeopleOpen] = useState(false);
+  if (!session) return null;
+
+  const presenter = participants.find((item) => Number(item.user?.id) === Number(session.presenter_user_id));
+  const followTarget = participants.find((item) => Number(item.user?.id) === Number(followTargetId));
+  const visibleParticipants = participants.slice(0, 5);
+  const title = isFollowing
+    ? `Следуете за ${getParticipantName(followTarget, "участником")}`
+    : isPresenter
+      ? "Вы показываете workflow"
+      : "Самостоятельный просмотр";
+
+  return (
+    <div className="live-workflow-bar">
+      <button type="button" className="live-workflow-bar__status" onClick={() => setPeopleOpen((prev) => !prev)}>
+        <Radio size={16} />
+        <span>{title}</span>
+      </button>
+      <div className="live-workflow-avatars">
+        {visibleParticipants.map((item) => (
+          <button
+            type="button"
+            key={item.user.id}
+            title={getParticipantName(item)}
+            className={`${item.online ? "online" : ""} ${Number(item.user.id) === Number(followTargetId) ? "following" : ""}`}
+            style={{ "--avatar-color": getParticipantColor(item.user.id) }}
+            onClick={() => setPeopleOpen((prev) => !prev)}
+          >
+            {getParticipantInitials(item)}
+          </button>
+        ))}
+        {participants.length > visibleParticipants.length && <small>+{participants.length - visibleParticipants.length}</small>}
+      </div>
+      {isFollowing
+        ? <button type="button" onClick={onStopFollowing}>Стоп</button>
+        : <button type="button" onClick={onResumeFollowing} disabled={!presenter || Number(presenter.user?.id) === Number(currentUser?.id)}>Следовать</button>}
+      {isPresenter && <button type="button" className="danger" onClick={onEnd}>Завершить</button>}
+
+      <AnimatePresence>
+        {isPeopleOpen && (
+          <motion.div
+            className="live-workflow-people-panel"
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+          >
+            <header>
+              <strong><Users size={16} /> Участники live workflow</strong>
+              <button type="button" onClick={() => setPeopleOpen(false)}><X size={15} /></button>
+            </header>
+            <div className="live-workflow-people-list">
+              {participants.map((item) => {
+                const isCurrentUser = Number(item.user?.id) === Number(currentUser?.id);
+                const isFollowTarget = Number(item.user?.id) === Number(followTargetId);
+                const hasRoute = Boolean(userRoutesById?.[Number(item.user?.id)]?.route || Number(item.user?.id) === Number(session.presenter_user_id));
+                return (
+                  <div key={item.user.id} className={`live-workflow-person ${isFollowTarget ? "is-follow-target" : ""}`}>
+                    <span
+                      className={`live-workflow-person__avatar ${item.online ? "online" : ""}`}
+                      style={{ "--avatar-color": getParticipantColor(item.user.id) }}
+                    >
+                      {getParticipantInitials(item)}
+                    </span>
+                    <div>
+                      <strong>
+                        {getParticipantName(item)}
+                        {Number(item.user?.id) === Number(session.presenter_user_id) && <em>Presenter</em>}
+                      </strong>
+                      <small>
+                        {item.online ? "онлайн" : "не в сети"}
+                        {hasRoute ? " · можно следовать" : " · ждём маршрут"}
+                      </small>
+                    </div>
+                    {isCurrentUser ? (
+                      <span className="live-workflow-person__self">Это вы</span>
+                    ) : isFollowTarget ? (
+                      <span className="live-workflow-person__following"><UserRoundCheck size={14} /> Следуете</span>
+                    ) : (
+                      <button type="button" disabled={!hasRoute} onClick={() => onFollowUser(item.user.id)}>
+                        <Eye size={14} /> Следовать
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function RemoteCursors({ cursors }) {
   return (
     <div className="live-cursors-layer" aria-hidden="true">
@@ -436,11 +733,12 @@ function RemoteCursors({ cursors }) {
         <motion.div
           key={cursor.user.id}
           className="live-remote-cursor"
+          style={{ "--cursor-color": cursor.color || getParticipantColor(cursor.user.id) }}
           animate={{ x: cursor.x * window.innerWidth, y: cursor.y * window.innerHeight }}
           transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.2 }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 1.5 16.5 8 10 9.4 7.1 16.5 2 1.5Z" /></svg>
-          <span>{cursor.user.full_name || cursor.user.username}</span>
+          <span>{getParticipantName(cursor.user)}</span>
         </motion.div>
       ))}
     </div>
