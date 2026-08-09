@@ -732,7 +732,12 @@ foreach ($databaseService in @("go-backend", "daily_tasks", "applications_portal
     $bashLines.Add('      DB_USER: ${POSTGRES_USER}')
     $bashLines.Add('      DB_PASSWORD: ${POSTGRES_PASSWORD}')
     $bashLines.Add('      DB_NAME: ${POSTGRES_DB}')
+    $bashLines.Add('      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}')
 }
+$bashLines.Add('  frontend:')
+$bashLines.Add('    depends_on:')
+$bashLines.Add('      abs_service:')
+$bashLines.Add('        condition: service_started')
 $bashLines.Add('DEPLOY_COMPOSE_OVERRIDE')
 $bashLines.Add('echo "[DATABASE] Services will use PostgreSQL database ''$selected_db''."')
 $databaseConfigCompatibility = @()
@@ -777,7 +782,7 @@ if ($databaseConfigCompatibility.Count -gt 0) {
     $bashLines.Add("echo '[DATABASE] Docker build configs prepared; originals will be restored automatically.'")
 }
 $bashLines.Add("echo '[DEPLOY] Building changed services...'")
-$bashLines.Add("if ! `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml up --build -d --no-deps $serviceArguments; then")
+$bashLines.Add("if ! `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml up --build -d $serviceArguments; then")
 $bashLines.Add("  echo '[ERROR] One or more services failed to start. Recent container logs:'")
 $bashLines.Add("  `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $serviceArguments || true")
 $bashLines.Add("  `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml logs --tail 150 $serviceArguments || true")
