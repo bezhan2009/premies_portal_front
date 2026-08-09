@@ -24,7 +24,7 @@ import {
 import "./LiveWorkflow.css";
 
 const LiveWorkflowContext = createContext(null);
-const CURSOR_SEND_INTERVAL = 40;
+const CURSOR_SEND_INTERVAL = 32;
 const REMOTE_SYNC_MUTE_MS = 1200;
 const REMOTE_CURSOR_TTL_MS = 12000;
 const REMOTE_SNAPSHOT_DEDUP_MS = 220;
@@ -33,6 +33,7 @@ const INPUT_SYNC_INTERVAL = 90;
 const REMOTE_INPUT_TTL_MS = 12000;
 const WORKFLOW_CHAT_LIMIT = 100;
 const LIVE_WORKFLOW_SESSION_STORAGE_KEY = "live_workflow_active_session_id";
+const LIVE_WORKFLOW_CURSOR_EVENT = "activ-daily:live-workflow-cursor";
 
 const getCurrentRoute = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
@@ -573,7 +574,6 @@ export const useLiveWorkflow = () => {
       session: null,
       participants: [],
       currentUser: null,
-      remoteCursors: [],
       isPresenter: false,
       isFollowing: false,
       followTargetId: 0,
@@ -594,7 +594,6 @@ export default function LiveWorkflowProvider({ children }) {
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
-  const [remoteCursors, setRemoteCursors] = useState({});
   const [remoteClicks, setRemoteClicks] = useState({});
   const [isShareOpen, setShareOpen] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -630,6 +629,12 @@ export default function LiveWorkflowProvider({ children }) {
   const latestPageStateRef = useRef(null);
   const pendingChatMessagesRef = useRef([]);
   const lastViewportSentRef = useRef(0);
+  const pendingViewportTargetRef = useRef(null);
+  const viewportFrameRef = useRef(null);
+  const viewportDelayTimerRef = useRef(null);
+  const pendingRemoteViewportRef = useRef(null);
+  const remoteViewportFrameRef = useRef(null);
+  const remoteViewportReleaseTimerRef = useRef(null);
   const lastScrollTargetContextRef = useRef(null);
   const shellTimerRef = useRef(null);
   const lastPointerRef = useRef({ x: 0.5, y: 0.5 });
@@ -729,38 +734,48 @@ export default function LiveWorkflowProvider({ children }) {
   }, []);
 
   const syncRemoteViewport = useCallback((context = {}) => {
-    const hasScrollValue = ["scrollX", "scrollY", "scrollXRatio", "scrollYRatio"].some((key) => Number.isFinite(Number(context?.[key])));
-    const nestedTarget = context?.scrollTarget ? findWorkflowElement(context.scrollTarget) : null;
-    if (!hasScrollValue && !nestedTarget) return;
-    const { left, top } = getRemoteScrollTarget(context);
-    const windowNeedsSync = hasScrollValue && (Math.abs(window.scrollX - left) >= 4 || Math.abs(window.scrollY - top) >= 4);
-    let nestedNeedsSync = false;
-    let nestedLeft = 0;
-    let nestedTop = 0;
-    if (nestedTarget) {
-      const maxLeft = Math.max(nestedTarget.scrollWidth - nestedTarget.clientWidth, 0);
-      const maxTop = Math.max(nestedTarget.scrollHeight - nestedTarget.clientHeight, 0);
-      const leftRatio = Number(context.scrollTarget?.scrollLeftRatio);
-      const topRatio = Number(context.scrollTarget?.scrollTopRatio);
-      nestedLeft = Number.isFinite(leftRatio)
-        ? clampWorkflowNumber(leftRatio, 0, 1) * maxLeft
-        : clampWorkflowNumber(Number(context.scrollTarget?.scrollLeft) || 0, 0, maxLeft);
-      nestedTop = Number.isFinite(topRatio)
-        ? clampWorkflowNumber(topRatio, 0, 1) * maxTop
-        : clampWorkflowNumber(Number(context.scrollTarget?.scrollTop) || 0, 0, maxTop);
-      nestedNeedsSync = Math.abs(nestedTarget.scrollLeft - nestedLeft) >= 3 || Math.abs(nestedTarget.scrollTop - nestedTop) >= 3;
-    }
-    if (!windowNeedsSync && !nestedNeedsSync) return;
-    muteOutgoingSync();
-    applyingRemoteViewportRef.current = true;
-    window.requestAnimationFrame(() => {
+    // Scroll messages may arrive faster than the browser can paint. Keep only
+    // the newest viewport and apply it once per animation frame; this avoids a
+    // backlog that otherwise keeps moving the remote page after scrolling ends.
+    pendingRemoteViewportRef.current = context;
+    if (remoteViewportFrameRef.current) return;
+    remoteViewportFrameRef.current = window.requestAnimationFrame(() => {
+      remoteViewportFrameRef.current = null;
+      const latestContext = pendingRemoteViewportRef.current || {};
+      pendingRemoteViewportRef.current = null;
+      const hasScrollValue = ["scrollX", "scrollY", "scrollXRatio", "scrollYRatio"].some((key) => Number.isFinite(Number(latestContext?.[key])));
+      const nestedTarget = latestContext?.scrollTarget ? findWorkflowElement(latestContext.scrollTarget) : null;
+      if (!hasScrollValue && !nestedTarget) return;
+      const { left, top } = getRemoteScrollTarget(latestContext);
+      const windowNeedsSync = hasScrollValue && (Math.abs(window.scrollX - left) >= 2 || Math.abs(window.scrollY - top) >= 2);
+      let nestedNeedsSync = false;
+      let nestedLeft = 0;
+      let nestedTop = 0;
+      if (nestedTarget) {
+        const maxLeft = Math.max(nestedTarget.scrollWidth - nestedTarget.clientWidth, 0);
+        const maxTop = Math.max(nestedTarget.scrollHeight - nestedTarget.clientHeight, 0);
+        const leftRatio = Number(latestContext.scrollTarget?.scrollLeftRatio);
+        const topRatio = Number(latestContext.scrollTarget?.scrollTopRatio);
+        nestedLeft = Number.isFinite(leftRatio)
+          ? clampWorkflowNumber(leftRatio, 0, 1) * maxLeft
+          : clampWorkflowNumber(Number(latestContext.scrollTarget?.scrollLeft) || 0, 0, maxLeft);
+        nestedTop = Number.isFinite(topRatio)
+          ? clampWorkflowNumber(topRatio, 0, 1) * maxTop
+          : clampWorkflowNumber(Number(latestContext.scrollTarget?.scrollTop) || 0, 0, maxTop);
+        nestedNeedsSync = Math.abs(nestedTarget.scrollLeft - nestedLeft) >= 2 || Math.abs(nestedTarget.scrollTop - nestedTop) >= 2;
+      }
+      if (!windowNeedsSync && !nestedNeedsSync) return;
+      muteOutgoingSync(180);
+      applyingRemoteViewportRef.current = true;
       if (windowNeedsSync) window.scrollTo({ left, top, behavior: "auto" });
       if (nestedNeedsSync && nestedTarget) {
         nestedTarget.scrollTo({ left: nestedLeft, top: nestedTop, behavior: "auto" });
       }
-      window.setTimeout(() => {
+      if (remoteViewportReleaseTimerRef.current) window.clearTimeout(remoteViewportReleaseTimerRef.current);
+      remoteViewportReleaseTimerRef.current = window.setTimeout(() => {
         applyingRemoteViewportRef.current = false;
-      }, 80);
+        remoteViewportReleaseTimerRef.current = null;
+      }, 64);
     });
   }, [muteOutgoingSync]);
 
@@ -980,6 +995,11 @@ export default function LiveWorkflowProvider({ children }) {
     setParticipants((prev) => {
       const seenAt = new Date().toISOString();
       if (prev.some((participant) => isSameLiveUser(participant, user))) {
+        // Presence events accompany cursor, scroll and input traffic. Returning
+        // the existing array keeps those high-frequency events from rendering
+        // the complete portal tree again when the participant is already online.
+        const existing = prev.find((participant) => isSameLiveUser(participant, user));
+        if (existing?.online) return prev;
         return prev.map((participant) => (
           isSameLiveUser(participant, user)
             ? { ...participant, online: true, last_seen_at: seenAt }
@@ -1065,30 +1085,31 @@ export default function LiveWorkflowProvider({ children }) {
 
   const applyCursorSnapshots = useCallback((cursorSnapshots = []) => {
     if (!Array.isArray(cursorSnapshots) || cursorSnapshots.length === 0) return;
-    setRemoteCursors((prev) => {
-      const next = { ...prev };
-      cursorSnapshots.forEach((item) => {
-        const user = item.user || {};
-        if (!user.id || Number(user.id) === Number(currentUserRef.current?.id)) return;
-        const payload = item.payload || {};
-        next[user.id] = {
-          user,
-          x: Number(payload.x) || 0.5,
-          y: Number(payload.y) || 0.5,
-          pageXRatio: Number.isFinite(Number(payload.pageXRatio)) ? Number(payload.pageXRatio) : null,
-          pageYRatio: Number.isFinite(Number(payload.pageYRatio)) ? Number(payload.pageYRatio) : null,
-          route: payload.route,
-          scrollX: payload.scrollX,
-          scrollY: payload.scrollY,
-          scrollXRatio: payload.scrollXRatio,
-          scrollYRatio: payload.scrollYRatio,
-          color: getParticipantColor(user.id),
-          seenAt: Date.now(),
-        };
-        markParticipantOnline(user);
-      });
-      return next;
+    const cursors = cursorSnapshots.flatMap((item) => {
+      const user = item.user || {};
+      if (!user.id || Number(user.id) === Number(currentUserRef.current?.id)) return [];
+      const payload = item.payload || {};
+      markParticipantOnline(user);
+      return [{
+        user,
+        x: Number(payload.x) || 0.5,
+        y: Number(payload.y) || 0.5,
+        pageXRatio: Number.isFinite(Number(payload.pageXRatio)) ? Number(payload.pageXRatio) : null,
+        pageYRatio: Number.isFinite(Number(payload.pageYRatio)) ? Number(payload.pageYRatio) : null,
+        route: payload.route,
+        scrollX: payload.scrollX,
+        scrollY: payload.scrollY,
+        scrollXRatio: payload.scrollXRatio,
+        scrollYRatio: payload.scrollYRatio,
+        color: getParticipantColor(user.id),
+        seenAt: Date.now(),
+      }];
     });
+    if (cursors.length) {
+      window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_CURSOR_EVENT, {
+        detail: { type: "batch", cursors },
+      }));
+    }
   }, [markParticipantOnline]);
 
   const applyWorkflowMessages = useCallback((messages = []) => {
@@ -1269,11 +1290,9 @@ export default function LiveWorkflowProvider({ children }) {
                 ? { ...participant, online: false, last_seen_at: new Date().toISOString() }
                 : participant
             )));
-            setRemoteCursors((prev) => {
-              const next = { ...prev };
-              delete next[leftUserId];
-              return next;
-            });
+            window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_CURSOR_EVENT, {
+              detail: { type: "remove", userId: leftUserId },
+            }));
             setRemoteInputs((prev) => {
               const next = { ...prev };
               delete next[leftUserId];
@@ -1285,9 +1304,10 @@ export default function LiveWorkflowProvider({ children }) {
         if (msg.type === "cursor.moved" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
           const color = getParticipantColor(msg.user?.id);
           markParticipantOnline(msg.user);
-          setRemoteCursors((prev) => ({
-            ...prev,
-            [msg.user.id]: {
+          window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_CURSOR_EVENT, {
+            detail: {
+              type: "upsert",
+              cursor: {
               user: msg.user,
               x: msg.payload?.x || 0,
               y: msg.payload?.y || 0,
@@ -1300,6 +1320,7 @@ export default function LiveWorkflowProvider({ children }) {
               scrollYRatio: msg.payload?.scrollYRatio,
               color,
               seenAt: Date.now(),
+            },
             },
           }));
           return;
@@ -1320,9 +1341,6 @@ export default function LiveWorkflowProvider({ children }) {
           const route = msg.payload?.route;
           const context = msg.payload?.context || {};
           markParticipantOnline(msg.user);
-          if (route) {
-            mergeUserRouteIntoSession(msg.user.id, route, context);
-          }
           if (route) {
             applyRemoteSnapshot({ route, context });
           }
@@ -1386,7 +1404,7 @@ export default function LiveWorkflowProvider({ children }) {
           setStatusMessage("Live workflow session завершён");
           setSession(null);
           setParticipants([]);
-          setRemoteCursors({});
+          window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_CURSOR_EVENT, { detail: { type: "clear" } }));
           setRemoteClicks({});
           setRemoteInputs({});
           setWorkflowMessages([]);
@@ -1570,7 +1588,7 @@ export default function LiveWorkflowProvider({ children }) {
     await endLiveWorkflowSession(session.id);
     setSession(null);
     setParticipants([]);
-    setRemoteCursors({});
+    window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_CURSOR_EVENT, { detail: { type: "clear" } }));
     localStorage.removeItem(LIVE_WORKFLOW_SESSION_STORAGE_KEY);
     disconnect(false);
   }, [disconnect, session?.id]);
@@ -1723,46 +1741,69 @@ export default function LiveWorkflowProvider({ children }) {
 
   useEffect(() => {
     if (!session?.id) return undefined;
-    const handleViewportChange = (event) => {
-      const now = Date.now();
+    const flushViewport = () => {
+      viewportFrameRef.current = null;
+      const now = performance.now();
+      const elapsed = now - lastViewportSentRef.current;
+      if (elapsed < 32) {
+        viewportDelayTimerRef.current = window.setTimeout(() => {
+          viewportDelayTimerRef.current = null;
+          viewportFrameRef.current = window.requestAnimationFrame(flushViewport);
+        }, Math.max(0, 32 - elapsed));
+        return;
+      }
+      const eventTarget = pendingViewportTargetRef.current;
+      pendingViewportTargetRef.current = null;
       if (
         applyingRemoteRouteRef.current ||
         applyingRemoteViewportRef.current ||
         applyingRemoteInteractionRef.current ||
-        now < muteOutgoingUntilRef.current ||
-        now - lastViewportSentRef.current < 160 ||
+        Date.now() < muteOutgoingUntilRef.current ||
         wsRef.current?.readyState !== WebSocket.OPEN
       ) {
         return;
       }
       lastViewportSentRef.current = now;
       const route = getCurrentRoute();
-      const scrollTarget = buildScrollableTargetContext(event.target);
+      const scrollTarget = buildScrollableTargetContext(eventTarget);
       lastScrollTargetContextRef.current = scrollTarget;
       const context = buildViewportContext(scrollTarget ? { scrollTarget } : {});
-      const viewportSignature = `${route}|${roundedWorkflowNumber(context.scrollX)}|${roundedWorkflowNumber(context.scrollY)}|${roundedWorkflowNumber(context.scrollYRatio, 0.01)}|${scrollTarget?.path || "window"}|${roundedWorkflowNumber(scrollTarget?.scrollTop, 4)}`;
+      const viewportSignature = `${route}|${roundedWorkflowNumber(context.scrollX, 2)}|${roundedWorkflowNumber(context.scrollY, 2)}|${roundedWorkflowNumber(context.scrollYRatio, 0.002)}|${scrollTarget?.path || "window"}|${roundedWorkflowNumber(scrollTarget?.scrollTop, 2)}`;
       if (viewportSignature === lastViewportSignatureRef.current) return;
       lastViewportSignatureRef.current = viewportSignature;
-
       wsRef.current.send(JSON.stringify({
         type: "viewport.change",
         payload: { route, ...context },
       }));
-      mergeUserRouteIntoSession(currentUserRef.current?.id, route, context);
-      if (sharedStatePersistTimerRef.current) window.clearTimeout(sharedStatePersistTimerRef.current);
-      sharedStatePersistTimerRef.current = window.setTimeout(() => {
-        sendCurrentNavigation(undefined, { force: true });
-      }, 450);
+    };
+    const handleViewportChange = (event) => {
+      if (
+        applyingRemoteRouteRef.current ||
+        applyingRemoteViewportRef.current ||
+        applyingRemoteInteractionRef.current ||
+        Date.now() < muteOutgoingUntilRef.current ||
+        wsRef.current?.readyState !== WebSocket.OPEN
+      ) {
+        return;
+      }
+      pendingViewportTargetRef.current = event.target;
+      if (!viewportFrameRef.current && !viewportDelayTimerRef.current) {
+        viewportFrameRef.current = window.requestAnimationFrame(flushViewport);
+      }
     };
     window.addEventListener("scroll", handleViewportChange, { passive: true, capture: true });
-    return () => window.removeEventListener("scroll", handleViewportChange, { capture: true });
-  }, [mergeUserRouteIntoSession, sendCurrentNavigation, session?.id]);
+    return () => {
+      window.removeEventListener("scroll", handleViewportChange, { capture: true });
+      if (viewportFrameRef.current) window.cancelAnimationFrame(viewportFrameRef.current);
+      if (viewportDelayTimerRef.current) window.clearTimeout(viewportDelayTimerRef.current);
+      viewportFrameRef.current = null;
+      viewportDelayTimerRef.current = null;
+      pendingViewportTargetRef.current = null;
+    };
+  }, [session?.id]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setRemoteCursors((prev) => Object.fromEntries(
-        Object.entries(prev).filter(([, cursor]) => Date.now() - cursor.seenAt < REMOTE_CURSOR_TTL_MS)
-      ));
       setRemoteInputs((prev) => Object.fromEntries(
         Object.entries(prev).filter(([, input]) => Date.now() - input.seenAt < REMOTE_INPUT_TTL_MS)
       ));
@@ -1784,7 +1825,6 @@ export default function LiveWorkflowProvider({ children }) {
     session,
     participants,
     currentUser,
-    remoteCursors: Object.values(remoteCursors),
     isPresenter,
     isFollowing,
     followTargetId,
@@ -1795,12 +1835,12 @@ export default function LiveWorkflowProvider({ children }) {
     resumeFollowing,
     followUser,
     endSession,
-  }), [currentUser, endSession, followTargetId, followTargetParticipant, followUser, isFollowing, isPresenter, joinByToken, openShareDialog, participants, remoteCursors, resumeFollowing, session, stopFollowing]);
+  }), [currentUser, endSession, followTargetId, followTargetParticipant, followUser, isFollowing, isPresenter, joinByToken, openShareDialog, participants, resumeFollowing, session, stopFollowing]);
 
   return (
     <LiveWorkflowContext.Provider value={value}>
       {children}
-      <RemoteCursors cursors={Object.values(remoteCursors)} currentRoute={getCurrentRoute()} />
+      <RemoteCursorLayer currentRoute={getCurrentRoute()} />
       <RemoteClickEffects clicks={Object.values(remoteClicks)} currentRoute={getCurrentRoute()} />
       <RemoteInputOverlays inputs={Object.values(remoteInputs)} currentRoute={getCurrentRoute()} />
       <LiveWorkflowPeopleBar
@@ -2060,7 +2100,76 @@ function WorkflowChatPanel({ open, messages, currentUser, text, onTextChange, on
   );
 }
 
-function RemoteCursors({ cursors, currentRoute }) {
+function RemoteCursorLayer({ currentRoute }) {
+  const [cursorsByUser, setCursorsByUser] = useState({});
+  const pendingCursorsRef = useRef({});
+  const cursorFrameRef = useRef(null);
+
+  useEffect(() => {
+    const flushPendingCursors = () => {
+      cursorFrameRef.current = null;
+      const pending = pendingCursorsRef.current;
+      pendingCursorsRef.current = {};
+      if (!Object.keys(pending).length) return;
+      setCursorsByUser((prev) => ({ ...prev, ...pending }));
+    };
+    const scheduleCursorFrame = () => {
+      if (!cursorFrameRef.current) {
+        cursorFrameRef.current = window.requestAnimationFrame(flushPendingCursors);
+      }
+    };
+    const handleCursorEvent = (event) => {
+      const detail = event.detail || {};
+      if (detail.type === "clear") pendingCursorsRef.current = {};
+      if (detail.type === "remove" && detail.userId) delete pendingCursorsRef.current[detail.userId];
+      if (detail.type === "upsert" && detail.cursor?.user?.id) {
+        pendingCursorsRef.current[detail.cursor.user.id] = detail.cursor;
+        scheduleCursorFrame();
+        return;
+      }
+      if (detail.type === "batch" && Array.isArray(detail.cursors)) {
+        detail.cursors.forEach((cursor) => {
+          if (cursor?.user?.id) pendingCursorsRef.current[cursor.user.id] = cursor;
+        });
+        scheduleCursorFrame();
+        return;
+      }
+      setCursorsByUser((prev) => {
+        if (detail.type === "clear") return Object.keys(prev).length ? {} : prev;
+        if (detail.type === "remove") {
+          if (!prev[detail.userId]) return prev;
+          const next = { ...prev };
+          delete next[detail.userId];
+          return next;
+        }
+        return prev;
+      });
+    };
+    window.addEventListener(LIVE_WORKFLOW_CURSOR_EVENT, handleCursorEvent);
+    return () => {
+      window.removeEventListener(LIVE_WORKFLOW_CURSOR_EVENT, handleCursorEvent);
+      if (cursorFrameRef.current) window.cancelAnimationFrame(cursorFrameRef.current);
+      cursorFrameRef.current = null;
+      pendingCursorsRef.current = {};
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const cutoff = Date.now() - REMOTE_CURSOR_TTL_MS;
+      setCursorsByUser((prev) => {
+        const entries = Object.entries(prev);
+        const fresh = entries.filter(([, cursor]) => cursor.seenAt >= cutoff);
+        return fresh.length === entries.length ? prev : Object.fromEntries(fresh);
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <RemoteCursors cursors={Object.values(cursorsByUser)} currentRoute={currentRoute} />;
+}
+
+const RemoteCursors = React.memo(function RemoteCursors({ cursors, currentRoute }) {
   const visibleCursors = cursors.filter((cursor) => !cursor.route || !currentRoute || cursor.route === currentRoute);
   return (
     <div className="live-cursors-layer" aria-hidden="true">
@@ -2072,7 +2181,7 @@ function RemoteCursors({ cursors, currentRoute }) {
             className="live-remote-cursor"
             style={{ "--cursor-color": cursor.color || getParticipantColor(cursor.user.id) }}
             animate={{ x: position.x, y: position.y }}
-            transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.2 }}
+            transition={{ duration: 0.04, ease: "linear" }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 1.5 16.5 8 10 9.4 7.1 16.5 2 1.5Z" /></svg>
             <span>{getParticipantName(cursor.user)}</span>
@@ -2081,7 +2190,7 @@ function RemoteCursors({ cursors, currentRoute }) {
       })}
     </div>
   );
-}
+});
 
 function LiveWorkflowBar({ session, participants, isPresenter, isFollowing, onStopFollowing, onResumeFollowing, onEnd }) {
   if (!session) return null;
