@@ -67,6 +67,10 @@ import {
     resolveClientDocumentUrl,
 } from "../../../utils/clientDocuments.js";
 import { hasOverdueCreditDebt } from "../../../utils/creditDebtBalance.js";
+import {
+    publishLiveWorkflowPageState,
+    subscribeToRemoteLiveWorkflowPageState,
+} from "../../../utils/liveWorkflowPageState.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
@@ -94,6 +98,8 @@ export default function ABSClientSearch() {
     const searchInFlightRef = useRef(false);
     const consumedClientIndexRef = useRef("");
     const handleSearchClientRef = useRef(null);
+    const handleClearRef = useRef(null);
+    const remoteSearchSignatureRef = useRef("");
     const [cardsData, setCardsData] = useState([]);
     const [accountsData, setAccountsData] = useState([]);
     const [creditsData, setCreditsData] = useState([]);
@@ -296,7 +302,10 @@ export default function ABSClientSearch() {
         }
     };
 
-    const handleClear = () => {
+    const handleClear = (options = {}) => {
+        if (!options?.remote) {
+            publishLiveWorkflowPageState({ kind: "frontovik.clear" });
+        }
         setPhoneNumber("");
         setDisplayPhone("");
         setClientsData([]);
@@ -314,7 +323,14 @@ export default function ABSClientSearch() {
         setPinModalClient(null);
         setClientPin("");
         sessionStorage.removeItem("absClientSearchState");
+        consumedClientIndexRef.current = "";
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.delete("clientIndex");
+            return nextParams;
+        }, { replace: true });
     };
+    handleClearRef.current = handleClear;
 
     // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
@@ -355,7 +371,11 @@ export default function ABSClientSearch() {
 
         // getClientByCode is now imported from getUserCredits API
 
-    const handleSearchClient = async (searchValue = phoneNumber, searchType = selectTypeSearchClient) => {
+    const handleSearchClient = async (
+        searchValue = phoneNumber,
+        searchType = selectTypeSearchClient,
+        options = {},
+    ) => {
         if (!searchValue) {
             showAlert("Пожалуйста, введите данные для поиска", "error");
             return;
@@ -367,6 +387,15 @@ export default function ABSClientSearch() {
         searchInFlightRef.current = true;
 
         let formattedPhone = searchValue.trim();
+
+        if (!options.remote) {
+            publishLiveWorkflowPageState({
+                kind: "frontovik.search",
+                searchValue: formattedPhone,
+                searchType,
+                activeTab,
+            });
+        }
 
         // Log audit action
         logAuditAction({
@@ -476,6 +505,37 @@ export default function ABSClientSearch() {
         }
     };
     handleSearchClientRef.current = handleSearchClient;
+
+    useEffect(() => subscribeToRemoteLiveWorkflowPageState((pageState) => {
+        if (!pageState || !String(pageState.kind || "").startsWith("frontovik.")) return;
+
+        if (pageState.kind === "frontovik.clear") {
+            handleClearRef.current?.({ remote: true });
+            return;
+        }
+        if (pageState.activeTab) {
+            setActiveTab(pageState.activeTab);
+        }
+        if (pageState.kind !== "frontovik.search") return;
+
+        const searchValue = String(pageState.searchValue || "").trim();
+        const searchType = String(pageState.searchType || "").trim();
+        if (!searchValue || !searchType) return;
+        const signature = `${searchType}|${searchValue}|${pageState.at || ""}`;
+        if (remoteSearchSignatureRef.current === signature) return;
+        remoteSearchSignatureRef.current = signature;
+
+        setSelectTypeSearchClient(searchType);
+        setPhoneNumber(searchValue);
+        setDisplayPhone(
+            searchType === "client/info?phoneNumber="
+                ? formatPhoneNumber(searchValue.replace(/[^\d.]/g, ""))
+                : searchValue,
+        );
+        window.setTimeout(() => {
+            void handleSearchClientRef.current?.(searchValue, searchType, { remote: true });
+        }, 0);
+    }), []);
 
     const handleGetDataUser = useCallback(async (client, clientIndex) => {
         if (!client?.client_code) return;
@@ -1145,6 +1205,27 @@ export default function ABSClientSearch() {
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
     const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
 
+    const handleActiveTabChange = useCallback((nextTab) => {
+        setActiveTab(nextTab);
+        publishLiveWorkflowPageState({
+            kind: "frontovik.view",
+            activeTab: nextTab,
+            clientCode: selectedClient?.client_code || "",
+        });
+    }, [selectedClient?.client_code]);
+
+    useEffect(() => {
+        const clientCode = String(selectedClient?.client_code || "").trim();
+        if (!clientCode) return;
+        consumedClientIndexRef.current = clientCode;
+        setSearchParams((currentParams) => {
+            if (currentParams.get("clientIndex") === clientCode) return currentParams;
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.set("clientIndex", clientCode);
+            return nextParams;
+        }, { replace: true });
+    }, [selectedClient?.client_code, setSearchParams]);
+
     useEffect(() => {
         const checkTerror = async () => {
             if (!selectedClient) {
@@ -1442,11 +1523,6 @@ export default function ABSClientSearch() {
         setAccountsData([]);
         setCreditsData([]);
         setDepositsData([]);
-        setSearchParams((currentParams) => {
-            const nextParams = new URLSearchParams(currentParams);
-            nextParams.delete("clientIndex");
-            return nextParams;
-        }, { replace: true });
         void handleSearchClientRef.current?.(clientIndex, clientIndexSearchType);
     }, [requestedClientIndex, setSearchParams]);
 
@@ -1685,7 +1761,7 @@ export default function ABSClientSearch() {
                                 tableData={tableData}
                                 isMobile={isMobile}
                                 activeTab={activeTab}
-                                setActiveTab={setActiveTab}
+                                setActiveTab={handleActiveTabChange}
                             />
                         )}
                     </div>

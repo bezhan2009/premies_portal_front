@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion as Motion } from "framer-motion";
 import { AlertCircle, Loader2, Radio, ShieldCheck } from "lucide-react";
@@ -16,8 +16,11 @@ export default function LiveWorkflowJoinPage() {
   const { token } = useParams();
   const { joinByToken } = useLiveWorkflow();
   const [state, setState] = useState({ loading: true, error: "" });
+  const joinAttemptRef = useRef("");
 
   useEffect(() => {
+    if (!token || joinAttemptRef.current === token) return undefined;
+    joinAttemptRef.current = token;
     let mounted = true;
     joinByToken(token)
       .then(() => {

@@ -17,6 +17,10 @@ import { apiClient } from "../../api/utils/apiClient";
 import { parseLiveWorkflowInvitation } from "../../utils/liveWorkflowMessages";
 import useNavigationStore from "../../store/useNavigationStore";
 import useTabsStore from "../../store/useTabsStore";
+import {
+  LIVE_WORKFLOW_PAGE_STATE_EVENT,
+  LIVE_WORKFLOW_REMOTE_PAGE_STATE_EVENT,
+} from "../../utils/liveWorkflowPageState";
 import "./LiveWorkflow.css";
 
 const LiveWorkflowContext = createContext(null);
@@ -25,8 +29,7 @@ const REMOTE_SYNC_MUTE_MS = 1200;
 const REMOTE_CURSOR_TTL_MS = 12000;
 const REMOTE_SNAPSHOT_DEDUP_MS = 220;
 const ONLINE_GRACE_MS = 18000;
-const MANUAL_FOLLOW_PAUSE_MS = 8000;
-const INPUT_SYNC_INTERVAL = 120;
+const INPUT_SYNC_INTERVAL = 90;
 const REMOTE_INPUT_TTL_MS = 12000;
 const WORKFLOW_CHAT_LIMIT = 100;
 const LIVE_WORKFLOW_SESSION_STORAGE_KEY = "live_workflow_active_session_id";
@@ -150,12 +153,14 @@ const getRemoteCursorPosition = (cursor) => {
   const viewportX = Number(cursor?.x);
   const viewportY = Number(cursor?.y);
 
-  const x = Number.isFinite(pageXRatio)
-    ? pageXRatio * metrics.width - metrics.scrollX
-    : (Number.isFinite(viewportX) ? viewportX : 0.5) * metrics.viewportWidth;
-  const y = Number.isFinite(pageYRatio)
-    ? pageYRatio * metrics.height - metrics.scrollY
-    : (Number.isFinite(viewportY) ? viewportY : 0.5) * metrics.viewportHeight;
+  // Viewport ratios are the stable coordinate system when participants have
+  // different resolutions or when the page uses nested scroll containers.
+  const x = Number.isFinite(viewportX)
+    ? viewportX * metrics.viewportWidth
+    : (Number.isFinite(pageXRatio) ? pageXRatio * metrics.width - metrics.scrollX : metrics.viewportWidth * 0.5);
+  const y = Number.isFinite(viewportY)
+    ? viewportY * metrics.viewportHeight
+    : (Number.isFinite(pageYRatio) ? pageYRatio * metrics.height - metrics.scrollY : metrics.viewportHeight * 0.5);
 
   return {
     x: clampWorkflowNumber(x, -24, metrics.viewportWidth + 24),
@@ -200,6 +205,37 @@ const getElementNthPath = (element) => {
     current = current.parentElement;
   }
   return parts.join(" > ");
+};
+
+const findWorkflowElement = (target = {}) => {
+  const selectors = [];
+  if (target.id) selectors.push(`#${cssEscapeValue(target.id)}`);
+  if (target.path) selectors.push(target.path);
+  for (const selector of selectors) {
+    try {
+      const found = document.querySelector(selector);
+      if (found) return found;
+    } catch {
+      // Ignore stale selectors after navigation or a responsive layout change.
+    }
+  }
+  return null;
+};
+
+const buildScrollableTargetContext = (eventTarget) => {
+  const element = eventTarget instanceof Element ? eventTarget : null;
+  if (!element || element === document.documentElement || element === document.body) return null;
+  const maxLeft = Math.max(element.scrollWidth - element.clientWidth, 0);
+  const maxTop = Math.max(element.scrollHeight - element.clientHeight, 0);
+  if (maxLeft <= 0 && maxTop <= 0) return null;
+  return {
+    id: element.id || "",
+    path: getElementNthPath(element),
+    scrollLeft: element.scrollLeft,
+    scrollTop: element.scrollTop,
+    scrollLeftRatio: maxLeft > 0 ? element.scrollLeft / maxLeft : 0,
+    scrollTopRatio: maxTop > 0 ? element.scrollTop / maxTop : 0,
+  };
 };
 
 const getWorkflowInputLabel = (element) => {
@@ -279,6 +315,20 @@ const findWorkflowInputTarget = (target = {}) => {
     }
   }
   return null;
+};
+
+const setWorkflowInputNativeValue = (element, value) => {
+  if (!element || element.isContentEditable) return false;
+  const tag = element.tagName?.toLowerCase();
+  const prototype = tag === "textarea"
+    ? window.HTMLTextAreaElement?.prototype
+    : tag === "select"
+      ? window.HTMLSelectElement?.prototype
+      : window.HTMLInputElement?.prototype;
+  const setter = prototype ? Object.getOwnPropertyDescriptor(prototype, "value")?.set : null;
+  if (!setter) return false;
+  setter.call(element, value ?? "");
+  return true;
 };
 
 const getRemoteInputPosition = (input) => {
@@ -448,6 +498,7 @@ export default function LiveWorkflowProvider({ children }) {
   const [participants, setParticipants] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
   const [remoteCursors, setRemoteCursors] = useState({});
+  const [remoteClicks, setRemoteClicks] = useState({});
   const [isShareOpen, setShareOpen] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [employeeQuery, setEmployeeQuery] = useState("");
@@ -469,9 +520,14 @@ export default function LiveWorkflowProvider({ children }) {
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(false);
   const lastCursorSentRef = useRef(0);
-  const lastInputSentRef = useRef(0);
+  const pendingInputTimerRef = useRef(null);
+  const pendingInputElementRef = useRef(null);
   const activeInputTargetRef = useRef(null);
+  const applyingRemoteInputRef = useRef(false);
+  const latestPageStateRef = useRef(null);
+  const pendingChatMessagesRef = useRef([]);
   const lastViewportSentRef = useRef(0);
+  const lastScrollTargetContextRef = useRef(null);
   const shellTimerRef = useRef(null);
   const lastPointerRef = useRef({ x: 0.5, y: 0.5 });
   const routeTimerRef = useRef(null);
@@ -538,6 +594,7 @@ export default function LiveWorkflowProvider({ children }) {
     activeTabId: workflowActiveTabId || getCurrentRoute(),
     splitTabHref: workflowSplitTabHref || "",
     menuLinks: sanitizeWorkflowMenuLinks(workflowMenuLinks),
+    pageState: latestPageStateRef.current,
   }), [workflowActiveTabId, workflowMenuLinks, workflowSplitTabHref, workflowTabs]);
 
   useEffect(() => {
@@ -571,28 +628,78 @@ export default function LiveWorkflowProvider({ children }) {
     muteOutgoingUntilRef.current = Math.max(muteOutgoingUntilRef.current, Date.now() + duration);
   }, []);
 
-  const pauseRemoteFollowForManualWork = useCallback((duration = MANUAL_FOLLOW_PAUSE_MS) => {
-    if (!isFollowingRef.current || applyingRemoteRouteRef.current || applyingRemoteViewportRef.current) return;
-    const nextUntil = Date.now() + duration;
-    manualFollowPausedUntilRef.current = nextUntil;
-    setManualFollowPausedUntil(nextUntil);
-  }, []);
-
   const syncRemoteViewport = useCallback((context = {}) => {
     if (isFollowingRef.current && Date.now() < manualFollowPausedUntilRef.current) return;
     const hasScrollValue = ["scrollX", "scrollY", "scrollXRatio", "scrollYRatio"].some((key) => Number.isFinite(Number(context?.[key])));
-    if (!hasScrollValue) return;
+    const nestedTarget = context?.scrollTarget ? findWorkflowElement(context.scrollTarget) : null;
+    if (!hasScrollValue && !nestedTarget) return;
     const { left, top } = getRemoteScrollTarget(context);
-    if (Math.abs(window.scrollX - left) < 24 && Math.abs(window.scrollY - top) < 24) return;
+    const windowNeedsSync = hasScrollValue && (Math.abs(window.scrollX - left) >= 4 || Math.abs(window.scrollY - top) >= 4);
+    let nestedNeedsSync = false;
+    let nestedLeft = 0;
+    let nestedTop = 0;
+    if (nestedTarget) {
+      const maxLeft = Math.max(nestedTarget.scrollWidth - nestedTarget.clientWidth, 0);
+      const maxTop = Math.max(nestedTarget.scrollHeight - nestedTarget.clientHeight, 0);
+      const leftRatio = Number(context.scrollTarget?.scrollLeftRatio);
+      const topRatio = Number(context.scrollTarget?.scrollTopRatio);
+      nestedLeft = Number.isFinite(leftRatio)
+        ? clampWorkflowNumber(leftRatio, 0, 1) * maxLeft
+        : clampWorkflowNumber(Number(context.scrollTarget?.scrollLeft) || 0, 0, maxLeft);
+      nestedTop = Number.isFinite(topRatio)
+        ? clampWorkflowNumber(topRatio, 0, 1) * maxTop
+        : clampWorkflowNumber(Number(context.scrollTarget?.scrollTop) || 0, 0, maxTop);
+      nestedNeedsSync = Math.abs(nestedTarget.scrollLeft - nestedLeft) >= 3 || Math.abs(nestedTarget.scrollTop - nestedTop) >= 3;
+    }
+    if (!windowNeedsSync && !nestedNeedsSync) return;
     muteOutgoingSync();
     applyingRemoteViewportRef.current = true;
     window.requestAnimationFrame(() => {
-      window.scrollTo({ left, top, behavior: "auto" });
+      if (windowNeedsSync) window.scrollTo({ left, top, behavior: "auto" });
+      if (nestedNeedsSync && nestedTarget) {
+        nestedTarget.scrollTo({ left: nestedLeft, top: nestedTop, behavior: "auto" });
+      }
       window.setTimeout(() => {
         applyingRemoteViewportRef.current = false;
-      }, 180);
+      }, 80);
     });
   }, [muteOutgoingSync]);
+
+  const applyRemotePageState = useCallback((pageState) => {
+    if (!pageState || typeof pageState !== "object") return;
+    window.dispatchEvent(new CustomEvent(LIVE_WORKFLOW_REMOTE_PAGE_STATE_EVENT, { detail: pageState }));
+  }, []);
+
+  const applyRemoteInputValue = useCallback((payload) => {
+    if (!payload || payload.sensitive || payload.status === "blur" || payload.route !== getCurrentRoute()) return;
+    const apply = () => {
+      const element = findWorkflowInputTarget(payload.target);
+      if (!element || !isWorkflowInputTarget(element)) return false;
+      const nextValue = payload.value ?? "";
+      if (String(getWorkflowInputValue(element)) === String(nextValue)) return true;
+      applyingRemoteInputRef.current = true;
+      try {
+        if (element.type === "checkbox" || element.type === "radio") {
+          element.checked = String(nextValue) === "выбрано";
+        } else if (element.isContentEditable) {
+          element.textContent = String(nextValue);
+        } else {
+          setWorkflowInputNativeValue(element, nextValue);
+        }
+        const inputEvent = new Event(element.tagName?.toLowerCase() === "select" ? "change" : "input", { bubbles: true });
+        Object.defineProperty(inputEvent, "liveWorkflowRemote", { value: true });
+        element.dispatchEvent(inputEvent);
+      } finally {
+        applyingRemoteInputRef.current = false;
+      }
+      return true;
+    };
+
+    if (!apply()) {
+      window.setTimeout(apply, 120);
+      window.setTimeout(apply, 500);
+    }
+  }, []);
 
   const applyRemoteSnapshot = useCallback((snapshot, options = {}) => {
     if (!snapshot?.route) return;
@@ -615,6 +722,7 @@ export default function LiveWorkflowProvider({ children }) {
     }
     lastAppliedRemoteSnapshotRef.current = { key: snapshotKey, at: now };
     muteOutgoingSync();
+    const pageState = context?.shell?.pageState || context?.pageState;
 
     if (snapshot.route !== getCurrentRoute()) {
       applyingRemoteRouteRef.current = true;
@@ -622,12 +730,15 @@ export default function LiveWorkflowProvider({ children }) {
       window.setTimeout(() => {
         applyingRemoteRouteRef.current = false;
         syncRemoteViewport(context);
+        applyRemotePageState(pageState);
         window.setTimeout(() => syncRemoteViewport(context), 700);
+        window.setTimeout(() => applyRemotePageState(pageState), 720);
       }, 650);
       return;
     }
     syncRemoteViewport(context);
-  }, [muteOutgoingSync, navigate, syncRemoteViewport]);
+    applyRemotePageState(pageState);
+  }, [applyRemotePageState, muteOutgoingSync, navigate, syncRemoteViewport]);
 
   const applySessionState = useCallback((nextSession) => {
     setSession(nextSession);
@@ -715,7 +826,10 @@ export default function LiveWorkflowProvider({ children }) {
     if (!force && navigationSignature === lastNavigationSignatureRef.current) return;
     lastNavigationSignatureRef.current = navigationSignature;
 
-    const context = buildViewportContext({ shell });
+    const context = buildViewportContext({
+      shell,
+      ...(lastScrollTargetContextRef.current ? { scrollTarget: lastScrollTargetContextRef.current } : {}),
+    });
     socket.send(JSON.stringify({
       type: "navigation.change",
       payload: { route, context },
@@ -801,12 +915,9 @@ export default function LiveWorkflowProvider({ children }) {
     }
   }, [isWorkflowChatOpen]);
 
-  const sendInputSync = useCallback((element, status = "change", options = {}) => {
+  const transmitInputSync = useCallback((element, status = "change") => {
     const socket = wsRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN || !isWorkflowInputTarget(element)) return;
-    const now = Date.now();
-    if (!options.force && status === "change" && now - lastInputSentRef.current < INPUT_SYNC_INTERVAL) return;
-    lastInputSentRef.current = now;
     socket.send(JSON.stringify({
       type: status === "focus" ? "input.focus" : status === "blur" ? "input.blur" : "input.change",
       payload: buildWorkflowInputPayload(element, status),
@@ -814,14 +925,43 @@ export default function LiveWorkflowProvider({ children }) {
     markParticipantOnline(currentUserRef.current);
   }, [markParticipantOnline]);
 
+  const sendInputSync = useCallback((element, status = "change", options = {}) => {
+    if (!isWorkflowInputTarget(element) || applyingRemoteInputRef.current) return;
+    if (status === "change" && !options.force) {
+      pendingInputElementRef.current = element;
+      if (pendingInputTimerRef.current) return;
+      pendingInputTimerRef.current = window.setTimeout(() => {
+        pendingInputTimerRef.current = null;
+        const pendingElement = pendingInputElementRef.current;
+        pendingInputElementRef.current = null;
+        transmitInputSync(pendingElement, "change");
+      }, INPUT_SYNC_INTERVAL);
+      return;
+    }
+    transmitInputSync(element, status);
+  }, [transmitInputSync]);
+
+  const sendPageState = useCallback((pageState, socket = wsRef.current) => {
+    if (!pageState || typeof pageState !== "object") return;
+    latestPageStateRef.current = pageState;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "page.state", payload: pageState }));
+    markParticipantOnline(currentUserRef.current);
+  }, [markParticipantOnline]);
+
   const sendWorkflowChatMessage = useCallback(() => {
     const text = workflowChatText.trim();
     const socket = wsRef.current;
-    if (!text || !socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({
-      type: "workflow.chat.send",
-      payload: { text },
-    }));
+    if (!text) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      pendingChatMessagesRef.current.push(text);
+      setStatusMessage("Сообщение будет отправлено сразу после подключения");
+    } else {
+      socket.send(JSON.stringify({
+        type: "workflow.chat.send",
+        payload: { text },
+      }));
+    }
     setWorkflowChatText("");
     setWorkflowChatOpen(true);
   }, [workflowChatText]);
@@ -855,8 +995,14 @@ export default function LiveWorkflowProvider({ children }) {
         setStatusMessage("Live workflow подключён");
         sendCurrentNavigation(socket, { force: true });
         sendCurrentCursor(socket);
-        window.setTimeout(() => sendCurrentNavigation(socket, { force: true }), 400);
-        window.setTimeout(() => sendCurrentCursor(socket), 450);
+        if (latestPageStateRef.current) sendPageState(latestPageStateRef.current, socket);
+        if (activeInputTargetRef.current) sendInputSync(activeInputTargetRef.current, "focus", { force: true });
+        socket.send(JSON.stringify({ type: "session.sync.request", payload: { at: Date.now() } }));
+        pendingChatMessagesRef.current.splice(0).forEach((text) => {
+          socket.send(JSON.stringify({ type: "workflow.chat.send", payload: { text } }));
+        });
+        window.setTimeout(() => sendCurrentNavigation(socket, { force: true }), 120);
+        window.setTimeout(() => sendCurrentCursor(socket), 140);
       };
 
       socket.onmessage = (event) => {
@@ -882,6 +1028,16 @@ export default function LiveWorkflowProvider({ children }) {
           markParticipantOnline(msg.user);
           sendCurrentNavigation(undefined, { force: true });
           sendCurrentCursor();
+          if (latestPageStateRef.current) sendPageState(latestPageStateRef.current);
+          if (activeInputTargetRef.current) sendInputSync(activeInputTargetRef.current, "focus", { force: true });
+          return;
+        }
+        if (msg.type === "session.sync.requested") {
+          markParticipantOnline(msg.user);
+          sendCurrentNavigation(undefined, { force: true });
+          sendCurrentCursor();
+          if (latestPageStateRef.current) sendPageState(latestPageStateRef.current);
+          if (activeInputTargetRef.current) sendInputSync(activeInputTargetRef.current, "focus", { force: true });
           return;
         }
         if (msg.type === "participant.left") {
@@ -959,6 +1115,22 @@ export default function LiveWorkflowProvider({ children }) {
           }
           return;
         }
+        if (msg.type === "interaction.clicked" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
+          const remoteUserId = Number(msg.user?.id);
+          markParticipantOnline(msg.user);
+          if (!remoteUserId || (msg.payload?.route && msg.payload.route !== getCurrentRoute())) return;
+          const click = { user: msg.user, ...(msg.payload || {}), seenAt: Date.now() };
+          setRemoteClicks((prev) => ({ ...prev, [remoteUserId]: click }));
+          window.setTimeout(() => {
+            setRemoteClicks((prev) => {
+              if (prev[remoteUserId]?.seenAt !== click.seenAt) return prev;
+              const next = { ...prev };
+              delete next[remoteUserId];
+              return next;
+            });
+          }, 900);
+          return;
+        }
         if (
           ["input.focused", "input.changed", "input.blurred"].includes(msg.type) &&
           Number(msg.user?.id) !== Number(currentUserRef.current?.id)
@@ -982,6 +1154,17 @@ export default function LiveWorkflowProvider({ children }) {
               seenAt: Date.now(),
             },
           }));
+          if (isFollowingRef.current && remoteUserId === Number(followTargetIdRef.current)) {
+            applyRemoteInputValue(msg.payload);
+          }
+          return;
+        }
+        if (msg.type === "page.state.changed" && Number(msg.user?.id) !== Number(currentUserRef.current?.id)) {
+          markParticipantOnline(msg.user);
+          if (isFollowingRef.current && Number(msg.user?.id) === Number(followTargetIdRef.current)) {
+            latestPageStateRef.current = msg.payload || null;
+            applyRemotePageState(msg.payload);
+          }
           return;
         }
         if (msg.type === "workflow.chat.message") {
@@ -994,6 +1177,7 @@ export default function LiveWorkflowProvider({ children }) {
           setSession(null);
           setParticipants([]);
           setRemoteCursors({});
+          setRemoteClicks({});
           setRemoteInputs({});
           setWorkflowMessages([]);
           setWorkflowChatUnread(0);
@@ -1014,7 +1198,7 @@ export default function LiveWorkflowProvider({ children }) {
     } catch {
       setStatusMessage("Не удалось подключить Live workflow");
     }
-  }, [appendWorkflowMessage, applyCursorSnapshots, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentCursor, sendCurrentNavigation, syncRemoteViewport]);
+  }, [appendWorkflowMessage, applyCursorSnapshots, applyRemoteInputValue, applyRemotePageState, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentCursor, sendCurrentNavigation, sendInputSync, sendPageState, syncRemoteViewport]);
 
   const openShareDialog = useCallback(async () => {
     setShareOpen(true);
@@ -1047,10 +1231,10 @@ export default function LiveWorkflowProvider({ children }) {
     applySessionState(joined);
     applyCursorSnapshots(joined?.cursors);
     applyWorkflowMessages(joined?.messages);
-    await connect(joined);
     const me = joined.participants?.find((item) => Number(item.user?.id) === Number(currentUserRef.current?.id));
     const targetId = Number(me?.follow_target_id || joined.presenter_user_id || 0);
     applyRemoteSnapshot(getFollowSnapshot(joined, targetId), { replace: true });
+    await connect(joined);
   }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, connect]);
 
   useEffect(() => {
@@ -1163,25 +1347,35 @@ export default function LiveWorkflowProvider({ children }) {
   }, [location.hash, location.pathname, location.search, sendCurrentNavigation, session?.id]);
 
   useEffect(() => {
+    const handlePageState = (event) => {
+      const pageState = event.detail;
+      if (!pageState || typeof pageState !== "object") return;
+      sendPageState({ ...pageState, route: pageState.route || getCurrentRoute(), at: Date.now() });
+    };
+    window.addEventListener(LIVE_WORKFLOW_PAGE_STATE_EVENT, handlePageState);
+    return () => window.removeEventListener(LIVE_WORKFLOW_PAGE_STATE_EVENT, handlePageState);
+  }, [sendPageState]);
+
+  useEffect(() => {
     if (!session?.id) return undefined;
-    const handleManualInteraction = (event) => {
-      const target = event.target;
-      if (target?.closest?.(".live-workflow-bar, .live-workflow-people-panel, .live-share-backdrop, .live-workflow-chat-panel")) {
-        return;
-      }
-      pauseRemoteFollowForManualWork();
+    const handleClick = (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || target.closest(".live-workflow-bar, .live-workflow-people-panel, .live-share-backdrop, .live-workflow-chat-panel")) return;
+      const socket = wsRef.current;
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({
+        type: "interaction.click",
+        payload: {
+          route: getCurrentRoute(),
+          x: Math.max(0, Math.min(1, event.clientX / Math.max(window.innerWidth, 1))),
+          y: Math.max(0, Math.min(1, event.clientY / Math.max(window.innerHeight, 1))),
+          label: String(target.getAttribute("aria-label") || target.textContent || "Действие").trim().replace(/\s+/g, " ").slice(0, 80),
+        },
+      }));
     };
-    window.addEventListener("wheel", handleManualInteraction, { passive: true, capture: true });
-    window.addEventListener("touchstart", handleManualInteraction, { passive: true, capture: true });
-    window.addEventListener("pointerdown", handleManualInteraction, { passive: true, capture: true });
-    window.addEventListener("keydown", handleManualInteraction, { capture: true });
-    return () => {
-      window.removeEventListener("wheel", handleManualInteraction, { capture: true });
-      window.removeEventListener("touchstart", handleManualInteraction, { capture: true });
-      window.removeEventListener("pointerdown", handleManualInteraction, { capture: true });
-      window.removeEventListener("keydown", handleManualInteraction, { capture: true });
-    };
-  }, [pauseRemoteFollowForManualWork, session?.id]);
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [session?.id]);
 
   useEffect(() => {
     if (!session?.id) return undefined;
@@ -1192,6 +1386,7 @@ export default function LiveWorkflowProvider({ children }) {
       sendInputSync(target, "focus", { force: true });
     };
     const handleInput = (event) => {
+      if (event.liveWorkflowRemote || applyingRemoteInputRef.current) return;
       const target = event.target;
       if (!isWorkflowInputTarget(target)) return;
       activeInputTargetRef.current = target;
@@ -1215,6 +1410,10 @@ export default function LiveWorkflowProvider({ children }) {
       document.removeEventListener("input", handleInput, true);
       document.removeEventListener("change", handleInput, true);
       document.removeEventListener("focusout", handleFocusOut, true);
+      if (pendingInputTimerRef.current) {
+        window.clearTimeout(pendingInputTimerRef.current);
+        pendingInputTimerRef.current = null;
+      }
     };
   }, [sendInputSync, session?.id]);
 
@@ -1264,17 +1463,8 @@ export default function LiveWorkflowProvider({ children }) {
 
   useEffect(() => {
     if (!session?.id) return undefined;
-    const handleViewportChange = () => {
+    const handleViewportChange = (event) => {
       const now = Date.now();
-      if (
-        isFollowingRef.current &&
-        !applyingRemoteRouteRef.current &&
-        !applyingRemoteViewportRef.current &&
-        now >= muteOutgoingUntilRef.current
-      ) {
-        pauseRemoteFollowForManualWork();
-        return;
-      }
       if (
         isFollowingRef.current ||
         applyingRemoteRouteRef.current ||
@@ -1287,8 +1477,10 @@ export default function LiveWorkflowProvider({ children }) {
       }
       lastViewportSentRef.current = now;
       const route = getCurrentRoute();
-      const context = buildViewportContext();
-      const viewportSignature = `${route}|${roundedWorkflowNumber(context.scrollX)}|${roundedWorkflowNumber(context.scrollY)}|${roundedWorkflowNumber(context.scrollYRatio, 0.01)}`;
+      const scrollTarget = buildScrollableTargetContext(event.target);
+      lastScrollTargetContextRef.current = scrollTarget;
+      const context = buildViewportContext(scrollTarget ? { scrollTarget } : {});
+      const viewportSignature = `${route}|${roundedWorkflowNumber(context.scrollX)}|${roundedWorkflowNumber(context.scrollY)}|${roundedWorkflowNumber(context.scrollYRatio, 0.01)}|${scrollTarget?.path || "window"}|${roundedWorkflowNumber(scrollTarget?.scrollTop, 4)}`;
       if (viewportSignature === lastViewportSignatureRef.current) return;
       lastViewportSignatureRef.current = viewportSignature;
 
@@ -1298,9 +1490,9 @@ export default function LiveWorkflowProvider({ children }) {
       }));
       mergeUserRouteIntoSession(currentUserRef.current?.id, route, context);
     };
-    window.addEventListener("scroll", handleViewportChange, { passive: true });
-    return () => window.removeEventListener("scroll", handleViewportChange);
-  }, [mergeUserRouteIntoSession, pauseRemoteFollowForManualWork, session?.id]);
+    window.addEventListener("scroll", handleViewportChange, { passive: true, capture: true });
+    return () => window.removeEventListener("scroll", handleViewportChange, { capture: true });
+  }, [mergeUserRouteIntoSession, session?.id]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1345,6 +1537,7 @@ export default function LiveWorkflowProvider({ children }) {
     <LiveWorkflowContext.Provider value={value}>
       {children}
       <RemoteCursors cursors={Object.values(remoteCursors)} currentRoute={getCurrentRoute()} />
+      <RemoteClickEffects clicks={Object.values(remoteClicks)} currentRoute={getCurrentRoute()} />
       <RemoteInputOverlays inputs={Object.values(remoteInputs)} currentRoute={getCurrentRoute()} />
       <LiveWorkflowPeopleBar
         session={session}
@@ -1558,6 +1751,29 @@ function RemoteInputOverlays({ inputs, currentRoute }) {
           </Motion.div>
         );
       })}
+    </div>
+  );
+}
+
+function RemoteClickEffects({ clicks, currentRoute }) {
+  const visibleClicks = clicks.filter((click) => !click.route || click.route === currentRoute);
+  if (!visibleClicks.length) return null;
+  return (
+    <div className="live-clicks-layer" aria-hidden="true">
+      {visibleClicks.map((click) => (
+        <Motion.div
+          key={`${click.user?.id}-${click.seenAt}`}
+          className="live-remote-click"
+          style={{
+            "--click-color": getParticipantColor(click.user?.id),
+            left: `${clampWorkflowNumber(Number(click.x) || 0, 0, 1) * 100}%`,
+            top: `${clampWorkflowNumber(Number(click.y) || 0, 0, 1) * 100}%`,
+          }}
+          initial={{ opacity: 1, scale: 0.35 }}
+          animate={{ opacity: 0, scale: 1.9 }}
+          transition={{ duration: 0.75, ease: "easeOut" }}
+        />
+      ))}
     </div>
   );
 }

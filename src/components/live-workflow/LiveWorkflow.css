@@ -224,6 +224,24 @@
   font-weight: 700;
 }
 
+.live-clicks-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100019;
+  pointer-events: none;
+}
+
+.live-remote-click {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 3px solid var(--click-color, #eb2525);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--click-color, #eb2525) 18%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--click-color, #eb2525) 10%, transparent);
+}
+
 .live-inputs-layer {
   position: fixed;
   inset: 0;
