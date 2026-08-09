@@ -376,6 +376,19 @@ const getSessionUserRoutesMap = (targetSession) => (
   }, {})
 );
 
+const mergeWorkflowUserRoutes = (currentRoutes = [], incomingRoutes = []) => {
+  const merged = new Map();
+  [...currentRoutes, ...incomingRoutes].forEach((item) => {
+    const userId = Number(item?.user_id);
+    if (!userId || !item?.route) return;
+    const existing = merged.get(userId);
+    if (!existing || Number(item.updated_at || 0) >= Number(existing.updated_at || 0)) {
+      merged.set(userId, item);
+    }
+  });
+  return Array.from(merged.values());
+};
+
 const getFollowSnapshot = (targetSession, targetUserId) => {
   const numericTargetId = Number(targetUserId);
   if (!targetSession?.id || !numericTargetId) return null;
@@ -517,6 +530,7 @@ export default function LiveWorkflowProvider({ children }) {
   const workflowMenuLinks = useNavigationStore((state) => state.links);
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const connectionWatchdogRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(false);
   const lastCursorSentRef = useRef(0);
@@ -544,6 +558,7 @@ export default function LiveWorkflowProvider({ children }) {
   const onlineUntilByUserRef = useRef({});
   const sessionRef = useRef(null);
   const currentUserRef = useRef(null);
+  currentUserRef.current = currentUser;
 
   const myParticipant = useMemo(() => (
     participants.find((item) => Number(item.user?.id) === Number(currentUser?.id))
@@ -617,6 +632,7 @@ export default function LiveWorkflowProvider({ children }) {
   const disconnect = useCallback((allowReconnect = false) => {
     shouldReconnectRef.current = allowReconnect;
     if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+    if (connectionWatchdogRef.current) window.clearTimeout(connectionWatchdogRef.current);
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.close();
@@ -741,6 +757,20 @@ export default function LiveWorkflowProvider({ children }) {
   }, [applyRemotePageState, muteOutgoingSync, navigate, syncRemoteViewport]);
 
   const applySessionState = useCallback((nextSession) => {
+    sessionRef.current = nextSession;
+    userRoutesRef.current = getSessionUserRoutesMap(nextSession);
+    const currentParticipant = (nextSession?.participants || []).find(
+      (item) => Number(item.user?.id) === Number(currentUserRef.current?.id),
+    );
+    const nextFollowTargetId = Number(
+      currentParticipant?.follow_target_id || nextSession?.presenter_user_id || 0,
+    );
+    isFollowingRef.current = Boolean(
+      currentParticipant?.is_following &&
+      nextFollowTargetId &&
+      nextFollowTargetId !== Number(currentUserRef.current?.id),
+    );
+    followTargetIdRef.current = isFollowingRef.current ? nextFollowTargetId : 0;
     setSession(nextSession);
     const now = Date.now();
     const nextParticipants = Array.isArray(nextSession?.participants) ? nextSession.participants : [];
@@ -984,15 +1014,32 @@ export default function LiveWorkflowProvider({ children }) {
     if (!targetSession?.id) return;
     disconnect(true);
     shouldReconnectRef.current = true;
+    sessionRef.current = targetSession;
+
+    const scheduleReconnect = () => {
+      if (!shouldReconnectRef.current) return;
+      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      const attempt = Math.min(reconnectAttemptRef.current + 1, 8);
+      reconnectAttemptRef.current = attempt;
+      const timeout = Math.min(5000, 250 * 2 ** Math.max(0, attempt - 1));
+      reconnectTimerRef.current = window.setTimeout(() => {
+        connect(sessionRef.current || targetSession);
+      }, timeout);
+    };
 
     try {
+      setStatusMessage("Подключаем live workflow...");
       const { ticket } = await createLiveWorkflowWsTicket(targetSession.id);
       const socket = new WebSocket(backendToWsURL(targetSession.id, ticket));
       wsRef.current = socket;
+      connectionWatchdogRef.current = window.setTimeout(() => {
+        if (socket.readyState === WebSocket.CONNECTING) socket.close();
+      }, 5000);
 
       socket.onopen = () => {
+        if (connectionWatchdogRef.current) window.clearTimeout(connectionWatchdogRef.current);
         reconnectAttemptRef.current = 0;
-        setStatusMessage("Live workflow подключён");
+        setStatusMessage("Соединение установлено, синхронизируем workflow...");
         sendCurrentNavigation(socket, { force: true });
         sendCurrentCursor(socket);
         if (latestPageStateRef.current) sendPageState(latestPageStateRef.current, socket);
@@ -1010,6 +1057,12 @@ export default function LiveWorkflowProvider({ children }) {
         try {
           msg = JSON.parse(event.data);
         } catch {
+          return;
+        }
+        if (msg.type === "connection.ready") {
+          setStatusMessage("Live workflow подключён");
+          markParticipantOnline(msg.user || currentUserRef.current);
+          socket.send(JSON.stringify({ type: "session.sync.request", payload: { at: Date.now(), ready: true } }));
           return;
         }
         if (msg.type === "session.state") {
@@ -1187,16 +1240,18 @@ export default function LiveWorkflowProvider({ children }) {
       };
 
       socket.onclose = () => {
-        if (!shouldReconnectRef.current || !sessionRef.current?.id) return;
-        const attempt = Math.min(reconnectAttemptRef.current + 1, 6);
-        reconnectAttemptRef.current = attempt;
-        const timeout = Math.min(30000, 700 * 2 ** attempt);
-        reconnectTimerRef.current = window.setTimeout(() => connect(sessionRef.current), timeout);
+        if (connectionWatchdogRef.current) window.clearTimeout(connectionWatchdogRef.current);
+        if (wsRef.current === socket) wsRef.current = null;
+        scheduleReconnect();
       };
 
-      socket.onerror = () => setStatusMessage("Live assistance временно недоступен");
+      socket.onerror = () => {
+        setStatusMessage("Переподключаем live workflow...");
+        if (socket.readyState === WebSocket.CONNECTING) socket.close();
+      };
     } catch {
-      setStatusMessage("Не удалось подключить Live workflow");
+      setStatusMessage("Переподключаем live workflow...");
+      scheduleReconnect();
     }
   }, [appendWorkflowMessage, applyCursorSnapshots, applyRemoteInputValue, applyRemotePageState, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, disconnect, markParticipantOnline, mergeUserRouteIntoSession, sendCurrentCursor, sendCurrentNavigation, sendInputSync, sendPageState, syncRemoteViewport]);
 
@@ -1264,6 +1319,55 @@ export default function LiveWorkflowProvider({ children }) {
 
     return () => { cancelled = true; };
   }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, connect, currentUser?.id, location.pathname, session?.id]);
+
+  useEffect(() => {
+    if (!session?.id) return undefined;
+    let cancelled = false;
+    const timers = [];
+    const refreshSnapshot = async () => {
+      try {
+        const snapshot = await getLiveWorkflowSession(session.id);
+        if (cancelled || !snapshot?.id) return;
+        const current = sessionRef.current || {};
+        const merged = {
+          ...current,
+          ...snapshot,
+          user_routes: mergeWorkflowUserRoutes(current.user_routes, snapshot.user_routes),
+        };
+        applySessionState(merged);
+        if (snapshot.cursors?.length) applyCursorSnapshots(snapshot.cursors);
+        if (snapshot.messages?.length) applyWorkflowMessages(snapshot.messages);
+
+        if (wsRef.current?.readyState !== WebSocket.OPEN && isFollowingRef.current) {
+          const followSnapshot = getFollowSnapshot(merged, followTargetIdRef.current);
+          if (followSnapshot) applyRemoteSnapshot(followSnapshot, { force: true });
+        }
+      } catch {
+        // The WebSocket remains primary; these requests are only fast recovery.
+      }
+    };
+
+    [250, 750, 1500, 3000, 6000].forEach((delay) => {
+      timers.push(window.setTimeout(refreshSnapshot, delay));
+    });
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [applyCursorSnapshots, applyRemoteSnapshot, applySessionState, applyWorkflowMessages, session?.id]);
+
+  useEffect(() => {
+    if (!session?.id) return undefined;
+    const sendHeartbeat = () => {
+      const socket = wsRef.current;
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "heartbeat", payload: { at: Date.now() } }));
+      }
+    };
+    sendHeartbeat();
+    const timer = window.setInterval(sendHeartbeat, 15000);
+    return () => window.clearInterval(timer);
+  }, [session?.id]);
 
   const copyLink = useCallback(async () => {
     let invite = invitation;
