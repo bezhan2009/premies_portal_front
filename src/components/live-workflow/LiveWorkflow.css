@@ -224,6 +224,77 @@
   font-weight: 700;
 }
 
+.live-inputs-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100018;
+  pointer-events: none;
+}
+
+.live-remote-input {
+  position: fixed;
+  min-width: 80px;
+  min-height: 28px;
+  pointer-events: none;
+}
+
+.live-remote-input__ring {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--input-color, #eb2525);
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--input-color, #eb2525) 14%, transparent);
+  animation: live-input-pulse 1.2s ease-in-out infinite;
+}
+
+.live-remote-input__bubble {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  max-width: min(360px, calc(100vw - 32px));
+  min-width: 190px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--input-color, #eb2525) 35%, #fff);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--bg-surface, #fff) 94%, transparent);
+  color: var(--text-color, #172033);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.live-remote-input__bubble strong,
+.live-remote-input__bubble small,
+.live-remote-input__bubble p {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-remote-input__bubble strong {
+  color: var(--input-color, #eb2525);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.live-remote-input__bubble small {
+  margin-top: 2px;
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+}
+
+.live-remote-input__bubble p {
+  margin: 5px 0 0;
+  color: var(--text-color, #172033);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes live-input-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
 .live-workflow-bar {
   position: fixed;
   left: 50%;
@@ -295,6 +366,36 @@
 .live-workflow-bar button.danger {
   background: #eb2525;
   color: #fff;
+}
+
+.live-workflow-chat-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.live-workflow-chat-toggle.active {
+  background: #eb2525;
+  color: #fff;
+}
+
+.live-workflow-chat-toggle b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #eb2525;
+  color: #fff;
+  font-size: 10px;
+}
+
+.live-workflow-chat-toggle.active b {
+  background: #fff;
+  color: #eb2525;
 }
 
 .live-workflow-avatars {
@@ -499,6 +600,144 @@
 .live-workflow-person__following {
   background: rgba(16, 185, 129, 0.12);
   color: #047857;
+}
+
+.live-workflow-chat-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 72px;
+  z-index: 100016;
+  width: min(390px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 18px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-color, #172033);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.live-workflow-chat-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-workflow-chat-panel header strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.live-workflow-chat-panel header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+}
+
+.live-workflow-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(320px, 48vh);
+  overflow: auto;
+  padding: 12px;
+  background: color-mix(in srgb, var(--bg-color, #f8fafc) 72%, transparent);
+}
+
+.live-workflow-chat-empty {
+  padding: 18px 10px;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+  font-size: 12px;
+}
+
+.live-workflow-chat-message {
+  align-self: flex-start;
+  max-width: 86%;
+  padding: 8px 10px;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--bg-surface, #fff);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.live-workflow-chat-message.mine {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: rgba(235, 37, 37, 0.1);
+}
+
+.live-workflow-chat-message span,
+.live-workflow-chat-message small {
+  display: block;
+  color: var(--text-secondary, #64748b);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.live-workflow-chat-message p {
+  margin: 3px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.live-workflow-chat-message small {
+  text-align: right;
+  font-weight: 700;
+}
+
+.live-workflow-chat-panel form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.live-workflow-chat-panel form input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--bg-color, #f8fafc);
+  color: var(--text-color, #172033);
+}
+
+.live-workflow-chat-panel form input:focus {
+  border-color: rgba(235, 37, 37, 0.45);
+  box-shadow: 0 0 0 3px rgba(235, 37, 37, 0.08);
+}
+
+.live-workflow-chat-panel form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  background: #eb2525;
+  color: #fff;
+  cursor: pointer;
+}
+
+.live-workflow-chat-panel form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .live-share-backdrop {
