@@ -11,7 +11,7 @@ export const createLiveWorkflowSession = async ({ route, context = {} }) => {
 };
 
 export const getLiveWorkflowSession = async (sessionId) => {
-  const { data } = await apiClient.get(`/api/live-workflows/${sessionId}`);
+  const { data } = await apiClient.get(`/api/live-workflows/${sessionId}`, { timeout: 3000 });
   return data;
 };
 
@@ -22,12 +22,12 @@ export const inviteLiveWorkflowUser = async (sessionId, targetUserId) => {
 };
 
 export const joinLiveWorkflowByToken = async (token) => {
-  const { data } = await apiClient.post("/api/live-workflows/join", { token });
+  const { data } = await apiClient.post("/api/live-workflows/join", { token }, { timeout: 5000 });
   return data;
 };
 
 export const createLiveWorkflowWsTicket = async (sessionId) => {
-  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/ws-ticket`);
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/ws-ticket`, null, { timeout: 2500 });
   return data;
 };
 

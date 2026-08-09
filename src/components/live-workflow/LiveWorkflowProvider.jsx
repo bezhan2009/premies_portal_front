@@ -37,9 +37,15 @@ const LIVE_WORKFLOW_SESSION_STORAGE_KEY = "live_workflow_active_session_id";
 const getCurrentRoute = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
 const backendToWsURL = (sessionId, ticket) => {
-  const base = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+  const base = import.meta.env.VITE_BACKEND_URL_WS || import.meta.env.VITE_BACKEND_URL || window.location.origin;
   const parsed = new URL(base, window.location.origin);
-  parsed.protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
+  // Production builds used to contain localhost in .env. In a user's browser
+  // that points to the user's own PC, so the socket silently retried forever.
+  // Keep the configured backend port but resolve loopback to the portal host.
+  if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) && !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)) {
+    parsed.hostname = window.location.hostname;
+  }
+  parsed.protocol = ["https:", "wss:"].includes(parsed.protocol) ? "wss:" : "ws:";
   parsed.pathname = `/api/live-workflows/${sessionId}/ws`;
   parsed.search = `ticket=${encodeURIComponent(ticket)}`;
   return parsed.toString();
@@ -971,11 +977,25 @@ export default function LiveWorkflowProvider({ children }) {
     if (numericUserId > 0) {
       onlineUntilByUserRef.current[numericUserId] = Date.now() + ONLINE_GRACE_MS;
     }
-    setParticipants((prev) => prev.map((participant) => (
-      isSameLiveUser(participant, user)
-        ? { ...participant, online: true, last_seen_at: new Date().toISOString() }
-        : participant
-    )));
+    setParticipants((prev) => {
+      const seenAt = new Date().toISOString();
+      if (prev.some((participant) => isSameLiveUser(participant, user))) {
+        return prev.map((participant) => (
+          isSameLiveUser(participant, user)
+            ? { ...participant, online: true, last_seen_at: seenAt }
+            : participant
+        ));
+      }
+      return [...prev, {
+        user,
+        role: Number(sessionRef.current?.presenter_user_id) === numericUserId ? "PRESENTER" : "FOLLOWER",
+        is_following: false,
+        follow_target_id: Number(sessionRef.current?.presenter_user_id || 0),
+        online: true,
+        joined_at: seenAt,
+        last_seen_at: seenAt,
+      }];
+    });
   }, []);
 
   const sendCurrentNavigation = useCallback((socket = wsRef.current, options = {}) => {
@@ -1187,7 +1207,7 @@ export default function LiveWorkflowProvider({ children }) {
       wsRef.current = socket;
       connectionWatchdogRef.current = window.setTimeout(() => {
         if (socket.readyState === WebSocket.CONNECTING) socket.close();
-      }, 5000);
+      }, 2500);
 
       socket.onopen = () => {
         if (connectionWatchdogRef.current) window.clearTimeout(connectionWatchdogRef.current);
