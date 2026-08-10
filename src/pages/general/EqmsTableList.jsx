@@ -530,10 +530,11 @@ export default function EQMSList() {
 
     const orderedKeys = [];
     if (allKeys.includes("id")) orderedKeys.push("id");
+    if (allKeys.includes("amount")) orderedKeys.push("amount");
     if (allKeys.includes("status")) orderedKeys.push("status");
     if (allKeys.includes("statusABS")) orderedKeys.push("statusABS");
     allKeys.forEach((key) => {
-      if (key !== "id" && key !== "status" && key !== "statusABS") {
+      if (key !== "id" && key !== "amount" && key !== "status" && key !== "statusABS") {
         orderedKeys.push(key);
       }
     });
