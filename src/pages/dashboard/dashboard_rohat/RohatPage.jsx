@@ -99,6 +99,8 @@ const RohatPage = () => {
         clientFullName: values.clientFullName.trim(),
         cardId: values.cardId.trim(),
         limitMinor,
+        currency: values.currency.trim(),
+        expDate: values.expDate.trim(),
         linkedCards: splitValues(values.linkedCards),
         linkedAccounts: splitValues(values.linkedAccounts),
         commissionDebitAccount: values.commissionDebitAccount.trim(),
@@ -377,12 +379,14 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
       message="Баланс, задолженность и счётчики будут заполнены автоматически из card-data."
       style={{ marginBottom: 16 }}
     />
-    <Form form={form} layout="vertical" requiredMark="optional">
+    <Form form={form} layout="vertical" requiredMark="optional" initialValues={{ currency: "972" }}>
       <div className="rohat-form-grid">
         <RequiredField name="absClientId" label="ID клиента в АБС" />
         <RequiredField name="clientFullName" label="ФИО клиента" />
         <RequiredField name="cardId" label="ID карты Рохат" />
         <RequiredField name="limit" label="Сумма Рохата, TJS" inputMode="decimal" placeholder="500.00" />
+        <RequiredField name="currency" label="Валюта ChangeExceedLimit" inputMode="numeric" placeholder="972" maxLength={3} pattern={/^\d{3}$/} patternMessage="Введите трёхзначный код валюты" />
+        <RequiredField name="expDate" label="Срок действия карты (YYYYMM)" inputMode="numeric" placeholder="203211" maxLength={6} pattern={/^\d{4}(0[1-9]|1[0-2])$/} patternMessage="Введите срок в формате YYYYMM" />
         <Form.Item name="linkedCards" label="Привязанные карты">
           <TextArea rows={3} placeholder="ID карт через запятую или с новой строки" />
         </Form.Item>
@@ -412,9 +416,16 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
   </Modal>
 );
 
-const RequiredField = ({ name, label, inputMode, placeholder }) => (
-  <Form.Item name={name} label={label} rules={[{ required: true, whitespace: true, message: `Заполните поле «${label}»` }]}>
-    <Input inputMode={inputMode} placeholder={placeholder} />
+const RequiredField = ({ name, label, inputMode, placeholder, maxLength, pattern, patternMessage }) => (
+  <Form.Item
+    name={name}
+    label={label}
+    rules={[
+      { required: true, whitespace: true, message: `Заполните поле «${label}»` },
+      ...(pattern ? [{ pattern, message: patternMessage }] : []),
+    ]}
+  >
+    <Input inputMode={inputMode} placeholder={placeholder} maxLength={maxLength} />
   </Form.Item>
 );
 
@@ -444,6 +455,7 @@ const RohatDetailsModal = ({ product, historyRows, loading, onClose }) => {
             <Detail label="Клиент" value={`${product.clientFullName} · АБС ${product.absClientId}`} />
             <Detail label="Карта Рохат" value={product.cardNumberMask || maskIdentifier(product.cardId)} />
             <Detail label="Счёт Рохат" value={maskIdentifier(product.rohatAccountNumber)} />
+            <Detail label="Валюта / срок действия" value={`${product.currency || "—"} · ${product.expDate || "—"}`} />
             <Detail label="Собственные средства" value={formatMinor(product.ownFundsMinor)} />
             <Detail label="Привязанные карты" value={product.linkedCards?.map((item) => maskIdentifier(item.cardId)).join(", ") || "—"} />
             <Detail label="Привязанные счета" value={product.linkedAccounts?.map((item) => maskIdentifier(item.accountNumber)).join(", ") || "—"} />
