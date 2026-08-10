@@ -481,7 +481,10 @@ const getFollowSnapshot = (targetSession, targetUserId) => {
 };
 
 const getSharedWorkflowSnapshot = (targetSession) => {
-  if (!targetSession?.id || !targetSession.current_route) return null;
+  if (!targetSession?.id) return null;
+  const presenterSnapshot = getFollowSnapshot(targetSession, targetSession.presenter_user_id);
+  if (presenterSnapshot) return presenterSnapshot;
+  if (!targetSession.current_route) return null;
   return {
     user_id: Number(targetSession.presenter_user_id || 0),
     route: targetSession.current_route,
@@ -1262,6 +1265,16 @@ export default function LiveWorkflowProvider({ children }) {
         if (msg.type === "connection.ready") {
           setStatusMessage("Live workflow подключён");
           markParticipantOnline(msg.user || currentUserRef.current);
+          // Send a short readiness burst. It closes the race between route
+          // restoration, socket registration and cross-instance subscription,
+          // while each cursor event remains a cheap latest-value snapshot.
+          [0, 80, 240, 700].forEach((delay) => {
+            window.setTimeout(() => {
+              if (wsRef.current === socket && socket.readyState === WebSocket.OPEN) {
+                sendCurrentCursor(socket);
+              }
+            }, delay);
+          });
           socket.send(JSON.stringify({ type: "session.sync.request", payload: { at: Date.now(), ready: true } }));
           return;
         }
@@ -1275,10 +1288,20 @@ export default function LiveWorkflowProvider({ children }) {
         }
         if (msg.type === "participant.joined") {
           markParticipantOnline(msg.user);
+          // Existing participants immediately answer a new peer with their
+          // current screen and cursor instead of waiting for a periodic refresh.
+          sendCurrentCursor(socket);
+          if (Number(sessionRef.current?.presenter_user_id) === Number(currentUserRef.current?.id)) {
+            sendCurrentNavigation(socket, { force: true });
+          }
           return;
         }
         if (msg.type === "session.sync.requested") {
           markParticipantOnline(msg.user);
+          sendCurrentCursor(socket);
+          if (Number(sessionRef.current?.presenter_user_id) === Number(currentUserRef.current?.id)) {
+            sendCurrentNavigation(socket, { force: true });
+          }
           return;
         }
         if (msg.type === "participant.left") {
@@ -1606,9 +1629,10 @@ export default function LiveWorkflowProvider({ children }) {
     if (routeTimerRef.current) window.clearTimeout(routeTimerRef.current);
     routeTimerRef.current = window.setTimeout(() => {
       sendCurrentNavigation();
+      sendCurrentCursor();
     }, 180);
     return () => window.clearTimeout(routeTimerRef.current);
-  }, [location.hash, location.pathname, location.search, sendCurrentNavigation, session?.id]);
+  }, [location.hash, location.pathname, location.search, sendCurrentCursor, sendCurrentNavigation, session?.id]);
 
   useEffect(() => {
     const handlePageState = (event) => {
