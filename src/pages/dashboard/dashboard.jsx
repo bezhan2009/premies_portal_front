@@ -91,7 +91,9 @@ function RedirectDashboard() {
     } else if (roleIds.includes(21)) {
         navigate("/processing-search/transactions", { replace: true });
     } else if (roleIds.includes(27)) {
-        navigate("/client-documents", { replace: true });
+      navigate("/client-documents", { replace: true });
+    } else if (roleIds.includes(41)) {
+      navigate("/rohat", { replace: true });
     } else if (roleIds.includes(1)) {
         navigate("/request-access", { replace: true });
     } else {

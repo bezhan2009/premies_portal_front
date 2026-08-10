@@ -19,6 +19,7 @@ import MailAgentPage from "../../pages/dashboard/dashboard_mail_agent/MailAgentP
 import AuditLogsPage from "../../pages/dashboard/AuditLogsPage.jsx";
 import CustomerDirectory from "../../pages/dashboard/dashboard_customer_directory/CustomerDirectory.jsx";
 import AccountReconciliation from "../../pages/dashboard/account_reconciliation/AccountReconciliation.jsx";
+import RohatPage from "../../pages/dashboard/dashboard_rohat/RohatPage.jsx";
 
 const managementRoutes = (
   <>
@@ -204,6 +205,17 @@ const managementRoutes = (
           }
       >
           <Route path="/account-reconciliation" element={<AccountReconciliation />} />
+      </Route>
+
+      {/* Rohat management (Role 41) */}
+      <Route
+          element={
+              <RequireRole allowedRoles={[41]}>
+                  <Outlet />
+              </RequireRole>
+          }
+      >
+          <Route path="/rohat" element={<RohatPage />} />
       </Route>
   </>
 );

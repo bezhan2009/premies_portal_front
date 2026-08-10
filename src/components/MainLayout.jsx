@@ -100,6 +100,9 @@ const MainLayout = () => {
     if (pathname.includes("/cashback/monthly-limits")) return "cashback_monthly_limits";
     if (pathname.includes("/cashback/qr-list")) return "qr_cashback_list";
 
+    // Rohat
+    if (pathname.includes("/rohat")) return "rohat";
+
     // Payments
     if (pathname.includes("agent-payments/list")) return "payments_list";
 

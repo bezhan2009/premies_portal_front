@@ -853,6 +853,16 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(41)) {
+            additionalLinks.push({
+                name: "Управление Рохат",
+                href: "/rohat",
+                key: "rohat",
+                icon: Wallet,
+                description: "Лимиты, задолженность и комиссии Рохат",
+            });
+        }
+
         if (roles.includes(23)) {
             additionalLinks.push({
                 name: "Кэшбэк",
