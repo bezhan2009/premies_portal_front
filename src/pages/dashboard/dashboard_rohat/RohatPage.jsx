@@ -86,19 +86,12 @@ const RohatPage = () => {
       return;
     }
 
-    const limitMinor = parseTjsToMinor(values.limit);
-    if (limitMinor === null || limitMinor <= 0) {
-      createForm.setFields([{ name: "limit", errors: ["Введите положительную сумму с точностью до двух знаков"] }]);
-      return;
-    }
-
     setCreating(true);
     try {
       await rohatApi.createProduct({
         absClientId: values.absClientId.trim(),
         clientFullName: values.clientFullName.trim(),
         cardId: values.cardId.trim(),
-        limitMinor,
         currency: values.currency.trim(),
         expDate: values.expDate.trim(),
         linkedCards: splitValues(values.linkedCards),
@@ -110,7 +103,7 @@ const RohatPage = () => {
         commissionCreditInn: values.commissionCreditInn.trim(),
         commissionCreditName: values.commissionCreditName.trim(),
       });
-      message.success("Рохат добавлен, данные карты получены через card-data");
+      message.success("Рохат добавлен, лимит получен из GetCardData");
       setCreateOpen(false);
       createForm.resetFields();
       await loadProducts();
@@ -200,7 +193,7 @@ const RohatPage = () => {
       width: 180,
       render: (_, product) => product.cardNumberMask || maskIdentifier(product.cardId),
     },
-    moneyColumn("Сумма Рохата", "limitMinor"),
+    moneyColumn("Сумма Рохата (exceedLimit)", "limitMinor"),
     moneyColumn("Задолженность", "debtMinor", (value) => value > 0 && "danger"),
     moneyColumn("Рассчитанная комиссия", "calculatedCommissionMinor"),
     moneyColumn("Начисленная комиссия", "accruedCommissionMinor", (value) => value > 0 && "warning"),
@@ -376,7 +369,7 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
     <Alert
       type="info"
       showIcon
-      message="Баланс, задолженность и счётчики будут заполнены автоматически из card-data."
+      message="Лимит, баланс, задолженность и счётчики будут заполнены автоматически из GetCardData."
       style={{ marginBottom: 16 }}
     />
     <Form form={form} layout="vertical" requiredMark="optional" initialValues={{ currency: "972" }}>
@@ -384,7 +377,6 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
         <RequiredField name="absClientId" label="ID клиента в АБС" />
         <RequiredField name="clientFullName" label="ФИО клиента" />
         <RequiredField name="cardId" label="ID карты Рохат" />
-        <RequiredField name="limit" label="Сумма Рохата, TJS" inputMode="decimal" placeholder="500.00" />
         <RequiredField name="currency" label="Валюта ChangeExceedLimit" inputMode="numeric" placeholder="972" maxLength={3} pattern={/^\d{3}$/} patternMessage="Введите трёхзначный код валюты" />
         <RequiredField name="expDate" label="Срок действия карты (YYYY-MM-DD)" inputMode="text" placeholder="2023-12-23" maxLength={10} pattern={/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/} patternMessage="Введите срок в формате YYYY-MM-DD" />
         <Form.Item name="linkedCards" label="Привязанные карты">
@@ -455,6 +447,7 @@ const RohatDetailsModal = ({ product, historyRows, loading, onClose }) => {
             <Detail label="Клиент" value={`${product.clientFullName} · АБС ${product.absClientId}`} />
             <Detail label="Карта Рохат" value={product.cardNumberMask || maskIdentifier(product.cardId)} />
             <Detail label="Счёт Рохат" value={maskIdentifier(product.rohatAccountNumber)} />
+            <Detail label="Лимит Рохата (exceedLimit)" value={formatMinor(product.limitMinor)} />
             <Detail label="Валюта / срок действия" value={`${product.currency || "—"} · ${product.expDate || "—"}`} />
             <Detail label="Собственные средства" value={formatMinor(product.ownFundsMinor)} />
             <Detail label="Привязанные карты" value={product.linkedCards?.map((item) => maskIdentifier(item.cardId)).join(", ") || "—"} />
