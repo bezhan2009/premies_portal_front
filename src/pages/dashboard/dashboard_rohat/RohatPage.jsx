@@ -85,6 +85,11 @@ const RohatPage = () => {
     } catch {
       return;
     }
+    const limitMinor = parseDirhamAmount(values.limit);
+    if (limitMinor === null || limitMinor <= 0) {
+      createForm.setFields([{ name: "limit", errors: ["Введите положительную сумму в дирхамах"] }]);
+      return;
+    }
 
     setCreating(true);
     try {
@@ -94,6 +99,8 @@ const RohatPage = () => {
         cardId: values.cardId.trim(),
         currency: values.currency.trim(),
         expDate: values.expDate.trim(),
+        limitAccountNumber: values.limitAccountNumber.trim(),
+        limitMinor,
         linkedCards: splitValues(values.linkedCards),
         linkedAccounts: splitValues(values.linkedAccounts),
         commissionDebitAccount: values.commissionDebitAccount.trim(),
@@ -103,7 +110,7 @@ const RohatPage = () => {
         commissionCreditInn: values.commissionCreditInn.trim(),
         commissionCreditName: values.commissionCreditName.trim(),
       });
-      message.success("Рохат добавлен, лимит получен из GetCardData");
+      message.success("Рохат добавлен, лимит отправлен через ChangeExceedLimit");
       setCreateOpen(false);
       createForm.resetFields();
       await loadProducts();
@@ -117,7 +124,7 @@ const RohatPage = () => {
 
   const openLimitModal = (product) => {
     setLimitProduct(product);
-    limitForm.setFieldsValue({ limit: formatMinorInput(product.limitMinor) });
+    limitForm.setFieldsValue({ limit: String(product.limitMinor || ""), limitAccountNumber: product.limitAccountNumber || "" });
   };
 
   const changeLimit = async () => {
@@ -128,15 +135,15 @@ const RohatPage = () => {
       return;
     }
 
-    const limitMinor = parseTjsToMinor(values.limit);
+    const limitMinor = parseDirhamAmount(values.limit);
     if (limitMinor === null || limitMinor <= 0) {
-      limitForm.setFields([{ name: "limit", errors: ["Введите положительную сумму с точностью до двух знаков"] }]);
+      limitForm.setFields([{ name: "limit", errors: ["Введите положительную сумму в дирхамах"] }]);
       return;
     }
 
     setLimitSaving(true);
     try {
-      await rohatApi.changeLimit(getRowId(limitProduct), limitMinor);
+      await rohatApi.changeLimit(getRowId(limitProduct), limitMinor, values.limitAccountNumber.trim());
       message.success("Лимит Рохат изменён");
       setLimitProduct(null);
       limitForm.resetFields();
@@ -338,8 +345,9 @@ const RohatPage = () => {
           style={{ marginBottom: 16 }}
         />
         <Form form={limitForm} layout="vertical">
-          <Form.Item name="limit" label="Новая сумма Рохата, TJS" rules={[{ required: true, message: "Укажите сумму" }]}>
-            <Input inputMode="decimal" placeholder="500.00" />
+          <RequiredField name="limitAccountNumber" label="Номер счёта ChangeExceedLimit" inputMode="numeric" />
+          <Form.Item name="limit" label="Сумма ChangeExceedLimit, дирхам" rules={[{ required: true, message: "Укажите сумму" }]}>
+            <Input inputMode="numeric" placeholder="100" />
           </Form.Item>
         </Form>
       </Modal>
@@ -369,7 +377,7 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
     <Alert
       type="info"
       showIcon
-      message="Лимит, баланс, задолженность и счётчики будут заполнены автоматически из GetCardData."
+      message="Баланс, задолженность и счётчики будут заполнены из GetCardData, а лимит отправится через ChangeExceedLimit."
       style={{ marginBottom: 16 }}
     />
     <Form form={form} layout="vertical" requiredMark="optional" initialValues={{ currency: "972" }}>
@@ -379,6 +387,8 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
         <RequiredField name="cardId" label="ID карты Рохат" />
         <RequiredField name="currency" label="Валюта ChangeExceedLimit" inputMode="numeric" placeholder="972" maxLength={3} pattern={/^\d{3}$/} patternMessage="Введите трёхзначный код валюты" />
         <RequiredField name="expDate" label="Срок действия карты (YYYY-MM-DD)" inputMode="text" placeholder="2023-12-23" maxLength={10} pattern={/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/} patternMessage="Введите срок в формате YYYY-MM-DD" />
+        <RequiredField name="limitAccountNumber" label="Номер счёта ChangeExceedLimit" inputMode="numeric" placeholder="20216972581304504248" />
+        <RequiredField name="limit" label="Сумма ChangeExceedLimit, дирхам" inputMode="numeric" placeholder="100" pattern={/^\d+$/} patternMessage="Введите сумму в дирхамах" />
         <Form.Item name="linkedCards" label="Привязанные карты">
           <TextArea rows={3} placeholder="ID карт через запятую или с новой строки" />
         </Form.Item>
@@ -448,6 +458,7 @@ const RohatDetailsModal = ({ product, historyRows, loading, onClose }) => {
             <Detail label="Карта Рохат" value={product.cardNumberMask || maskIdentifier(product.cardId)} />
             <Detail label="Счёт Рохат" value={maskIdentifier(product.rohatAccountNumber)} />
             <Detail label="Лимит Рохата (exceedLimit)" value={formatMinor(product.limitMinor)} />
+            <Detail label="Счёт ChangeExceedLimit" value={maskIdentifier(product.limitAccountNumber)} />
             <Detail label="Валюта / срок действия" value={`${product.currency || "—"} · ${product.expDate || "—"}`} />
             <Detail label="Собственные средства" value={formatMinor(product.ownFundsMinor)} />
             <Detail label="Привязанные карты" value={product.linkedCards?.map((item) => maskIdentifier(item.cardId)).join(", ") || "—"} />
@@ -512,11 +523,10 @@ function splitValues(value = "") {
   return [...new Set(String(value).split(/[;,\n]/).map((item) => item.trim()).filter(Boolean))];
 }
 
-function parseTjsToMinor(value) {
-  const normalized = String(value || "").trim().replace(",", ".");
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
-  const [whole, fraction = ""] = normalized.split(".");
-  const result = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+function parseDirhamAmount(value) {
+  const normalized = String(value || "").trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const result = Number(normalized);
   return Number.isSafeInteger(result) ? result : null;
 }
 
@@ -525,11 +535,6 @@ function formatMinor(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })} TJS`;
-}
-
-function formatMinorInput(value) {
-  const minor = Number(value || 0);
-  return `${Math.trunc(minor / 100)}.${String(Math.abs(minor % 100)).padStart(2, "0")}`;
 }
 
 function maskIdentifier(value) {

@@ -13,8 +13,8 @@ export const rohatApi = {
     return response.data;
   },
 
-  changeLimit: async (id, limitMinor) => {
-    const response = await apiClient.post(`${ROHAT_PREFIX}/${id}/limit`, { limitMinor });
+  changeLimit: async (id, limitMinor, limitAccountNumber) => {
+    const response = await apiClient.post(`${ROHAT_PREFIX}/${id}/limit`, { limitMinor, limitAccountNumber });
     return response.data;
   },
 
