@@ -54,6 +54,37 @@ const backendToWsURL = (sessionId, ticket) => {
 
 const buildAbsoluteJoinUrl = (joinPath) => `${window.location.origin}${joinPath}`;
 
+const copyTextForInternalPortal = async (text) => {
+  if (!text) throw new Error("empty clipboard value");
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  // Clipboard API is intentionally unavailable on the bank's HTTP portal.
+  // execCommand remains the compatible fallback for these internal browsers.
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus({ preventScroll: true });
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("clipboard copy was rejected");
+};
+
+const getLiveWorkflowActionError = (error, fallback) => (
+  error?.response?.data?.error ||
+  error?.response?.data?.message ||
+  (error?.code === "ECONNABORTED" ? "Сервис не ответил вовремя" : "") ||
+  fallback
+);
+
 const LIVE_WORKFLOW_CURSOR_COLORS = [
   "#eb2525",
   "#2563eb",
@@ -604,6 +635,7 @@ export default function LiveWorkflowProvider({ children }) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [invitation, setInvitation] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
+  const [shareAction, setShareAction] = useState("");
   const [remoteInputs, setRemoteInputs] = useState({});
   const [workflowMessages, setWorkflowMessages] = useState([]);
   const [isWorkflowChatOpen, setWorkflowChatOpen] = useState(false);
@@ -1562,31 +1594,56 @@ export default function LiveWorkflowProvider({ children }) {
   }, [session?.id]);
 
   const copyLink = useCallback(async () => {
-    let invite = invitation;
-    if (!invite && session?.id) {
-      invite = await inviteLiveWorkflowUser(session.id);
-      setInvitation(invite);
+    if (!session?.id || shareAction) return;
+    setShareAction("copy");
+    setStatusMessage("");
+    try {
+      let invite = invitation;
+      if (!invite?.join_path) {
+        invite = await inviteLiveWorkflowUser(session.id);
+        setInvitation(invite);
+      }
+      if (!invite?.join_path) throw new Error("invitation link is missing");
+      await copyTextForInternalPortal(buildAbsoluteJoinUrl(invite.join_path));
+      setStatusMessage("Ссылка скопирована");
+    } catch (error) {
+      setStatusMessage(getLiveWorkflowActionError(error, "Не удалось скопировать ссылку"));
+    } finally {
+      setShareAction("");
     }
-    if (!invite?.join_path) return;
-    await navigator.clipboard.writeText(buildAbsoluteJoinUrl(invite.join_path));
-    setStatusMessage("Ссылка скопирована");
-  }, [invitation, session?.id]);
+  }, [invitation, session?.id, shareAction]);
 
   const sendViaChat = useCallback(async () => {
-    if (!session?.id || !selectedEmployeeId) return;
-    const invite = await inviteLiveWorkflowUser(session.id, selectedEmployeeId);
-    const message = buildLiveWorkflowInvitationMessage({
-      sessionId: session.id,
-      token: invite.token,
-      joinPath: invite.join_path,
-      route: getCurrentRoute(),
-      invitedBy: currentUser?.full_name || currentUser?.username || "Сотрудник",
-      createdAt: new Date().toISOString(),
-      expiresAt: invite.expires_at,
-    });
-    await sendLiveWorkflowChatInvite({ recipientId: selectedEmployeeId, message });
-    setStatusMessage("Приглашение отправлено в чат");
-  }, [currentUser, selectedEmployeeId, session]);
+    if (!session?.id || !selectedEmployeeId || shareAction) return;
+    setShareAction("send");
+    setStatusMessage("");
+    try {
+      const recipientId = Number(selectedEmployeeId);
+      if (!Number.isInteger(recipientId) || recipientId <= 0) {
+        throw new Error("invalid recipient");
+      }
+      const invite = await inviteLiveWorkflowUser(session.id, recipientId);
+      if (!invite?.token || !invite?.join_path) {
+        throw new Error("invitation response is incomplete");
+      }
+      const message = buildLiveWorkflowInvitationMessage({
+        sessionId: session.id,
+        token: invite.token,
+        joinPath: invite.join_path,
+        route: getCurrentRoute(),
+        invitedBy: currentUser?.full_name || currentUser?.username || "Сотрудник",
+        createdAt: new Date().toISOString(),
+        expiresAt: invite.expires_at,
+      });
+      await sendLiveWorkflowChatInvite({ recipientId, message });
+      setInvitation(invite);
+      setStatusMessage("Приглашение отправлено в чат");
+    } catch (error) {
+      setStatusMessage(getLiveWorkflowActionError(error, "Не удалось отправить приглашение в чат"));
+    } finally {
+      setShareAction("");
+    }
+  }, [currentUser, selectedEmployeeId, session, shareAction]);
 
   const stopFollowing = useCallback(async () => {
     if (!session?.id) return;
@@ -1896,6 +1953,7 @@ export default function LiveWorkflowProvider({ children }) {
         selectedEmployeeId={selectedEmployeeId}
         invitation={invitation}
         statusMessage={statusMessage}
+        shareAction={shareAction}
         onQueryChange={setEmployeeQuery}
         onSelectEmployee={setSelectedEmployeeId}
         onCopy={copyLink}
@@ -2250,6 +2308,7 @@ function ShareWorkflowModal({
   selectedEmployeeId,
   invitation,
   statusMessage,
+  shareAction,
   onQueryChange,
   onSelectEmployee,
   onCopy,
@@ -2308,11 +2367,11 @@ function ShareWorkflowModal({
             </section>
 
             <footer>
-              <button type="button" onClick={onCopy} disabled={!session?.id}>
-                <Copy size={16} /> Скопировать ссылку
+              <button type="button" onClick={onCopy} disabled={!session?.id || Boolean(shareAction)}>
+                <Copy size={16} /> {shareAction === "copy" ? "Копируем..." : "Скопировать ссылку"}
               </button>
-              <button type="button" className="primary" onClick={onSend} disabled={!session?.id || !selectedEmployeeId}>
-                <Send size={16} /> Отправить в чат
+              <button type="button" className="primary" onClick={onSend} disabled={!session?.id || !selectedEmployeeId || Boolean(shareAction)}>
+                <Send size={16} /> {shareAction === "send" ? "Отправляем..." : "Отправить в чат"}
               </button>
             </footer>
             <div className="live-share-security"><ShieldCheck size={15} /> Сессия истекает: {invitation?.expires_at ? new Date(invitation.expires_at).toLocaleString("ru-RU") : "создаётся..."}</div>

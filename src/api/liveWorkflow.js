@@ -17,7 +17,7 @@ export const getLiveWorkflowSession = async (sessionId) => {
 
 export const inviteLiveWorkflowUser = async (sessionId, targetUserId) => {
   const payload = targetUserId ? { target_user_id: Number(targetUserId) } : {};
-  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/invite`, payload);
+  const { data } = await apiClient.post(`/api/live-workflows/${sessionId}/invite`, payload, { timeout: 5000 });
   return data;
 };
 
@@ -48,6 +48,6 @@ export const sendLiveWorkflowChatInvite = async ({ recipientId, message }) => {
   const { data } = await apiClient.post("/api/feedback", {
     message,
     recipient_id: Number(recipientId),
-  });
+  }, { timeout: 5000 });
   return data;
 };
