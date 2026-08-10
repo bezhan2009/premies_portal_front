@@ -386,7 +386,7 @@ const CreateRohatModal = ({ open, form, loading, onCancel, onSubmit }) => (
         <RequiredField name="cardId" label="ID карты Рохат" />
         <RequiredField name="limit" label="Сумма Рохата, TJS" inputMode="decimal" placeholder="500.00" />
         <RequiredField name="currency" label="Валюта ChangeExceedLimit" inputMode="numeric" placeholder="972" maxLength={3} pattern={/^\d{3}$/} patternMessage="Введите трёхзначный код валюты" />
-        <RequiredField name="expDate" label="Срок действия карты (YYYYMM)" inputMode="numeric" placeholder="203211" maxLength={6} pattern={/^\d{4}(0[1-9]|1[0-2])$/} patternMessage="Введите срок в формате YYYYMM" />
+        <RequiredField name="expDate" label="Срок действия карты (YYYY-MM-DD)" inputMode="text" placeholder="2023-12-23" maxLength={10} pattern={/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/} patternMessage="Введите срок в формате YYYY-MM-DD" />
         <Form.Item name="linkedCards" label="Привязанные карты">
           <TextArea rows={3} placeholder="ID карт через запятую или с новой строки" />
         </Form.Item>
