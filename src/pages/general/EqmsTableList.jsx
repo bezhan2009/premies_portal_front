@@ -8,6 +8,7 @@ import { MdPayment, MdCheckCircle } from "react-icons/md";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import { toast } from "react-toastify";
 import { tableDataDef } from "../../const/defConst.js";
+import { exportEqmsTransactions } from "../../utils/eqmsExcelExport.js";
 
 export default function EQMSList() {
   const [tableData, setTableData] = useState([]);
@@ -395,7 +396,7 @@ export default function EQMSList() {
     setPaymentsToProcess([]);
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     try {
       const selectedTransactions = sortedData.filter((row) =>
         selectedRows.includes(row.id),
@@ -406,23 +407,6 @@ export default function EQMSList() {
         return;
       }
 
-      const resp = await fetch(`${backendMain}/automation/eqms`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify(selectedTransactions),
-      });
-
-      if (!resp.ok) {
-        const errorText = await resp.text();
-        throw new Error(`Ошибка выгрузки: ${resp.status} - ${errorText}`);
-      }
-
-      const blob = await resp.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
       const allSelected =
         selectedRows.length === sortedData.length && sortedData.length > 0;
       const start = data?.eqms_start_date || "";
@@ -432,14 +416,11 @@ export default function EQMSList() {
         .slice(0, 10)
         .replace(/-/g, "");
 
-      a.download = allSelected
+      const filename = allSelected
         ? `EQMS_Report_${start}_to_${end}.xlsx`
         : `EQMS_Report_${todayFormatted}.xlsx`;
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+
+      exportEqmsTransactions(selectedTransactions, filename);
 
       showAlert(
         `Файл успешно выгружен (${selectedTransactions.length} записей)`,
