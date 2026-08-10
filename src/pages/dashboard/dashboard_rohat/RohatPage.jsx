@@ -339,7 +339,7 @@ const RohatPage = () => {
         <Alert
           type="info"
           showIcon
-          message="Лимит изменится только после успешного ответа метода changeExceedLimit."
+          message="Лимит изменится только после успешного ответа метода ChangeExceedLimit."
           style={{ marginBottom: 16 }}
         />
         <Form form={limitForm} layout="vertical">
