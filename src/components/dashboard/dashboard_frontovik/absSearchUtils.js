@@ -69,6 +69,18 @@ export const normalizeClientData = (client, searchType) => {
     long_name: rawLongName,
     client_type: rawType,
     ClientTypeName: client.ClientTypeName || "",
+    correctionDate: (() => {
+      if (client.ClientRiskValuesList?.ClientRiskValue) {
+          const risks = Array.isArray(client.ClientRiskValuesList.ClientRiskValue) 
+              ? client.ClientRiskValuesList.ClientRiskValue 
+              : [client.ClientRiskValuesList.ClientRiskValue];
+          const riskWithDate = risks.find(r => r.CorrectionDate);
+          if (riskWithDate) {
+              return riskWithDate.CorrectionDate;
+          }
+      }
+      return null;
+    })(),
   };
 };
 

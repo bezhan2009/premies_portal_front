@@ -143,6 +143,7 @@ const ClientPersonalInfo = ({
               <div className="summary-identity-code" style={{ display: 'flex', gap: '20px', color: '#888', fontSize: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span>Код клиента: {code}</span>
                 {serviceText && <span>Обслуживается: {serviceText}</span>}
+                {selectedClient.correctionDate && <span>Дата открытия картотеки: {new Date(selectedClient.correctionDate).toLocaleString("ru-RU")}</span>}
                 {isSalaryClient && (
                   <span className="salary-client-badge" style={{ 
                     backgroundColor: 'var(--primary-color)', 

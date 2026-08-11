@@ -1506,7 +1506,8 @@ export default function DashboardOperatorTransactionSearch() {
                       disabled={isLoading}
                       options={[
                         { label: "Пусто", value: "" },
-                        { label: "216 (GooglePay)", value: "216" }
+                        { label: "216 (GooglePay)", value: "216" },
+                        { label: "103 Apple Pay", value: "103" }
                       ]}
                       allowClear
                     />
