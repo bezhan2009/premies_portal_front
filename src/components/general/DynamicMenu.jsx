@@ -564,18 +564,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 icon: Briefcase,
                 children: [
                     {
-                        name: "Белые списки",
-                        href: "/compliance/white-list",
-                        key: "compliance_white_list",
-                        icon: ShieldCheck
-                    },
-                    {
-                        name: "Черные списки",
-                        href: "/compliance/black-list",
-                        key: "compliance_black_list",
-                        icon: ShieldX
-                    },
-                    {
                         name: "Карты",
                         href: "/product/cards",
                         key: "product_cards",
@@ -965,6 +953,18 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 key: "compliance",
                 icon: ShieldAlert,
                 children: [
+                    {
+                        name: "Белые списки",
+                        href: "/compliance/white-list",
+                        key: "compliance_white_list",
+                        icon: ShieldCheck
+                    },
+                    {
+                        name: "Черные списки",
+                        href: "/compliance/black-list",
+                        key: "compliance_black_list",
+                        icon: ShieldX
+                    },
                     {
                         name: "Настройки сходства",
                         href: "/compliance/settings",

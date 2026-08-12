@@ -145,6 +145,7 @@ export default function ABSClientSearch() {
     const [isTerrorChecking, setIsTerrorChecking] = useState(false);
     const [complianceListType, setComplianceListType] = useState(null);
     const [isComplianceChecking, setIsComplianceChecking] = useState(false);
+    const [complianceCheckFailed, setComplianceCheckFailed] = useState(false);
     const [duplicateSearchField, setDuplicateSearchField] = useState(null);
 
     // Audit logs states
@@ -330,6 +331,7 @@ export default function ABSClientSearch() {
         setDocumentPreviewVariant("default");
         setDuplicateSearchField(null);
         setComplianceListType(null);
+        setComplianceCheckFailed(false);
         setTerrorMatch(null);
         setPinModalClient(null);
         setClientPin("");
@@ -1298,6 +1300,7 @@ export default function ABSClientSearch() {
         if (!selectedClient) {
             setTerrorMatch(null);
             setComplianceListType(null);
+            setComplianceCheckFailed(false);
             setIsTerrorChecking(false);
             setIsComplianceChecking(false);
             return () => {
@@ -1306,6 +1309,7 @@ export default function ABSClientSearch() {
         }
 
         const fullName = selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
+        const birthDate = selectedClient.BirthDate || selectedClient.birth_date || selectedClient.birthDate || "";
         const token = localStorage.getItem("access_token");
         const authHeaders = {
             Authorization: `Bearer ${token}`,
@@ -1317,7 +1321,7 @@ export default function ABSClientSearch() {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
                 method: "POST",
                 headers: authHeaders,
-                body: JSON.stringify({ name: fullName, bday: "" }),
+                body: JSON.stringify({ name: fullName, bday: birthDate }),
             });
             if (response.status === 404) return false;
             if (!response.ok) throw new Error(`Terror check failed: ${response.status}`);
@@ -1339,6 +1343,7 @@ export default function ABSClientSearch() {
 
         setTerrorMatch(null);
         setComplianceListType(null);
+        setComplianceCheckFailed(false);
         setIsTerrorChecking(true);
         setIsComplianceChecking(true);
 
@@ -1352,8 +1357,10 @@ export default function ABSClientSearch() {
                 }
                 if (complianceResult.status === "fulfilled") {
                     setComplianceListType(complianceResult.value);
+                    setComplianceCheckFailed(false);
                 } else {
                     console.error("Error checking compliance list:", complianceResult.reason);
+                    setComplianceCheckFailed(true);
                 }
             })
             .finally(() => {
@@ -1767,26 +1774,32 @@ export default function ABSClientSearch() {
                             phoneNumber={phoneNumber}
                         />
 
-                        {!isSelectedClientPinRequired && selectedClient && (
+                        {selectedClient && (
                             <div className="terror-check-banner-wrapper">
                                 {duplicateSearchField && (
                                     <div className="terror-banner terror-danger">
                                         Имеется дубликат по {duplicateSearchField}. Клиент не сможет зарегистрироваться в приложении и получать денежные переводы, актуализируйте данные клиента!
                                     </div>
                                 )}
-                                {isClientChecking ? (
-                                    <div className="terror-banner terror-checking">Идет проверка в базе террористов...</div>
-                                ) : isWhiteListed ? (
-                                    <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
-                                ) : terrorMatch === true ? (
-                                    <div className="terror-banner terror-danger">Обслуживание запрещено, обратитесь в Комплайнс</div>
-                                ) : terrorMatch === false ? (
-                                    <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
-                                ) : null}
-                                {hasOverdueDebt && (
-                                    <div className="terror-banner terror-danger">
-                                        Имеется просроченная задолженность по кредиту
-                                    </div>
+                                {!isSelectedClientPinRequired && (
+                                    <>
+                                        {isClientChecking ? (
+                                            <div className="terror-banner terror-checking">Идет проверка в базе террористов...</div>
+                                        ) : complianceCheckFailed ? (
+                                            <div className="terror-banner terror-danger">Не удалось выполнить комплайнс проверку</div>
+                                        ) : isWhiteListed ? (
+                                            <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
+                                        ) : terrorMatch === true ? (
+                                            <div className="terror-banner terror-danger">Обслуживание запрещено, обратитесь в Комплайнс</div>
+                                        ) : terrorMatch === false ? (
+                                            <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
+                                        ) : null}
+                                        {hasOverdueDebt && (
+                                            <div className="terror-banner terror-danger">
+                                                Имеется просроченная задолженность по кредиту
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
