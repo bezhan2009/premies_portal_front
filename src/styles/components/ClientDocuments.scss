@@ -53,6 +53,32 @@
   font-size: 14px;
 }
 
+.client-documents-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.client-documents-modal__add,
+.client-document-preview__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-documents-modal__add:hover,
+.client-document-preview__action:hover {
+  background: var(--primary-hover);
+}
+
 .client-documents-modal__empty {
   display: flex;
   align-items: center;
@@ -127,6 +153,11 @@
   border-radius: 18px;
   background: #f8fafc;
   color: #374151;
+}
+
+.client-document-preview__actions {
+  display: flex;
+  justify-content: center;
 }
 
 .client-document-preview__link {

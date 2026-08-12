@@ -1,28 +1,42 @@
 import { useState } from "react";
+import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
 
 export default function SendSmsForm() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [messageContent, setMessageContent] = useState("");
-  const [status, setStatus] = useState("");
-  const backendUrl = import.meta.env.VITE_BACKEND_SMS_URL;
+  const [status, setStatus] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("Отправка...");
+    setStatus(null);
+    setIsSending(true);
 
     try {
-      const res = await fetch(`${backendUrl}/api/SendSmsToTelegramNum/send`, {
+      const res = await fetch(`${backendUrl}/sms/send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber, messageContent }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+        body: JSON.stringify({
+          phoneNumber: phoneNumber.replace(/\D/g, ""),
+          messageContent: messageContent.trim(),
+        }),
       });
 
-      if (!res.ok) throw new Error("Ошибка при отправке");
-      setStatus("✅ Сообщение успешно отправлено!");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Ошибка при отправке");
+      }
+      setStatus({ type: "success", message: "Сообщение успешно отправлено" });
       setPhoneNumber("");
       setMessageContent("");
     } catch (err) {
-      setStatus("❌ Ошибка: " + err.message);
+      setStatus({ type: "error", message: err.message || "Не удалось отправить сообщение" });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -48,17 +62,18 @@ export default function SendSmsForm() {
 
             <div className="input">
               <label>Текст сообщения</label>
-              <input
-                type="text"
+              <textarea
                 placeholder="Привет, как дела?"
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 required
+                rows={5}
               />
             </div>
 
             <button
               type="submit"
+              disabled={isSending}
               style={{
                 height: "40px",
                 backgroundColor: "var(--primary-color)",
@@ -67,9 +82,14 @@ export default function SendSmsForm() {
                 borderRadius: "12px",
                 cursor: "pointer",
                 transition: "0.2s",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              Отправить
+              {isSending ? <Loader2 size={17} className="spin" /> : <Send size={17} />}
+              {isSending ? "Отправка..." : "Отправить"}
             </button>
           </form>
 
@@ -77,10 +97,15 @@ export default function SendSmsForm() {
             <p
               style={{
                 marginTop: "20px",
-                color: status.startsWith("✅") ? "green" : "red",
+                color: status.type === "success" ? "green" : "red",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              {status}
+              {status.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              {status.message}
             </p>
           )}
         </div>

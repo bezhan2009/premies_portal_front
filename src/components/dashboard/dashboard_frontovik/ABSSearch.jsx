@@ -53,6 +53,7 @@ import ServicesModal from "./ServicesModal.jsx";
 import ChangePinModal from "./ChangePinModal.jsx";
 import CardLimitsModal from "./CardLimitsModal.jsx";
 import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.jsx";
+import ClientDocumentUploadModal from "../../client-documents/ClientDocumentUploadModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
@@ -116,6 +117,9 @@ export default function ABSClientSearch() {
     const [clientDocumentsLoading, setClientDocumentsLoading] = useState(false);
     const [clientDocumentsModalOpen, setClientDocumentsModalOpen] =
         useState(false);
+    const [clientDocumentUploadOpen, setClientDocumentUploadOpen] = useState(false);
+    const [clientDocumentUploadMode, setClientDocumentUploadMode] = useState("document");
+    const [clientDocumentsRefreshKey, setClientDocumentsRefreshKey] = useState(0);
     const [documentPreview, setDocumentPreview] = useState(null);
     const [documentPreviewVariant, setDocumentPreviewVariant] =
         useState("default");
@@ -139,6 +143,9 @@ export default function ABSClientSearch() {
     // Terrorist check states
     const [terrorMatch, setTerrorMatch] = useState(null);
     const [isTerrorChecking, setIsTerrorChecking] = useState(false);
+    const [complianceListType, setComplianceListType] = useState(null);
+    const [isComplianceChecking, setIsComplianceChecking] = useState(false);
+    const [duplicateSearchField, setDuplicateSearchField] = useState(null);
 
     // Audit logs states
     const [auditLogs, setAuditLogs] = useState([]);
@@ -318,8 +325,12 @@ export default function ABSClientSearch() {
         setTelegramData(null);
         setClientDocuments([]);
         setClientDocumentsModalOpen(false);
+        setClientDocumentUploadOpen(false);
         setDocumentPreview(null);
         setDocumentPreviewVariant("default");
+        setDuplicateSearchField(null);
+        setComplianceListType(null);
+        setTerrorMatch(null);
         setPinModalClient(null);
         setClientPin("");
         sessionStorage.removeItem("absClientSearchState");
@@ -405,6 +416,7 @@ export default function ABSClientSearch() {
 
         try {
             setIsLoading(true);
+            setDuplicateSearchField(null);
             const token = localStorage.getItem("access_token");
 
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
@@ -438,6 +450,7 @@ export default function ABSClientSearch() {
                 );
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);
+                setDuplicateSearchField(null);
                 setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 
@@ -486,6 +499,13 @@ export default function ABSClientSearch() {
                 }
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);
+                setDuplicateSearchField(
+                    normalizedData.length > 1 && searchTypeIndex === 0
+                        ? "Номеру телефона"
+                        : normalizedData.length > 1 && searchTypeIndex === 2
+                            ? "ИНН"
+                            : null,
+                );
                 setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 
@@ -1090,7 +1110,12 @@ export default function ABSClientSearch() {
 
     const handleOpenClientPhoto = () => {
         if (!selectedClientSelfie) {
-            showAlert("Фото клиента не найдено", "warning");
+            if (!selectedClientINN) {
+                showAlert("У клиента не указан ИНН", "error");
+                return;
+            }
+            setClientDocumentUploadMode("photo");
+            setClientDocumentUploadOpen(true);
             return;
         }
 
@@ -1104,6 +1129,30 @@ export default function ABSClientSearch() {
         });
 
         openDocumentPreview(selectedClientSelfie, "oval");
+    };
+
+    const handleOpenClientDocumentUpload = (mode = "document") => {
+        if (!selectedClientINN) {
+            showAlert("У клиента не указан ИНН", "error");
+            return;
+        }
+        setClientDocumentsModalOpen(false);
+        setDocumentPreview(null);
+        setClientDocumentUploadMode(mode);
+        setClientDocumentUploadOpen(true);
+    };
+
+    const handleClientDocumentUploadSuccess = () => {
+        setClientDocumentsRefreshKey((current) => current + 1);
+        showAlert(
+            clientDocumentUploadMode === "photo"
+                ? "Фото клиента успешно обновлено"
+                : "Документ успешно добавлен",
+            "success",
+        );
+        if (clientDocumentUploadMode === "document") {
+            setClientDocumentsModalOpen(true);
+        }
     };
 
     const handleOpenClientDocuments = () => {
@@ -1204,6 +1253,23 @@ export default function ABSClientSearch() {
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
     const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
+    const isComplianceBlocked = complianceListType === "black";
+    const isWhiteListed = complianceListType === "white";
+    const isClientChecking = isTerrorChecking || isComplianceChecking;
+
+    useEffect(() => {
+        if (!isComplianceBlocked) return;
+        setClientDocumentsModalOpen(false);
+        setClientDocumentUploadOpen(false);
+        setDocumentPreview(null);
+        setIsBlockModalOpen(false);
+        setIsPinModalOpen(false);
+        setIsServicesModalOpen(false);
+        setIsLimitsModalOpen(false);
+        setGraphModalOpen(false);
+        setRepayModalOpen(false);
+        setDetailsModalOpen(false);
+    }, [isComplianceBlocked]);
 
     const handleActiveTabChange = useCallback((nextTab) => {
         setActiveTab(nextTab);
@@ -1227,44 +1293,80 @@ export default function ABSClientSearch() {
     }, [selectedClient?.client_code, setSearchParams]);
 
     useEffect(() => {
-        const checkTerror = async () => {
-            if (!selectedClient) {
-                setTerrorMatch(null);
-                return;
-            }
-            const fullName = selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
-            if (fullName.length < 2) return;
+        let cancelled = false;
 
-            setIsTerrorChecking(true);
-            try {
-                const token = localStorage.getItem("access_token");
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        name: fullName,
-                        bday: "",
-                    }),
-                });
+        if (!selectedClient) {
+            setTerrorMatch(null);
+            setComplianceListType(null);
+            setIsTerrorChecking(false);
+            setIsComplianceChecking(false);
+            return () => {
+                cancelled = true;
+            };
+        }
 
-                if (response.ok) {
-                    const result = await response.json();
-                    setTerrorMatch(result.is_match);
-                } else if (response.status === 404) {
-                    setTerrorMatch(false);
-                }
-            } catch (error) {
-                console.error("Error checking terror list:", error);
-            } finally {
-                setIsTerrorChecking(false);
-            }
+        const fullName = selectedClient.long_name || `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim();
+        const token = localStorage.getItem("access_token");
+        const authHeaders = {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
         };
 
-        checkTerror();
-    }, [selectedClient]);
+        const checkTerror = async () => {
+            if (fullName.length < 2) return null;
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/terror-list/check`, {
+                method: "POST",
+                headers: authHeaders,
+                body: JSON.stringify({ name: fullName, bday: "" }),
+            });
+            if (response.status === 404) return false;
+            if (!response.ok) throw new Error(`Terror check failed: ${response.status}`);
+            const result = await response.json();
+            return Boolean(result.is_match);
+        };
+
+        const checkComplianceList = async () => {
+            if (!selectedClientINN) return null;
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/compliance/client-check`, {
+                method: "POST",
+                headers: authHeaders,
+                body: JSON.stringify({ inn: selectedClientINN }),
+            });
+            if (!response.ok) throw new Error(`Compliance list check failed: ${response.status}`);
+            const result = await response.json();
+            return result.matched ? result.list_type : null;
+        };
+
+        setTerrorMatch(null);
+        setComplianceListType(null);
+        setIsTerrorChecking(true);
+        setIsComplianceChecking(true);
+
+        Promise.allSettled([checkTerror(), checkComplianceList()])
+            .then(([terrorResult, complianceResult]) => {
+                if (cancelled) return;
+                if (terrorResult.status === "fulfilled") {
+                    setTerrorMatch(terrorResult.value);
+                } else {
+                    console.error("Error checking terror list:", terrorResult.reason);
+                }
+                if (complianceResult.status === "fulfilled") {
+                    setComplianceListType(complianceResult.value);
+                } else {
+                    console.error("Error checking compliance list:", complianceResult.reason);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsTerrorChecking(false);
+                    setIsComplianceChecking(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedClient, selectedClientINN]);
 
     useEffect(() => {
         let cancelled = false;
@@ -1303,7 +1405,7 @@ export default function ABSClientSearch() {
         return () => {
             cancelled = true;
         };
-    }, [selectedClientINN]);
+    }, [selectedClientINN, clientDocumentsRefreshKey]);
 
     useEffect(() => {
         if (!selectedClient || !hasRole(35)) {
@@ -1648,7 +1750,12 @@ export default function ABSClientSearch() {
                 )}
 
                 <div className="processing-integration">
-                    <div className="processing-integration__container">
+                    {isComplianceBlocked && (
+                        <div className="terror-check-banner-wrapper compliance-service-ban">
+                            <div className="terror-banner terror-danger">Запрет обслуживания комплайнс</div>
+                        </div>
+                    )}
+                    <div className={`processing-integration__container ${isComplianceBlocked ? "processing-integration__container--blocked" : ""}`}>
                         <SearchForm
                             selectTypeSearchClient={selectTypeSearchClient}
                             setSelectTypeSearchClient={setSelectTypeSearchClient}
@@ -1662,8 +1769,15 @@ export default function ABSClientSearch() {
 
                         {!isSelectedClientPinRequired && selectedClient && (
                             <div className="terror-check-banner-wrapper">
-                                {isTerrorChecking ? (
+                                {duplicateSearchField && (
+                                    <div className="terror-banner terror-danger">
+                                        Имеется дубликат по {duplicateSearchField}. Клиент не сможет зарегистрироваться в приложении и получать денежные переводы, актуализируйте данные клиента!
+                                    </div>
+                                )}
+                                {isClientChecking ? (
                                     <div className="terror-banner terror-checking">Идет проверка в базе террористов...</div>
+                                ) : isWhiteListed ? (
+                                    <div className="terror-banner terror-success">✓ Клиент проверен (Комплайнс проверка)</div>
                                 ) : terrorMatch === true ? (
                                     <div className="terror-banner terror-danger">Обслуживание запрещено, обратитесь в Комплайнс</div>
                                 ) : terrorMatch === false ? (
@@ -1798,6 +1912,7 @@ export default function ABSClientSearch() {
                 documents={clientDocuments}
                 isLoading={clientDocumentsLoading}
                 onPreview={(document) => openDocumentPreview(document)}
+                onAddDocument={() => handleOpenClientDocumentUpload("document")}
                 title="Документы клиента"
                 subtitle={
                     selectedClient
@@ -1817,6 +1932,24 @@ export default function ABSClientSearch() {
                         ? "Фото клиента"
                         : documentPreview?.title || "Предпросмотр документа"
                 }
+                actionLabel={documentPreviewVariant === "oval" ? "Поменять фото" : ""}
+                onAction={
+                    documentPreviewVariant === "oval"
+                        ? () => handleOpenClientDocumentUpload("photo")
+                        : undefined
+                }
+            />
+
+            <ClientDocumentUploadModal
+                isOpen={clientDocumentUploadOpen}
+                onClose={() => setClientDocumentUploadOpen(false)}
+                onUploadSuccess={handleClientDocumentUploadSuccess}
+                inn={selectedClientINN}
+                hideInn
+                initialTitle={clientDocumentUploadMode === "photo" ? "Фото клиента" : ""}
+                documentType={clientDocumentUploadMode === "photo" ? "selfie_with_passport" : ""}
+                accept={clientDocumentUploadMode === "photo" ? "image/*" : undefined}
+                title={clientDocumentUploadMode === "photo" ? "Поменять фото клиента" : "Добавить документ клиента"}
             />
 
             <BlockCardModal

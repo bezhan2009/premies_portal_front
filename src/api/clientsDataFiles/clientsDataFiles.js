@@ -21,11 +21,14 @@ export const deleteClientDocument = async (id) => {
   return response.data;
 };
 
-export const uploadClientDocument = async (inn, title, file) => {
+export const uploadClientDocument = async (inn, title, file, documentType = "") => {
   const formData = new FormData();
   formData.append("inn", inn);
   formData.append("title", title);
   formData.append("file", file);
+  if (documentType) {
+    formData.append("document_type", documentType);
+  }
 
   const response = await apiClient.post("/clients-data-files/upload", formData, {
     headers: {

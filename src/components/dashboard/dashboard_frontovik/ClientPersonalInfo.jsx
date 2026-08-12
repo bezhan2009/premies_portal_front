@@ -122,8 +122,8 @@ const ClientPersonalInfo = ({
                 type="button"
                 className="summary-photo-btn"
                 onClick={onOpenClientPhoto}
-                disabled={!clientPhotoUrl}
-                title={clientPhotoUrl ? "Посмотреть фото клиента" : "Фото клиента не найдено"}
+                disabled={clientPhotoLoading}
+                title={clientPhotoUrl ? "Посмотреть фото клиента" : "Добавить фото клиента"}
               >
                 {clientPhotoLoading ? (
                   <div className="photo-placeholder"><FaSpinner className="spin" /></div>
@@ -281,4 +281,3 @@ const ClientPersonalInfo = ({
 };
 
 export default ClientPersonalInfo;
-

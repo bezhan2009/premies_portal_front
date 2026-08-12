@@ -1,13 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../general/Modal.jsx";
 import { uploadClientDocument } from "../../api/clientsDataFiles/clientsDataFiles.js";
 
-export default function ClientDocumentUploadModal({ isOpen, onClose, onUploadSuccess, inn: initialInn = "" }) {
+export default function ClientDocumentUploadModal({
+  isOpen,
+  onClose,
+  onUploadSuccess,
+  inn: initialInn = "",
+  hideInn = false,
+  initialTitle = "",
+  documentType = "",
+  accept,
+  title: modalTitle = "Загрузить документ клиента",
+}) {
   const [inn, setInn] = useState(initialInn);
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setInn(initialInn);
+    setTitle(initialTitle);
+    setFile(null);
+    setError("");
+  }, [isOpen, initialInn, initialTitle]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -26,7 +44,7 @@ export default function ClientDocumentUploadModal({ isOpen, onClose, onUploadSuc
 
     setIsLoading(true);
     try {
-      await uploadClientDocument(inn, title, file);
+      await uploadClientDocument(inn, title, file, documentType);
       onUploadSuccess();
       onClose();
     } catch (err) {
@@ -37,21 +55,23 @@ export default function ClientDocumentUploadModal({ isOpen, onClose, onUploadSuc
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Загрузить документ клиента">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
       <div className="client-document-upload-modal" style={{ padding: '0 16px 16px' }}>
         {error && <div className="alert-message error-message" style={{ color: 'red', marginBottom: '16px' }}>{error}</div>}
         
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px' }}>ИНН Клиента:</label>
-            <input 
-              type="text" 
-              value={inn} 
-              onChange={(e) => setInn(e.target.value)}
-              required 
-              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-            />
-          </div>
+          {!hideInn && (
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px' }}>ИНН Клиента:</label>
+              <input
+                type="text"
+                value={inn}
+                onChange={(e) => setInn(e.target.value)}
+                required
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+          )}
           
           <div className="form-group" style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px' }}>Название документа:</label>
@@ -70,6 +90,7 @@ export default function ClientDocumentUploadModal({ isOpen, onClose, onUploadSuc
             <input 
               type="file" 
               onChange={handleFileChange}
+              accept={accept}
               required 
               style={{ width: '100%' }}
             />

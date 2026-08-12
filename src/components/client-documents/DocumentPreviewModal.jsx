@@ -14,6 +14,8 @@ export default function DocumentPreviewModal({
   document,
   oval = false,
   title,
+  actionLabel,
+  onAction,
 }) {
   if (!document) {
     return null;
@@ -68,6 +70,14 @@ export default function DocumentPreviewModal({
             >
               Открыть документ
             </a>
+          </div>
+        )}
+
+        {actionLabel && onAction && (
+          <div className="client-document-preview__actions">
+            <button type="button" className="client-document-preview__action" onClick={onAction}>
+              {actionLabel}
+            </button>
           </div>
         )}
       </div>

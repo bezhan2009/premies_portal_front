@@ -51,6 +51,8 @@ import {
     Search,
     Cpu,
     ShieldAlert,
+    ShieldCheck,
+    ShieldX,
     Repeat,
     ZoomIn,
     Folder,
@@ -561,6 +563,18 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 key: "products",
                 icon: Briefcase,
                 children: [
+                    {
+                        name: "Белые списки",
+                        href: "/compliance/white-list",
+                        key: "compliance_white_list",
+                        icon: ShieldCheck
+                    },
+                    {
+                        name: "Черные списки",
+                        href: "/compliance/black-list",
+                        key: "compliance_black_list",
+                        icon: ShieldX
+                    },
                     {
                         name: "Карты",
                         href: "/product/cards",

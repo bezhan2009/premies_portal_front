@@ -114,6 +114,8 @@ const MainLayout = () => {
     if (pathname.includes("knowledge-base")) return "knowledge";
 
     // Compliance
+    if (pathname.includes("/compliance/white-list")) return "compliance_white_list";
+    if (pathname.includes("/compliance/black-list")) return "compliance_black_list";
     if (pathname.includes("/compliance/requests")) return "compliance_requests";
     if (pathname.includes("/compliance/score-options")) return "compliance_score_options";
     if (pathname.includes("/compliance/settings")) return "compliance_settings";
