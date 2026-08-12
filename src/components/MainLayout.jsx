@@ -10,7 +10,7 @@ import Header from "./layout/Header.jsx";
 import TabsBar from "./layout/TabsBar.jsx";
 import useTabsStore from "../store/useTabsStore.js";
 import useNavigationStore from "../store/useNavigationStore.js";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import LiveWorkflowProvider from "./live-workflow/LiveWorkflowProvider.jsx";
 
 const MainLayout = () => {
@@ -168,6 +168,7 @@ const MainLayout = () => {
   }, [location.pathname, flatLinks, addTab]);
 
   const isBareMode = location.search.includes("bare=true");
+  const isAbsSearchRoute = location.pathname.includes("/frontovik/abs-search");
 
   if (isBareMode) {
     return (
@@ -179,7 +180,10 @@ const MainLayout = () => {
 
   return (
     <LiveWorkflowProvider>
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div
+      className={isAbsSearchRoute ? "abs-search-layout" : undefined}
+      style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
+    >
       <Header toggleSidebar={toggleSidebar} />
       <div className={`dashboard-container ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`} style={{ flex: 1, overflow: 'hidden', padding: 0, margin: 0, display: 'flex', gap: 0 }}>
         <Sidebar
@@ -190,10 +194,10 @@ const MainLayout = () => {
         <div className="main-content-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
           <TabsBar />
           
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <div className="main-layout-workspace" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '16px', position: 'relative' }}>
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div
+                <Motion.div
                   key={location.pathname}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -202,7 +206,7 @@ const MainLayout = () => {
                   style={{ minHeight: '100%', width: '100%' }}
                 >
                   <Outlet />
-                </motion.div>
+                </Motion.div>
               </AnimatePresence>
             </div>
             
