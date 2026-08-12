@@ -8,6 +8,33 @@
   text-align: left;
 }
 
+/* MainLayout already owns page scrolling. Keep ABS search in that single flow. */
+.abs-search-page {
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: visible;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+
+  .processing-integration,
+  .processing-integration__container,
+  .client-data-tabs-container,
+  .abs-tab-content-window,
+  .tab-pane-fade,
+  .abs-cards-grid,
+  .frontovik-card-ui {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
 .processing-integration__container {
   display: flex;
   flex-direction: column;
@@ -1103,7 +1130,7 @@
 /* -- EXPANDABLE CARDS GRID -- */
 .abs-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 20px;
 }
@@ -2085,4 +2112,3 @@
   flex-direction: column;
   gap: 2px;
 }
-

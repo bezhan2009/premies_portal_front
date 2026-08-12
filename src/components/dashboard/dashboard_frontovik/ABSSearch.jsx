@@ -1739,7 +1739,7 @@ export default function ABSClientSearch() {
 
     return (
         <>
-            <div className="block_info_prems content-page" style={{ textAlign: "left" }}>
+            <div className="block_info_prems content-page abs-search-page" style={{ textAlign: "left" }}>
                 {alert.show && (
                     <AlertMessage
                         message={alert.message}
