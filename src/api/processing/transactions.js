@@ -223,6 +223,13 @@ export const fetchCardFios = async (cardIds) => {
     }
 };
 
+const escapeXmlText = (value) => String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
 // Получение информации об уведомлениях (сервисах) карты
 export const fetchCardServices = async (cardId) => {
     const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
@@ -268,7 +275,7 @@ export const changeCardStatus = async (cardId, status, comment) => {
             </v11:head>
             <v1:cardId>${cardId}</v1:cardId>
             <v1:reason>${status}</v1:reason>
-            <v1:description>${comment || ""}</v1:description>
+            <v1:description>${escapeXmlText(comment)}</v1:description>
         </v1:CardBlockRequest>
     </soapenv:Body>
 </soapenv:Envelope>`;
@@ -315,7 +322,7 @@ export const unblockCard = async (cardId, comment) => {
                 </v11:params>
             </v11:head>
             <v1:cardId>${cardId}</v1:cardId>
-            <v1:description>${comment || ""}</v1:description>
+            <v1:description>${escapeXmlText(comment)}</v1:description>
         </v1:CardUnBlockRequest>
     </soapenv:Body>
 </soapenv:Envelope>`;
@@ -337,15 +344,14 @@ export const unblockCard = async (cardId, comment) => {
 
 // Валидация/активация карты через ПЦ (Scenario B)
 export const validateCard = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+    const BASE_URL_5012 = 'http://10.64.20.84:5012';
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/validate-card`, {
+        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/validate-card`, {
             cardId: String(cardId)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                'Content-Type': 'application/json'
             }
         });
         return response.data;

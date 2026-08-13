@@ -219,6 +219,17 @@ export default function ABSClientSearch() {
         });
     };
 
+    const getOperatorDisplayName = () => {
+        const fullName = localStorage.getItem("full_name")?.trim();
+        const username = localStorage.getItem("username")?.trim();
+        return fullName || username || "Оператор";
+    };
+
+    const addOperatorToComment = (comment) => {
+        const text = String(comment || "").trim();
+        return `${getOperatorDisplayName()}: ${text}`;
+    };
+
     const copyToClipboard = (text) => {
         if (copyToClipboardUtil(text)) {
             showAlert("Скопировано в буфер обмена", "success");
@@ -748,8 +759,9 @@ export default function ABSClientSearch() {
 
     const handleBlockCardConfirm = async (status, comment) => {
         setIsBlockingLoading(true);
+        const commentWithOperator = addOperatorToComment(comment);
         try {
-            await changeCardStatus(blockingCardId, status, comment);
+            await changeCardStatus(blockingCardId, status, commentWithOperator);
 
             // Log audit action
             logAuditAction({
@@ -758,7 +770,7 @@ export default function ABSClientSearch() {
                 client_phone: selectedClient?.phone || "",
                 client_inn: selectedClient?.tax_code || "",
                 card_number: String(blockingCardId),
-                details: `Блокировка карты ${blockingCardId} со статусом ${status}. Комментарий: ${comment}`
+                details: `Блокировка карты ${blockingCardId} со статусом ${status}. Комментарий: ${commentWithOperator}`
             });
 
             showAlert("Карта успешно заблокирована", "success");
@@ -797,7 +809,11 @@ export default function ABSClientSearch() {
         }
     };
 
-    const handleUnblockCard = async (cardId) => {
+    const handleUnblockCard = async (cardOrId) => {
+        const card = typeof cardOrId === "object" && cardOrId !== null
+            ? cardOrId
+            : cardsData.find((item) => String(item.cardId) === String(cardOrId));
+        const cardId = card?.cardId || cardOrId;
         const comment = window.prompt("Введите причину/комментарий для разблокировки карты:");
         if (comment === null) return;
         if (!comment.trim()) {
@@ -805,23 +821,32 @@ export default function ABSClientSearch() {
             return;
         }
 
+        const commentWithOperator = addOperatorToComment(comment);
+        const pcStatus = String(card?.details?.hotCardStatus ?? "").trim();
+        const absStatus = String(card?.statusName || "").trim().toLowerCase();
+        const shouldValidateInPcOnly = pcStatus !== "" && pcStatus !== "0" && absStatus === "активирована";
+
         try {
-            await unblockCard(cardId, comment.trim());
+            if (shouldValidateInPcOnly) {
+                await validateCard(cardId);
+            } else {
+                await unblockCard(cardId, commentWithOperator);
+            }
 
             // Log audit action
             logAuditAction({
-                action: "Разблокировка карты",
+                action: shouldValidateInPcOnly ? "Валидация карты в ПЦ" : "Разблокировка карты",
                 client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
                 client_phone: selectedClient?.phone || "",
                 client_inn: selectedClient?.tax_code || "",
                 card_number: String(cardId),
-                details: `Разблокировка карты ${cardId}. Комментарий: ${comment.trim()}`
+                details: `${shouldValidateInPcOnly ? "Валидация карты через ПЦ" : "Разблокировка карты"} ${cardId}. Комментарий: ${commentWithOperator}`
             });
 
-            showAlert("Карта успешно разблокирована", "success");
+            showAlert(shouldValidateInPcOnly ? "Карта успешно валидирована в ПЦ" : "Карта успешно разблокирована", "success");
             handleGetDataUser(selectedClient, selectedClientIndex);
         } catch {
-            showAlert("Ошибка при разблокировке карты", "error");
+            showAlert(shouldValidateInPcOnly ? "Ошибка при валидации карты" : "Ошибка при разблокировке карты", "error");
         }
     };
 

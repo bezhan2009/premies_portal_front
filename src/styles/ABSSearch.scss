@@ -1382,6 +1382,15 @@
   letter-spacing: 1px;
 }
 
+.card-owner-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  overflow-wrap: anywhere;
+}
+
 .card-dates {
   display: flex;
   justify-content: space-between;
@@ -1393,6 +1402,12 @@
   font-size: 16px;
   color: var(--text-secondary);
   font-weight: 600;
+}
+
+.exp-date.expired,
+.frontovik-card-ui.card-expired .exp-date {
+  color: #e11d48 !important;
+  font-weight: 800;
 }
 
 .right-dates {

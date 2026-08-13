@@ -57,6 +57,26 @@ const getAbsStatusStyle = (statusName) => {
   return { color: "#334155", bg: "#f1f5f9" };
 };
 
+const isCardExpiredByMonth = (expiryDate) => {
+  const digits = String(expiryDate || "").replace(/\D/g, "");
+  if (digits.length < 6) return false;
+  const expiryYearMonth = Number(digits.slice(0, 6));
+  if (!Number.isFinite(expiryYearMonth)) return false;
+  const now = new Date();
+  const currentYearMonth = now.getFullYear() * 100 + now.getMonth() + 1;
+  return expiryYearMonth < currentYearMonth;
+};
+
+const formatCardExpiryDisplay = (expiryDate, fallbackDate) => {
+  const digits = String(expiryDate || "").replace(/\D/g, "");
+  if (digits.length >= 6) {
+    const year = digits.slice(0, 4);
+    const month = digits.slice(4, 6);
+    return `${month}/${year}`;
+  }
+  return formatDateDisplay(fallbackDate || expiryDate || "-");
+};
+
 const getAccountStatusData = (code, name) => {
   if (code === "OPENED") return { text: "Открыт", bg: "#27ae60", color: "#fff" };
   return { text: name || code || "-", bg: "#f59e0b", color: "#fff" };
@@ -627,16 +647,15 @@ const ClientDataTabs = ({
               const pcStatus = String(card.details?.hotCardStatus);
               
               const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
-              const isScenarioB = absStatus === "Активирована" && pcStatus === "17";
               const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
               const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
 
-              if (isScenarioA || isScenarioB || isScenarioC) {
+              if (isScenarioA || isScenarioC) {
                 return (
                   <button
                     className="button"
                     style={{ background: "#10b981", color: "white", width: "100%" }}
-                    onClick={() => onActivateCard(card, isScenarioA ? 'A' : isScenarioB ? 'B' : 'C')}
+                    onClick={() => onActivateCard(card, isScenarioA ? 'A' : 'C')}
                   >
                     Активировать
                   </button>
@@ -671,7 +690,7 @@ const ClientDataTabs = ({
                   <button
                     className="button"
                     style={{ background: "#10b981", color: "white", width: "100%" }}
-                    onClick={() => onUnblockCard(card.cardId)}
+                    onClick={() => onUnblockCard(card)}
                   >
                     Разблокировать
                   </button>
@@ -1230,13 +1249,16 @@ const ClientDataTabs = ({
                     const codeNum = Number(pcStatusCode);
                     return (codeNum >= 1 && codeNum <= 16) || (codeNum >= 18 && codeNum <= 20);
                   })();
+                  const cardExpiryDate = card.details?.expiryDate || card.details?.expirationDate || card.expirationDate || "";
+                  const isExpired = isCardExpiredByMonth(cardExpiryDate);
+                  const embossedName = card.details?.embossedName || card.embossedName || "";
 
                   const agreementStr = card.details?.agreement || card.agreement || "";
                   const cardBranchCode = agreementStr.length >= 4 ? agreementStr.substring(0, 4) : null;
                   const cardBranchName = cardBranchCode && serviceCodes[cardBranchCode] ? serviceCodes[cardBranchCode] : null;
 
                   return (
-                    <div id={`card-${card.cardId}`} key={card.cardId || idx} className={`frontovik-card-ui ${isBlocked ? "pc-status-blocked" : ""}`}>
+                    <div id={`card-${card.cardId}`} key={card.cardId || idx} className={`frontovik-card-ui ${(isBlocked || isExpired) ? "pc-status-blocked" : ""} ${isExpired ? "card-expired" : ""}`}>
                       <div className="card-top-badges" style={{ alignItems: "center" }}>
                         <span style={{ color: absStyle.color, background: absStyle.bg, fontSize: "12px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px" }}>
                           {absStatus} (АБС)
@@ -1280,8 +1302,9 @@ const ClientDataTabs = ({
                         <div className="card-details-text">
                           <div className="card-type-name">{card.type || card.CardTypeName || card.details?.cardTypeName || "Unknown Card"}</div>
                           <div className="card-number-mask">{card.CardNumber || card.details?.cardNumberMask || card.cardNumber || "-"}</div>
+                          <div className="card-owner-name">{embossedName || "-"}</div>
                           <div className="card-dates">
-                            <div className="exp-date">{formatDateDisplay(card.details?.expirationDate || card.expirationDate || "-")}</div>
+                            <div className={`exp-date ${isExpired ? "expired" : ""}`}>{formatCardExpiryDisplay(card.details?.expiryDate, card.details?.expirationDate || card.expirationDate)}</div>
                             <div className="right-dates">
                               <span style={{ display: 'block' }}>IDN: {card.cardId || "-"}</span>
                               {cardBranchName && <span style={{ display: 'block', color: '#64748b' }}>Обслуживается: {cardBranchName}</span>}
@@ -1389,13 +1412,12 @@ const ClientDataTabs = ({
                           const pcStatus = String(card.details?.hotCardStatus);
                           
                           const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
-                          const isScenarioB = absStatus === "Активирована" && pcStatus === "17";
                           const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
                           const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
 
-                          if (isScenarioA || isScenarioB || isScenarioC) {
+                          if (isScenarioA || isScenarioC) {
                             return (
-                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onActivateCard(card, isScenarioA ? 'A' : isScenarioB ? 'B' : 'C')}>
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onActivateCard(card, isScenarioA ? 'A' : 'C')}>
                                 Активировать
                               </button>
                             );
@@ -1418,7 +1440,7 @@ const ClientDataTabs = ({
                                 Заблокировать
                               </button>
                             ) : (
-                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card.cardId)}>
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card)}>
                                 Разблокировать
                               </button>
                             );
