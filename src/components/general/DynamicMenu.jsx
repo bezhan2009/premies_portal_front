@@ -676,18 +676,24 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
-        if (roles.includes(14)) {
+        if (roles.includes(14) || roles.includes(3)) {
             additionalLinks.push({
                 name: "Агент по SMS",
                 key: "sms",
                 icon: MessageSquare,
                 children: [
-                    {
+                    ...(roles.includes(14) ? [{
                         name: "Отправка SMS",
                         href: "/agent-sms/sms-sender",
                         key: "sms_send",
                         icon: Send
-                    },
+                    }] : []),
+                    ...(roles.includes(3) ? [{
+                        name: "История SMS",
+                        href: "/agent-sms/sms-history",
+                        key: "sms_history",
+                        icon: History
+                    }] : []),
                 ],
             });
         }

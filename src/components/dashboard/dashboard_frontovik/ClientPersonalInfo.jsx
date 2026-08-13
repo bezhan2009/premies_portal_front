@@ -53,6 +53,20 @@ const ClientPersonalInfo = ({
     isMobile?.mainAccount ||
     isMobile?.main_mobile_account ||
     "—";
+  const residentRaw =
+    selectedClient.IsResident ??
+    selectedClient.isResident ??
+    selectedClient.is_resident ??
+    selectedClient.resident;
+  const hasResidentValue = residentRaw !== undefined && residentRaw !== null && String(residentRaw).trim() !== "";
+  const isResident =
+    residentRaw === true ||
+    residentRaw === 1 ||
+    String(residentRaw).trim().toLowerCase() === "true" ||
+    String(residentRaw).trim() === "1";
+  const residentText = hasResidentValue
+    ? isResident ? "Резидент РТ" : "Нерезидент РТ"
+    : "—";
   
   const typeVal = selectedClient.client_type?.toLowerCase();
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
@@ -175,6 +189,13 @@ const ClientPersonalInfo = ({
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>Телефон</span>
                   <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{phone}</span>
+                </div>
+
+                <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '12px', color: '#888' }}>Резедентность</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: hasResidentValue && !isResident ? '#e11d48' : '#16a34a' }}>
+                    {residentText}
+                  </span>
                 </div>
 
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

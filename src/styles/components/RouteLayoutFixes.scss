@@ -53,6 +53,9 @@
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
   }
 
   .processing-integration,
@@ -87,13 +90,122 @@
   .applications-table-wrap,
   .sort-table-scroll,
   .limits-table__wrapper,
+  .limits-table__container,
   .custom-scroll,
+  .table-wrapper,
   .table-responsive {
     max-height: none !important;
     min-width: 0;
     max-width: 100%;
     overflow-x: auto !important;
     overflow-y: visible !important;
+  }
+
+  .flexible-ant-table,
+  .flexible-ant-table .ant-table-wrapper,
+  .flexible-ant-table .ant-spin-nested-loading,
+  .flexible-ant-table .ant-spin-container,
+  .flexible-ant-table .ant-table,
+  .flexible-ant-table .ant-table-container,
+  .flexible-ant-table .ant-table-content,
+  .flexible-ant-table .ant-table-body {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  .flexible-ant-table .ant-table-content,
+  .flexible-ant-table .ant-table-body {
+    overflow-x: auto !important;
+  }
+
+  .eqms-page,
+  .eqms-page .applications-list,
+  .eqms-page main,
+  .eqms-page .my-applications-content {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .eqms-page .applications-list {
+    align-items: stretch;
+  }
+
+  .eqms-page .my-applications-content {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  .sms-history-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .sms-history-header,
+  .sms-history-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sms-history-header {
+    justify-content: space-between;
+    flex-wrap: wrap;
+
+    h2 {
+      margin: 0;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: var(--text-secondary);
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .sms-history-toolbar {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+
+    input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text-color);
+      font: inherit;
+    }
+  }
+
+  .sms-history-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e11d48;
+    font-weight: 700;
+  }
+
+  .sms-history-table-wrap {
+    width: 100%;
+  }
+
+  .sms-history-message-cell {
+    max-width: 620px;
+    white-space: normal !important;
+    word-break: break-word;
+    text-align: left !important;
   }
 
   .table-reports,

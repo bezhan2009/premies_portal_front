@@ -10,6 +10,7 @@ export default function ThemeManager() {
 
   useEffect(() => {
     const root = document.documentElement;
+    const effectiveFontSize = Number(fontSize || 16) * 0.8;
     
     // Set basic theme attribute
     root.setAttribute('data-theme', theme);
@@ -31,7 +32,9 @@ export default function ThemeManager() {
     }
 
     // Inject dynamic sizing
-    root.style.setProperty('--font-size-base', `${fontSize}px`);
+    root.style.setProperty('--font-size-base', `${effectiveFontSize}px`);
+    root.style.setProperty('--root-font-size', `${effectiveFontSize}px`);
+    root.style.fontSize = `${effectiveFontSize}px`;
 
   }, [theme, primaryColor, fontSize]);
 

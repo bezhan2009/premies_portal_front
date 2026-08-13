@@ -25,6 +25,7 @@ const useThemeStore = create(
       
       applySettings: () => {
         const { theme, primaryColor, fontSize } = get();
+        const effectiveFontSize = Number(fontSize || 16) * 0.8;
         const root = document.documentElement;
         
         // Apply theme attribute
@@ -51,10 +52,10 @@ const useThemeStore = create(
         root.style.setProperty('--primary-hover', adjustColor(primaryColor, -20));
         
         // Apply font size basics
-        root.style.setProperty('--font-size-base', `${fontSize}px`);
-        root.style.setProperty('--root-font-size', `${fontSize}px`);
+        root.style.setProperty('--font-size-base', `${effectiveFontSize}px`);
+        root.style.setProperty('--root-font-size', `${effectiveFontSize}px`);
         // For global scaling via rems and baseline
-        root.style.fontSize = `${fontSize}px`;
+        root.style.fontSize = `${effectiveFontSize}px`;
       },
     }),
     {

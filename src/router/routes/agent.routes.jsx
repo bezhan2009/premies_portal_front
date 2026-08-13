@@ -20,6 +20,7 @@ import DashboardAgentKBCredit from "../../pages/dashboard/dashboard_credit/KBAge
 
 import Transactions from "../../pages/general/TransactionsQR.jsx";
 import SendSmsForm from "../../pages/dashboard/dashboard_sms/SenderSMS.jsx";
+import SMSHistory from "../../pages/dashboard/dashboard_sms/SMSHistory.jsx";
 import DashboardAgentSMSKnowledgeBase from "../../pages/dashboard/dashboard_sms/KnowledgeBase.jsx";
 import UpdatingTransactionType from "../../pages/general/TransactionTypes.jsx";
 import TerminalNames from "../../pages/general/TerminalNames.jsx";
@@ -138,6 +139,17 @@ const agentRoutes = (
         path="agent-sms/knowledge-base"
         element={<DashboardAgentSMSKnowledgeBase />}
       />
+    </Route>
+
+    {/* SMS History (Operator Role 3) */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[3]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="agent-sms/sms-history" element={<SMSHistory />} />
     </Route>
 
     {/* Agent Transaction (Role 15) */}

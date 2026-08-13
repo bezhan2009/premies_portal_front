@@ -70,6 +70,7 @@ const MainLayout = () => {
     if (pathname.includes("accounts-qr/settings")) return "qr_another_bank_settings";
 
     // SMS Agent
+    if (pathname.includes("agent-sms/sms-history")) return "sms_history";
     if (pathname.includes("agent-sms/sms-sender")) return "sms_send";
 
     // Transaction Agent
@@ -194,6 +195,7 @@ const MainLayout = () => {
     "/pvn/transactions/list",
     "/pvn/settings/list",
     "/agent-sms/sms-sender",
+    "/agent-sms/sms-history",
     "/agent-transaction/update-transaction",
     "/agent-transaction/terminal-names",
     "/agent-custom/eqms",

@@ -3005,6 +3005,10 @@ input:checked + .slider:before {
     background: rgba(127, 29, 29, 0.86);
   }
 }
+html {
+  font-size: var(--root-font-size, 12.8px);
+}
+
 html, body, #root { background: var(--bg-color); color: var(--text-color); }
 [data-theme='dark'] {
   color-scheme: dark;
