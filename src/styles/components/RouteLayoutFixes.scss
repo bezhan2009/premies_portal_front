@@ -1,0 +1,125 @@
+.route-layout-fix {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+
+  > .dashboard-container,
+  .main-content-wrapper,
+  .main-layout-workspace {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .tabs-bar-container {
+    position: sticky;
+    top: 0;
+    z-index: 110;
+    flex: 0 0 auto;
+    box-shadow: 0 1px 0 var(--border-color);
+  }
+
+  .page-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+
+    > div {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+  }
+
+  .content-page,
+  .page-content-wrapper,
+  .block_info_prems,
+  .applications-list,
+  .transactions-qr-container,
+  .processing-integration,
+  .processing-integration__container,
+  .product-bank-page,
+  .account-operations,
+  .card-balance-page,
+  .tests-module {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .processing-integration,
+  .account-operations {
+    min-height: auto;
+  }
+
+  .processing-integration__container {
+    margin: 0;
+  }
+
+  .card-balance-page,
+  .account-operations .container {
+    max-width: none;
+  }
+
+  .tests-module {
+    height: auto;
+    min-height: auto;
+  }
+
+  .page-content .dashboard-container {
+    display: block;
+    width: 100%;
+    min-height: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .table-reports-div,
+  .my-applications-content,
+  .applications-table-wrap,
+  .sort-table-scroll,
+  .limits-table__wrapper,
+  .custom-scroll,
+  .table-responsive {
+    max-height: none !important;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  .table-reports,
+  .limits-table,
+  .applications-table-wrap table,
+  .sort-table,
+  .eqms-table,
+  .modern-table {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .route-layout-fix {
+    .page-content {
+      padding: 10px !important;
+    }
+
+    .table-header-actions,
+    .my-applications-header,
+    .applications-toolbar,
+    .header-with-balance,
+    .section-header {
+      max-width: 100%;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+  }
+}

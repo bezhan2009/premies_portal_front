@@ -170,9 +170,53 @@ const MainLayout = () => {
   const isBareMode = location.search.includes("bare=true");
   const isAbsSearchRoute = location.pathname.includes("/frontovik/abs-search");
   const isUserKnowledgeBaseRoute = location.pathname === "/user/knowledge-base";
+  const normalizedLayoutRoutes = [
+    "/submit-feedback",
+    "/operator/tests",
+    "/agent/card",
+    "/agent/applications-list",
+    "/product/cards",
+    "/agent-qr/transactions/list",
+    "/accounts-qr/operations",
+    "/accounts-qr/settings",
+    "/pvn/transactions/list",
+    "/pvn/settings/list",
+    "/agent-sms/sms-sender",
+    "/agent-transaction/update-transaction",
+    "/agent-transaction/terminal-names",
+    "/agent-custom/eqms",
+    "/processing/limits",
+    "/processing/transactions",
+    "/processing-search/transactions",
+    "/client-documents",
+    "/card-balance",
+    "/atm/table",
+    "/accounts/account-operations",
+    "/cashback/settings",
+    "/cashback/card-list",
+    "/cashback/monthly-limits",
+    "/cashback/qr-list",
+    "/agent-payments/list",
+    "/admin/logs",
+    "/admin/daily-tasks",
+    "/compliance/white-list",
+    "/compliance/black-list",
+    "/compliance/settings",
+    "/compliance/score-options",
+    "/compliance/requests",
+    "/mail-agent",
+    "/admin/audit-logs",
+    "/agent/client-pins",
+  ];
+  const isNormalizedLayoutRoute = normalizedLayoutRoutes.some((route) => {
+    if (route === "/agent/card") return location.pathname.startsWith("/agent/card");
+    if (route === "/processing/transactions") return location.pathname.startsWith("/processing/transactions");
+    return location.pathname === route;
+  });
   const layoutClassName = [
     isAbsSearchRoute && "abs-search-layout",
     isUserKnowledgeBaseRoute && "knowledge-base-layout",
+    isNormalizedLayoutRoute && "route-layout-fix",
   ]
     .filter(Boolean)
     .join(" ") || undefined;
