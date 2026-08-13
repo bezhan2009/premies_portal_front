@@ -169,6 +169,13 @@ const MainLayout = () => {
 
   const isBareMode = location.search.includes("bare=true");
   const isAbsSearchRoute = location.pathname.includes("/frontovik/abs-search");
+  const isUserKnowledgeBaseRoute = location.pathname === "/user/knowledge-base";
+  const layoutClassName = [
+    isAbsSearchRoute && "abs-search-layout",
+    isUserKnowledgeBaseRoute && "knowledge-base-layout",
+  ]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   if (isBareMode) {
     return (
@@ -181,7 +188,7 @@ const MainLayout = () => {
   return (
     <LiveWorkflowProvider>
     <div
-      className={isAbsSearchRoute ? "abs-search-layout" : undefined}
+      className={layoutClassName}
       style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
     >
       <Header toggleSidebar={toggleSidebar} />
