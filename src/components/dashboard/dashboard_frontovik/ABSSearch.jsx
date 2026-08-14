@@ -359,8 +359,12 @@ export default function ABSClientSearch() {
     // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
         let url = "";
+        const digits = String(searchValue || "").replace(/\D/g, "");
 
         switch (searchType) {
+            case "client/info?phoneNumber=":
+                url = `${API_ATM_URL}/services/clientcode.php?phone=${digits}`;
+                break;
             case "byCardId":
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
                 break;
@@ -394,6 +398,11 @@ export default function ABSClientSearch() {
     };
 
         // getClientByCode is now imported from getUserCredits API
+
+    const extractClientCodeFromSearchResult = (item) => {
+        if (typeof item === "string") return item;
+        return item?.code || item?.clicode || item?.client_code || item?.clientCode || "";
+    };
 
     const handleSearchClient = async (
         searchValue = phoneNumber,
@@ -436,7 +445,7 @@ export default function ABSClientSearch() {
                 (t) => t.value === searchType,
             );
 
-            if (searchTypeIndex >= 3 && searchTypeIndex <= 6) {
+            if (searchTypeIndex === 0 || (searchTypeIndex >= 3 && searchTypeIndex <= 6)) {
                 const clientCodes = await searchViaATMService(
                     searchType,
                     formattedPhone,
@@ -452,8 +461,19 @@ export default function ABSClientSearch() {
                     ? clientCodes
                     : [clientCodes];
 
-                const clientsPromises = clientCodesArray.map((item) =>
-                    getClientByCode(item.clicode, token),
+                const resolvedClientCodes = clientCodesArray
+                    .map(extractClientCodeFromSearchResult)
+                    .map((code) => String(code || "").trim())
+                    .filter(Boolean);
+
+                if (resolvedClientCodes.length === 0) {
+                    showAlert("Клиенты не найдены", "error");
+                    setClientsData([]);
+                    return;
+                }
+
+                const clientsPromises = resolvedClientCodes.map((code) =>
+                    getClientByCode(code, token),
                 );
 
                 const clientsFullData = await Promise.all(clientsPromises);
@@ -463,7 +483,11 @@ export default function ABSClientSearch() {
                 );
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);
-                setDuplicateSearchField(null);
+                setDuplicateSearchField(
+                    normalizedData.length > 1 && searchTypeIndex === 0
+                        ? "Номеру телефона"
+                        : null,
+                );
                 setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 

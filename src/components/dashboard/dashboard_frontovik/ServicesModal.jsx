@@ -139,8 +139,8 @@ const ServicesModal = ({
     >
       <div className="graph-modal-container services-modal-redesign">
         <div className="graph-modal-header">
-          <h2 className="graph-modal-title">Уведомления</h2>
-          <button className="graph-modal-close" onClick={onClose}>
+          <h2 className="graph-modal-title" style={{ color: "white" }}>Уведомления</h2>
+          <button className="graph-modal-close" onClick={onClose} style={{ color: "white" }}>
             X
           </button>
         </div>

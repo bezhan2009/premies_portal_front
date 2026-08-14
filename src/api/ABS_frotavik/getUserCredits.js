@@ -57,6 +57,27 @@ export const getUserDeposits = async (clientIndex) => {
   }
 };
 
+export const fetchDepositSchedule = async (colvirReferenceId) => {
+  try {
+    const res = await apiClientABS_Frontovik(
+      "/deposits/schedule?colvirReferenceId=" + encodeURIComponent(colvirReferenceId),
+    );
+    if (Array.isArray(res.data)) {
+      return res.data;
+    }
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    if (res.data && Array.isArray(res.data.schedule)) {
+      return res.data.schedule;
+    }
+    return [];
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
+};
+
 export const getUserInfoPhone = async (clientNumber) => {
   try {
     const res = await apiClientABS_Frontovik("account/user/" + clientNumber);
@@ -98,4 +119,3 @@ export const getClientByCode = async (clientIndex) => {
     console.error("getClientByCode error:", err);
   }
 };
-

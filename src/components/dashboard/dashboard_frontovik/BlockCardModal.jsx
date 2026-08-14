@@ -36,6 +36,8 @@ const BlockCardModal = ({ isOpen, onClose, onConfirm, isLoading }) => {
     onClose();
   };
 
+  const selectedOption = options.find((opt) => opt.value === selectedStatus);
+
   return (
     <div className={`graph-modal-overlay ${isOpen ? "graph-modal-overlay--open" : ""}`}>
       <div className="graph-modal-container" style={{ maxWidth: '500px' }}>
@@ -65,7 +67,8 @@ const BlockCardModal = ({ isOpen, onClose, onConfirm, isLoading }) => {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   outline: 'none',
-                  background: 'white'
+                  background: 'white',
+                  color: '#111827'
                 }}
               >
                 <option value="">Выберите тип...</option>
@@ -75,6 +78,23 @@ const BlockCardModal = ({ isOpen, onClose, onConfirm, isLoading }) => {
                   </option>
                 ))}
               </select>
+              {selectedOption && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(225, 29, 72, 0.08)',
+                    border: '1px solid rgba(225, 29, 72, 0.18)',
+                    color: '#9f1239',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Выбранный тип блокировки: {selectedOption.label}
+                </div>
+              )}
 
               <p style={{ marginTop: '15px', marginBottom: '10px', color: '#666' }}>Комментарий (обязательно)</p>
               <textarea

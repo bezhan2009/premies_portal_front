@@ -1,10 +1,72 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import "../../../styles/ABSSearch.scss";
+import Spinner from "../../Spinner.jsx";
+import { fetchDepositSchedule } from "../../../api/ABS_frotavik/getUserCredits.js";
+
+const normalizeScheduleDate = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return raw.replace("T", " ").split(".")[0];
+};
+
+const getDateOnly = (value) => normalizeScheduleDate(value).split(" ")[0] || "";
+
+const parseScheduleAmount = (value) => {
+  const normalized = String(value || "0").replace(/\s/g, "").replace(",", ".");
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : 0;
+};
+
+const buildDepositScheduleRows = (schedulePoints) => {
+  const grouped = new Map();
+
+  (Array.isArray(schedulePoints) ? schedulePoints : []).forEach((point) => {
+    const calculatingDate = normalizeScheduleDate(point.calculatingDate || point.CalculatingDate);
+    if (!calculatingDate) return;
+
+    if (!grouped.has(calculatingDate)) {
+      grouped.set(calculatingDate, {
+        date: calculatingDate,
+        calculatedIncome: 0,
+        tax: 0,
+        income: 0,
+      });
+    }
+
+    const row = grouped.get(calculatingDate);
+    const name = String(point.longName || point.LongName || "").toLowerCase();
+    const amount = parseScheduleAmount(point.planAmount || point.PlanAmount);
+
+    if (name.includes("вознаграждение по депозиту") && !name.includes("выплата")) {
+      row.calculatedIncome += amount;
+    } else if (name.includes("подоходного налога")) {
+      row.tax += amount;
+    } else if (name.includes("выплата вознаграждения")) {
+      row.income += amount;
+    }
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return Array.from(grouped.values())
+    .map((row) => {
+      const paymentDate = new Date(getDateOnly(row.date));
+      const isPaid = !Number.isNaN(paymentDate.getTime()) && paymentDate <= today;
+      return {
+        ...row,
+        status: isPaid ? "Выплачен" : "Ожидается",
+      };
+    })
+    .sort((a, b) => new Date(getDateOnly(a.date)).getTime() - new Date(getDateOnly(b.date)).getTime());
+};
 
 const DepositDetails = ({ deposit, onBack }) => {
   const agreement = deposit.AgreementData || {};
   const balances = deposit.BalanceAccounts || [];
+  const [schedulePoints, setSchedulePoints] = useState([]);
+  const [isScheduleLoading, setIsScheduleLoading] = useState(false);
   
   // Extract Rates
   const allRates = deposit.SumTypes || deposit.sumTypes || deposit.Rates || deposit.Conditions || agreement.Rates || agreement.Conditions || [];
@@ -51,6 +113,44 @@ const DepositDetails = ({ deposit, onBack }) => {
   // Find Income Balance
   const incomeAcc = balances.find(a => a.RuleCode === "CLIACC") || {};
   const incomeBalance = Number(incomeAcc.Balance || 0);
+  const colvirReferenceId = agreement.ColvirReferenceId || deposit.ColvirReferenceId || "";
+  const scheduleRows = useMemo(() => buildDepositScheduleRows(schedulePoints), [schedulePoints]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!colvirReferenceId) {
+      setSchedulePoints([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadSchedule = async () => {
+      setIsScheduleLoading(true);
+      try {
+        const data = await fetchDepositSchedule(colvirReferenceId);
+        if (!cancelled) {
+          setSchedulePoints(data || []);
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки графика депозита:", error);
+        if (!cancelled) {
+          setSchedulePoints([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsScheduleLoading(false);
+        }
+      }
+    };
+
+    loadSchedule();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [colvirReferenceId]);
 
   const handleExportDetails = () => {
     const ws = XLSX.utils.json_to_sheet(balances.map(b => ({
@@ -63,7 +163,20 @@ const DepositDetails = ({ deposit, onBack }) => {
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Счета депозита");
-    XLSX.writeFile(wb, `Deposit_${agreement.ColvirReferenceId || "Details"}.xlsx`);
+    XLSX.writeFile(wb, `Deposit_${colvirReferenceId || "Details"}.xlsx`);
+  };
+
+  const handleExportSchedule = () => {
+    const ws = XLSX.utils.json_to_sheet(scheduleRows.map((row) => ({
+      "Дата": getDateOnly(row.date),
+      "Расчитанный доход": row.calculatedIncome.toFixed(2),
+      "Налог": row.tax.toFixed(2),
+      "Доход": row.income.toFixed(2),
+      "Статус": row.status,
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "График депозита");
+    XLSX.writeFile(wb, `Deposit_schedule_${colvirReferenceId || "export"}.xlsx`);
   };
 
   return (
@@ -153,6 +266,77 @@ const DepositDetails = ({ deposit, onBack }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Deposit Schedule */}
+      <div style={{ background: "#fff", padding: "20px", borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>График выплат депозита</div>
+          {scheduleRows.length > 0 && (
+            <button
+              onClick={handleExportSchedule}
+              style={{ background: "#27ae60", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", fontWeight: 600 }}
+            >
+              Экспорт в Excel
+            </button>
+          )}
+        </div>
+        {isScheduleLoading ? (
+          <div style={{ minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Spinner center />
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b" }}>
+                  <th style={{ padding: "12px 8px" }}>Дата</th>
+                  <th style={{ padding: "12px 8px", textAlign: "right" }}>Расчитанный доход</th>
+                  <th style={{ padding: "12px 8px", textAlign: "right" }}>Налог</th>
+                  <th style={{ padding: "12px 8px", textAlign: "right" }}>Доход</th>
+                  <th style={{ padding: "12px 8px" }}>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scheduleRows.map((row, index) => {
+                  const isPaid = row.status === "Выплачен";
+
+                  return (
+                    <tr key={`${row.date}-${index}`} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px 8px", color: "#0f172a", fontWeight: "600" }}>{getDateOnly(row.date)}</td>
+                      <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: "700", color: "#0f172a" }}>
+                        {row.calculatedIncome.toLocaleString("ru-RU", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "12px 8px", textAlign: "right", color: "#475569" }}>
+                        {row.tax.toLocaleString("ru-RU", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "12px 8px", textAlign: "right", color: "#475569" }}>
+                        {row.income.toLocaleString("ru-RU", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "12px 8px" }}>
+                        <span style={{
+                          background: isPaid ? "#27ae60" : "#f59e0b",
+                          color: "#fff",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: "600"
+                        }}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {scheduleRows.length === 0 && (
+                  <tr>
+                    <td colSpan="5" style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>График отсутствует</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Tables Section */}
