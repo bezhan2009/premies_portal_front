@@ -82,6 +82,7 @@ const MainLayout = () => {
 
     // Frontovik
     if (pathname.includes("frontovik/abs-search")) return "abs_search";
+    if (pathname.includes("frontovik/compliance-requests")) return "frontovik_compliance_requests";
 
     // Processing
     if (pathname.includes("/processing/limits")) return "limits";
@@ -199,6 +200,7 @@ const MainLayout = () => {
     "/agent-transaction/update-transaction",
     "/agent-transaction/terminal-names",
     "/agent-custom/eqms",
+    "/frontovik/compliance-requests",
     "/processing/limits",
     "/processing/transactions",
     "/processing-search/transactions",

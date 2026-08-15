@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin } from "antd";
+import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Descriptions } from "antd";
 
 const { Text } = Typography;
 
@@ -7,6 +7,7 @@ export default function ComplianceRequests() {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedApp, setSelectedApp] = useState(null);
+    const [selectedRequest, setSelectedRequest] = useState(null);
     const [appModalVisible, setAppModalVisible] = useState(false);
     const [appLoading, setAppLoading] = useState(false);
 
@@ -37,12 +38,14 @@ export default function ComplianceRequests() {
     };
 
     const handleViewApplication = async (record) => {
+        setSelectedRequest(record);
+        setSelectedApp(null);
+        setAppLoading(false);
+        setAppModalVisible(true);
         if (!record.application_id) {
-            message.warning("ID заявки отсутствует");
             return;
         }
         setAppLoading(true);
-        setAppModalVisible(true);
         try {
             const token = localStorage.getItem("access_token");
             const backendAppUrl = import.meta.env.VITE_BACKEND_APPLICATION_URL;
@@ -90,7 +93,9 @@ export default function ComplianceRequests() {
                 try {
                     const errData = await response.json();
                     errMsg = errData.error || errData.message || errMsg;
-                } catch (_) {}
+                } catch {
+                    // Keep the default message when the backend body is not JSON.
+                }
                 throw new Error(errMsg);
             }
 
@@ -152,7 +157,7 @@ export default function ComplianceRequests() {
         try {
             const parsed = JSON.parse(value);
             return Array.isArray(parsed) ? parsed : [parsed];
-        } catch (error) {
+        } catch {
             return [];
         }
     };
@@ -177,6 +182,12 @@ export default function ComplianceRequests() {
             title: "Телефон",
             dataIndex: "client_phone",
             key: "client_phone",
+        },
+        {
+            title: "ИНН / идентификатор",
+            dataIndex: "client_identifier",
+            key: "client_identifier",
+            render: (value) => value || "-",
         },
         {
             title: "Вероятность совпадения (%)",
@@ -220,8 +231,8 @@ export default function ComplianceRequests() {
             key: "status",
             render: (status) => {
                 let color = "blue";
-                let text = "Ожидает";
-                if (status === "approved") { color = "green"; text = "Принято"; }
+                let text = "На проверке";
+                if (status === "approved") { color = "green"; text = "Одобрено"; }
                 if (status === "rejected") { color = "red"; text = "Отклонено"; }
                 return <Tag color={color}>{text}</Tag>;
             }
@@ -251,7 +262,7 @@ export default function ComplianceRequests() {
                     {(!record.status || record.status.toLowerCase() === "pending") && (
                         <Space>
                             <Button type="primary" onClick={() => confirmAction(record, "approved")}>
-                                Принять
+                                Одобрить
                             </Button>
                             <Button danger onClick={() => confirmAction(record, "rejected")}>
                                 Отклонить
@@ -276,16 +287,18 @@ export default function ComplianceRequests() {
             </Card>
 
             <Modal
-                title={`Детали заявки #${selectedApp?.ID || ""}`}
+                title={`Детали заявки #${selectedRequest?.id || selectedApp?.ID || ""}`}
                 open={appModalVisible}
                 onCancel={() => {
                     setAppModalVisible(false);
                     setSelectedApp(null);
+                    setSelectedRequest(null);
                 }}
                 footer={[
                     <Button key="close" onClick={() => {
                         setAppModalVisible(false);
                         setSelectedApp(null);
+                        setSelectedRequest(null);
                     }}>
                         Закрыть
                     </Button>
@@ -295,6 +308,33 @@ export default function ComplianceRequests() {
                 {appLoading ? (
                     <div style={{ textAlign: "center", padding: "40px" }}>
                         <Spin size="large" />
+                    </div>
+                ) : selectedRequest?.source === "frontovik_new_client" ? (
+                    <div>
+                        <Card title="Анкета нового клиента" size="small" style={{ marginBottom: 15 }}>
+                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+                                <Descriptions.Item label="ФИО" span={2}>{selectedRequest.client_full_name || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="ИНН">{selectedRequest.client_identifier || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Телефон">{selectedRequest.client_phone || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Дата рождения">{selectedRequest.client_birth_date || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Гражданство">{selectedRequest.citizenship || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Документ" span={2}>{selectedRequest.passport_number || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Адрес регистрации" span={2}>{selectedRequest.registration_address || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Адрес проживания" span={2}>{selectedRequest.residence_address || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Род деятельности">{selectedRequest.client_occupation || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Источник средств">{selectedRequest.net_worth || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Ежемесячный доход">{selectedRequest.monthly_income || "-"}</Descriptions.Item>
+                                <Descriptions.Item label="Автор заявки">{selectedRequest.creator_username || "-"}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+                        <Card title="Результаты автоматических проверок" size="small">
+                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+                                <Descriptions.Item label="Резидент">{selectedRequest.is_resident ? "Да" : "Нет"}</Descriptions.Item>
+                                <Descriptions.Item label="FATCA">{selectedRequest.fatca ? "Да" : "Нет"}</Descriptions.Item>
+                                <Descriptions.Item label="АПЛ/ПЗЛ">{selectedRequest.apl_pzl ? "Да" : "Нет"}</Descriptions.Item>
+                                <Descriptions.Item label="Совпадение Compliance">{selectedRequest.compliance_matched ? "Найдено" : "Не найдено"}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
                     </div>
                 ) : selectedApp ? (
                     <div>

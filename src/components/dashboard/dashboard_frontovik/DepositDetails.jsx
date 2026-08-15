@@ -3,64 +3,7 @@ import * as XLSX from "xlsx";
 import "../../../styles/ABSSearch.scss";
 import Spinner from "../../Spinner.jsx";
 import { fetchDepositSchedule } from "../../../api/ABS_frotavik/getUserCredits.js";
-
-const normalizeScheduleDate = (value) => {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  return raw.replace("T", " ").split(".")[0];
-};
-
-const getDateOnly = (value) => normalizeScheduleDate(value).split(" ")[0] || "";
-
-const parseScheduleAmount = (value) => {
-  const normalized = String(value || "0").replace(/\s/g, "").replace(",", ".");
-  const number = Number(normalized);
-  return Number.isFinite(number) ? number : 0;
-};
-
-const buildDepositScheduleRows = (schedulePoints) => {
-  const grouped = new Map();
-
-  (Array.isArray(schedulePoints) ? schedulePoints : []).forEach((point) => {
-    const calculatingDate = normalizeScheduleDate(point.calculatingDate || point.CalculatingDate);
-    if (!calculatingDate) return;
-
-    if (!grouped.has(calculatingDate)) {
-      grouped.set(calculatingDate, {
-        date: calculatingDate,
-        calculatedIncome: 0,
-        tax: 0,
-        income: 0,
-      });
-    }
-
-    const row = grouped.get(calculatingDate);
-    const name = String(point.longName || point.LongName || "").toLowerCase();
-    const amount = parseScheduleAmount(point.planAmount || point.PlanAmount);
-
-    if (name.includes("вознаграждение по депозиту") && !name.includes("выплата")) {
-      row.calculatedIncome += amount;
-    } else if (name.includes("подоходного налога")) {
-      row.tax += amount;
-    } else if (name.includes("выплата вознаграждения")) {
-      row.income += amount;
-    }
-  });
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return Array.from(grouped.values())
-    .map((row) => {
-      const paymentDate = new Date(getDateOnly(row.date));
-      const isPaid = !Number.isNaN(paymentDate.getTime()) && paymentDate <= today;
-      return {
-        ...row,
-        status: isPaid ? "Выплачен" : "Ожидается",
-      };
-    })
-    .sort((a, b) => new Date(getDateOnly(a.date)).getTime() - new Date(getDateOnly(b.date)).getTime());
-};
+import { buildDepositScheduleRows, getDateOnly } from "./depositScheduleUtils.js";
 
 const DepositDetails = ({ deposit, onBack }) => {
   const agreement = deposit.AgreementData || {};

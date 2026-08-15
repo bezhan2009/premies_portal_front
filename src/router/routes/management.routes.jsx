@@ -6,6 +6,7 @@ import DashboardChairmanKnowledgeBase from "../../pages/dashboard/dashboard_chai
 import DashboardDirectorReports from "../../pages/dashboard/dashboard_director/DirectorReports.jsx";
 import DashboardDirectorKnowledgeBase from "../../pages/dashboard/dashboard_director/KnowledgeBase.jsx";
 import DashboardFrontovikAbsSearch from "../../pages/dashboard/dashboard_frontovik/ABSSearch.jsx";
+import FrontovikComplianceRequests from "../../pages/dashboard/dashboard_frontovik/FrontovikComplianceRequests.jsx";
 import AccountOperations from "../../pages/dashboard/dashboard_frontovik/AccountOperations.jsx";
 import DashboardOperatorProcessing from "../../pages/dashboard/dashboard_operator/ProcessingPage.jsx";
 import DashboardOperatorProcessingTransactions from "../../pages/dashboard/dashboard_operator/Transactions.jsx";
@@ -35,6 +36,20 @@ const managementRoutes = (
       <Route
         path="/chairman/knowledge-base"
         element={<DashboardChairmanKnowledgeBase />}
+      />
+    </Route>
+
+    {/* Personal Compliance requests are available only to Frontovik (Role 17). */}
+    <Route
+      element={
+        <RequireRole allowedRoles={[17]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route
+        path="frontovik/compliance-requests"
+        element={<FrontovikComplianceRequests />}
       />
     </Route>
 

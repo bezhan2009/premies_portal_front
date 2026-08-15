@@ -55,6 +55,7 @@ import CardLimitsModal from "./CardLimitsModal.jsx";
 import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.jsx";
 import ClientDocumentUploadModal from "../../client-documents/ClientDocumentUploadModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
+import NewClientModal from "./NewClientModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
 // Utilities
@@ -96,6 +97,8 @@ export default function ABSClientSearch() {
     const [clientsData, setClientsData] = useState([]);
     const [selectedClientIndex, setSelectedClientIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const [clientNotFound, setClientNotFound] = useState(false);
+    const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
     const searchInFlightRef = useRef(false);
     const consumedClientIndexRef = useRef("");
     const handleSearchClientRef = useRef(null);
@@ -341,6 +344,8 @@ export default function ABSClientSearch() {
         setDocumentPreview(null);
         setDocumentPreviewVariant("default");
         setDuplicateSearchField(null);
+        setClientNotFound(false);
+        setIsNewClientModalOpen(false);
         setComplianceListType(null);
         setComplianceCheckFailed(false);
         setTerrorMatch(null);
@@ -439,6 +444,7 @@ export default function ABSClientSearch() {
         try {
             setIsLoading(true);
             setDuplicateSearchField(null);
+            setClientNotFound(false);
             const token = localStorage.getItem("access_token");
 
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
@@ -454,6 +460,7 @@ export default function ABSClientSearch() {
                 if (!clientCodes || clientCodes.length === 0) {
                     showAlert("Клиенты не найдены", "error");
                     setClientsData([]);
+                    setClientNotFound(true);
                     return;
                 }
 
@@ -469,6 +476,7 @@ export default function ABSClientSearch() {
                 if (resolvedClientCodes.length === 0) {
                     showAlert("Клиенты не найдены", "error");
                     setClientsData([]);
+                    setClientNotFound(true);
                     return;
                 }
 
@@ -493,7 +501,9 @@ export default function ABSClientSearch() {
 
                 if (normalizedData.length === 0) {
                     showAlert("Клиенты не найдены в АБС", "error");
+                    setClientNotFound(true);
                 } else {
+                    setClientNotFound(false);
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
@@ -510,6 +520,7 @@ export default function ABSClientSearch() {
                 if (!response.ok) {
                     if (response.status === 404) {
                         showAlert("Клиенты не найдены в АБС", "error");
+                        setClientNotFound(true);
                     } else {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -548,7 +559,9 @@ export default function ABSClientSearch() {
 
                 if (normalizedData.length === 0) {
                     showAlert("Клиенты не найдены в АБС", "error");
+                    setClientNotFound(true);
                 } else {
+                    setClientNotFound(false);
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             }
@@ -556,6 +569,7 @@ export default function ABSClientSearch() {
             console.error("Ошибка при поиске клиента:", error);
             showAlert("Произошла ошибка при поиске клиента", "error");
             setClientsData([]);
+            setClientNotFound(false);
         } finally {
             searchInFlightRef.current = false;
             setIsLoading(false);
@@ -1823,6 +1837,22 @@ export default function ABSClientSearch() {
                             phoneNumber={phoneNumber}
                         />
 
+                        {clientNotFound && !isLoading && clientsData.length === 0 && (
+                            <div className="new-client-entry">
+                                <div>
+                                    <strong>Клиент не найден в АБС</strong>
+                                    <span>Создайте обязательную анкету для определения сценария обслуживания.</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="new-client-entry__button"
+                                    onClick={() => setIsNewClientModalOpen(true)}
+                                >
+                                    Новый клиент
+                                </button>
+                            </div>
+                        )}
+
                         {selectedClient && (
                             <div className="terror-check-banner-wrapper">
                                 {duplicateSearchField && (
@@ -2044,6 +2074,21 @@ export default function ABSClientSearch() {
                 limits={cardLimits}
                 isLoading={modalLoading}
                 cardId={activeCardId}
+            />
+
+            <NewClientModal
+                open={isNewClientModalOpen}
+                onClose={() => setIsNewClientModalOpen(false)}
+                onSubmitted={(result) => {
+                    const requiresCompliance = Boolean(result?.requires_compliance);
+                    showAlert(
+                        result?.message || (requiresCompliance
+                            ? "Заявка отправлена на проверку в Compliance."
+                            : "Обслуживание разрешено."),
+                        requiresCompliance ? "error" : "success",
+                    );
+                    setClientNotFound(false);
+                }}
             />
 
             {pinModalClient && (
