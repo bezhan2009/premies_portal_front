@@ -4,6 +4,7 @@ import FlexibleAntTable from '../../components/table/FlexibleAntTable';
 import { apiClient } from '../../api/utils/apiClient';
 import { RefreshCw, Filter, Search, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import UserProfileLink from '../../components/general/UserProfileLink.jsx';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -66,7 +67,7 @@ const AuditLogsPage = () => {
             title: 'Пользователь (Фронтовик)',
             dataIndex: 'username',
             key: 'username',
-            render: (username) => <Tag color="blue">{username}</Tag>,
+            render: (username) => <Tag color="blue"><UserProfileLink username={username} displayName={username} /></Tag>,
             width: 180,
         },
         {

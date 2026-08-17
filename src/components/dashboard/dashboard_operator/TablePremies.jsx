@@ -10,6 +10,7 @@ import DownloadModal from "./DownloadModal.jsx";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../hooks/useTableSort.js";
 import SortIcon from "../../general/SortIcon.jsx";
+import UserProfileLink from "../../general/UserProfileLink.jsx";
 
 const TablePremies = ({ month, year }) => {
   const {
@@ -424,7 +425,7 @@ const TablePremies = ({ month, year }) => {
                       />
                     ) : (
                       <div className="fio-cell">
-                        <span className="fio-text">{user.full_name}</span>
+                        <UserProfileLink userId={user.ID || user.id} username={user.username} displayName={user.full_name} className="fio-text" />
                         <button
                           className="download-report-btn"
                           title="Скачать отчет рабочего"

@@ -16,6 +16,7 @@ import useChatStore from "../../store/useChatStore";
 import ImageModal from "../modal/ImageModal";
 import PasteFileModal from "../modal/PasteFileModal";
 import ChatDatePicker from "./ChatDatePicker";
+import UserProfileLink from "./UserProfileLink.jsx";
 import { LiveWorkflowInvitationCard } from "../live-workflow/LiveWorkflowProvider.jsx";
 import { useLocation } from "react-router-dom";
 import filePng from "../../assets/file.png";
@@ -229,7 +230,7 @@ const AudioPlayer = ({ src, isOut }) => {
 };
 
 const MiniChatWindow = () => {
-  const { isMiniChatOpen, closeMiniChat, setUnreadCount } = useChatStore();
+  const { isMiniChatOpen, closeMiniChat, setUnreadCount, pendingConversation, consumePendingConversation } = useChatStore();
   const { theme } = useThemeStore();
   const location = useLocation();
   const dragControls = useDragControls();
@@ -263,6 +264,31 @@ const MiniChatWindow = () => {
   const [supportThreads, setSupportThreads] = useState([]);
   const [directThreads, setDirectThreads] = useState([]);
   const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    if (!pendingConversation) return;
+    const userId = Number(pendingConversation.userId || pendingConversation.user_id || 0);
+    const userName = pendingConversation.name || pendingConversation.username || "Сотрудник";
+    if (userId > 0) {
+      setChatType("direct");
+      setRecipientId(userId);
+      setActiveThreadName(userName);
+      setCurrentView("chat");
+      setDirectThreads((current) => current.some((thread) => Number(thread.user_id) === userId)
+        ? current
+        : [{
+          id: userId,
+          user_id: userId,
+          username: userName,
+          name: userName,
+          message: "",
+          last_message_at: new Date().toISOString(),
+          unread_count: 0,
+          chatType: "direct",
+        }, ...current]);
+    }
+    consumePendingConversation();
+  }, [pendingConversation, consumePendingConversation]);
   
   // New Chat User Selection
   const [usersList, setUsersList] = useState([]);
@@ -1611,7 +1637,9 @@ const MiniChatWindow = () => {
              <h3 style={{ margin: "0 0 16px" }}>Закрепленные сообщения</h3>
              {pinnedMessages.map((msg, idx) => (
                 <div key={msg.id} style={{ padding: "8px", borderBottom: "1px solid #eee", cursor: "pointer" }} onClick={() => { scrollToMessage(msg.id); setAllPinsModalOpen(false); }}>
-                  <div style={{ fontWeight: 600, fontSize: "12px" }}>{msg.username}</div>
+                  <div style={{ fontWeight: 600, fontSize: "12px" }}>
+                    <UserProfileLink userId={msg.sender_id || msg.user_id} username={msg.username} displayName={msg.username} />
+                  </div>
                   <div style={{ fontSize: "12px" }}>{msg.message}</div>
                 </div>
              ))}
@@ -2442,7 +2470,7 @@ const MiniChatWindow = () => {
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                                             <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
-                                              {thread.username}
+                                              <UserProfileLink userId={thread.isGroup ? undefined : thread.user_id} username={thread.username} displayName={thread.username} />
                                               <Pin size={10} style={{ transform: "rotate(45deg)", color: "#3b82f6" }} />
                                               {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
                                             </span>
@@ -2543,7 +2571,7 @@ const MiniChatWindow = () => {
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                                       <span style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "4px" }}>
-                                        {thread.username}
+                                        <UserProfileLink userId={thread.isGroup ? undefined : thread.user_id} username={thread.username} displayName={thread.username} />
                                         {isMuted && <BellOff size={10} style={{ color: "#f59e0b" }} />}
                                       </span>
                                       <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>

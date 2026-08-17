@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Search, User, Shield, ShieldAlert, Trash2, LogOut, UserPlus } from "lucide-react";
+import UserProfileLink from "./UserProfileLink.jsx";
 
 export default function GroupMembersModal({ isOpen, onClose, group, groupId, onUpdate }) {
   const [members, setMembers] = useState([]);
@@ -252,7 +253,7 @@ export default function GroupMembersModal({ isOpen, onClose, group, groupId, onU
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontWeight: isSelf ? "700" : "500" }}>
-                          {member.full_name || member.username} {isSelf && "(Вы)"}
+                          <UserProfileLink userId={member.user_id} username={member.username} displayName={member.full_name || member.username} /> {isSelf && "(Вы)"}
                         </span>
                         <span style={{ fontSize: "10px", color: "#64748b" }}>@{member.username}</span>
                       </div>

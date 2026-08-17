@@ -1,4 +1,5 @@
 import React from "react";
+import UserProfileLink from "../../general/UserProfileLink.jsx";
 
 const ClientAuditLogs = ({ logs, loading, isModalMode = false }) => {
   const formatTimestamp = (ts) => {
@@ -51,7 +52,7 @@ const ClientAuditLogs = ({ logs, loading, isModalMode = false }) => {
                       {formatTimestamp(log.timestamp)}
                     </td>
                     <td className="limits-table__td" style={{ padding: "10px 15px", fontWeight: "bold" }}>
-                      {log.username}
+                      <UserProfileLink username={log.username} displayName={log.username} />
                     </td>
                     <td className="limits-table__td" style={{ padding: "10px 15px" }}>
                       <span className="badge" style={{

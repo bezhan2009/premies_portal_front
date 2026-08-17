@@ -4,6 +4,7 @@ import SearchBar from "../../../general/SearchBar.jsx";
 import Spinner from "../../../Spinner.jsx";
 import { calculateTotalPremia } from "../../../../api/utils/calculate_premia.js";
 import { fetchOfficeDirector } from "../../../../api/offices/director_office.js";
+import UserProfileLink from "../../../general/UserProfileLink.jsx";
 
 function formatNumber(value) {
   if (value == null || isNaN(value)) return "0,00";
@@ -163,7 +164,7 @@ const ReportTableEmployeesDirector = ({ onSelect, workerId = null }) => {
                         className={`choose-td ${selectedRow === worker.ID ? "active" : ""}`}
                       ></div>
                     </td>
-                    <td>{worker.user?.full_name || ""}</td>
+                    <td><UserProfileLink userId={worker.user?.ID || worker.user?.id} username={worker.user?.username} displayName={worker.user?.full_name || ""} /></td>
                     <td>{worker.place_work || ""}</td>
                     <td>
                       {formatNumber(

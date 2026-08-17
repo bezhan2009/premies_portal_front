@@ -539,6 +539,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(42)) {
+            additionalLinks.push({
+                name: "Управление деклайнами",
+                href: "/declines",
+                key: "declines_management",
+                icon: ShieldX,
+            });
+        }
+
         if (roles.includes(10)) {
             additionalLinks.push({
                 name: "Заявки на карты",

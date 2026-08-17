@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal.jsx";
 import Spinner from "../Spinner.jsx";
-import { User, Mail, Phone, Shield } from "lucide-react";
+import { User, Mail, Phone, Shield, Briefcase, Heart, Camera, CalendarDays } from "lucide-react";
 
 export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
   const [loading, setLoading] = useState(false);
@@ -14,6 +14,13 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [complianceCode, setComplianceCode] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [position, setPosition] = useState("");
+  const [internalPhone, setInternalPhone] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [workStatus, setWorkStatus] = useState("");
 
   const token = localStorage.getItem("access_token");
 
@@ -40,6 +47,13 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
       setEmail(data.email || "");
       setPhone(data.phone || "");
       setComplianceCode(data.compliance_code || "");
+      setBirthDate(data.birth_date || "");
+      setMaritalStatus(data.marital_status || "");
+      setPosition(data.position || "");
+      setInternalPhone(data.internal_phone || "");
+      setPhotoURL(data.photo_url || "");
+      setPhotoFile(null);
+      setWorkStatus(data.work_status || "");
     } catch (err) {
       console.error(err);
       setError(err.message || "Ошибка при получении профиля");
@@ -69,12 +83,31 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
           email: email,
           phone: phone,
           compliance_code: complianceCode,
+          marital_status: maritalStatus,
+          position,
+          internal_phone: internalPhone,
         }),
       });
 
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Не удалось сохранить изменения");
+      }
+
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("photo", photoFile);
+        const photoResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/photo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!photoResponse.ok) {
+          const data = await photoResponse.json();
+          throw new Error(data.error || "Не удалось загрузить фото");
+        }
+        setPhotoURL((await photoResponse.json()).photo_url || "");
+        setPhotoFile(null);
       }
 
       setSuccess("Профиль успешно обновлен");
@@ -284,6 +317,61 @@ export default function ProfileModal({ isOpen, onClose, onProfileUpdated }) {
                 onChange={(e) => setComplianceCode(e.target.value)}
                 placeholder="Введите свой комплаенс код"
               />
+            </div>
+          </div>
+
+          <div className="profile-name-row">
+            <div className="profile-field">
+              <label><CalendarDays size={16} /> Дата рождения</label>
+              <div className="profile-input-wrapper">
+                <CalendarDays size={18} />
+                <input type="date" value={birthDate} disabled title="Дату рождения изменяет оператор" />
+              </div>
+            </div>
+            <div className="profile-field">
+              <label><Heart size={16} /> Семейное положение</label>
+              <div className="profile-input-wrapper">
+                <Heart size={18} />
+                <input type="text" value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} placeholder="Не указано" />
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-name-row">
+            <div className="profile-field">
+              <label><Briefcase size={16} /> Должность</label>
+              <div className="profile-input-wrapper">
+                <Briefcase size={18} />
+                <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Должность" />
+              </div>
+            </div>
+            <div className="profile-field">
+              <label><Phone size={16} /> Внутренний телефон</label>
+              <div className="profile-input-wrapper">
+                <Phone size={18} />
+                <input type="text" value={internalPhone} onChange={(e) => setInternalPhone(e.target.value)} placeholder="Например, 1234" />
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-field">
+            <label><Camera size={16} /> Фото</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              {photoURL && (
+                <img
+                  src={`${import.meta.env.VITE_BACKEND_URL}${photoURL}`}
+                  alt="Фото профиля"
+                  style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }}
+                />
+              )}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} />
+            </div>
+          </div>
+
+          <div className="profile-field">
+            <label><User size={16} /> Статус</label>
+            <div style={{ color: workStatus === "На работе" ? "#86efac" : "#cbd5e1", fontWeight: 700 }}>
+              {workStatus || "Отсутствует на работе"}
             </div>
           </div>
 

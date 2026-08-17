@@ -21,6 +21,7 @@ import { LiveWorkflowInvitationCard } from "../../../components/live-workflow/Li
 import filePng from "../../../assets/file.png";
 import { formatChatDayLabel, getMessageDayKey } from "../../../utils/chatDateUtils";
 import { getLiveWorkflowMessagePreview, isLiveWorkflowInvitationMessage } from "../../../utils/liveWorkflowMessages";
+import UserProfileLink from "../../../components/general/UserProfileLink.jsx";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -3973,7 +3974,7 @@ export default function OperatorFeedbackPage() {
                               }}
                             >
                               {!isOutgoing && activeChatType === "support" && (
-                                <span className="msg-sender" style={{ alignSelf: "flex-start", marginBottom: "4px" }}>{group.messages[0].username}</span>
+                                <span className="msg-sender" style={{ alignSelf: "flex-start", marginBottom: "4px" }}><UserProfileLink userId={group.messages[0].sender_id || group.messages[0].user_id} username={group.messages[0].username} displayName={group.messages[0].username} /></span>
                               )}
                               <div style={{
                                 display: "flex",
@@ -4099,7 +4100,7 @@ export default function OperatorFeedbackPage() {
                                     <Pin size={12} style={{ opacity: 0.5 }} />
                                   )}
                                   <span>
-                                    <strong>{msg.username}</strong> {msg.message}
+                                    <strong><UserProfileLink userId={msg.sender_id || msg.user_id} username={msg.username} displayName={msg.username} /></strong> {msg.message}
                                   </span>
                                 </span>
                                 {msg.system_type === "pin" && msg.target_msg_id && (
@@ -4183,7 +4184,7 @@ export default function OperatorFeedbackPage() {
                                 }}
                               >
                             {!isOutgoing && (activeChatType === "support" || activeChatType === "group") && (
-                              <span className="msg-sender">{msg.username}</span>
+                              <span className="msg-sender"><UserProfileLink userId={msg.sender_id || msg.user_id} username={msg.username} displayName={msg.username} /></span>
                             )}
 
                              <div className="msg-bubble" style={{ position: "relative", paddingRight: msg.is_pinned ? "30px" : "16px" }}>
@@ -4731,7 +4732,7 @@ export default function OperatorFeedbackPage() {
                     >
                       <div className="modal-user-avatar">{initials}</div>
                       <div className="modal-user-info">
-                        <span className="modal-user-name">{u.full_name || u.username}</span>
+                        <span className="modal-user-name"><UserProfileLink userId={u.id} username={u.username} displayName={u.full_name || u.username} /></span>
                         <span className="modal-user-details">{details}</span>
                       </div>
                     </button>

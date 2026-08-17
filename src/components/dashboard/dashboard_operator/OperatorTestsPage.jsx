@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Select from "../../elements/Select";
 import Spinner from "../../Spinner.jsx";
 import { Viewer, Worker } from "@react-pdf-viewer/core";
+import UserProfileLink from "../../general/UserProfileLink.jsx";
 
 const baseURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -327,7 +328,7 @@ export default function OperatorTestsPage() {
                       >
                         <div className="answer-header">
                           <strong>
-                            {a.user?.full_name || "Неизвестный пользователь"}
+                            <UserProfileLink userId={a.user?.ID || a.user?.id || a.user_id} username={a.user?.username} displayName={a.user?.full_name || "Неизвестный пользователь"} />
                           </strong>
                           <span className="answer-type">
                             {QUESTION_TYPE_LABELS[a.type]}
