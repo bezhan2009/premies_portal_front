@@ -222,6 +222,13 @@ export default function ABSClientSearch() {
         });
     };
 
+    const showClientNotFoundState = () => {
+        hideAlert();
+        setClientsData([]);
+        setSelectedClientIndex(0);
+        setClientNotFound(true);
+    };
+
     const getOperatorDisplayName = () => {
         const fullName = localStorage.getItem("full_name")?.trim();
         const username = localStorage.getItem("username")?.trim();
@@ -443,6 +450,7 @@ export default function ABSClientSearch() {
 
         try {
             setIsLoading(true);
+            hideAlert();
             setDuplicateSearchField(null);
             setClientNotFound(false);
             const token = localStorage.getItem("access_token");
@@ -458,9 +466,7 @@ export default function ABSClientSearch() {
                 );
 
                 if (!clientCodes || clientCodes.length === 0) {
-                    showAlert("Клиенты не найдены", "error");
-                    setClientsData([]);
-                    setClientNotFound(true);
+                    showClientNotFoundState();
                     return;
                 }
 
@@ -474,17 +480,20 @@ export default function ABSClientSearch() {
                     .filter(Boolean);
 
                 if (resolvedClientCodes.length === 0) {
-                    showAlert("Клиенты не найдены", "error");
-                    setClientsData([]);
-                    setClientNotFound(true);
+                    showClientNotFoundState();
                     return;
                 }
 
-                const clientsPromises = resolvedClientCodes.map((code) =>
+                const clientsResults = await Promise.allSettled(resolvedClientCodes.map((code) =>
                     getClientByCode(code, token),
+                ));
+                const failedRequest = clientsResults.find((result) =>
+                    result.status === "rejected" && result.reason?.response?.status !== 404
                 );
-
-                const clientsFullData = await Promise.all(clientsPromises);
+                if (failedRequest) throw failedRequest.reason;
+                const clientsFullData = clientsResults
+                    .filter((result) => result.status === "fulfilled" && result.value)
+                    .map((result) => result.value);
 
                 const normalizedData = clientsFullData.map((client) =>
                     normalizeClientData(client, TYPE_SEARCH_CLIENT[1].value),
@@ -500,8 +509,7 @@ export default function ABSClientSearch() {
                 setSelectedClientIndex(0);
 
                 if (normalizedData.length === 0) {
-                    showAlert("Клиенты не найдены в АБС", "error");
-                    setClientNotFound(true);
+                    showClientNotFoundState();
                 } else {
                     setClientNotFound(false);
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
@@ -519,12 +527,10 @@ export default function ABSClientSearch() {
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        showAlert("Клиенты не найдены в АБС", "error");
-                        setClientNotFound(true);
+                        showClientNotFoundState();
                     } else {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    setClientsData([]);
                     return;
                 }
 
@@ -558,8 +564,7 @@ export default function ABSClientSearch() {
                 setSelectedClientIndex(0);
 
                 if (normalizedData.length === 0) {
-                    showAlert("Клиенты не найдены в АБС", "error");
-                    setClientNotFound(true);
+                    showClientNotFoundState();
                 } else {
                     setClientNotFound(false);
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");

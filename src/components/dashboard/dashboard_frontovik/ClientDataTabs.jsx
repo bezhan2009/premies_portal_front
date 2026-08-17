@@ -94,6 +94,43 @@ const getAccountTypeData = (type) => {
   }
 };
 
+const getCardAccountNumbers = (card) => {
+  const numbers = [
+    ...(Array.isArray(card?.details?.accounts) ? card.details.accounts : []).map(
+      (account) => account?.number || account?.accountNumber,
+    ),
+    ...(Array.isArray(card?.accounts) ? card.accounts : []).map(
+      (account) => account?.accountNumber || account?.number,
+    ),
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  return [...new Set(numbers)].slice(0, 3);
+};
+
+const normalizeCreditSchedule = (graphs = []) => {
+  const schedule = new Map();
+  (Array.isArray(graphs) ? graphs : []).forEach((row) => {
+    const date = row?.PaymentDate;
+    if (!date) return;
+    const current = schedule.get(date) || {
+      date,
+      amount: 0,
+      interest: 0,
+      principal: 0,
+      status: row.Status || "",
+      type: row.Type || "",
+    };
+    const amount = Number(row.Amount || 0);
+    if (row.Code === "CR_PD") current.principal += amount;
+    if (row.Code === "CR_INTER") current.interest += amount;
+    current.amount = current.principal + current.interest;
+    if (row.Status) current.status = row.Status;
+    schedule.set(date, current);
+  });
+  return [...schedule.values()].sort((left, right) => new Date(left.date) - new Date(right.date));
+};
+
 // Eagerly load all assets to perform dynamic fuzzy matching
 const cardImages = import.meta.glob("../../../assets/*.{png,jpg,jpeg,svg}", { eager: true });
 
@@ -1179,6 +1216,7 @@ const ClientDataTabs = ({
                         <DynamicDocxButtons
                           page="AccountDetails"
                           section="Счета клиента в АБС"
+                          triggerLabel="Документы"
                           data={{
                             ...extractDocxClientData(selectedClient),
                             "account.number": acc.Number,
@@ -1254,6 +1292,7 @@ const ClientDataTabs = ({
                   const embossedName = card.details?.embossedName || card.embossedName || "";
 
                   const agreementStr = card.details?.agreement || card.agreement || "";
+                  const cardAccountNumbers = getCardAccountNumbers(card);
                   const cardBranchCode = agreementStr.length >= 4 ? agreementStr.substring(0, 4) : null;
                   const cardBranchName = cardBranchCode && serviceCodes[cardBranchCode] ? serviceCodes[cardBranchCode] : null;
 
@@ -1461,6 +1500,7 @@ const ClientDataTabs = ({
                         <DynamicDocxButtons
                           page="CardDetails"
                           section="Карты клиента"
+                          triggerLabel="Документы"
                           data={{
                             ...extractDocxClientData(selectedClient),
                             "card.cardId": card.cardId || "",
@@ -1470,8 +1510,14 @@ const ClientDataTabs = ({
                             "card.statusName": card.statusName || "",
                             "card.expireDate": card.details?.expirationDate || card.expirationDate || "",
                             "card.issueDate": card.details?.requestDate || card.requestDate || "",
-                            "card.accountNumber": card.details?.accounts?.[0]?.number || card.accounts?.[0]?.accountNumber || "",
+                            "card.accountNumber": cardAccountNumbers[0] || "",
+                            "card.accountNumbers": cardAccountNumbers.join("\n"),
+                            "card.accountNumber1": cardAccountNumbers[0] || "",
+                            "card.accountNumber2": cardAccountNumbers[1] || "",
+                            "card.accountNumber3": cardAccountNumbers[2] || "",
                             "card.agreement": card.details?.agreement || card.agreement || "",
+                            "card.openDate": formatDateDisplay(card.details?.requestDate || card.requestDate || ""),
+                            "card.productName": card.type || card.CardTypeName || card.details?.cardTypeName || "",
                             "agreement": card.details?.agreement || card.agreement || "",
                           }}
                         />
@@ -1694,7 +1740,7 @@ const ClientDataTabs = ({
                             </div>
                           </div>
 
-                          <div style={{ display: "flex", gap: "12px" }}>
+                          <div className="card-actions-bar" style={{ display: "flex", gap: "12px" }}>
                             <button 
                               className="card-action-btn outline-danger" 
                               onClick={() => handleOpenRepayModal(card)}
@@ -1708,6 +1754,29 @@ const ClientDataTabs = ({
                             >
                               Подробнее
                             </button>
+                            <DynamicDocxButtons
+                              page="CreditDetails"
+                              section="Документы и график платежей"
+                              triggerLabel="Документы"
+                              data={{
+                                ...extractDocxClientData(selectedClient),
+                                "credit.amount": amount,
+                                "credit.currency": currency,
+                                "credit.statusName": statusName,
+                                "credit.interestRate": interestRate,
+                                "credit.clientCode": params.clientDea || card.clientCode || "",
+                                "credit.department": department,
+                                "credit.term": term,
+                                "credit.startDate": startDate,
+                                "credit.endDate": endDate,
+                                "credit.purposeName": params.creditPurpose || "",
+                                "credit.debtBalance": debtBalance,
+                                "credit.contractNumber": params.contractNumber || card.contractNumber || referenceId,
+                                "credit.referenceId": referenceId,
+                                contractNumber: params.contractNumber || card.contractNumber || referenceId,
+                                schedule: normalizeCreditSchedule(graphs),
+                              }}
+                            />
                           </div>
                         </div>
                       );
@@ -1923,6 +1992,7 @@ const ClientDataTabs = ({
                             <DynamicDocxButtons
                               page="DepositDetails"
                               section="Договоры депозитов"
+                              triggerLabel="Документы"
                               data={{
                                 ...extractDocxClientData(selectedClient),
                                 "deposit.agreementId": agreement.ColvirReferenceId || "",

@@ -1,0 +1,121 @@
+.compliance-request-modal {
+  .ant-modal-body {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+}
+
+.compliance-request-modal__loading {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+}
+
+.compliance-request-details {
+  display: grid;
+  gap: 16px;
+
+  .ant-card {
+    border-color: #e7ebf0;
+    box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
+  }
+}
+
+.compliance-client-card {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid #e7ebf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.compliance-client-photo {
+  width: 100%;
+  min-height: 210px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 210px;
+    object-fit: cover;
+  }
+}
+
+.compliance-client-photo__placeholder {
+  display: flex;
+  min-height: 210px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #7b8794;
+  text-align: center;
+}
+
+.compliance-client-info {
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 12px;
+    color: #1f2937;
+    font-size: 16px;
+  }
+}
+
+.compliance-documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .ant-btn {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.compliance-documents__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 80px;
+  color: #64748b;
+}
+
+@media (max-width: 700px) {
+  .compliance-request-modal {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+
+    .ant-modal-body {
+      max-height: calc(100vh - 190px);
+    }
+  }
+
+  .compliance-client-card {
+    grid-template-columns: 1fr;
+  }
+
+  .compliance-client-photo {
+    width: min(100%, 260px);
+    min-height: 200px;
+    margin: 0 auto;
+  }
+
+  .compliance-request-details .ant-descriptions-view {
+    overflow-x: auto;
+  }
+
+  .compliance-documents .ant-btn {
+    width: 100%;
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, Card, Descriptions, Modal, Table, Tag, message } from "antd";
+import { useSearchParams } from "react-router-dom";
 import { fetchMyComplianceRequests } from "../../../api/complianceRequests.js";
 
 const statusMeta = {
@@ -21,6 +22,7 @@ const formatDateTime = (value) => {
 const yesNo = (value) => value ? "Да" : "Нет";
 
 export default function FrontovikComplianceRequests() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -47,6 +49,22 @@ export default function FrontovikComplianceRequests() {
       window.removeEventListener("focus", handleFocus);
     };
   }, []);
+
+  useEffect(() => {
+    const requestId = searchParams.get("requestId");
+    if (!requestId || !requests.length) return;
+    const request = requests.find((item) => String(item.id) === String(requestId));
+    if (request) setSelected(request);
+  }, [requests, searchParams]);
+
+  const closeDetails = () => {
+    setSelected(null);
+    if (searchParams.has("requestId")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("requestId");
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
 
   const columns = [
     { title: "№ заявки", dataIndex: "id", key: "id", width: 110 },
@@ -104,8 +122,8 @@ export default function FrontovikComplianceRequests() {
       <Modal
         title={`Заявка №${selected?.id || ""}`}
         open={Boolean(selected)}
-        onCancel={() => setSelected(null)}
-        footer={<Button onClick={() => setSelected(null)}>Закрыть</Button>}
+        onCancel={closeDetails}
+        footer={<Button onClick={closeDetails}>Закрыть</Button>}
         width={760}
       >
         {selected && (

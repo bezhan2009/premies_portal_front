@@ -158,6 +158,7 @@
 .search-input-wrapper {
   position: relative;
   flex: 1;
+  min-width: 0;
 
   .search-icon {
     position: absolute;
@@ -167,6 +168,83 @@
     color: var(--text-color);
     font-size: 18px;
     pointer-events: none;
+  }
+}
+
+.search-history-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+}
+
+.search-history-dropdown__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.search-history-dropdown__list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.search-history-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  color: var(--text-color);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  text-align: left;
+  cursor: pointer;
+
+  > svg {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bg-secondary);
+    outline: none;
+  }
+}
+
+.search-history-item__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: var(--text-secondary);
+    font-size: 11px;
   }
 }
 
@@ -1342,9 +1420,9 @@
 
 .card-main-info {
   display: flex;
-  gap: 20px;
-  padding: 20px;
-  align-items: center;
+  gap: 24px;
+  padding: 28px 20px 24px;
+  align-items: flex-start;
 }
 
 .card-img-container {
@@ -1366,7 +1444,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1374,7 +1452,7 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text-color);
-  line-height: 1.25;
+  line-height: 1.4;
 }
 
 .card-number-mask {
@@ -1382,7 +1460,8 @@
   font-weight: 700;
   color: var(--text-color);
   letter-spacing: 0;
-  line-height: 1.25;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .card-owner-name {
@@ -1391,7 +1470,7 @@
   color: var(--text-color);
   text-transform: uppercase;
   letter-spacing: 0;
-  line-height: 1.25;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -1400,7 +1479,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-top: 0;
+  margin-top: 4px;
 }
 
 .exp-date {
@@ -1420,7 +1499,7 @@
   text-align: right;
   font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.6;
 }
 
 .card-accounts-table {
@@ -1517,6 +1596,24 @@
 .card-action-btn:hover {
   background: var(--bg-secondary);
   border-color: var(--border-color);
+}
+
+.docx-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.docx-trigger-modal__description {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 /* ── BLOCKED PC CARD STATE BLUR AND HIGHLIGHT ── */
@@ -2172,9 +2269,9 @@
   gap: 16px;
   margin-top: 16px;
   padding: 16px 18px;
-  border: 1px solid #fecdd3;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: #fff7f8;
+  background: var(--bg-surface);
 
   > div {
     display: flex;
@@ -2183,7 +2280,7 @@
   }
 
   strong {
-    color: #9f1239;
+    color: var(--text-color);
   }
 
   span {
@@ -2211,6 +2308,77 @@
   color: #475569;
 }
 
+.new-client-progress-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.new-client-progress-panel__completion,
+.new-client-progress-panel__status {
+  padding: 15px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.new-client-progress-panel__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  span {
+    color: #15803d;
+    font-weight: 800;
+  }
+}
+
+.new-client-progress-panel__problem,
+.new-client-progress-panel__complete {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.new-client-progress-panel__problem {
+  color: #b91c1c;
+}
+
+.new-client-progress-panel__complete {
+  color: #15803d;
+}
+
+.new-client-progress-panel__status > strong {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.new-client-status-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.new-client-status {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.new-client-status--success { color: #166534; background: #dcfce7; }
+.new-client-status--warning { color: #92400e; background: #fef3c7; }
+.new-client-status--danger { color: #991b1b; background: #fee2e2; }
+.new-client-status--checking { color: #1d4ed8; background: #dbeafe; }
+.new-client-status--neutral { color: #475569; background: #e2e8f0; }
+
 .new-client-modal__actions {
   display: flex;
   justify-content: flex-end;
@@ -2226,5 +2394,29 @@
 
   .new-client-entry__button {
     width: 100%;
+  }
+
+  .new-client-progress-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .card-main-info {
+    flex-direction: column;
+    gap: 18px;
+    padding-top: 22px;
+  }
+
+  .card-img-container {
+    width: min(100%, 220px);
+    height: auto;
+    aspect-ratio: 1.625;
+  }
+
+  .card-dates {
+    flex-direction: column;
+  }
+
+  .right-dates {
+    text-align: left;
   }
 }

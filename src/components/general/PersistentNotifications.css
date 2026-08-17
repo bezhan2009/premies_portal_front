@@ -1,0 +1,114 @@
+.persistent-notifications {
+  position: fixed;
+  z-index: 1200;
+  top: 76px;
+  right: 20px;
+  display: grid;
+  width: min(390px, calc(100vw - 32px));
+  gap: 12px;
+  pointer-events: none;
+}
+
+.persistent-notification {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 28px;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dce5f0;
+  border-left: 4px solid #1677ff;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgb(15 23 42 / 18%);
+  pointer-events: auto;
+}
+
+.persistent-notification--chat {
+  border-left-color: #16a34a;
+}
+
+.persistent-notification__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef5ff;
+  color: #1677ff;
+}
+
+.persistent-notification--chat .persistent-notification__icon {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.persistent-notification__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.persistent-notification__heading strong {
+  color: #172033;
+  font-size: 14px;
+}
+
+.persistent-notification__heading time {
+  color: #8a94a4;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.persistent-notification__content p {
+  margin: 5px 0 10px;
+  color: #526071;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.persistent-notification__content > button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.persistent-notification__close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8a94a4;
+  cursor: pointer;
+}
+
+.persistent-notification__close:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+@media (max-width: 600px) {
+  .persistent-notifications {
+    top: 68px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .persistent-notification {
+    grid-template-columns: 36px minmax(0, 1fr) 28px;
+    padding: 12px;
+  }
+
+  .persistent-notification__icon {
+    width: 36px;
+    height: 36px;
+  }
+}

@@ -117,5 +117,6 @@ export const getClientByCode = async (clientIndex) => {
     return res.data;
   } catch (err) {
     console.error("getClientByCode error:", err);
+    throw err;
   }
 };

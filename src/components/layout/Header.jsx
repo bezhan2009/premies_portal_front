@@ -8,9 +8,14 @@ import useNotificationStore from '../../store/useNotificationStore';
 import LogoImageComponent from '../Logo';
 import LogoutButton from "../general/Logout.jsx";
 import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
+import PersistentNotifications from '../general/PersistentNotifications.jsx';
+import { fetchMyComplianceRequests } from '../../api/complianceRequests.js';
+import { apiClientApplication } from '../../api/utils/apiClientApplication.js';
 import { useLiveWorkflow } from '../live-workflow/LiveWorkflowProvider.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
+
+const MotionDiv = motion.div;
 
 const normalizeSearchText = (value = '') => String(value)
   .toLocaleLowerCase('ru-RU')
@@ -25,6 +30,38 @@ const SEARCH_SCOPES = [
   { name: 'Искать транзакции', href: '/processing-search/transactions', param: 'search', description: 'Карта, сумма, RRN и другие поля' },
 ];
 
+const hasStoredRole = (roleId) => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('role_ids') || '[]');
+    const roles = Array.isArray(stored) ? stored : [stored];
+    return roles.some((role) => Number(role?.ID ?? role?.id ?? role) === Number(roleId));
+  } catch {
+    return false;
+  }
+};
+
+const complianceStatusLabel = (status) => ({
+  approved: 'Одобрено',
+  rejected: 'Отклонено',
+  pending: 'На проверке',
+}[status] || status || 'Не указан');
+
+const applicationStatusLabel = (application) => {
+  const explicit = application?.application_status?.name || application?.application_status?.Name || application?.application_status_name;
+  if (explicit) return explicit;
+  const id = Number(application?.application_status_id || application?.status_id || 0);
+  return ({
+    1: 'Заявка принята',
+    2: 'Заявка обработана',
+    3: 'Карта открыта',
+    4: 'Карта активирована',
+    5: 'Недостоверные данные',
+    6: 'Отказано в карте',
+    7: 'Не одобрено',
+    8: 'Одобрено',
+  })[id] || 'Статус изменён';
+};
+
 const Header = ({ toggleSidebar }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -33,7 +70,7 @@ const Header = ({ toggleSidebar }) => {
   const { flatLinks } = useNavigationStore();
   const { addTab } = useTabsStore();
   const { toggleMiniChat } = useChatStore();
-  const { unreadCount, connect, disconnect } = useNotificationStore();
+  const { unreadCount, connect, disconnect, addNotification } = useNotificationStore();
   const { session: liveWorkflowSession, openShareDialog } = useLiveWorkflow();
   const navigate = useNavigate();
   const searchRef = useRef(null);
@@ -43,6 +80,122 @@ const Header = ({ toggleSidebar }) => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
+
+  useEffect(() => {
+    if (!hasStoredRole(17) || !localStorage.getItem('access_token')) return undefined;
+
+    let active = true;
+    const userScope = localStorage.getItem('user_id') || localStorage.getItem('username') || 'current';
+    const snapshotKey = `activ-daily-compliance-statuses:${userScope}`;
+
+    const pollStatuses = async () => {
+      try {
+        const data = await fetchMyComplianceRequests();
+        if (!active || !Array.isArray(data)) return;
+
+        let previous = {};
+        try {
+          previous = JSON.parse(localStorage.getItem(snapshotKey) || '{}');
+        } catch {
+          previous = {};
+        }
+
+        const next = {};
+        data.forEach((request) => {
+          if (!request?.id) return;
+          const id = String(request.id);
+          const status = request.status || 'pending';
+          next[id] = status;
+          if (previous[id] && previous[id] !== status) {
+            addNotification({
+              id: `compliance-status-${id}-${status}-${request.updated_at || Date.now()}`,
+              type: 'application-status',
+              title: 'Статус заявки изменён',
+              message: `Заявка №${id}\nСтатус: ${complianceStatusLabel(status)}`,
+              action: {
+                kind: 'compliance-request',
+                href: `/frontovik/compliance-requests?requestId=${encodeURIComponent(id)}`,
+              },
+              data: request,
+            });
+          }
+        });
+        localStorage.setItem(snapshotKey, JSON.stringify(next));
+      } catch (error) {
+        console.error('Не удалось проверить статусы заявок Compliance:', error);
+      }
+    };
+
+    pollStatuses();
+    const intervalId = window.setInterval(pollStatuses, 15000);
+    const handleFocus = () => pollStatuses();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [addNotification]);
+
+  useEffect(() => {
+    if (!hasStoredRole(10) || !localStorage.getItem('access_token')) return undefined;
+
+    let active = true;
+    const userScope = localStorage.getItem('user_id') || localStorage.getItem('username') || 'current';
+    const snapshotKey = `activ-daily-application-statuses:${userScope}`;
+
+    const pollApplicationStatuses = async () => {
+      try {
+        const response = await apiClientApplication.get('/applications', {
+          params: { with_meta: true, page: 1, page_size: 100 },
+        });
+        if (!active) return;
+        const payload = response.data || {};
+        const applications = Array.isArray(payload) ? payload : payload.items || [];
+
+        let previous = {};
+        try {
+          previous = JSON.parse(localStorage.getItem(snapshotKey) || '{}');
+        } catch {
+          previous = {};
+        }
+
+        const next = {};
+        applications.forEach((application) => {
+          const id = application?.ID ?? application?.id;
+          if (!id) return;
+          const statusId = String(application?.application_status_id ?? application?.status_id ?? '');
+          next[String(id)] = statusId;
+          if (previous[String(id)] !== undefined && previous[String(id)] !== statusId) {
+            addNotification({
+              id: `application-status-${id}-${statusId}-${application.UpdatedAt || Date.now()}`,
+              type: 'application-status',
+              title: 'Статус заявки изменён',
+              message: `Заявка №${id}\nСтатус: ${applicationStatusLabel(application)}`,
+              action: {
+                kind: 'application-status',
+                href: `/agent/applications-list?search=${encodeURIComponent(id)}`,
+              },
+              data: application,
+            });
+          }
+        });
+        localStorage.setItem(snapshotKey, JSON.stringify(next));
+      } catch (error) {
+        console.error('Не удалось проверить статусы заявок:', error);
+      }
+    };
+
+    pollApplicationStatuses();
+    const intervalId = window.setInterval(pollApplicationStatuses, 15000);
+    const handleFocus = () => pollApplicationStatuses();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [addNotification]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -88,6 +241,7 @@ const Header = ({ toggleSidebar }) => {
   const handleOpenProfile = () => window.dispatchEvent(new CustomEvent('open-profile'));
 
   return (
+    <>
     <header className="app-header">
       <div className="header-left">
         <button className="icon-btn menu-btn" onClick={toggleSidebar} aria-label="Toggle Menu">
@@ -122,7 +276,7 @@ const Header = ({ toggleSidebar }) => {
         
         <AnimatePresence>
           {isSearchFocused && searchResults.length > 0 && (
-            <motion.div 
+            <MotionDiv
               className="search-dropdown"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -143,7 +297,7 @@ const Header = ({ toggleSidebar }) => {
                   <span className="result-path">{result.kind === 'scope' ? 'Поиск' : result.href}</span>
                 </div>
               ))}
-            </motion.div>
+            </MotionDiv>
           )}
         </AnimatePresence>
       </div>
@@ -189,6 +343,8 @@ const Header = ({ toggleSidebar }) => {
         </div>
       </div>
     </header>
+    <PersistentNotifications />
+    </>
   );
 };
 

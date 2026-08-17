@@ -1,7 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Descriptions } from "antd";
+import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Descriptions, Empty } from "antd";
+import { FileText, ImageOff, UserRound } from "lucide-react";
+import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
+import DocumentPreviewModal from "../../../components/client-documents/DocumentPreviewModal.jsx";
+import {
+    getClientDocumentTypeLabel,
+    getClientSelfieDocument,
+    resolveClientDocumentUrl,
+} from "../../../utils/clientDocuments.js";
+import "../../../styles/ComplianceRequests.scss";
 
 const { Text } = Typography;
+
+const statusMeta = {
+    pending: { color: "gold", label: "На проверке" },
+    approved: { color: "green", label: "Одобрено" },
+    rejected: { color: "red", label: "Отклонено" },
+};
+
+const emptyValue = (value) => value === null || value === undefined || value === "" ? "—" : value;
+const yesNo = (value) => value ? "Да" : "Нет";
+const formatDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "medium" }).format(date);
+};
+
+const applicationDocument = (path, documentType, title) => path ? ({
+    id: `${documentType}-${path}`,
+    path,
+    source: "applications_portal",
+    document_type: documentType,
+    title,
+}) : null;
 
 export default function ComplianceRequests() {
     const [requests, setRequests] = useState([]);
@@ -10,6 +42,10 @@ export default function ComplianceRequests() {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [appModalVisible, setAppModalVisible] = useState(false);
     const [appLoading, setAppLoading] = useState(false);
+    const [clientDocuments, setClientDocuments] = useState([]);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
+    const [previewDocument, setPreviewDocument] = useState(null);
+    const [photoFailed, setPhotoFailed] = useState(false);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -40,8 +76,23 @@ export default function ComplianceRequests() {
     const handleViewApplication = async (record) => {
         setSelectedRequest(record);
         setSelectedApp(null);
+        setClientDocuments([]);
+        setPreviewDocument(null);
+        setPhotoFailed(false);
         setAppLoading(false);
         setAppModalVisible(true);
+        if (record.client_identifier) {
+            setDocumentsLoading(true);
+            getClientDocumentsByINN(record.client_identifier)
+                .then((data) => setClientDocuments(Array.isArray(data) ? data : []))
+                .catch((error) => {
+                    console.error("Error fetching client documents:", error);
+                    setClientDocuments([]);
+                })
+                .finally(() => setDocumentsLoading(false));
+        } else {
+            setDocumentsLoading(false);
+        }
         if (!record.application_id) {
             return;
         }
@@ -135,6 +186,7 @@ export default function ComplianceRequests() {
             }
 
             message.success(`Заявка успешно ${status === 'approved' ? 'принята' : 'отклонена'}`);
+            setSelectedRequest((current) => current?.id === record.id ? { ...current, status, updated_at: new Date().toISOString() } : current);
             fetchRequests(); // refresh data
         } catch (error) {
             console.error("Error updating status:", error);
@@ -167,6 +219,15 @@ export default function ComplianceRequests() {
             .filter(Boolean)
             .sort((a, b) => Number(b.similarity || 0) - Number(a.similarity || 0))[0] || null;
 
+    const closeDetails = () => {
+        setAppModalVisible(false);
+        setSelectedApp(null);
+        setSelectedRequest(null);
+        setClientDocuments([]);
+        setPreviewDocument(null);
+        setPhotoFailed(false);
+    };
+
     const columns = [
         {
             title: "ID",
@@ -177,11 +238,13 @@ export default function ComplianceRequests() {
             title: "ФИО Клиента",
             dataIndex: "client_full_name",
             key: "client_full_name",
+            render: emptyValue,
         },
         {
             title: "Телефон",
             dataIndex: "client_phone",
             key: "client_phone",
+            render: emptyValue,
         },
         {
             title: "ИНН / идентификатор",
@@ -193,7 +256,7 @@ export default function ComplianceRequests() {
             title: "Вероятность совпадения (%)",
             dataIndex: "match_similarity",
             key: "match_similarity",
-            render: (val) => <Text type="danger">{val}%</Text>
+            render: (val) => <Text type="danger">{val === null || val === undefined || val === "" ? "—" : `${val}%`}</Text>
         },
         {
             title: "Совпадение",
@@ -242,11 +305,11 @@ export default function ComplianceRequests() {
             key: "extra",
             render: (_, record) => (
                 <Space direction="vertical" size="small">
-                    <Text>Занятость: {record.client_occupation}</Text>
-                    <Text>Оборот: {record.net_worth}</Text>
-                    <Text>Метод открытия: {record.monthly_income}</Text>
-                    <Text>Транзакции (Сумма/Кол-во): {record.total_outgoing_transactions_amount} / {record.total_outgoing_transactions_count}</Text>
-                    <Text>Касса (Сумма/Кол-во): {record.total_cash_transactions_amount} / {record.total_cash_transactions_count}</Text>
+                    <Text>Занятость: {emptyValue(record.client_occupation)}</Text>
+                    <Text>Оборот: {emptyValue(record.net_worth)}</Text>
+                    <Text>Метод открытия: {emptyValue(record.monthly_income)}</Text>
+                    <Text>Транзакции (Сумма/Кол-во): {emptyValue(record.total_outgoing_transactions_amount)} / {emptyValue(record.total_outgoing_transactions_count)}</Text>
+                    <Text>Касса (Сумма/Кол-во): {emptyValue(record.total_cash_transactions_amount)} / {emptyValue(record.total_cash_transactions_count)}</Text>
                     <Text><b>Балл комплаенса: {record.compliance_score || 0}</b></Text>
                 </Space>
             )
@@ -274,6 +337,23 @@ export default function ComplianceRequests() {
         },
     ];
 
+    const applicationDocuments = selectedApp ? [
+        applicationDocument(selectedApp.front_side_of_the_passport, "front_side_of_the_passport", "Лицевая сторона паспорта"),
+        applicationDocument(selectedApp.back_side_of_the_passport, "back_side_of_the_passport", "Обратная сторона паспорта"),
+        applicationDocument(selectedApp.selfie_with_passport, "selfie_with_passport", "Селфи с паспортом"),
+    ].filter(Boolean) : [];
+    const availableDocuments = [...clientDocuments, ...applicationDocuments].filter((document, index, items) => {
+        const url = resolveClientDocumentUrl(document);
+        return url && items.findIndex((item) => resolveClientDocumentUrl(item) === url) === index;
+    });
+    const selfieDocument = getClientSelfieDocument(availableDocuments);
+    const photoUrl = selfieDocument ? resolveClientDocumentUrl(selfieDocument) : "";
+    const appFullName = selectedApp
+        ? [selectedApp.surname, selectedApp.name, selectedApp.patronymic].filter(Boolean).join(" ")
+        : "";
+    const requestStatus = statusMeta[selectedRequest?.status] || statusMeta.pending;
+    const bestMatch = selectedRequest ? getBestMatch(selectedRequest) : null;
+
     return (
         <>
             <Card title="Заявки на проверку Комплайнс" style={{ margin: "20px" }}>
@@ -283,123 +363,118 @@ export default function ComplianceRequests() {
                     rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10, showSizeChanger: true }}
+                    scroll={{ x: 1500 }}
                 />
             </Card>
 
             <Modal
                 title={`Детали заявки #${selectedRequest?.id || selectedApp?.ID || ""}`}
                 open={appModalVisible}
-                onCancel={() => {
-                    setAppModalVisible(false);
-                    setSelectedApp(null);
-                    setSelectedRequest(null);
-                }}
+                onCancel={closeDetails}
                 footer={[
-                    <Button key="close" onClick={() => {
-                        setAppModalVisible(false);
-                        setSelectedApp(null);
-                        setSelectedRequest(null);
-                    }}>
+                    selectedRequest && (!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
+                        <Button key="approve" type="primary" onClick={() => confirmAction(selectedRequest, "approved")}>Одобрить</Button>
+                    ) : null,
+                    selectedRequest && (!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
+                        <Button key="reject" danger onClick={() => confirmAction(selectedRequest, "rejected")}>Отклонить</Button>
+                    ) : null,
+                    <Button key="close" onClick={closeDetails}>
                         Закрыть
                     </Button>
-                ]}
-                width={800}
+                ].filter(Boolean)}
+                width={960}
+                className="compliance-request-modal"
             >
                 {appLoading ? (
-                    <div style={{ textAlign: "center", padding: "40px" }}>
+                    <div className="compliance-request-modal__loading">
                         <Spin size="large" />
                     </div>
-                ) : selectedRequest?.source === "frontovik_new_client" ? (
-                    <div>
-                        <Card title="Анкета нового клиента" size="small" style={{ marginBottom: 15 }}>
-                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                                <Descriptions.Item label="ФИО" span={2}>{selectedRequest.client_full_name || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="ИНН">{selectedRequest.client_identifier || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Телефон">{selectedRequest.client_phone || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Дата рождения">{selectedRequest.client_birth_date || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Гражданство">{selectedRequest.citizenship || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Документ" span={2}>{selectedRequest.passport_number || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Адрес регистрации" span={2}>{selectedRequest.registration_address || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Адрес проживания" span={2}>{selectedRequest.residence_address || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Род деятельности">{selectedRequest.client_occupation || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Источник средств">{selectedRequest.net_worth || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Ежемесячный доход">{selectedRequest.monthly_income || "-"}</Descriptions.Item>
-                                <Descriptions.Item label="Автор заявки">{selectedRequest.creator_username || "-"}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-                        <Card title="Результаты автоматических проверок" size="small">
-                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                                <Descriptions.Item label="Резидент">{selectedRequest.is_resident ? "Да" : "Нет"}</Descriptions.Item>
-                                <Descriptions.Item label="FATCA">{selectedRequest.fatca ? "Да" : "Нет"}</Descriptions.Item>
-                                <Descriptions.Item label="АПЛ/ПЗЛ">{selectedRequest.apl_pzl ? "Да" : "Нет"}</Descriptions.Item>
-                                <Descriptions.Item label="Совпадение Compliance">{selectedRequest.compliance_matched ? "Найдено" : "Не найдено"}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-                    </div>
-                ) : selectedApp ? (
-                    <div>
-                        <Card title="Персональные данные" size="small" style={{ marginBottom: 15 }}>
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Text><b>ФИО:</b> {`${selectedApp.surname || ""} ${selectedApp.name || ""} ${selectedApp.patronymic || ""}`}</Text>
-                                <Text><b>Телефон:</b> {selectedApp.phone_number || "-"}</Text>
-                                <Text><b>ИНН:</b> {selectedApp.inn || "-"}</Text>
-                                <Text><b>Пол:</b> {selectedApp.gender || "-"}</Text>
-                                <Text><b>Резидент:</b> {selectedApp.is_resident ? "Да" : "Нет"}</Text>
-                            </Space>
-                        </Card>
-
-                        <Card title="Детали Карты" size="small" style={{ marginBottom: 15 }}>
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Text><b>Тип карты:</b> {selectedApp.card_type || "-"}</Text>
-                                <Text><b>Название карты:</b> {selectedApp.card_name || "-"}</Text>
-                                <Text><b>Кодовое слово:</b> {selectedApp.secret_word || "-"}</Text>
-                                <Text><b>Адрес доставки:</b> {selectedApp.delivery_address || "-"}</Text>
-                                <Text><b>Офис получения:</b> {selectedApp.receiving_office || "-"}</Text>
-                            </Space>
-                        </Card>
-
-                        <Card title="Скан-копии документов" size="small">
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
-                                <div>
-                                    <div style={{ marginBottom: 5 }}><b>Лицевая сторона</b></div>
-                                    {selectedApp.front_side_of_the_passport ? (
-                                        <img
-                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.front_side_of_the_passport.replace(/\\/g, "/")}`}
-                                            alt="Лицевая сторона"
-                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
-                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.front_side_of_the_passport.replace(/\\/g, "/")}`, "_blank")}
-                                        />
-                                    ) : <Text type="secondary">Нет файла</Text>}
-                                </div>
-                                <div>
-                                    <div style={{ marginBottom: 5 }}><b>Задняя сторона</b></div>
-                                    {selectedApp.back_side_of_the_passport ? (
-                                        <img
-                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.back_side_of_the_passport.replace(/\\/g, "/")}`}
-                                            alt="Задняя сторона"
-                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
-                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.back_side_of_the_passport.replace(/\\/g, "/")}`, "_blank")}
-                                        />
-                                    ) : <Text type="secondary">Нет файла</Text>}
-                                </div>
-                                <div>
-                                    <div style={{ marginBottom: 5 }}><b>Селфи с паспортом</b></div>
-                                    {selectedApp.selfie_with_passport ? (
-                                        <img
-                                            src={`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.selfie_with_passport.replace(/\\/g, "/")}`}
-                                            alt="Селфи"
-                                            style={{ width: "100%", maxHeight: 200, objectFit: "contain", cursor: "pointer", border: "1px solid #ddd" }}
-                                            onClick={() => window.open(`${import.meta.env.VITE_BACKEND_APPLICATION_URL}/uploads/${selectedApp.selfie_with_passport.replace(/\\/g, "/")}`, "_blank")}
-                                        />
-                                    ) : <Text type="secondary">Нет файла</Text>}
-                                </div>
+                ) : selectedRequest ? (
+                    <div className="compliance-request-details">
+                        <section className="compliance-client-card">
+                            <div className="compliance-client-photo">
+                                {photoUrl && !photoFailed ? (
+                                    <img src={photoUrl} alt="Фото клиента" onError={() => setPhotoFailed(true)} />
+                                ) : (
+                                    <div className="compliance-client-photo__placeholder">
+                                        {photoFailed ? <ImageOff size={30} /> : <UserRound size={34} />}
+                                        <span>Фото отсутствует</span>
+                                    </div>
+                                )}
                             </div>
+                            <div className="compliance-client-info">
+                                <h3>Информация о клиенте</h3>
+                                <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+                                    <Descriptions.Item label="ФИО" span={2}>{emptyValue(selectedRequest.client_full_name || appFullName)}</Descriptions.Item>
+                                    <Descriptions.Item label="ИНН">{emptyValue(selectedRequest.client_identifier || selectedApp?.inn)}</Descriptions.Item>
+                                    <Descriptions.Item label="Телефон">{emptyValue(selectedRequest.client_phone || selectedApp?.phone_number)}</Descriptions.Item>
+                                    <Descriptions.Item label="Дата рождения">{emptyValue(selectedRequest.client_birth_date || selectedApp?.date_of_birth)}</Descriptions.Item>
+                                    <Descriptions.Item label="Резидентство">{yesNo(selectedRequest.is_resident ?? selectedApp?.is_resident)}</Descriptions.Item>
+                                    <Descriptions.Item label="FATCA">{yesNo(selectedRequest.fatca)}</Descriptions.Item>
+                                    <Descriptions.Item label="АПЛ/ПЗЛ">{yesNo(selectedRequest.apl_pzl)}</Descriptions.Item>
+                                    <Descriptions.Item label="Род деятельности">{emptyValue(selectedRequest.client_occupation)}</Descriptions.Item>
+                                </Descriptions>
+                            </div>
+                        </section>
+
+                        <Card title="Информация о заявке" size="small">
+                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+                                <Descriptions.Item label="Номер заявки">{emptyValue(selectedRequest.id)}</Descriptions.Item>
+                                <Descriptions.Item label="Статус"><Tag color={requestStatus.color}>{requestStatus.label}</Tag></Descriptions.Item>
+                                <Descriptions.Item label="Дата создания">{formatDateTime(selectedRequest.created_at || selectedApp?.CreatedAt)}</Descriptions.Item>
+                                <Descriptions.Item label="Последнее изменение">{formatDateTime(selectedRequest.updated_at || selectedApp?.UpdatedAt)}</Descriptions.Item>
+                                <Descriptions.Item label="Сотрудник" span={2}>{emptyValue(selectedRequest.creator_username || selectedApp?.request_creator || selectedApp?.request_сreator)}</Descriptions.Item>
+                                <Descriptions.Item label="Источник средств">{emptyValue(selectedRequest.net_worth)}</Descriptions.Item>
+                                <Descriptions.Item label="Ежемесячный доход">{emptyValue(selectedRequest.monthly_income)}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Проверка Compliance" size="small">
+                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+                                <Descriptions.Item label="Балл Compliance">{emptyValue(selectedRequest.compliance_score ?? 0)}</Descriptions.Item>
+                                <Descriptions.Item label="Совпадение">{selectedRequest.compliance_matched ? "Найдено" : "Не найдено"}</Descriptions.Item>
+                                <Descriptions.Item label="Вероятность совпадения">{emptyValue(selectedRequest.match_similarity)}{selectedRequest.match_similarity !== null && selectedRequest.match_similarity !== undefined ? "%" : ""}</Descriptions.Item>
+                                <Descriptions.Item label="Источник совпадения">{emptyValue(bestMatch?.source)}</Descriptions.Item>
+                                {bestMatch?.data?.full_name && <Descriptions.Item label="Найденное имя" span={2}>{bestMatch.data.full_name}</Descriptions.Item>}
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Документы" size="small">
+                            {documentsLoading ? (
+                                <div className="compliance-documents__loading"><Spin size="small" /> Загрузка документов…</div>
+                            ) : availableDocuments.length ? (
+                                <div className="compliance-documents">
+                                    {availableDocuments.map((document) => (
+                                        <Button key={document.id || document.ID || document.path} icon={<FileText size={16} />} onClick={() => setPreviewDocument(document)}>
+                                            {getClientDocumentTypeLabel(document.document_type, document.title)}
+                                        </Button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Документ отсутствует" />
+                            )}
+                        </Card>
+
+                        <Card title="Действия Compliance" size="small">
+                            {(!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
+                                <Space wrap>
+                                    <Button type="primary" onClick={() => confirmAction(selectedRequest, "approved")}>Одобрить</Button>
+                                    <Button danger onClick={() => confirmAction(selectedRequest, "rejected")}>Отклонить</Button>
+                                </Space>
+                            ) : (
+                                <Text type="secondary">Решение по заявке уже принято: {requestStatus.label.toLowerCase()}.</Text>
+                            )}
                         </Card>
                     </div>
                 ) : (
-                    <Text type="secondary">Не удалось загрузить данные</Text>
+                    <Empty description="Данные заявки отсутствуют" />
                 )}
             </Modal>
+            <DocumentPreviewModal
+                isOpen={Boolean(previewDocument)}
+                onClose={() => setPreviewDocument(null)}
+                document={previewDocument}
+            />
         </>
     );
 }

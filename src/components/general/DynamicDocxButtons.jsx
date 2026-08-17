@@ -137,12 +137,13 @@ const hasSystemKeySource = (variant, sourceName) =>
     return systemKey.includes(sourceName);
   });
 
-const DynamicDocxButtons = ({ page, section, data = {} }) => {
+const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => {
   const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
@@ -622,6 +623,7 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
     const variants = template.parsedVariants || normalizeDocxVariants(template.variants);
 
     setSelectedFormat(format);
+    setShowDocumentsModal(false);
 
     if (variants.length === 0) {
       alert("У данного шаблона нет настроенных вариантов генерации.");
@@ -641,6 +643,14 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   };
 
   if (loading) {
+    if (triggerLabel) {
+      return (
+        <button type="button" className="card-action-btn neutral docx-trigger-btn" disabled>
+          <Loader2 className="docx-spin" size={15} />
+          {triggerLabel}
+        </button>
+      );
+    }
     return (
       <div className="docx-runtime-loading">
         <Loader2 className="docx-spin" size={16} />
@@ -650,65 +660,97 @@ const DynamicDocxButtons = ({ page, section, data = {} }) => {
   }
 
   if (templates.length === 0) {
-    return null;
+    return triggerLabel ? (
+      <button
+        type="button"
+        className="card-action-btn neutral docx-trigger-btn"
+        disabled
+        title="Для этого продукта документы пока не настроены"
+      >
+        <FileText size={15} />
+        {triggerLabel}
+      </button>
+    ) : null;
   }
 
   const userRoles = getRoles();
 
+  const renderTemplateButtons = () => (
+    <div className="docx-runtime-buttons">
+      {templates.map((template) => {
+        const variants = template.parsedVariants || [];
+        const hasMultiple = variants.length > 1;
+        const isWorking = generatingId && generatingId.startsWith(`${template.ID || template.id}_`);
+
+        const pdfRoles = normalizeDocxRoles(template.pdfRoles || template.PdfRoles);
+        const docxRoles = normalizeDocxRoles(template.docxRoles || template.DocxRoles);
+        const canPdf = pdfRoles.length === 0 || pdfRoles.some((role) => userRoles.includes(role));
+        const canDocx = (docxRoles.length === 0 || docxRoles.some((role) => userRoles.includes(role))) && userRoles.includes(3);
+
+        if (!canPdf && !canDocx) return null;
+
+        return (
+          <div key={template.ID || template.id} className="docx-generate-group" style={{display: "inline-flex", marginRight: "8px", verticalAlign: "middle", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)"}}>
+            {canPdf && (
+              <button
+                type="button"
+                onClick={() => handleButtonClick(template, "pdf")}
+                className="docx-runtime-btn"
+                disabled={Boolean(generatingId)}
+                title={template.description || template.name}
+                style={{ borderTopRightRadius: canDocx ? 0 : "8px", borderBottomRightRadius: canDocx ? 0 : "8px", borderRight: canDocx ? "1px solid rgba(255,255,255,0.2)" : "none", margin: 0, boxShadow: "none" }}
+              >
+                {isWorking ? <Loader2 className="docx-spin" size={15} /> : hasMultiple ? <Layers size={15} /> : <FileText size={15} />}
+                <span>{template.name} {canDocx ? "" : "(PDF)"}</span>
+              </button>
+            )}
+            {canDocx && (
+              <button
+                type="button"
+                onClick={() => handleButtonClick(template, "docx")}
+                className="docx-runtime-btn"
+                disabled={Boolean(generatingId)}
+                style={{ borderTopLeftRadius: canPdf ? 0 : "8px", borderBottomLeftRadius: canPdf ? 0 : "8px", paddingLeft: canPdf ? "10px" : "15px", paddingRight: canPdf ? "10px" : "15px", margin: 0, boxShadow: "none", backgroundColor: "#334155" }}
+                title="Скачать в DOCX"
+              >
+                <Download size={15} />
+                <span style={{ fontSize: "11px", marginLeft: "2px" }}>DOCX</span>
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
-      <div className="docx-runtime-buttons">
-        {templates.map((template) => {
-          const variants = template.parsedVariants || [];
-          const hasMultiple = variants.length > 1;
-          const isWorking = generatingId && generatingId.startsWith(`${template.ID || template.id}_`);
+      {triggerLabel ? (
+        <button
+          type="button"
+          className="card-action-btn neutral docx-trigger-btn"
+          onClick={() => setShowDocumentsModal(true)}
+        >
+          <FileText size={15} />
+          {triggerLabel}
+        </button>
+      ) : renderTemplateButtons()}
 
-          const pdfRoles = normalizeDocxRoles(template.pdfRoles || template.PdfRoles);
-          const docxRoles = normalizeDocxRoles(template.docxRoles || template.DocxRoles);
-          
-          const canPdf = pdfRoles.length === 0 || pdfRoles.some(r => userRoles.includes(r));
-          const canDocx = (docxRoles.length === 0 || docxRoles.some(r => userRoles.includes(r))) && userRoles.includes(3);
-
-          if (!canPdf && !canDocx) return null;
-
-          return (
-            <div key={template.ID || template.id} className="docx-generate-group" style={{display: "inline-flex", marginRight: "8px", verticalAlign: "middle", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)"}}>
-              {canPdf && (
-                <button
-                  type="button"
-                  onClick={() => handleButtonClick(template, "pdf")}
-                  className="docx-runtime-btn"
-                  disabled={Boolean(generatingId)}
-                  title={template.description || template.name}
-                  style={{ borderTopRightRadius: canDocx ? 0 : "8px", borderBottomRightRadius: canDocx ? 0 : "8px", borderRight: canDocx ? "1px solid rgba(255,255,255,0.2)" : "none", margin: 0, boxShadow: "none" }}
-                >
-                  {isWorking ? (
-                    <Loader2 className="docx-spin" size={15} />
-                  ) : hasMultiple ? (
-                    <Layers size={15} />
-                  ) : (
-                    <FileText size={15} />
-                  )}
-                  <span>{template.name} {canDocx ? "" : "(PDF)"}</span>
-                </button>
-              )}
-              {canDocx && (
-                <button
-                  type="button"
-                  onClick={() => handleButtonClick(template, "docx")}
-                  className="docx-runtime-btn"
-                  disabled={Boolean(generatingId)}
-                  style={{ borderTopLeftRadius: canPdf ? 0 : "8px", borderBottomLeftRadius: canPdf ? 0 : "8px", paddingLeft: canPdf ? "10px" : "15px", paddingRight: canPdf ? "10px" : "15px", margin: 0, boxShadow: "none", backgroundColor: "#334155" }}
-                  title="Скачать в DOCX"
-                >
-                  <Download size={15} />
-                  <span style={{ fontSize: "11px", marginLeft: "2px" }}>DOCX</span>
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {triggerLabel && (
+        <Modal
+          title={`${triggerLabel}: ${section}`}
+          open={showDocumentsModal}
+          onCancel={() => setShowDocumentsModal(false)}
+          footer={null}
+          width={680}
+          destroyOnHidden
+        >
+          <div className="docx-trigger-modal__description">
+            Выберите настроенный шаблон и формат документа.
+          </div>
+          {renderTemplateButtons()}
+        </Modal>
+      )}
 
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
