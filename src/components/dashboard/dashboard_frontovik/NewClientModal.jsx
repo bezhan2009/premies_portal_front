@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Upload, message } from "antd";
-import { ShieldCheck } from "lucide-react";
+import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
 import { submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
@@ -274,48 +274,24 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
 
   return (
     <Modal
-      title="Создание нового клиента"
+      title={null}
       open={open}
       onCancel={onClose}
       footer={null}
-      width={920}
+      width={1180}
+      centered
+      className="new-client-modal"
       destroyOnHidden
       maskClosable={!submitting}
       closable={!submitting}
     >
-      <div className="new-client-progress-panel">
-        <div className="new-client-progress-panel__completion">
-          <div className="new-client-progress-panel__heading">
-            <strong>Заполнение анкеты</strong>
-            <span>{completion.percent}%</span>
-          </div>
-          <Progress
-            percent={completion.percent}
-            showInfo={false}
-            strokeColor="#16a34a"
-            trailColor={completion.percent === 100 ? "#dcfce7" : "#fee2e2"}
-          />
-          <div className={completion.invalidFields.length ? "new-client-progress-panel__problem" : "new-client-progress-panel__complete"}>
-            {completion.invalidFields.length
-              ? `Не заполнено или заполнено некорректно: ${completion.invalidFields.length}`
-              : "Все обязательные поля заполнены корректно"}
-          </div>
+      <div className="new-client-modal__header">
+        <span className="new-client-modal__header-icon"><UserRound size={22} /></span>
+        <div>
+          <span className="new-client-modal__eyebrow">Frontovik</span>
+          <h2>Создание нового клиента</h2>
+          <p>Заполните анкету и приложите фото и документ клиента.</p>
         </div>
-        <div className="new-client-progress-panel__status">
-          <strong>Статус клиента</strong>
-          <div className="new-client-status-list">
-            {statusReasons.map((reason) => (
-              <span key={`${reason.tone}-${reason.text}`} className={`new-client-status new-client-status--${reason.tone}`}>
-                {reason.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="new-client-modal__description">
-        Заполните обязательные поля. Система проверит резидентство, FATCA,
-        АПЛ/ПЗЛ и совпадения в базе Compliance.
       </div>
 
       <Form
@@ -323,108 +299,146 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         layout="vertical"
         onFinish={handleSubmit}
         autoComplete="off"
+        className="new-client-form"
         initialValues={{
           is_resident: true,
           fatca: false,
           apl_pzl: false,
         }}
       >
-        <Row gutter={16}>
-          <Col xs={24} md={8}>
-            <Form.Item label="Фамилия" name="last_name" rules={[requiredRule]}>
-              <Input maxLength={100} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="Имя" name="first_name" rules={[requiredRule]}>
-              <Input maxLength={100} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="Отчество" name="middle_name" rules={[requiredRule]}>
-              <Input maxLength={100} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} md={8}>
-            <Form.Item label="Дата рождения" name="birth_date" rules={[requiredRule]}>
-              <Input type="date" max={new Date().toISOString().slice(0, 10)} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              label="ИНН / идентификатор клиента"
-              name="inn"
-              dependencies={["is_resident"]}
-              rules={[
-                requiredRule,
-                ({ getFieldValue }) => ({
-                  validator: (_, value) => {
-                    const normalized = String(value || "").trim();
-                    const isResident = getFieldValue("is_resident");
-                    const valid = isResident === false
-                      ? /^[A-Za-z0-9-]{5,32}$/.test(normalized)
-                      : /^\d{9,14}$/.test(normalized) || /^[A-Za-z0-9-]{5,32}$/.test(normalized);
-                    return valid
-                      ? Promise.resolve()
-                      : Promise.reject(new Error("Для резидента укажите ИНН; для нерезидента — идентификатор"));
-                  },
-                }),
-              ]}
-            >
-              <Input maxLength={32} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="Номер телефона" name="phone" rules={[requiredRule]}>
-              <Input maxLength={20} placeholder="992XXXXXXXXX" />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} md={8}>
-            <Form.Item label="Источник средств" name="source_of_funds" rules={[requiredRule]}>
-              <Input maxLength={255} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24}>
-            <div className="new-client-compliance-block">
-              <div className="new-client-compliance-block__header">
-                <strong><ShieldCheck size={17} /> Параметры комплаенса</strong>
-                <span>Балл комплаенса: <b>{totalComplianceScore}</b></span>
-              </div>
-              <Row gutter={16}>
-                {complianceCategories.map((field) => (
-                  <Col xs={24} md={field === "total_cash_transactions_count" ? 6 : 12} lg={field === "total_cash_transactions_count" ? 6 : 5} key={field}>
-                    <Form.Item label={complianceFieldLabels[field]} name={field} rules={[requiredRule]}>
-                      <AutoComplete
-                        options={complianceOptions[field] || []}
-                        filterOption={(inputValue, option) =>
-                          String(option?.label || option?.value || "")
-                            .toLowerCase()
-                            .includes(inputValue.toLowerCase())
-                        }
-                        placeholder="Выберите или введите значение"
-                      />
-                    </Form.Item>
-                  </Col>
-                ))}
-              </Row>
-              <div className="new-client-compliance-flags">
-                <Form.Item label="Резидент" name="is_resident" rules={[requiredRule]}>
-                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-                </Form.Item>
-                <Form.Item label="Признак FATCA" name="fatca" rules={[requiredRule]}>
-                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-                </Form.Item>
-                <Form.Item label="Признак АПЛ/ПЗЛ" name="apl_pzl" rules={[requiredRule]}>
-                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-                </Form.Item>
-              </div>
+        <div className="new-client-progress-panel">
+          <div className="new-client-progress-panel__completion">
+            <div className="new-client-progress-panel__heading">
+              <strong>Заполнение анкеты</strong>
+              <span>{completion.percent}%</span>
             </div>
-          </Col>
+            <Progress
+              percent={completion.percent}
+              showInfo={false}
+              strokeColor="#16a34a"
+              trailColor={completion.percent === 100 ? "#dcfce7" : "#fee2e2"}
+            />
+            <div className={completion.invalidFields.length ? "new-client-progress-panel__problem" : "new-client-progress-panel__complete"}>
+              {completion.invalidFields.length
+                ? `Не заполнено или заполнено некорректно: ${completion.invalidFields.length}`
+                : "Все обязательные поля заполнены корректно"}
+            </div>
+          </div>
+          <div className="new-client-progress-panel__status">
+            <strong>Статус клиента</strong>
+            <div className="new-client-status-list">
+              {statusReasons.map((reason) => (
+                <span key={`${reason.tone}-${reason.text}`} className={`new-client-status new-client-status--${reason.tone}`}>
+                  {reason.text}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
 
-          <Col xs={24} md={12}>
+        <section className="new-client-form-section">
+          <div className="new-client-form-section__title">
+            <span>1</span>
+            <div><strong>Основные данные</strong><small>Персональная и контактная информация клиента</small></div>
+          </div>
+          <Row gutter={[18, 0]}>
+            <Col xs={24} md={8}>
+              <Form.Item label="Фамилия" name="last_name" rules={[requiredRule]}>
+                <Input maxLength={100} placeholder="Введите фамилию" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Имя" name="first_name" rules={[requiredRule]}>
+                <Input maxLength={100} placeholder="Введите имя" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Отчество" name="middle_name" rules={[requiredRule]}>
+                <Input maxLength={100} placeholder="Введите отчество" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Дата рождения" name="birth_date" rules={[requiredRule]}>
+                <Input type="date" max={new Date().toISOString().slice(0, 10)} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item
+                label="ИНН / идентификатор клиента"
+                name="inn"
+                dependencies={["is_resident"]}
+                rules={[
+                  requiredRule,
+                  ({ getFieldValue }) => ({
+                    validator: (_, value) => {
+                      const normalized = String(value || "").trim();
+                      const isResident = getFieldValue("is_resident");
+                      const valid = isResident === false
+                        ? /^[A-Za-z0-9-]{5,32}$/.test(normalized)
+                        : /^\d{9,14}$/.test(normalized);
+                      return valid
+                        ? Promise.resolve()
+                        : Promise.reject(new Error("Для резидента укажите ИНН; для нерезидента — идентификатор"));
+                    },
+                  }),
+                ]}
+              >
+                <Input maxLength={32} placeholder="Введите ИНН" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Номер телефона" name="phone" rules={[requiredRule]}>
+                <Input maxLength={20} placeholder="992XXXXXXXXX" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Источник средств" name="source_of_funds" rules={[requiredRule]}>
+                <Input maxLength={255} placeholder="Например, заработная плата" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </section>
+
+        <section className="new-client-compliance-block">
+          <div className="new-client-compliance-block__header">
+            <strong><ShieldCheck size={18} /> Параметры комплаенса</strong>
+            <span>Балл комплаенса: <b>{totalComplianceScore}</b></span>
+          </div>
+          <div className="new-client-compliance-fields">
+            {complianceCategories.map((field) => (
+              <Form.Item key={field} label={complianceFieldLabels[field]} name={field} rules={[requiredRule]}>
+                <AutoComplete
+                  options={complianceOptions[field] || []}
+                  filterOption={(inputValue, option) =>
+                    String(option?.label || option?.value || "")
+                      .toLowerCase()
+                      .includes(inputValue.toLowerCase())
+                  }
+                  placeholder="Выберите или введите значение"
+                  allowClear
+                />
+              </Form.Item>
+            ))}
+          </div>
+          <div className="new-client-compliance-flags">
+            <Form.Item label="Резидент" name="is_resident" rules={[requiredRule]}>
+              <Radio.Group options={yesNoOptions} />
+            </Form.Item>
+            <Form.Item label="Признак FATCA" name="fatca" rules={[requiredRule]}>
+              <Radio.Group options={yesNoOptions} />
+            </Form.Item>
+            <Form.Item label="Признак АПЛ/ПЗЛ" name="apl_pzl" rules={[requiredRule]}>
+              <Radio.Group options={yesNoOptions} />
+            </Form.Item>
+          </div>
+        </section>
+
+        <section className="new-client-form-section new-client-form-section--uploads">
+          <div className="new-client-form-section__title">
+            <span>3</span>
+            <div><strong>Фото и документы</strong><small>Файлы будут прикреплены к клиенту по ИНН</small></div>
+          </div>
+          <div className="new-client-upload-grid">
             <Form.Item label="Фото клиента">
               <Upload
                 accept="image/*"
@@ -433,11 +447,9 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                 maxCount={1}
                 onChange={({ fileList }) => setClientPhotoList(fileList)}
               >
-                <Button>Загрузить фото</Button>
+                <Button htmlType="button" icon={<Camera size={16} />}>Выбрать фото</Button>
               </Upload>
             </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
             <Form.Item label="Документ клиента">
               <Upload
                 accept="image/*,.pdf,.doc,.docx"
@@ -446,15 +458,15 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                 maxCount={1}
                 onChange={({ fileList }) => setClientDocumentList(fileList)}
               >
-                <Button>Загрузить документ</Button>
+                <Button htmlType="button" icon={<FileUp size={16} />}>Выбрать документ</Button>
               </Upload>
             </Form.Item>
-          </Col>
-        </Row>
+          </div>
+        </section>
 
         <div className="new-client-modal__actions">
-          <Button onClick={onClose} disabled={submitting}>Отмена</Button>
-          <Button type="primary" htmlType="submit" loading={submitting}>
+          <Button htmlType="button" onClick={onClose} disabled={submitting}>Отмена</Button>
+          <Button type="primary" htmlType="button" loading={submitting} onClick={() => form.submit()}>
             Отправить анкету
           </Button>
         </div>

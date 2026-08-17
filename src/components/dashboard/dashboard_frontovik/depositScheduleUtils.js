@@ -32,7 +32,14 @@ export const buildDepositScheduleRows = (schedulePoints, now = new Date()) => {
   const grouped = new Map();
 
   (Array.isArray(schedulePoints) ? schedulePoints : []).forEach((point) => {
-    const calculatingDate = getDateOnly(point.calculatingDate || point.CalculatingDate);
+    const calculatingDate = getDateOnly(
+      point.calculatingDate ||
+      point.CalculatingDate ||
+      point.paymentDate ||
+      point.PaymentDate ||
+      point.expectationDate ||
+      point.ExpectationDate,
+    );
     if (!calculatingDate) return;
 
     if (!grouped.has(calculatingDate)) {
@@ -45,14 +52,28 @@ export const buildDepositScheduleRows = (schedulePoints, now = new Date()) => {
     }
 
     const row = grouped.get(calculatingDate);
-    const name = String(point.longName || point.LongName || "").toLowerCase();
-    const amount = parseScheduleAmount(point.planAmount || point.PlanAmount);
+    const name = String(point.longName || point.LongName || point.name || point.Name || "").toLowerCase();
+    const code = String(point.code || point.Code || "").toUpperCase();
+    const amount = parseScheduleAmount(
+      point.planAmount ||
+      point.PlanAmount ||
+      point.calculatingAmount ||
+      point.CalculatingAmount ||
+      point.amount ||
+      point.Amount,
+    );
 
-    if (name.includes("вознаграждение по депозиту") && !name.includes("выплата")) {
+    if (
+      (name.includes("вознаграждение по депозиту") && !name.includes("выплата")) ||
+      code === "DEP_BONUS" ||
+      code === "DEP_INTER"
+    ) {
       row.calculatedIncome += amount;
-    } else if (name.includes("подоходного налога")) {
+    } else if (name.includes("подоходного налога") || name.includes("налог") || code === "DEP_TAX") {
       row.tax += amount;
-    } else if (name.includes("выплата вознаграждения")) {
+    } else if (name.includes("выплата вознаграждения") || code === "DEP_PAY") {
+      row.income += amount;
+    } else {
       row.income += amount;
     }
   });
