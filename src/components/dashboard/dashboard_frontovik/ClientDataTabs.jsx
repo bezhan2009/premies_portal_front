@@ -1795,7 +1795,7 @@ const ClientDataTabs = ({
         {activeTab === "deposits" && (
           <div className="tab-pane-fade">
             {selectedDeposit ? (
-              <DepositDetails deposit={selectedDeposit} onBack={() => setSelectedDeposit(null)} />
+              <DepositDetails deposit={selectedDeposit} onBack={() => setSelectedDeposit(null)} selectedClient={selectedClient} />
             ) : (
               <>
                 <div className="tab-pane-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
@@ -1985,7 +1985,11 @@ const ClientDataTabs = ({
                           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                             <button 
                               className="card-action-btn neutral"
-                              onClick={() => setSelectedDeposit(item)}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setSelectedDeposit(item);
+                              }}
                             >
                               Подробнее
                             </button>
@@ -1995,6 +1999,9 @@ const ClientDataTabs = ({
                               triggerLabel="Документы"
                               data={{
                                 ...extractDocxClientData(selectedClient),
+                                depositId: agreement.ColvirReferenceId || "",
+                                "deposit.id": agreement.ColvirReferenceId || "",
+                                "deposit.referenceId": agreement.ColvirReferenceId || "",
                                 "deposit.agreementId": agreement.ColvirReferenceId || "",
                                 "deposit.ColvirReferenceId": agreement.ColvirReferenceId || "",
                                 "ColvirReferenceId": agreement.ColvirReferenceId || "",

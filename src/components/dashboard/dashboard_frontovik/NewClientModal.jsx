@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Upload, message } from "antd";
+import { ShieldCheck } from "lucide-react";
 import { submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
@@ -58,7 +59,6 @@ const isQuestionnaireFieldValid = (field, values) => {
 export default function NewClientModal({ open, onClose, onSubmitted }) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const [formReady, setFormReady] = useState(false);
   const [complianceCheck, setComplianceCheck] = useState({
     state: "idle",
     matched: false,
@@ -126,7 +126,6 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   useEffect(() => {
     if (!open) {
       form.resetFields();
-      setFormReady(false);
       setComplianceCheck({ state: "idle", matched: false, listType: "" });
       setClientPhotoList([]);
       setClientDocumentList([]);
@@ -175,6 +174,14 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
 
         setComplianceOptions(grouped);
         setComplianceScoreByValue(scores);
+        form.setFieldsValue(
+          complianceCategories.reduce((acc, category) => {
+            if (!form.getFieldValue(category) && grouped[category]?.[0]?.value) {
+              acc[category] = grouped[category][0].value;
+            }
+            return acc;
+          }, {}),
+        );
       } catch (error) {
         if (error.name !== "AbortError") {
           console.error("Ошибка загрузки справочников комплаенса:", error);
@@ -185,7 +192,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     fetchComplianceOptions();
 
     return () => controller.abort();
-  }, [open]);
+  }, [form, open]);
 
   useEffect(() => {
     const identifier = String(values.inn || "").replace(/\s/g, "");
@@ -226,15 +233,6 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       controller.abort();
     };
   }, [open, values.inn]);
-
-  const updateFormReady = async () => {
-    try {
-      await form.validateFields({ validateOnly: true });
-      setFormReady(true);
-    } catch {
-      setFormReady(false);
-    }
-  };
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
@@ -324,7 +322,6 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        onFieldsChange={updateFormReady}
         autoComplete="off"
         initialValues={{
           is_resident: true,
@@ -393,12 +390,12 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           <Col xs={24}>
             <div className="new-client-compliance-block">
               <div className="new-client-compliance-block__header">
-                <strong>Параметры комплаенса</strong>
-                <span>Балл комплаенса: {totalComplianceScore}</span>
+                <strong><ShieldCheck size={17} /> Параметры комплаенса</strong>
+                <span>Балл комплаенса: <b>{totalComplianceScore}</b></span>
               </div>
               <Row gutter={16}>
                 {complianceCategories.map((field) => (
-                  <Col xs={24} md={12} key={field}>
+                  <Col xs={24} md={field === "total_cash_transactions_count" ? 6 : 12} lg={field === "total_cash_transactions_count" ? 6 : 5} key={field}>
                     <Form.Item label={complianceFieldLabels[field]} name={field} rules={[requiredRule]}>
                       <AutoComplete
                         options={complianceOptions[field] || []}
@@ -413,23 +410,18 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                   </Col>
                 ))}
               </Row>
+              <div className="new-client-compliance-flags">
+                <Form.Item label="Резидент" name="is_resident" rules={[requiredRule]}>
+                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
+                </Form.Item>
+                <Form.Item label="Признак FATCA" name="fatca" rules={[requiredRule]}>
+                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
+                </Form.Item>
+                <Form.Item label="Признак АПЛ/ПЗЛ" name="apl_pzl" rules={[requiredRule]}>
+                  <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
+                </Form.Item>
+              </div>
             </div>
-          </Col>
-
-          <Col xs={24} md={8}>
-            <Form.Item label="Резидент" name="is_resident" rules={[requiredRule]}>
-              <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="FATCA" name="fatca" rules={[requiredRule]}>
-              <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="АПЛ/ПЗЛ" name="apl_pzl" rules={[requiredRule]}>
-              <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
-            </Form.Item>
           </Col>
 
           <Col xs={24} md={12}>
@@ -462,7 +454,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
 
         <div className="new-client-modal__actions">
           <Button onClick={onClose} disabled={submitting}>Отмена</Button>
-          <Button type="primary" htmlType="submit" loading={submitting} disabled={!formReady}>
+          <Button type="primary" htmlType="submit" loading={submitting}>
             Отправить анкету
           </Button>
         </div>

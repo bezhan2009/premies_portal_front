@@ -4,8 +4,10 @@ import "../../../styles/ABSSearch.scss";
 import Spinner from "../../Spinner.jsx";
 import { fetchDepositSchedule } from "../../../api/ABS_frotavik/getUserCredits.js";
 import { buildDepositScheduleRows, getDateOnly } from "./depositScheduleUtils.js";
+import DynamicDocxButtons from "../../general/DynamicDocxButtons.jsx";
+import { extractDocxClientData } from "../../../utils/docxTemplateHelpers.js";
 
-const DepositDetails = ({ deposit, onBack }) => {
+const DepositDetails = ({ deposit, onBack, selectedClient }) => {
   const agreement = deposit.AgreementData || {};
   const balances = deposit.BalanceAccounts || [];
   const [schedulePoints, setSchedulePoints] = useState([]);
@@ -58,6 +60,41 @@ const DepositDetails = ({ deposit, onBack }) => {
   const incomeBalance = Number(incomeAcc.Balance || 0);
   const colvirReferenceId = agreement.ColvirReferenceId || deposit.ColvirReferenceId || "";
   const scheduleRows = useMemo(() => buildDepositScheduleRows(schedulePoints), [schedulePoints]);
+  const depositDocxData = useMemo(() => ({
+    ...extractDocxClientData(selectedClient),
+    depositId: colvirReferenceId,
+    "deposit.id": colvirReferenceId,
+    "deposit.referenceId": colvirReferenceId,
+    "deposit.ColvirReferenceId": colvirReferenceId,
+    ColvirReferenceId: colvirReferenceId,
+    "deposit.code": agreement.Code || "",
+    "deposit.productName": productName || "",
+    "deposit.amount": amount || "0.00",
+    "deposit.balance": String(depoBalance || "0.00"),
+    "deposit.currency": currency || "",
+    "deposit.interestRate": bonusRate || "0",
+    "deposit.startDate": dateFrom || "",
+    "deposit.endDate": dateTo || "",
+    "deposit.statusName": statusName || "",
+    "deposit.accountNumber": depoAcc.AccCode || "",
+    "deposit.interestAccount": incomeAcc.AccCode || "",
+    schedule: scheduleRows,
+  }), [
+    agreement.Code,
+    amount,
+    bonusRate,
+    colvirReferenceId,
+    currency,
+    dateFrom,
+    dateTo,
+    depoAcc.AccCode,
+    depoBalance,
+    incomeAcc.AccCode,
+    productName,
+    scheduleRows,
+    selectedClient,
+    statusName,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,12 +161,20 @@ const DepositDetails = ({ deposit, onBack }) => {
 
   return (
     <div className="deposit-details-container" style={{ width: "100%", animation: "fadeIn 0.3s ease-in-out" }}>
-      <button 
-        onClick={onBack} 
-        style={{ marginBottom: "20px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}
-      >
-        <span>&larr;</span> Назад к депозитам
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <button
+          onClick={onBack}
+          style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}
+        >
+          <span>&larr;</span> Назад к депозитам
+        </button>
+        <DynamicDocxButtons
+          page="DepositDetails"
+          section="Договоры депозитов"
+          triggerLabel="Документы"
+          data={depositDocxData}
+        />
+      </div>
 
       {/* Top 4 Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "20px" }}>

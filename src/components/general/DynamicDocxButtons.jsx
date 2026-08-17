@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { ChevronRight, Layers, Loader2, X, FileText, Download } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   buildDocxPayload,
   normalizeDocxRoles,
@@ -502,7 +502,7 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
       const min = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       nowStr = `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
-    } catch (e) {
+    } catch {
       nowStr = new Date().toLocaleString("ru-RU");
     }
 
@@ -516,13 +516,6 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
     finalData["дата выписки по"] = formattedToDate;
     finalData["дата выписки"] = nowStr;
     finalData["дата_выписки"] = nowStr;
-
-    const usesProcessingTransactions =
-      hasSystemKeySource(variant, "processing_transactions") ||
-      (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0);
-    const usesTransactions =
-      hasSystemKeySource(variant, "transactions") ||
-      (Array.isArray(finalData.transactions) && finalData.transactions.length > 0);
 
     const transactionVirtualKeys = [
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
