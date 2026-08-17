@@ -426,6 +426,10 @@ export default function ComplianceRequests() {
                                 <Descriptions.Item label="Сотрудник" span={2}>{emptyValue(selectedRequest.creator_username || selectedApp?.request_creator || selectedApp?.request_сreator)}</Descriptions.Item>
                                 <Descriptions.Item label="Источник средств">{emptyValue(selectedRequest.net_worth)}</Descriptions.Item>
                                 <Descriptions.Item label="Ежемесячный доход">{emptyValue(selectedRequest.monthly_income)}</Descriptions.Item>
+                                <Descriptions.Item label="Сумма ежемесячных транзакций">{emptyValue(selectedRequest.total_outgoing_transactions_amount)}</Descriptions.Item>
+                                <Descriptions.Item label="Количество ежемесячных транзакций">{emptyValue(selectedRequest.total_outgoing_transactions_count)}</Descriptions.Item>
+                                <Descriptions.Item label="Сумма кассовых сделок">{emptyValue(selectedRequest.total_cash_transactions_amount)}</Descriptions.Item>
+                                <Descriptions.Item label="Количество кассовых сделок">{emptyValue(selectedRequest.total_cash_transactions_count)}</Descriptions.Item>
                             </Descriptions>
                         </Card>
 

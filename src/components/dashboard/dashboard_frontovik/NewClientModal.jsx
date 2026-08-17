@@ -1,12 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Col, Form, Input, Modal, Progress, Radio, Row, message } from "antd";
+import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Upload, message } from "antd";
 import { submitFrontovikNewClient } from "../../../api/complianceRequests.js";
+import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
   { label: "Да", value: true },
   { label: "Нет", value: false },
 ];
+
+const complianceCategories = [
+  "client_occupation",
+  "monthly_income",
+  "total_outgoing_transactions_amount",
+  "total_outgoing_transactions_count",
+  "total_cash_transactions_amount",
+  "total_cash_transactions_count",
+];
+
+const complianceFieldLabels = {
+  client_occupation: "Чем занимается клиент",
+  monthly_income: "Метод открытия счета",
+  total_outgoing_transactions_amount: "Общая ожидаемая сумма ежемесячных транзакций",
+  total_outgoing_transactions_count: "Ожидаемое общее количество ежемесячных транзакций",
+  total_cash_transactions_amount: "Ожидаемая общая сумма кассовых сделок",
+  total_cash_transactions_count: "Ожидаемое общее количество кассовых сделок",
+};
 
 const questionnaireFields = [
   { name: "last_name", label: "Фамилия" },
@@ -22,9 +41,8 @@ const questionnaireFields = [
     return /^[A-Za-z0-9-]{5,32}$/.test(normalized);
   } },
   { name: "phone", label: "Номер телефона" },
-  { name: "occupation", label: "Род деятельности" },
   { name: "source_of_funds", label: "Источник средств" },
-  { name: "monthly_income", label: "Ежемесячный доход" },
+  ...complianceCategories.map((name) => ({ name, label: complianceFieldLabels[name] })),
   { name: "is_resident", label: "Резидент", boolean: true },
   { name: "fatca", label: "FATCA", boolean: true },
   { name: "apl_pzl", label: "АПЛ/ПЗЛ", boolean: true },
@@ -46,8 +64,25 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     matched: false,
     listType: "",
   });
+  const [complianceOptions, setComplianceOptions] = useState({});
+  const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
+  const [clientPhotoList, setClientPhotoList] = useState([]);
+  const [clientDocumentList, setClientDocumentList] = useState([]);
   const watchedValues = Form.useWatch([], form);
   const values = useMemo(() => watchedValues || {}, [watchedValues]);
+
+  const totalComplianceScore = useMemo(() => {
+    const getScore = (value) => Number(complianceScoreByValue[value]) || 0;
+    const booleanScore = (value) => (value === true ? 5 : 0);
+    const residentScore = (value) => (value === false ? 5 : 0);
+    const total =
+      complianceCategories.reduce((sum, field) => sum + getScore(values[field]), 0) +
+      residentScore(values.is_resident) +
+      booleanScore(values.fatca) +
+      booleanScore(values.apl_pzl);
+
+    return Math.max(1, Math.round(total / 8));
+  }, [complianceScoreByValue, values]);
 
   const completion = useMemo(() => {
     const invalidFields = questionnaireFields.filter(
@@ -93,8 +128,64 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       form.resetFields();
       setFormReady(false);
       setComplianceCheck({ state: "idle", matched: false, listType: "" });
+      setClientPhotoList([]);
+      setClientDocumentList([]);
     }
   }, [form, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const controller = new AbortController();
+
+    const fetchComplianceOptions = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/compliance/score-options`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
+          },
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+
+        const options = await response.json();
+        if (!Array.isArray(options)) return;
+
+        const grouped = {};
+        const scores = {};
+        options.forEach((option) => {
+          const category = option.category;
+          if (!category) return;
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push({
+            value: option.value,
+            label: option.label || `${option.value} (${option.score || 0})`,
+            sortOrder: option.sort_order || 0,
+          });
+          scores[option.value] = Number(option.score) || 0;
+        });
+
+        Object.keys(grouped).forEach((category) => {
+          grouped[category].sort((a, b) => a.sortOrder - b.sortOrder);
+          grouped[category] = grouped[category].map((option) => ({
+            value: option.value,
+            label: option.label,
+          }));
+        });
+
+        setComplianceOptions(grouped);
+        setComplianceScoreByValue(scores);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Ошибка загрузки справочников комплаенса:", error);
+        }
+      }
+    };
+
+    fetchComplianceOptions();
+
+    return () => controller.abort();
+  }, [open]);
 
   useEffect(() => {
     const identifier = String(values.inn || "").replace(/\s/g, "");
@@ -148,8 +239,32 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const result = await submitFrontovikNewClient(values);
+      const identifier = String(values.inn || "").trim();
+      const uploads = [
+        ...clientPhotoList.map((item) => ({
+          file: item.originFileObj,
+          title: "Фото клиента",
+          documentType: "selfie_with_passport",
+        })),
+        ...clientDocumentList.map((item) => ({
+          file: item.originFileObj,
+          title: item.name || "Документ клиента",
+          documentType: "front_side_of_the_passport",
+        })),
+      ].filter((item) => item.file);
+
+      for (const upload of uploads) {
+        await uploadClientDocument(identifier, upload.title, upload.file, upload.documentType);
+      }
+
+      const result = await submitFrontovikNewClient({
+        ...values,
+        occupation: values.client_occupation,
+        compliance_score: totalComplianceScore,
+      });
       form.resetFields();
+      setClientPhotoList([]);
+      setClientDocumentList([]);
       onSubmitted(result);
       onClose();
     } catch (error) {
@@ -211,6 +326,11 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         onFinish={handleSubmit}
         onFieldsChange={updateFormReady}
         autoComplete="off"
+        initialValues={{
+          is_resident: true,
+          fatca: false,
+          apl_pzl: false,
+        }}
       >
         <Row gutter={16}>
           <Col xs={24} md={8}>
@@ -244,9 +364,10 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                 ({ getFieldValue }) => ({
                   validator: (_, value) => {
                     const normalized = String(value || "").trim();
-                    const valid = getFieldValue("is_resident") === true
-                      ? /^\d{9,14}$/.test(normalized)
-                      : /^[A-Za-z0-9-]{5,32}$/.test(normalized);
+                    const isResident = getFieldValue("is_resident");
+                    const valid = isResident === false
+                      ? /^[A-Za-z0-9-]{5,32}$/.test(normalized)
+                      : /^\d{9,14}$/.test(normalized) || /^[A-Za-z0-9-]{5,32}$/.test(normalized);
                     return valid
                       ? Promise.resolve()
                       : Promise.reject(new Error("Для резидента укажите ИНН; для нерезидента — идентификатор"));
@@ -264,19 +385,35 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           </Col>
 
           <Col xs={24} md={8}>
-            <Form.Item label="Род деятельности" name="occupation" rules={[requiredRule]}>
-              <Input maxLength={255} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
             <Form.Item label="Источник средств" name="source_of_funds" rules={[requiredRule]}>
               <Input maxLength={255} />
             </Form.Item>
           </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label="Ежемесячный доход" name="monthly_income" rules={[requiredRule]}>
-              <Input maxLength={100} />
-            </Form.Item>
+
+          <Col xs={24}>
+            <div className="new-client-compliance-block">
+              <div className="new-client-compliance-block__header">
+                <strong>Параметры комплаенса</strong>
+                <span>Балл комплаенса: {totalComplianceScore}</span>
+              </div>
+              <Row gutter={16}>
+                {complianceCategories.map((field) => (
+                  <Col xs={24} md={12} key={field}>
+                    <Form.Item label={complianceFieldLabels[field]} name={field} rules={[requiredRule]}>
+                      <AutoComplete
+                        options={complianceOptions[field] || []}
+                        filterOption={(inputValue, option) =>
+                          String(option?.label || option?.value || "")
+                            .toLowerCase()
+                            .includes(inputValue.toLowerCase())
+                        }
+                        placeholder="Выберите или введите значение"
+                      />
+                    </Form.Item>
+                  </Col>
+                ))}
+              </Row>
+            </div>
           </Col>
 
           <Col xs={24} md={8}>
@@ -292,6 +429,33 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           <Col xs={24} md={8}>
             <Form.Item label="АПЛ/ПЗЛ" name="apl_pzl" rules={[requiredRule]}>
               <Radio.Group options={yesNoOptions} optionType="button" buttonStyle="solid" />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} md={12}>
+            <Form.Item label="Фото клиента">
+              <Upload
+                accept="image/*"
+                beforeUpload={() => false}
+                fileList={clientPhotoList}
+                maxCount={1}
+                onChange={({ fileList }) => setClientPhotoList(fileList)}
+              >
+                <Button>Загрузить фото</Button>
+              </Upload>
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Документ клиента">
+              <Upload
+                accept="image/*,.pdf,.doc,.docx"
+                beforeUpload={() => false}
+                fileList={clientDocumentList}
+                maxCount={1}
+                onChange={({ fileList }) => setClientDocumentList(fileList)}
+              >
+                <Button>Загрузить документ</Button>
+              </Upload>
             </Form.Item>
           </Col>
         </Row>

@@ -2379,6 +2379,28 @@
 .new-client-status--checking { color: #1d4ed8; background: #dbeafe; }
 .new-client-status--neutral { color: #475569; background: #e2e8f0; }
 
+.new-client-compliance-block {
+  margin: 4px 0 18px;
+  padding: 15px 16px 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.new-client-compliance-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  span {
+    color: #15803d;
+    font-size: 13px;
+    font-weight: 800;
+  }
+}
+
 .new-client-modal__actions {
   display: flex;
   justify-content: flex-end;
@@ -2398,6 +2420,11 @@
 
   .new-client-progress-panel {
     grid-template-columns: 1fr;
+  }
+
+  .new-client-compliance-block__header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .card-main-info {
