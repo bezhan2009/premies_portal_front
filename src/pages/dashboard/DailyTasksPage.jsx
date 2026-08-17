@@ -20,17 +20,17 @@ import { Clock3, Play, RefreshCw, RotateCcw } from 'lucide-react';
 
 const { Title, Text } = Typography;
 
-const BACKFILL_JOB_OPTIONS = [
-  { label: 'Все поддерживаемые джобы', value: 'all' },
-  { label: 'Кешбек по картам', value: 'return_cashback_card' },
-  { label: 'Кешбек QR', value: 'return_cashback_qr' },
-  { label: 'Комиссии / выписки', value: 'update_transaction_types' },
-  { label: 'Переводы: отправитель видит получателя', value: 'mark_client_transfers' },
-  { label: 'Переводы: получатель видит отправителя', value: 'mark_client_transfer_receivers' },
-  { label: 'Платежи в мобилке', value: 'update_mobile_payment_transaction_types' },
-  { label: 'P2P выписки', value: 'update_p2p_transaction_types' },
-  { label: 'QR выписки', value: 'update_qr_transaction_types' },
-];
+const BACKFILL_JOB_LABELS = {
+  return_cashback_card: 'Кешбек по картам',
+  return_cashback_qr: 'Кешбек QR',
+  update_transaction_types: 'Комиссии / выписки',
+  mark_client_transfers: 'Переводы: отправитель видит получателя',
+  mark_client_transfer_receivers: 'Переводы: получатель видит отправителя',
+  update_mobile_payment_transaction_types: 'Платежи в мобилке',
+  update_p2p_transaction_types: 'P2P выписки',
+  update_qr_transaction_types: 'QR выписки',
+  process_rohat_daily: 'Рохат: ежедневное начисление',
+};
 
 const formatDateTime = (date) => {
   if (!date) return '—';
@@ -187,6 +187,20 @@ const DailyTasksPage = () => {
     if (!total) return 0;
     return Math.min(100, Math.round((processed / total) * 100));
   }, [backfillStatus]);
+
+  const backfillJobOptions = useMemo(() => [
+    { label: 'Все поддерживаемые джобы', value: 'all' },
+    ...jobs
+      .filter((job) => (
+        Object.prototype.hasOwnProperty.call(job, 'backfill_supported')
+          ? job.backfill_supported
+          : Boolean(BACKFILL_JOB_LABELS[job.id])
+      ))
+      .map((job) => ({
+        label: BACKFILL_JOB_LABELS[job.id] || job.name || job.id,
+        value: job.id,
+      })),
+  ], [jobs]);
 
   const columns = [
     {
@@ -359,7 +373,7 @@ const DailyTasksPage = () => {
           <div>
             <Text strong>Какие джобы запускать</Text>
             <Checkbox.Group
-              options={BACKFILL_JOB_OPTIONS}
+              options={backfillJobOptions}
               value={selectedBackfillJobs}
               onChange={handleBackfillJobsChange}
               style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8, marginTop: 8 }}
