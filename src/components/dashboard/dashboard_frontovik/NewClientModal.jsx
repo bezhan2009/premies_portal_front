@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Upload, message } from "antd";
-import { AlertTriangle, Camera, FileUp, SearchCheck, ShieldCheck, UserRound } from "lucide-react";
+import { Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
+import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
 import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import {
+  buildNewClientStatusReasons,
+  getComplianceLookupStateForScreening,
   isQuestionnaireFieldValid,
   isTerrorScreeningReady,
 } from "./newClientFormUtils.js";
@@ -57,6 +59,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   const [submitting, setSubmitting] = useState(false);
   const [complianceCheck, setComplianceCheck] = useState({
     state: "idle",
+    identifier: "",
     matched: false,
     listType: "",
   });
@@ -70,6 +73,13 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   const [clientDocumentList, setClientDocumentList] = useState([]);
   const watchedValues = Form.useWatch([], form);
   const values = useMemo(() => watchedValues || {}, [watchedValues]);
+  const screeningIdentifier = String(values.inn || "").replace(/\s/g, "");
+  const { pending: complianceLookupPending, isWhiteListed } =
+    getComplianceLookupStateForScreening({
+      identifier: screeningIdentifier,
+      isResident: values.is_resident,
+      complianceCheck,
+    });
 
   const totalComplianceScore = useMemo(() => {
     const getScore = (value) => Number(complianceScoreByValue[value]) || 0;
@@ -95,48 +105,21 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     };
   }, [values]);
 
-  const statusReasons = useMemo(() => {
-    const reasons = [];
-    if (complianceCheck.state === "loading") {
-      reasons.push({ tone: "checking", text: "Проверка ИНН по базе Compliance…" });
-    } else if (complianceCheck.state === "error") {
-      reasons.push({ tone: "danger", text: "Не удалось выполнить проверку Compliance" });
-    } else if (complianceCheck.state === "checked") {
-      if (!complianceCheck.matched) {
-        reasons.push({ tone: "success", text: "Клиент не найден в черных списках" });
-      } else if (complianceCheck.listType === "black") {
-        reasons.push({ tone: "danger", text: "Клиент в черных списках" });
-      } else if (complianceCheck.listType === "white") {
-        reasons.push({ tone: "success", text: "Клиент в белом списке" });
-      }
-    }
-
-    if (terrorScreening.state === "checking") {
-      reasons.push({ tone: "checking", text: "Проверка ФИО по внешнему списку…" });
-    } else if (terrorScreening.state === "error") {
-      reasons.push({ tone: "danger", text: "Внешняя проверка недоступна — отправка будет перепроверена сервером" });
-    } else if (terrorScreening.state === "matched") {
-      reasons.push({ tone: "danger", text: "Найдено совпадение в террористическом списке — заявка уйдёт в Compliance" });
-    } else if (terrorScreening.state === "clear") {
-      reasons.push({ tone: "success", text: "Совпадений в террористическом списке не найдено" });
-    }
-
-    if (values.is_resident === false) {
-      reasons.push({ tone: "warning", text: "Клиент нерезидент" });
-    }
-    if (values.fatca === true || values.apl_pzl === true) {
-      reasons.push({ tone: "warning", text: "Требуется проверка Compliance" });
-    }
-    if (reasons.length === 0) {
-      reasons.push({ tone: "neutral", text: "Заполните ИНН, ФИО и дату рождения для проверки" });
-    }
-    return reasons;
-  }, [complianceCheck, terrorScreening, values.apl_pzl, values.fatca, values.is_resident]);
+  const statusReasons = useMemo(
+    () => buildNewClientStatusReasons({
+      complianceCheck,
+      terrorScreening,
+      complianceLookupPending,
+      isWhiteListed,
+      values,
+    }),
+    [complianceCheck, complianceLookupPending, isWhiteListed, terrorScreening, values],
+  );
 
   useEffect(() => {
     if (!open) {
       form.resetFields();
-      setComplianceCheck({ state: "idle", matched: false, listType: "" });
+      setComplianceCheck({ state: "idle", identifier: "", matched: false, listType: "" });
       setTerrorScreening({ state: "idle", match: null });
       setClientPhotoList([]);
       setClientDocumentList([]);
@@ -208,13 +191,13 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   useEffect(() => {
     const identifier = String(values.inn || "").replace(/\s/g, "");
     if (!open || !/^\d{9,14}$/.test(identifier)) {
-      setComplianceCheck({ state: "idle", matched: false, listType: "" });
+      setComplianceCheck({ state: "idle", identifier: "", matched: false, listType: "" });
       return undefined;
     }
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setComplianceCheck({ state: "loading", matched: false, listType: "" });
+      setComplianceCheck({ state: "loading", identifier, matched: false, listType: "" });
       try {
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/compliance/client-check`, {
           method: "POST",
@@ -229,12 +212,13 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         const result = await response.json();
         setComplianceCheck({
           state: "checked",
+          identifier,
           matched: Boolean(result?.matched),
           listType: String(result?.list_type || "").toLowerCase(),
         });
       } catch (error) {
         if (error.name !== "AbortError") {
-          setComplianceCheck({ state: "error", matched: false, listType: "" });
+          setComplianceCheck({ state: "error", identifier, matched: false, listType: "" });
         }
       }
     }, 500);
@@ -252,7 +236,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       middleName: String(values.middle_name || "").trim(),
       birthDate: String(values.birth_date || "").trim(),
     };
-    if (!open || !isTerrorScreeningReady(screeningData)) {
+    if (!open || complianceLookupPending || isWhiteListed || !isTerrorScreeningReady(screeningData)) {
       setTerrorScreening({ state: "idle", match: null });
       return undefined;
     }
@@ -274,7 +258,15 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [open, values.birth_date, values.first_name, values.last_name, values.middle_name]);
+  }, [
+    complianceLookupPending,
+    isWhiteListed,
+    open,
+    values.birth_date,
+    values.first_name,
+    values.last_name,
+    values.middle_name,
+  ]);
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
@@ -320,7 +312,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       open={open}
       onCancel={onClose}
       footer={null}
-      width={1180}
+      width={1480}
       centered
       className="new-client-modal"
       destroyOnHidden
@@ -434,26 +426,6 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
               </Form.Item>
             </Col>
           </Row>
-          <div className={`new-client-terror-screening new-client-terror-screening--${terrorScreening.state}`}>
-            <span className="new-client-terror-screening__icon">
-              {terrorScreening.state === "matched" || terrorScreening.state === "error"
-                ? <AlertTriangle size={18} />
-                : <SearchCheck size={18} />}
-            </span>
-            <div>
-              <strong>Проверка по внешнему террористическому списку</strong>
-              {terrorScreening.state === "idle" && <small>Заполните фамилию, имя и дату рождения.</small>}
-              {terrorScreening.state === "checking" && <small>Выполняется проверка…</small>}
-              {terrorScreening.state === "clear" && <small>Совпадений не найдено.</small>}
-              {terrorScreening.state === "error" && <small>Сервис временно недоступен. Сервер повторит проверку при отправке.</small>}
-              {terrorScreening.state === "matched" && (
-                <small>
-                  Найдено совпадение{terrorScreening.match?.data?.full_name ? `: ${terrorScreening.match.data.full_name}` : ""}.
-                  После отправки заявка будет направлена на согласование Compliance.
-                </small>
-              )}
-            </div>
-          </div>
         </section>
 
         <section className="new-client-compliance-block">
@@ -464,14 +436,11 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           <div className="new-client-compliance-fields">
             {complianceCategories.map((field) => (
               <Form.Item key={field} label={complianceFieldLabels[field]} name={field} rules={[requiredRule]}>
-                <AutoComplete
+                <Select
                   options={complianceOptions[field] || []}
-                  filterOption={(inputValue, option) =>
-                    String(option?.label || option?.value || "")
-                      .toLowerCase()
-                      .includes(inputValue.toLowerCase())
-                  }
-                  placeholder="Выберите или введите значение"
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="Выберите значение"
                   allowClear
                 />
               </Form.Item>
@@ -527,7 +496,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
             type="primary"
             htmlType="button"
             loading={submitting}
-            disabled={terrorScreening.state === "checking"}
+            disabled={terrorScreening.state === "checking" && !isWhiteListed}
             onClick={() => form.submit()}
           >
             Отправить заявку
