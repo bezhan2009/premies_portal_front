@@ -22,6 +22,34 @@ export const submitFrontovikNewClient = async (questionnaire) => {
   return parseResponse(response);
 };
 
+export const fetchComplianceScoreOptions = async () => {
+  const response = await fetch(`${getBackendUrl()}/compliance/score-options`, {
+    headers: authHeaders(),
+  });
+  return parseResponse(response);
+};
+
+export const checkTerroristList = async (
+  { lastName, firstName, middleName, birthDate },
+  { signal, backendUrl } = {},
+) => {
+  const name = [lastName, firstName, middleName]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const bday = String(birthDate || "").trim();
+  if (!name || !bday) return null;
+
+  const response = await fetch(`${backendUrl || getBackendUrl()}/terror-list/best-match`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ name, bday }),
+    signal,
+  });
+  const result = await parseResponse(response);
+  return result?.match || null;
+};
+
 export const fetchMyComplianceRequests = async () => {
   const response = await fetch(`${getBackendUrl()}/frontovik/compliance-requests`, {
     headers: authHeaders(),

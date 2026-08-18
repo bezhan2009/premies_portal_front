@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Upload, message } from "antd";
-import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
-import { submitFrontovikNewClient } from "../../../api/complianceRequests.js";
+import { AlertTriangle, Camera, FileUp, SearchCheck, ShieldCheck, UserRound } from "lucide-react";
+import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 
 const requiredRule = { required: true, message: "Обязательное поле" };
@@ -42,7 +42,6 @@ const questionnaireFields = [
     return /^[A-Za-z0-9-]{5,32}$/.test(normalized);
   } },
   { name: "phone", label: "Номер телефона" },
-  { name: "source_of_funds", label: "Источник средств" },
   ...complianceCategories.map((name) => ({ name, label: complianceFieldLabels[name] })),
   { name: "is_resident", label: "Резидент", boolean: true },
   { name: "fatca", label: "FATCA", boolean: true },
@@ -63,6 +62,10 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     state: "idle",
     matched: false,
     listType: "",
+  });
+  const [terrorScreening, setTerrorScreening] = useState({
+    state: "idle",
+    match: null,
   });
   const [complianceOptions, setComplianceOptions] = useState({});
   const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
@@ -98,7 +101,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   const statusReasons = useMemo(() => {
     const reasons = [];
     if (complianceCheck.state === "loading") {
-      reasons.push({ tone: "checking", text: "Проверка по базе Compliance…" });
+      reasons.push({ tone: "checking", text: "Проверка ИНН по базе Compliance…" });
     } else if (complianceCheck.state === "error") {
       reasons.push({ tone: "danger", text: "Не удалось выполнить проверку Compliance" });
     } else if (complianceCheck.state === "checked") {
@@ -111,6 +114,16 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       }
     }
 
+    if (terrorScreening.state === "checking") {
+      reasons.push({ tone: "checking", text: "Проверка ФИО по внешнему списку…" });
+    } else if (terrorScreening.state === "error") {
+      reasons.push({ tone: "danger", text: "Внешняя проверка недоступна — отправка будет перепроверена сервером" });
+    } else if (terrorScreening.state === "matched") {
+      reasons.push({ tone: "danger", text: "Найдено совпадение в террористическом списке — заявка уйдёт в Compliance" });
+    } else if (terrorScreening.state === "clear") {
+      reasons.push({ tone: "success", text: "Совпадений в террористическом списке не найдено" });
+    }
+
     if (values.is_resident === false) {
       reasons.push({ tone: "warning", text: "Клиент нерезидент" });
     }
@@ -118,15 +131,16 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       reasons.push({ tone: "warning", text: "Требуется проверка Compliance" });
     }
     if (reasons.length === 0) {
-      reasons.push({ tone: "neutral", text: "Статус появится после заполнения ИНН" });
+      reasons.push({ tone: "neutral", text: "Заполните ИНН, ФИО и дату рождения для проверки" });
     }
     return reasons;
-  }, [complianceCheck, values.apl_pzl, values.fatca, values.is_resident]);
+  }, [complianceCheck, terrorScreening, values.apl_pzl, values.fatca, values.is_resident]);
 
   useEffect(() => {
     if (!open) {
       form.resetFields();
       setComplianceCheck({ state: "idle", matched: false, listType: "" });
+      setTerrorScreening({ state: "idle", match: null });
       setClientPhotoList([]);
       setClientDocumentList([]);
     }
@@ -233,6 +247,37 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       controller.abort();
     };
   }, [open, values.inn]);
+
+  useEffect(() => {
+    const screeningData = {
+      lastName: String(values.last_name || "").trim(),
+      firstName: String(values.first_name || "").trim(),
+      middleName: String(values.middle_name || "").trim(),
+      birthDate: String(values.birth_date || "").trim(),
+    };
+    if (!open || !Object.values(screeningData).every(Boolean)) {
+      setTerrorScreening({ state: "idle", match: null });
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setTerrorScreening({ state: "checking", match: null });
+      try {
+        const match = await checkTerroristList(screeningData, { signal: controller.signal });
+        setTerrorScreening({ state: match ? "matched" : "clear", match });
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setTerrorScreening({ state: "error", match: null });
+        }
+      }
+    }, 650);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, values.birth_date, values.first_name, values.last_name, values.middle_name]);
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
@@ -391,12 +436,27 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                 <Input maxLength={20} placeholder="992XXXXXXXXX" />
               </Form.Item>
             </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Источник средств" name="source_of_funds" rules={[requiredRule]}>
-                <Input maxLength={255} placeholder="Например, заработная плата" />
-              </Form.Item>
-            </Col>
           </Row>
+          <div className={`new-client-terror-screening new-client-terror-screening--${terrorScreening.state}`}>
+            <span className="new-client-terror-screening__icon">
+              {terrorScreening.state === "matched" || terrorScreening.state === "error"
+                ? <AlertTriangle size={18} />
+                : <SearchCheck size={18} />}
+            </span>
+            <div>
+              <strong>Проверка по внешнему террористическому списку</strong>
+              {terrorScreening.state === "idle" && <small>Заполните фамилию, имя, отчество и дату рождения.</small>}
+              {terrorScreening.state === "checking" && <small>Выполняется проверка…</small>}
+              {terrorScreening.state === "clear" && <small>Совпадений не найдено.</small>}
+              {terrorScreening.state === "error" && <small>Сервис временно недоступен. Сервер повторит проверку при отправке.</small>}
+              {terrorScreening.state === "matched" && (
+                <small>
+                  Найдено совпадение{terrorScreening.match?.data?.full_name ? `: ${terrorScreening.match.data.full_name}` : ""}.
+                  После отправки заявка будет направлена на согласование Compliance.
+                </small>
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="new-client-compliance-block">
@@ -466,8 +526,14 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
 
         <div className="new-client-modal__actions">
           <Button htmlType="button" onClick={onClose} disabled={submitting}>Отмена</Button>
-          <Button type="primary" htmlType="button" loading={submitting} onClick={() => form.submit()}>
-            Отправить анкету
+          <Button
+            type="primary"
+            htmlType="button"
+            loading={submitting}
+            disabled={terrorScreening.state === "checking"}
+            onClick={() => form.submit()}
+          >
+            Отправить заявку
           </Button>
         </div>
       </Form>

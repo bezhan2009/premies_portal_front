@@ -7,6 +7,7 @@ import {
     getClientDocumentTypeLabel,
     resolveClientDocumentUrl,
 } from "../../../utils/clientDocuments.js";
+import { formatComplianceCreatedAt } from "../../../utils/complianceRequests.js";
 import "../../../styles/ComplianceRequests.scss";
 
 const { Text } = Typography;
@@ -39,7 +40,7 @@ const detailCards = (selectedRequest, selectedApp, appFullName) => [
     { icon: CreditCard, label: "Карта", value: selectedApp?.card_name || selectedRequest.client_full_name || appFullName },
     { icon: Hash, label: "ИНН", value: selectedRequest.client_identifier || selectedApp?.inn },
     { icon: Building2, label: "Офис получения", value: selectedApp?.receiving_office || selectedApp?.office_name || selectedApp?.department_name },
-    { icon: CalendarDays, label: "Дата создания", value: formatDateTime(selectedRequest.created_at || selectedApp?.CreatedAt) },
+    { icon: CalendarDays, label: "Дата создания", value: formatComplianceCreatedAt(selectedRequest.created_at || selectedApp?.CreatedAt) },
     { icon: Eye, label: "Оператор", value: selectedRequest.creator_username || selectedApp?.request_creator || selectedApp?.request_сreator },
 ];
 
@@ -49,14 +50,13 @@ const complianceInfoRows = (selectedRequest) => [
     ["FATCA", yesNo(selectedRequest.fatca)],
     ["АПЛ/ПЗЛ", yesNo(selectedRequest.apl_pzl)],
     ["Род деятельности", selectedRequest.client_occupation],
-    ["Источник средств", selectedRequest.net_worth],
     ["Метод открытия счета", selectedRequest.monthly_income],
     ["Сумма ежемесячных транзакций", selectedRequest.total_outgoing_transactions_amount],
     ["Количество ежемесячных транзакций", selectedRequest.total_outgoing_transactions_count],
     ["Сумма кассовых сделок", selectedRequest.total_cash_transactions_amount],
     ["Количество кассовых сделок", selectedRequest.total_cash_transactions_count],
     ["Балл Compliance", selectedRequest.compliance_score ?? 0],
-    ["Совпадение Compliance", selectedRequest.compliance_matched ? "Найдено" : "Не найдено"],
+    ["Совпадение по спискам", selectedRequest.compliance_matched ? "Найдено" : "Не найдено"],
 ];
 
 const findDocumentByType = (documents, type) =>
@@ -276,6 +276,13 @@ export default function ComplianceRequests() {
             key: "id",
         },
         {
+            title: "Дата создания",
+            dataIndex: "created_at",
+            key: "created_at",
+            width: 160,
+            render: formatComplianceCreatedAt,
+        },
+        {
             title: "ФИО Клиента",
             dataIndex: "client_full_name",
             key: "client_full_name",
@@ -347,7 +354,6 @@ export default function ComplianceRequests() {
             render: (_, record) => (
                 <Space direction="vertical" size="small">
                     <Text>Занятость: {emptyValue(record.client_occupation)}</Text>
-                    <Text>Оборот: {emptyValue(record.net_worth)}</Text>
                     <Text>Метод открытия: {emptyValue(record.monthly_income)}</Text>
                     <Text>Транзакции (Сумма/Кол-во): {emptyValue(record.total_outgoing_transactions_amount)} / {emptyValue(record.total_outgoing_transactions_count)}</Text>
                     <Text>Касса (Сумма/Кол-во): {emptyValue(record.total_cash_transactions_amount)} / {emptyValue(record.total_cash_transactions_count)}</Text>
