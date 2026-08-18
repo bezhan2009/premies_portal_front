@@ -63,6 +63,7 @@ import {
     normalizeClientData,
     formatPhoneNumber as formatPhoneNumberUtil,
     copyToClipboard as copyToClipboardUtil,
+    resolveClientSearch,
 } from "./absSearchUtils.js";
 import {
     getClientSelfieDocument,
@@ -431,13 +432,21 @@ export default function ABSClientSearch() {
         if (searchInFlightRef.current) return;
         searchInFlightRef.current = true;
 
-        let formattedPhone = searchValue.trim();
+        const resolvedSearch = resolveClientSearch(searchValue, searchType);
+        const formattedPhone = resolvedSearch.searchValue;
+        const effectiveSearchType = resolvedSearch.searchType;
+
+        if (effectiveSearchType !== searchType) {
+            setSelectTypeSearchClient(effectiveSearchType);
+            setPhoneNumber(formattedPhone);
+            setDisplayPhone(formattedPhone);
+        }
 
         if (!options.remote) {
             publishLiveWorkflowPageState({
                 kind: "frontovik.search",
                 searchValue: formattedPhone,
-                searchType,
+                searchType: effectiveSearchType,
                 activeTab,
             });
         }
@@ -445,7 +454,7 @@ export default function ABSClientSearch() {
         // Log audit action
         logAuditAction({
             action: "Поиск клиента",
-            details: `Поиск клиента по типу '${searchType}' со значением '${formattedPhone}'`
+            details: `Поиск клиента по типу '${effectiveSearchType}' со значением '${formattedPhone}'`
         });
 
         try {
@@ -456,12 +465,12 @@ export default function ABSClientSearch() {
             const token = localStorage.getItem("access_token");
 
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
-                (t) => t.value === searchType,
+                (t) => t.value === effectiveSearchType,
             );
 
             if (searchTypeIndex === 0 || (searchTypeIndex >= 3 && searchTypeIndex <= 6)) {
                 const clientCodes = await searchViaATMService(
-                    searchType,
+                    effectiveSearchType,
                     formattedPhone,
                 );
 
@@ -515,7 +524,7 @@ export default function ABSClientSearch() {
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
-                const apiUrl = `${API_BASE_URL}/${searchType}${formattedPhone}`;
+                const apiUrl = `${API_BASE_URL}/${effectiveSearchType}${formattedPhone}`;
 
                 const response = await fetch(apiUrl, {
                     method: "GET",
@@ -543,13 +552,13 @@ export default function ABSClientSearch() {
                         normalizeClientData(client, TYPE_SEARCH_CLIENT[0].value)
                     );
                 } else if (searchTypeIndex === 1) {
-                    normalizedData = [normalizeClientData(data, searchType)];
+                    normalizedData = [normalizeClientData(data, effectiveSearchType)];
                 } else if (searchTypeIndex === 2) {
                     normalizedData = Array.isArray(data)
                         ? data.map((client) =>
-                            normalizeClientData(client, searchType),
+                            normalizeClientData(client, effectiveSearchType),
                         )
-                        : [normalizeClientData(data, searchType)];
+                        : [normalizeClientData(data, effectiveSearchType)];
                 }
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);

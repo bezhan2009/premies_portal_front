@@ -49,3 +49,38 @@ test("checkTerroristList sends full name and birth date to the backend screening
     globalThis.localStorage = originalLocalStorage;
   }
 });
+
+test("checkTerroristList omits an empty middle name without extra spaces", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalLocalStorage = globalThis.localStorage;
+  let requestBody;
+
+  globalThis.localStorage = { getItem: () => "test-token" };
+  globalThis.fetch = async (_url, options) => {
+    requestBody = JSON.parse(options.body);
+    return new Response(JSON.stringify({ match: null }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  try {
+    await checkTerroristList(
+      {
+        lastName: " Иванов ",
+        firstName: " Иван ",
+        middleName: "  ",
+        birthDate: "1990-01-01",
+      },
+      { backendUrl: "http://backend.test" },
+    );
+
+    assert.deepEqual(requestBody, {
+      name: "Иванов Иван",
+      bday: "1990-01-01",
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.localStorage = originalLocalStorage;
+  }
+});

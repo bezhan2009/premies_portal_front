@@ -3,6 +3,10 @@ import { AutoComplete, Button, Col, Form, Input, Modal, Progress, Radio, Row, Up
 import { AlertTriangle, Camera, FileUp, SearchCheck, ShieldCheck, UserRound } from "lucide-react";
 import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
+import {
+  isQuestionnaireFieldValid,
+  isTerrorScreeningReady,
+} from "./newClientFormUtils.js";
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
@@ -31,7 +35,7 @@ const complianceFieldLabels = {
 const questionnaireFields = [
   { name: "last_name", label: "Фамилия" },
   { name: "first_name", label: "Имя" },
-  { name: "middle_name", label: "Отчество" },
+  { name: "middle_name", label: "Отчество", optional: true },
   { name: "birth_date", label: "Дата рождения", validate: (value) => {
     const date = new Date(value);
     return Boolean(value) && !Number.isNaN(date.getTime()) && date <= new Date();
@@ -47,13 +51,6 @@ const questionnaireFields = [
   { name: "fatca", label: "FATCA", boolean: true },
   { name: "apl_pzl", label: "АПЛ/ПЗЛ", boolean: true },
 ];
-
-const isQuestionnaireFieldValid = (field, values) => {
-  const value = values?.[field.name];
-  if (field.boolean) return typeof value === "boolean";
-  if (field.validate) return field.validate(value, values || {});
-  return String(value || "").trim().length > 0;
-};
 
 export default function NewClientModal({ open, onClose, onSubmitted }) {
   const [form] = Form.useForm();
@@ -255,7 +252,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       middleName: String(values.middle_name || "").trim(),
       birthDate: String(values.birth_date || "").trim(),
     };
-    if (!open || !Object.values(screeningData).every(Boolean)) {
+    if (!open || !isTerrorScreeningReady(screeningData)) {
       setTerrorScreening({ state: "idle", match: null });
       return undefined;
     }
@@ -398,7 +395,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Отчество" name="middle_name" rules={[requiredRule]}>
+              <Form.Item label="Отчество (необязательно)" name="middle_name">
                 <Input maxLength={100} placeholder="Введите отчество" />
               </Form.Item>
             </Col>
@@ -445,7 +442,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
             </span>
             <div>
               <strong>Проверка по внешнему террористическому списку</strong>
-              {terrorScreening.state === "idle" && <small>Заполните фамилию, имя, отчество и дату рождения.</small>}
+              {terrorScreening.state === "idle" && <small>Заполните фамилию, имя и дату рождения.</small>}
               {terrorScreening.state === "checking" && <small>Выполняется проверка…</small>}
               {terrorScreening.state === "clear" && <small>Совпадений не найдено.</small>}
               {terrorScreening.state === "error" && <small>Сервис временно недоступен. Сервер повторит проверку при отправке.</small>}
