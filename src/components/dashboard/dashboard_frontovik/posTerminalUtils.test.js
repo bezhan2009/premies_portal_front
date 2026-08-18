@@ -6,8 +6,10 @@ import {
   findPosAccountBalance,
   historyAtmIds,
   isLatestClientProductRequest,
+  isLatestRequestGeneration,
   parsePosHistoryQuery,
   formatPosHistoryRows,
+  resolveTransactionsSearchType,
   selectionState,
 } from "./posTerminalUtils.js";
 
@@ -69,6 +71,11 @@ test("stale product response cannot update a different selected client", () => {
   assert.equal(isLatestClientProductRequest(4, 4, "10026", "10025"), false);
 });
 
+test("only the latest generic request generation may update state", () => {
+  assert.equal(isLatestRequestGeneration(7, 7), true);
+  assert.equal(isLatestRequestGeneration(8, 7), false);
+});
+
 test("POS history query requires client code and concrete ATM IDs", () => {
   assert.deepEqual(parsePosHistoryQuery(" 10025 ", "30000374,30000373,30000374"), {
     clientCode: "10025",
@@ -80,6 +87,12 @@ test("POS history query requires client code and concrete ATM IDs", () => {
     atmIds: [],
     isPosHistory: false,
   });
+});
+
+test("transaction search returns to a valid ordinary mode after POS query removal", () => {
+  assert.equal(resolveTransactionsSearchType("cardId", true), "posHistory");
+  assert.equal(resolveTransactionsSearchType("posHistory", false), "cardId");
+  assert.equal(resolveTransactionsSearchType("atmId", false), "atmId");
 });
 
 test("POS history rows accept processing field aliases without deduplication", () => {

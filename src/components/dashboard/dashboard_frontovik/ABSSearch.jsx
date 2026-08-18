@@ -61,6 +61,7 @@ import { fetchMerchantPosTerminals } from "../../../api/merchantPosTerminals.js"
 import {
     historyAtmIds,
     isLatestClientProductRequest,
+    isLatestRequestGeneration,
 } from "./posTerminalUtils.js";
 
 // Utilities
@@ -118,6 +119,7 @@ export default function ABSClientSearch() {
     const [posTerminalsClientCode, setPosTerminalsClientCode] = useState("");
     const [isProductDataLoading, setIsProductDataLoading] = useState(false);
     const productRequestGenerationRef = useRef(0);
+    const pinRequirementGenerationRef = useRef(0);
     const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
         TYPE_SEARCH_CLIENT[0].value,
     );
@@ -357,6 +359,7 @@ export default function ABSClientSearch() {
         setPosTerminalsClientCode("");
         setIsProductDataLoading(false);
         productRequestGenerationRef.current += 1;
+        pinRequirementGenerationRef.current += 1;
         setIsMobile(null);
         setTelegramData(null);
         setClientDocuments([]);
@@ -688,22 +691,6 @@ export default function ABSClientSearch() {
                 console.log("[ABSSearch] Client already enriched. DetailedAddresses:", client.DetailedAddresses);
             }
 
-            const [resCards, resAcc, resCredits, resDeposits, resPosTerminals] = await Promise.all([
-                getUserCards(clientCode),
-                getUserAccounts(clientCode),
-                getUserCredits(clientCode),
-                getUserDeposits(clientCode),
-                fetchMerchantPosTerminals(clientCode).catch((error) => {
-                    console.error("[ABSSearch] Failed to load POS terminals:", error);
-                    if (isCurrentRequest()) {
-                        showAlert("Не удалось загрузить POS-терминалы", "error");
-                    }
-                    return [];
-                }),
-            ]);
-
-            if (!isCurrentRequest()) return;
-
             const normalizeArrayResponse = (response) => {
                 if (Array.isArray(response)) return response;
                 if (Array.isArray(response?.data)) return response.data;
@@ -712,14 +699,53 @@ export default function ABSClientSearch() {
                 return [];
             };
 
-            const normalizedAcc = normalizeArrayResponse(resAcc);
-            const normalizedCredits = normalizeArrayResponse(resCredits);
-            const normalizedDeposits = normalizeArrayResponse(resDeposits);
-            const normalizedPosTerminals = normalizeArrayResponse(resPosTerminals);
+            const posRequest = fetchMerchantPosTerminals(clientCode)
+                .then((response) => {
+                    if (!isCurrentRequest()) return;
+                    setPosTerminals(normalizeArrayResponse(response));
+                    setPosTerminalsClientCode(clientCode);
+                })
+                .catch((error) => {
+                    console.error("[ABSSearch] Failed to load POS terminals:", error);
+                    if (!isCurrentRequest()) return;
+                    setPosTerminals([]);
+                    setPosTerminalsClientCode(clientCode);
+                    showAlert("Не удалось загрузить POS-терминалы", "error");
+                });
+
+            const [cardsResult, accountsResult, creditsResult, depositsResult] = await Promise.allSettled([
+                getUserCards(clientCode),
+                getUserAccounts(clientCode),
+                getUserCredits(clientCode),
+                getUserDeposits(clientCode),
+            ]);
+
+            if (!isCurrentRequest()) return;
+
+            const fulfilledArray = (result, label) => {
+                if (result.status === "fulfilled") {
+                    return normalizeArrayResponse(result.value);
+                }
+                console.error(`[ABSSearch] Failed to load ${label}:`, result.reason);
+                return [];
+            };
+
+            const normalizedCards = fulfilledArray(cardsResult, "cards");
+            const normalizedAcc = fulfilledArray(accountsResult, "accounts");
+            const normalizedCredits = fulfilledArray(creditsResult, "credits");
+            const normalizedDeposits = fulfilledArray(depositsResult, "deposits");
+
+            const failedAbsRequests = [
+                cardsResult,
+                accountsResult,
+                creditsResult,
+                depositsResult,
+            ].filter((result) => result.status === "rejected").length;
+            if (failedAbsRequests > 0) {
+                showAlert("Не удалось загрузить часть данных клиента", "error");
+            }
 
             setAccountsData(normalizedAcc);
-            setPosTerminals(normalizedPosTerminals);
-            setPosTerminalsClientCode(clientCode);
             
             if (normalizedCredits.length > 0) {
                 const enrichedCredits = await Promise.all(
@@ -745,9 +771,9 @@ export default function ABSClientSearch() {
             if (!isCurrentRequest()) return;
             setDepositsData(normalizedDeposits);
 
-            if (resCards && resCards.length > 0) {
+            if (normalizedCards.length > 0) {
                 const enrichedCards = await Promise.all(
-                    resCards.map(async (card) => {
+                    normalizedCards.map(async (card) => {
                         try {
                             const [details, services] = await Promise.all([
                                 fetchCardDetails(card.cardId),
@@ -785,12 +811,11 @@ export default function ABSClientSearch() {
             } else {
                 setCardsData([]);
             }
+            await posRequest;
         } catch (error) {
             if (!isCurrentRequest()) return;
             console.error("Error fetching user cards/accounts:", error);
             showAlert("Ошибка при получении данных карт/счетов", "error");
-            setPosTerminals([]);
-            setPosTerminalsClientCode(clientCode);
         } finally {
             if (isCurrentRequest()) setIsProductDataLoading(false);
         }
@@ -1716,17 +1741,32 @@ export default function ABSClientSearch() {
     };
 
     useEffect(() => {
+        const requestGeneration = pinRequirementGenerationRef.current + 1;
+        pinRequirementGenerationRef.current = requestGeneration;
+        let cancelled = false;
+
         const checkAndGetData = async () => {
             const currentClient = selectedClientRef.current;
-            const clientCode = currentClient?.client_code;
+            const clientCode = String(currentClient?.client_code || "").trim();
             if (!clientCode) return;
 
+            const isCurrentCheck = () =>
+                !cancelled &&
+                isLatestRequestGeneration(
+                    pinRequirementGenerationRef.current,
+                    requestGeneration,
+                ) &&
+                String(selectedClientRef.current?.client_code || "").trim() === clientCode;
+
             if (verifiedClientCodes.includes(clientCode)) {
-                handleGetDataUser(currentClient, selectedClientIndex);
+                if (isCurrentCheck()) {
+                    handleGetDataUser(currentClient, selectedClientIndex);
+                }
                 return;
             }
 
             const requiresPin = await checkPinRequired(clientCode);
+            if (!isCurrentCheck()) return;
             if (requiresPin) {
                 productRequestGenerationRef.current += 1;
                 setCardsData([]);
@@ -1743,6 +1783,9 @@ export default function ABSClientSearch() {
         };
 
         checkAndGetData();
+        return () => {
+            cancelled = true;
+        };
     }, [selectedClient?.client_code, selectedClientIndex, verifiedClientCodes, handleGetDataUser]);
 
     // Восстановление состояния
@@ -1792,6 +1835,7 @@ export default function ABSClientSearch() {
         setPosTerminalsClientCode("");
         setIsProductDataLoading(false);
         productRequestGenerationRef.current += 1;
+        pinRequirementGenerationRef.current += 1;
         void handleSearchClientRef.current?.(clientIndex, clientIndexSearchType);
     }, [requestedClientIndex, setSearchParams]);
 

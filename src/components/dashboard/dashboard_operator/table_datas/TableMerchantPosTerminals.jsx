@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   Form,
@@ -6,11 +6,11 @@ import {
   Modal,
   Popconfirm,
   Space,
+  Table,
   message,
 } from "antd";
 import { EditOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 
-import { Table } from "../../../table/FlexibleAntTable.jsx";
 import {
   createMerchantPosTerminal,
   deleteMerchantPosTerminal,
@@ -42,8 +42,11 @@ const TableMerchantPosTerminals = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const loadGenerationRef = useRef(0);
 
   const loadItems = useCallback(async () => {
+    const requestGeneration = loadGenerationRef.current + 1;
+    loadGenerationRef.current = requestGeneration;
     setLoading(true);
     try {
       const data = await fetchMerchantPosTerminalList({
@@ -53,18 +56,25 @@ const TableMerchantPosTerminals = () => {
         sortBy,
         sortOrder,
       });
+      if (loadGenerationRef.current !== requestGeneration) return;
       setItems(Array.isArray(data?.items) ? data.items : []);
       setTotal(Number(data?.total) || 0);
     } catch (error) {
+      if (loadGenerationRef.current !== requestGeneration) return;
       setItems([]);
       message.error(getErrorMessage(error, "Не удалось загрузить POS-терминалы"));
     } finally {
-      setLoading(false);
+      if (loadGenerationRef.current === requestGeneration) {
+        setLoading(false);
+      }
     }
   }, [limit, page, search, sortBy, sortOrder]);
 
   useEffect(() => {
     loadItems();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadItems]);
 
   const openCreate = () => {
@@ -132,16 +142,25 @@ const TableMerchantPosTerminals = () => {
     }
   };
 
+  const sortableColumn = (title, dataIndex) => ({
+    title,
+    dataIndex,
+    key: dataIndex,
+    sorter: true,
+    sortOrder:
+      sortBy === dataIndex ? (sortOrder === "asc" ? "ascend" : "descend") : null,
+  });
+
   const columns = [
-    { title: "ATM ID", dataIndex: "atm_id", key: "atm_id" },
-    { title: "Счёт", dataIndex: "account_number", key: "account_number" },
-    { title: "Код клиента", dataIndex: "client_code", key: "client_code" },
-    { title: "Адрес", dataIndex: "address", key: "address" },
-    { title: "ИНН", dataIndex: "inn", key: "inn" },
+    sortableColumn("ATM ID", "atm_id"),
+    sortableColumn("Счёт", "account_number"),
+    sortableColumn("Код клиента", "client_code"),
+    sortableColumn("Адрес", "address"),
+    sortableColumn("ИНН", "inn"),
     {
       title: "Действия",
       key: "actions",
-      sortable: false,
+      sorter: false,
       render: (_, terminal) => (
         <Space>
           <Button
@@ -191,7 +210,6 @@ const TableMerchantPosTerminals = () => {
       />
 
       <Table
-        tableId="operator-merchant-pos-terminals"
         columns={columns}
         dataSource={items}
         rowKey="atm_id"

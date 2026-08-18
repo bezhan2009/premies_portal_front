@@ -57,6 +57,14 @@ export const isLatestClientProductRequest = (
   activeGeneration === requestGeneration &&
   String(activeClientCode ?? "").trim() === String(requestClientCode ?? "").trim();
 
+export const isLatestRequestGeneration = (activeGeneration, requestGeneration) =>
+  activeGeneration === requestGeneration;
+
+export const resolveTransactionsSearchType = (currentSearchType, isPosHistory) => {
+  if (isPosHistory) return "posHistory";
+  return currentSearchType === "posHistory" ? "cardId" : currentSearchType;
+};
+
 export const parsePosHistoryQuery = (rawClientCode, rawAtmIds) => {
   const clientCode = String(rawClientCode ?? "").trim();
   const atmIds = historyAtmIds(String(rawAtmIds ?? "").split(","));

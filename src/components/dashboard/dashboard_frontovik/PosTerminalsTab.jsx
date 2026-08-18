@@ -127,7 +127,7 @@ const PosTerminalsTab = ({
 
               <div className="pos-terminal-card__address">
                 <MapPin size={16} />
-                <span>{terminal.address || "Адрес не указан"}</span>
+                <span>{terminal.address || "—"}</span>
               </div>
 
               <div className="card-actions-bar pos-terminal-card__actions">
@@ -193,7 +193,7 @@ const PosTerminalsTab = ({
                     onChange={(event) => toggleATM(atmID, event.target.checked)}
                   />
                   <strong>{atmID}</strong>
-                  <span><MapPin size={15} /> {terminal.address || "Адрес не указан"}</span>
+                  <span><MapPin size={15} /> {terminal.address || "—"}</span>
                 </label>
               );
             })}

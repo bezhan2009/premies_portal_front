@@ -30,6 +30,7 @@ import { fetchMerchantPosHistory } from "../../../../api/merchantPosTerminals.js
 import {
   formatPosHistoryRows,
   parsePosHistoryQuery,
+  resolveTransactionsSearchType,
 } from "../../dashboard_frontovik/posTerminalUtils.js";
 
 const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
@@ -543,12 +544,19 @@ export default function DashboardOperatorProcessingTransactions() {
 
   const automaticPosRequestRef = useRef("");
   useEffect(() => {
-    if (!posHistory.isPosHistory) {
+    const nextSearchType = resolveTransactionsSearchType(
+      searchType,
+      posHistory.isPosHistory,
+    );
+    if (nextSearchType !== searchType) {
       automaticPosRequestRef.current = "";
+      setSearchType(nextSearchType);
+      setTransactions([]);
+      setShowChart(false);
       return;
     }
-    if (searchType !== "posHistory") {
-      setSearchType("posHistory");
+    if (!posHistory.isPosHistory) {
+      automaticPosRequestRef.current = "";
       return;
     }
     if (!fromDate || !toDate) return;
@@ -1317,6 +1325,14 @@ export default function DashboardOperatorProcessingTransactions() {
                     >
                       Очистить
                     </button>
+                    {posHistory.isPosHistory && transactions.length > 0 && (
+                      <button
+                        onClick={() => setShowChart(!showChart)}
+                        className="search-card__button"
+                      >
+                        {showChart ? "Скрыть график" : "Отобразить график"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1380,7 +1396,7 @@ export default function DashboardOperatorProcessingTransactions() {
             </div>
           )}
 
-          {!!id && transactions.length > 0 && showChart && (
+          {(!!id || posHistory.isPosHistory) && transactions.length > 0 && showChart && (
             <div className="txn-stats__chart" style={{ marginBottom: "20px", width: "100%" }}>
               <TransactionsChart transactions={transactionTableData} />
             </div>
