@@ -8,6 +8,182 @@
   text-align: left;
 }
 
+.frontovik-products-loading {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+}
+
+.pos-terminals-count {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pos-terminals-grid {
+  align-items: stretch;
+}
+
+.pos-terminal-card {
+  min-height: 340px;
+  padding: 24px;
+}
+
+.pos-terminal-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  h4 {
+    margin: 0 0 6px;
+    color: #0f172a;
+    font-size: 19px;
+  }
+}
+
+.pos-terminal-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 16px;
+  color: #b20d2f;
+  background: rgba(178, 13, 47, 0.1);
+}
+
+.pos-terminal-card__atm {
+  color: #475569;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pos-terminal-card__details {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(150px, 1fr);
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.pos-terminal-card__field {
+  min-width: 0;
+
+  > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  > strong {
+    color: #0f172a;
+    font-size: 18px;
+  }
+}
+
+.pos-terminal-card__account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  strong {
+    overflow-wrap: anywhere;
+    color: #0f172a;
+    font-size: 17px;
+    font-family: monospace;
+  }
+}
+
+.pos-terminal-copy {
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pos-terminal-card__balance {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+
+  em {
+    color: #27ae60;
+    font-style: normal;
+  }
+}
+
+.pos-terminal-card__address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  margin-top: 22px;
+  color: #64748b;
+}
+
+.pos-terminal-card__actions {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.pos-history-selector {
+  padding-top: 6px;
+}
+
+.pos-history-selector__list {
+  max-height: 360px;
+  margin-top: 16px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.pos-history-selector__row {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 0.6fr) minmax(180px, 1.4fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  > span:last-child {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748b;
+  }
+}
+
+@media (max-width: 680px) {
+  .pos-terminal-card__details {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-terminal-card__actions {
+    flex-direction: column;
+  }
+
+  .pos-history-selector__row {
+    grid-template-columns: auto 1fr;
+
+    > span:last-child {
+      grid-column: 2;
+    }
+  }
+}
+
 /* MainLayout already owns page scrolling. Keep ABS search in that single flow. */
 .abs-search-layout {
   min-width: 0;

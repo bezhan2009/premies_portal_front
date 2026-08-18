@@ -19,6 +19,8 @@ import {
   isUsdCredit,
 } from "../../../utils/creditDebtBalance.js";
 import activeLogoImg from "../../../assets/new_logo.png";
+import PosTerminalsTab from "./PosTerminalsTab.jsx";
+import { buildFrontovikTabs } from "./posTerminalUtils.js";
 
 const getPcStatusData = (code) => {
   const statusMap = {
@@ -231,6 +233,9 @@ const ClientDataTabs = ({
   isMobile,
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
+  posTerminals = [],
+  handleNavigateToPosHistory,
+  hasPosHistoryAccess,
 }) => {
   const depositsRows =
     Array.isArray(sortedDeposits) && sortedDeposits.length > 0
@@ -997,36 +1002,26 @@ const ClientDataTabs = ({
       
       {/* ── TABS NAVIGATION BAR ── */}
       <div className="abs-tabs-navigation">
-        <button
-          className={`abs-tab-trigger-btn ${activeTab === "cards" ? "active" : ""}`}
-          onClick={() => setActiveTab("cards")}
-        >
-          Карты ({cardsData?.length || 0})
-        </button>
-        <button
-          className={`abs-tab-trigger-btn ${activeTab === "accounts" ? "active" : ""}`}
-          onClick={() => setActiveTab("accounts")}
-        >
-          Счета ({accountsData?.length || 0})
-        </button>
-        <button
-          className={`abs-tab-trigger-btn ${activeTab === "credits" ? "active" : ""}`}
-          onClick={() => setActiveTab("credits")}
-        >
-          Кредиты ({creditsData?.length || 0})
-        </button>
-        <button
-          className={`abs-tab-trigger-btn ${activeTab === "deposits" ? "active" : ""}`}
-          onClick={() => setActiveTab("deposits")}
-        >
-          Депозиты ({depositsData?.length || 0})
-        </button>
-        <button
-          className={`abs-tab-trigger-btn ${activeTab === "info" ? "active" : ""}`}
-          onClick={() => setActiveTab("info")}
-        >
-          Информация
-        </button>
+        {buildFrontovikTabs(posTerminals).map((tab) => {
+          const countByKey = {
+            cards: cardsData?.length || 0,
+            credits: creditsData?.length || 0,
+            accounts: accountsData?.length || 0,
+            deposits: depositsData?.length || 0,
+            pos: posTerminals.length,
+          };
+          const count = countByKey[tab.key];
+          return (
+            <button
+              type="button"
+              key={tab.key}
+              className={`abs-tab-trigger-btn ${activeTab === tab.key ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}{count !== undefined ? ` (${count})` : ""}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── TABS CONTENT WINDOW ── */}
@@ -2030,6 +2025,18 @@ const ClientDataTabs = ({
               </>
             )}
           </div>
+        )}
+
+        {activeTab === "pos" && (
+          <PosTerminalsTab
+            terminals={posTerminals}
+            accounts={accountsData}
+            selectedClient={selectedClient}
+            onOpenStatement={handleNavigateToAccountOperations}
+            onOpenHistory={handleNavigateToPosHistory}
+            canOpenStatement={hasAccountOperationsAccess}
+            canOpenHistory={hasPosHistoryAccess}
+          />
         )}
 
         {/* Client Info Detailed Tab */}

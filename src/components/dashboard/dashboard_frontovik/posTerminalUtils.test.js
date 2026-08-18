@@ -5,6 +5,7 @@ import {
   buildFrontovikTabs,
   findPosAccountBalance,
   historyAtmIds,
+  isLatestClientProductRequest,
   selectionState,
 } from "./posTerminalUtils.js";
 
@@ -58,4 +59,10 @@ test("history ATM payload preserves first selection order and only removes dupli
     "30000374",
     "30000373",
   ]);
+});
+
+test("stale product response cannot update a different selected client", () => {
+  assert.equal(isLatestClientProductRequest(4, 4, "10025", "10025"), true);
+  assert.equal(isLatestClientProductRequest(5, 4, "10025", "10025"), false);
+  assert.equal(isLatestClientProductRequest(4, 4, "10026", "10025"), false);
 });

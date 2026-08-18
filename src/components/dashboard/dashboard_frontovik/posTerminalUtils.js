@@ -47,3 +47,12 @@ export const historyAtmIds = (values) => {
   }
   return result;
 };
+
+export const isLatestClientProductRequest = (
+  activeGeneration,
+  requestGeneration,
+  activeClientCode,
+  requestClientCode,
+) =>
+  activeGeneration === requestGeneration &&
+  String(activeClientCode ?? "").trim() === String(requestClientCode ?? "").trim();
