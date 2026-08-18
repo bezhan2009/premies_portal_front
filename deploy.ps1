@@ -634,23 +634,21 @@ if ($MirrorErrors.Count -gt 0 -or $ReadyProjects.Count -ne $Candidates.Count) {
 
 $bashLines = New-Object 'System.Collections.Generic.List[string]'
 $bashLines.Add("set -eu")
+$remoteBackupScriptPath = Join-Path (Split-Path -Parent $controllerPath) "deploy/backup-git-worktree.sh"
+if (-not (Test-Path -LiteralPath $remoteBackupScriptPath)) {
+    throw "Deployment backup helper was not found: $remoteBackupScriptPath"
+}
+$remoteBackupScript = Get-Content -Raw -LiteralPath $remoteBackupScriptPath
+$bashLines.Add($remoteBackupScript.Trim())
 $bashLines.Add("echo '[DEPLOY] Updating application repositories...'")
 
 foreach ($project in $ReadyProjects) {
     $bashLines.Add("echo $(ConvertTo-BashLiteral "[DEPLOY] $($project.LocalName) @ $($project.OriginSha)")")
     Add-RemoteDirectorySelection -Lines $bashLines -Paths $project.RemotePaths -ProjectName $project.LocalName -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $project.GitLabAuthHeader
-    # Back up only tracked changes. Runtime files such as TLS private keys,
-    # .env files and logs must remain untouched on the server and may not be
-    # readable by the deployment user.
-    $bashLines.Add('if [ -n "$(git status --porcelain --untracked-files=no)" ]; then')
-    $stashMessage = ConvertTo-BashLiteral "auto-deploy backup for $($project.LocalName)"
-    $bashLines.Add("  echo $(ConvertTo-BashLiteral "[BACKUP] Server files in $($project.LocalName) are modified; saving them before deployment.")")
-    $bashLines.Add("  if ! git stash push -m $stashMessage; then")
-    $bashLines.Add("    echo $(ConvertTo-BashLiteral "[ERROR] Could not back up server changes in $($project.LocalName); deployment stopped without overwriting them.")")
-    $bashLines.Add("    exit 22")
-    $bashLines.Add("  fi")
-    $bashLines.Add('  echo "[BACKUP] Saved as stash $(git rev-parse --short refs/stash)."')
-    $bashLines.Add("fi")
+    # Runtime files such as TLS keys remain in place. Only tracked changes are
+    # stashed here; target-tracked untracked collisions are handled after fetch.
+    $quotedProjectName = ConvertTo-BashLiteral $project.LocalName
+    $bashLines.Add("backup_tracked_worktree_changes $quotedProjectName")
     $quotedHeader = ConvertTo-BashLiteral "http.extraHeader=Authorization: Basic $($project.GitLabAuthHeader)"
     $quotedUrl = ConvertTo-BashLiteral $project.GitLabUrl
     $quotedBranch = ConvertTo-BashLiteral $project.Branch
@@ -672,6 +670,7 @@ foreach ($project in $ReadyProjects) {
     $bashLines.Add("git -c credential.helper= -c $quotedHeader fetch --no-tags $quotedUrl $quotedFetchRefspec")
     $bashLines.Add('old_sha="$(git rev-parse HEAD)"')
     $bashLines.Add("new_sha=`$(git rev-parse $quotedGitLabTrackingRef)")
+    $bashLines.Add("backup_untracked_checkout_conflicts $quotedProjectName " + '"$new_sha"')
     $bashLines.Add('if [ "$old_sha" != "$new_sha" ]; then')
     $bashLines.Add(('  backup_ref="deploy-backup/{0}-$(date +%Y%m%d%H%M%S)"' -f $project.Branch))
     $bashLines.Add('  if ! git branch -f "$backup_ref" "$old_sha"; then true; fi')
