@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Input as AntInput, Space, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import Select from "../../../elements/Select";
@@ -15,7 +15,7 @@ import {
   fetchTransactionsByCardBinAndType,
 } from "../../../../api/processing/transactions.js";
 import { getCurrencyCode } from "../../../../api/utils/getCurrencyCode.js";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { dataTrans } from "../../../../const/defConst.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 import { useTableSort } from "../../../../hooks/useTableSort.js";
@@ -26,6 +26,11 @@ import CustomDateInput from "../../../elements/CustomDateInput.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import TransactionsChart from "../../../graph/graph.jsx";
 import { formatProcessingAmount as formatSignedProcessingAmount } from "../../../../utils/processingAmountFormatter.js";
+import { fetchMerchantPosHistory } from "../../../../api/merchantPosTerminals.js";
+import {
+  formatPosHistoryRows,
+  parsePosHistoryQuery,
+} from "../../dashboard_frontovik/posTerminalUtils.js";
 
 const getTransactionTypeValue = (transactionType, transactionTypeNumber) => {
   if (!dataTrans || !Array.isArray(dataTrans)) return undefined;
@@ -59,6 +64,13 @@ const getNationalAmount = (transaction, exchangeRates) =>
 export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const posHistoryClientCode = searchParams.get("clientCode") || "";
+  const posHistoryAtmIds = searchParams.get("atmIds") || "";
+  const posHistory = useMemo(
+    () => parsePosHistoryQuery(posHistoryClientCode, posHistoryAtmIds),
+    [posHistoryAtmIds, posHistoryClientCode],
+  );
   const { exportToExcel } = useExcelExport();
 
   const getColumnSearchProps = (dataIndex, label) => ({
@@ -100,13 +112,11 @@ export default function DashboardOperatorProcessingTransactions() {
   const [allowedCardId, setAllowedCardId] = useState(null);
 
   const [transactions, setTransactions] = useState([]);
-  const {
-    items: sortedTransactions,
-    requestSort,
-    sortConfig,
-  } = useTableSort(transactions);
+  const { items: sortedTransactions } = useTableSort(transactions);
 
-  const [searchType, setSearchType] = useState("cardId");
+  const [searchType, setSearchType] = useState(
+    posHistory.isPosHistory ? "posHistory" : "cardId",
+  );
   const [displayCardId, setDisplayCardId] = useState("");
   const [cardId, setCardId] = useState("");
   const [atmId, setAtmId] = useState("");
@@ -134,6 +144,9 @@ export default function DashboardOperatorProcessingTransactions() {
   });
 
   const searchOptions = [
+    ...(posHistory.isPosHistory
+      ? [{ value: "posHistory", label: "История POS-терминалов" }]
+      : []),
     { value: "cardId", label: "Поиск по идентификатору карты" },
     { value: "atmId", label: "Поиск по номеру терминала" },
     { value: "utrnno", label: "Поиск по номеру операции (UTRNNO)" },
@@ -147,6 +160,11 @@ export default function DashboardOperatorProcessingTransactions() {
   // Проверка доступа при монтировании компонента
   useEffect(() => {
     if (!hasAccess) {
+      if (posHistory.isPosHistory) {
+        setIsLimitedAccess(false);
+        setAllowedCardId(null);
+        return;
+      }
       const storedCardId = sessionStorage.getItem("allowedCardId");
 
       if (storedCardId && id && storedCardId === id) {
@@ -160,8 +178,11 @@ export default function DashboardOperatorProcessingTransactions() {
         setIsLimitedAccess(true);
         setAllowedCardId(null);
       }
+    } else {
+      setIsLimitedAccess(false);
+      setAllowedCardId(null);
     }
-  }, [hasAccess, id, navigate]);
+  }, [hasAccess, id, navigate, posHistory.isPosHistory]);
 
   // Функция для форматирования суммы
   const formatAmount = (amount, transactionContext) =>
@@ -232,6 +253,7 @@ export default function DashboardOperatorProcessingTransactions() {
   };
 
   const handleSearchTypeChange = (valueOrEvent) => {
+    if (posHistory.isPosHistory) return;
     if (isLimitedAccess) {
       showAlert(
         "У вас ограниченный доступ. Можно просматривать только историю одной карты",
@@ -272,7 +294,7 @@ export default function DashboardOperatorProcessingTransactions() {
   };
 
   const validateSearch = useCallback(() => {
-    if (isLimitedAccess && allowedCardId && cardId !== allowedCardId) {
+    if (searchType !== "posHistory" && isLimitedAccess && allowedCardId && cardId !== allowedCardId) {
       showAlert(
         "У вас есть доступ только к просмотру истории конкретной карты",
         "error",
@@ -307,6 +329,12 @@ export default function DashboardOperatorProcessingTransactions() {
     }
 
     switch (searchType) {
+      case "posHistory":
+        if (!posHistory.isPosHistory) {
+          showAlert("Не указаны POS-терминалы для истории", "warning");
+          return false;
+        }
+        break;
       case "cardId":
         if (!cardId.trim()) {
           showAlert("Введите ID карты", "warning");
@@ -391,6 +419,7 @@ export default function DashboardOperatorProcessingTransactions() {
     toTime,
     isLimitedAccess,
     allowedCardId,
+    posHistory.isPosHistory,
     showAlert,
   ]);
 
@@ -403,6 +432,14 @@ export default function DashboardOperatorProcessingTransactions() {
         let transactionsData = [];
 
         switch (searchType) {
+          case "posHistory":
+            transactionsData = await fetchMerchantPosHistory({
+              clientCode: posHistory.clientCode,
+              atmIds: posHistory.atmIds,
+              fromDate: fromDate || undefined,
+              toDate: toDate || undefined,
+            });
+            break;
           case "cardId":
             transactionsData = await fetchTransactionsByCardId(
               cardId || id,
@@ -463,32 +500,7 @@ export default function DashboardOperatorProcessingTransactions() {
         }
 
         if (transactionsData && Array.isArray(transactionsData)) {
-          const formattedTransactions = transactionsData.map((transaction) => ({
-            id: transaction.id,
-            cardNumber: transaction.cardNumber,
-            cardId: transaction.cardId,
-            responseCode: transaction.responseCode,
-            responseDescription: transaction.responseDescription,
-            reqamt: transaction.reqamt,
-            amount: transaction.amount,
-            conamt: transaction.conamt,
-            acctbal: transaction.acctbal,
-            netbal: transaction.netbal,
-            utrnno: transaction.utrnno,
-            currency: transaction.currency,
-            conCurrency: transaction.conCurrency,
-            terminalId: transaction.terminalId,
-            reversal: transaction.reversal,
-            transactionType: transaction.transactionType,
-            transactionTypeName: transaction.transactionTypeName,
-            transactionTypeNumber: transaction.transactionTypeNumber,
-            atmId: transaction.atmId,
-            terminalAddress: transaction.terminalAddress,
-            localTransactionDate: transaction.localTransactionDate,
-            localTransactionTime: transaction.localTransactionTime,
-            mcc: transaction.mcc,
-            account: transaction.account,
-          }));
+          const formattedTransactions = formatPosHistoryRows(transactionsData);
 
           setTransactions(formattedTransactions);
           showAlert(
@@ -525,8 +537,27 @@ export default function DashboardOperatorProcessingTransactions() {
       toTime,
       validateSearch,
       showAlert,
+      posHistory,
     ],
   );
+
+  const automaticPosRequestRef = useRef("");
+  useEffect(() => {
+    if (!posHistory.isPosHistory) {
+      automaticPosRequestRef.current = "";
+      return;
+    }
+    if (searchType !== "posHistory") {
+      setSearchType("posHistory");
+      return;
+    }
+    if (!fromDate || !toDate) return;
+
+    const signature = `${posHistory.clientCode}|${posHistory.atmIds.join(",")}|${fromDate}|${toDate}`;
+    if (automaticPosRequestRef.current === signature) return;
+    automaticPosRequestRef.current = signature;
+    void handleSearch();
+  }, [fromDate, handleSearch, posHistory, searchType, toDate]);
 
   const transactionTableData = useMemo(
     () => {
@@ -719,7 +750,7 @@ export default function DashboardOperatorProcessingTransactions() {
         width: 150,
       },
     ],
-    [exchangeRates],
+    [],
   );
 
   const handleExport = () => {
@@ -847,6 +878,8 @@ export default function DashboardOperatorProcessingTransactions() {
     }
 
     switch (searchType) {
+      case "posHistory":
+        break;
       case "cardId":
         if (!isLimitedAccess) {
           setDisplayCardId("");
@@ -891,6 +924,22 @@ export default function DashboardOperatorProcessingTransactions() {
   const renderSearchFields = () => {
     // ... (unchanged, same as original)
     switch (searchType) {
+      case "posHistory":
+        return (
+          <div className="search-card__input-group">
+            <label htmlFor="posAtmIds" className="search-card__label">
+              Выбранные ATM ID
+            </label>
+            <input
+              type="text"
+              id="posAtmIds"
+              value={posHistory.atmIds.join(", ")}
+              className="search-card__input"
+              disabled
+              readOnly
+            />
+          </div>
+        );
       case "cardId":
         return (
           <div className="search-card__input-group">
@@ -1125,6 +1174,9 @@ export default function DashboardOperatorProcessingTransactions() {
 
   const getTableTitle = () => {
     if (id) return "История транзакций";
+    if (posHistory.isPosHistory) {
+      return `История операций POS (${posHistory.atmIds.join(", ")})`;
+    }
     const baseTitle = "Найденные транзакции";
     let searchInfo = "";
 
@@ -1201,7 +1253,7 @@ export default function DashboardOperatorProcessingTransactions() {
                       value={searchType}
                       onChange={handleSearchTypeChange}
                       options={searchOptions}
-                      disabled={isLoading || !!id || isLimitedAccess}
+                      disabled={isLoading || !!id || isLimitedAccess || posHistory.isPosHistory}
                     />
                   </div>
 

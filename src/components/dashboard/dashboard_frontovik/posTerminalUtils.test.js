@@ -6,6 +6,8 @@ import {
   findPosAccountBalance,
   historyAtmIds,
   isLatestClientProductRequest,
+  parsePosHistoryQuery,
+  formatPosHistoryRows,
   selectionState,
 } from "./posTerminalUtils.js";
 
@@ -65,4 +67,51 @@ test("stale product response cannot update a different selected client", () => {
   assert.equal(isLatestClientProductRequest(4, 4, "10025", "10025"), true);
   assert.equal(isLatestClientProductRequest(5, 4, "10025", "10025"), false);
   assert.equal(isLatestClientProductRequest(4, 4, "10026", "10025"), false);
+});
+
+test("POS history query requires client code and concrete ATM IDs", () => {
+  assert.deepEqual(parsePosHistoryQuery(" 10025 ", "30000374,30000373,30000374"), {
+    clientCode: "10025",
+    atmIds: ["30000374", "30000373"],
+    isPosHistory: true,
+  });
+  assert.deepEqual(parsePosHistoryQuery("10025", ""), {
+    clientCode: "10025",
+    atmIds: [],
+    isPosHistory: false,
+  });
+});
+
+test("POS history rows accept processing field aliases without deduplication", () => {
+  const rows = formatPosHistoryRows([
+    { ID: 7, UTRNNO: "same", ATMID: "30000373", TerminalAddress: "Дилкушо 26/1" },
+    { ID: 7, UTRNNO: "same", ATMID: "30000373", TerminalAddress: "Дилкушо 26/1" },
+  ]);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[0], {
+    id: 7,
+    cardNumber: undefined,
+    cardId: undefined,
+    responseCode: undefined,
+    responseDescription: undefined,
+    reqamt: undefined,
+    amount: undefined,
+    conamt: undefined,
+    acctbal: undefined,
+    netbal: undefined,
+    utrnno: "same",
+    currency: undefined,
+    conCurrency: undefined,
+    terminalId: undefined,
+    reversal: undefined,
+    transactionType: undefined,
+    transactionTypeName: undefined,
+    transactionTypeNumber: undefined,
+    atmId: "30000373",
+    terminalAddress: "Дилкушо 26/1",
+    localTransactionDate: undefined,
+    localTransactionTime: undefined,
+    mcc: undefined,
+    account: undefined,
+  });
 });
