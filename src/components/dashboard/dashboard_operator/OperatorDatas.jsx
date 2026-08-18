@@ -4,9 +4,9 @@ import FiltersDatas from "./FiltersData";
 import OfficeTable from "./table_datas/TableOffice";
 import EmployeesTable from "./table_datas/TableEmployees";
 import UnderDevelopmentPage from "../dashboard_general/UnderDevelopment";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 import CardsTable from "./table_datas/TableCardPrices.jsx";
-import TableCardMargents from "./table_datas/TableCardMargents.jsx";
+import MerchantAdminPanel from "./MerchantAdminPanel.jsx";
 import RolesTable from "./table_datas/RolesTable.jsx";
 import RolesLogsTable from "./table_datas/RoleLogsTable.jsx";
 import JournalTable from "./table_datas/JournalLogs.jsx";
@@ -41,8 +41,8 @@ const OperatorDatasBlockInfo = () => {
       case "margents":
         return (
           <>
-            <Filters modificationDesc="Отделения" />
-            <TableCardMargents key="margents" />
+            <Filters modificationDesc="Мерчанты / POS-терминалы" />
+            <MerchantAdminPanel key="margents" />
           </>
         );
       case "roles":
@@ -87,7 +87,7 @@ const OperatorDatasBlockInfo = () => {
       <FiltersDatas onSelect={setSelectedTable} />
 
       <AnimatePresence mode="wait">
-        <motion.div
+        <Motion.div
           key={selectedTable}
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
@@ -95,7 +95,7 @@ const OperatorDatasBlockInfo = () => {
           transition={{ duration: 0.3 }}
         >
           {renderTable()}
-        </motion.div>
+        </Motion.div>
       </AnimatePresence>
     </div>
   );
