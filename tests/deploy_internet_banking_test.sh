@@ -13,12 +13,22 @@ for value in \
   'ServiceName   = "internet-banking-frontend"' \
   'GitlabProject = "Bejan/internet_banking_frontend.git"' \
   "INTERNET_BANKING_SERVICE_TOKEN" \
-  "NEXT_PUBLIC_API_URL: http://10.65.10.20:4001" \
-  "http://127.0.0.1:4001/ping" \
-  "      - daily_network" \
-  '"4001:4001"' \
-  '"4000:3000"'; do
-  grep -Fq "$value" "$controller" || { echo "deploy.ps1 is missing: $value" >&2; exit 1; }
+  'internet-banking-backend", "internet-banking-frontend' \
+  'main_service_arguments=' \
+  'deploy_internet_banking=' \
+  '-p internet_banking -f internet_banking_backend/deploy/docker-compose.yml up --build -d' \
+  'INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}'; do
+  grep -Fq -- "$value" "$controller" || { echo "deploy.ps1 is missing: $value" >&2; exit 1; }
 done
+
+if grep -Fq '$serviceArguments = $quotedServices' "$controller"; then
+  echo "deploy.ps1 still sends Internet Banking service names to the main Compose project" >&2
+  exit 1
+fi
+
+if grep -Eq 'ghp_|glpat-' "$controller"; then
+  echo "deploy.ps1 must not contain repository credentials" >&2
+  exit 1
+fi
 
 echo "internet banking deployment configuration test passed"
