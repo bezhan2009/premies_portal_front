@@ -13,10 +13,13 @@ for value in \
   'ServiceName   = "internet-banking-frontend"' \
   'GitlabProject = "Bejan/internet_banking_frontend.git"' \
   "INTERNET_BANKING_SERVICE_TOKEN" \
+  "INTERNET_BANKING_OTP_SECRET" \
+  "INTERNET_BANKING_JWT_SECRET" \
   'internet-banking-backend", "internet-banking-frontend' \
   'main_service_arguments=' \
   'deploy_internet_banking=' \
-  '-p internet_banking -f internet_banking_backend/deploy/docker-compose.yml up --build -d' \
+  '-p internet_banking -f internet_banking_backend/deploy/docker-compose.yml up --build -d --wait --wait-timeout 180' \
+  '-f docker-compose.yml -f .deploy-compose.override.yml -f .deploy-internet-banking-token.override.yml up -d --no-deps go-backend abs_service' \
   'INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}'; do
   grep -Fq -- "$value" "$controller" || { echo "deploy.ps1 is missing: $value" >&2; exit 1; }
 done
