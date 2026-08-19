@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-19  
 **Status:** Approved in conversation; awaiting written-spec review  
-**Scope:** `premies_portal`, `premies_portal_front`, `internet_banking_backend`, `internet_banking_frontend`, and the shared deployment controller in `premies_portal_front/deploy.ps1`
+**Scope:** `premies_portal`, `premies_portal_front`, `internet_banking_backend`, `internet_banking_frontend`, `abs_service`, and the shared deployment controller in `premies_portal_front/deploy.ps1`
 
 ## 1. Goal
 
@@ -24,6 +24,8 @@ Daily Portal is the source of truth for:
 `internet_banking_backend` is the only public backend used by `internet_banking_frontend`. It calls protected internal Daily Portal endpoints for registration, authentication, client access, and effective permissions. It calls the existing ABS service for product data and existing banking actions.
 
 Direct shared-table access from `internet_banking_backend` is prohibited. All cross-service access uses versioned HTTP contracts and a server-to-server credential stored only in deployment environment files.
+
+The existing ABS employee JWT must never be issued to or derived in Internet Banking. `abs_service` exposes a narrow `/internal/internet-banking/v1` route group protected by a dedicated service token. Only product reads needed by the Internet Banking gateway are available in that group. Mutating card, credit, notification, subscription, and PIN operations continue to be owned by Daily Portal and are exposed to the gateway through separately protected internal Daily Portal contracts.
 
 ## 3. Repositories and Responsibilities
 
@@ -57,6 +59,13 @@ Direct shared-table access from `internet_banking_backend` is prohibited. All cr
 - Add a client selector when the account has access to more than one ABS client code.
 - Render a new Internet Banking product dashboard inspired by `/frontovik/abs-search`, without client search or compliance checks.
 - Hide inaccessible tabs and actions, while treating backend permission checks as authoritative.
+
+### 3.5 `abs_service`
+
+- Expose service-token-protected internal product-read endpoints for client details, accounts, cards, credits, credit graphs/details, deposits, deposit schedules, and addresses.
+- Reuse the existing ABS service layer rather than duplicating SOAP request code.
+- Reject missing or invalid service credentials before invoking any ABS client.
+- Keep all existing employee-facing routes and JWT behavior unchanged.
 
 ## 4. Data Model
 
@@ -266,6 +275,8 @@ Product requests include a selected client-access identifier, not an arbitrary A
 
 For resource-specific actions, the backend verifies that the card, account, credit, deposit, or terminal belongs to the selected client before calling the upstream action. A matching frontend button is never sufficient authorization.
 
+Read-only product calls go from `internet_banking_backend` to `/internal/internet-banking/v1` on `abs_service` with `X-Internet-Banking-Service-Token`. Privileged mutations go to `/internal/internet-banking/v1` on Daily Portal with the same independently configured service credential. Both receiving services compare credentials in constant time and return `401` without revealing configuration details.
+
 Errors use these stable semantics:
 
 - `401` for absent, expired, or revoked Internet Banking authentication;
@@ -342,6 +353,13 @@ Backend tests must prove:
 - every privileged action requires its exact ARM;
 - upstream failures are bounded and sanitized.
 
+ABS service tests must prove:
+
+- existing employee JWT routes remain unchanged;
+- missing or invalid Internet Banking service tokens are rejected before ABS work begins;
+- internal product routes delegate only to the intended existing service methods;
+- no mutating ABS route is exposed in the internal Internet Banking group.
+
 Frontend tests must prove:
 
 - operator multi-person editing and multi-select roles/ARMs;
@@ -362,4 +380,3 @@ Deployment tests must prove:
 - a deployment state is saved only after both Internet Banking services start successfully.
 
 Production acceptance requires passing repository tests, lint/type checks, Go vet, production builds, Compose validation, container health checks, HTTP health checks, registration through SMS OTP, login, multi-client switching, permission-denied verification, and visual checks at `http://10.65.10.20:3000/internet-bank` and `http://10.65.10.20:4000/`.
-
