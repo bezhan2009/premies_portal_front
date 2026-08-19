@@ -70,6 +70,22 @@ $Projects = @(
         GitHubUrl     = "https://github.com/bezhan2009/abs_service.git"
         GitlabProject = "Bejan/activ_daily_abs_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/abs_service")
+    },
+    @{
+        LocalName     = "internet_banking_backend"
+        ServiceName   = "internet-banking-backend"
+        DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/internet_banking_backend.git"
+        GitlabProject = "Bejan/internet_banking_backend.git"
+        RemotePaths   = @("/home/bkarimov/daily_activ/internet_banking_backend")
+    },
+    @{
+        LocalName     = "internet_banking_frontend"
+        ServiceName   = "internet-banking-frontend"
+        DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/internet_banking_frontend.git"
+        GitlabProject = "Bejan/internet_banking_frontend.git"
+        RemotePaths   = @("/home/bkarimov/daily_activ/internet_banking_frontend")
     }
 )
 
@@ -705,7 +721,8 @@ $bashLines.Add("    exit 23")
 $bashLines.Add("  fi")
 $bashLines.Add("fi")
 $bashLines.Add('compose_file_value=''docker-compose.yml:.deploy-compose.override.yml''')
-$bashLines.Add('if [ "$selected_db" != "$configured_db" ] || ! grep -Eq ''^[[:space:]]*COMPOSE_FILE[[:space:]]*='' .env; then')
+$bashLines.Add('configured_ib_token="$(awk -F= ''/^[[:space:]]*INTERNET_BANKING_SERVICE_TOKEN[[:space:]]*=/{sub(/^[^=]*=/,""); gsub(/\r/,""); print}'' .env | tail -n 1)"')
+$bashLines.Add('if [ "$selected_db" != "$configured_db" ] || ! grep -Eq ''^[[:space:]]*COMPOSE_FILE[[:space:]]*='' .env || [ -z "$configured_ib_token" ]; then')
 $bashLines.Add('  env_backup=".env.deploy-backup.$(date +%Y%m%d%H%M%S)"')
 $bashLines.Add('  cp -p .env "$env_backup"')
 $bashLines.Add('  echo "[BACKUP] Environment saved to $env_backup."')
@@ -721,6 +738,12 @@ $bashLines.Add("else")
 $bashLines.Add('  printf ''COMPOSE_FILE=%s\n'' "$compose_file_value" >> .env')
 $bashLines.Add("fi")
 $bashLines.Add('export POSTGRES_DB="$selected_db"')
+$bashLines.Add('if [ -z "$configured_ib_token" ]; then')
+$bashLines.Add('  if command -v openssl >/dev/null 2>&1; then configured_ib_token="$(openssl rand -hex 32)"; else configured_ib_token="$(od -An -N32 -tx1 /dev/urandom | tr -d '' \n'')"; fi')
+$bashLines.Add('  printf ''INTERNET_BANKING_SERVICE_TOKEN=%s\n'' "$configured_ib_token" >> .env')
+$bashLines.Add("  echo '[SECURITY] Generated the Internet Banking service token and stored it in .env.'")
+$bashLines.Add('fi')
+$bashLines.Add('export INTERNET_BANKING_SERVICE_TOKEN="$configured_ib_token"')
 $bashLines.Add('cat > .deploy-compose.override.yml <<''DEPLOY_COMPOSE_OVERRIDE''')
 $bashLines.Add('services:')
 foreach ($databaseService in @("go-backend", "daily_tasks", "applications_portal", "python-backend", "abs_service")) {
@@ -732,7 +755,52 @@ foreach ($databaseService in @("go-backend", "daily_tasks", "applications_portal
     $bashLines.Add('      DB_PASSWORD: ${POSTGRES_PASSWORD}')
     $bashLines.Add('      DB_NAME: ${POSTGRES_DB}')
     $bashLines.Add('      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}')
+    if ($databaseService -eq "go-backend" -or $databaseService -eq "abs_service") {
+        $bashLines.Add('      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}')
+    }
 }
+$bashLines.Add('  internet-banking-backend:')
+$bashLines.Add('    build:')
+$bashLines.Add('      context: ./internet_banking_backend')
+$bashLines.Add('    restart: unless-stopped')
+$bashLines.Add('    environment:')
+$bashLines.Add('      PORT: "4001"')
+$bashLines.Add('      PREMIES_PORTAL_URL: http://go-backend:7575')
+$bashLines.Add('      ABS_SERVICE_URL: http://abs_service:5000')
+$bashLines.Add('      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}')
+$bashLines.Add('      ALLOWED_ORIGINS: http://10.65.10.20:4000')
+$bashLines.Add('      UPSTREAM_TIMEOUT: 15s')
+$bashLines.Add('    ports:')
+$bashLines.Add('      - "4001:4001"')
+$bashLines.Add('    healthcheck:')
+$bashLines.Add('      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4001/ping"]')
+$bashLines.Add('      interval: 15s')
+$bashLines.Add('      timeout: 3s')
+$bashLines.Add('      start_period: 5s')
+$bashLines.Add('      retries: 5')
+$bashLines.Add('    networks:')
+$bashLines.Add('      - daily_network')
+$bashLines.Add('    depends_on:')
+$bashLines.Add('      go-backend:')
+$bashLines.Add('        condition: service_started')
+$bashLines.Add('      abs_service:')
+$bashLines.Add('        condition: service_started')
+$bashLines.Add('  internet-banking-frontend:')
+$bashLines.Add('    build:')
+$bashLines.Add('      context: ./internet_banking_frontend')
+$bashLines.Add('      args:')
+$bashLines.Add('        NEXT_PUBLIC_API_URL: http://10.65.10.20:4001')
+$bashLines.Add('    restart: unless-stopped')
+$bashLines.Add('    environment:')
+$bashLines.Add('      HOSTNAME: 0.0.0.0')
+$bashLines.Add('      PORT: "3000"')
+$bashLines.Add('    ports:')
+$bashLines.Add('      - "4000:3000"')
+$bashLines.Add('    networks:')
+$bashLines.Add('      - daily_network')
+$bashLines.Add('    depends_on:')
+$bashLines.Add('      internet-banking-backend:')
+$bashLines.Add('        condition: service_healthy')
 $bashLines.Add('  frontend:')
 $bashLines.Add('    depends_on:')
 $bashLines.Add('      abs_service:')
