@@ -548,6 +548,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
+        if (roles.includes(43)) {
+            additionalLinks.push({
+                name: "Интернет банк",
+                href: "/internet-bank",
+                key: "internet_bank",
+                icon: Landmark,
+            });
+        }
+
         if (roles.includes(10)) {
             additionalLinks.push({
                 name: "Заявки на карты",

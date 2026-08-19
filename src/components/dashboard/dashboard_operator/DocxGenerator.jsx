@@ -115,6 +115,7 @@ const SYSTEM_ROLES = [
   { id: 40, name: "Сверка счетов" },
   { id: 41, name: "Управление Рохат" },
   { id: 42, name: "Управление деклайнами" },
+  { id: 43, name: "Интернет банк" },
 ];
 
 const BUTTON_PLACEMENTS = [
