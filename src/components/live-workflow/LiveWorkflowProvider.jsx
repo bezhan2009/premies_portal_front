@@ -22,6 +22,7 @@ import {
   LIVE_WORKFLOW_REMOTE_PAGE_STATE_EVENT,
 } from "../../utils/liveWorkflowPageState";
 import "./LiveWorkflow.css";
+import UserProfileLink from "../general/UserProfileLink.jsx";
 
 const LiveWorkflowContext = createContext(null);
 const CURSOR_SEND_INTERVAL = 32;
@@ -2346,7 +2347,7 @@ function ShareWorkflowModal({
                     onClick={() => onSelectEmployee(user.id)}
                   >
                     <span>{(user.full_name || user.username || "U").slice(0, 2).toUpperCase()}</span>
-                    <strong>{user.full_name || user.username || user.email}</strong>
+                    <strong><UserProfileLink userId={user.id} username={user.username} displayName={user.full_name || user.username || user.email} /></strong>
                     {Number(selectedEmployeeId) === Number(user.id) && <Check size={16} />}
                   </button>
                 ))}
@@ -2359,7 +2360,7 @@ function ShareWorkflowModal({
                 {participants.map((participant) => (
                   <div key={participant.user.id}>
                     <span className={participant.online ? "online" : ""}>{participant.user.initials}</span>
-                    <strong>{participant.user.full_name || participant.user.username}</strong>
+                    <strong><UserProfileLink userId={participant.user.id} username={participant.user.username} displayName={participant.user.full_name || participant.user.username} /></strong>
                     <small>{participant.role === "presenter" ? "Ведущий" : participant.is_following ? "Следует" : "Смотрит"}</small>
                   </div>
                 ))}

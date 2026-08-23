@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { ChevronRight, Layers, Loader2, X, FileText, Download } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 import {
   buildDocxPayload,
   normalizeDocxRoles,
@@ -12,7 +12,7 @@ import {
 } from "../../utils/docxTemplateHelpers";
 import { formatProcessingAmount as formatSignedProcessingAmount } from "../../utils/processingAmountFormatter";
 import { fetchCreditGraphs } from "../../api/ABS_frotavik/getUserCredits";
-import { Modal, Button } from "antd";
+import { Alert, Modal, Button } from "antd";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 const PROCESSING_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL || "http://10.64.20.84:5003";
@@ -502,7 +502,7 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
       const min = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       nowStr = `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
-    } catch (e) {
+    } catch {
       nowStr = new Date().toLocaleString("ru-RU");
     }
 
@@ -516,13 +516,6 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
     finalData["дата выписки по"] = formattedToDate;
     finalData["дата выписки"] = nowStr;
     finalData["дата_выписки"] = nowStr;
-
-    const usesProcessingTransactions =
-      hasSystemKeySource(variant, "processing_transactions") ||
-      (Array.isArray(finalData.processing_transactions) && finalData.processing_transactions.length > 0);
-    const usesTransactions =
-      hasSystemKeySource(variant, "transactions") ||
-      (Array.isArray(finalData.transactions) && finalData.transactions.length > 0);
 
     const transactionVirtualKeys = [
       { key: "eval: (transactions || []).map(t => t.date)", docxKey: "date" },
@@ -675,9 +668,29 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
 
   const userRoles = getRoles();
 
-  const renderTemplateButtons = () => (
-    <div className="docx-runtime-buttons">
-      {templates.map((template) => {
+  const renderTemplateButtons = () => {
+    const availableTemplates = templates.filter((template) => {
+      const pdfRoles = normalizeDocxRoles(template.pdfRoles || template.PdfRoles);
+      const docxRoles = normalizeDocxRoles(template.docxRoles || template.DocxRoles);
+      const canPdf = pdfRoles.length === 0 || pdfRoles.some((role) => userRoles.includes(role));
+      const canDocx = (docxRoles.length === 0 || docxRoles.some((role) => userRoles.includes(role))) && userRoles.includes(3);
+      return canPdf || canDocx;
+    });
+
+    if (availableTemplates.length === 0) {
+      return (
+        <Alert
+          type="info"
+          showIcon
+          message="Нет доступных документов"
+          description="Для этого продукта шаблоны пока не настроены или недоступны для вашей роли."
+        />
+      );
+    }
+
+    return (
+      <div className="docx-runtime-buttons">
+      {availableTemplates.map((template) => {
         const variants = template.parsedVariants || [];
         const hasMultiple = variants.length > 1;
         const isWorking = generatingId && generatingId.startsWith(`${template.ID || template.id}_`);
@@ -720,8 +733,9 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
           </div>
         );
       })}
-    </div>
-  );
+      </div>
+    );
+  };
 
   return (
     <>
@@ -755,13 +769,13 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
           {showVariantModal && selectedTemplate && (
-            <motion.div
+            <Motion.div
               className="docx-modal-layer"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <motion.div
+              <Motion.div
                 className="docx-modal docx-modal--compact"
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -803,8 +817,8 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
                     Отмена
                   </button>
                 </div>
-              </motion.div>
-            </motion.div>
+              </Motion.div>
+            </Motion.div>
           )}
         </AnimatePresence>,
         document.body
@@ -813,13 +827,13 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
           {paramsModal.isOpen && paramsModal.template && (
-            <motion.div
+            <Motion.div
               className="docx-modal-layer"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <motion.div
+              <Motion.div
                 className="docx-modal docx-modal--compact"
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -878,8 +892,8 @@ const DynamicDocxButtons = ({ page, section, data = {}, triggerLabel = "" }) => 
                     Сгенерировать
                   </button>
                 </div>
-              </motion.div>
-            </motion.div>
+              </Motion.div>
+            </Motion.div>
           )}
         </AnimatePresence>,
         document.body

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Descriptions, Empty } from "antd";
-import { FileText, ImageOff, UserRound } from "lucide-react";
+import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Empty } from "antd";
+import { Building2, CalendarDays, CreditCard, Eye, FileImage, FileText, Hash, Phone } from "lucide-react";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import DocumentPreviewModal from "../../../components/client-documents/DocumentPreviewModal.jsx";
 import {
     getClientDocumentTypeLabel,
-    getClientSelfieDocument,
     resolveClientDocumentUrl,
 } from "../../../utils/clientDocuments.js";
+import { formatComplianceCreatedAt } from "../../../utils/complianceRequests.js";
 import "../../../styles/ComplianceRequests.scss";
 
 const { Text } = Typography;
@@ -35,6 +35,50 @@ const applicationDocument = (path, documentType, title) => path ? ({
     title,
 }) : null;
 
+const detailCards = (selectedRequest, selectedApp, appFullName) => [
+    { icon: Phone, label: "Телефон", value: selectedRequest.client_phone || selectedApp?.phone_number },
+    { icon: CreditCard, label: "Карта", value: selectedApp?.card_name || selectedRequest.client_full_name || appFullName },
+    { icon: Hash, label: "ИНН", value: selectedRequest.client_identifier || selectedApp?.inn },
+    { icon: Building2, label: "Офис получения", value: selectedApp?.receiving_office || selectedApp?.office_name || selectedApp?.department_name },
+    { icon: CalendarDays, label: "Дата создания", value: formatComplianceCreatedAt(selectedRequest.created_at || selectedApp?.CreatedAt) },
+    { icon: Eye, label: "Оператор", value: selectedRequest.creator_username || selectedApp?.request_creator || selectedApp?.request_сreator },
+];
+
+const complianceInfoRows = (selectedRequest) => [
+    ["Дата рождения", selectedRequest.client_birth_date],
+    ["Резидент", yesNo(selectedRequest.is_resident)],
+    ["FATCA", yesNo(selectedRequest.fatca)],
+    ["АПЛ/ПЗЛ", yesNo(selectedRequest.apl_pzl)],
+    ["Род деятельности", selectedRequest.client_occupation],
+    ["Метод открытия счета", selectedRequest.monthly_income],
+    ["Сумма ежемесячных транзакций", selectedRequest.total_outgoing_transactions_amount],
+    ["Количество ежемесячных транзакций", selectedRequest.total_outgoing_transactions_count],
+    ["Сумма кассовых сделок", selectedRequest.total_cash_transactions_amount],
+    ["Количество кассовых сделок", selectedRequest.total_cash_transactions_count],
+    ["Балл Compliance", selectedRequest.compliance_score ?? 0],
+    ["Совпадение по спискам", selectedRequest.compliance_matched ? "Найдено" : "Не найдено"],
+];
+
+const findDocumentByType = (documents, type) =>
+    documents.find((document) => document?.document_type === type) || null;
+
+const PassportScanCard = ({ title, document, onPreview }) => {
+    const url = document ? resolveClientDocumentUrl(document) : "";
+    return (
+        <button
+            type="button"
+            className={`compliance-passport-scan ${url ? "has-file" : ""}`}
+            onClick={() => url && onPreview(document)}
+            disabled={!url}
+        >
+            <span className="compliance-passport-scan__preview">
+                {url ? <img src={url} alt={title} /> : <><FileImage size={30} /><b>Нет файла</b></>}
+            </span>
+            <span>{title}</span>
+        </button>
+    );
+};
+
 export default function ComplianceRequests() {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -45,7 +89,6 @@ export default function ComplianceRequests() {
     const [clientDocuments, setClientDocuments] = useState([]);
     const [documentsLoading, setDocumentsLoading] = useState(false);
     const [previewDocument, setPreviewDocument] = useState(null);
-    const [photoFailed, setPhotoFailed] = useState(false);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -78,7 +121,6 @@ export default function ComplianceRequests() {
         setSelectedApp(null);
         setClientDocuments([]);
         setPreviewDocument(null);
-        setPhotoFailed(false);
         setAppLoading(false);
         setAppModalVisible(true);
         if (record.client_identifier) {
@@ -225,7 +267,6 @@ export default function ComplianceRequests() {
         setSelectedRequest(null);
         setClientDocuments([]);
         setPreviewDocument(null);
-        setPhotoFailed(false);
     };
 
     const columns = [
@@ -233,6 +274,13 @@ export default function ComplianceRequests() {
             title: "ID",
             dataIndex: "id",
             key: "id",
+        },
+        {
+            title: "Дата создания",
+            dataIndex: "created_at",
+            key: "created_at",
+            width: 160,
+            render: formatComplianceCreatedAt,
         },
         {
             title: "ФИО Клиента",
@@ -306,7 +354,6 @@ export default function ComplianceRequests() {
             render: (_, record) => (
                 <Space direction="vertical" size="small">
                     <Text>Занятость: {emptyValue(record.client_occupation)}</Text>
-                    <Text>Оборот: {emptyValue(record.net_worth)}</Text>
                     <Text>Метод открытия: {emptyValue(record.monthly_income)}</Text>
                     <Text>Транзакции (Сумма/Кол-во): {emptyValue(record.total_outgoing_transactions_amount)} / {emptyValue(record.total_outgoing_transactions_count)}</Text>
                     <Text>Касса (Сумма/Кол-во): {emptyValue(record.total_cash_transactions_amount)} / {emptyValue(record.total_cash_transactions_count)}</Text>
@@ -346,13 +393,20 @@ export default function ComplianceRequests() {
         const url = resolveClientDocumentUrl(document);
         return url && items.findIndex((item) => resolveClientDocumentUrl(item) === url) === index;
     });
-    const selfieDocument = getClientSelfieDocument(availableDocuments);
-    const photoUrl = selfieDocument ? resolveClientDocumentUrl(selfieDocument) : "";
     const appFullName = selectedApp
         ? [selectedApp.surname, selectedApp.name, selectedApp.patronymic].filter(Boolean).join(" ")
         : "";
     const requestStatus = statusMeta[selectedRequest?.status] || statusMeta.pending;
     const bestMatch = selectedRequest ? getBestMatch(selectedRequest) : null;
+    const passportScans = [
+        { type: "front_side_of_the_passport", title: "Лицевая сторона" },
+        { type: "back_side_of_the_passport", title: "Задняя сторона" },
+        { type: "selfie_with_passport", title: "Скан с лицом" },
+    ].map((slot) => ({
+        ...slot,
+        document: findDocumentByType(availableDocuments, slot.type),
+    }));
+    const loadedPassportScans = passportScans.filter((slot) => slot.document).length;
 
     return (
         <>
@@ -368,22 +422,13 @@ export default function ComplianceRequests() {
             </Card>
 
             <Modal
-                title={`Детали заявки #${selectedRequest?.id || selectedApp?.ID || ""}`}
+                title={null}
                 open={appModalVisible}
                 onCancel={closeDetails}
-                footer={[
-                    selectedRequest && (!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
-                        <Button key="approve" type="primary" onClick={() => confirmAction(selectedRequest, "approved")}>Одобрить</Button>
-                    ) : null,
-                    selectedRequest && (!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
-                        <Button key="reject" danger onClick={() => confirmAction(selectedRequest, "rejected")}>Отклонить</Button>
-                    ) : null,
-                    <Button key="close" onClick={closeDetails}>
-                        Закрыть
-                    </Button>
-                ].filter(Boolean)}
-                width={960}
+                footer={null}
+                width={980}
                 className="compliance-request-modal"
+                closeIcon={null}
             >
                 {appLoading ? (
                     <div className="compliance-request-modal__loading">
@@ -391,55 +436,56 @@ export default function ComplianceRequests() {
                     </div>
                 ) : selectedRequest ? (
                     <div className="compliance-request-details">
-                        <section className="compliance-client-card">
-                            <div className="compliance-client-photo">
-                                {photoUrl && !photoFailed ? (
-                                    <img src={photoUrl} alt="Фото клиента" onError={() => setPhotoFailed(true)} />
-                                ) : (
-                                    <div className="compliance-client-photo__placeholder">
-                                        {photoFailed ? <ImageOff size={30} /> : <UserRound size={34} />}
-                                        <span>Фото отсутствует</span>
-                                    </div>
-                                )}
+                        <header className="compliance-request-hero">
+                            <div>
+                                <div className="compliance-request-title-row">
+                                    <h2>Заявка #{selectedRequest.id}</h2>
+                                    <Tag color={requestStatus.color}>{requestStatus.label}</Tag>
+                                </div>
+                                <p>{emptyValue(selectedRequest.client_full_name || appFullName)}</p>
                             </div>
-                            <div className="compliance-client-info">
-                                <h3>Информация о клиенте</h3>
-                                <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                                    <Descriptions.Item label="ФИО" span={2}>{emptyValue(selectedRequest.client_full_name || appFullName)}</Descriptions.Item>
-                                    <Descriptions.Item label="ИНН">{emptyValue(selectedRequest.client_identifier || selectedApp?.inn)}</Descriptions.Item>
-                                    <Descriptions.Item label="Телефон">{emptyValue(selectedRequest.client_phone || selectedApp?.phone_number)}</Descriptions.Item>
-                                    <Descriptions.Item label="Дата рождения">{emptyValue(selectedRequest.client_birth_date || selectedApp?.date_of_birth)}</Descriptions.Item>
-                                    <Descriptions.Item label="Резидентство">{yesNo(selectedRequest.is_resident ?? selectedApp?.is_resident)}</Descriptions.Item>
-                                    <Descriptions.Item label="FATCA">{yesNo(selectedRequest.fatca)}</Descriptions.Item>
-                                    <Descriptions.Item label="АПЛ/ПЗЛ">{yesNo(selectedRequest.apl_pzl)}</Descriptions.Item>
-                                    <Descriptions.Item label="Род деятельности">{emptyValue(selectedRequest.client_occupation)}</Descriptions.Item>
-                                </Descriptions>
-                            </div>
+                            <button type="button" onClick={closeDetails} aria-label="Закрыть">×</button>
+                        </header>
+
+                        <section className="compliance-detail-grid">
+                            {detailCards(selectedRequest, selectedApp, appFullName).map(({ icon, label, value }) => {
+                                const DetailIcon = icon;
+                                return (
+                                    <article key={label} className="compliance-detail-tile">
+                                        <DetailIcon size={20} />
+                                        <span>{label}</span>
+                                        <strong>{emptyValue(value)}</strong>
+                                    </article>
+                                );
+                            })}
                         </section>
 
-                        <Card title="Информация о заявке" size="small">
-                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                                <Descriptions.Item label="Номер заявки">{emptyValue(selectedRequest.id)}</Descriptions.Item>
-                                <Descriptions.Item label="Статус"><Tag color={requestStatus.color}>{requestStatus.label}</Tag></Descriptions.Item>
-                                <Descriptions.Item label="Дата создания">{formatDateTime(selectedRequest.created_at || selectedApp?.CreatedAt)}</Descriptions.Item>
-                                <Descriptions.Item label="Последнее изменение">{formatDateTime(selectedRequest.updated_at || selectedApp?.UpdatedAt)}</Descriptions.Item>
-                                <Descriptions.Item label="Сотрудник" span={2}>{emptyValue(selectedRequest.creator_username || selectedApp?.request_creator || selectedApp?.request_сreator)}</Descriptions.Item>
-                                <Descriptions.Item label="Источник средств">{emptyValue(selectedRequest.net_worth)}</Descriptions.Item>
-                                <Descriptions.Item label="Ежемесячный доход">{emptyValue(selectedRequest.monthly_income)}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
+                        <section className="compliance-section-card">
+                            <div className="compliance-section-title">
+                                <h3>Сканы паспорта</h3>
+                                <span>Загружено {loadedPassportScans} из 3</span>
+                            </div>
+                            {documentsLoading ? (
+                                <div className="compliance-documents__loading"><Spin size="small" /> Загрузка документов…</div>
+                            ) : (
+                                <div className="compliance-passport-grid">
+                                    {passportScans.map((slot) => (
+                                        <PassportScanCard
+                                            key={slot.type}
+                                            title={slot.title}
+                                            document={slot.document}
+                                            onPreview={setPreviewDocument}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </section>
 
-                        <Card title="Проверка Compliance" size="small">
-                            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                                <Descriptions.Item label="Балл Compliance">{emptyValue(selectedRequest.compliance_score ?? 0)}</Descriptions.Item>
-                                <Descriptions.Item label="Совпадение">{selectedRequest.compliance_matched ? "Найдено" : "Не найдено"}</Descriptions.Item>
-                                <Descriptions.Item label="Вероятность совпадения">{emptyValue(selectedRequest.match_similarity)}{selectedRequest.match_similarity !== null && selectedRequest.match_similarity !== undefined ? "%" : ""}</Descriptions.Item>
-                                <Descriptions.Item label="Источник совпадения">{emptyValue(bestMatch?.source)}</Descriptions.Item>
-                                {bestMatch?.data?.full_name && <Descriptions.Item label="Найденное имя" span={2}>{bestMatch.data.full_name}</Descriptions.Item>}
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Документы" size="small">
+                        <section className="compliance-section-card">
+                            <div className="compliance-section-title">
+                                <h3>Все документы</h3>
+                                <span>{availableDocuments.length} файл(ов)</span>
+                            </div>
                             {documentsLoading ? (
                                 <div className="compliance-documents__loading"><Spin size="small" /> Загрузка документов…</div>
                             ) : availableDocuments.length ? (
@@ -453,9 +499,44 @@ export default function ComplianceRequests() {
                             ) : (
                                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Документ отсутствует" />
                             )}
-                        </Card>
+                        </section>
 
-                        <Card title="Действия Compliance" size="small">
+                        <section className="compliance-section-card">
+                            <div className="compliance-section-title">
+                                <h3>Данные клиента и проверки</h3>
+                                <span>Все параметры заявки</span>
+                            </div>
+                            <div className="compliance-info-list">
+                                {complianceInfoRows(selectedRequest).map(([label, value]) => (
+                                    <div key={label}>
+                                        <span>{label}</span>
+                                        <strong>{emptyValue(value)}</strong>
+                                    </div>
+                                ))}
+                                <div>
+                                    <span>Вероятность совпадения</span>
+                                    <strong>{emptyValue(selectedRequest.match_similarity)}{selectedRequest.match_similarity !== null && selectedRequest.match_similarity !== undefined ? "%" : ""}</strong>
+                                </div>
+                                <div>
+                                    <span>Источник совпадения</span>
+                                    <strong>{emptyValue(bestMatch?.source)}</strong>
+                                </div>
+                                <div>
+                                    <span>Найденное имя</span>
+                                    <strong>{emptyValue(bestMatch?.data?.full_name)}</strong>
+                                </div>
+                                <div>
+                                    <span>Последнее изменение</span>
+                                    <strong>{formatDateTime(selectedRequest.updated_at || selectedApp?.UpdatedAt)}</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="compliance-section-card">
+                            <div className="compliance-section-title">
+                                <h3>Действия Compliance</h3>
+                                <span>{requestStatus.label}</span>
+                            </div>
                             {(!selectedRequest.status || selectedRequest.status.toLowerCase() === "pending") ? (
                                 <Space wrap>
                                     <Button type="primary" onClick={() => confirmAction(selectedRequest, "approved")}>Одобрить</Button>
@@ -464,7 +545,7 @@ export default function ComplianceRequests() {
                             ) : (
                                 <Text type="secondary">Решение по заявке уже принято: {requestStatus.label.toLowerCase()}.</Text>
                             )}
-                        </Card>
+                        </section>
                     </div>
                 ) : (
                     <Empty description="Данные заявки отсутствуют" />

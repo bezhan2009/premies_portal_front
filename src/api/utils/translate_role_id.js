@@ -7,6 +7,8 @@ export function translate_role_id(role_ids) {
     return "Банковские продукты";
   } else if (role_ids === 41) {
     return "Управление Рохат";
+  } else if (role_ids === 42) {
+    return "Управление деклайнами";
   } else {
     return "undefined";
   }

@@ -19,6 +19,7 @@ import ChatDatePicker from "../../components/general/ChatDatePicker";
 import { LiveWorkflowInvitationCard } from "../../components/live-workflow/LiveWorkflowProvider";
 import { formatChatDayLabel, getMessageDayKey } from "../../utils/chatDateUtils";
 import { getLiveWorkflowMessagePreview, isLiveWorkflowInvitationMessage } from "../../utils/liveWorkflowMessages";
+import UserProfileLink from "../../components/general/UserProfileLink.jsx";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:7575";
 
@@ -2670,7 +2671,7 @@ export default function FeedbackPage() {
                     </div>
                     <div className="thread-info">
                       <div className="thread-meta">
-                        <span className="thread-name">{thread.username || thread.name || "Сотрудник"}</span>
+                        <span className="thread-name"><UserProfileLink userId={thread.user_id} username={thread.username} displayName={thread.username || thread.name || "Сотрудник"} /></span>
                         {thread.last_message_at && <span className="thread-time">{formatTime(thread.last_message_at)}</span>}
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -3323,7 +3324,7 @@ export default function FeedbackPage() {
                               <Pin size={12} style={{ opacity: 0.5 }} />
                             )}
                             <span>
-                              <strong>{msg.username}</strong> {msg.message}
+                              <strong><UserProfileLink userId={msg.sender_id || msg.user_id} username={msg.username} displayName={msg.username} /></strong> {msg.message}
                             </span>
                           </span>
                           {msg.system_type === "pin" && msg.target_msg_id && (
@@ -3407,7 +3408,7 @@ export default function FeedbackPage() {
                         >
                           {!isOutgoing && activeChatType === "group" && (
                             <div style={{ fontSize: "11px", fontWeight: "bold", color: "var(--primary-color, #eb2525)", marginBottom: "4px" }}>
-                              {msg.username}
+                              <UserProfileLink userId={msg.sender_id || msg.user_id} username={msg.username} displayName={msg.username} />
                             </div>
                           )}
                         {msg.is_pinned && (

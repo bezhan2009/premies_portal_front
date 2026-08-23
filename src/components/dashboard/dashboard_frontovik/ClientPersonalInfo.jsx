@@ -8,6 +8,7 @@ import { serviceCodes } from "../../../utils/serviceCodes";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
 import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
 import { getClientEmployeeUsername } from "./absSearchUtils";
+import UserProfileLink from "../../general/UserProfileLink.jsx";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -247,9 +248,11 @@ const ClientPersonalInfo = ({
 
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>Сотрудник</span>
-                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>
-                    {employeeUsername}
-                  </span>
+                  {employeeUsername === "Не указан" ? (
+                    <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>Не указан</span>
+                  ) : (
+                    <UserProfileLink absName={employeeUsername} className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }} />
+                  )}
                 </div>
               </div>
             </div>

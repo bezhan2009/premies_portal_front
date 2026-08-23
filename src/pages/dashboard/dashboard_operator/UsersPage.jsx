@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import Select from "../../../components/elements/Select.jsx";
 import Spinner from "../../../components/Spinner";
+import UserProfileLink from "../../../components/general/UserProfileLink.jsx";
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users"); // "users" or "offices"
@@ -43,6 +44,12 @@ export default function UsersPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [complianceCode, setComplianceCode] = useState("");
+  const [absName, setABSName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [internalPhone, setInternalPhone] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
   
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedAppOffices, setSelectedAppOffices] = useState([]);
@@ -81,6 +88,9 @@ export default function UsersPage() {
       user.email,
       user.phone,
       user.compliance_code,
+      user.abs_name,
+      user.position,
+      user.internal_phone,
       ...(Array.isArray(user.roles) ? user.roles.map((role) => role?.Name) : []),
     ];
 
@@ -218,6 +228,12 @@ export default function UsersPage() {
     setEmail(u.email || "");
     setPhone(u.phone || "");
     setComplianceCode(u.compliance_code || "");
+    setABSName(u.abs_name || "");
+    setBirthDate(u.birth_date || "");
+    setMaritalStatus(u.marital_status || "");
+    setInternalPhone(u.internal_phone || "");
+    setPhotoURL(u.photo_url || "");
+    setPhotoFile(null);
 
     // Fetch user roles
     try {
@@ -261,7 +277,7 @@ export default function UsersPage() {
     }
 
     // Reset conditional parameters
-    setPosition("");
+    setPosition(u.position || "");
     setSalary("");
     setPlan("");
     setSalaryProject("");
@@ -323,12 +339,31 @@ export default function UsersPage() {
           email: email,
           phone: phone,
           compliance_code: complianceCode,
+          abs_name: absName,
+          birth_date: birthDate,
+          marital_status: maritalStatus,
+          position,
+          internal_phone: internalPhone,
         }),
       });
 
       if (!profileRes.ok) {
         const errData = await profileRes.json();
         throw new Error(errData.error || "Не удалось обновить профиль");
+      }
+
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("photo", photoFile);
+        const photoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/${editingUser.id}/photo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!photoRes.ok) {
+          const errData = await photoRes.json();
+          throw new Error(errData.error || "Не удалось загрузить фото сотрудника");
+        }
       }
 
       // 2. Update roles and application offices
@@ -546,13 +581,15 @@ export default function UsersPage() {
                     <div key={u.id} className="request-list-card">
                       <div className="req-info-block">
                         <div className="req-user-row">
-                          <span className="req-name">{u.full_name || "Без ФИО"}</span>
+                          <UserProfileLink userId={u.id} displayName={u.full_name || `${u.last_name || ""} ${u.first_name || ""}`.trim() || "Без ФИО"} className="req-name" />
                           <span className="req-username">@{u.username}</span>
                         </div>
                         <div className="req-details-row">
                           <span><FaPhoneAlt /> {u.phone || "Без телефона"}</span>
                           {u.email && <span>Email: {u.email}</span>}
                           {u.compliance_code && <span>Комплаенс код: {u.compliance_code}</span>}
+                          {u.internal_phone && <span>Внутренний: {u.internal_phone}</span>}
+                          <span>{u.work_status || "Отсутствует на работе"}</span>
                         </div>
                         <div className="req-roles-badge-list">
                           {u.roles?.map((r) => (
@@ -754,6 +791,33 @@ export default function UsersPage() {
                 <div className="form-group">
                   <label>Код комплаенса</label>
                   <input type="text" value={complianceCode} onChange={(e) => setComplianceCode(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Имя в АБС</label>
+                  <input type="text" value={absName} onChange={(e) => setABSName(e.target.value)} placeholder="Например, SSHAKHROM" />
+                </div>
+                <div className="form-group">
+                  <label>Дата рождения</label>
+                  <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Семейное положение</label>
+                  <input type="text" value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Должность</label>
+                  <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Внутренний номер телефона</label>
+                  <input type="text" value={internalPhone} onChange={(e) => setInternalPhone(e.target.value)} placeholder="Например, 1234" />
+                </div>
+                <div className="form-group span-2">
+                  <label>Фото сотрудника</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {photoURL && <img src={`${import.meta.env.VITE_BACKEND_URL}${photoURL}`} alt="Фото" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover" }} />}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} />
+                  </div>
                 </div>
               </div>
 

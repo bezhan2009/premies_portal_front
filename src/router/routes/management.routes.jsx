@@ -21,9 +21,20 @@ import AuditLogsPage from "../../pages/dashboard/AuditLogsPage.jsx";
 import CustomerDirectory from "../../pages/dashboard/dashboard_customer_directory/CustomerDirectory.jsx";
 import AccountReconciliation from "../../pages/dashboard/account_reconciliation/AccountReconciliation.jsx";
 import RohatPage from "../../pages/dashboard/dashboard_rohat/RohatPage.jsx";
+import DeclineManagementPage from "../../pages/dashboard/dashboard_declines/DeclineManagementPage.jsx";
 
 const managementRoutes = (
   <>
+    <Route
+      element={
+        <RequireRole allowedRoles={[42]}>
+          <Outlet />
+        </RequireRole>
+      }
+    >
+      <Route path="/declines" element={<DeclineManagementPage />} />
+    </Route>
+
     {/* Chairman (Role 9) */}
     <Route
       element={

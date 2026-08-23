@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, RefreshCw, Search } from "lucide-react";
 import Spinner from "../../../components/Spinner.jsx";
+import UserProfileLink from "../../../components/general/UserProfileLink.jsx";
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -113,7 +114,7 @@ export default function SMSHistory() {
                     <td>{item.phone_number || "-"}</td>
                     <td className="sms-history-message-cell">{item.message_content || "-"}</td>
                     <td>{formatDateTime(item.sent_at || item.created_at)}</td>
-                    <td>{item.sender_username || "-"}</td>
+                    <td><UserProfileLink userId={item.sender_user_id} username={item.sender_username} displayName={item.sender_username || "-"} /></td>
                   </tr>
                 ))
               ) : (

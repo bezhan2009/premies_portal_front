@@ -6,6 +6,7 @@ import { fullUpdateWorkers } from "../../../../api/workers/fullUpdateWorkers.js"
 import ModalRoles from "../../../modal/ModalRoles.jsx";
 import { getAllUsers } from "../../../../api/users/get_user.js";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import UserProfileLink from "../../../general/UserProfileLink.jsx";
 
 const RolesTable = () => {
   const [employees, setEmployees] = useState([]);
@@ -229,7 +230,9 @@ const RolesTable = () => {
 
     return (
       <div onClick={() => setEdit(record)} style={{ cursor: "pointer" }}>
-        {record[field]}
+        {field === "full_name" ? (
+          <UserProfileLink userId={record.ID || record.id} username={record.username} displayName={record[field]} />
+        ) : record[field]}
       </div>
     );
   };

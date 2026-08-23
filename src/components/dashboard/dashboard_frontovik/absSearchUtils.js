@@ -1,5 +1,17 @@
 import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 
+const CLIENT_CODE_PATTERN = /^\d{4}\.\d{6}$/;
+
+export const resolveClientSearch = (value, selectedSearchType) => {
+  const searchValue = String(value || "").trim();
+  return {
+    searchValue,
+    searchType: CLIENT_CODE_PATTERN.test(searchValue)
+      ? TYPE_SEARCH_CLIENT[1].value
+      : selectedSearchType,
+  };
+};
+
 export const getClientEmployeeUsername = (client) => {
   const rawRiskValues =
     client?.ClientRiskValuesList?.ClientRiskValue ??

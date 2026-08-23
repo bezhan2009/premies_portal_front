@@ -1,7 +1,7 @@
 .persistent-notifications {
   position: fixed;
   z-index: 1200;
-  top: 76px;
+  bottom: 20px;
   right: 20px;
   display: grid;
   width: min(390px, calc(100vw - 32px));
@@ -18,7 +18,7 @@
   border-left: 4px solid #1677ff;
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 12px 34px rgb(15 23 42 / 18%);
+  box-shadow: 0 18px 48px rgb(15 23 42 / 22%);
   pointer-events: auto;
 }
 
@@ -97,7 +97,7 @@
 
 @media (max-width: 600px) {
   .persistent-notifications {
-    top: 68px;
+    bottom: 12px;
     right: 12px;
     width: calc(100vw - 24px);
   }

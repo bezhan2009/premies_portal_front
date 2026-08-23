@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Input from "../../../elements/Input.jsx";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
+import UserProfileLink from "../../../general/UserProfileLink.jsx";
 
 const RolesLogsTable = () => {
   const [logs, setLogs] = useState([]);
@@ -172,13 +173,13 @@ const RolesLogsTable = () => {
           title="Оператор"
           dataIndex={["operator", "username"]}
           key="operator.username"
-          render={(value) => value || "N/A"}
+          render={(value, record) => <UserProfileLink userId={record.operator?.ID || record.operator?.id} username={value} displayName={value || "N/A"} />}
         />
         <Table.Column
           title="Пользователь"
           dataIndex={["user", "username"]}
           key="user.username"
-          render={(value) => value || "N/A"}
+          render={(value, record) => <UserProfileLink userId={record.user?.ID || record.user?.id} username={value} displayName={value || "N/A"} />}
         />
         <Table.Column
           title="Роли"

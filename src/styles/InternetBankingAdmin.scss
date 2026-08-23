@@ -1,0 +1,106 @@
+.internet-banking-admin-page {
+  min-height: 100%;
+  padding: 24px;
+  background: #f5f7fa;
+
+  .ib-page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+    background: #fff;
+    border: 1px solid #dce3ec;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(30, 50, 80, 0.06);
+
+    h2 { margin: 0 0 3px; color: #172033; }
+  }
+
+  .ib-page-icon {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, #d71935, #a90f27);
+    border-radius: 12px;
+  }
+
+  .ib-error { margin-bottom: 16px; }
+
+  .ant-tabs-nav {
+    padding: 0 16px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #dce3ec;
+    border-radius: 12px;
+  }
+
+  .ib-tab-label { display: inline-flex; gap: 8px; align-items: center; }
+
+  .ib-section-card {
+    border-color: #d5dde8;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(30, 50, 80, 0.05);
+  }
+
+  .ib-table-toolbar {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) auto auto auto;
+    gap: 10px;
+    margin-bottom: 16px;
+
+    &--end { display: flex; justify-content: flex-end; }
+  }
+
+  .ant-table-wrapper {
+    overflow: hidden;
+    border: 1px solid #dce3ec;
+    border-radius: 10px;
+  }
+
+  .ant-table-thead > tr > th {
+    color: #3c485d;
+    font-weight: 650;
+    background: #f3f6fa;
+    border-bottom-color: #cfd8e5;
+  }
+}
+
+.ib-client-modal {
+  .ant-modal-content { border: 1px solid #cfd8e5; border-radius: 16px; }
+  .ant-modal-body { max-height: 72vh; padding: 18px 2px; overflow-y: auto; }
+}
+
+.ib-form-section,
+.ib-person-card {
+  margin-bottom: 14px;
+  border-color: #d5dde8;
+  border-radius: 12px;
+
+  .ant-card-head { background: #f7f9fc; border-bottom-color: #dce3ec; }
+  .ant-input,
+  .ant-select-selector,
+  .ant-input-number { border-color: #bdc8d7 !important; border-radius: 8px !important; }
+}
+
+.ib-person-card { border-left: 4px solid #d71935; }
+
+.ib-repeatable-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 2px 12px;
+
+  h4 { margin: 0; }
+}
+
+@media (max-width: 760px) {
+  .internet-banking-admin-page {
+    padding: 12px;
+    .ib-table-toolbar { grid-template-columns: 1fr; }
+  }
+  .ib-repeatable-heading { align-items: flex-start; flex-direction: column; }
+}

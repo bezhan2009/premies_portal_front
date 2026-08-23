@@ -1,72 +1,182 @@
 .compliance-request-modal {
+  .ant-modal-content {
+    overflow: hidden;
+    border-radius: 18px;
+    padding: 0;
+  }
+
   .ant-modal-body {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
-    padding-right: 6px;
+    padding: 0;
   }
 }
 
 .compliance-request-modal__loading {
   display: grid;
-  min-height: 240px;
+  min-height: 280px;
   place-items: center;
 }
 
 .compliance-request-details {
   display: grid;
-  gap: 16px;
-
-  .ant-card {
-    border-color: #e7ebf0;
-    box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
-  }
-}
-
-.compliance-client-card {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 20px;
-  padding: 16px;
-  border: 1px solid #e7ebf0;
-  border-radius: 8px;
+  gap: 22px;
+  padding: 28px 32px 32px;
   background: #fff;
 }
 
-.compliance-client-photo {
-  width: 100%;
-  min-height: 210px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
+.compliance-request-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #edf1f5;
 
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 210px;
-    object-fit: cover;
+  h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 26px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: #6b7280;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  > button {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 20px;
   }
 }
 
-.compliance-client-photo__placeholder {
+.compliance-request-title-row {
   display: flex;
-  min-height: 210px;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #7b8794;
-  text-align: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.compliance-client-info {
-  min-width: 0;
+.compliance-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compliance-detail-tile {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 4px;
+  align-items: center;
+  min-height: 76px;
+  padding: 18px;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+  background: #fbfcfe;
+
+  svg {
+    grid-row: span 2;
+    color: #7b8794;
+  }
+
+  span {
+    color: #7b8794;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    min-width: 0;
+    color: #111827;
+    font-size: 16px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+}
+
+.compliance-section-card {
+  display: grid;
+  gap: 16px;
+}
+
+.compliance-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 
   h3 {
-    margin: 0 0 12px;
-    color: #1f2937;
-    font-size: 16px;
+    margin: 0;
+    color: #111827;
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  span {
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 800;
+  }
+}
+
+.compliance-passport-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.compliance-passport-scan {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  cursor: default;
+  font-weight: 700;
+  text-align: center;
+
+  &.has-file {
+    cursor: pointer;
+  }
+}
+
+.compliance-passport-scan__preview {
+  display: grid;
+  min-height: 230px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed #e5eaf0;
+  border-radius: 12px;
+  background: #fbfcfe;
+  color: #7b8794;
+
+  img {
+    width: 100%;
+    height: 100%;
+    min-height: 230px;
+    object-fit: cover;
+  }
+
+  b {
+    display: block;
+    margin-top: 8px;
+    font-weight: 700;
   }
 }
 
@@ -90,32 +200,53 @@
   color: #64748b;
 }
 
-@media (max-width: 700px) {
+.compliance-info-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+
+  > div {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid #edf1f5;
+    border-radius: 10px;
+    background: #fbfcfe;
+  }
+
+  span {
+    color: #7b8794;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: #111827;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 760px) {
   .compliance-request-modal {
     width: calc(100vw - 24px) !important;
     max-width: calc(100vw - 24px);
     margin: 12px auto;
-
-    .ant-modal-body {
-      max-height: calc(100vh - 190px);
-    }
   }
 
-  .compliance-client-card {
+  .compliance-request-details {
+    padding: 22px 18px;
+  }
+
+  .compliance-detail-grid,
+  .compliance-passport-grid,
+  .compliance-info-list {
     grid-template-columns: 1fr;
   }
 
-  .compliance-client-photo {
-    width: min(100%, 260px);
-    min-height: 200px;
-    margin: 0 auto;
-  }
-
-  .compliance-request-details .ant-descriptions-view {
-    overflow-x: auto;
-  }
-
-  .compliance-documents .ant-btn {
-    width: 100%;
+  .compliance-section-title,
+  .compliance-request-hero {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

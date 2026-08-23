@@ -37,3 +37,19 @@ test("deposit schedule is chronological for DD.MM.YYYY dates and groups by day",
   ]);
   assert.equal(rows[0].tax, 1);
 });
+
+test("deposit schedule accepts the existing ABS graphs response fields", () => {
+  const rows = buildDepositScheduleRows([
+    { PaymentDate: "2026-09-01", Code: "DEP_INTER", Amount: "120.50" },
+    { PaymentDate: "2026-09-01", Code: "DEP_TAX", Amount: "14.46" },
+    { PaymentDate: "2026-09-01", Code: "DEP_PAY", Amount: "106.04" },
+  ], new Date("2026-08-17T00:00:00Z"));
+
+  assert.deepEqual(rows, [{
+    date: "2026-09-01",
+    calculatedIncome: 120.5,
+    tax: 14.46,
+    income: 106.04,
+    status: "Ожидается",
+  }]);
+});

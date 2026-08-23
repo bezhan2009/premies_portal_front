@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import { FaUserShield, FaCheck, FaTimes, FaEdit, FaUserCheck, FaSpinner, FaUsers, FaFolderOpen, FaAddressCard, FaPhoneAlt, FaRegBuilding, FaBriefcase } from "react-icons/fa";
 import Select from "../../../components/elements/Select.jsx";
 import Spinner from "../../../components/Spinner";
+import UserProfileLink from "../../../components/general/UserProfileLink.jsx";
 
 export default function AccessRequestsPage() {
   const [requests, setRequests] = useState([]);
@@ -231,7 +232,7 @@ export default function AccessRequestsPage() {
               <div key={req.ID} className="request-list-card">
                 <div className="req-info-block">
                   <div className="req-user-row">
-                    <span className="req-name">{req.full_name}</span>
+                    <UserProfileLink userId={req.user_id} displayName={req.full_name} className="req-name" />
                     <span className="req-username">@{req.User?.email ? req.User.email.split("@")[0] : "user"}</span>
                   </div>
                   <div className="req-details-row">

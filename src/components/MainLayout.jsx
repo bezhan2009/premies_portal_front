@@ -12,6 +12,7 @@ import useTabsStore from "../store/useTabsStore.js";
 import useNavigationStore from "../store/useNavigationStore.js";
 import { motion as Motion, AnimatePresence } from "framer-motion";
 import LiveWorkflowProvider from "./live-workflow/LiveWorkflowProvider.jsx";
+import UserProfileModalHost from "./general/UserProfileModalHost.jsx";
 
 const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -40,6 +41,7 @@ const MainLayout = () => {
     if (pathname.includes("/operator/access-requests")) return "access_requests_operator";
     if (pathname.includes("/operator/docx-generator")) return "docx_generator";
     if (pathname.includes("/customers")) return "customers";
+    if (pathname.includes("/declines")) return "declines_management";
 
     // Worker pages
     if (pathname.includes("/worker/premies")) return "worker_premies";
@@ -223,6 +225,7 @@ const MainLayout = () => {
     "/mail-agent",
     "/admin/audit-logs",
     "/agent/client-pins",
+    "/declines",
   ];
   const isNormalizedLayoutRoute = normalizedLayoutRoutes.some((route) => {
     if (route === "/agent/card") return location.pathname.startsWith("/agent/card");
@@ -300,6 +303,7 @@ const MainLayout = () => {
       </div>
       <CurrencyRatesWidget />
       <MiniChatWindow />
+      <UserProfileModalHost />
     </div>
     </LiveWorkflowProvider>
   );

@@ -60,7 +60,7 @@ export const getUserDeposits = async (clientIndex) => {
 export const fetchDepositSchedule = async (colvirReferenceId) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/deposits/schedule?colvirReferenceId=" + encodeURIComponent(colvirReferenceId),
+      "/credits/graphs?referenceId=" + encodeURIComponent(colvirReferenceId),
     );
     if (Array.isArray(res.data)) {
       return res.data;

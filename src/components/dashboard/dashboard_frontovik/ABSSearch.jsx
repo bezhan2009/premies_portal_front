@@ -57,12 +57,19 @@ import ClientDocumentUploadModal from "../../client-documents/ClientDocumentUplo
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import NewClientModal from "./NewClientModal.jsx";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
+import { fetchMerchantPosTerminals } from "../../../api/merchantPosTerminals.js";
+import {
+    historyAtmIds,
+    isLatestClientProductRequest,
+    isLatestRequestGeneration,
+} from "./posTerminalUtils.js";
 
 // Utilities
 import {
     normalizeClientData,
     formatPhoneNumber as formatPhoneNumberUtil,
     copyToClipboard as copyToClipboardUtil,
+    resolveClientSearch,
 } from "./absSearchUtils.js";
 import {
     getClientSelfieDocument,
@@ -108,6 +115,11 @@ export default function ABSClientSearch() {
     const [accountsData, setAccountsData] = useState([]);
     const [creditsData, setCreditsData] = useState([]);
     const [depositsData, setDepositsData] = useState([]);
+    const [posTerminals, setPosTerminals] = useState([]);
+    const [posTerminalsClientCode, setPosTerminalsClientCode] = useState("");
+    const [isProductDataLoading, setIsProductDataLoading] = useState(false);
+    const productRequestGenerationRef = useRef(0);
+    const pinRequirementGenerationRef = useRef(0);
     const [selectTypeSearchClient, setSelectTypeSearchClient] = useState(
         TYPE_SEARCH_CLIENT[0].value,
     );
@@ -343,6 +355,11 @@ export default function ABSClientSearch() {
         setAccountsData([]);
         setCreditsData([]);
         setDepositsData([]);
+        setPosTerminals([]);
+        setPosTerminalsClientCode("");
+        setIsProductDataLoading(false);
+        productRequestGenerationRef.current += 1;
+        pinRequirementGenerationRef.current += 1;
         setIsMobile(null);
         setTelegramData(null);
         setClientDocuments([]);
@@ -431,13 +448,21 @@ export default function ABSClientSearch() {
         if (searchInFlightRef.current) return;
         searchInFlightRef.current = true;
 
-        let formattedPhone = searchValue.trim();
+        const resolvedSearch = resolveClientSearch(searchValue, searchType);
+        const formattedPhone = resolvedSearch.searchValue;
+        const effectiveSearchType = resolvedSearch.searchType;
+
+        if (effectiveSearchType !== searchType) {
+            setSelectTypeSearchClient(effectiveSearchType);
+            setPhoneNumber(formattedPhone);
+            setDisplayPhone(formattedPhone);
+        }
 
         if (!options.remote) {
             publishLiveWorkflowPageState({
                 kind: "frontovik.search",
                 searchValue: formattedPhone,
-                searchType,
+                searchType: effectiveSearchType,
                 activeTab,
             });
         }
@@ -445,7 +470,7 @@ export default function ABSClientSearch() {
         // Log audit action
         logAuditAction({
             action: "Поиск клиента",
-            details: `Поиск клиента по типу '${searchType}' со значением '${formattedPhone}'`
+            details: `Поиск клиента по типу '${effectiveSearchType}' со значением '${formattedPhone}'`
         });
 
         try {
@@ -456,12 +481,12 @@ export default function ABSClientSearch() {
             const token = localStorage.getItem("access_token");
 
             const searchTypeIndex = TYPE_SEARCH_CLIENT.findIndex(
-                (t) => t.value === searchType,
+                (t) => t.value === effectiveSearchType,
             );
 
             if (searchTypeIndex === 0 || (searchTypeIndex >= 3 && searchTypeIndex <= 6)) {
                 const clientCodes = await searchViaATMService(
-                    searchType,
+                    effectiveSearchType,
                     formattedPhone,
                 );
 
@@ -515,7 +540,7 @@ export default function ABSClientSearch() {
                     showAlert(`Найдено клиентов: ${normalizedData.length}`, "success");
                 }
             } else {
-                const apiUrl = `${API_BASE_URL}/${searchType}${formattedPhone}`;
+                const apiUrl = `${API_BASE_URL}/${effectiveSearchType}${formattedPhone}`;
 
                 const response = await fetch(apiUrl, {
                     method: "GET",
@@ -543,13 +568,13 @@ export default function ABSClientSearch() {
                         normalizeClientData(client, TYPE_SEARCH_CLIENT[0].value)
                     );
                 } else if (searchTypeIndex === 1) {
-                    normalizedData = [normalizeClientData(data, searchType)];
+                    normalizedData = [normalizeClientData(data, effectiveSearchType)];
                 } else if (searchTypeIndex === 2) {
                     normalizedData = Array.isArray(data)
                         ? data.map((client) =>
-                            normalizeClientData(client, searchType),
+                            normalizeClientData(client, effectiveSearchType),
                         )
-                        : [normalizeClientData(data, searchType)];
+                        : [normalizeClientData(data, effectiveSearchType)];
                 }
 
                 const enrichedData = await enrichClientsWithPin(normalizedData);
@@ -616,9 +641,21 @@ export default function ABSClientSearch() {
     const handleGetDataUser = useCallback(async (client, clientIndex) => {
         if (!client?.client_code) return;
 
-        try {
-            const clientCode = client.client_code;
+        const clientCode = String(client.client_code).trim();
+        const requestGeneration = productRequestGenerationRef.current + 1;
+        productRequestGenerationRef.current = requestGeneration;
+        setPosTerminals([]);
+        setPosTerminalsClientCode("");
+        setIsProductDataLoading(true);
 
+        const isCurrentRequest = () => isLatestClientProductRequest(
+            productRequestGenerationRef.current,
+            requestGeneration,
+            selectedClientRef.current?.client_code,
+            clientCode,
+        );
+
+        try {
             // Log audit action
             logAuditAction({
                 action: "Просмотр данных клиента",
@@ -654,13 +691,6 @@ export default function ABSClientSearch() {
                 console.log("[ABSSearch] Client already enriched. DetailedAddresses:", client.DetailedAddresses);
             }
 
-            const [resCards, resAcc, resCredits, resDeposits] = await Promise.all([
-                getUserCards(clientCode),
-                getUserAccounts(clientCode),
-                getUserCredits(clientCode),
-                getUserDeposits(clientCode),
-            ]);
-
             const normalizeArrayResponse = (response) => {
                 if (Array.isArray(response)) return response;
                 if (Array.isArray(response?.data)) return response.data;
@@ -669,9 +699,51 @@ export default function ABSClientSearch() {
                 return [];
             };
 
-            const normalizedAcc = normalizeArrayResponse(resAcc);
-            const normalizedCredits = normalizeArrayResponse(resCredits);
-            const normalizedDeposits = normalizeArrayResponse(resDeposits);
+            const posRequest = fetchMerchantPosTerminals(clientCode)
+                .then((response) => {
+                    if (!isCurrentRequest()) return;
+                    setPosTerminals(normalizeArrayResponse(response));
+                    setPosTerminalsClientCode(clientCode);
+                })
+                .catch((error) => {
+                    console.error("[ABSSearch] Failed to load POS terminals:", error);
+                    if (!isCurrentRequest()) return;
+                    setPosTerminals([]);
+                    setPosTerminalsClientCode(clientCode);
+                    showAlert("Не удалось загрузить POS-терминалы", "error");
+                });
+
+            const [cardsResult, accountsResult, creditsResult, depositsResult] = await Promise.allSettled([
+                getUserCards(clientCode),
+                getUserAccounts(clientCode),
+                getUserCredits(clientCode),
+                getUserDeposits(clientCode),
+            ]);
+
+            if (!isCurrentRequest()) return;
+
+            const fulfilledArray = (result, label) => {
+                if (result.status === "fulfilled") {
+                    return normalizeArrayResponse(result.value);
+                }
+                console.error(`[ABSSearch] Failed to load ${label}:`, result.reason);
+                return [];
+            };
+
+            const normalizedCards = fulfilledArray(cardsResult, "cards");
+            const normalizedAcc = fulfilledArray(accountsResult, "accounts");
+            const normalizedCredits = fulfilledArray(creditsResult, "credits");
+            const normalizedDeposits = fulfilledArray(depositsResult, "deposits");
+
+            const failedAbsRequests = [
+                cardsResult,
+                accountsResult,
+                creditsResult,
+                depositsResult,
+            ].filter((result) => result.status === "rejected").length;
+            if (failedAbsRequests > 0) {
+                showAlert("Не удалось загрузить часть данных клиента", "error");
+            }
 
             setAccountsData(normalizedAcc);
             
@@ -692,15 +764,16 @@ export default function ABSClientSearch() {
                         }
                     })
                 );
-                setCreditsData(enrichedCredits);
+                if (isCurrentRequest()) setCreditsData(enrichedCredits);
             } else {
                 setCreditsData([]);
             }
+            if (!isCurrentRequest()) return;
             setDepositsData(normalizedDeposits);
 
-            if (resCards && resCards.length > 0) {
+            if (normalizedCards.length > 0) {
                 const enrichedCards = await Promise.all(
-                    resCards.map(async (card) => {
+                    normalizedCards.map(async (card) => {
                         try {
                             const [details, services] = await Promise.all([
                                 fetchCardDetails(card.cardId),
@@ -734,13 +807,17 @@ export default function ABSClientSearch() {
                         }
                     }),
                 );
-                setCardsData(enrichedCards);
+                if (isCurrentRequest()) setCardsData(enrichedCards);
             } else {
                 setCardsData([]);
             }
+            await posRequest;
         } catch (error) {
+            if (!isCurrentRequest()) return;
             console.error("Error fetching user cards/accounts:", error);
             showAlert("Ошибка при получении данных карт/счетов", "error");
+        } finally {
+            if (isCurrentRequest()) setIsProductDataLoading(false);
         }
     }, []);
 
@@ -1311,6 +1388,26 @@ export default function ABSClientSearch() {
         navigate("/accounts/account-operations?account=" + accountNumber);
     };
 
+    const handleNavigateToPosHistory = (selectedAtmIDs) => {
+        const atmIDs = historyAtmIds(selectedAtmIDs);
+        const clientCode = String(selectedClient?.client_code || "").trim();
+        if (!clientCode || atmIDs.length === 0) return;
+
+        logAuditAction({
+            action: "Переход к истории POS-терминалов",
+            client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
+            client_phone: selectedClient?.phone || "",
+            client_inn: selectedClient?.tax_code || "",
+            details: `Переход к истории POS-терминалов: ${atmIDs.join(", ")}`,
+        });
+
+        const params = new URLSearchParams({
+            clientCode,
+            atmIds: atmIDs.join(","),
+        });
+        navigate(`/processing/transactions?${params.toString()}`);
+    };
+
     console.log("isMobile", isMobile);
 
     const selectedClient =
@@ -1323,6 +1420,10 @@ export default function ABSClientSearch() {
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
     const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
     const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
+    const visiblePosTerminals =
+        posTerminalsClientCode === String(selectedClient?.client_code || "").trim()
+            ? posTerminals
+            : [];
     const isComplianceBlocked = complianceListType === "black";
     const isWhiteListed = complianceListType === "white";
     const isClientChecking = isTerrorChecking || isComplianceChecking;
@@ -1349,6 +1450,12 @@ export default function ABSClientSearch() {
             clientCode: selectedClient?.client_code || "",
         });
     }, [selectedClient?.client_code]);
+
+    useEffect(() => {
+        if (!isProductDataLoading && activeTab === "pos" && visiblePosTerminals.length === 0) {
+            setActiveTab("cards");
+        }
+    }, [activeTab, isProductDataLoading, visiblePosTerminals.length]);
 
     useEffect(() => {
         const clientCode = String(selectedClient?.client_code || "").trim();
@@ -1634,22 +1741,41 @@ export default function ABSClientSearch() {
     };
 
     useEffect(() => {
+        const requestGeneration = pinRequirementGenerationRef.current + 1;
+        pinRequirementGenerationRef.current = requestGeneration;
+        let cancelled = false;
+
         const checkAndGetData = async () => {
             const currentClient = selectedClientRef.current;
-            const clientCode = currentClient?.client_code;
+            const clientCode = String(currentClient?.client_code || "").trim();
             if (!clientCode) return;
 
+            const isCurrentCheck = () =>
+                !cancelled &&
+                isLatestRequestGeneration(
+                    pinRequirementGenerationRef.current,
+                    requestGeneration,
+                ) &&
+                String(selectedClientRef.current?.client_code || "").trim() === clientCode;
+
             if (verifiedClientCodes.includes(clientCode)) {
-                handleGetDataUser(currentClient, selectedClientIndex);
+                if (isCurrentCheck()) {
+                    handleGetDataUser(currentClient, selectedClientIndex);
+                }
                 return;
             }
 
             const requiresPin = await checkPinRequired(clientCode);
+            if (!isCurrentCheck()) return;
             if (requiresPin) {
+                productRequestGenerationRef.current += 1;
                 setCardsData([]);
                 setAccountsData([]);
                 setCreditsData([]);
                 setDepositsData([]);
+                setPosTerminals([]);
+                setPosTerminalsClientCode("");
+                setIsProductDataLoading(false);
                 setPinModalClient(currentClient);
             } else {
                 handleGetDataUser(currentClient, selectedClientIndex);
@@ -1657,6 +1783,9 @@ export default function ABSClientSearch() {
         };
 
         checkAndGetData();
+        return () => {
+            cancelled = true;
+        };
     }, [selectedClient?.client_code, selectedClientIndex, verifiedClientCodes, handleGetDataUser]);
 
     // Восстановление состояния
@@ -1680,6 +1809,8 @@ export default function ABSClientSearch() {
             setAccountsData(state.accountsData || []);
             setCreditsData(state.creditsData || []);
             setDepositsData(state.depositsData || []);
+            setPosTerminals(state.posTerminals || []);
+            setPosTerminalsClientCode(state.posTerminalsClientCode || "");
         }
     }, []);
 
@@ -1700,6 +1831,11 @@ export default function ABSClientSearch() {
         setAccountsData([]);
         setCreditsData([]);
         setDepositsData([]);
+        setPosTerminals([]);
+        setPosTerminalsClientCode("");
+        setIsProductDataLoading(false);
+        productRequestGenerationRef.current += 1;
+        pinRequirementGenerationRef.current += 1;
         void handleSearchClientRef.current?.(clientIndex, clientIndexSearchType);
     }, [requestedClientIndex, setSearchParams]);
 
@@ -1734,6 +1870,8 @@ export default function ABSClientSearch() {
             accountsData,
             creditsData,
             depositsData,
+            posTerminals,
+            posTerminalsClientCode,
         };
         sessionStorage.setItem("absClientSearchState", JSON.stringify(stateToSave));
     }, [
@@ -1747,6 +1885,8 @@ export default function ABSClientSearch() {
         accountsData,
         creditsData,
         depositsData,
+        posTerminals,
+        posTerminalsClientCode,
     ]);
 
     useEffect(() => {
@@ -1814,7 +1954,7 @@ export default function ABSClientSearch() {
 
     return (
         <>
-            <div className="block_info_prems content-page abs-search-page" style={{ textAlign: "left" }}>
+            <div className="block_info_prems content-page abs-search-page abs-search-wrapper" style={{ textAlign: "left", width: "100%" }}>
                 {alert.show && (
                     <AlertMessage
                         message={alert.message}
@@ -1924,7 +2064,11 @@ export default function ABSClientSearch() {
                             loading={auditLogsLoading}
                         />
 
-                        {!isSelectedClientPinRequired && (
+                        {!isSelectedClientPinRequired && (isProductDataLoading ? (
+                            <div className="frontovik-products-loading">
+                                <Spinner center />
+                            </div>
+                        ) : (
                             <ClientDataTabs
                                 selectedClient={selectedClient}
                                 cardsData={cardsData}
@@ -1973,8 +2117,11 @@ export default function ABSClientSearch() {
                                 isMobile={isMobile}
                                 activeTab={activeTab}
                                 setActiveTab={handleActiveTabChange}
+                                posTerminals={visiblePosTerminals}
+                                handleNavigateToPosHistory={handleNavigateToPosHistory}
+                                hasPosHistoryAccess={hasRole(17) || hasRole(18)}
                             />
-                        )}
+                        ))}
                     </div>
                 </div>
             </div>

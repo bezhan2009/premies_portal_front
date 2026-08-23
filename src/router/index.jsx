@@ -24,6 +24,7 @@ import managementRoutes from "./routes/management.routes";
 import atmRoutes from "./routes/atm.routes.jsx";
 import { productRoutes } from "./routes/product.routes";
 import complianceRoutes from "./routes/compliance.routes";
+import internetBankingRoutes from "./routes/internetBanking.routes.jsx";
 
 export default function AppRouter() {
   return (
@@ -80,6 +81,7 @@ export default function AppRouter() {
           {atmRoutes}
           {productRoutes}
           {complianceRoutes}
+          {internetBankingRoutes}
         </Route>
 
         <Route path="*" element={<PageNotFound />} />

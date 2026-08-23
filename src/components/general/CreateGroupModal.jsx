@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Search, User, Camera, Trash2 } from "lucide-react";
+import UserProfileLink from "./UserProfileLink.jsx";
 
 export default function CreateGroupModal({ isOpen, onClose, onSuccess }) {
   const [name, setName] = useState("");
@@ -227,7 +228,7 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }) {
                           {user.full_name?.charAt(0) || user.username?.charAt(0) || "U"}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span>{user.full_name || user.username}</span>
+                          <UserProfileLink userId={user.id} username={user.username} displayName={user.full_name || user.username} />
                           <span style={{ fontSize: "10px", color: "#64748b" }}>@{user.username}</span>
                         </div>
                       </div>
@@ -245,7 +246,7 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }) {
                 <div className="member-selected-list">
                   {selectedUsers.map(user => (
                     <div key={user.id} className="member-chip">
-                      <span>{user.full_name || user.username}</span>
+                      <UserProfileLink userId={user.id} username={user.username} displayName={user.full_name || user.username} />
                       <button type="button" onClick={() => handleRemoveUser(user.id)}>
                         <X size={14} />
                       </button>
