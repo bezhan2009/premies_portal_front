@@ -8,6 +8,7 @@ RUN npm install
 
 COPY . .
 
+ENV NODE_OPTIONS=--max-old-space-size=6144
 RUN npm run build
 
 # ---------- RUNTIME STAGE ----------

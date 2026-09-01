@@ -40,8 +40,10 @@ const MainLayout = () => {
     if (pathname.includes("/operator/users")) return "users_operator";
     if (pathname.includes("/operator/access-requests")) return "access_requests_operator";
     if (pathname.includes("/operator/docx-generator")) return "docx_generator";
+    if (pathname.includes("/operator/student-certificates")) return "student_certificates";
     if (pathname.includes("/customers")) return "customers";
     if (pathname.includes("/declines")) return "declines_management";
+    if (pathname.includes("/internet-bank")) return "internet_bank";
 
     // Worker pages
     if (pathname.includes("/worker/premies")) return "worker_premies";
@@ -184,7 +186,9 @@ const MainLayout = () => {
     "/operator/access-requests",
     "/operator/users",
     "/operator/docx-generator",
+    "/operator/student-certificates",
     "/operator/feedback",
+    "/internet-bank",
     "/agent/card",
     "/agent/applications-list",
     "/product/cards",

@@ -83,7 +83,23 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
 const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
-const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL;
+const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL || "/telegram-api";
+const SEARCH_CACHE_TTL = 60 * 1000;
+const searchLookupCache = new Map();
+
+const cachedSearchLookup = (key, request) => {
+    const now = Date.now();
+    const cacheScope = localStorage.getItem("access_token") || "anonymous";
+    const scopedKey = `${cacheScope}:${key}`;
+    const cached = searchLookupCache.get(scopedKey);
+    if (cached && cached.expiresAt > now) return cached.promise;
+    const promise = Promise.resolve().then(request).catch((error) => {
+        searchLookupCache.delete(scopedKey);
+        throw error;
+    });
+    searchLookupCache.set(scopedKey, { promise, expiresAt: now + SEARCH_CACHE_TTL });
+    return promise;
+};
 
 // Функция преобразования дирамов в сомони (деление на 100)
 const convertDiramToSomoni = (value) => {
@@ -107,6 +123,7 @@ export default function ABSClientSearch() {
     const [clientNotFound, setClientNotFound] = useState(false);
     const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
     const searchInFlightRef = useRef(false);
+    const pinRequirementCacheRef = useRef(new Map());
     const consumedClientIndexRef = useRef("");
     const handleSearchClientRef = useRef(null);
     const handleClearRef = useRef(null);
@@ -411,19 +428,20 @@ export default function ABSClientSearch() {
                 throw new Error("Неизвестный тип поиска");
         }
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
+        return cachedSearchLookup(url, async () => {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data;
     };
 
         // getClientByCode is now imported from getUserCredits API
@@ -509,28 +527,40 @@ export default function ABSClientSearch() {
                     return;
                 }
 
-                const clientsResults = await Promise.allSettled(resolvedClientCodes.map((code) =>
-                    getClientByCode(code, token),
-                ));
+                // Client details and PIN policy are independent upstream calls.
+                // Start them together so the search no longer pays for two
+                // consecutive network round-trips before showing a result.
+                const [clientsResults, pinResults] = await Promise.all([
+                    Promise.allSettled(resolvedClientCodes.map((code) =>
+                        getClientByCode(code, token),
+                    )),
+                    Promise.allSettled(resolvedClientCodes.map((code) =>
+                        checkPinRequired(code),
+                    )),
+                ]);
                 const failedRequest = clientsResults.find((result) =>
                     result.status === "rejected" && result.reason?.response?.status !== 404
                 );
                 if (failedRequest) throw failedRequest.reason;
-                const clientsFullData = clientsResults
-                    .filter((result) => result.status === "fulfilled" && result.value)
-                    .map((result) => result.value);
-
-                const normalizedData = clientsFullData.map((client) =>
-                    normalizeClientData(client, TYPE_SEARCH_CLIENT[1].value),
+                const clientEntries = clientsResults.flatMap((result, index) =>
+                    result.status === "fulfilled" && result.value
+                        ? [{ client: result.value, requiresPin: pinResults[index]?.status === "fulfilled" ? pinResults[index].value : false }]
+                        : [],
                 );
 
-                const enrichedData = await enrichClientsWithPin(normalizedData);
+                const normalizedData = clientEntries.map(({ client, requiresPin }) => {
+                    const normalized = normalizeClientData(client, TYPE_SEARCH_CLIENT[1].value);
+                    return {
+                        ...normalized,
+                        requires_pin: requiresPin,
+                    };
+                });
                 setDuplicateSearchField(
                     normalizedData.length > 1 && searchTypeIndex === 0
                         ? "Номеру телефона"
                         : null,
                 );
-                setClientsData(enrichedData);
+                setClientsData(normalizedData);
                 setSelectedClientIndex(0);
 
                 if (normalizedData.length === 0) {
@@ -542,24 +572,30 @@ export default function ABSClientSearch() {
             } else {
                 const apiUrl = `${API_BASE_URL}/${effectiveSearchType}${formattedPhone}`;
 
-                const response = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const data = await cachedSearchLookup(apiUrl, async () => {
+                    const response = await fetch(apiUrl, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    });
 
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        showClientNotFoundState();
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) {
+                        const error = new Error(`HTTP error! status: ${response.status}`);
+                        error.status = response.status;
+                        throw error;
                     }
-                    return;
-                }
 
-                const data = await response.json();
+                    return await response.json();
+                }).catch((error) => {
+                    if (error?.status === 404) {
+                        showClientNotFoundState();
+                        return null;
+                    }
+                    throw error;
+                });
+                if (data === null) return;
 
                 let normalizedData = [];
 
@@ -1687,6 +1723,12 @@ export default function ABSClientSearch() {
         : [];
 
     const checkPinRequired = async (clientCode) => {
+        const cacheKey = String(clientCode || "").trim();
+        const now = Date.now();
+        const cached = pinRequirementCacheRef.current.get(cacheKey);
+        if (cached && cached.expiresAt > now) return cached.promise;
+
+        const request = (async () => {
         try {
             const token = localStorage.getItem("access_token");
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/agent-client-pin/check?clientCode=${clientCode}`, {
@@ -1700,6 +1742,12 @@ export default function ABSClientSearch() {
             console.error("Error checking PIN requirement", error);
         }
         return false;
+        })();
+        pinRequirementCacheRef.current.set(cacheKey, {
+            promise: request,
+            expiresAt: now + 15 * 1000,
+        });
+        return request;
     };
 
     const enrichClientsWithPin = async (clients) => {

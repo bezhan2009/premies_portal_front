@@ -49,8 +49,11 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+const DEFAULT_QR_BACKEND_URL = "http://10.64.20.101:8080";
+const normalizeBaseUrl = (value, fallback = "") => String(value || fallback).replace(/\/+$/, "");
+
 export default function QRStatistics({ startDate, endDate }) {
-  const backendUrl = import.meta.env.VITE_BACKEND_QR_URL;
+  const backendUrl = normalizeBaseUrl(import.meta.env.VITE_BACKEND_QR_URL, DEFAULT_QR_BACKEND_URL);
   const [metric, setMetric] = useState("count");
   // const [selectedRange, setSelectedRange] = useState(null);
   const [date, setDate] = useState([]);
@@ -81,7 +84,7 @@ export default function QRStatistics({ startDate, endDate }) {
           params.append("accountNumber", "17507972690808713012");
           
           const token = localStorage.getItem("access_token");
-          const response = await fetch(`${absUrl}/account/operations?${params.toString()}`, {
+          const response = await fetch(`${normalizeBaseUrl(absUrl)}/account/operations?${params.toString()}`, {
               headers: { Authorization: "Bearer " + token }
           });
           if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);
@@ -122,7 +125,7 @@ export default function QRStatistics({ startDate, endDate }) {
         }
 
         const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-        const url = `${backendUrl}${endpoint}?start_date=${startDate}&end_date=${endDate}`;
+        const url = `${backendUrl}/${endpoint}?start_date=${startDate}&end_date=${endDate}`;
 
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Ошибка HTTP ${response.status}`);

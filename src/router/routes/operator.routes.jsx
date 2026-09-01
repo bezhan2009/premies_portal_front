@@ -10,6 +10,7 @@ import AccessRequestsPage from "../../pages/dashboard/dashboard_operator/AccessR
 import UsersPage from "../../pages/dashboard/dashboard_operator/UsersPage.jsx";
 import OperatorFeedbackPage from "../../pages/dashboard/dashboard_operator/OperatorFeedbackPage.jsx";
 import OperatorGroupsPage from "../../pages/dashboard/dashboard_operator/OperatorGroupsPage.jsx";
+import StudentCertificatesBulkPage from "../../pages/dashboard/dashboard_operator/StudentCertificatesBulkPage.jsx";
 
 import DocxGenerator from "../../components/dashboard/dashboard_operator/DocxGenerator.jsx";
 
@@ -36,6 +37,7 @@ const operatorRoutes = (
     <Route path="/operator/users" element={<UsersPage />} />
     <Route path="/operator/feedback" element={<OperatorFeedbackPage />} />
     <Route path="/operator/docx-generator" element={<DocxGenerator />} />
+    <Route path="/operator/student-certificates" element={<StudentCertificatesBulkPage />} />
     <Route path="/operator/groups" element={<OperatorGroupsPage />} />
   </Route>
 );

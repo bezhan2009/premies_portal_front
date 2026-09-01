@@ -1,10 +1,31 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 
+const shownToastsKey = "activ-daily-shown-top-toasts";
+
+function toastFingerprint(message, type) {
+    return `${type || "error"}:${String(message || "").trim()}`;
+}
+
+function shouldShowToastOnce(message, type) {
+    if (!message || typeof window === "undefined") return Boolean(message);
+    const fingerprint = toastFingerprint(message, type);
+    try {
+        const shown = JSON.parse(window.sessionStorage.getItem(shownToastsKey) || "[]");
+        if (Array.isArray(shown) && shown.includes(fingerprint)) return false;
+        const next = Array.isArray(shown) ? [fingerprint, ...shown].slice(0, 200) : [fingerprint];
+        window.sessionStorage.setItem(shownToastsKey, JSON.stringify(next));
+        return true;
+    } catch {
+        return true;
+    }
+}
+
 export default function AlertMessage({ message, type = "error", duration = 3000, onClick }) {
 
     useEffect(() => {
         if (!message) return;
+        if (!shouldShowToastOnce(message, type)) return;
 
         if (type === "success") {
             toast.success(message, { autoClose: duration, onClick });

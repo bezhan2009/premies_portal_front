@@ -187,14 +187,15 @@ export const fetchTransactionsSearch = async (params) => {
 
 // Получение подробной информации о карте
 export const fetchCardDetails = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/card-data`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/card-data`, {
             cardId: String(cardId)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;
@@ -344,14 +345,15 @@ export const unblockCard = async (cardId, comment) => {
 
 // Валидация/активация карты через ПЦ (Scenario B)
 export const validateCard = async (cardId) => {
-    const BASE_URL_5012 = 'http://10.64.20.84:5012';
+    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
     try {
-        const response = await axios.post(`${BASE_URL_5012}/api/Transactions/validate-card`, {
+        const response = await axios.post(`${GATEWAY_URL}/api/transactions/validate-card`, {
             cardId: String(cardId)
         }, {
             headers: {
                 'accept': '*/*',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
         });
         return response.data;

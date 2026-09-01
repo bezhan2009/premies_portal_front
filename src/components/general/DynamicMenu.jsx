@@ -520,6 +520,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: FileText
                     },
                     {
+                        name: "Справки студентам",
+                        href: "/operator/student-certificates",
+                        key: "student_certificates",
+                        icon: FileSpreadsheet
+                    },
+                    {
                         name: "Актив чат (Оператор)",
                         href: "/operator/feedback",
                         key: "feedback_operator",
@@ -545,6 +551,15 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                 href: "/declines",
                 key: "declines_management",
                 icon: ShieldX,
+            });
+        }
+
+        if (roles.includes(43)) {
+            additionalLinks.push({
+                name: "Интернет банк",
+                href: "/internet-bank",
+                key: "internet_bank",
+                icon: Landmark,
             });
         }
 

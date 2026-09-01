@@ -20,6 +20,7 @@
 // 2. Base & Tokens
 @import "tokens.scss";
 @import "global.scss";
+@import "InternetBankingAdmin.scss";
 
 // 3. Components
 @import "components/FormElements.scss";
@@ -54,6 +55,7 @@
 @import "components/ProcessingIntegration.scss";
 @import "components/OperatorAdmin.scss";
 @import "components/DocxGenerator.scss";
+@import "components/StudentCertificatesBulk.scss";
 
 // 4. Feature Specific
 @import "components/WorkerTests.scss";

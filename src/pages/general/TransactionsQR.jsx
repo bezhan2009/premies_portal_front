@@ -24,6 +24,9 @@ import { useTableSort } from "../../hooks/useTableSort.js";
 import SortIcon from "../../components/general/SortIcon.jsx";
 import { normalizeClientData } from "../../components/dashboard/dashboard_frontovik/absSearchUtils.js";
 
+const DEFAULT_QR_BACKEND_URL = "http://10.64.20.101:8080";
+const normalizeBaseUrl = (value, fallback = "") => String(value || fallback).replace(/\/+$/, "");
+
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
   const [activeBankLimit, setActiveBankLimit] = useState(null);
@@ -78,13 +81,13 @@ export default function TransactionsQR() {
   const [showMerchantTranslator, setShowMerchantTranslator] = useState(false);
   const [merchantSearch, setMerchantSearch] = useState("");
 
-  const backendQR = import.meta.env.VITE_BACKEND_QR_URL;
-  const backendMain = import.meta.env.VITE_BACKEND_URL;
+  const backendQR = normalizeBaseUrl(import.meta.env.VITE_BACKEND_QR_URL, DEFAULT_QR_BACKEND_URL);
+  const backendMain = normalizeBaseUrl(import.meta.env.VITE_BACKEND_URL);
   const token = localStorage.getItem("access_token");
 
   const getActiveBankLimit = useCallback(async () => {
     try {
-      const resp = await fetch(`${import.meta.env.VITE_BACKEND_QR_URL}limit`);
+      const resp = await fetch(`${backendQR}/limit`);
       if (!resp.ok) throw new Error("Ошибка загрузки лимита");
       const json = await resp.json();
       setActiveBankLimit(json?.limit ?? 0);
@@ -92,7 +95,7 @@ export default function TransactionsQR() {
       console.error("Ошибка лимита:", e);
       setActiveBankLimit(null);
     }
-  }, []);
+  }, [backendQR]);
 
   const showAlert = (message, type = "success") => {
     setAlert({ message, type });
@@ -159,7 +162,7 @@ export default function TransactionsQR() {
           params.append("startDate", formatToDDMMYYYY(startDate));
           params.append("endDate", formatToDDMMYYYY(endDate));
           params.append("accountNumber", "17507972690808713012");
-          const url = `${baseUrl}/account/operations?${params.toString()}`;
+          const url = `${normalizeBaseUrl(baseUrl)}/account/operations?${params.toString()}`;
           
           const token = localStorage.getItem("access_token");
           const resp = await fetch(url, {
@@ -193,7 +196,7 @@ export default function TransactionsQR() {
         }
 
         const endpoint = type === "usOnThem" ? "transactions" : "incoming_tx";
-        const url = `${backendQR}${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
+        const url = `${backendQR}/${endpoint}?start_date=${startDate}&end_date=${endDate}&page=${pageNum}&limit=${PAGE_SIZE}`;
 
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import "../../styles/components/DateRangeModal.css";
-import CustomDateInput from "../elements/CustomDateInput.jsx";
 
 export default function DateRangeModal({ open, onClose, onSubmit }) {
     const [fromDate, setFromDate] = useState("");
@@ -24,6 +23,11 @@ export default function DateRangeModal({ open, onClose, onSubmit }) {
     // Блокируем всплытие событий от элементов внутри модального окна
     const stopPropagation = (e) => {
         e.stopPropagation();
+    };
+
+    const openNativePicker = (event) => {
+        stopPropagation(event);
+        event.currentTarget.showPicker?.();
     };
 
     // Фокусируемся на первом поле при открытии модального окна
@@ -61,24 +65,26 @@ export default function DateRangeModal({ open, onClose, onSubmit }) {
                     <div className="date-inputs">
                         <div className="input-group">
                             <label htmlFor="fromDate">С</label>
-                            <CustomDateInput
+                            <input
                                 id="fromDate"
+                                className="date-input"
                                 type="date"
                                 value={fromDate}
-                                onChange={setFromDate}
-                                onClick={stopPropagation}
+                                onChange={(e) => setFromDate(e.target.value)}
+                                onClick={openNativePicker}
                                 autoFocus
                             />
                         </div>
 
                         <div className="input-group">
                             <label htmlFor="toDate">По</label>
-                            <CustomDateInput
+                            <input
                                 id="toDate"
+                                className="date-input"
                                 type="date"
                                 value={toDate}
-                                onChange={setToDate}
-                                onClick={stopPropagation}
+                                onChange={(e) => setToDate(e.target.value)}
+                                onClick={openNativePicker}
                             />
                         </div>
                     </div>

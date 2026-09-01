@@ -8,7 +8,6 @@ import useNotificationStore from '../../store/useNotificationStore';
 import LogoImageComponent from '../Logo';
 import LogoutButton from "../general/Logout.jsx";
 import NotificationsDropdown from '../general/NotificationsDropdown.jsx';
-import PersistentNotifications from '../general/PersistentNotifications.jsx';
 import { fetchMyComplianceRequests } from '../../api/complianceRequests.js';
 import { apiClientApplication } from '../../api/utils/apiClientApplication.js';
 import { useLiveWorkflow } from '../live-workflow/LiveWorkflowProvider.jsx';
@@ -343,7 +342,6 @@ const Header = ({ toggleSidebar }) => {
         </div>
       </div>
     </header>
-    <PersistentNotifications />
     </>
   );
 };

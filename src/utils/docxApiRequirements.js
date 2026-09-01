@@ -14,6 +14,21 @@ const SOURCE_DEFINITIONS = {
       },
     ],
   },
+  card: {
+    title: "Данные карты",
+    source: "card",
+    description:
+      "Шаблон использует данные конкретной карты. Укажите IDN карты — по нему сервис определит клиента и подтянет реквизиты карты, договор, дату открытия и связанные счета.",
+    fields: [
+      {
+        key: "cardId",
+        label: "IDN карты",
+        required: true,
+        placeholder: "100002602016",
+        dataAliases: ["cardId", "card.cardId", "card.idn"],
+      },
+    ],
+  },
   processing_transactions: {
     title: "Выписка из ПЦ",
     source: "processing_transactions",
@@ -147,9 +162,11 @@ export const getVariantDynamicRequirements = (variant = {}) => {
     // A processing statement is resolved by cardId. Requiring a second
     // account identifier would make the external API needlessly difficult.
     usedSources.delete("account");
+    usedSources.delete("card");
   } else if (usedSources.has("transactions")) {
     // The transaction requirement already offers accountNumber/cardId.
     usedSources.delete("account");
+    usedSources.delete("card");
   }
 
   return Array.from(usedSources).map((source) => SOURCE_DEFINITIONS[source]);

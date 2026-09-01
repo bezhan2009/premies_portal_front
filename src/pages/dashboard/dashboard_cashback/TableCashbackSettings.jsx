@@ -261,7 +261,7 @@ const TableCashbackSettings = () => {
         order: "descend",
     });
 
-    const backendURL = import.meta.env.VITE_BACKEND_URL;
+    const backendURL = import.meta.env.VITE_BACKEND_URL || "http://10.65.10.20:7575";
     const { exportToExcel } = useExcelExport();
     const abortControllerRef = useRef(null);
 
@@ -395,7 +395,7 @@ const TableCashbackSettings = () => {
     }, [items, exportToExcel]);
 
     const handlePreview = (item) => {
-        const baseURL = "http://10.64.20.84:5012/api/Transactions/search-transactions";
+        const baseURL = `${backendURL}/api/transactions/search-transactions`;
         const q = new URLSearchParams();
 
         if (item.card_number && item.card_number !== "********") q.append("cardNumber", item.card_number);
