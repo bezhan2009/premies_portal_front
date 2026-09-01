@@ -1,0 +1,375 @@
+services:
+  go-backend:
+    build:
+      context: ./go-backend
+    restart: unless-stopped
+    ports:
+      - "7575:7575"
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - GIN_MODE=${GIN_MODE:-release}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_NAME=${POSTGRES_DB}
+      - PYTHON_GRPC_URL=python-backend:50051
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      - ABS_SERVICE_URL=http://abs_service:5000
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CUSTOMER_SYNC_TOKEN=${CUSTOMER_SYNC_TOKEN:?CUSTOMER_SYNC_TOKEN is required}
+      - INTERNET_BANKING_SERVICE_TOKEN=${INTERNET_BANKING_SERVICE_TOKEN:?INTERNET_BANKING_SERVICE_TOKEN is required}
+      - INTERNET_BANKING_JWT_SECRET=${INTERNET_BANKING_JWT_SECRET:?INTERNET_BANKING_JWT_SECRET is required}
+      - INTERNET_BANKING_OTP_SECRET=${INTERNET_BANKING_OTP_SECRET:?INTERNET_BANKING_OTP_SECRET is required}
+      - MOBILE_DOCUMENTS_API_KEY=${INTERNET_BANKING_SERVICE_TOKEN}
+    volumes:
+      - ./go-backend/uploads:/app/uploads
+    depends_on:
+      python-backend:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - daily_network
+
+  daily_tasks:
+    build:
+      context: ./daily_tasks
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      - ABS_SERVICE_URL=http://abs_service:5000
+      - PREMIES_PORTAL_URL=http://go-backend:7575
+      - CUSTOMER_SYNC_TOKEN=${CUSTOMER_SYNC_TOKEN:?CUSTOMER_SYNC_TOKEN is required}
+    depends_on:
+      python-backend:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - daily_network
+
+  applications_portal:
+    build:
+      context: ./applications_portal
+    restart: unless-stopped
+    ports:
+      - "7676:7676"
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - GIN_MODE=${GIN_MODE:-release}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    volumes:
+      - applications_shared_uploads:/shared/applications_uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - daily_network
+
+  credits_portal:
+    build:
+      context: ./credits_portal
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    environment:
+      - GIN_MODE=${GIN_MODE:-release}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    volumes:
+      - credits_uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - daily_network
+
+  deposits_portal:
+    build:
+      context: ./deposits_portal
+    restart: unless-stopped
+    ports:
+      - "7878:7878"
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - GIN_MODE=${GIN_MODE:-release}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - daily_network
+
+  python-backend:
+    build:
+      context: ./premies_automation
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    volumes:
+      - applications_shared_uploads:/shared/applications_uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+    networks:
+      - daily_network
+
+  abs_service:
+    build:
+      context: ./abs_service
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - GIN_MODE=${GIN_MODE:-release}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - INTERNET_BANKING_SERVICE_TOKEN=${INTERNET_BANKING_SERVICE_TOKEN:?INTERNET_BANKING_SERVICE_TOKEN is required}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      - CUSTOMER_SYNC_TOKEN=${CUSTOMER_SYNC_TOKEN:?CUSTOMER_SYNC_TOKEN is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/5000'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - daily_network
+
+  frontend:
+    build:
+      context: ./premies_portal_front
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+    ports:
+      - "3000:80"
+    depends_on:
+      go-backend:
+        condition: service_started
+      applications_portal:
+        condition: service_started
+    networks:
+      - daily_network
+
+  new-frontend:
+    build:
+      context: ./new_front
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Asia/Dushanbe}
+      - PORT=3000
+    ports:
+      - "3001:3000"
+    depends_on:
+      go-backend:
+        condition: service_started
+      applications_portal:
+        condition: service_started
+    networks:
+      - daily_network
+
+  internet-banking-backend:
+    build:
+      context: ./internet_banking_backend
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      TZ: ${TZ:-Asia/Dushanbe}
+      PORT: "4001"
+      GIN_MODE: release
+      PREMIES_PORTAL_URL: http://go-backend:7575
+      ABS_SERVICE_URL: http://abs_service:5000
+      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN:?INTERNET_BANKING_SERVICE_TOKEN is required}
+      ALLOWED_ORIGINS: ${INTERNET_BANKING_ALLOWED_ORIGINS:-http://10.65.10.20:4000}
+      UPSTREAM_TIMEOUT: 10s
+      REQUEST_TIMEOUT: 15s
+      MAX_CONCURRENT_REQUESTS: "512"
+      MAX_HEADER_BYTES: "1048576"
+      DATABASE_URL: "host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable"
+      DB_MAX_OPEN_CONNS: "50"
+      DB_MAX_IDLE_CONNS: "25"
+      DB_CONN_MAX_LIFETIME: 30m
+      DB_CONN_MAX_IDLE_TIME: 5m
+      AUDIT_ENABLED: "true"
+      AUDIT_QUEUE_SIZE: "4096"
+      AUDIT_BATCH_SIZE: "100"
+      AUDIT_FLUSH_INTERVAL: 500ms
+    ports:
+      - "4001:4001"
+    depends_on:
+      go-backend:
+        condition: service_started
+      abs_service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4001/ready"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+    networks:
+      - daily_network
+
+  internet-banking-frontend:
+    build:
+      context: ./internet_banking_frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${INTERNET_BANKING_PUBLIC_API_URL:-http://10.65.10.20:4001}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Dushanbe}
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    ports:
+      - "4000:3000"
+    depends_on:
+      internet-banking-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/login"]
+      interval: 15s
+      timeout: 3s
+      start_period: 15s
+      retries: 5
+    networks:
+      - daily_network
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - daily_network
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - daily_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - daily_network
+
+  elasticsearch:
+    image: elasticsearch:8.13.0
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - daily_network
+
+volumes:
+  es_data:
+  go_uploads_data:
+  applications_uploads_data:
+  credits_uploads_data:
+  applications_shared_uploads:
+
+networks:
+  daily_network:
+    driver: bridge

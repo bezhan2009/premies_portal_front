@@ -991,7 +991,7 @@ cd ../premies_portal_front && bash tests/deploy_backup_worktree_test.sh && bash 
 - [ ] **Step 2: Run credential and unsafe-log scans**
 
 ```bash
-rg -n 'ghp_|glpat-|P1jOE|Fduecn|password_hash|code_mac' ../premies_portal ../premies_portal_front ../abs_service ../internet_banking_backend ../internet_banking_frontend
+rg -n 'ghp_[A-Za-z0-9]{30,}|glpat-[A-Za-z0-9_-]{20,}|BEGIN (RSA |OPENSSH )?PRIVATE KEY|password_hash|code_mac' ../premies_portal ../premies_portal_front ../abs_service ../internet_banking_backend ../internet_banking_frontend
 ```
 
 Expected: no real credentials; `password_hash` and `code_mac` appear only in models/tests and never response DTOs or log format strings.

@@ -70,6 +70,22 @@ $Projects = @(
         GitHubUrl     = "https://github.com/bezhan2009/abs_service.git"
         GitlabProject = "Bejan/activ_daily_abs_backend.git"
         RemotePaths   = @("/home/bkarimov/daily_activ/abs_service")
+    },
+    @{
+        LocalName     = "internet_banking_backend"
+        ServiceName   = "internet-banking-backend"
+        DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/internet_banking_backend.git"
+        GitlabProject = "Bejan/internet_banking_backend.git"
+        RemotePaths   = @("/home/bkarimov/daily_activ/internet_banking_backend")
+    },
+    @{
+        LocalName     = "internet_banking_frontend"
+        ServiceName   = "internet-banking-frontend"
+        DefaultBranch = "main"
+        GitHubUrl     = "https://github.com/bezhan2009/internet_banking_frontend.git"
+        GitlabProject = "Bejan/internet_banking_frontend.git"
+        RemotePaths   = @("/home/bkarimov/daily_activ/internet_banking_frontend")
     }
 )
 
@@ -419,6 +435,10 @@ $TargetServices = @()
 if (-not [string]::IsNullOrWhiteSpace($Services)) {
     $TargetServices = $Services.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 }
+$internetBankingServiceNames = @("internet-banking-backend", "internet-banking-frontend")
+if (@($TargetServices | Where-Object { $internetBankingServiceNames -contains $_ }).Count -gt 0) {
+    $TargetServices = @($TargetServices + $internetBankingServiceNames | Select-Object -Unique)
+}
 
 Write-Host "[SCAN] Workspace: $WorkspaceRoot" -ForegroundColor Cyan
 $Candidates = @()
@@ -679,17 +699,52 @@ foreach ($project in $ReadyProjects) {
     $bashLines.Add("git branch --set-upstream-to=gitlab/$($project.Branch) $quotedBranch >/dev/null 2>&1 || true")
 }
 
+$mainReadyProjects = @($ReadyProjects | Where-Object { $internetBankingServiceNames -notcontains $_.ServiceName })
+$internetBankingReadyProjects = @($ReadyProjects | Where-Object { $internetBankingServiceNames -contains $_.ServiceName })
 $quotedProjectDir = ConvertTo-BashLiteral $ServerProjectDir
-$quotedServices = @($ReadyProjects | ForEach-Object { ConvertTo-BashLiteral $_.ServiceName })
-$serviceArguments = $quotedServices -join " "
+$mainServiceArguments = @($mainReadyProjects | ForEach-Object { $_.ServiceName }) -join " "
+$deployInternetBanking = if ($internetBankingReadyProjects.Count -gt 0) { "true" } else { "false" }
 $bashLines.Add("cd $quotedProjectDir")
+$bashLines.Add("main_service_arguments=$(ConvertTo-BashLiteral $mainServiceArguments)")
+$bashLines.Add("deploy_internet_banking=$deployInternetBanking")
 $bashLines.Add("if docker compose version >/dev/null 2>&1; then")
 $bashLines.Add("  compose_command='docker compose'")
 $bashLines.Add("else")
 $bashLines.Add("  compose_command='docker-compose'")
 $bashLines.Add("fi")
-$bashLines.Add("echo '[CHECK] Validating the configured PostgreSQL database...'")
 $bashLines.Add("if [ ! -f .env ]; then echo '[ERROR] /home/bkarimov/daily_activ/.env was not found.'; exit 23; fi")
+$bashLines.Add('configured_ib_token="$(awk -F= ''/^[[:space:]]*INTERNET_BANKING_SERVICE_TOKEN[[:space:]]*=/{sub(/^[^=]*=/,""); gsub(/\r/,""); print}'' .env | tail -n 1)"')
+$bashLines.Add('if [ -z "$configured_ib_token" ]; then')
+$bashLines.Add('  token_env_backup=".env.deploy-backup.token.$(date +%Y%m%d%H%M%S)"')
+$bashLines.Add('  cp -p .env "$token_env_backup"')
+$bashLines.Add('  echo "[BACKUP] Environment saved to $token_env_backup."')
+$bashLines.Add('  if command -v openssl >/dev/null 2>&1; then configured_ib_token="$(openssl rand -hex 32)"; else configured_ib_token="$(od -An -N32 -tx1 /dev/urandom | tr -d '' \n'')"; fi')
+$bashLines.Add('  printf ''INTERNET_BANKING_SERVICE_TOKEN=%s\n'' "$configured_ib_token" >> .env')
+$bashLines.Add("  echo '[SECURITY] Generated the Internet Banking service token and stored it in .env.'")
+$bashLines.Add('fi')
+$bashLines.Add('export INTERNET_BANKING_SERVICE_TOKEN="$configured_ib_token"')
+$bashLines.Add('configured_ib_otp_secret="$(awk -F= ''/^[[:space:]]*INTERNET_BANKING_OTP_SECRET[[:space:]]*=/{sub(/^[^=]*=/,""); gsub(/\r/,""); print}'' .env | tail -n 1)"')
+$bashLines.Add('if [ -z "$configured_ib_otp_secret" ]; then')
+$bashLines.Add('  otp_env_backup=".env.deploy-backup.otp.$(date +%Y%m%d%H%M%S)"')
+$bashLines.Add('  cp -p .env "$otp_env_backup"')
+$bashLines.Add('  echo "[BACKUP] Environment saved to $otp_env_backup."')
+$bashLines.Add('  if command -v openssl >/dev/null 2>&1; then configured_ib_otp_secret="$(openssl rand -hex 32)"; else configured_ib_otp_secret="$(od -An -N32 -tx1 /dev/urandom | tr -d '' \n'')"; fi')
+$bashLines.Add('  printf ''INTERNET_BANKING_OTP_SECRET=%s\n'' "$configured_ib_otp_secret" >> .env')
+$bashLines.Add("  echo '[SECURITY] Generated the Internet Banking OTP secret and stored it in .env.'")
+$bashLines.Add('fi')
+$bashLines.Add('export INTERNET_BANKING_OTP_SECRET="$configured_ib_otp_secret"')
+$bashLines.Add('configured_ib_jwt_secret="$(awk -F= ''/^[[:space:]]*INTERNET_BANKING_JWT_SECRET[[:space:]]*=/{sub(/^[^=]*=/,""); gsub(/\r/,""); print}'' .env | tail -n 1)"')
+$bashLines.Add('if [ -z "$configured_ib_jwt_secret" ]; then')
+$bashLines.Add('  jwt_env_backup=".env.deploy-backup.jwt.$(date +%Y%m%d%H%M%S)"')
+$bashLines.Add('  cp -p .env "$jwt_env_backup"')
+$bashLines.Add('  echo "[BACKUP] Environment saved to $jwt_env_backup."')
+$bashLines.Add('  if command -v openssl >/dev/null 2>&1; then configured_ib_jwt_secret="$(openssl rand -hex 32)"; else configured_ib_jwt_secret="$(od -An -N32 -tx1 /dev/urandom | tr -d '' \n'')"; fi')
+$bashLines.Add('  printf ''INTERNET_BANKING_JWT_SECRET=%s\n'' "$configured_ib_jwt_secret" >> .env')
+$bashLines.Add("  echo '[SECURITY] Generated the Internet Banking JWT secret and stored it in .env.'")
+$bashLines.Add('fi')
+$bashLines.Add('export INTERNET_BANKING_JWT_SECRET="$configured_ib_jwt_secret"')
+$bashLines.Add('if [ -n "$main_service_arguments" ] || [ "$deploy_internet_banking" = "true" ]; then')
+$bashLines.Add("echo '[CHECK] Validating the configured PostgreSQL database...'")
 $bashLines.Add('configured_db="$(awk -F= ''/^[[:space:]]*POSTGRES_DB[[:space:]]*=/{sub(/^[^=]*=/,""); gsub(/\r/,""); print}'' .env | tail -n 1)"')
 $bashLines.Add('database_list="$($compose_command exec -T postgres sh -c ''psql -U "$POSTGRES_USER" -d postgres -Atc "SELECT datname FROM pg_database WHERE datistemplate = false AND datname <> current_database() ORDER BY datname;"'')"')
 $bashLines.Add('selected_db="$configured_db"')
@@ -732,6 +787,13 @@ foreach ($databaseService in @("go-backend", "daily_tasks", "applications_portal
     $bashLines.Add('      DB_PASSWORD: ${POSTGRES_PASSWORD}')
     $bashLines.Add('      DB_NAME: ${POSTGRES_DB}')
     $bashLines.Add('      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}')
+    if ($databaseService -eq "go-backend" -or $databaseService -eq "abs_service") {
+        $bashLines.Add('      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}')
+        if ($databaseService -eq "go-backend") {
+            $bashLines.Add('      INTERNET_BANKING_OTP_SECRET: ${INTERNET_BANKING_OTP_SECRET}')
+            $bashLines.Add('      INTERNET_BANKING_JWT_SECRET: ${INTERNET_BANKING_JWT_SECRET}')
+        }
+    }
 }
 $bashLines.Add('  frontend:')
 $bashLines.Add('    depends_on:')
@@ -740,13 +802,13 @@ $bashLines.Add('        condition: service_started')
 $bashLines.Add('DEPLOY_COMPOSE_OVERRIDE')
 $bashLines.Add('echo "[DATABASE] Services will use PostgreSQL database ''$selected_db''."')
 $databaseConfigCompatibility = @()
-if ($ReadyProjects.ServiceName -contains "daily_tasks") {
+if ($mainReadyProjects.ServiceName -contains "daily_tasks") {
     $databaseConfigCompatibility += @{
         Name = "daily_tasks"
         Path = "/home/bkarimov/daily_activ/daily_tasks/configs/docker/configs.json"
     }
 }
-if ($ReadyProjects.ServiceName -contains "abs_service") {
+if ($mainReadyProjects.ServiceName -contains "abs_service") {
     $databaseConfigCompatibility += @{
         Name = "abs_service"
         Path = "/home/bkarimov/daily_activ/abs_service/configs/docker/configs.json"
@@ -780,19 +842,46 @@ if ($databaseConfigCompatibility.Count -gt 0) {
     }
     $bashLines.Add("echo '[DATABASE] Docker build configs prepared; originals will be restored automatically.'")
 }
+$bashLines.Add('if [ -n "$main_service_arguments" ]; then')
 $bashLines.Add("echo '[DEPLOY] Building changed services...'")
-$bashLines.Add("if ! `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml up --build -d $serviceArguments; then")
+$bashLines.Add('if ! $compose_command -f docker-compose.yml -f .deploy-compose.override.yml up --build -d $main_service_arguments; then')
 $bashLines.Add("  echo '[ERROR] One or more services failed to start. Recent container logs:'")
-$bashLines.Add("  `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $serviceArguments || true")
-$bashLines.Add("  `$compose_command -f docker-compose.yml -f .deploy-compose.override.yml logs --tail 150 $serviceArguments || true")
+$bashLines.Add('  $compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $main_service_arguments || true')
+$bashLines.Add('  $compose_command -f docker-compose.yml -f .deploy-compose.override.yml logs --tail 150 $main_service_arguments || true')
 $bashLines.Add("  exit 24")
 $bashLines.Add("fi")
 $bashLines.Add("sleep 5")
-$bashLines.Add("`$compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $serviceArguments")
+$bashLines.Add('$compose_command -f docker-compose.yml -f .deploy-compose.override.yml ps $main_service_arguments')
+$bashLines.Add('fi')
 if ($databaseConfigCompatibility.Count -gt 0) {
     $bashLines.Add('restore_deploy_database_configs')
     $bashLines.Add('trap - EXIT')
 }
+$bashLines.Add('fi')
+$bashLines.Add('if [ "$deploy_internet_banking" = "true" ]; then')
+$bashLines.Add('  cat > .deploy-internet-banking-token.override.yml <<''INTERNET_BANKING_TOKEN_OVERRIDE''')
+$bashLines.Add('services:')
+$bashLines.Add('  go-backend:')
+$bashLines.Add('    environment:')
+$bashLines.Add('      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}')
+$bashLines.Add('  abs_service:')
+$bashLines.Add('    environment:')
+$bashLines.Add('      INTERNET_BANKING_SERVICE_TOKEN: ${INTERNET_BANKING_SERVICE_TOKEN}')
+$bashLines.Add('INTERNET_BANKING_TOKEN_OVERRIDE')
+$bashLines.Add("  echo '[DEPLOY] Applying the Internet Banking service token to Daily Portal and ABS...'")
+$bashLines.Add('  if ! $compose_command -f docker-compose.yml -f .deploy-compose.override.yml -f .deploy-internet-banking-token.override.yml up -d --no-deps go-backend abs_service; then')
+$bashLines.Add("    echo '[ERROR] Could not apply the Internet Banking token to upstream services.'")
+$bashLines.Add('    exit 26')
+$bashLines.Add('  fi')
+$bashLines.Add("  echo '[DEPLOY] Building the dedicated Internet Banking project...'")
+$bashLines.Add('  if ! $compose_command -p internet_banking -f internet_banking_backend/deploy/docker-compose.yml up --build -d --wait --wait-timeout 180; then')
+$bashLines.Add("    echo '[ERROR] Internet Banking services failed to start. Recent container logs:'")
+$bashLines.Add('    $compose_command -p internet_banking -f internet_banking_backend/deploy/docker-compose.yml ps || true')
+$bashLines.Add('    $compose_command -p internet_banking -f internet_banking_backend/deploy/docker-compose.yml logs --tail 150 || true')
+$bashLines.Add('    exit 27')
+$bashLines.Add('  fi')
+$bashLines.Add('  $compose_command -p internet_banking -f internet_banking_backend/deploy/docker-compose.yml ps')
+$bashLines.Add('fi')
 $bashLines.Add("docker image prune -f")
 $bashLines.Add("echo '[DEPLOY] Completed successfully.'")
 $remoteScript = $bashLines -join "`n"

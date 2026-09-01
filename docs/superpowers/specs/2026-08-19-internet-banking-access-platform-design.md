@@ -1,7 +1,7 @@
 # Internet Banking Access Platform Design
 
-**Date:** 2026-08-19  
-**Status:** Approved in conversation; awaiting written-spec review  
+**Date:** 2026-08-19
+**Status:** Approved in conversation; awaiting written-spec review
 **Scope:** `premies_portal`, `premies_portal_front`, `internet_banking_backend`, `internet_banking_frontend`, `abs_service`, and the shared deployment controller in `premies_portal_front/deploy.ps1`
 
 ## 1. Goal
