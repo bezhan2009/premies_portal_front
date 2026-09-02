@@ -526,6 +526,12 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: FileSpreadsheet
                     },
                     {
+                        name: "Пакетный поиск АБС",
+                        href: "/operator/bulk-abs-search",
+                        key: "bulk_abs_search",
+                        icon: Search
+                    },
+                    {
                         name: "Актив чат (Оператор)",
                         href: "/operator/feedback",
                         key: "feedback_operator",
