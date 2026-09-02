@@ -24,7 +24,7 @@ import {
   getUserDeposits,
 } from "../../../api/ABS_frotavik/getUserCredits";
 import { resolveBulkClientCodes } from "../../../api/ABS_frotavik/bulkClientSearch";
-import { fetchCardDetails } from "../../../api/processing/transactions";
+import { fetchCardDetails, fetchCardServices } from "../../../api/processing/transactions";
 import { fetchLoanDetails } from "../../../api/ABS_frotavik/getLoanDetails";
 import {
   calculateUsdCreditDebtBalance,
@@ -32,6 +32,12 @@ import {
 } from "../../../utils/creditDebtBalance";
 import { useExcelExport } from "../../../hooks/useExcelExport";
 import { logAuditAction } from "../../../utils/auditLogger";
+import {
+  buildCardExportColumns,
+  CARD_FIELD_DEFINITIONS,
+  formatCardFieldForTable,
+  isCardFieldKey,
+} from "./bulkAbsSearchCards";
 
 const IDENTIFIER_OPTIONS = [
   { value: "telefon", label: "Телефон", column: "telefon", example: "992900000000" },
@@ -59,15 +65,7 @@ const FIELD_GROUPS = [
   },
   {
     name: "Карты",
-    fields: [
-      { key: "cards_summary", label: "Все карты: тип и балансы" },
-      { key: "card_ids", label: "ID всех карт" },
-      { key: "card_numbers", label: "Номера всех карт" },
-      { key: "card_types", label: "Типы карт" },
-      { key: "card_statuses", label: "Статусы карт" },
-      { key: "card_accounts", label: "Счета карт" },
-      { key: "card_balances", label: "Балансы карт" },
-    ],
+    fields: CARD_FIELD_DEFINITIONS,
   },
   {
     name: "Счета",
@@ -106,13 +104,14 @@ const FIELD_GROUPS = [
 ];
 
 const ALL_FIELDS = FIELD_GROUPS.flatMap((group) => group.fields);
-const FIELD_BY_KEY = new Map(ALL_FIELDS.map((field) => [field.key, field]));
 const DEFAULT_FIELDS = [
   "fio",
   "client_code",
   "inn",
   "phones",
-  "cards_summary",
+  "card_types",
+  "card_abs_balances",
+  "card_pc_balances",
   "accounts_summary",
   "credits_summary",
 ];
@@ -210,48 +209,6 @@ const accountBalanceOf = (account) =>
 
 const cardIdOf = (card) => String(readFirst(card, ["cardId", "CardId", "IDN", "idn"])).trim();
 
-const cardNumberOf = (card) =>
-  String(
-    readFirst(card, ["CardNumber", "cardNumber"], readFirst(card?.details, ["cardNumberMask", "cardNumber"])),
-  ).trim();
-
-const cardTypeOf = (card) =>
-  String(
-    readFirst(card, ["CardTypeName", "cardTypeName", "type"], readFirst(card?.details, ["cardTypeName", "type"])),
-  ).trim();
-
-const cardStatusOf = (card) =>
-  String(
-    readFirst(card, ["statusName", "StatusName"], readFirst(card?.details, ["statusDescription", "hotCardStatus"])),
-  ).trim();
-
-const cardAccountsOf = (card) => normalizeArray(card?.details?.accounts);
-
-const cardBalancesOf = (card, accounts) => {
-  const lines = [];
-  for (const cardAccount of cardAccountsOf(card)) {
-    const number = String(readFirst(cardAccount, ["number", "Number"])).trim();
-    const processingCurrency = String(readFirst(cardAccount, ["currency", "Currency"])).trim();
-    const processingCurrencyCode = processingCurrency === "972"
-      ? "TJS"
-      : processingCurrency === "840"
-        ? "USD"
-        : processingCurrency === "978"
-          ? "EUR"
-          : processingCurrency;
-    const rawProcessingBalance = Number(readFirst(cardAccount, ["balance", "Balance"], 0));
-    const processingBalance = Number.isFinite(rawProcessingBalance) ? rawProcessingBalance / 100 : 0;
-    const absAccount = accounts.find((account) => accountNumberOf(account) === number);
-    const absBalance = absAccount
-      ? formatAmount(accountBalanceOf(absAccount), accountCurrencyOf(absAccount))
-      : "—";
-    lines.push(
-      `${number || "счет не указан"}: АБС ${absBalance}; ПЦ ${formatAmount(processingBalance, processingCurrencyCode)}`,
-    );
-  }
-  return lines;
-};
-
 const creditNumberOf = (credit) =>
   String(
     readFirst(
@@ -301,7 +258,7 @@ const depositBalanceOf = (deposit) => {
 };
 
 const valueForField = (row, key) => {
-  const { client = {}, cards = [], accounts = [], credits = [], deposits = [] } = row;
+  const { client = {}, accounts = [], credits = [], deposits = [] } = row;
 
   switch (key) {
     case "fio": return clientNameOf(client);
@@ -320,17 +277,6 @@ const valueForField = (row, key) => {
     case "addresses": return joinLines(clientAddressesOf(client));
     case "department": return String(client?.Department?.Name ?? client?.Department?.Code ?? client?.department?.name ?? readFirst(client, ["dep_code"], "—"));
     case "documents": return joinLines(clientDocumentsOf(client));
-    case "cards_summary":
-      return joinLines(cards.map((card) => {
-        const balances = cardBalancesOf(card, accounts);
-        return `${cardTypeOf(card) || "Тип не указан"} | ${cardNumberOf(card) || cardIdOf(card) || "—"}${balances.length ? ` | ${balances.join("; ")}` : ""}`;
-      }));
-    case "card_ids": return joinLines(cards.map(cardIdOf));
-    case "card_numbers": return joinLines(cards.map(cardNumberOf));
-    case "card_types": return joinLines(cards.map(cardTypeOf));
-    case "card_statuses": return joinLines(cards.map((card) => `${cardIdOf(card) || cardNumberOf(card)}: ${cardStatusOf(card) || "—"}`));
-    case "card_accounts": return joinLines(cards.flatMap((card) => cardAccountsOf(card).map((account) => readFirst(account, ["number", "Number"]))));
-    case "card_balances": return joinLines(cards.flatMap((card) => cardBalancesOf(card, accounts).map((balance) => `${cardIdOf(card) || cardNumberOf(card)} — ${balance}`)));
     case "accounts_summary": return joinLines(accounts.map((account) => `${accountNumberOf(account)} | ${formatAmount(accountBalanceOf(account), accountCurrencyOf(account))}`));
     case "account_numbers": return joinLines(accounts.map(accountNumberOf));
     case "account_balances": return joinLines(accounts.map((account) => `${accountNumberOf(account)}: ${formatAmount(accountBalanceOf(account), accountCurrencyOf(account))}`));
@@ -350,7 +296,7 @@ const valueForField = (row, key) => {
     case "deposit_statuses": return joinLines(deposits.map((deposit) => `${depositNumberOf(deposit) || "—"}: ${depositAgreementOf(deposit)?.Status?.Name ?? depositAgreementOf(deposit)?.status?.name ?? "—"}`));
     case "deposit_products": return joinLines(deposits.map((deposit) => `${depositNumberOf(deposit) || "—"}: ${depositAgreementOf(deposit)?.Product?.Name ?? depositAgreementOf(deposit)?.product?.name ?? "—"}`));
     case "deposit_dates": return joinLines(deposits.map((deposit) => `${depositNumberOf(deposit) || "—"}: ${readFirst(depositAgreementOf(deposit), ["DateFrom", "dateFrom"], "—")} — ${readFirst(depositAgreementOf(deposit), ["DateTo", "dateTo"], "—")}`));
-    default: return "—";
+    default: return isCardFieldKey(key) ? formatCardFieldForTable(row, key) : "—";
   }
 };
 
@@ -376,12 +322,27 @@ const mapWithConcurrency = async (items, concurrency, mapper, onSettled) => {
 
 const productNeeds = (selectedFields) => {
   const hasPrefix = (prefix) => selectedFields.some((key) => key.startsWith(prefix));
-  const cardDetails = selectedFields.some((key) => ["cards_summary", "card_numbers", "card_statuses", "card_accounts", "card_balances"].includes(key));
+  const cardDetails = selectedFields.some((key) => [
+    "card_numbers",
+    "card_types",
+    "card_pc_statuses",
+    "card_hot_statuses",
+    "card_expiry_dates",
+    "card_request_dates",
+    "card_embossed_names",
+    "card_accounts",
+    "card_account_currencies",
+    "card_abs_balances",
+    "card_pc_balances",
+    "card_pin_counters",
+  ].includes(key));
+  const cardServices = selectedFields.includes("card_notifications");
   const creditDetails = selectedFields.some((key) => ["credits_summary", "credit_debts", "credit_amounts", "credit_statuses", "credit_products", "credit_dates"].includes(key));
   return {
-    cards: hasPrefix("card") || selectedFields.includes("cards_summary"),
+    cards: hasPrefix("card"),
     cardDetails,
-    accounts: hasPrefix("account") || selectedFields.includes("accounts_summary") || cardDetails,
+    cardServices,
+    accounts: hasPrefix("account") || selectedFields.includes("accounts_summary") || selectedFields.includes("card_abs_balances"),
     credits: hasPrefix("credit") || selectedFields.includes("credits_summary"),
     creditDetails,
     deposits: hasPrefix("deposit") || selectedFields.includes("deposits_summary"),
@@ -403,12 +364,19 @@ const loadClientResult = async (inputRow, code, selectedFields) => {
   let credits = normalizeArray(creditsValue);
   const deposits = normalizeArray(depositsValue);
 
-  if (needs.cardDetails && cards.length) {
+  if ((needs.cardDetails || needs.cardServices) && cards.length) {
     cards = await mapWithConcurrency(cards, 3, async (card) => {
       const cardId = cardIdOf(card);
       if (!cardId) return card;
-      const details = await fetchCardDetails(cardId);
-      return { ...card, details: details || card.details || null };
+      const [details, services] = await Promise.all([
+        needs.cardDetails ? fetchCardDetails(cardId).catch(() => null) : null,
+        needs.cardServices ? fetchCardServices(cardId).catch(() => []) : [],
+      ]);
+      return {
+        ...card,
+        details: details || card.details || null,
+        services: needs.cardServices ? normalizeArray(services) : card.services,
+      };
     });
   }
 
@@ -466,7 +434,7 @@ export default function BulkAbsSearchPage() {
   const progressPercent = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
 
   const resultColumns = useMemo(
-    () => selectedFields.map((key) => FIELD_BY_KEY.get(key)).filter(Boolean),
+    () => ALL_FIELDS.filter((field) => selectedFields.includes(field.key)),
     [selectedFields],
   );
 
@@ -638,15 +606,26 @@ export default function BulkAbsSearchPage() {
   };
 
   const handleExport = () => {
+    const selectedCardFields = resultColumns.filter((column) => isCardFieldKey(column.key)).map((column) => column.key);
+    const cardColumns = buildCardExportColumns(results, selectedCardFields);
+    let cardColumnsAdded = false;
+    const requestedColumns = resultColumns.flatMap((column) => {
+      if (isCardFieldKey(column.key)) {
+        if (cardColumnsAdded) return [];
+        cardColumnsAdded = true;
+        return cardColumns;
+      }
+      return [{
+        key: (row) => row.status === "success" ? valueForField(row, column.key) : "",
+        label: column.label,
+      }];
+    });
     const columns = [
       { key: "sourceRow", label: "Строка Excel" },
       { key: "inputValue", label: identifier.label },
       { key: (row) => row.status === "success" ? "Найден" : "Ошибка", label: "Статус" },
       { key: (row) => row.error || "", label: "Комментарий" },
-      ...resultColumns.map((column) => ({
-        key: (row) => row.status === "success" ? valueForField(row, column.key) : "",
-        label: column.label,
-      })),
+      ...requestedColumns,
     ];
     exportToExcel(results, columns, `Пакетный_поиск_АБС_${identifier.column}`);
   };
@@ -716,7 +695,7 @@ export default function BulkAbsSearchPage() {
         <div className="bulk-abs-panel__header">
           <div>
             <h2>Какие данные получить</h2>
-            <p>Каждый выбранный пункт станет отдельной колонкой таблицы и Excel-файла.</p>
+            <p>Для карт каждый выбранный параметр, каждая карта и каждое её значение выгружаются в отдельные столбцы Excel.</p>
           </div>
           <div className="bulk-abs-inline-actions">
             <button type="button" onClick={() => { setSelectedFields(ALL_FIELDS.map((field) => field.key)); setResults([]); }}>Выбрать всё</button>
@@ -843,4 +822,3 @@ export default function BulkAbsSearchPage() {
     </div>
   );
 }
-
