@@ -18,7 +18,7 @@ import {
   Typography,
   message,
 } from "antd";
-import { Ban, BookOpenText, Cpu, Edit3, Landmark, Plus, RefreshCw, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { ArrowLeftRight, Ban, BookOpenText, Cpu, Edit3, Landmark, ListTree, Plus, RefreshCw, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 
 import {
   getInternetBankingClient,
@@ -36,6 +36,8 @@ import {
   emptyInternetBankingPerson,
 } from "./internetBankingForm.js";
 import InternetBankingDictionary from "./InternetBankingDictionary.jsx";
+import InternetBankingOperations from "./InternetBankingOperations.jsx";
+import InternetBankingPaymentCategories from "./InternetBankingPaymentCategories.jsx";
 
 const { Title, Text } = Typography;
 
@@ -267,6 +269,16 @@ export default function InternetBankingPage() {
   ];
 
   const tabs = [
+	{
+	  key: "payment-categories",
+	  label: <span className="ib-tab-label"><ArrowLeftRight size={16} />Категории платежей/переводов</span>,
+	  children: <InternetBankingPaymentCategories />,
+	},
+	{
+	  key: "operations",
+	  label: <span className="ib-tab-label"><ListTree size={16} />Операции</span>,
+	  children: <InternetBankingOperations />,
+	},
     {
       key: "clients",
       label: <span className="ib-tab-label"><Users size={16} />Клиенты и доступы</span>,

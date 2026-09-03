@@ -127,3 +127,26 @@ export function saveInternetBankingTranslations(items, options = {}) {
     body: JSON.stringify({ items }),
   }, options);
 }
+
+export function listInternetBankingPaymentCategories(options = {}) {
+  return requestInternetBanking(`${operatorPath}/payment-categories`, { headers: authHeaders() }, options);
+}
+
+export function setInternetBankingPaymentCategoryStatus(code, isActive, options = {}) {
+  return requestInternetBanking(`${operatorPath}/payment-categories/${encodeURIComponent(code)}`, {
+    method: "PATCH",
+    headers: authHeaders(true),
+    body: JSON.stringify({ is_active: Boolean(isActive) }),
+  }, options);
+}
+
+export function listInternetBankingOperations(filters = {}, options = {}) {
+  const query = new URLSearchParams({ page: String(filters.page || 1), page_size: String(filters.pageSize || 20) });
+  if (filters.status) query.set("status", filters.status);
+  if (filters.operationType) query.set("operation_type", filters.operationType);
+  return requestInternetBanking(`${operatorPath}/operations?${query}`, { headers: authHeaders() }, options);
+}
+
+export function getInternetBankingOperation(id, options = {}) {
+  return requestInternetBanking(`${operatorPath}/operations/${encodeURIComponent(id)}`, { headers: authHeaders() }, options);
+}
