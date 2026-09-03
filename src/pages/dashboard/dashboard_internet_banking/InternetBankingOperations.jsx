@@ -9,8 +9,8 @@ const { Paragraph, Text, Title } = Typography;
 const statusMeta = {
   pending_signatures: ["Ожидает подписей", "gold"],
   ready: ["Готова к исполнению", "blue"],
-  processing: ["Исполняется", "processing"],
-  executed: ["Исполнена", "green"],
+  processing: ["В процессе", "processing"],
+  executed: ["Исполнено (BOOKED)", "green"],
   failed: ["Ошибка", "red"],
   rejected: ["Отклонена", "default"],
   revision: ["На доработке", "orange"],
@@ -24,7 +24,7 @@ function StatusTag({ status }) {
 function OperationDetail({ operation, loading }) {
   if (!operation) return <div className="ib-operation-loading">{loading ? "Загрузка параметров…" : "Нет данных"}</div>;
   const descriptionItems = [
-    ["Номер операции", operation.operation_number], ["Тип", "Между своими счетами"], ["Статус", <StatusTag status={operation.status} />],
+    ["Номер операции", operation.operation_number], ["Тип", "Между своими счетами"], ["Статус", <StatusTag status={operation.status} />], ["Статус АБС", operation.provider_status], ["Colvir Reference ID", operation.colvir_reference_id],
     ["Код клиента", operation.abs_client_code], ["Номер документа", operation.document_number], ["Сумма", `${Number(operation.amount || 0).toLocaleString("ru-RU", { minimumFractionDigits: 2 })} ${operation.currency}`],
     ["Счёт отправителя", operation.payer_account], ["Счёт получателя", operation.beneficiary_account], ["ИНН отправителя", operation.payer_inn],
     ["ИНН получателя", operation.beneficiary_inn], ["ФИО/название отправителя", operation.payer_name], ["ФИО/название получателя", operation.beneficiary_name],
@@ -64,6 +64,12 @@ export default function InternetBankingOperations() {
   }, [page, pageSize, status]);
 
   useEffect(() => { load(); }, [load]);
+
+	useEffect(() => {
+		if (!items.some((operation) => operation.status === "processing")) return undefined;
+		const interval = window.setInterval(load, 30_000);
+		return () => window.clearInterval(interval);
+	}, [items, load]);
 
   const loadDetail = async (expanded, record) => {
     if (!expanded || details[record.ID] || details[record.id]) return;
