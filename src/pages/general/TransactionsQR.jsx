@@ -7,8 +7,9 @@ import { FcCancel, FcHighPriority, FcOk, FcProcess } from "react-icons/fc";
 import AlertMessage from "../../components/general/AlertMessage.jsx";
 import Spinner from "../../components/Spinner.jsx";
 import QRStatistics from "./QRStatistics.jsx";
-import { Button, Space } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { Button, Drawer, Space } from "antd";
+import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
+import * as XLSX from "xlsx";
 
 // New imports for loan integration
 import RepayModal from "../../components/dashboard/dashboard_frontovik/RepayModal.jsx";
@@ -23,9 +24,25 @@ import { TYPE_SEARCH_CLIENT } from "../../const/defConst.js";
 import { useTableSort } from "../../hooks/useTableSort.js";
 import SortIcon from "../../components/general/SortIcon.jsx";
 import { normalizeClientData } from "../../components/dashboard/dashboard_frontovik/absSearchUtils.js";
+import {
+  buildUsOnUsStatementUrl,
+  normalizeUsOnUsTransactions,
+  US_ON_US_ACCOUNT_PREFIXES,
+  usOnUsDateTimestamp,
+  usOnUsExcelRows,
+} from "./usOnUsTransactions.js";
 
 const DEFAULT_QR_BACKEND_URL = "http://10.64.20.101:8080";
 const normalizeBaseUrl = (value, fallback = "") => String(value || fallback).replace(/\/+$/, "");
+const currentDateTimeRange = () => {
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+  return { start: `${date}T00:00`, end: `${date}T23:59` };
+};
 
 export default function TransactionsQR() {
   const { data, setData } = useFormStore();
@@ -35,8 +52,6 @@ export default function TransactionsQR() {
   const [merchants, setMerchants] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 50;
   const [showFilters, setShowFilters] = useState(false);
 
@@ -44,6 +59,15 @@ export default function TransactionsQR() {
   const [isThemOnUs, setIsThemOnUs] = useState(true);
   const [isUsOnUs, setIsUsOnUs] = useState(false);
   const [isLoans, setIsLoans] = useState(false);
+  const [usOnUsStartDate, setUsOnUsStartDate] = useState(
+    () => currentDateTimeRange().start,
+  );
+  const [usOnUsEndDate, setUsOnUsEndDate] = useState(
+    () => currentDateTimeRange().end,
+  );
+  const [selectedUsOnUsTransaction, setSelectedUsOnUsTransaction] =
+    useState(null);
+  const fetchRequestId = useRef(0);
 
   // States for loans functionality
   const [loanSearchValue, setLoanSearchValue] = useState("");
@@ -74,7 +98,7 @@ export default function TransactionsQR() {
   const [filters, setFilters] = useState({});
   const [alert, setAlert] = useState(null);
 
-  const [sortOrder, setSortOrder] = useState("desc");
+  const sortOrder = "desc";
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -147,51 +171,42 @@ export default function TransactionsQR() {
 
   const fetchData = useCallback(
     async (type = "themOnUs", pageNum = 1) => {
+      const requestId = ++fetchRequestId.current;
       try {
         setLoading(true);
-        const startDate = data?.start_date || "2025-09-25T00:00";
-        const endDate = data?.end_date || "2025-10-01T23:59";
+        const startDate =
+          type === "usOnUs"
+            ? usOnUsStartDate
+            : data?.start_date || currentDateTimeRange().start;
+        const endDate =
+          type === "usOnUs"
+            ? usOnUsEndDate
+            : data?.end_date || currentDateTimeRange().end;
 
         if (type === "usOnUs") {
-          const formatToDDMMYYYY = (dateStr) => {
-            const [y, m, d] = dateStr.split("T")[0].split("-");
-            return `${d}.${m}.${y}`;
-          };
-          const baseUrl = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-          const params = new URLSearchParams();
-          params.append("startDate", formatToDDMMYYYY(startDate));
-          params.append("endDate", formatToDDMMYYYY(endDate));
-          params.append("accountNumber", "17507972690808713012");
-          const url = `${normalizeBaseUrl(baseUrl)}/account/operations?${params.toString()}`;
-          
-          const token = localStorage.getItem("access_token");
-          const resp = await fetch(url, {
-              headers: { Authorization: "Bearer " + token }
-          });
-          if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
-          const dataJson = await resp.json();
-          if (dataJson && Array.isArray(dataJson)) {
-              let formattedTransactions = dataJson.flatMap((day) =>
-                  day.Transactions.map((tx) => ({
-                      ...tx,
-                      doper: day.DOPER,
-                      id: tx.NDOC || tx.ID || Math.random().toString(36).substr(2, 9),
-                      description: tx.TXTDSCR,
-                      amount: tx.SUMN || tx.AMNT || 0,
-                      status: "success"
-                  }))
+          const responses = await Promise.all(
+            US_ON_US_ACCOUNT_PREFIXES.map(async (accountPrefix) => {
+              const resp = await fetch(
+                buildUsOnUsStatementUrl(startDate, endDate, accountPrefix),
+                { headers: token ? { Authorization: `Bearer ${token}` } : {} },
               );
-              // Оставляем только те, что относятся к оплате QR (если нужно, но по URL был параметр descr, пока отобразим все, либо фильтруем)
-              formattedTransactions = formattedTransactions.filter(tx => 
-                tx.description && tx.description.toLowerCase().includes("qr")
-              );
-              setTableData(formattedTransactions);
-              setHasMore(false);
-              showAlert(`Загружено ${formattedTransactions.length} записей (Us on Us)`, "success");
-          } else {
-              setTableData([]);
-              setHasMore(false);
-          }
+              if (!resp.ok) {
+                throw new Error(
+                  `Ошибка выписки ${accountPrefix}: HTTP ${resp.status}`,
+                );
+              }
+              return resp.json();
+            }),
+          );
+
+          if (requestId !== fetchRequestId.current) return;
+          const formattedTransactions = normalizeUsOnUsTransactions(responses);
+          setTableData(formattedTransactions);
+          setSelectedUsOnUsTransaction(null);
+          showAlert(
+            `Загружено ${formattedTransactions.length} записей (Us on Us)`,
+            "success",
+          );
           return;
         }
 
@@ -202,39 +217,33 @@ export default function TransactionsQR() {
         if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
         let json = await resp.json();
 
-        if (type === "usOnUs" && Array.isArray(json)) {
-          json = json.filter(r => r.trn_acc_code !== "26202972590810637954" && r.txt_ben !== "ЧСП \"АКТИВ БОНК\"");
-        }
-        
+        if (requestId !== fetchRequestId.current) return;
         if (Array.isArray(json)) {
             if (pageNum === 1) {
                 setTableData(json);
             } else {
                 setTableData(prev => [...prev, ...json]);
             }
-            setHasMore(false);
             showAlert(`Загружено ${json.length} записей`, "success");
-        } else {
-            setHasMore(false);
         }
       } catch (err) {
+        if (requestId !== fetchRequestId.current) return;
         console.error("Ошибка загрузки данных:", err);
         showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
         if (pageNum === 1) setTableData([]);
-        setHasMore(false);
       } finally {
-        setLoading(false);
+        if (requestId === fetchRequestId.current) setLoading(false);
       }
     },
-    [backendQR, data.end_date, data.start_date],
+    [
+      backendQR,
+      data.end_date,
+      data.start_date,
+      token,
+      usOnUsEndDate,
+      usOnUsStartDate,
+    ],
   );
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    const type = isUsOnThem ? "usOnThem" : isUsOnUs ? "usOnUs" : "themOnUs";
-    fetchData(type, nextPage);
-  };
 
   const getBanks = useCallback(async () => {
     try {
@@ -285,8 +294,12 @@ export default function TransactionsQR() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
-      const da = new Date(a.created_at || a.creation_datetime || 0).getTime();
-      const db = new Date(b.created_at || b.creation_datetime || 0).getTime();
+      const da = isUsOnUs
+        ? usOnUsDateTimestamp(a.doper)
+        : new Date(a.created_at || a.creation_datetime || 0).getTime();
+      const db = isUsOnUs
+        ? usOnUsDateTimestamp(b.doper)
+        : new Date(b.created_at || b.creation_datetime || 0).getTime();
       
       if (da !== db) {
         return sortOrder === "asc" ? da - db : db - da;
@@ -297,7 +310,7 @@ export default function TransactionsQR() {
       return sortOrder === "asc" ? ka - kb : kb - ka;
     });
     return arr;
-  }, [filteredData, sortOrder]);
+  }, [filteredData, isUsOnUs, sortOrder]);
 
   const selectedSum = useMemo(() => {
     return selectedRows.reduce((acc, key) => {
@@ -335,11 +348,11 @@ export default function TransactionsQR() {
   }, []);
 
   useEffect(() => {
-    setPage(1);
+    if (!isUsOnUs && (!data?.start_date || !data?.end_date)) return;
     if (isUsOnThem) fetchData("usOnThem", 1);
     else if (isThemOnUs) fetchData("themOnUs", 1);
     else if (isUsOnUs) fetchData("usOnUs", 1);
-  }, [isUsOnThem, isThemOnUs, isUsOnUs, fetchData]);
+  }, [data?.end_date, data?.start_date, fetchData, isThemOnUs, isUsOnThem, isUsOnUs]);
 
   // Handle loan search
   const handleSearchLoans = async () => {
@@ -470,15 +483,6 @@ export default function TransactionsQR() {
   };
 
   useEffect(() => {
-    if (data?.start_date && data?.end_date) {
-      setPage(1);
-      if (isUsOnThem) fetchData("usOnThem", 1);
-      else if (isThemOnUs) fetchData("themOnUs", 1);
-      else if (isUsOnUs) fetchData("usOnUs", 1);
-    }
-  }, [data.start_date, data.end_date, fetchData, isUsOnThem, isThemOnUs, isUsOnUs]);
-
-  useEffect(() => {
     if (selectAll) {
       const keys = sortedData.map((r) => getRowKey(r));
       setSelectedRows(keys);
@@ -498,6 +502,25 @@ export default function TransactionsQR() {
 
       if (selectedTransactions.length === 0) {
         showAlert("Выберите хотя бы одну запись для выгрузки", "error");
+        return;
+      }
+
+      if (isUsOnUs) {
+        const worksheet = XLSX.utils.json_to_sheet(
+          usOnUsExcelRows(selectedTransactions),
+        );
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Us on Us");
+        XLSX.writeFile(
+          workbook,
+          `Us-on-Us_${usOnUsStartDate.slice(0, 10)}_to_${usOnUsEndDate.slice(0, 10)}.xlsx`,
+        );
+        showAlert(
+          `Файл успешно выгружен (${selectedTransactions.length} записей)`,
+          "success",
+        );
+        setSelectedRows([]);
+        setSelectAll(false);
         return;
       }
 
@@ -601,7 +624,7 @@ export default function TransactionsQR() {
         style={{ flexDirection: "column", gap: "20px", height: "auto", width: "100%", maxWidth: "100%", padding: "10px" }}
       >
         <main>
-          {showChart && (
+          {showChart && !isUsOnUs && (
             <QRStatistics
               startDate={data?.start_date}
               endDate={data?.end_date}
@@ -626,6 +649,8 @@ export default function TransactionsQR() {
                 setSelectedRows([]);
                 setSelectAll(false);
                 setTableData([]);
+                setFilters({});
+                setSelectedUsOnUsTransaction(null);
               }}
             >
               Наш клиент — чужой QR
@@ -641,6 +666,8 @@ export default function TransactionsQR() {
                 setSelectedRows([]);
                 setSelectAll(false);
                 setTableData([]);
+                setFilters({});
+                setSelectedUsOnUsTransaction(null);
               }}
             >
               Наш клиент — Наш QR (Us on Us)
@@ -655,6 +682,8 @@ export default function TransactionsQR() {
                 setIsLoans(false);
                 setSelectedRows([]);
                 setSelectAll(false);
+                setFilters({});
+                setSelectedUsOnUsTransaction(null);
               }}
             >
               Наш QR — чужой клиент
@@ -669,6 +698,8 @@ export default function TransactionsQR() {
                 setIsUsOnUs(false);
                 setSelectedRows([]);
                 setSelectAll(false);
+                setFilters({});
+                setSelectedUsOnUsTransaction(null);
               }}
             >
               Кредиты
@@ -695,9 +726,11 @@ export default function TransactionsQR() {
             >
               {selectAll ? "Снять выделение" : "Выбрать все"}
             </button>
-            <button className="button" onClick={() => setShowChart(!showChart)}>
-              {showChart ? "Скрыть график" : "Показать график"}
-            </button>
+            {!isUsOnUs && (
+              <button className="button" onClick={() => setShowChart(!showChart)}>
+                {showChart ? "Скрыть график" : "Показать график"}
+              </button>
+            )}
 
             <div className="activebank-balance">
               <div
@@ -753,6 +786,30 @@ export default function TransactionsQR() {
                       setFilters((p) => ({
                         ...p,
                         sender_phone: e.target.value,
+                      }))
+                    }
+                  />
+                </>
+              )}
+              {isUsOnUs && (
+                <>
+                  <input
+                    placeholder="Отправитель"
+                    value={filters.txt_pay || ""}
+                    onChange={(e) =>
+                      setFilters((previous) => ({
+                        ...previous,
+                        txt_pay: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    placeholder="Получатель"
+                    value={filters.txt_ben || ""}
+                    onChange={(e) =>
+                      setFilters((previous) => ({
+                        ...previous,
+                        txt_ben: e.target.value,
                       }))
                     }
                   />
@@ -885,8 +942,12 @@ export default function TransactionsQR() {
               от{" "}
               <Input
                 type="datetime-local"
-                onChange={(e) => setData("start_date", e)}
-                value={data?.start_date}
+                onChange={(value) =>
+                  isUsOnUs
+                    ? setUsOnUsStartDate(value)
+                    : setData("start_date", value)
+                }
+                value={isUsOnUs ? usOnUsStartDate : data?.start_date}
                 style={{ width: "200px" }}
                 id="start_date"
               />
@@ -895,8 +956,12 @@ export default function TransactionsQR() {
               до{" "}
               <Input
                 type="datetime-local"
-                onChange={(e) => setData("end_date", e)}
-                value={data?.end_date}
+                onChange={(value) =>
+                  isUsOnUs
+                    ? setUsOnUsEndDate(value)
+                    : setData("end_date", value)
+                }
+                value={isUsOnUs ? usOnUsEndDate : data?.end_date}
                 style={{ width: "200px" }}
                 id="end_date"
               />
@@ -1126,9 +1191,9 @@ export default function TransactionsQR() {
                      <Button className="export-excel-btn" onClick={handleExport}>
                        Экспорт в Excel
                      </Button>
-                     {!(isUsOnUs) && <span style={{ marginLeft: "10px", fontSize: "14px", color: "gray" }}>
+                     <span style={{ marginLeft: "10px", fontSize: "14px", color: "gray" }}>
                        (Всего: {sortedData.length})
-                     </span>}
+                     </span>
                    </Space>
                 </div>
               )}
@@ -1174,40 +1239,82 @@ export default function TransactionsQR() {
                     );
                   }}
                 />
-                <Table.Column
-                  title="ID"
-                  key="id"
-                  width={100}
-                  render={(_, row) => row.id || "-"}
-                />
+                {!isUsOnUs && (
+                  <Table.Column
+                    title="ID"
+                    key="id"
+                    width={100}
+                    render={(_, row) => row.id || "-"}
+                  />
+                )}
 
                 {isUsOnUs && (
-                  <>
-                    <Table.Column title="ФИО Плательщика" dataIndex="txt_pay" key="txt_pay" render={(val) => val || "-"} />
-                    <Table.Column title="Получатель" dataIndex="txt_ben" key="txt_ben" render={(val) => val || "-"} />
-                    <Table.Column title="Описание" dataIndex="dscr" key="dscr" render={(val) => val || "-"} />
-                    <Table.Column title="Номер счета получателя" dataIndex="trn_acc_code" key="trn_acc_code" render={(val) => val || "-"} />
-                    <Table.Column
-                      title="Статус"
-                      key="status_us"
-                      render={() => (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <FcOk style={{ fontSize: 22 }} />
-                          <span style={{ color: "green" }}>Успешно</span>
-                        </div>
-                      )}
-                    />
-                    <Table.Column
-                      title="Сумма"
-                      key="amount_us"
-                      render={(_, row) => {
-                         const rawSum = Number(row.sdok || 0);
-                         const realSum = rawSum > 0 ? (rawSum / 0.99).toFixed(2) : 0;
-                         return <span style={{ fontWeight: "600" }}>{Number(realSum).toLocaleString("ru-RU")} с.</span>;
-                      }}
-                      sortValue={(row) => Number(row.sdok || 0) / 0.99}
-                    />
-                  </>
+                  <Table.Column
+                    title="Дата операции"
+                    dataIndex="doper"
+                    key="doper"
+                    render={(value) => value || "-"}
+                    sortValue={(row) => usOnUsDateTimestamp(row.doper)}
+                  />
+                )}
+                {isUsOnUs && (
+                  <Table.Column
+                    title="Сумма"
+                    key="amount_us"
+                    render={(_, row) => (
+                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                        {Number(row.sdok || 0).toLocaleString("ru-RU", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {row.val_code || "TJS"}
+                      </span>
+                    )}
+                    sortValue={(row) => Number(row.sdok || 0)}
+                  />
+                )}
+                {isUsOnUs && (
+                  <Table.Column
+                    title="Отправитель"
+                    dataIndex="txt_pay"
+                    key="txt_pay"
+                    render={(value) => value || "-"}
+                  />
+                )}
+                {isUsOnUs && (
+                  <Table.Column
+                    title="Получатель"
+                    dataIndex="txt_ben"
+                    key="txt_ben"
+                    render={(value) => value || "-"}
+                  />
+                )}
+                {isUsOnUs && (
+                  <Table.Column
+                    title="Статус"
+                    key="status_us"
+                    render={() => (
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <FcOk style={{ fontSize: 22 }} />
+                        <span style={{ color: "green" }}>Успешно</span>
+                      </div>
+                    )}
+                  />
+                )}
+                {isUsOnUs && (
+                  <Table.Column
+                    title=""
+                    key="details_us"
+                    width={130}
+                    render={(_, row) => (
+                      <Button
+                        icon={<EyeOutlined />}
+                        onClick={() => setSelectedUsOnUsTransaction(row)}
+                      >
+                        Подробнее
+                      </Button>
+                    )}
+                  />
                 )}
                 {isUsOnThem && (
                   <Table.Column
@@ -1222,15 +1329,6 @@ export default function TransactionsQR() {
                     title="Телефон"
                     dataIndex="sender_phone"
                     key="sender_phone"
-                    render={(val) => val || "-"}
-                  />
-                )}
-
-                {isUsOnUs && (
-                  <Table.Column
-                    title="Дата"
-                    dataIndex="doper"
-                    key="doper"
                     render={(val) => val || "-"}
                   />
                 )}
@@ -1302,55 +1400,58 @@ export default function TransactionsQR() {
                     }}
                 />
                 )}
-                <Table.Column
-                  title="Банк отправителя"
-                  key="bank_sender"
-                  render={(_, row) => {
-                    const bankId = isUsOnThem ? row.sender_bank : row.sender;
-                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }}
-                />
-                <Table.Column
-                  title="Банк получателя"
-                  key="bank_receiver"
-                  render={(_, row) => {
-                    const bankId = row.receiver;
-                    const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
-                    return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
-                  }}
-                />
-                <Table.Column
-                  title="Сумма"
-                  key="amount"
-                  render={(_, row) => (
-                    <span style={{ fontWeight: "600" }}>
-                      {Number(row.amount).toLocaleString("ru-RU")} с.
-                    </span>
-                  )}
-                  sortValue={(row) => Number(row.amount)}
-                />
-                <Table.Column
-                  title="Дата создания"
-                  key="date"
-                  render={(_, row) => {
-                    const d = isUsOnThem ? row.created_at : isUsOnUs ? row.doper : row.creation_datetime;
-                    return isUsOnUs ? d : formatDateForDisplay(d);
-                  }}
-                  sortValue={(row) => {
-                    if (isUsOnUs) {
-                      // doper format DD.MM.YYYY or similar
-                      if (!row.doper) return 0;
-                      const parts = row.doper.split(".");
-                      if (parts.length === 3) {
-                         return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
-                      }
-                      return 0;
-                    }
-                    const d = isUsOnThem ? row.created_at : row.creation_datetime;
-                    return new Date(d).getTime();
-                  }}
-                />
+                {!isUsOnUs && (
+                  <Table.Column
+                    title="Банк отправителя"
+                    key="bank_sender"
+                    render={(_, row) => {
+                      const bankId = isUsOnThem ? row.sender_bank : row.sender;
+                      const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                      return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                    }}
+                  />
+                )}
+                {!isUsOnUs && (
+                  <Table.Column
+                    title="Банк получателя"
+                    key="bank_receiver"
+                    render={(_, row) => {
+                      const bankId = row.receiver;
+                      const bank = banks.find((b) => b.bankId === bankId || b.id === bankId);
+                      return bank ? `${bank.bankName} (${bankId})` : `ID: ${bankId}`;
+                    }}
+                  />
+                )}
+                {!isUsOnUs && (
+                  <Table.Column
+                    title="Сумма"
+                    key="amount"
+                    render={(_, row) => (
+                      <span style={{ fontWeight: "600" }}>
+                        {Number(row.amount).toLocaleString("ru-RU")} с.
+                      </span>
+                    )}
+                    sortValue={(row) => Number(row.amount)}
+                  />
+                )}
+                {!isUsOnUs && (
+                  <Table.Column
+                    title="Дата создания"
+                    key="date"
+                    render={(_, row) => {
+                      const date = isUsOnThem
+                        ? row.created_at
+                        : row.creation_datetime;
+                      return formatDateForDisplay(date);
+                    }}
+                    sortValue={(row) => {
+                      const date = isUsOnThem
+                        ? row.created_at
+                        : row.creation_datetime;
+                      return new Date(date).getTime();
+                    }}
+                  />
+                )}
               </Table>
               )}
               </>
@@ -1358,6 +1459,68 @@ export default function TransactionsQR() {
           </div>
         </main>
       </div>
+
+      <Drawer
+        title="Детали операции Us on Us"
+        placement="right"
+        width={520}
+        open={Boolean(selectedUsOnUsTransaction)}
+        onClose={() => setSelectedUsOnUsTransaction(null)}
+      >
+        {selectedUsOnUsTransaction && (
+          <div className="us-on-us-details">
+            <div className="us-on-us-details__status">
+              <FcOk style={{ fontSize: 24 }} />
+              <div>
+                <span>Статус операции</span>
+                <strong>Успешно</strong>
+              </div>
+            </div>
+            <dl className="us-on-us-details__grid">
+              <div>
+                <dt>Дата операции</dt>
+                <dd>{selectedUsOnUsTransaction.doper || "—"}</dd>
+              </div>
+              <div>
+                <dt>Сумма</dt>
+                <dd>
+                  {Number(selectedUsOnUsTransaction.sdok || 0).toLocaleString(
+                    "ru-RU",
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                  )}{" "}
+                  {selectedUsOnUsTransaction.val_code || "TJS"}
+                </dd>
+              </div>
+              <div className="us-on-us-details__wide">
+                <dt>Отправитель</dt>
+                <dd>{selectedUsOnUsTransaction.txt_pay || "—"}</dd>
+              </div>
+              <div className="us-on-us-details__wide">
+                <dt>Получатель</dt>
+                <dd>{selectedUsOnUsTransaction.txt_ben || "—"}</dd>
+              </div>
+              <div className="us-on-us-details__wide">
+                <dt>Номер счета получателя</dt>
+                <dd className="us-on-us-details__account">
+                  {selectedUsOnUsTransaction.trn_acc_code || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>ID операции</dt>
+                <dd>{selectedUsOnUsTransaction.id || "—"}</dd>
+              </div>
+              <div>
+                <dt>Номер документа</dt>
+                <dd>{selectedUsOnUsTransaction.ord_code || "—"}</dd>
+              </div>
+              <div className="us-on-us-details__wide">
+                <dt>Назначение платежа</dt>
+                <dd>{selectedUsOnUsTransaction.dscr || "—"}</dd>
+              </div>
+            </dl>
+          </div>
+        )}
+      </Drawer>
 
       {isLoading && (
         <div className="loading-overlay">
