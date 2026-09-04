@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { Popconfirm, message } from "antd";
 import { Table } from "../../../table/FlexibleAntTable.jsx";
 import { useExcelExport } from "../../../../hooks/useExcelExport.js";
 
@@ -11,6 +12,8 @@ const TableCardMargents = () => {
   const [newCard, setNewCard] = useState({
     title: "",
     code: "",
+    client_code: "",
+    account_number: "",
   });
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -76,8 +79,10 @@ const TableCardMargents = () => {
         previous.map((card) => (card.ID === id ? { ...editedCard } : card)),
       );
       setEditId(null);
+      message.success("Запись мерчанта сохранена");
     } catch (error) {
       console.error("Ошибка при сохранении:", error);
+      message.error("Не удалось сохранить запись мерчанта");
     }
   };
 
@@ -98,12 +103,29 @@ const TableCardMargents = () => {
       }
 
       setCards((previous) => previous.filter((card) => card.ID !== id));
+      message.success("Запись мерчанта удалена");
     } catch (error) {
       console.error("Ошибка при удалении:", error);
+      message.error("Не удалось удалить запись мерчанта");
     }
   };
 
   const handleAdd = async () => {
+    const payload = Object.fromEntries(
+      Object.entries(newCard).map(([key, value]) => [key, String(value).trim()]),
+    );
+    if (!payload.title || !/^\d{5}$/.test(payload.code)) {
+      message.error("Укажите название и 5-значный код мерчанта");
+      return;
+    }
+    if (!payload.client_code) {
+      message.error("Укажите код клиента");
+      return;
+    }
+    if (!/^\d{20}$/.test(payload.account_number)) {
+      message.error("Номер счета должен содержать 20 цифр");
+      return;
+    }
     try {
       const token = localStorage.getItem("access_token");
 
@@ -113,7 +135,7 @@ const TableCardMargents = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newCard),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -124,16 +146,22 @@ const TableCardMargents = () => {
       setNewCard({
         title: "",
         code: "",
+        client_code: "",
+        account_number: "",
       });
+      message.success("Мерчант добавлен");
     } catch (error) {
       console.error("Ошибка при добавлении:", error);
+      message.error("Не удалось добавить мерчанта");
     }
   };
 
   const handleExport = () => {
     const columns = [
       { key: "title", label: "Название" },
-      { key: "code", label: "Код" },
+      { key: "code", label: "Код мерчанта" },
+      { key: "client_code", label: "Код клиента" },
+      { key: "account_number", label: "Номер счета" },
     ];
 
     exportToExcel(cards, columns, "Мерчанты");
@@ -150,7 +178,7 @@ const TableCardMargents = () => {
             setEditedCard((previous) => ({
               ...previous,
               [field]:
-                field === "code"
+                field === "code" || field === "account_number"
                   ? String(event.target.value)
                   : event.target.value,
             }))
@@ -170,7 +198,7 @@ const TableCardMargents = () => {
         onDoubleClick={() => handleDoubleClick(card)}
         style={{ cursor: "pointer" }}
       >
-        {card[field]}
+        {card[field] || "—"}
       </div>
     );
   };
@@ -205,7 +233,32 @@ const TableCardMargents = () => {
                 code: String(event.target.value),
               }))
             }
-            placeholder="Код"
+            placeholder="Код мерчанта (5 цифр)"
+            inputMode="numeric"
+            maxLength={5}
+          />
+          <input
+            value={newCard.client_code}
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                client_code: event.target.value,
+              }))
+            }
+            placeholder="Код клиента"
+            maxLength={64}
+          />
+          <input
+            value={newCard.account_number}
+            onChange={(event) =>
+              setNewCard((previous) => ({
+                ...previous,
+                account_number: event.target.value.replace(/\D/g, ""),
+              }))
+            }
+            placeholder="Номер счета (20 цифр)"
+            inputMode="numeric"
+            maxLength={20}
           />
           <button onClick={handleAdd} className="action-buttons__btn">
             Добавить
@@ -233,10 +286,22 @@ const TableCardMargents = () => {
             render={(_, record) => renderEditableCell(record, "title")}
           />
           <Table.Column
-            title="Код"
+            title="Код мерчанта"
             dataIndex="code"
             key="code"
             render={(_, record) => renderEditableCell(record, "code")}
+          />
+          <Table.Column
+            title="Код клиента"
+            dataIndex="client_code"
+            key="client_code"
+            render={(_, record) => renderEditableCell(record, "client_code")}
+          />
+          <Table.Column
+            title="Номер счета"
+            dataIndex="account_number"
+            key="account_number"
+            render={(_, record) => renderEditableCell(record, "account_number")}
           />
           <Table.Column
             title="Действия"
@@ -251,12 +316,16 @@ const TableCardMargents = () => {
                   Сохранить
                 </button>
               ) : (
-                <button
-                  onClick={() => handleDelete(record.ID)}
-                  className="action-buttons__btn"
+                <Popconfirm
+                  title="Удалить запись мерчанта?"
+                  description="Запись будет удалена из справочника."
+                  okText="Удалить"
+                  cancelText="Отмена"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => handleDelete(record.ID)}
                 >
-                  Удалить
-                </button>
+                  <button className="action-buttons__btn">Удалить</button>
+                </Popconfirm>
               )
             }
           />
