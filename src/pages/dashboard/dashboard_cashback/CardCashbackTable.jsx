@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Input, Button, Space, Tag } from "antd";
+import { Input, Button, DatePicker, Space, Tag } from "antd";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useExcelExport } from "../../../hooks/useExcelExport.js";
 import { apiClient } from "../../../api/utils/apiClient.js";
@@ -9,8 +9,10 @@ import { Table } from "../../../components/table/FlexibleAntTable.jsx";
 import { getCurrencyCode } from "../../../api/utils/getCurrencyCode.js";
 import CardCashbackStatistics from "./CardCashbackStatistics.jsx";
 import CashbackStatistics from "./CashbackStatistics.jsx";
+import { filterCashbackItemsByDate } from "./cardCashbackStatisticsUtils.js";
 
 const STATUS_PAID = "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E";
+const { RangePicker } = DatePicker;
 
 const CardCashbackTable = () => {
     const [items, setItems] = useState([]);
@@ -23,6 +25,7 @@ const CardCashbackTable = () => {
         order: "descend",
     });
     const [showChart, setShowChart] = useState(false);
+    const [dateRange, setDateRange] = useState(["", ""]);
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
     const { exportToExcel } = useExcelExport();
@@ -84,6 +87,17 @@ const CardCashbackTable = () => {
     const handleRefresh = useCallback(() => {
         fetchItems();
     }, [fetchItems]);
+
+    const filteredItems = useMemo(
+        () => filterCashbackItemsByDate(items, dateRange[0], dateRange[1]),
+        [items, dateRange],
+    );
+
+    const periodLabel = useMemo(() => {
+        if (!dateRange[0] || !dateRange[1]) return "За весь период";
+        const format = (value) => value.split("-").reverse().join(".");
+        return `${format(dateRange[0])} — ${format(dateRange[1])}`;
+    }, [dateRange]);
 
     const handlePay = useCallback(async (utrno) => {
         try {
@@ -329,7 +343,7 @@ const CardCashbackTable = () => {
         const exportColumns = columns
             .filter((col) => col.key !== "actions")
             .map((col) => ({ key: col.dataIndex, label: col.title }));
-        const mappedItems = items.map((item) => ({
+        const mappedItems = filteredItems.map((item) => ({
             ...item,
             fio: item.client_full_name || fios[item.card_id] || "-",
             payId: item.payId == "216" ? "GooglePay" : item.payId || "",
@@ -341,16 +355,31 @@ const CardCashbackTable = () => {
 
     return (
         <div className="block_info_prems content-page">
-            <div className="table-header-actions" style={{ margin: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div className="table-header-actions" style={{ margin: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                     <h2 style={{ margin: 0 }}>Кэшбэк по картам</h2>
                     {balance !== null && (
                         <Tag color="blue" style={{ fontSize: "16px", padding: "4px 8px" }}>
                             Остаток по счету: {balance} TJS
                         </Tag>
                     )}
+                    <Tag color="geekblue" style={{ fontSize: "14px", padding: "4px 8px" }}>
+                        Показано: {filteredItems.length} из {items.length}
+                    </Tag>
                 </div>
-                <Space>
+                <Space wrap>
+                    <RangePicker
+                        format="DD.MM.YYYY"
+                        placeholder={["Дата от", "Дата до"]}
+                        allowClear
+                        onChange={(dates) =>
+                            setDateRange(
+                                dates
+                                    ? dates.map((date) => date.format("YYYY-MM-DD"))
+                                    : ["", ""],
+                            )
+                        }
+                    />
                     <Button onClick={() => setShowChart(!showChart)}>
                         {showChart ? "Скрыть график" : "Показать график"}
                     </Button>
@@ -367,17 +396,17 @@ const CardCashbackTable = () => {
                 </Space>
             </div>
 
-            {showChart && <CardCashbackStatistics data={items} />}
+            {showChart && <CardCashbackStatistics data={filteredItems} periodLabel={periodLabel} />}
 
             {error ? (
                 <p style={{ color: "red", margin: "16px" }}>{error}</p>
             ) : (
                 <>
-                <CashbackStatistics items={items} />
+                <CashbackStatistics items={filteredItems} periodLabel={periodLabel} />
                 <Table
                     tableId="cashback-card-list"
                     columns={columns}
-                    dataSource={items}
+                    dataSource={filteredItems}
                     rowKey={(record) => record.id || record.utrno}
                     loading={{
                         spinning: loading,
