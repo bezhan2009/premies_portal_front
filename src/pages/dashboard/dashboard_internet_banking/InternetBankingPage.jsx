@@ -38,6 +38,7 @@ import {
 import InternetBankingDictionary from "./InternetBankingDictionary.jsx";
 import InternetBankingOperations from "./InternetBankingOperations.jsx";
 import InternetBankingPaymentCategories from "./InternetBankingPaymentCategories.jsx";
+import InternetBankingConversionSettings from "./InternetBankingConversionSettings.jsx";
 
 const { Title, Text } = Typography;
 
@@ -269,6 +270,7 @@ export default function InternetBankingPage() {
   ];
 
   const tabs = [
+    { key: "conversion-settings", label: <span className="ib-tab-label"><ArrowLeftRight size={16} />Конвертация валют</span>, children: <InternetBankingConversionSettings /> },
 	{
 	  key: "payment-categories",
 	  label: <span className="ib-tab-label"><ArrowLeftRight size={16} />Категории платежей/переводов</span>,

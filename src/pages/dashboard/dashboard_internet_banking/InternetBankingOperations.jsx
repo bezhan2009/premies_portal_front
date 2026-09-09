@@ -6,6 +6,8 @@ import { getInternetBankingOperation, listInternetBankingOperations } from "../.
 
 const { Paragraph, Text, Title } = Typography;
 
+const operationTitles = { "own-transfer": "Между своими счетами", "bank-client": "Клиенту банка", domestic: "Внутри страны", conversion: "Конвертация валют" };
+
 const statusMeta = {
   pending_signatures: ["Ожидает подписей", "gold"],
   ready: ["Готова к исполнению", "blue"],
@@ -24,8 +26,8 @@ function StatusTag({ status }) {
 function OperationDetail({ operation, loading }) {
   if (!operation) return <div className="ib-operation-loading">{loading ? "Загрузка параметров…" : "Нет данных"}</div>;
   const descriptionItems = [
-    ["Номер операции", operation.operation_number], ["Тип", "Между своими счетами"], ["Статус", <StatusTag status={operation.status} />], ["Статус АБС", operation.provider_status], ["Colvir Reference ID", operation.colvir_reference_id],
-    ["Код клиента", operation.abs_client_code], ["Номер документа", operation.document_number], ["Сумма", `${Number(operation.amount || 0).toLocaleString("ru-RU", { minimumFractionDigits: 2 })} ${operation.currency}`],
+    ["Номер операции", operation.operation_number], ["Тип", operationTitles[operation.operation_type] || operation.operation_type], ["Статус", <StatusTag status={operation.status} />], ["Статус АБС", operation.provider_status], ["Colvir Reference ID", operation.colvir_reference_id],
+    ["К зачислению", operation.currency_to ? `${operation.amount_to} ${operation.currency_to}` : "—"], ["Курс конвертации", operation.conversion_rate || "—"], ["Код клиента", operation.abs_client_code], ["Номер документа", operation.document_number], ["Сумма", `${Number(operation.amount || 0).toLocaleString("ru-RU", { minimumFractionDigits: 2 })} ${operation.currency}`],
     ["Счёт отправителя", operation.payer_account], ["Счёт получателя", operation.beneficiary_account], ["ИНН отправителя", operation.payer_inn],
     ["ИНН получателя", operation.beneficiary_inn], ["ФИО/название отправителя", operation.payer_name], ["ФИО/название получателя", operation.beneficiary_name],
     ["Назначение", operation.payment_details], ["Подписи", `${operation.signatures_received || 0} из ${operation.signatures_required || 0}`], ["Ошибка", operation.error_message || "—"],
@@ -53,7 +55,7 @@ export default function InternetBankingOperations() {
     setLoading(true);
     setError("");
     try {
-      const result = await listInternetBankingOperations({ page, pageSize, status, operationType: "own-transfer" });
+      const result = await listInternetBankingOperations({ page, pageSize, status });
       setItems(result?.items || []);
       setTotal(result?.total || 0);
     } catch (requestError) {
