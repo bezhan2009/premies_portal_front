@@ -24,6 +24,13 @@ async function requestInternetBanking(path, requestOptions = {}, options = {}) {
 
 const operatorPath = "/internet-banking/operator";
 
+export function getInternetBankingConversionSettings(options = {}) {
+  return requestInternetBanking(`${operatorPath}/conversion-settings`, { headers: authHeaders() }, options);
+}
+export function saveInternetBankingConversionSettings(payload, options = {}) {
+  return requestInternetBanking(`${operatorPath}/conversion-settings`, { method: "PUT", headers: authHeaders(true), body: JSON.stringify(payload) }, options);
+}
+
 export function listInternetBankingClients(filters = {}, options = {}) {
   const query = new URLSearchParams({
     page: String(filters.page || 1),
