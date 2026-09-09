@@ -9,134 +9,249 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Select } from "antd";
+import { Empty, Select, Table, Tag } from "antd";
+import {
+  buildCashbackChartSeries,
+  summarizeCashbackByName,
+} from "./cardCashbackStatisticsUtils.js";
 
-function formatNumber(value) {
-  if (value == null || isNaN(value)) return "0";
-  return Number(value)
-    .toFixed(0)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-    .replace(".", ",");
+const SERIES_COLORS = [
+  "#417cd5",
+  "#2ec4b6",
+  "#ff9f1c",
+  "#9b5de5",
+  "#e71d36",
+  "#00a8e8",
+  "#6a994e",
+  "#f15bb5",
+];
+
+function formatNumber(value, isSum = false) {
+  if (value == null || Number.isNaN(Number(value))) return "0";
+
+  return Number(value).toLocaleString("ru-RU", {
+    minimumFractionDigits: isSum ? 2 : 0,
+    maximumFractionDigits: isSum ? 2 : 0,
+  });
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        style={{
-          background: "rgba(255,255,255,0.85)",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          backdropFilter: "blur(8px)",
-          fontSize: "13px",
-          color: "var(--text-color)",
-        }}
-      >
-        <div style={{ fontWeight: "600", marginBottom: "6px" }}>{label}</div>
-        {payload.map((p, i) => (
-          <div key={i}>
-            <span style={{ color: p.color }}>{p.name}: </span>
-            {formatNumber(p.value)}
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-export default function CashbackStatistics({ items }) {
-  const [metric, setMetric] = useState("count");
-
-  const chartData = useMemo(() => {
-    if (!items || !Array.isArray(items)) return [];
-
-    const grouped = items.reduce((acc, curr) => {
-      const dateRaw = curr.created_at || curr.updated_at;
-      if (!dateRaw) return acc;
-      
-      const date = dateRaw.split("T")[0];
-      if (!acc[date]) {
-        acc[date] = { date, count: 0, cashbackSum: 0, transactionSum: 0 };
-      }
-      
-      acc[date].count += 1;
-      acc[date].cashbackSum += Number(curr.amount || curr.cashback_amount || 0);
-      acc[date].transactionSum += Number((curr.transaction_amount || curr.amount || 0) / 100);
-      
-      return acc;
-    }, {});
-
-    return Object.values(grouped).sort(
-      (a, b) => new Date(a.date) - new Date(b.date)
-    );
-  }, [items]);
-
-  if (!chartData.length) return null;
+const CustomTooltip = ({ active, payload, label, isSum }) => {
+  if (!active || !payload?.length) return null;
 
   return (
-    <div className="p-6" style={{ paddingBottom: 0 }}>
-      <div className="flex gap-4 items-center mb-4">
+    <div
+      style={{
+        background: "rgba(255,255,255,0.94)",
+        padding: "10px 14px",
+        borderRadius: "10px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        backdropFilter: "blur(8px)",
+        fontSize: "13px",
+        color: "var(--text-color)",
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: "6px" }}>{label}</div>
+      {payload.map((entry) => (
+        <div key={entry.dataKey}>
+          <span style={{ color: entry.color }}>{entry.name}: </span>
+          {formatNumber(entry.value, isSum)} {isSum ? "TJS" : "шт."}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default function CashbackStatistics({ items, periodLabel }) {
+  const [metric, setMetric] = useState("sum");
+  const summary = useMemo(() => summarizeCashbackByName(items), [items]);
+  const chart = useMemo(
+    () => buildCashbackChartSeries(items, metric),
+    [items, metric],
+  );
+  const totalAmount = useMemo(
+    () => summary.reduce((total, item) => total + item.totalAmount, 0),
+    [summary],
+  );
+
+  const columns = useMemo(
+    () => [
+      {
+        title: "Название кэшбэка",
+        dataIndex: "name",
+        key: "name",
+        render: (value) => <strong>{value}</strong>,
+      },
+      {
+        title: "Операций",
+        dataIndex: "count",
+        key: "count",
+        align: "right",
+      },
+      {
+        title: "Общая сумма за период",
+        dataIndex: "totalAmount",
+        key: "totalAmount",
+        align: "right",
+        render: (value) => <strong>{formatNumber(value, true)} TJS</strong>,
+      },
+      {
+        title: "Оплачено",
+        dataIndex: "paidCount",
+        key: "paidCount",
+        align: "right",
+      },
+      {
+        title: "В обработке",
+        dataIndex: "processingCount",
+        key: "processingCount",
+        align: "right",
+      },
+      {
+        title: "Ошибки",
+        dataIndex: "errorCount",
+        key: "errorCount",
+        align: "right",
+      },
+      {
+        title: "Возвраты",
+        dataIndex: "returnedCount",
+        key: "returnedCount",
+        align: "right",
+      },
+    ],
+    [],
+  );
+
+  return (
+    <div
+      style={{
+        margin: "16px",
+        padding: "18px",
+        background: "var(--block-bg, white)",
+        border: "1px solid var(--border-color, #eef0f3)",
+        borderRadius: "12px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginBottom: "16px",
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0 }}>Статистика по названиям кэшбэка</h3>
+          <div
+            style={{
+              marginTop: "8px",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <Tag color="blue">{periodLabel}</Tag>
+            <Tag color="green">
+              Общая сумма: {formatNumber(totalAmount, true)} TJS
+            </Tag>
+          </div>
+        </div>
         <Select
           value={metric}
           onChange={setMetric}
           options={[
+            { label: "Сумма кэшбэка", value: "sum" },
             { label: "Количество операций", value: "count" },
-            { label: "Сумма", value: "sum" },
           ]}
-          style={{ width: 200 }}
+          style={{ width: 220 }}
         />
       </div>
 
-      <div style={{ width: "100%", height: 340 }}>
-        <ResponsiveContainer>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#417cd5" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#417cd5" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="colorCashback" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#82ca9d" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#82ca9d" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="colorTransaction" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ffc658" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#ffc658" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
+      {chart.data.length ? (
+        <div style={{ width: "100%", height: 340, marginBottom: "20px" }}>
+          <ResponsiveContainer>
+            <AreaChart data={chart.data}>
+              <defs>
+                {chart.series.map((series, index) => {
+                  const color = SERIES_COLORS[index % SERIES_COLORS.length];
 
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+                  return (
+                    <linearGradient
+                      key={series.key}
+                      id={`gradient_${series.key}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor={color} stopOpacity={0.75} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0.08} />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip isSum={metric === "sum"} />} />
+              <Legend />
+              {chart.series.map((series, index) => {
+                const color = SERIES_COLORS[index % SERIES_COLORS.length];
 
-            {metric === "count" ? (
-              <Area
-                type="monotone"
-                dataKey="count"
-                name="Количество операций"
-                stroke="#417cd5"
-                fill="url(#colorCount)"
-                strokeWidth={2.5}
-                dot={{ r: 2 }}
-              />
-            ) : (
-              <Area
-                type="monotone"
-                dataKey="cashbackSum"
-                name="Сумма кэшбэка (TJS)"
-                stroke="#82ca9d"
-                fill="url(#colorCashback)"
-                strokeWidth={2.5}
-                dot={{ r: 2 }}
-              />
-            )}
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+                return (
+                  <Area
+                    key={series.key}
+                    type="monotone"
+                    dataKey={series.key}
+                    name={series.name}
+                    stroke={color}
+                    fill={`url(#gradient_${series.key})`}
+                    strokeWidth={2.25}
+                    dot={{ r: 2 }}
+                  />
+                );
+              })}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <Empty
+          description="За выбранный период данных нет"
+          style={{ margin: "24px 0" }}
+        />
+      )}
+
+      <Table
+        size="small"
+        rowKey="name"
+        columns={columns}
+        dataSource={summary}
+        pagination={false}
+        scroll={{ x: 850 }}
+        locale={{ emptyText: "За выбранный период данных нет" }}
+        summary={() =>
+          summary.length ? (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0}>
+                <strong>Итого</strong>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={1} align="right">
+                <strong>
+                  {summary.reduce((total, item) => total + item.count, 0)}
+                </strong>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={2} align="right">
+                <strong>{formatNumber(totalAmount, true)} TJS</strong>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={3} colSpan={4} />
+            </Table.Summary.Row>
+          ) : null
+        }
+      />
     </div>
   );
 }
