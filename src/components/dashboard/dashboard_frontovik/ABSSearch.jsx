@@ -57,6 +57,7 @@ import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.js
 import ClientDocumentUploadModal from "../../client-documents/ClientDocumentUploadModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import NewClientModal from "./NewClientModal.jsx";
+import { creationCapabilities } from "../../../api/ABS_frotavik/createClient.js";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import { fetchMerchantPosTerminals } from "../../../api/merchantPosTerminals.js";
 import {
@@ -123,6 +124,8 @@ export default function ABSClientSearch() {
     const [isLoading, setIsLoading] = useState(false);
     const [clientNotFound, setClientNotFound] = useState(false);
     const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+    const [clientCreationEnabled, setClientCreationEnabled] = useState(false);
+    useEffect(() => { let active=true; creationCapabilities().then(r=>{if(active)setClientCreationEnabled(r.enabled)}).catch(()=>{});return()=>{active=false}; }, []);
     const searchInFlightRef = useRef(false);
     const pinRequirementCacheRef = useRef(new Map());
     const consumedClientIndexRef = useRef("");
@@ -410,7 +413,7 @@ export default function ABSClientSearch() {
 
         switch (searchType) {
             case "client/info?phoneNumber=":
-                url = `${API_ATM_URL}/services/clientcode.php?phone=${digits}`;
+                url = clientCreationEnabled ? `${API_BASE_URL}/client/info?phoneNumber=${digits}` : `${API_ATM_URL}/services/clientcode.php?phone=${digits}`;
                 break;
             case "byCardId":
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
@@ -434,9 +437,11 @@ export default function ABSClientSearch() {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
+                    ...(clientCreationEnabled && searchType === "client/info?phoneNumber=" ? { Authorization: `Bearer ${localStorage.getItem("access_token") || ""}` } : {}),
                 },
             });
 
+            if (clientCreationEnabled && response.status === 404) return [];
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -2035,7 +2040,7 @@ export default function ABSClientSearch() {
                             <div className="new-client-entry">
                                 <div>
                                     <strong>Клиент не найден в АБС</strong>
-                                    <span>Создайте обязательную анкету для определения сценария обслуживания.</span>
+                                    <span>Заполните анкету и данные для создания клиента в АБС.</span>
                                 </div>
                                 <button
                                     type="button"
@@ -2285,8 +2290,10 @@ export default function ABSClientSearch() {
 
             <NewClientModal
                 open={isNewClientModalOpen}
+                initialSearch={phoneNumber}
                 onClose={() => setIsNewClientModalOpen(false)}
                 onSubmitted={(result) => {
+                    if (result?.status === "completed" && result.client_code) { searchLookupCache.clear(); invalidateClientProfileCache(); setClientNotFound(false); handleSearchClient(result.client_code, "client/info/client-index?clientIndex="); return; }
                     const requiresCompliance = Boolean(result?.requires_compliance);
                     showAlert(
                         result?.message || (requiresCompliance

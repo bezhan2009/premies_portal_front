@@ -10,6 +10,9 @@ import {
   isTerrorScreeningReady,
 } from "./newClientFormUtils.js";
 
+import { useClientCreation } from "./useClientCreation.js";
+import { ClientCreationFields, ClientCreationProgress } from "./ClientCreationFields.jsx";
+
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
   { label: "Да", value: true },
@@ -54,8 +57,10 @@ const questionnaireFields = [
   { name: "apl_pzl", label: "АПЛ/ПЗЛ", boolean: true },
 ];
 
-export default function NewClientModal({ open, onClose, onSubmitted }) {
+export default function NewClientModal({ open, onClose, onSubmitted, initialSearch = "" }) {
   const [form] = Form.useForm();
+  const creation = useClientCreation(open, form);
+  useEffect(() => { if (open) { const digits=String(initialSearch).replace(/\D/g, ""); if (/^992\d{9}$/.test(digits)) form.setFieldValue("phone",digits); else if (/^\d{9}$/.test(digits)) form.setFieldValue("inn",digits); } }, [open, initialSearch, form]);
   const [submitting, setSubmitting] = useState(false);
   const [complianceCheck, setComplianceCheck] = useState({
     state: "idle",
@@ -95,15 +100,19 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   }, [complianceScoreByValue, values]);
 
   const completion = useMemo(() => {
-    const invalidFields = questionnaireFields.filter(
-      (field) => !isQuestionnaireFieldValid(field, values),
-    );
-    const completed = questionnaireFields.length - invalidFields.length;
+    const creationFields = creation.enabled ? [
+      ["department","Филиал"], ["sex","Пол"], ["country","Страна"], ["latin_first_name","Имя латиницей"], ["latin_last_name","Фамилия латиницей"],
+      ["passport.type.code","Тип документа"], ["passport.number","Номер документа"], ["passport.issued","Дата выдачи"], ["passport.issuer","Кем выдан"], ["passport.expires","Срок действия"],
+      ["address.country_name","Страна адреса"], ["address.region.name","Регион"], ["address.district.name","Район"], ["address.city.name","Город"], ["address.street.name","Улица"], ["address.house.code","Дом"], ["address.zip","Почтовый индекс"], ["address.okato","ОКАТО"], ["kopf","КОПФ"]
+    ].map(([path,label])=>({name:path,label,validate:(_value,all)=>Boolean(path.split(".").reduce((item,key)=>item?.[key],all))})) : [];
+    const fields = [...questionnaireFields, ...creationFields];
+    const invalidFields = fields.filter(field => !isQuestionnaireFieldValid(field, values));
+    const completed = fields.length - invalidFields.length;
     return {
-      percent: Math.round((completed / questionnaireFields.length) * 100),
+      percent: Math.round((completed / fields.length) * 100),
       invalidFields,
     };
-  }, [values]);
+  }, [values, creation.enabled]);
 
   const statusReasons = useMemo(
     () => buildNewClientStatusReasons({
@@ -269,6 +278,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   ]);
 
   const handleSubmit = async (values) => {
+    if (creation.enabled && !creation.unique && !creation.pending) { message.error("Дождитесь проверки уникальности ИНН и телефона"); return; }
     setSubmitting(true);
     try {
       const identifier = String(values.inn || "").trim();
@@ -289,6 +299,11 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         await uploadClientDocument(identifier, upload.title, upload.file, upload.documentType);
       }
 
+      if (creation.enabled) {
+        const result = await creation.submit(values);
+        if (result?.requires_compliance) { onSubmitted(result); onClose(); }
+        return;
+      }
       const result = await submitFrontovikNewClient({
         ...values,
         occupation: values.client_occupation,
@@ -328,7 +343,9 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         </div>
       </div>
 
+      <ClientCreationProgress creation={creation} onDone={(result) => { onSubmitted(result); onClose(); }} />
       <Form
+        style={{ display: creation.locked ? "none" : undefined }}
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
@@ -338,6 +355,9 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           is_resident: true,
           fatca: false,
           apl_pzl: false,
+          country: "TJ",
+          passport: { type: { code: "058" } },
+          address: { country_name: "ТОҶИКИСТОН" },
         }}
       >
         <div className="new-client-progress-panel">
@@ -417,17 +437,18 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                   }),
                 ]}
               >
-                <Input maxLength={32} placeholder="Введите ИНН" />
+                <Input maxLength={32} placeholder="Введите ИНН" onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Номер телефона" name="phone" rules={[requiredRule]}>
-                <Input maxLength={20} placeholder="992XXXXXXXXX" />
+                <Input maxLength={20} placeholder="992XXXXXXXXX" onBlur={() => creation.enabled && creation.check("phone", form.getFieldValue("phone"))} />
               </Form.Item>
             </Col>
           </Row>
         </section>
 
+        {creation.enabled && <ClientCreationFields form={form} creation={creation} />}
         <section className="new-client-compliance-block">
           <div className="new-client-compliance-block__header">
             <strong><ShieldCheck size={18} /> Параметры комплаенса</strong>
@@ -496,10 +517,10 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
             type="primary"
             htmlType="button"
             loading={submitting}
-            disabled={terrorScreening.state === "checking" && !isWhiteListed}
+            disabled={(terrorScreening.state === "checking" && !isWhiteListed) || (creation.enabled && !creation.unique)}
             onClick={() => form.submit()}
           >
-            Отправить заявку
+            {creation.enabled ? "Создать клиента" : "Отправить заявку"}
           </Button>
         </div>
       </Form>
