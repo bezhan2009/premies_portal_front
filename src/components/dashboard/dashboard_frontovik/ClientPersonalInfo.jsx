@@ -1,14 +1,18 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaSpinner,
   FaCopy,
-  FaHistory
+  FaHistory,
+  FaPencilAlt
 } from "react-icons/fa";
 import { serviceCodes } from "../../../utils/serviceCodes";
 import DynamicDocxButtons from "../../general/DynamicDocxButtons";
 import { extractDocxClientData } from "../../../utils/docxTemplateHelpers";
 import { getClientEmployeeUsername } from "./absSearchUtils";
 import UserProfileLink from "../../general/UserProfileLink.jsx";
+import { isFrontovik } from "../../../api/roleHelper.js";
+import { getPhoneChangeCapabilities } from "../../../api/ABS_frotavik/changeClientPhone.js";
+import ChangeClientPhoneModal from "./ChangeClientPhoneModal.jsx";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -33,7 +37,15 @@ const ClientPersonalInfo = ({
   isSalaryClient,
   verifiedClientCodes = [],
   onPromptPin,
+  onPhoneUpdated,
 }) => {
+  const [phoneChangeEnabled, setPhoneChangeEnabled] = useState(false);
+  const [phoneModalOpen, setPhoneModalOpen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (isFrontovik()) getPhoneChangeCapabilities().then((result) => { if (active) setPhoneChangeEnabled(result.enabled); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   if (!selectedClient) return null;
 
   const isSelectedClientPinRequired = selectedClient && selectedClient.requires_pin && !verifiedClientCodes.includes(selectedClient.client_code);
@@ -77,6 +89,7 @@ const ClientPersonalInfo = ({
 
   return (
     <div className="client-results-section">
+      {phoneModalOpen && !isSelectedClientPinRequired && <ChangeClientPhoneModal client={selectedClient} onClose={() => setPhoneModalOpen(false)} onUpdated={onPhoneUpdated} />}
       {/* ── MULTIPLE CLIENTS SELECTOR ── */}
       {clientsData.length > 1 && (
         <div className="client-selector-card">
@@ -189,7 +202,9 @@ const ClientPersonalInfo = ({
 
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>Телефон</span>
-                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{phone}</span>
+                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: 8 }}>{phone}
+                    {phoneChangeEnabled && <button type="button" aria-label="Изменить телефон клиента" title="Изменить телефон" onClick={() => setPhoneModalOpen(true)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>}
+                  </span>
                 </div>
 
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

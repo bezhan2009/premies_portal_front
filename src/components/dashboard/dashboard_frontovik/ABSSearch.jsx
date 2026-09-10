@@ -10,6 +10,7 @@ import {
     getUserInfoPhone,
     fetchCreditGraphs,
     getClientByCode,
+    invalidateClientProfileCache,
 } from "../../../api/ABS_frotavik/getUserCredits";
 import {
     fetchLoanDetails,
@@ -2077,6 +2078,12 @@ export default function ABSClientSearch() {
                         )}
 
                         <ClientPersonalInfo
+                            key={selectedClient?.client_code}
+                            onPhoneUpdated={(phone, clientCode) => {
+                                searchLookupCache.clear();
+                                invalidateClientProfileCache();
+                                setClientsData((current) => current.map((client) => client.client_code === clientCode ? { ...client, phone } : client));
+                            }}
                             clientsData={clientsData}
                             selectedClientIndex={selectedClientIndex}
                             setSelectedClientIndex={setSelectedClientIndex}
