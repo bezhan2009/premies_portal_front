@@ -62,6 +62,7 @@ export function ClientCreationFields({
           ...old,
           ...a,
           country_code: form.getFieldValue('country'),
+          house: { ...a.house, code: a.house?.code || a.house?.house_number || "" },
           zip: a.zip || old.zip,
           okato: a.okato || old.okato,
           text: undefined
