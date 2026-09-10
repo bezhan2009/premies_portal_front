@@ -1,6 +1,6 @@
 import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
 
-const ATM_BASE_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
+const ATM_BASE_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || "/api/atm";
 const LOOKUP_CACHE_TTL = 60 * 1000;
 const lookupCache = new Map();
 

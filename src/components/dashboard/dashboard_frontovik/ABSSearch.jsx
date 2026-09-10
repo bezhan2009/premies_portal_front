@@ -83,7 +83,7 @@ import {
 } from "../../../utils/liveWorkflowPageState.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL;
+const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || "/api/atm";
 const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL || "/telegram-api";
 const SEARCH_CACHE_TTL = 60 * 1000;
 const searchLookupCache = new Map();
