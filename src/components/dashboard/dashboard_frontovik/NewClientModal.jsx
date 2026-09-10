@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
+import { Alert, Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
 import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
 import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
@@ -11,7 +11,7 @@ import {
 } from "./newClientFormUtils.js";
 
 import { useClientCreation } from "./useClientCreation.js";
-import { ClientCreationFields, ClientCreationProgress } from "./ClientCreationFields.jsx";
+import { ClientCreationFields, ClientCreationProgress, IdentityCheckIcon } from "./ClientCreationFields.jsx";
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
@@ -73,6 +73,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
     match: null,
   });
   const [complianceOptions, setComplianceOptions] = useState({});
+  const [complianceOptionsError, setComplianceOptionsError] = useState('');
   const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
   const [clientPhotoList, setClientPhotoList] = useState([]);
   const [clientDocumentList, setClientDocumentList] = useState([]);
@@ -102,6 +103,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   const completion = useMemo(() => {
     const creationFields = creation.enabled ? [
       ["department","Филиал"], ["sex","Пол"], ["country","Страна"], ["latin_first_name","Имя латиницей"], ["latin_last_name","Фамилия латиницей"],
+      ["sector","Сектор экономики"], ["tariff","Тарифная категория"], ["address.region_key","Область"],
       ["passport.type.code","Тип документа"], ["passport.number","Номер документа"], ["passport.issued","Дата выдачи"], ["passport.issuer","Кем выдан"], ["passport.expires","Срок действия"],
       ["address.country_name","Страна адреса"], ["address.region.name","Регион"], ["address.district.name","Район"], ["address.city.name","Город"], ["address.street.name","Улица"], ["address.house.code","Дом"], ["address.zip","Почтовый индекс"], ["address.okato","ОКАТО"], ["kopf","КОПФ"]
     ].map(([path,label])=>({name:path,label,validate:(_value,all)=>Boolean(path.split(".").reduce((item,key)=>item?.[key],all))})) : [];
@@ -148,10 +150,11 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
           },
           signal: controller.signal,
         });
-        if (!response.ok) return;
+        if (!response.ok) throw new Error('catalog unavailable');
 
         const options = await response.json();
-        if (!Array.isArray(options)) return;
+        if (!Array.isArray(options) || complianceCategories.some(category => !options.some(option => option.category === category))) throw new Error('incomplete catalog');
+        setComplianceOptionsError('');
 
         const grouped = {};
         const scores = {};
@@ -187,6 +190,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
         );
       } catch (error) {
         if (error.name !== "AbortError") {
+          setComplianceOptionsError('Справочники комплаенс недоступны или не заполнены. Повторите открытие формы после их настройки в Daily.');
           console.error("Ошибка загрузки справочников комплаенса:", error);
         }
       }
@@ -356,6 +360,9 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
           fatca: false,
           apl_pzl: false,
           country: "TJ",
+          kopf: "4",
+          sector: "7",
+          tariff: "200",
           passport: { type: { code: "058" } },
           address: { country_name: "ТОҶИКИСТОН" },
         }}
@@ -437,12 +444,12 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
                   }),
                 ]}
               >
-                <Input maxLength={32} placeholder="Введите ИНН" onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
+                <Input maxLength={32} placeholder="Введите ИНН" suffix={creation.enabled && <IdentityCheckIcon kind="inn" value={values.inn} check={creation.checks.inn} />} onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Номер телефона" name="phone" rules={[requiredRule]}>
-                <Input maxLength={20} placeholder="992XXXXXXXXX" onBlur={() => creation.enabled && creation.check("phone", form.getFieldValue("phone"))} />
+                <Input maxLength={20} placeholder="992XXXXXXXXX" suffix={creation.enabled && <IdentityCheckIcon kind="phone" value={values.phone} check={creation.checks.phone} />} onBlur={() => creation.enabled && creation.check("phone", form.getFieldValue("phone"))} />
               </Form.Item>
             </Col>
           </Row>
@@ -450,6 +457,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
 
         {creation.enabled && <ClientCreationFields form={form} creation={creation} />}
         <section className="new-client-compliance-block">
+          {complianceOptionsError && <Alert type="error" showIcon message={complianceOptionsError} />}
           <div className="new-client-compliance-block__header">
             <strong><ShieldCheck size={18} /> Параметры комплаенса</strong>
             <span>Балл комплаенса: <b>{totalComplianceScore}</b></span>

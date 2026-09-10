@@ -2084,6 +2084,13 @@ export default function ABSClientSearch() {
 
                         <ClientPersonalInfo
                             key={selectedClient?.client_code}
+                            onProfileUpdated={async (clientCode) => {
+                                searchLookupCache.clear();
+                                invalidateClientProfileCache();
+                                const fullClient = await getClientByCode(clientCode);
+                                const refreshed = normalizeClientData(fullClient, TYPE_SEARCH_CLIENT[1].value);
+                                setClientsData(current => current.map(client => client.client_code === clientCode ? { ...client, ...refreshed } : client));
+                            }}
                             onPhoneUpdated={(phone, clientCode) => {
                                 searchLookupCache.clear();
                                 invalidateClientProfileCache();

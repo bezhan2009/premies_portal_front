@@ -13,6 +13,8 @@ import UserProfileLink from "../../general/UserProfileLink.jsx";
 import { isFrontovik } from "../../../api/roleHelper.js";
 import { getPhoneChangeCapabilities } from "../../../api/ABS_frotavik/changeClientPhone.js";
 import ChangeClientPhoneModal from "./ChangeClientPhoneModal.jsx";
+import { profileCapabilities } from "../../../api/ABS_frotavik/changeClientProfile.js";
+import ChangeClientProfileModal from "./ChangeClientProfileModal.jsx";
 
 const ClientPersonalInfo = ({
   clientsData,
@@ -38,12 +40,16 @@ const ClientPersonalInfo = ({
   verifiedClientCodes = [],
   onPromptPin,
   onPhoneUpdated,
+  onProfileUpdated,
 }) => {
+  const [profileEnabled, setProfileEnabled] = useState(false);
+  const [profileKind, setProfileKind] = useState(null);
   const [phoneChangeEnabled, setPhoneChangeEnabled] = useState(false);
   const [phoneModalOpen, setPhoneModalOpen] = useState(false);
   useEffect(() => {
     let active = true;
     if (isFrontovik()) getPhoneChangeCapabilities().then((result) => { if (active) setPhoneChangeEnabled(result.enabled); }).catch(() => {});
+    if (isFrontovik()) profileCapabilities().then((result) => { if (active) setProfileEnabled(result.enabled); }).catch(() => {});
     return () => { active = false; };
   }, []);
   if (!selectedClient) return null;
@@ -82,6 +88,8 @@ const ClientPersonalInfo = ({
     : "—";
   
   const typeVal = selectedClient.client_type?.toLowerCase();
+  const canEditProfile = profileEnabled && typeVal === 'individual';
+  const pencil = (kind, label) => canEditProfile && <button type="button" aria-label={label} title={label} onClick={() => setProfileKind(kind)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>;
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
 
   const branchCode = code && code !== "Не указан" ? code.replace(/[^0-9]/g, "").substring(0, 4) : null;
@@ -89,6 +97,7 @@ const ClientPersonalInfo = ({
 
   return (
     <div className="client-results-section">
+      {profileKind && !isSelectedClientPinRequired && <ChangeClientProfileModal client={selectedClient} kind={profileKind} onClose={() => setProfileKind(null)} onUpdated={onProfileUpdated} />}
       {phoneModalOpen && !isSelectedClientPinRequired && <ChangeClientPhoneModal client={selectedClient} onClose={() => setPhoneModalOpen(false)} onUpdated={onPhoneUpdated} />}
       {/* ── MULTIPLE CLIENTS SELECTOR ── */}
       {clientsData.length > 1 && (
@@ -166,7 +175,7 @@ const ClientPersonalInfo = ({
             {/* 2. Client Identity Metadata */}
             <div className="summary-identity-info" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
               <div className="summary-identity-fio">
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{name}</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{name} {pencil('name', 'Изменить ФИО клиента')}</h2>
               </div>
               <div className="summary-identity-code" style={{ display: 'flex', gap: '20px', color: '#888', fontSize: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span>Код клиента: {code}</span>
@@ -197,7 +206,7 @@ const ClientPersonalInfo = ({
               }}>
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>ИНН</span>
-                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{inn}</span>
+                  <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500' }}>{inn} {pencil('inn', 'Изменить ИНН клиента')}</span>
                 </div>
 
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -276,6 +285,7 @@ const ClientPersonalInfo = ({
           {/* Lower row: Action Toolbar */}
           <div className="summary-actions-toolbar">
             <div className="actions-left-group">
+              {canEditProfile && <><button type="button" onClick={() => setProfileKind('passport')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить паспорт</span></button><button type="button" onClick={() => setProfileKind('address')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить адрес</span></button></>}
               {showAuditLogsBtn && (
                 <button onClick={onOpenAuditLogs} className="btn-toolbar-action btn-toolbar-audit">
                   <FaHistory />

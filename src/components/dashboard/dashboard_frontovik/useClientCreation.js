@@ -27,6 +27,8 @@ export function creationPayload(v) {
     },
     address,
     kopf: v.kopf,
+    sector: v.sector,
+    tariff: v.tariff,
     questionnaire: Object.fromEntries(['client_occupation', 'monthly_income', 'total_outgoing_transactions_amount', 'total_outgoing_transactions_count', 'total_cash_transactions_amount', 'total_cash_transactions_count', 'fatca', 'apl_pzl'].map(k => [k, v[k]]))
   };
 }

@@ -1,4 +1,5 @@
 import { apiClientABS_Frontovik as api } from '../utils/apiClientABS_Frontovik';
+export const creationCatalogs = async () => (await api.get('/client/onboarding/catalogs')).data;
 export const creationCapabilities = async () => (await api.get('/client/onboarding/capabilities')).data;
 export const checkNewClientIdentity = async (kind, value, signal) => (await api.get('/client/onboarding/unique', {
   params: {
