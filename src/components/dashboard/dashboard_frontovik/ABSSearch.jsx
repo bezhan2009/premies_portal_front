@@ -2138,6 +2138,15 @@ export default function ABSClientSearch() {
                         ) : (
                             <ClientDataTabs
                                 selectedClient={selectedClient}
+                                onCardOpened={async (code) => {
+                                    invalidateClientProfileCache();
+                                    const generation = productRequestGenerationRef.current;
+                                    const [cards, accounts] = await Promise.all([getUserCards(code), getUserAccounts(code)]);
+                                    if (selectedClientRef.current?.client_code !== code || generation !== productRequestGenerationRef.current) return;
+                                    if (!Array.isArray(cards) || !Array.isArray(accounts)) throw new Error("Failed to refresh cards/accounts");
+                                    setCardsData(current => cards.map(card => ({ ...current.find(old => old.cardId === card.cardId), ...card })));
+                                    setAccountsData(accounts);
+                                }}
                                 cardsData={cardsData}
                                 sortedCards={sortedCards}
                                 requestSortCards={requestSortCards}
