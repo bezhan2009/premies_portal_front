@@ -12,6 +12,7 @@ import {
 
 import { useClientCreation } from "./useClientCreation.js";
 import { ClientCreationFields, ClientCreationProgress, IdentityCheckIcon } from "./ClientCreationFields.jsx";
+import CustomDateInput from "../../elements/CustomDateInput.jsx";
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
@@ -62,6 +63,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   const creation = useClientCreation(open, form);
   useEffect(() => { if (open) { const digits=String(initialSearch).replace(/\D/g, ""); if (/^992\d{9}$/.test(digits)) form.setFieldValue("phone",digits); else if (/^\d{9}$/.test(digits)) form.setFieldValue("inn",digits); } }, [open, initialSearch, form]);
   const [submitting, setSubmitting] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [complianceCheck, setComplianceCheck] = useState({
     state: "idle",
     identifier: "",
@@ -87,6 +89,19 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       complianceCheck,
     });
 
+  const closeModal = () => {
+    setCloseConfirmOpen(false);
+    creation.dismiss();
+    form.resetFields();
+    setClientPhotoList([]);
+    setClientDocumentList([]);
+    onClose();
+  };
+
+  const requestClose = () => {
+    setCloseConfirmOpen(true);
+  };
+
   const totalComplianceScore = useMemo(() => {
     const getScore = (value) => Number(complianceScoreByValue[value]) || 0;
     const booleanScore = (value) => (value === true ? 5 : 0);
@@ -102,7 +117,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
 
   const completion = useMemo(() => {
     const creationFields = creation.enabled ? [
-      ["department","Филиал"], ["sex","Пол"], ["country","Страна"], ["latin_first_name","Имя латиницей"], ["latin_last_name","Фамилия латиницей"],
+      ["department","Филиал"], ["service_group","Группа обслуживания"], ["codeword","Кодовое слово"], ["sex","Пол"], ["country","Страна"], ["latin_first_name","Имя латиницей"], ["latin_last_name","Фамилия латиницей"],
       ["sector","Сектор экономики"], ["tariff","Тарифная категория"], ["address.region_key","Область"],
       ["passport.type.code","Тип документа"], ["passport.number","Номер документа"], ["passport.issued","Дата выдачи"], ["passport.issuer","Кем выдан"], ["passport.expires","Срок действия"],
       ["address.country_name","Страна адреса"], ["address.region.name","Регион"], ["address.district.name","Район"], ["address.city.name","Город"], ["address.street.name","Улица"], ["address.house.code","Дом"], ["address.zip","Почтовый индекс"], ["address.okato","ОКАТО"], ["kopf","КОПФ"]
@@ -282,7 +297,20 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   ]);
 
   const handleSubmit = async (values) => {
-    if (creation.enabled && !creation.unique && !creation.pending) { message.error("Дождитесь проверки уникальности ИНН и телефона"); return; }
+    if (creation.enabled && !creation.unique && !creation.pending) {
+      const duplicateKinds = [
+        creation.checks.inn?.state === "duplicate" ? "ИНН" : "",
+        creation.checks.phone?.state === "duplicate" ? "телефоном" : "",
+      ].filter(Boolean);
+      if (duplicateKinds.length) {
+        message.error(`Клиент с таким ${duplicateKinds.join(" и ")} уже существует в АБС`);
+      } else if ([creation.checks.inn?.state, creation.checks.phone?.state].includes("loading")) {
+        message.warning("Дождитесь завершения проверки ИНН и телефона");
+      } else {
+        message.error("Не удалось подтвердить уникальность ИНН и телефона. Проверьте поля повторно");
+      }
+      return;
+    }
     setSubmitting(true);
     try {
       const identifier = String(values.inn || "").trim();
@@ -325,11 +353,11 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
     }
   };
 
-  return (
+  return <>
     <Modal
       title={null}
       open={open}
-      onCancel={onClose}
+      onCancel={requestClose}
       footer={null}
       width={1480}
       centered
@@ -360,6 +388,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
           fatca: false,
           apl_pzl: false,
           country: "TJ",
+          service_group: "5100",
           kopf: "4",
           sector: "7",
           tariff: "200",
@@ -420,7 +449,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Дата рождения" name="birth_date" rules={[requiredRule]}>
-                <Input type="date" max={new Date().toISOString().slice(0, 10)} />
+                <CustomDateInput type="date" style={{ width: "100%" }} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -520,12 +549,11 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
         </section>
 
         <div className="new-client-modal__actions">
-          <Button htmlType="button" onClick={onClose} disabled={submitting}>Отмена</Button>
+          <Button htmlType="button" onClick={requestClose} disabled={submitting}>Отмена</Button>
           <Button
             type="primary"
             htmlType="button"
             loading={submitting}
-            disabled={(terrorScreening.state === "checking" && !isWhiteListed) || (creation.enabled && !creation.unique)}
             onClick={() => form.submit()}
           >
             {creation.enabled ? "Создать клиента" : "Отправить заявку"}
@@ -533,5 +561,19 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
         </div>
       </Form>
     </Modal>
-  );
+    <Modal
+      open={closeConfirmOpen}
+      title="Предупреждение"
+      okText="Закрыть"
+      cancelText="Остаться"
+      okButtonProps={{ danger: true }}
+      onOk={closeModal}
+      onCancel={() => setCloseConfirmOpen(false)}
+      maskClosable={false}
+      centered
+      zIndex={2100}
+    >
+      Вы закрываете окно, указанные данные могут пропасть
+    </Modal>
+  </>;
 }

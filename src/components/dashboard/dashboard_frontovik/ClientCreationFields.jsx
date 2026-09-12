@@ -6,7 +6,8 @@ import { creationDomain } from '../../../api/ABS_frotavik/createClient';
 import { normalizeClientPhone } from '../../../api/ABS_frotavik/changeClientPhone';
 import ClientAddressFields from './ClientAddressFields';
 import { transliterateName } from './clientProfileUtils';
-const stepNames = [['CHECK_INN', 'Проверка ИНН'], ['CHECK_PHONE', 'Проверка телефона'], ['CREATE_CLIENT', 'Создание картотеки'], ['SAVE_ADDRESS', 'Создание адреса'], ['LINK_ADDRESS', 'Привязка адреса'], ['SET_KOPF', 'Настройка КОПФ'], ['SET_OKATO', 'Настройка ОКАТО'], ['VERIFY', 'Проверка данных']];
+import CustomDateInput from '../../elements/CustomDateInput';
+const stepNames = [['CHECK_INN', 'Проверка ИНН'], ['CHECK_PHONE', 'Проверка телефона'], ['CREATE_CLIENT', 'Создание картотеки'], ['SAVE_CODEWORD', 'Сохранение кодового слова'], ['SAVE_ADDRESS', 'Создание адреса'], ['LINK_ADDRESS', 'Привязка адреса'], ['SET_KOPF', 'Настройка КОПФ'], ['SET_OKATO', 'Настройка ОКАТО'], ['VERIFY', 'Проверка данных']];
 const required = {
   required: true,
   message: 'Обязательное поле'
@@ -35,12 +36,9 @@ export function IdentityCheckIcon({
   return null;
 }
 export function PassportFields() {
-  const field = (name, label, needed = true, props = {}) => <Col xs={24} md={8} key={name}><Form.Item name={['passport', name]} label={label} rules={needed ? [required] : []}><Input {...props} /></Form.Item></Col>;
-  return <Row gutter={18}><Col xs={24} md={8}><Form.Item name={['passport', 'type', 'code']} label="Тип документа" rules={[required]}><Select options={documentTypes} /></Form.Item></Col>{field('series', 'Серия', false)}{field('number', 'Номер документа')}{field('issued', 'Дата выдачи', true, {
-      type: 'date'
-    })}{field('issuer', 'Кем выдан')}{field('expires', 'Срок действия', true, {
-      type: 'date'
-    })}</Row>;
+  const field = (name, label, needed = true) => <Col xs={24} md={8} key={name}><Form.Item name={['passport', name]} label={label} rules={needed ? [required] : []}><Input /></Form.Item></Col>;
+  const dateField = (name, label) => <Col xs={24} md={8} key={name}><Form.Item name={['passport', name]} label={label} rules={[required]}><CustomDateInput type="date" style={{ width: '100%' }} /></Form.Item></Col>;
+  return <Row gutter={18}><Col xs={24} md={8}><Form.Item name={['passport', 'type', 'code']} label="Тип документа" rules={[required]}><Select options={documentTypes} /></Form.Item></Col>{field('series', 'Серия', false)}{field('number', 'Номер документа')}{dateField('issued', 'Дата выдачи')}{field('issuer', 'Кем выдан')}{dateField('expires', 'Срок действия')}</Row>;
 }
 export function ClientCreationFields({
   form
@@ -51,7 +49,7 @@ export function ClientCreationFields({
   const generated = useRef({});
   useEffect(() => {
     let active = true;
-    for (const kind of ['kopf', 'sector', 'tariff']) creationDomain(kind).then(rows => {
+    for (const kind of ['service_group', 'kopf', 'sector', 'tariff']) creationDomain(kind).then(rows => {
       if (active) setDomains(d => ({
         ...d,
         [kind]: rows
@@ -96,6 +94,8 @@ export function ClientCreationFields({
             }]} /></Form.Item></Col>
  <Col xs={24} md={8}><Form.Item name="country" label="Страна"><Input readOnly /></Form.Item></Col>
  {field('latin_last_name', 'Фамилия латиницей')}{field('latin_first_name', 'Имя латиницей')}{field('latin_middle_name', 'Отчество латиницей', false)}
+ {select('service_group', 'Группа обслуживания')}
+ <Col xs={24} md={8}><Form.Item name="codeword" label="Кодовое слово" rules={[required]}><Input.Password maxLength={100} autoComplete="new-password" placeholder="Введите кодовое слово" /></Form.Item></Col>
  </Row><Typography.Text type="secondary">Латиница формируется автоматически. При необходимости исправьте её по паспорту.</Typography.Text></section>
  <section className="new-client-form-section"><div className="new-client-form-section__title"><strong>Паспорт</strong></div><PassportFields /></section>
  <section className="new-client-form-section"><div className="new-client-form-section__title"><strong>Адрес регистрации</strong></div><ClientAddressFields form={form} /></section>
@@ -115,6 +115,7 @@ export function ClientCreationProgress({
   if (!pending && !error) return null;
   let step = job?.step;
   if (step === 'CREATE_SUBMITTING') step = 'CREATE_CLIENT';
+  if (step === 'CODEWORD_SUBMITTING') step = 'SAVE_CODEWORD';
   if (step === 'ADDRESS_SUBMITTING') step = 'SAVE_ADDRESS';
   const current = job?.status === 'completed' ? stepNames.length : Math.max(0, stepNames.findIndex(([k]) => k === step));
   return <Space direction="vertical" size="middle" style={{
@@ -126,6 +127,9 @@ export function ClientCreationProgress({
     }))} />}
   {error && <Alert showIcon type="error" message={error} />}
   {job?.message && <Alert showIcon type={job.status === 'completed' ? 'success' : job.status === 'partial' || job.status === 'failed' ? 'warning' : 'info'} message={job.message} />}
+  {job?.error_log && <Alert showIcon type="error" message="Лог ошибки АБС" description={<Typography.Text copyable style={{
+      whiteSpace: 'pre-wrap'
+    }}>{`Шаг: ${step || 'не определён'}\n${job.error_log}`}</Typography.Text>} />}
   {job?.client_code && <Typography.Text>Код клиента: {job.client_code}</Typography.Text>}
   {pending && <Typography.Text type="secondary">Номер запроса: {pending.request_id}</Typography.Text>}
   {job?.status === 'partial' && <Button loading={busy} onClick={creation.retry}>Продолжить с сохранённого шага</Button>}

@@ -9,6 +9,8 @@ export function creationPayload(v) {
   };
   return {
     department: v.department,
+    service_group: v.service_group,
+    codeword: v.codeword,
     first_name: v.first_name,
     last_name: v.last_name,
     middle_name: v.middle_name || '',
@@ -203,6 +205,14 @@ export function useClientCreation(open, form) {
       setBusy(false);
     }
   };
+  const dismiss = useCallback(() => {
+    sessionStorage.removeItem(storageKey);
+    pendingRef.current = null;
+    setPending(null);
+    setJob(null);
+    setError('');
+    setBusy(false);
+  }, [storageKey]);
   const unique = ['inn', 'phone'].every(k => checks[k]?.state === 'unique' && checks[k].value === (k === 'phone' ? normalizeClientPhone(values[k]) : String(values[k] || '').trim()));
   return {
     enabled,
@@ -215,6 +225,7 @@ export function useClientCreation(open, form) {
     check,
     submit,
     retry,
+    dismiss,
     locked: Boolean(pending),
     running: Boolean(pending && !['completed', 'failed', 'partial'].includes(job?.status))
   };
