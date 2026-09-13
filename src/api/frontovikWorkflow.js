@@ -24,6 +24,7 @@ export const downloadWorkflowAttachment = async id => {
   const response = await portal.get(`/frontovik/attachments/${encodeURIComponent(id)}/file`, { responseType: 'blob' });
   const url = URL.createObjectURL(response.data);
   const a = document.createElement('a');
-  a.href = url; a.download = 'document'; a.click();
+  const extension = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }[response.data.type] || 'pdf';
+  a.href = url; a.download = `document.${extension}`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };

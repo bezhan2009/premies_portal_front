@@ -107,7 +107,8 @@ const Header = ({ toggleSidebar }) => {
           const id = String(request.id);
           const status = request.status || 'pending';
           next[id] = status;
-          if (previous[id] && previous[id] !== status) {
+          if ((previous[id] && previous[id] !== status) ||
+              (!previous[id] && request.source === 'frontovik_new_client' && ['approved', 'rejected'].includes(status))) {
             addNotification({
               id: `compliance-status-${id}-${status}-${request.updated_at || Date.now()}`,
               type: 'application-status',

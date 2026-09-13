@@ -1,4 +1,5 @@
 import ClientChangeStatement from './ClientChangeStatement';
+import { frontovikActorID } from '../../../utils/frontovikIdentity';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Input, Modal, Space, Spin, Typography } from 'antd';
 import { changeClientPhone, getClientPhoneChange, normalizeClientPhone, newPhoneChangeID } from '../../../api/ABS_frotavik/changeClientPhone';
@@ -8,7 +9,7 @@ const errorText = (error) => error?.response?.data?.error || 'Связь с се
 
 export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
   const clientCode = client.client_code;
-  const storageKey = `frontovik-phone-change:${clientCode}`;
+  const storageKey = `frontovik-phone-change:${frontovikActorID()}:${clientCode}`;
   const [draftID] = useState(newPhoneChangeID);
   const [statement, setStatement] = useState(null);
   const [phone, setPhone] = useState(client.phone || '');

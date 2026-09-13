@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import useNotificationStore from '../../../store/useNotificationStore';
 import { listChangeApprovals } from '../../../api/frontovikWorkflow';
+import { frontovikActorID } from '../../../utils/frontovikIdentity';
 
 export default function useClientChangeNotifications() {
   const addNotification = useNotificationStore(state => state.addNotification);
@@ -8,7 +9,7 @@ export default function useClientChangeNotifications() {
     let roles = []; try { roles = JSON.parse(localStorage.getItem('role_ids') || '[]'); } catch { /* no session */ }
     if (!roles.includes(17)) return;
     let active = true;
-    const actor = Number(localStorage.getItem('user_id'));
+    const actor = frontovikActorID();
     const key = `frontovik-change-notifications:${actor}`;
     const poll = async () => {
       try {

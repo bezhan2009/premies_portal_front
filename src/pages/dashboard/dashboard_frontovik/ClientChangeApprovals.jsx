@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Input, Modal, Space, Table, Tag, Typography, message } from 'antd';
 import { useSearchParams } from 'react-router-dom';
+import { frontovikActorID } from '../../../utils/frontovikIdentity';
 import { decideChangeApproval, downloadWorkflowAttachment, getChangePermissions, listChangeApprovals, workflowError } from '../../../api/frontovikWorkflow';
 
 const changeLabels = { phone: 'Телефон', inn: 'ИНН', address: 'Адрес', passport: 'Паспорт', name: 'ФИО' };
@@ -17,7 +18,7 @@ export default function ClientChangeApprovals() {
   const [rows, setRows] = useState([]), [selected, setSelected] = useState(null), [permissions, setPermissions] = useState({});
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(''), [reason, setReason] = useState('');
   const [params] = useSearchParams();
-  const actor = Number(localStorage.getItem('user_id'));
+  const actor = frontovikActorID();
   const targetID = params.get('requestId');
   const refresh = useCallback(async () => {
     try { const data = await listChangeApprovals(); setRows(data); setSelected(old => data.find(x => x.request_id === (old?.request_id || targetID)) || old); setError(''); }

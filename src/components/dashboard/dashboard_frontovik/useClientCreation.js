@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from 'antd';
 import { creationCapabilities, checkNewClientIdentity, submitClientCreation, getClientCreation, retryClientCreation } from '../../../api/ABS_frotavik/createClient';
 import { newPhoneChangeID, normalizeClientPhone } from '../../../api/ABS_frotavik/changeClientPhone';
+import { frontovikActorID } from '../../../utils/frontovikIdentity';
 export function creationPayload(v) {
   const address = {
     ...v.address,
@@ -48,7 +49,7 @@ export function useClientCreation(open, form) {
   const generations = useRef({});
   const pendingRef = useRef(null);
   const submittingRef = useRef(false);
-  const storageKey = `frontovik-client-creation:${localStorage.getItem('user_id') || 'session'}`;
+  const storageKey = `frontovik-client-creation:${frontovikActorID() || 'session'}`;
   const savePending = useCallback(p => {
     pendingRef.current = p;
     setPending(p);

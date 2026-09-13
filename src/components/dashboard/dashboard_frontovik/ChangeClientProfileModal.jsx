@@ -1,4 +1,5 @@
 import ClientChangeStatement from './ClientChangeStatement';
+import { frontovikActorID } from '../../../utils/frontovikIdentity';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Col, Form, Input, Modal, Row, Select, Space, Spin, Typography } from 'antd';
 import { getEditableProfile, getProfileChange, submitProfileChange } from '../../../api/ABS_frotavik/changeClientProfile';
@@ -24,7 +25,7 @@ export default function ChangeClientProfileModal({
   onUpdated
 }) {
   const code = client.client_code;
-  const storageKey = `frontovik-profile-change:${localStorage.getItem('user_id') || 'session'}:${code}`;
+  const storageKey = `frontovik-profile-change:${frontovikActorID()}:${code}`;
   const [form] = Form.useForm();
   const [draftID] = useState(newPhoneChangeID);
   const [statement, setStatement] = useState(null);
