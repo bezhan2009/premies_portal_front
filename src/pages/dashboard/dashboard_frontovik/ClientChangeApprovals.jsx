@@ -6,7 +6,7 @@ import { decideChangeApproval, downloadWorkflowAttachment, getChangePermissions,
 
 const changeLabels = { phone: 'Телефон', inn: 'ИНН', address: 'Адрес', passport: 'Паспорт', name: 'ФИО' };
 const statusLabels = { awaiting_approval: 'Ожидает санкции', approved: 'Подтверждено', rejected: 'Отклонено', queued: 'Принято АБС', processing: 'Выполняется', completed: 'Выполнено', failed: 'Ошибка', recovery_pending: 'Проверка результата' };
-const valueLabels = { phone: 'Новый телефон', expected_phone: 'Текущий телефон', first_name: 'Имя', last_name: 'Фамилия', middle_name: 'Отчество', latin_first: 'Имя латиницей', latin_last: 'Фамилия латиницей', latin_middle: 'Отчество латиницей', number: 'Номер', series: 'Серия', issued: 'Дата выдачи', expires: 'Срок действия', issuer: 'Кем выдан', region: 'Область', district: 'Район', city: 'Город', street: 'Улица', house: 'Дом', flat: 'Квартира', zip: 'Индекс', text: 'Полный адрес', country_name: 'Страна' };
+const valueLabels = { phone: 'Телефон', expected_phone: 'Текущий телефон', first_name: 'Имя', last_name: 'Фамилия', middle_name: 'Отчество', latin_first_name: 'Имя латиницей', latin_last_name: 'Фамилия латиницей', latin_middle_name: 'Отчество латиницей', number: 'Номер', series: 'Серия', issued: 'Дата выдачи', expires: 'Срок действия', issuer: 'Кем выдан', region: 'Область', district: 'Район', city: 'Город', street: 'Улица', house: 'Дом', flat: 'Квартира', zip: 'Индекс', text: 'Полный адрес', country_name: 'Страна' };
 function proposedValues(value, prefix = '') {
   return Object.entries(value || {}).flatMap(([key, item]) => {
     if (['kind', 'version', 'address_id', 'nord', 'is_archival', 'is_default'].includes(key) || item == null || item === '') return [];
