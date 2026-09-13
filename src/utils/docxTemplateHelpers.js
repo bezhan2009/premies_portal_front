@@ -278,6 +278,11 @@ export const formatDocxValueByKey = (key, value) => {
 
   const keyLower = String(key).toLowerCase();
 
+  // Identifiers such as 5100.052140 are text, not monetary amounts.
+  if (typeof value === "string" && /(?:clientcode|client_code|iban|accountnumber|cardnumber|passportnumber|phonenumber|inn|pinfl|bic)$/.test(keyLower)) {
+    return value;
+  }
+
   // Format floating point numbers to 2 decimal places (e.g. 473.570000005 -> "473.57", 473.5 -> "473.50")
   if (typeof value === "number" && !Number.isInteger(value)) {
     return value.toFixed(2);
