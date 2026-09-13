@@ -288,7 +288,8 @@ const ClientPersonalInfo = ({
           {/* Lower row: Action Toolbar */}
           <div className="summary-actions-toolbar">
             <div className="actions-left-group">
-              {canEditProfile && <><button type="button" onClick={() => setProfileKind('passport')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить паспорт</span></button><button type="button" onClick={() => setProfileKind('address')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить адрес</span></button></>}
+              {canEditProfile && changePermissions.passport && <button type="button" onClick={() => setProfileKind('passport')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить паспорт</span></button>}
+              {canEditProfile && changePermissions.address && <button type="button" onClick={() => setProfileKind('address')} className="btn-toolbar-action"><FaPencilAlt /><span>Изменить адрес</span></button>}
               {showAuditLogsBtn && (
                 <button onClick={onOpenAuditLogs} className="btn-toolbar-action btn-toolbar-audit">
                   <FaHistory />

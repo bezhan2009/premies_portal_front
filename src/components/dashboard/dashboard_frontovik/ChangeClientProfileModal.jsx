@@ -181,6 +181,11 @@ export default function ChangeClientProfileModal({
           accept(active);
           return;
         } catch {/* keep original ID for status reconciliation */}
+        if (cause.response?.data?.error === 'Данные клиента изменились. Обновите карточку перед подачей заявки') {
+          sessionStorage.removeItem(storageKey); setPending(null); setProfile(null); setStatement(null);
+          setError('Данные клиента изменились. Закройте форму и откройте её снова, чтобы загрузить актуальную карточку.');
+          return;
+        }
       }
       setError(errorText(cause));
     } finally {

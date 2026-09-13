@@ -87,6 +87,9 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
     try { acceptJob(await changeClientPhone(clientCode, pending)); }
     catch (cause) {
       if (!alive.current) return;
+      if ([400, 403].includes(cause?.response?.status)) {
+        sessionStorage.removeItem(storageKey); setRequest(null); setNotAccepted(false);
+      }
       const existingID = cause?.response?.status === 409 && cause.response.data.request_id;
       if (existingID) {
         const pendingOther = { ...pending, request_id: existingID };
@@ -105,7 +108,7 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
       <Typography.Text type="secondary">Текущий телефон: {client.phone || 'Не указан'}</Typography.Text>
       <label htmlFor="client-new-phone">Новый телефон</label>
       <Input id="client-new-phone" type="tel" autoComplete="off" placeholder="+992 900 00 11 22" maxLength={24} value={phone} onChange={(event) => { setPhone(event.target.value); setError(''); }} disabled={loading || Boolean(request)} />
-      {!request && <ClientChangeStatement client={client} scopeID={draftID} kind="phone" changes={{ old_phone: client.phone, new_phone: phone }} document={statement} onDocument={setStatement} disabled={loading} />}
+      {!request && <ClientChangeStatement client={client} scopeID={draftID} kind="phone" changes={{ old_phone: client.phone, new_phone: phone }} document={statement} onDocument={document => { setStatement(document); setError(''); }} disabled={loading} />}
       {error && <Alert type="error" showIcon message={error} />}
       {running && <Alert type={job?.status === 'recovery_pending' ? 'warning' : 'info'} showIcon icon={<Spin size="small" />} message={job?.message || 'Изменяем телефон и проверяем данные клиента. Повторная отправка не требуется.'} />}
       {terminal(job) && <Alert type={job.status === 'completed' ? 'success' : 'error'} showIcon message={job.message} />}
