@@ -2,6 +2,14 @@
 // The same key can be used as a DOCX placeholder or as a source system key in the generator UI.
 export const docxDictionary = [
   {
+    category: "Заявление на изменение данных",
+    keys: [
+      { key: "change.kind", description: "Вид изменения" },
+      { key: "change.oldPhone", description: "Прежний телефон" },
+      { key: "change.newPhone", description: "Новый телефон" },
+    ],
+  },
+  {
     category: "Системные",
     keys: [
       { key: "system.currentDate", description: "Текущая дата" },

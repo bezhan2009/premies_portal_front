@@ -1,3 +1,4 @@
+import ClientChangeApprovals from "../../pages/dashboard/dashboard_frontovik/ClientChangeApprovals";
 import { Route, Outlet } from "react-router-dom";
 import RequireRole from "../../middlewares/RequireRole.jsx";
 
@@ -62,6 +63,7 @@ const managementRoutes = (
         path="frontovik/compliance-requests"
         element={<FrontovikComplianceRequests />}
       />
+      <Route path="frontovik/change-approvals" element={<ClientChangeApprovals />} />
     </Route>
 
     {/* Director (Role 5) */}

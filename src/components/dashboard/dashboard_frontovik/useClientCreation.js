@@ -8,6 +8,8 @@ export function creationPayload(v) {
     country_code: v.country
   };
   return {
+    draft_id: v.draft_id,
+    passport_attachment_id: v.passport_attachment_id,
     department: v.department,
     service_group: v.service_group,
     codeword: v.codeword,

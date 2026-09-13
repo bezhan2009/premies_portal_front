@@ -1,13 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import ClientChangeStatement from './ClientChangeStatement';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Input, Modal, Space, Spin, Typography } from 'antd';
 import { changeClientPhone, getClientPhoneChange, normalizeClientPhone, newPhoneChangeID } from '../../../api/ABS_frotavik/changeClientPhone';
 
-const terminal = (job) => job?.status === 'completed' || job?.status === 'failed';
+const terminal = (job) => job?.status === 'completed' || ['failed', 'rejected'].includes(job?.status);
 const errorText = (error) => error?.response?.data?.error || 'Связь с сервером прервана. Проверьте состояние запроса.';
 
 export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
   const clientCode = client.client_code;
   const storageKey = `frontovik-phone-change:${clientCode}`;
+  const [draftID] = useState(newPhoneChangeID);
+  const [statement, setStatement] = useState(null);
   const [phone, setPhone] = useState(client.phone || '');
   const [job, setJob] = useState(null);
   const [request, setRequest] = useState(null);
@@ -20,7 +23,7 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
   const onUpdatedRef = useRef(onUpdated);
   onUpdatedRef.current = onUpdated;
 
-  const acceptJob = (result) => {
+  const acceptJob = useCallback((result) => {
     if (!alive.current) return;
     setJob(result); setPhone(result.new_phone); setError(''); setNotAccepted(false);
     if (terminal(result)) {
@@ -30,7 +33,7 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
         onUpdatedRef.current(result.phone, clientCode);
       }
     }
-  };
+  }, [clientCode, storageKey]);
 
   useEffect(() => {
     alive.current = true;
@@ -54,7 +57,7 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
     };
     void load();
     return () => { alive.current = false; };
-  }, [clientCode]);
+  }, [clientCode, storageKey, acceptJob]);
 
   useEffect(() => {
     if (!request || terminal(job) || notAccepted || loading) return;
@@ -68,7 +71,7 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
       }
     }, 2000);
     return () => { active = false; clearTimeout(timer); };
-  }, [request, job, notAccepted, loading, clientCode]);
+  }, [request, job, notAccepted, loading, clientCode, acceptJob]);
 
   const submit = async () => {
     if (submitting.current) return;
@@ -76,7 +79,8 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
     const expected = normalizeClientPhone(client.phone);
     if (!nextPhone) { setError('Введите +992 и 9 цифр номера телефона'); return; }
     if (!expected) { setError('Обновите карточку клиента: текущий мобильный телефон не определён'); return; }
-    const pending = request || { request_id: newPhoneChangeID(), phone: nextPhone, expected_phone: expected };
+    if (!request && !statement) { setError('Загрузите подписанное заявление'); return; }
+    const pending = request || { request_id: draftID, document_id: statement?.id, phone: nextPhone, expected_phone: expected };
     submitting.current = true; setLoading(true); setError(''); setNotAccepted(false); setRequest(pending);
     sessionStorage.setItem(storageKey, JSON.stringify(pending));
     try { acceptJob(await changeClientPhone(clientCode, pending)); }
@@ -94,12 +98,13 @@ export default function ChangeClientPhoneModal({ client, onClose, onUpdated }) {
   const changed = normalizeClientPhone(phone) && normalizeClientPhone(phone) !== normalizeClientPhone(client.phone);
   return <Modal open title="Изменение телефона клиента" onCancel={onClose} maskClosable={false}
     footer={<Space><Button onClick={onClose}>{running ? 'Закрыть — операция продолжится' : 'Закрыть'}</Button>
-      {!terminal(job) && <Button type="primary" onClick={submit} loading={loading} disabled={running || !changed || Boolean(error && !request)}>{notAccepted ? 'Повторить отправку' : 'Сохранить телефон'}</Button>}</Space>}>
+      {!terminal(job) && <Button type="primary" onClick={submit} loading={loading} disabled={running || !changed || (!statement && !request) || Boolean(error && !request)}>{notAccepted ? 'Повторить отправку' : 'Отправить на санкцию'}</Button>}</Space>}>
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Typography.Text>{client.long_name || [client.surname, client.name, client.patronymic].filter(Boolean).join(' ')} · {clientCode}</Typography.Text>
       <Typography.Text type="secondary">Текущий телефон: {client.phone || 'Не указан'}</Typography.Text>
       <label htmlFor="client-new-phone">Новый телефон</label>
       <Input id="client-new-phone" type="tel" autoComplete="off" placeholder="+992 900 00 11 22" maxLength={24} value={phone} onChange={(event) => { setPhone(event.target.value); setError(''); }} disabled={loading || Boolean(request)} />
+      {!request && <ClientChangeStatement client={client} scopeID={draftID} kind="phone" changes={{ old_phone: client.phone, new_phone: phone }} document={statement} onDocument={setStatement} disabled={loading} />}
       {error && <Alert type="error" showIcon message={error} />}
       {running && <Alert type={job?.status === 'recovery_pending' ? 'warning' : 'info'} showIcon icon={<Spin size="small" />} message={job?.message || 'Изменяем телефон и проверяем данные клиента. Повторная отправка не требуется.'} />}
       {terminal(job) && <Alert type={job.status === 'completed' ? 'success' : 'error'} showIcon message={job.message} />}

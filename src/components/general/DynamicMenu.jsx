@@ -778,7 +778,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         key: "abs_search",
                         icon: Search
                     },
-                    ...(roles.includes(17) ? [{
+                    ...(roles.includes(17) ? [{ name: "Санкции изменения данных", href: "/frontovik/change-approvals", key: "frontovik_change_approvals", icon: FileText }, {
                         name: "Заявки на Compliance",
                         href: "/frontovik/compliance-requests",
                         key: "frontovik_compliance_requests",

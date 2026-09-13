@@ -1,3 +1,4 @@
+import { getChangePermissions } from '../../../api/frontovikWorkflow';
 import React, { useEffect, useState } from "react";
 import {
   FaSpinner,
@@ -42,12 +43,14 @@ const ClientPersonalInfo = ({
   onPhoneUpdated,
   onProfileUpdated,
 }) => {
+  const [changePermissions, setChangePermissions] = useState({});
   const [profileEnabled, setProfileEnabled] = useState(false);
   const [profileKind, setProfileKind] = useState(null);
   const [phoneChangeEnabled, setPhoneChangeEnabled] = useState(false);
   const [phoneModalOpen, setPhoneModalOpen] = useState(false);
   useEffect(() => {
     let active = true;
+    getChangePermissions().then(r => { if (active) setChangePermissions(r.kinds || {}); }).catch(() => {});
     if (isFrontovik()) getPhoneChangeCapabilities().then((result) => { if (active) setPhoneChangeEnabled(result.enabled); }).catch(() => {});
     if (isFrontovik()) profileCapabilities().then((result) => { if (active) setProfileEnabled(result.enabled); }).catch(() => {});
     return () => { active = false; };
@@ -89,7 +92,7 @@ const ClientPersonalInfo = ({
   
   const typeVal = selectedClient.client_type?.toLowerCase();
   const canEditProfile = profileEnabled && typeVal === 'individual';
-  const pencil = (kind, label) => canEditProfile && <button type="button" aria-label={label} title={label} onClick={() => setProfileKind(kind)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>;
+  const pencil = (kind, label) => canEditProfile && changePermissions[kind] && <button type="button" aria-label={label} title={label} onClick={() => setProfileKind(kind)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>;
   const clientTypeName = typeVal === "corporate" ? "Юридическое лицо" : typeVal === "individual" ? "Физическое лицо" : (selectedClient.ClientTypeName || selectedClient.client_type_name || (selectedClient.tax_code ? "Юридическое лицо" : "Физическое лицо"));
 
   const branchCode = code && code !== "Не указан" ? code.replace(/[^0-9]/g, "").substring(0, 4) : null;
@@ -212,7 +215,7 @@ const ClientPersonalInfo = ({
                 <div className="metadata-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#888' }}>Телефон</span>
                   <span className="font-mono" style={{ fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: 8 }}>{phone}
-                    {phoneChangeEnabled && <button type="button" aria-label="Изменить телефон клиента" title="Изменить телефон" onClick={() => setPhoneModalOpen(true)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>}
+                    {phoneChangeEnabled && changePermissions.phone && <button type="button" aria-label="Изменить телефон клиента" title="Изменить телефон" onClick={() => setPhoneModalOpen(true)} style={{ border: 0, background: 'transparent', color: 'var(--primary-color, #c8102e)', cursor: 'pointer', padding: 6 }}><FaPencilAlt aria-hidden="true" /></button>}
                   </span>
                 </div>
 

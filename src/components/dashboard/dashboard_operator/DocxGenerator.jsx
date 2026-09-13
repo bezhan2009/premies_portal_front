@@ -116,9 +116,15 @@ const SYSTEM_ROLES = [
   { id: 41, name: "Управление Рохат" },
   { id: 42, name: "Управление деклайнами" },
   { id: 43, name: "Интернет банк" },
+  { id: 44, name: "Изменение телефона" }, { id: 45, name: "Изменение ИНН" },
+  { id: 46, name: "Изменение адреса" }, { id: 47, name: "Изменение паспорта" },
+  { id: 48, name: "Изменение данных клиента" }, { id: 49, name: "Санкция изменения данных" },
 ];
 
 const BUTTON_PLACEMENTS = [
+  { id: "frontovik-client-data-change", group: "Фронтовик", title: "Заявление на изменение данных",
+    page: "ClientDataChange", section: "Заявление на изменение данных", route: "/frontovik/abs-search → Изменение данных клиента",
+    hint: "Загрузите DOCX заявления. Поля client.* заполняются данными клиента; change.* содержит предлагаемые изменения.", dataScope: ["system.*", "client.*", "change.*"] },
   {
     id: "frontovik-credit-documents",
     group: "Фронтовик",

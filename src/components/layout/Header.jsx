@@ -1,3 +1,4 @@
+import useClientChangeNotifications from '../dashboard/dashboard_frontovik/useClientChangeNotifications';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell, Settings, MessageSquare, GraduationCap, X, User, Share2 } from 'lucide-react';
@@ -62,6 +63,7 @@ const applicationStatusLabel = (application) => {
 };
 
 const Header = ({ toggleSidebar }) => {
+  useClientChangeNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);

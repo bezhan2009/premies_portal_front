@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import useOnboardingDraft from './useOnboardingDraft';
+import { preflightClientCreation, uploadWorkflowAttachment, workflowError } from '../../../api/frontovikWorkflow';
+import { newPhoneChangeID } from '../../../api/ABS_frotavik/changeClientPhone';
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
 import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
-import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
+import { checkTerroristList } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import {
   buildNewClientStatusReasons,
@@ -10,7 +13,7 @@ import {
   isTerrorScreeningReady,
 } from "./newClientFormUtils.js";
 
-import { useClientCreation } from "./useClientCreation.js";
+import { useClientCreation, creationPayload } from "./useClientCreation.js";
 import { ClientCreationFields, ClientCreationProgress, IdentityCheckIcon } from "./ClientCreationFields.jsx";
 import CustomDateInput from "../../elements/CustomDateInput.jsx";
 
@@ -79,6 +82,10 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
   const [clientPhotoList, setClientPhotoList] = useState([]);
   const [clientDocumentList, setClientDocumentList] = useState([]);
+  const draft = useOnboardingDraft(open, form, creation.locked);
+  const [preflightBusy, setPreflightBusy] = useState(false);
+  const [passportBusy, setPassportBusy] = useState(false);
+  const activeDraft = useRef({}); activeDraft.current = { id: draft.id, open };
   const watchedValues = Form.useWatch([], form);
   const values = useMemo(() => watchedValues || {}, [watchedValues]);
   const screeningIdentifier = String(values.inn || "").replace(/\s/g, "");
@@ -89,9 +96,10 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       complianceCheck,
     });
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    try { await draft.persist(); } catch (e) { message.error(workflowError(e)); return; }
     setCloseConfirmOpen(false);
-    creation.dismiss();
+    if (!creation.running) creation.dismiss();
     form.resetFields();
     setClientPhotoList([]);
     setClientDocumentList([]);
@@ -99,6 +107,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   };
 
   const requestClose = () => {
+    if (submitting || passportBusy || preflightBusy) return;
     setCloseConfirmOpen(true);
   };
 
@@ -264,7 +273,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       middleName: String(values.middle_name || "").trim(),
       birthDate: String(values.birth_date || "").trim(),
     };
-    if (!open || complianceLookupPending || isWhiteListed || !isTerrorScreeningReady(screeningData)) {
+    if (!open || complianceLookupPending || !isTerrorScreeningReady(screeningData)) {
       setTerrorScreening({ state: "idle", match: null });
       return undefined;
     }
@@ -296,61 +305,56 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
     values.middle_name,
   ]);
 
-  const handleSubmit = async (values) => {
-    if (creation.enabled && !creation.unique && !creation.pending) {
-      const duplicateKinds = [
-        creation.checks.inn?.state === "duplicate" ? "ИНН" : "",
-        creation.checks.phone?.state === "duplicate" ? "телефоном" : "",
-      ].filter(Boolean);
-      if (duplicateKinds.length) {
-        message.error(`Клиент с таким ${duplicateKinds.join(" и ")} уже существует в АБС`);
-      } else if ([creation.checks.inn?.state, creation.checks.phone?.state].includes("loading")) {
-        message.warning("Дождитесь завершения проверки ИНН и телефона");
-      } else {
-        message.error("Не удалось подтвердить уникальность ИНН и телефона. Проверьте поля повторно");
-      }
-      return;
+
+  const withDocuments = input => ({ ...input, draft_id: draft.id, passport_attachment_id: draft.passport?.id });
+  const formKey = JSON.stringify(creationPayload(withDocuments(values)));
+  const validPassport = Boolean(draft.passport && draft.passport.inn === String(values.inn || '').trim() && draft.passport.scope_id === draft.id);
+  const validReview = draft.review?.key === formKey ? draft.review.result : null;
+  const checkQuestionnaire = async (background = false) => {
+    if (preflightBusy || !validPassport || !creation.enabled) return;
+    setPreflightBusy(true);
+    try {
+      const current = await form.validateFields();
+      await draft.persist();
+      const data = creationPayload(withDocuments(current));
+      const key = JSON.stringify(data);
+      const result = await preflightClientCreation({ request_id: newPhoneChangeID(), data });
+      if (activeDraft.current.id === draft.id && activeDraft.current.open) draft.setReview({ key, result });
+    } catch (e) { if (!e.errorFields && !background) message.error(workflowError(e)); }
+    finally { setPreflightBusy(false); }
+  };
+  const backgroundCheck = useRef(checkQuestionnaire); backgroundCheck.current = checkQuestionnaire;
+  useEffect(() => {
+    if (!open || !validReview?.requires_compliance || validReview?.request?.status !== 'pending' || creation.locked) return;
+    const timer = setTimeout(() => { void backgroundCheck.current(true); }, 15000);
+    return () => clearTimeout(timer);
+  }, [open, validReview, preflightBusy, creation.locked]);
+  const uploadPassport = async file => {
+    if (!/^\d{9,14}$/.test(String(values.inn || '').trim())) { message.error('Сначала укажите ИНН клиента'); return false; }
+    setPassportBusy(true);
+    try {
+      const receipt = await uploadWorkflowAttachment(file, { scope_id: draft.id, purpose: 'passport', inn: String(values.inn).trim() });
+      if (activeDraft.current.id !== receipt.scope_id || !activeDraft.current.open) return false;
+      draft.setPassport(receipt); draft.setReview(null);
+      setClientDocumentList([{ uid: receipt.id, name: receipt.filename, status: 'done' }]);
+    } catch (e) { message.error(workflowError(e)); }
+    finally { setPassportBusy(false); }
+    return false;
+  };
+  const handleSubmit = async current => {
+    if (!creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique) {
+      message.warning('Загрузите паспорт и дождитесь разрешения после проверки клиента'); return;
     }
     setSubmitting(true);
     try {
-      const identifier = String(values.inn || "").trim();
-      const uploads = [
-        ...clientPhotoList.map((item) => ({
-          file: item.originFileObj,
-          title: "Фото клиента",
-          documentType: "selfie_with_passport",
-        })),
-        ...clientDocumentList.map((item) => ({
-          file: item.originFileObj,
-          title: item.name || "Документ клиента",
-          documentType: "front_side_of_the_passport",
-        })),
-      ].filter((item) => item.file);
-
-      for (const upload of uploads) {
-        await uploadClientDocument(identifier, upload.title, upload.file, upload.documentType);
+      await draft.persist();
+      for (const item of clientPhotoList) {
+        if (item.originFileObj) await uploadClientDocument(String(current.inn).trim(), 'Фото клиента', item.originFileObj, 'selfie_with_passport');
       }
-
-      if (creation.enabled) {
-        const result = await creation.submit(values);
-        if (result?.requires_compliance) { onSubmitted(result); onClose(); }
-        return;
-      }
-      const result = await submitFrontovikNewClient({
-        ...values,
-        occupation: values.client_occupation,
-        compliance_score: totalComplianceScore,
-      });
-      form.resetFields();
-      setClientPhotoList([]);
-      setClientDocumentList([]);
-      onSubmitted(result);
-      onClose();
-    } catch (error) {
-      message.error(error.message || "Не удалось отправить анкету");
-    } finally {
-      setSubmitting(false);
-    }
+      const result = await creation.submit(withDocuments(current));
+      if (result?.requires_compliance) draft.setReview({ key: formKey, result });
+    } catch (e) { message.error(workflowError(e)); }
+    finally { setSubmitting(false); }
   };
 
   return <>
@@ -363,8 +367,8 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       centered
       className="new-client-modal"
       destroyOnHidden
-      maskClosable={!submitting}
-      closable={!submitting}
+      maskClosable={!submitting && !passportBusy && !preflightBusy}
+      closable={!submitting && !passportBusy && !preflightBusy}
     >
       <div className="new-client-modal__header">
         <span className="new-client-modal__header-icon"><UserRound size={22} /></span>
@@ -375,7 +379,16 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
         </div>
       </div>
 
-      <ClientCreationProgress creation={creation} onDone={(result) => { onSubmitted(result); onClose(); }} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', margin: '12px 0' }}>
+        <Select aria-label="Сохранённые черновики" placeholder="Последние 10 незавершённых картотек" style={{ minWidth: 300 }} disabled={creation.locked || submitting || passportBusy || preflightBusy}
+          value={draft.drafts.some(d => d.id === draft.id) ? draft.id : undefined}
+          options={draft.drafts.map(d => ({ value: d.id, label: [d.payload.values?.last_name, d.payload.values?.first_name, d.payload.values?.inn].filter(Boolean).join(' · ') || 'Незавершённая картотека' }))}
+          onChange={id => { draft.restore(id).then(() => { setClientPhotoList([]); setClientDocumentList([]); }).catch(e => message.error(workflowError(e))); }} />
+        <Button disabled={creation.locked || submitting || passportBusy || preflightBusy} onClick={() => draft.startNew().then(() => { setClientPhotoList([]); setClientDocumentList([]); }).catch(e => message.error(workflowError(e)))}>Новая анкета</Button>
+        <span>{draft.saving ? 'Сохраняем черновик…' : draft.savedAt ? 'Черновик сохранён' : 'Черновик сохранится автоматически'}</span>
+      </div>
+      {draft.error && <Alert type="error" message={draft.error} showIcon />}
+      <ClientCreationProgress creation={creation} onDone={async result => { try { await draft.finish(); } catch (e) { message.error(workflowError(e)); } onSubmitted(result); onClose(); }} />
       <Form
         style={{ display: creation.locked ? "none" : undefined }}
         form={form}
@@ -534,25 +547,31 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
                 <Button htmlType="button" icon={<Camera size={16} />}>Выбрать фото</Button>
               </Upload>
             </Form.Item>
-            <Form.Item label="Документ клиента">
+            <Form.Item label="Скан паспорта" required>
               <Upload
-                accept="image/*,.pdf,.doc,.docx"
-                beforeUpload={() => false}
+                accept=".pdf,.jpg,.jpeg,.png"
+                beforeUpload={uploadPassport}
+                disabled={passportBusy || submitting}
                 fileList={clientDocumentList}
                 maxCount={1}
-                onChange={({ fileList }) => setClientDocumentList(fileList)}
+                onRemove={() => { draft.setPassport(null); draft.setReview(null); setClientDocumentList([]); return true; }}
               >
-                <Button htmlType="button" icon={<FileUp size={16} />}>Выбрать документ</Button>
+                <Button htmlType="button" icon={<FileUp size={16} />} loading={passportBusy}>Загрузить скан паспорта</Button>
               </Upload>
+              {validPassport && <div style={{ color: '#15803d', marginTop: 8 }}>✓ {draft.passport.filename} — скан сохранён в документах клиента</div>}
             </Form.Item>
           </div>
         </section>
-
+        {validReview && <Alert showIcon type={validReview.service_allowed ? 'success' : validReview.request?.status === 'rejected' ? 'error' : 'warning'} message={validReview.message}
+          description={validReview.request?.id ? <a href={`/frontovik/compliance-requests?requestId=${validReview.request.id}`}>Заявка комплайнс №{validReview.request.id}</a> : undefined} />}
+        {!validReview && <Alert type="info" showIcon message="Перед созданием загрузите скан паспорта и проверьте анкету. При совпадениях потребуется решение комплайнс." />}
         <div className="new-client-modal__actions">
           <Button htmlType="button" onClick={requestClose} disabled={submitting}>Отмена</Button>
+          <Button disabled={!creation.enabled || !validPassport || !creation.unique || submitting || passportBusy} loading={preflightBusy} onClick={() => checkQuestionnaire(false)}>Проверить клиента</Button>
           <Button
             type="primary"
             htmlType="button"
+            disabled={!creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique || preflightBusy || passportBusy}
             loading={submitting}
             onClick={() => form.submit()}
           >
@@ -573,7 +592,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       centered
       zIndex={2100}
     >
-      Вы закрываете окно, указанные данные могут пропасть
+      Последние введённые данные будут сохранены в черновиках. К заполнению можно вернуться позже.
     </Modal>
   </>;
 }

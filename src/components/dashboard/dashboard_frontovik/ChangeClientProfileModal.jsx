@@ -1,3 +1,4 @@
+import ClientChangeStatement from './ClientChangeStatement';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Col, Form, Input, Modal, Row, Select, Space, Spin, Typography } from 'antd';
 import { getEditableProfile, getProfileChange, submitProfileChange } from '../../../api/ABS_frotavik/changeClientProfile';
@@ -10,7 +11,7 @@ const titles = {
   passport: 'Изменение паспорта',
   address: 'Изменение адреса'
 };
-const terminal = job => ['completed', 'failed'].includes(job?.status);
+const terminal = job => ['completed', 'failed', 'rejected'].includes(job?.status);
 const errorText = error => error?.response?.data?.error || 'Связь прервана. Проверяем состояние запроса.';
 const required = {
   required: true,
@@ -25,6 +26,9 @@ export default function ChangeClientProfileModal({
   const code = client.client_code;
   const storageKey = `frontovik-profile-change:${localStorage.getItem('user_id') || 'session'}:${code}`;
   const [form] = Form.useForm();
+  const [draftID] = useState(newPhoneChangeID);
+  const [statement, setStatement] = useState(null);
+  const changedValues = Form.useWatch([], form);
   const [profile, setProfile] = useState(null),
     [job, setJob] = useState(null),
     [pending, setPending] = useState(null);
@@ -139,6 +143,7 @@ export default function ChangeClientProfileModal({
     try {
       let request = pending;
       if (!request) {
+        if (!statement) { setError('Загрузите подписанное заявление'); return; }
         const values = await form.validateFields();
         const data = {
           kind,
@@ -146,7 +151,8 @@ export default function ChangeClientProfileModal({
           [kind]: values[kind]
         };
         request = {
-          request_id: newPhoneChangeID(),
+          request_id: draftID,
+          document_id: statement?.id,
           data
         };
       }
@@ -183,7 +189,7 @@ export default function ChangeClientProfileModal({
   };
   const running = pending && !terminal(job) && !notAccepted;
   const nameField = (key, label, needed) => <Col xs={24} md={8} key={key}><Form.Item name={['name', key]} label={label} rules={needed ? [required] : []}><Input maxLength={100} /></Form.Item></Col>;
-  return <Modal open width={kind === 'inn' ? 520 : 920} title={titles[job?.kind || pending?.data?.kind || kind]} onCancel={onClose} maskClosable={false} footer={<Space><Button onClick={onClose}>{running ? 'Закрыть — операция продолжится' : 'Закрыть'}</Button>{!terminal(job) && <Button type="primary" onClick={submit} loading={busy} disabled={Boolean(running) || !profile && !pending?.data}>{notAccepted ? 'Повторить отправку' : 'Сохранить'}</Button>}</Space>}>
+  return <Modal open width={kind === 'inn' ? 520 : 920} title={titles[job?.kind || pending?.data?.kind || kind]} onCancel={onClose} maskClosable={false} footer={<Space><Button onClick={onClose}>{running ? 'Закрыть — операция продолжится' : 'Закрыть'}</Button>{!terminal(job) && <Button type="primary" onClick={submit} loading={busy} disabled={Boolean(running) || (!statement && !pending) || !profile && !pending?.data}>{notAccepted ? 'Повторить отправку' : 'Отправить на санкцию'}</Button>}</Space>}>
     <Space direction="vertical" size="middle" style={{
       width: '100%'
     }}>
@@ -211,6 +217,7 @@ export default function ChangeClientProfileModal({
             }} /></Form.Item><PassportFields /></>}
         {kind === 'address' && <ClientAddressFields form={form} />}
       </Form>}
+      {!pending && <ClientChangeStatement client={client} scopeID={draftID} kind={kind} changes={{ before: profile, after: changedValues }} document={statement} onDocument={setStatement} disabled={busy} />}
       {error && <Alert type="error" showIcon message={error} />}
       {running && <Alert type={job?.status === 'recovery_pending' ? 'warning' : 'info'} showIcon icon={<Spin size="small" />} message={job?.message || 'Проверяем и сохраняем данные клиента. Повторная отправка не требуется.'} />}
       {terminal(job) && <Alert type={job.status === 'completed' ? 'success' : 'error'} showIcon message={job.message} />}
