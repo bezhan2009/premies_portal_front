@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import ApiDocsModal from "./ApiDocsModal";
 import InternetBankingDocxSettings from "./InternetBankingDocxSettings";
-import { initialBankingDocx } from "../../../utils/internetBankingDocx";
+import { IB_DOCX_PLACEMENTS, initialBankingDocx } from "../../../utils/internetBankingDocx";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -267,7 +267,7 @@ const getInitialFormState = () => ({
 const getRoleName = (id) => SYSTEM_ROLES.find((role) => role.id === Number(id))?.name || `Роль ${id}`;
 
 const getPlacement = (page, section) =>
-  BUTTON_PLACEMENTS.find((place) => place.page === page && place.section === section) ||
+  [...BUTTON_PLACEMENTS, ...IB_DOCX_PLACEMENTS].find((place) => place.page === page && place.section === section) ||
   BUTTON_PLACEMENTS.find((place) => place.id === "custom");
 
 const getDictionaryItem = (key) => dictionaryItems.find((item) => item.key === key);
@@ -1224,7 +1224,7 @@ const DocxGenerator = () => {
       loadTemplates();
     } catch (err) {
       console.error(err);
-      alert("Ошибка сохранения шаблона");
+      alert(err.response?.data?.error || "Ошибка сохранения шаблона");
     }
   };
 
@@ -1460,7 +1460,7 @@ const DocxGenerator = () => {
             <div className="docx-stat-card">
               <MousePointerClick size={22} />
               <span>Места показа</span>
-              <strong>{BUTTON_PLACEMENTS.length - 1}</strong>
+              <strong>{channel === "banking" ? IB_DOCX_PLACEMENTS.length : BUTTON_PLACEMENTS.length - 1}</strong>
             </div>
             <div className="docx-stat-card">
               <FileJson size={22} />
@@ -1489,19 +1489,19 @@ const DocxGenerator = () => {
               onChange={(val) => setPageFilter(val)}
               options={[
                 { value: "all", label: "Все страницы" },
-                ...[...new Set(BUTTON_PLACEMENTS.filter((item) => item.page).map((item) => item.page))].map(
+                ...[...new Set((channel === "banking" ? IB_DOCX_PLACEMENTS : BUTTON_PLACEMENTS).filter((item) => item.page).map((item) => item.page))].map(
                   (page) => ({ value: page, label: page })
                 )
               ]}
             />
-            <CustomSelect
+            {channel === "daily" && <CustomSelect
               value={roleFilter}
               onChange={(val) => setRoleFilter(val)}
               options={[
                 { value: "all", label: "Все роли" },
                 ...SYSTEM_ROLES.map((role) => ({ value: String(role.id), label: role.name }))
               ]}
-            />
+            />}
           </section>
 
           {loading ? (
@@ -1561,8 +1561,8 @@ const DocxGenerator = () => {
 
                     <div className="docx-card-meta">
                       <div>
-                        <span className="docx-meta-label">Роли</span>
-                        <div className="docx-chip-list">{renderRoleChips(template.parsedRoles)}</div>
+                        <span className="docx-meta-label">{template.internetBanking ? "Публикация в ИБ" : "Роли"}</span>
+                        <div className="docx-chip-list">{template.internetBanking ? (template.internetBanking.enabled ? "Включена · по правам клиента" : "Выключена") : renderRoleChips(template.parsedRoles)}</div>
                       </div>
                       <div>
                         <span className="docx-meta-label">Варианты</span>
