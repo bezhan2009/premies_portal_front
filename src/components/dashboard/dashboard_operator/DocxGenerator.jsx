@@ -840,11 +840,12 @@ const DocxGenerator = () => {
     });
   }, [hydratedTemplates, pageFilter, roleFilter, searchQuery, channel]);
 
-  const totalVariants = hydratedTemplates.reduce(
+  const channelTemplates = hydratedTemplates.filter((template) => channel === "banking" ? Boolean(template.internetBanking) : !template.internetBanking);
+  const totalVariants = channelTemplates.reduce(
     (sum, template) => sum + template.parsedVariants.length,
     0,
   );
-  const totalMappings = hydratedTemplates.reduce(
+  const totalMappings = channelTemplates.reduce(
     (sum, template) =>
       sum +
       template.parsedVariants.reduce(
@@ -1450,7 +1451,7 @@ const DocxGenerator = () => {
             <div className="docx-stat-card">
               <FileText size={22} />
               <span>Шаблоны</span>
-              <strong>{hydratedTemplates.length}</strong>
+              <strong>{channelTemplates.length}</strong>
             </div>
             <div className="docx-stat-card">
               <Layers size={22} />
