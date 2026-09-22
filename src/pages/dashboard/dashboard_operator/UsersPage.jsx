@@ -299,6 +299,7 @@ export default function UsersPage() {
       setSelectedRoles([...selectedRoles, roleId]);
     } else {
       setSelectedRoles(selectedRoles.filter((id) => id !== roleId));
+      if (roleId === 49) setApproverDepartments([]);
     }
     setError("");
   };
@@ -316,6 +317,17 @@ export default function UsersPage() {
       setSelectedCustomerDepartments((current) => [...current, departmentCode]);
     } else {
       setSelectedCustomerDepartments((current) => current.filter((code) => code !== departmentCode));
+      setApproverDepartments((current) => current.filter((code) => code !== departmentCode));
+    }
+  };
+
+  const handleSanctionDepartmentChange = (e, departmentCode) => {
+    if (e.target.checked) {
+      setSelectedRoles((current) => current.includes(49) ? current : [...current, 49]);
+      setSelectedCustomerDepartments((current) => current.includes(departmentCode) ? current : [...current, departmentCode]);
+      setApproverDepartments((current) => current.includes(departmentCode) ? current : [...current, departmentCode]);
+    } else {
+      setApproverDepartments((current) => current.filter((code) => code !== departmentCode));
     }
   };
 
@@ -896,8 +908,16 @@ export default function UsersPage() {
 
               <div className="modal-section-title">5. Санкции</div>
               <div className="checkbox-item"><input type="checkbox" id="sanction-approver" checked={selectedRoles.includes(49)} onChange={e => handleRoleChange(e,49)} /><label htmlFor="sanction-approver">Может подтверждать заявки на просмотр и изменение данных</label></div>
-              <p>Выберите коды клиентов, заявки которых сотрудник может согласовывать. Собственные заявки подтверждать нельзя.</p>
-              <div className="roles-checklist">{selectedCustomerDepartments.map(code => <label className="checkbox-item" key={code}><input type="checkbox" disabled={!selectedRoles.includes(49)} checked={approverDepartments.includes(code)} onChange={e => setApproverDepartments(old => e.target.checked ? [...old,code] : old.filter(v => v!==code))} />{code}</label>)}</div>
+              <p>Выберите коды клиентов, заявки которых сотрудник может согласовывать. Выбранный код автоматически добавляется в доступ сотрудника. Собственные заявки подтверждать нельзя.</p>
+              <div className="roles-checklist customer-department-checklist">
+                {customerDepartments.map((department) => {
+                  const code = department.department_code;
+                  return <label className="checkbox-item" key={code}>
+                    <input type="checkbox" checked={approverDepartments.includes(code)} onChange={(e) => handleSanctionDepartmentChange(e, code)} />
+                    {code} - {department.department_name}
+                  </label>;
+                })}
+              </div>
               <div className="modal-section-title">6. Страница «Клиенты»</div>
               <div className="form-group"><label htmlFor="creator-restriction">Оформил — логин сотрудника в АБС</label><input id="creator-restriction" maxLength={255} value={creatorRestriction} onChange={e => setCreatorRestriction(e.target.value)} placeholder="Пусто — все сотрудники в разрешённых подразделениях" /><small>При заполнении видны только клиенты этого сотрудника. Пользователь не сможет изменить закреплённый фильтр.</small></div>
               {/* Conditional Worker Details */}
