@@ -539,6 +539,14 @@ export default function CustomerDirectory() {
   const syncIssues = departments.filter((department) => String(department.last_error || "").trim());
   const pendingFilters=JSON.stringify({...filters,search:draftSearch.trim()})!==JSON.stringify(appliedFilters);
   const statNumber=key=>stats?Number(stats[key]||0).toLocaleString('ru-RU'):'—';
+  const creatorOptions = useMemo(() => {
+    const options = (filterOptions.creators || []).map((item) => ({ value: item.value, label: `${item.label} (${item.value})` }));
+    const fixedCreator = access?.creator_username?.trim();
+    if (fixedCreator && !options.some((item) => item.value.toLowerCase() === fixedCreator.toLowerCase())) {
+      options.unshift({ value: fixedCreator, label: fixedCreator });
+    }
+    return [{ value: "", label: "Все сотрудники" }, ...options];
+  }, [access?.creator_username, filterOptions.creators]);
 
   return (
     <main className="customer-directory content-page">
@@ -569,7 +577,7 @@ export default function CustomerDirectory() {
         <ChoiceFilter label="Кредит" value={filters.has_credit} onChange={value => updateFilter("has_credit", value)} />
         <ChoiceFilter label="Депозит" value={filters.has_deposit} onChange={value => updateFilter("has_deposit", value)} />
         <ChoiceFilter label="Мобильный банк" value={filters.mobile_bank} onChange={value => updateFilter("mobile_bank", value)} />
-        <div className="customer-choice customer-employee-choice" data-active={Boolean(filters.creator)}><label htmlFor="customer-creator">Оформил</label><Select id="customer-creator" searchable autoSelectFirst={false} disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || filters.creator || ""} placeholder="Все сотрудники" title={access?.creator_username ? "Фильтр закреплён оператором" : "Фильтр по сотруднику АБС"} onChange={value=>updateFilter('creator',value||'')} options={[{value:"",label:"Все сотрудники"},...(filterOptions.creators||[]).map(item=>({value:item.value,label:`${item.label} (${item.value})`}))]} style={{width:'100%'}} /></div>
+        <div className="customer-choice customer-employee-choice" data-active={Boolean(filters.creator)}><label htmlFor="customer-creator">Оформил</label><Select id="customer-creator" searchable autoSelectFirst={false} disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || filters.creator || ""} placeholder="Все сотрудники" title={access?.creator_username ? "Фильтр закреплён оператором" : "Фильтр по сотруднику АБС"} onChange={value=>updateFilter('creator',value||'')} options={creatorOptions} style={{width:'100%'}} /></div>
         {[['card_status','Статус карты','card_statuses'],['credit_status','Статус кредита','credit_statuses']].map(([key,label,source])=><label className="customer-choice" key={key} data-active={Boolean(filters[key])}>{label}<select value={filters[key]} onChange={event=>updateFilter(key,event.target.value)}><option value="">Все</option>{(filterOptions[source]||[]).filter(Boolean).map(value=><option key={value}>{value}</option>)}</select></label>)}
         <label className="customer-choice" data-active={Boolean(filters.state_code)}>Статус картотеки<select value={filters.state_code} onChange={event=>updateFilter('state_code',event.target.value)}><option value="">Все</option>{(filterOptions.states||[]).filter(item=>item.value).map(item=><option key={item.value} value={item.value}>{item.label || item.value}</option>)}</select></label>
         {[['card_expiry_from','Срок карты с'],['card_expiry_to','Срок карты по']].map(([key,label])=><label className="customer-choice" key={key} data-active={Boolean(filters[key])}>{label}<input type="date" value={filters[key]} onChange={event=>updateFilter(key,event.target.value)} /></label>)}
