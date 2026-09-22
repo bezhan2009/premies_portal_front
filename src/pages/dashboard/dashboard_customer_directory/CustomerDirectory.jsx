@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import Select from "../../../components/elements/Select.jsx";
+import { cardExpiry, creditStatus } from "../../../utils/customerProductDetails.js";
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -19,11 +21,39 @@ import {
   X,
 } from "lucide-react";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
-import Select from "../../../components/elements/Select.jsx";
-import { buildCustomerDirectoryQuery, CUSTOMER_DIRECTORY_INITIAL_FILTERS } from "./customerDirectoryFilters.js";
 import "../../../styles/components/CustomerDirectory.scss";
+import ComplianceMatches from "../../../components/general/ComplianceMatches.jsx";
+import { customerDirectoryQuery } from "../../../utils/customerDirectoryQuery.js";
 
-const INITIAL_FILTERS = CUSTOMER_DIRECTORY_INITIAL_FILTERS;
+const INITIAL_FILTERS = {
+  search: "",
+  departments: [],
+  resident: "",
+  overdue: "",
+  terror: "",
+  complianceScore: "",
+  creator: "", mobile_bank: "",
+  card_status: "", credit_status: "", state_code: "", card_expiry_from: "", card_expiry_to: "",
+  client_type: "", has_credit: "", has_deposit: "", card_type: "", phone_length: "", inn_length: "", opened_from: "", opened_to: "", duplicate_phone: "", duplicate_inn: "", duplicate_passport: "", duplicate_name: "",
+  sortBy: "created_at",
+  sortOrder: "desc",
+};
+
+function ChoiceFilter({ label, value, onChange, options = [["true", "Да"], ["false", "Нет"]] }) {
+  return <fieldset className="customer-choice"><legend>{label}</legend><div className="customer-segment">{[["", "Все"], ...options].map(([key, title]) => <button type="button" key={key} data-active={key!==''&&value===key} aria-pressed={value === key} onClick={() => onChange(key)}>{title}</button>)}</div></fieldset>;
+}
+
+const plainValue = value => value && typeof value === "object" ? value.Code || value.code || value.Name || value.name || "" : value ?? "";
+function ProductSummary({ items, kind }) {
+  if (!Array.isArray(items) || !items.length) return <span className="customer-muted">Нет</span>;
+  const row = (item, index) => {
+    const agreement = item.AgreementData || item.agreementData || {};
+    const name = kind === "card" ? item.type || item.Type || "Карта" : kind === "account" ? item.Number || item.number : kind === "credit" ? item.productName || item.Product?.Name || "Кредит" : agreement.Product?.Name || agreement.product?.name || "Депозит";
+    const detail = kind === "card" ? item.statusName || item.StatusName || item.status || "Статус не указан" : `${plainValue(kind === "account" ? item.Balance ?? item.balance : kind === "credit" ? item.amount : agreement.Amount ?? agreement.amount)} ${plainValue(item.Currency || item.currency || agreement.Currency || agreement.currency)}`;
+    return <div className="customer-product-line" key={index}><strong>{name || "—"}</strong><small>{detail}</small>{kind === 'credit' && <small>{creditStatus(item)}</small>}{kind === 'card' && <small>Срок: {cardExpiry(item)}</small>}</div>;
+  };
+  return <div>{items.slice(0, 2).map(row)}{items.length > 2 && <details><summary>Ещё {items.length - 2}</summary>{items.slice(2).map(row)}</details>}</div>;
+}
 
 const readRoles = () => {
   try {
@@ -37,7 +67,8 @@ const readRoles = () => {
 const parseJson = (value, fallback = []) => {
   if (!value) return fallback;
   try {
-    return typeof value === "string" ? JSON.parse(value) : value;
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return Array.isArray(fallback) ? (Array.isArray(parsed) ? parsed : fallback) : parsed ?? fallback;
   } catch {
     return fallback;
   }
@@ -48,6 +79,7 @@ const formatDateTime = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU");
 };
+const formatDateOnly = value => /^\d{4}-\d{2}-\d{2}/.test(value || "") ? value.slice(0,10).split('-').reverse().join('.') : value || "Нет данных";
 
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
@@ -90,10 +122,11 @@ function DetailModal({ customer, onClose, onUpdateScore, onOpenDocuments }) {
           <div><span>Подразделение</span><strong>{customer.department_code} · {customer.department_name}</strong></div>
           <div><span>ИНН</span><strong>{customer.inn || "Нет данных"}</strong></div>
           <div><span>Телефон</span><strong>{customer.phone || "Нет данных"}</strong></div>
+          <div><span>Номер паспорта</span><strong>{customer.passport_number || "Не загружен"}</strong></div>
           <div><span>Дата рождения</span><strong>{customer.birth_date || "Нет данных"}</strong></div>
           <div><span>Резидент</span><strong>{customer.is_resident ? "Да" : "Нет"}</strong></div>
-          <div><span>Создал</span><strong>{customer.creator_username || "Нет данных"}</strong></div>
-          <div><span>Клиент создан</span><strong>{formatDateTime(customer.created_at)}</strong></div>
+          <div><span>Создал</span><strong>{customer.creator_full_name || customer.creator_username || "Нет данных"}</strong></div>
+          <div><span>Картотека открыта</span><strong>{formatDateOnly(customer.opened_at)}</strong></div>
           <div><span>Клиент изменён</span><strong>{formatDateTime(customer.updated_at)}</strong></div>
           <div><span>Балл комплайнса</span><strong>{customer.compliance_score} / 5</strong></div>
           <div><span>Последняя синхронизация</span><strong>{formatDateTime(customer.last_synced_at)}</strong></div>
@@ -114,7 +147,7 @@ function DetailModal({ customer, onClose, onUpdateScore, onOpenDocuments }) {
         {terrorMatch && (
           <section className="customer-detail-section customer-detail-section--warning">
             <h3><ShieldCheck size={17} />Совпадение по спискам: {(Number(customer.terror_similarity) * 100).toFixed(1)}%</h3>
-            <pre>{JSON.stringify(terrorMatch, null, 2)}</pre>
+            <ComplianceMatches value={terrorMatch} />
           </section>
         )}
 
@@ -137,7 +170,7 @@ function DetailModal({ customer, onClose, onUpdateScore, onOpenDocuments }) {
             {accounts.length ? accounts.map((account, index) => (
               <div key={`${account.Number || account.number || "account"}-${index}`}>
                 <strong>{account.Number || account.number}</strong>
-                <span>{account.Currency?.Code || account.currency?.code || account.Currency || ""} · {account.Balance ?? account.balance ?? 0}</span>
+                <span>{plainValue(account.Currency || account.currency)} · {plainValue(account.Balance ?? account.balance ?? 0)}</span>
               </div>
             )) : <p>Нет данных</p>}
           </div>
@@ -189,10 +222,43 @@ export default function CustomerDirectory() {
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get("search")?.trim() || "";
   const [filters, setFilters] = useState(() => ({ ...INITIAL_FILTERS, search: initialSearch }));
+  const [appliedFilters,setAppliedFilters] = useState(()=>({...INITIAL_FILTERS,search:initialSearch}));
+  const [stats,setStats]=useState(null),[statsLoading,setStatsLoading]=useState(false),[statsError,setStatsError]=useState('');
+  const [exporting,setExporting]=useState(false);
+  const [exportFile,setExportFile]=useState(null);
+  const statsRequest=useRef(null);
   const [draftSearch, setDraftSearch] = useState(initialSearch);
-  const [draftCreator, setDraftCreator] = useState("");
   const [departments, setDepartments] = useState([]);
   const [access, setAccess] = useState(null);
+  const [result, setResult] = useState({ items: [], total: 0, page: 1, limit: 30 });
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [scoreEditor, setScoreEditor] = useState(null);
+  const [scoreValue, setScoreValue] = useState("1");
+  const [documentsCustomer, setDocumentsCustomer] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [settings, setSettings] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [actionLoading, setActionLoading] = useState("");
+  const [notice, setNotice] = useState("");
+  const [filterOptions, setFilterOptions] = useState({card_types: [], phone_lengths: [], inn_lengths: []});
+  const customerRequest = useRef(null);
+  const accessGeneration = useRef(0);
+  const isOperator = useMemo(() => readRoles().includes(3), []);
+  const clearClientViews = useCallback(() => {
+    accessGeneration.current += 1;
+    setSelectedCustomer(null);
+    setScoreEditor(null);
+    setDocumentsCustomer(null);
+    setDocuments([]);
+    setResult({ items: [], total: 0, page: 1, limit: 30 });
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/me`, { headers: authHeaders(), signal: controller.signal })
@@ -206,41 +272,14 @@ export default function CustomerDirectory() {
       });
     return () => controller.abort();
   }, []);
-  useEffect(() => {
-    if (!access || access.failed || access.creator_username) return undefined;
-    const timer = window.setTimeout(() => {
-      const creatorUsername = draftCreator.trim();
-      setPage(1);
-      setFilters((current) => current.creatorUsername === creatorUsername
-        ? current
-        : { ...current, creatorUsername });
-    }, 350);
-    return () => window.clearTimeout(timer);
-  }, [access, draftCreator]);
-  const [result, setResult] = useState({ items: [], total: 0, page: 1, limit: 30 });
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [scoreEditor, setScoreEditor] = useState(null);
-  const [scoreValue, setScoreValue] = useState("1");
-  const [documentsCustomer, setDocumentsCustomer] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [settings, setSettings] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [actionLoading, setActionLoading] = useState("");
-  const [notice, setNotice] = useState("");
-  const isOperator = useMemo(() => readRoles().includes(3), []);
-  const accessGeneration = useRef(0);
-  const customerRequestRef = useRef(null);
-  const clearClientViews = useCallback(() => {
-    accessGeneration.current += 1;
-    setSelectedCustomer(null); setScoreEditor(null); setDocumentsCustomer(null); setDocuments([]);
-    setResult({items:[],total:0,page:1,limit:30});
-  }, []);
 
+  useEffect(() => {
+    const creator = access?.creator_username?.trim();
+    if (!creator) return;
+    setFilters((current) => current.creator === creator ? current : { ...current, creator });
+    setAppliedFilters((current) => current.creator === creator ? current : { ...current, creator });
+    setPage(1);
+  }, [access?.creator_username]);
 
   const loadDepartments = useCallback(async () => {
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/departments`, { headers: authHeaders() });
@@ -251,84 +290,111 @@ export default function CustomerDirectory() {
 
   const loadCustomers = useCallback(async () => {
     const generation = accessGeneration.current;
-    customerRequestRef.current?.abort();
+    customerRequest.current?.abort();
     const controller = new AbortController();
-    customerRequestRef.current = controller;
+    customerRequest.current = controller;
     setLoading(true);
     setError("");
     try {
-      const params = buildCustomerDirectoryQuery({ page, filters });
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, {
-        headers: authHeaders(),
-        signal: controller.signal,
-      });
-      if (!response.ok) throw new Error("Не удалось загрузить клиентов");
+      const params = customerDirectoryQuery(appliedFilters,page);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, { headers: authHeaders(), signal: controller.signal });
+      if (!response.ok) throw new Error(await readResponseError(response, "Не удалось загрузить клиентов"));
       const data = await response.json();
-      if (generation !== accessGeneration.current || controller.signal.aborted) return;
-      setResult(data);
+      if (!controller.signal.aborted && generation === accessGeneration.current) setResult(data);
     } catch (requestError) {
-      if (requestError.name === "AbortError") return;
-      setError(requestError.message || "Ошибка загрузки клиентов");
+      if (!controller.signal.aborted) setError(requestError.message || "Ошибка загрузки клиентов");
     } finally {
-      if (customerRequestRef.current === controller) {
-        customerRequestRef.current = null;
+      if (customerRequest.current === controller) {
+        customerRequest.current = null;
         setLoading(false);
       }
     }
-  }, [filters, page]);
+  }, [appliedFilters, page]);
 
-  useEffect(() => () => customerRequestRef.current?.abort(), []);
+  const loadStats=useCallback(async()=>{
+    statsRequest.current?.abort();const controller=new AbortController();statsRequest.current=controller;setStatsLoading(true);setStatsError('');
+    try{const response=await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/stats?${customerDirectoryQuery(appliedFilters)}`,{headers:authHeaders(),signal:controller.signal});if(!response.ok)throw new Error(await readResponseError(response,'Не удалось загрузить сводку'));const value=await response.json();if(!controller.signal.aborted)setStats(value);}
+    catch(error){if(!controller.signal.aborted)setStatsError(error.message);}finally{if(!controller.signal.aborted)setStatsLoading(false);}
+  },[appliedFilters]);
+  useEffect(()=>{setStats(null);loadStats();return()=>statsRequest.current?.abort();},[loadStats]);
+  const exportCustomers=async()=>{
+    setExporting(true);setError('');
+    try{const selection=customerDirectoryQuery(appliedFilters).toString();const response=await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/export?${selection}`,{headers:authHeaders()});if(!response.ok)throw new Error(await readResponseError(response,'Выгрузка не завершена'));const blob=await response.blob();const url=URL.createObjectURL(blob);const name=`customers-${new Date().toISOString().slice(0,10)}.xlsx`;setExportFile({url,name,selection});const link=document.createElement('a');link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();}
+    catch(error){setError(error.message);}finally{setExporting(false);}
+  };
+  useEffect(()=>()=>{if(exportFile)URL.revokeObjectURL(exportFile.url);},[exportFile]);
 
   useEffect(() => { loadDepartments().catch((requestError) => setError(requestError.message)); }, [loadDepartments]);
-  useEffect(() => { loadCustomers(); }, [loadCustomers]);
+  useEffect(() => { loadCustomers(); return () => customerRequest.current?.abort(); }, [loadCustomers]);
+  useEffect(() => { let active = true; fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/filter-options`, {headers: authHeaders()}).then(async response => { if (!response.ok) throw new Error("Не удалось загрузить варианты фильтров"); return response.json(); }).then(value => {if (active) setFilterOptions(value);}).catch(error => {if (active) setError(error.message);}); return () => { active = false; }; }, []);
 
   // Keep both the table and durable cursor diagnostics current.
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       loadCustomers();
       loadDepartments().catch(() => {});
-    }, 60000);
+    }, 300000);
     return () => clearInterval(interval);
   }, [loadCustomers, loadDepartments]);
 
-  // Drop every visible client view at the server-issued deadline. The next
-  // request recomputes scope, including changes made by an operator/director.
   useEffect(() => {
-    if (!result.access_expires_at) return;
+    if (!result.access_expires_at) return undefined;
     const remaining = new Date(result.access_expires_at) - new Date(result.server_time) - 1000;
-    const timer = setTimeout(() => { clearClientViews(); void loadCustomers(); }, Math.max(0, remaining));
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      clearClientViews();
+      void loadCustomers();
+    }, Math.max(0, remaining));
+    return () => window.clearTimeout(timer);
   }, [result.access_expires_at, result.server_time, clearClientViews, loadCustomers]);
-  const visibleCodes = [...new Set([selectedCustomer?.client_index, scoreEditor?.client_index, documentsCustomer?.client_index].filter(Boolean))].join(",");
+
+  const visibleCodes = [...new Set([
+    selectedCustomer?.client_index,
+    scoreEditor?.client_index,
+    documentsCustomer?.client_index,
+  ].filter(Boolean))].join(",");
   useEffect(() => {
-    if (!visibleCodes) return;
-    let active = true, deadline;
+    if (!visibleCodes) return undefined;
+    let active = true;
+    let deadline;
     const clear = () => { if (active) clearClientViews(); };
     const check = async () => {
       try {
-        const grants = await Promise.all(visibleCodes.split(",").map(async code => {
-          const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/check?directory=true&client_code=${encodeURIComponent(code)}`, {headers:authHeaders(), signal:AbortSignal.timeout(8000)});
-          if (!r.ok) throw Error("Доступ к клиенту истёк");
-          return r.json();
+        const grants = await Promise.all(visibleCodes.split(",").map(async (code) => {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/check?directory=true&client_code=${encodeURIComponent(code)}`, {
+            headers: authHeaders(),
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!response.ok) throw Error("Доступ к клиенту истёк");
+          return response.json();
         }));
         if (!active) return;
-        clearTimeout(deadline);
-        const durations = grants.filter(g=>g.expires_at).map(g=>new Date(g.expires_at)-new Date(g.server_time)-1000);
-        if (durations.length) deadline=setTimeout(clear,Math.max(0,Math.min(...durations)));
-      } catch { clear(); }
+        window.clearTimeout(deadline);
+        const durations = grants.filter((grant) => grant.expires_at).map((grant) => new Date(grant.expires_at) - new Date(grant.server_time) - 1000);
+        if (durations.length) deadline = window.setTimeout(clear, Math.max(0, Math.min(...durations)));
+      } catch {
+        clear();
+      }
     };
-    void check(); const timer=setInterval(check,15000);
-    return ()=>{active=false;clearTimeout(deadline);clearInterval(timer);};
-  }, [visibleCodes,clearClientViews]);
+    void check();
+    const timer = window.setInterval(check, 15000);
+    return () => {
+      active = false;
+      window.clearTimeout(deadline);
+      window.clearInterval(timer);
+    };
+  }, [visibleCodes, clearClientViews]);
 
   const applySearch = (event) => {
     event.preventDefault();
     setPage(1);
-    setFilters((current) => ({ ...current, search: draftSearch.trim() }));
+    const next = { ...filters, search: draftSearch.trim(), creator: access?.creator_username || filters.creator };
+    setFilters(next);
+    setAppliedFilters(next);
   };
 
   const updateFilter = (key, value) => {
-    setPage(1);
+    if (key === "creator" && access?.creator_username) return;
     setFilters((current) => ({ ...current, [key]: value }));
   };
 
@@ -349,9 +415,8 @@ export default function CustomerDirectory() {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/${encodeURIComponent(clientIndex)}`, { headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось загрузить данные клиента");
-      const data=await response.json();
-      if(generation !== accessGeneration.current)return;
-      setSelectedCustomer(data);
+      const data = await response.json();
+      if (generation === accessGeneration.current) setSelectedCustomer(data);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -410,8 +475,7 @@ export default function CustomerDirectory() {
     setDocumentsLoading(true);
     try {
       const data = await getClientDocumentsByINN(customer.inn);
-      if(generation !== accessGeneration.current)return;
-      setDocuments(Array.isArray(data) ? data : []);
+      if (generation === accessGeneration.current) setDocuments(Array.isArray(data) ? data : []);
     } catch {
       setError("Не удалось загрузить документы клиента");
     } finally {
@@ -457,7 +521,7 @@ export default function CustomerDirectory() {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/check-compliance-all`, { method: "POST", headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось запустить проверку комплайнса");
-      alert("Массовая проверка комплайнса запущена в фоновом режиме.");
+      setNotice("Проверка комплайнса включена в полное ночное обновление клиентов (18:00–07:00, Душанбе).");
     } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
   };
 
@@ -467,12 +531,14 @@ export default function CustomerDirectory() {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/check-mobile-all`, { method: "POST", headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось запустить проверку мобильного банка");
-      alert("Массовая проверка наличия мобильного банка запущена в фоновом режиме.");
+      setNotice("Проверка мобильного банка включена в полное ночное обновление клиентов (18:00–07:00, Душанбе).");
     } catch (requestError) { setError(requestError.message); } finally { setActionLoading(""); }
   };
 
   const totalPages = Math.max(1, Math.ceil((result.total || 0) / (result.limit || 30)));
   const syncIssues = departments.filter((department) => String(department.last_error || "").trim());
+  const pendingFilters=JSON.stringify({...filters,search:draftSearch.trim()})!==JSON.stringify(appliedFilters);
+  const statNumber=key=>stats?Number(stats[key]||0).toLocaleString('ru-RU'):'—';
 
   return (
     <main className="customer-directory content-page">
@@ -480,10 +546,13 @@ export default function CustomerDirectory() {
         <div>
           <p>Единый реестр</p>
           <h1>Клиенты</h1>
-          <span>{Number(result.total || 0).toLocaleString("ru-RU")} записей по доступным подразделениям · <small style={{ color: "#16a34a", fontWeight: "600" }}>Автообновление каждую 1 мин</small></span>
+          <span>{Number(result.total || 0).toLocaleString("ru-RU")} записей по доступным подразделениям · <small style={{ color: "#16a34a", fontWeight: "600" }}>Автообновление каждые 5 мин</small></span>
         </div>
         <div className="customer-directory__header-actions">
           <button type="button" className="customer-button customer-button--secondary" onClick={requestClientReadAccess}><Eye size={17} />Запросить просмотр клиента</button>
+          <button type="button" className="customer-button customer-button--secondary" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(value => !value)}><Filter size={17} />{filtersOpen ? 'Скрыть фильтры' : 'Показать фильтры'}</button>
+          <button type="button" className="customer-button" disabled={exporting||pendingFilters} onClick={exportCustomers}><FileText size={17}/>{exporting?'Подготовка Excel…':'Выгрузить Excel'}</button>
+          {exportFile&&!pendingFilters&&exportFile.selection===customerDirectoryQuery(appliedFilters).toString()&&<a className="customer-button" href={exportFile.url} download={exportFile.name}>Скачать подготовленный Excel</a>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkComplianceCheck} disabled={actionLoading === "bulk-compliance"}><ShieldCheck size={17} className={actionLoading === "bulk-compliance" ? "customer-spin" : ""} />Проверить комплайнс (все)</button>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkMobileCheck} disabled={actionLoading === "bulk-mobile"}><RefreshCw size={17} className={actionLoading === "bulk-mobile" ? "customer-spin" : ""} />Проверить мобильный банк (все)</button>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={loadSettings}><Settings2 size={17} />Настройки</button>}
@@ -491,24 +560,52 @@ export default function CustomerDirectory() {
         </div>
       </header>
 
-      <section className="customer-directory__toolbar">
-        <form className="customer-search" onSubmit={applySearch}><Search size={18} /><input value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="ФИО, ИНН, телефон или индекс клиента" /><button type="submit" title="Найти"><Search size={17} /></button></form>
-        <label className="customer-filter-group customer-filter-group--input"><Users size={17} /><span>Оформил</span><input aria-label="Оформил" disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || draftCreator} onChange={(event) => setDraftCreator(event.target.value)} placeholder="Логин АБС" title={access?.creator_username ? "Фильтр закреплён оператором" : "Поиск по логину сотрудника АБС"} /></label>
-        <div className="customer-filter-group"><SlidersHorizontal size={17} /><Select className="customer-filter-select" value={filters.resident} onChange={(value) => updateFilter("resident", value)} options={[{ value: "", label: "Все клиенты" }, { value: "true", label: "Резиденты" }, { value: "false", label: "Нерезиденты" }]} /></div>
-        <div className="customer-filter-group"><AlertTriangle size={17} /><Select className="customer-filter-select" value={filters.overdue} onChange={(value) => updateFilter("overdue", value)} options={[{ value: "", label: "Любая просрочка" }, { value: "true", label: "Есть просрочка" }, { value: "false", label: "Без просрочки" }]} /></div>
-        <div className="customer-filter-group"><ShieldCheck size={17} /><Select className="customer-filter-select" value={filters.terror} onChange={(value) => updateFilter("terror", value)} options={[{ value: "", label: "Все проверки" }, { value: "matched", label: "Есть совпадение" }, { value: "clear", label: "Без совпадений" }]} /></div>
-        <div className="customer-filter-group"><Filter size={17} /><Select className="customer-filter-select" value={filters.complianceScore} onChange={(value) => updateFilter("complianceScore", value)} options={[{ value: "", label: "Все баллы" }, ...[1, 2, 3, 4, 5].map((score) => ({ value: String(score), label: `${score} балл` }))]} /></div>
-        <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortBy} onChange={(value) => updateFilter("sortBy", value)} options={[{ value: "created_at", label: "По дате создания" }, { value: "updated_at", label: "По дате изменения" }]} /></div>
-        <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortOrder} onChange={(value) => updateFilter("sortOrder", value)} options={[{ value: "desc", label: "Сначала новые" }, { value: "asc", label: "Сначала старые" }]} /></div>
-        <button type="button" className="customer-reset-button" onClick={() => { setFilters({ ...INITIAL_FILTERS }); setDraftSearch(""); setDraftCreator(""); setPage(1); }} title="Сбросить фильтры"><X size={17} /></button>
+      <section className="customer-directory__toolbar" data-collapsed={!filtersOpen}>
+        <form className="customer-search" onSubmit={applySearch}><Search size={18} /><input aria-label="Поиск по всем полям" value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="Поиск по всем полям клиента и продуктов" /><button type="submit" title="Найти"><Search size={17} /></button></form>
+        <ChoiceFilter label="Резидентство" value={filters.resident} onChange={value => updateFilter("resident", value)} options={[["true", "Резидент"], ["false", "Нерезидент"]]} />
+        <ChoiceFilter label="Просрочка по кредиту" value={filters.overdue} onChange={value => updateFilter("overdue", value)} />
+        <ChoiceFilter label="Тип клиента" value={filters.client_type} onChange={value => updateFilter("client_type", value)} options={[["individual", "Физлицо"], ["corporate", "Юрлицо"], ["entrepreneur", "ИП"]]} />
+        <ChoiceFilter label="Совпадения комплаенса" value={filters.terror} onChange={value => updateFilter("terror", value)} />
+        <ChoiceFilter label="Кредит" value={filters.has_credit} onChange={value => updateFilter("has_credit", value)} />
+        <ChoiceFilter label="Депозит" value={filters.has_deposit} onChange={value => updateFilter("has_deposit", value)} />
+        <ChoiceFilter label="Мобильный банк" value={filters.mobile_bank} onChange={value => updateFilter("mobile_bank", value)} />
+        <div className="customer-choice customer-employee-choice" data-active={Boolean(filters.creator)}><label htmlFor="customer-creator">Оформил</label><Select id="customer-creator" searchable autoSelectFirst={false} disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || filters.creator || ""} placeholder="Все сотрудники" title={access?.creator_username ? "Фильтр закреплён оператором" : "Фильтр по сотруднику АБС"} onChange={value=>updateFilter('creator',value||'')} options={[{value:"",label:"Все сотрудники"},...(filterOptions.creators||[]).map(item=>({value:item.value,label:`${item.label} (${item.value})`}))]} style={{width:'100%'}} /></div>
+        {[['card_status','Статус карты','card_statuses'],['credit_status','Статус кредита','credit_statuses']].map(([key,label,source])=><label className="customer-choice" key={key} data-active={Boolean(filters[key])}>{label}<select value={filters[key]} onChange={event=>updateFilter(key,event.target.value)}><option value="">Все</option>{(filterOptions[source]||[]).filter(Boolean).map(value=><option key={value}>{value}</option>)}</select></label>)}
+        <label className="customer-choice" data-active={Boolean(filters.state_code)}>Статус картотеки<select value={filters.state_code} onChange={event=>updateFilter('state_code',event.target.value)}><option value="">Все</option>{(filterOptions.states||[]).filter(item=>item.value).map(item=><option key={item.value} value={item.value}>{item.label || item.value}</option>)}</select></label>
+        {[['card_expiry_from','Срок карты с'],['card_expiry_to','Срок карты по']].map(([key,label])=><label className="customer-choice" key={key} data-active={Boolean(filters[key])}>{label}<input type="date" value={filters[key]} onChange={event=>updateFilter(key,event.target.value)} /></label>)}
+        <label className="customer-choice" data-active={Boolean(filters.card_type)}>Тип карты<select value={filters.card_type} onChange={event => updateFilter("card_type", event.target.value)}><option value="">Все</option>{(filterOptions.card_types || []).filter(Boolean).map(value => <option key={value}>{value}</option>)}</select></label>
+        {[['phone_length', 'Цифр в телефоне', 'phone_lengths'], ['inn_length', 'Цифр в ИНН', 'inn_lengths']].map(([key, label, source]) => <label className="customer-choice" key={key} data-active={filters[key]!==''}>{label}<select value={filters[key]} onChange={event => updateFilter(key, event.target.value)}><option value="">Все</option>{(filterOptions[source] || []).map(value => <option key={value} value={value}>{value}</option>)}</select></label>)}
+        <label className="customer-choice" data-active={Boolean(filters.opened_from)}>Открытие картотеки с<input type="date" value={filters.opened_from} onChange={event => updateFilter("opened_from", event.target.value)} /></label>
+        <label className="customer-choice" data-active={Boolean(filters.opened_to)}>по<input type="date" value={filters.opened_to} min={filters.opened_from} onChange={event => updateFilter("opened_to", event.target.value)} /></label>
+        <div className="customer-duplicate-filters"><span>Дубли:</span>{[["duplicate_phone", "Телефон"], ["duplicate_inn", "ИНН"], ["duplicate_passport", "Паспорт"], ["duplicate_name", "Полное ФИО"]].map(([key, label]) => <button key={key} type="button" aria-pressed={filters[key] === "true"} onClick={() => updateFilter(key, filters[key] ? "" : "true")}>{label}</button>)}</div>
+        <label className="customer-choice" data-active={Boolean(filters.complianceScore)}>Балл комплаенса<select value={filters.complianceScore} onChange={event=>updateFilter('complianceScore',event.target.value)}><option value="">Все баллы</option>{[1,2,3,4,5].map(score=><option key={score} value={score}>{score}</option>)}</select></label>
+        <label className="customer-choice" data-active={filters.sortBy!==INITIAL_FILTERS.sortBy}>Сортировка<select value={filters.sortBy} onChange={event=>updateFilter('sortBy',event.target.value)}><option value="created_at">По дате создания</option><option value="updated_at">По дате изменения</option></select></label>
+        <label className="customer-choice" data-active={filters.sortOrder!==INITIAL_FILTERS.sortOrder}>Порядок<select value={filters.sortOrder} onChange={event=>updateFilter('sortOrder',event.target.value)}><option value="desc">Сначала новые</option><option value="asc">Сначала старые</option></select></label>
+        <div className="customer-filter-footer">
+          <button type="button" className="customer-reset-button" onClick={() => { const reset = { ...INITIAL_FILTERS, creator: access?.creator_username || "" }; setFilters(reset); setAppliedFilters(reset); setDraftSearch(""); setPage(1); }}><X size={17}/>Сбросить фильтры</button>
+          {pendingFilters&&<span role="status">Фильтры изменены — нажмите «Найти»</span>}
+          <button type="button" className="customer-button customer-button--primary" onClick={applySearch}><Search size={17}/>Найти</button>
+        </div>
       </section>
 
-      <section className="customer-departments" aria-label="Подразделения">
+      <section className="customer-departments" aria-label="Подразделения" style={!filtersOpen ? {display:'none'} : undefined}>
         {departments.map((department) => <button type="button" key={department.department_code} className={filters.departments.includes(department.department_code) ? "active" : ""} onClick={() => toggleDepartment(department.department_code)} title={department.last_error || `Следующий индекс: ${department.department_code}.${String(department.next_sequence || 0).padStart(6, "0")}`}>{department.department_code}<span>{department.department_name}</span></button>)}
+      </section>
+
+      <section className="customer-overview" aria-label="Сводка по выбранным клиентам" aria-busy={statsLoading}>
+        <header><span>По всей применённой выборке{statsLoading?' · Обновление…':''}</span><button type="button" className="customer-button" onClick={loadStats} disabled={statsLoading}>Обновить сводку</button></header>
+        {statsError?<p role="alert">{statsError}</p>:<div className="customer-overview-grid">
+          <article><Users size={22}/><span>Всего клиентов</span><strong>{statNumber('customers')}</strong><small>Резиденты: {statNumber('residents')} · Нерезиденты: {statNumber('nonresidents')}</small></article>
+          <article><FileText size={22}/><span>Всего карт</span><strong>{statNumber('cards')}</strong><small>Корти Милли: {statNumber('korti_milli')} · VISA: {statNumber('visa')} · MC: {statNumber('mc')}{stats?.other_cards>0?` · Другие: ${statNumber('other_cards')}`:''}</small></article>
+          <article><ShieldCheck size={22}/><span>Совпадения комплаенса</span><strong>{statNumber('compliance_matches')}</strong><small>Клиентов с совпадением / в чёрном списке</small></article>
+          <article><AlertTriangle size={22}/><span>Просрочка по кредитам</span><strong>{statNumber('overdue_customers')}</strong><small>Клиентов с просроченными счетами</small></article>
+          <article><ClipboardList size={22}/><span>Депозитов / кредитов</span><strong>{statNumber('deposits')} / {statNumber('credits')}</strong><small>Количество продуктов</small></article>
+        </div>}
       </section>
 
       {notice && <div className="customer-directory__notice">{notice}<button type="button" onClick={() => setNotice("")} title="Закрыть"><X size={15} /></button></div>}
       {error && <div className="customer-directory__error">{error}<button type="button" onClick={() => setError("")} title="Закрыть"><X size={15} /></button></div>}
+      {filters.duplicate_passport === 'true' && <p className="customer-directory__notice">Дубли паспортов проверяются по уже загруженным номерам. Паспортные данные старых записей пополняются при ночном обновлении; отсутствие результатов до завершения обхода не означает отсутствие дублей во всей АБС.</p>}
       {syncIssues.length > 0 && (
         <section className="customer-sync-errors" aria-live="polite">
           <header><AlertTriangle size={17} /><strong>Синхронизация остановлена в {syncIssues.length} подразделении(ях)</strong></header>
@@ -540,12 +637,12 @@ export default function CustomerDirectory() {
             </tr>
           </thead>
           <tbody>
-            {!result.items?.length && loading ? <tr><td colSpan="11" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
+            {loading && !result.items?.length ? <tr><td colSpan="11" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
               const cards = parseJson(customer.cards);
               const credits = parseJson(customer.credits);
               const deposits = parseJson(customer.deposits);
               const accounts = parseJson(customer.accounts);
-              const hasMatch = Number(customer.terror_similarity) > 0;
+              const hasMatch = Number(customer.terror_similarity) > 0 || customer.blacklisted;
               const terrorMatch = parseJson(customer.terror_match, null);
               const dbName = terrorMatch?.target?.source || terrorMatch?.source || terrorMatch?.list_name || terrorMatch?.source_name || "Перечень террористов/экстремистов";
 
@@ -553,9 +650,12 @@ export default function CustomerDirectory() {
                 <tr key={customer.client_index}>
                   <td>
                     <strong>{customer.full_name || "Без ФИО"}</strong>
+                    <span className="customer-badge">{customer.client_type === "individual" ? "Физлицо" : customer.client_type === "corporate" ? "Юрлицо" : customer.client_type === "entrepreneur" ? "ИП" : "Тип не указан"}</span>
+                    <small>{customer.state_name || customer.state_code || "Статус картотеки не указан"}</small>
                     <span>{customer.client_index}</span>
                     <span>ИНН: {customer.inn || "не указан"}</span>
                     <span>Тел: {customer.phone || "не указан"}</span>
+                    {customer.passport_number && <small>Паспорт: {customer.passport_number}</small>}
                     <small style={{ marginTop: "4px", display: "inline-block" }}>
                       <span className={customer.is_resident ? "customer-status customer-status--ok" : "customer-status customer-status--warn"}>
                         {customer.is_resident ? "Резидент" : "Нерезидент"}
@@ -566,28 +666,20 @@ export default function CustomerDirectory() {
                     <strong>{customer.department_code}</strong>
                     <span>{customer.department_name}</span>
                     <small style={{ marginTop: "4px", display: "block" }}>
-                      Открыл: {customer.creator_username || "не указан"}
+                      Открыл: {customer.creator_full_name || customer.creator_username || "не указан"}
                     </small>
                   </td>
                   <td>
-                    <span className={`customer-badge ${cards.length ? "customer-badge--info" : "customer-badge--muted"}`}>
-                      {cards.length ? `${cards.length} карт(ы)` : "Нет карт"}
-                    </span>
+                    <ProductSummary items={cards} kind="card" />
                   </td>
                   <td>
-                    <span className={`customer-badge ${credits.length ? "customer-badge--info" : "customer-badge--muted"}`}>
-                      {credits.length ? `${credits.length} кредит(ов)` : "Нет кредитов"}
-                    </span>
+                    <ProductSummary items={credits} kind="credit" />
                   </td>
                   <td>
-                    <span className={`customer-badge ${deposits.length ? "customer-badge--info" : "customer-badge--muted"}`}>
-                      {deposits.length ? `${deposits.length} депозит(ов)` : "Нет депозитов"}
-                    </span>
+                    <ProductSummary items={deposits} kind="deposit" />
                   </td>
                   <td>
-                    <span className={`customer-badge ${accounts.length ? "customer-badge--info" : "customer-badge--muted"}`}>
-                      {accounts.length ? `${accounts.length} счет(а)` : "Нет счетов"}
-                    </span>
+                    <ProductSummary items={accounts} kind="account" />
                   </td>
                   <td>
                     <span className={customer.is_mobile_app_registered ? "customer-status customer-status--ok" : "customer-status customer-status--danger"}>
@@ -596,11 +688,11 @@ export default function CustomerDirectory() {
                   </td>
                   <td>
                     <span className={hasMatch ? "customer-status customer-status--danger" : "customer-status customer-status--ok"}>
-                      {hasMatch ? "Есть" : "Нет"}
+                      {hasMatch ? "Есть" : customer.terror_checked_at ? "Нет" : "Не проверен"}
                     </span>
                     {hasMatch && (
                       <small style={{ display: "block", marginTop: "4px", color: "#dc2626", fontWeight: "600" }}>
-                        {(Number(customer.terror_similarity) * 100).toFixed(0)}% ({dbName})
+                        {customer.blacklisted ? "Чёрный список комплаенса" : `${(Number(customer.terror_similarity) * 100).toFixed(0)}% (${dbName})`}
                       </small>
                     )}
                   </td>
@@ -610,6 +702,7 @@ export default function CustomerDirectory() {
                     </span>
                   </td>
                   <td className="customer-date-cell">
+                    <span><b>Картотека:</b> {formatDateOnly(customer.opened_at)}</span>
                     <span><b>Создан:</b> {formatDateTime(customer.created_at)}</span>
                     <span><b>Изменён:</b> {formatDateTime(customer.updated_at)}</span>
                   </td>
@@ -635,7 +728,14 @@ export default function CustomerDirectory() {
       <DetailModal customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} onUpdateScore={openScoreEditor} onOpenDocuments={openDocuments} />
       <DocumentsModal customer={documentsCustomer} documents={documents} loading={documentsLoading} onClose={() => setDocumentsCustomer(null)} />
       {scoreEditor && <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => setScoreEditor(null)}><form className="customer-modal customer-modal--narrow" onSubmit={updateScore} onMouseDown={(event) => event.stopPropagation()}><header className="customer-modal__header"><div><p>{scoreEditor.client_index}</p><h2>Балл комплайнса</h2></div><button className="customer-icon-button" type="button" onClick={() => setScoreEditor(null)} title="Закрыть"><X size={18} /></button></header><label className="customer-settings-field">Новый балл<input type="number" min="1" max="5" step="1" autoFocus value={scoreValue} onChange={(event) => setScoreValue(event.target.value)} /></label><div className="customer-modal__actions"><button type="button" onClick={() => setScoreEditor(null)}>Отмена</button><button type="submit" className="customer-button customer-button--primary" disabled={actionLoading === `score-${scoreEditor.client_index}`}><ShieldCheck size={16} />Сохранить</button></div></form></div>}
-      {settingsOpen && settings && <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => setSettingsOpen(false)}><form className="customer-modal customer-modal--narrow" onSubmit={saveSettings} onMouseDown={(event) => event.stopPropagation()}><header className="customer-modal__header"><div><p>Фоновая задача</p><h2>Настройки синхронизации</h2></div><button className="customer-icon-button" type="button" onClick={() => setSettingsOpen(false)} title="Закрыть"><X size={18} /></button></header><label className="customer-settings-field">Интервал, минут<input type="number" min="1" max="1440" value={settings.interval_minutes} onChange={(event) => setSettings({ ...settings, interval_minutes: Number(event.target.value) })} /></label><label className="customer-settings-field">Клиентов на подразделение<input type="number" min="10" max="100" value={settings.batch_size} onChange={(event) => setSettings({ ...settings, batch_size: Number(event.target.value) })} /></label><label className="customer-settings-field">Параллельных запросов<input type="number" min="1" max="12" value={settings.max_concurrent} onChange={(event) => setSettings({ ...settings, max_concurrent: Number(event.target.value) })} /></label><label className="customer-settings-toggle"><input type="checkbox" checked={Boolean(settings.enabled)} onChange={(event) => setSettings({ ...settings, enabled: event.target.checked })} />Синхронизация включена</label><button className="customer-button customer-button--primary" type="submit" disabled={settingsSaving}><Settings2 size={17} />Сохранить</button></form></div>}
+      {settingsOpen && settings && <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => setSettingsOpen(false)}><form className="customer-modal customer-modal--narrow" onSubmit={saveSettings} onMouseDown={(event) => event.stopPropagation()}><header className="customer-modal__header"><div><p>Фоновая задача</p><h2>Настройки синхронизации</h2></div><button className="customer-icon-button" type="button" onClick={() => setSettingsOpen(false)} title="Закрыть"><X size={18} /></button></header>
+        <p>Новые клиенты: следующий номер каждого офиса раз в минуту, понедельник–пятница с 08:00 до 17:00 (Душанбе). Вне этого времени проверка новых номеров не запускается. При ошибках сервисов повтор откладывается.</p>
+        <p>Обновление существующих: 18:00–07:00 (Душанбе), с пятницы 18:00 до понедельника 07:00 — непрерывно. Сначала обновляются самые старые записи. Скорость ограничена на сервере АБС.</p>
+        <label className="customer-settings-field">Фоновых обработчиков<input type="number" min="1" max="4" value={settings.refresh_workers ?? 2} onChange={event => setSettings({...settings, refresh_workers: Number(event.target.value)})} /></label>
+        <label className="customer-settings-toggle"><input type="checkbox" checked={Boolean(settings.refresh_enabled)} onChange={event => setSettings({...settings, refresh_enabled: event.target.checked})} />Ночное обновление существующих клиентов</label>
+        <label className="customer-settings-toggle"><input type="checkbox" checked={Boolean(settings.enabled)} onChange={event => setSettings({...settings, enabled: event.target.checked})} />Синхронизация включена</label>
+        {settings.last_error && <p role="alert">Последняя ошибка: {settings.last_error}</p>}
+        <button className="customer-button customer-button--primary" type="submit" disabled={settingsSaving}><Settings2 size={17} />Сохранить</button></form></div>}
     </main>
   );
 }
