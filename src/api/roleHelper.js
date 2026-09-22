@@ -20,6 +20,7 @@ export const ROLE_CLIENT_DOCUMENTS = 27;
 
 export const ROLE_BLOCK_CARD = 29;
 export const ROLE_CHANGE_PIN = 30;
+export const ROLE_OPEN_CARD = 50;
 
 export const canAccessTransactions = () => hasRole(ROLE_PROCESSING);
 export const canAccessAccountOperations = () => hasRole(ROLE_ACCOUNT_OPERATIONS);
@@ -27,3 +28,4 @@ export const isFrontovik = () => hasRole(ROLE_FRONTOVIK);
 export const canAccessClientDocuments = () => hasRole(ROLE_CLIENT_DOCUMENTS);
 export const canBlockCard = () => hasRole(ROLE_BLOCK_CARD);
 export const canChangePin = () => hasRole(ROLE_CHANGE_PIN);
+export const canOpenCard = () => hasRole(ROLE_OPEN_CARD);

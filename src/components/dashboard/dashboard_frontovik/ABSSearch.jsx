@@ -77,7 +77,6 @@ import {
 } from "./absSearchUtils.js";
 import {
     getClientSelfieDocument,
-    resolveClientDocumentUrl,
 } from "../../../utils/clientDocuments.js";
 import { hasOverdueCreditDebt } from "../../../utils/creditDebtBalance.js";
 import {
@@ -115,7 +114,6 @@ const convertDiramToSomoni = (value) => {
 export default function ABSClientSearch() {
     const [searchParams, setSearchParams] = useSearchParams();
     const requestedClientIndex = searchParams.get("clientIndex")?.trim() || "";
-    const initialRequestedClientIndexRef = useRef(requestedClientIndex);
     const { exportToExcel } = useExcelExport();
     const [isMobile, setIsMobile] = useState(null);
     const [activeTab, setActiveTab] = useState("cards");
@@ -665,9 +663,10 @@ export default function ABSClientSearch() {
             setClientsData([]);
             setClientNotFound(false);
         } finally {
-            if (generation !== accessGeneration.current) return;
-            searchInFlightRef.current = false;
-            setIsLoading(false);
+            if (generation === accessGeneration.current) {
+                searchInFlightRef.current = false;
+                setIsLoading(false);
+            }
         }
     };
     handleSearchClientRef.current = handleSearchClient;

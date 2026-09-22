@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Descriptions, Input, Modal, Radio, Select, Space, Spin, Steps, Tag } from 'antd';
 import { CreditCardOutlined } from '@ant-design/icons';
 import { cardOpeningCapabilities, getCardOpening, openClientCard, selectCardAccount } from '../../../api/ABS_frotavik/openClientCard';
+import { NEW_CARD_ACCOUNT, cardOpeningSteps, cardOpeningStepNumber as stepNumber } from '../../../api/ABS_frotavik/cardAccountChoice';
 import { newPhoneChangeID } from '../../../api/ABS_frotavik/changeClientPhone';
-import { isFrontovik } from '../../../api/roleHelper';
+import { canOpenCard } from '../../../api/roleHelper';
 import visaImage from '../../../assets/visa.jpg';
 import mastercardImage from '../../../assets/mc.jpg';
 import nationalImage from '../../../assets/nc.jpg';
@@ -16,24 +17,16 @@ const groups = [
 ];
 const stopped = job => ['completed', 'failed', 'needs_review', 'awaiting_account'].includes(job?.status);
 const errorText = error => error?.response?.data?.error || 'Связь прервана. Состояние операции сохранено; проверяем ответ сервера.';
-const stepNumber = step => {
-  if (['load_client'].includes(step)) return 0;
-  if (['load_accounts'].includes(step)) return 1;
-  if (['create_sca', 'sca_submitting', 'reload_accounts', 'select_account'].includes(step)) return 2;
-  if (['register_card', 'register_submitting', 'account_mismatch'].includes(step)) return 3;
-  if (['verify_application', 'verify_card'].includes(step)) return 4;
-  return 5;
-};
 
 export function OpenClientCardButton({ client, onOpened }) {
   const [enabled, setEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
     let active = true;
-    if (isFrontovik()) cardOpeningCapabilities().then(result => { if (active) setEnabled(result.enabled); }).catch(() => {});
+    if (canOpenCard()) cardOpeningCapabilities().then(result => { if (active) setEnabled(result.enabled); }).catch(() => {});
     return () => { active = false; };
   }, []);
-  if (!enabled || !client?.client_code) return null;
+  if (!canOpenCard() || !enabled || !client?.client_code) return null;
   return <>
     <Button type="primary" aria-label="Открыть карту" icon={<CreditCardOutlined />} onClick={() => setOpen(true)}>Открыть карту</Button>
     {open && <OpenClientCardModal client={client} onOpened={onOpened} onClose={() => setOpen(false)} />}
@@ -44,7 +37,7 @@ export default function OpenClientCardModal({ client, onClose, onOpened }) {
   const code = client.client_code;
   const storageKey = `frontovik-card-opening:${localStorage.getItem('user_id') || 'session'}:${code}`;
   const [catalog, setCatalog] = useState([]), [product, setProduct] = useState(''), [currency, setCurrency] = useState('TJS');
-  const [search, setSearch] = useState(''), [selectedAccount, setSelectedAccount] = useState('');
+  const [search, setSearch] = useState(''), [selectedAccount, setSelectedAccount] = useState(NEW_CARD_ACCOUNT);
   const [job, setJob] = useState(null), [pending, setPending] = useState(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [notAccepted, setNotAccepted] = useState(false), [enabled, setEnabled] = useState(false);
@@ -139,7 +132,7 @@ export default function OpenClientCardModal({ client, onClose, onOpened }) {
       <Button onClick={onClose}>{job?.status === 'completed' ? 'Готово' : 'Закрыть'}</Button>
       {requestID && <Button onClick={poll} disabled={busy}>Обновить состояние</Button>}
       {notAccepted && pending?.data && <Button type="primary" loading={busy} onClick={() => submit(true)}>Повторить сохранённый запрос</Button>}
-      {job?.status === 'awaiting_account' && <Button type="primary" loading={busy} disabled={!selectedAccount} onClick={chooseAccount}>Продолжить с выбранным счётом</Button>}
+      {job?.status === 'awaiting_account' && <Button type="primary" loading={busy} disabled={!selectedAccount} onClick={chooseAccount}>{selectedAccount === NEW_CARD_ACCOUNT ? 'Открыть новый счёт и продолжить' : 'Продолжить с выбранным счётом'}</Button>}
       {!pending && !job && <Button type="primary" loading={busy} disabled={loading || !enabled || !chosen?.named || !chosen?.currencies.includes(currency)} onClick={() => submit()}>Открыть карту</Button>}
     </Space>
   }>
@@ -147,7 +140,7 @@ export default function OpenClientCardModal({ client, onClose, onOpened }) {
       <div className="card-open-client"><strong>{job?.client?.name || [client.surname, client.name, client.patronymic].filter(Boolean).join(' ')}</strong><span>Клиент {code}</span><Tag>Именная карта</Tag></div>
       {error && <Alert type="warning" showIcon message={error} />}
       {loading ? <div className="card-open-loading"><Spin tip="Загружаем продукты и состояние операции"><div style={{ height: 60 }} /></Spin></div> : job ? <>
-        <Steps size="small" current={stepNumber(job.step)} status={alertType === 'error' ? 'error' : job.status === 'completed' ? 'finish' : 'process'} items={['Клиент', 'Карты и счета', 'Выбор счёта', 'Заявление', 'Проверка'].map(title => ({ title }))} />
+        <Steps size="small" current={stepNumber(job.step)} status={alertType === 'error' ? 'error' : job.status === 'completed' ? 'finish' : 'process'} items={cardOpeningSteps.map(title => ({ title }))} />
         <Alert type={alertType} showIcon message={job.message} description={job.status === 'completed' && 'Выпуск зарегистрирован в АБС. Статус заявления и карты указан ниже.'} />
         <Descriptions bordered size="small" column={{ xs: 1, sm: 2 }}>
           <Descriptions.Item label="Продукт">{catalog.find(card => card.code === job.product)?.name || job.product} · {job.product}</Descriptions.Item>
@@ -165,8 +158,10 @@ export default function OpenClientCardModal({ client, onClose, onOpened }) {
           </>}
         </Descriptions>
         {job.status === 'awaiting_account' && <Radio.Group className="card-open-accounts" value={selectedAccount} onChange={event => setSelectedAccount(event.target.value)}>
-          {(job.free_accounts || []).map(account => <Radio key={account.account_number} value={account.account_number}><strong>{account.account_number}</strong> · {account.currency} <Tag color="green">Свободен</Tag></Radio>)}
+          <Radio value={NEW_CARD_ACCOUNT}><strong>Открыть новый карточный счёт</strong> · {job.currency}</Radio>
+          {(job.free_accounts || []).map(account => <Radio key={account.account_number} value={account.account_number}><strong>{account.account_number}</strong> · {account.currency} · подразделение {account.department} <Tag color="green">Не привязан к карте</Tag></Radio>)}
         </Radio.Group>}
+        {job.status === 'awaiting_account' && <p className="card-open-note">Новый счёт можно открыть, даже если есть свободные. Перед выпуском Daily проверит, что счёт действительно создан, принадлежит новому СКС, имеет нужную валюту и не привязан к другой карте.</p>}
         <div className="card-open-operation">Номер операции: {job.operation_id}<br />{!stopped(job) && 'Можно закрыть окно. Daily продолжит операцию; её состояние будет доступно при повторном открытии.'}</div>
       </> : pending ? <Alert type="info" showIcon message="Проверяем сохранённый запрос на открытие карты" description="Не отправляйте новую заявку. Состояние можно обновить кнопкой ниже." /> : <>
         <div className="card-open-controls"><Input.Search placeholder="Найти карту по названию или коду" value={search} onChange={event => setSearch(event.target.value)} allowClear /><label>Валюта <Select aria-label="Валюта карты" value={currency} onChange={setCurrency} options={(chosen?.currencies || ['TJS', 'USD', 'EUR']).map(value => ({ value, label: value }))} /></label></div>
@@ -177,7 +172,7 @@ export default function OpenClientCardModal({ client, onClose, onOpened }) {
             </Radio.Group>
           </section>)}
         </div>
-        <p className="card-open-note">Daily возьмёт данные клиента из АБС, проверит свободный карточный счёт и зарегистрирует заявление на выпуск. Если свободных счетов несколько, вы сможете выбрать нужный.</p>
+        <p className="card-open-note">Daily проверит карты во всех подразделениях, в которых у клиента есть карточные счета. Затем вы сможете открыть новый карточный счёт или явно выбрать свободный. Заявление отправится только после проверки выбранного счёта.</p>
       </>}
     </div>
   </Modal>;

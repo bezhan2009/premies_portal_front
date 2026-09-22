@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Input from "../../components/elements/Input.jsx";
 import Select from "../../components/elements/Select.jsx";
 import { useFormStore } from "../../hooks/useFormState.js";
@@ -9,6 +9,10 @@ import AlertMessage from "../../components/general/AlertMessage.jsx";
 import { toast } from "react-toastify";
 import { tableDataDef } from "../../const/defConst.js";
 import { exportEqmsTransactions } from "../../utils/eqmsExcelExport.js";
+import { paginateRows, togglePageSelection } from "../../utils/eqmsPagination.js";
+import EqmsPagination from "../../components/table/EqmsPagination.jsx";
+import { matchesEqmsSearch } from "../../utils/eqmsGlobalSearch.js";
+import "../../styles/components/EqmsPage.scss";
 
 export default function EQMSList() {
   const [tableData, setTableData] = useState([]);
@@ -18,9 +22,14 @@ export default function EQMSList() {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({});
+  const [globalSearch, setGlobalSearch] = useState("");
   const [alert, setAlert] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [statementPageNumber, setStatementPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const tableScrollRef = useRef(null);
+  const fetchSequence = useRef(0);
   const [payingIds, setPayingIds] = useState(new Set());
   const backendMain = import.meta.env.VITE_BACKEND_URL;
   const backendABS = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
@@ -116,6 +125,7 @@ export default function EQMSList() {
   };
 
   const fetchData = async () => {
+    const sequence = ++fetchSequence.current;
     try {
       setLoading(true);
       const start =
@@ -128,20 +138,22 @@ export default function EQMSList() {
       });
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
+      if (sequence !== fetchSequence.current) return;
       setTableData(json || []);
       showAlert(`Загружено ${json.length} записей`, "success");
     } catch (err) {
+      if (sequence !== fetchSequence.current) return;
       console.error("Ошибка загрузки данных:", err);
       showAlert("Ошибка загрузки данных. Проверьте сервер.", "error");
       setTableData([]);
     } finally {
-      setLoading(false);
+      if (sequence === fetchSequence.current) setLoading(false);
     }
   };
 
   const filteredData = useMemo(() => {
     if (!Array.isArray(tableData)) return [];
-    return tableData.filter((row) =>
+    return tableData.filter((row) => matchesEqmsSearch(row,globalSearch,[formatDateForDisplay(row.payedAt), getPaymentStatus(row)==='pending'?'Не оплачено':getPaymentStatus(row)==='already_paid'?'Оплачено в таможне':'Оплачено']) &&
       Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         const rowValue = row[key];
@@ -164,7 +176,7 @@ export default function EQMSList() {
         return false;
       }),
     );
-  }, [tableData, filters]);
+  }, [tableData, filters, globalSearch]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -191,6 +203,24 @@ export default function EQMSList() {
     });
     return arr;
   }, [filteredData, sortField, sortDirection]);
+
+  const page = useMemo(() => paginateRows(sortedData, pageNumber, pageSize), [sortedData, pageNumber, pageSize]);
+  const selectAll = sortedData.length > 0 && sortedData.every((row) => selectedRows.includes(row.id));
+  const pageSelected = page.rows.length > 0 && page.rows.every((row) => selectedRows.includes(row.id));
+  const pagePartlySelected = !pageSelected && page.rows.some((row) => selectedRows.includes(row.id));
+
+  useEffect(() => {
+    setPageNumber(1);
+  }, [filters, globalSearch, sortField, sortDirection, data?.eqms_start_date, data?.eqms_end_date]);
+
+  useEffect(() => {
+    setSelectedRows((previous) => previous.filter((id) => filteredData.some((row) => row.id === id)));
+  }, [filteredData]);
+
+  useEffect(() => {
+    setPageNumber(page.current);
+    if (tableScrollRef.current) tableScrollRef.current.scrollTop = 0;
+  }, [page.current]);
 
   const paySingle = async (transaction) => {
     const resp = await fetch(`${backendMain}/eqms/pay`, {
@@ -427,7 +457,6 @@ export default function EQMSList() {
         "success",
       );
       setSelectedRows([]);
-      setSelectAll(false);
     } catch (err) {
       console.error("Ошибка выгрузки:", err);
       showAlert(`Ошибка выгрузки: ${err.message}`, "error");
@@ -436,10 +465,9 @@ export default function EQMSList() {
 
   const handleCheckboxToggle = (id, checked) => {
     if (checked) {
-      setSelectedRows((prev) => [...prev, id]);
+      setSelectedRows((prev) => [...new Set([...prev, id])]);
     } else {
       setSelectedRows((prev) => prev.filter((p) => p !== id));
-      setSelectAll(false);
     }
   };
 
@@ -450,7 +478,6 @@ export default function EQMSList() {
       const ids = sortedData.map((r) => r.id);
       setSelectedRows(ids);
     }
-    setSelectAll(!selectAll);
   };
 
   const selectAllUnpaid = () => {
@@ -462,7 +489,6 @@ export default function EQMSList() {
       )
       .map((r) => r.id);
     setSelectedRows(ids);
-    setSelectAll(false);
   };
 
   const selectAllPaid = () => {
@@ -474,7 +500,6 @@ export default function EQMSList() {
       )
       .map((r) => r.id);
     setSelectedRows(ids);
-    setSelectAll(false);
   };
 
   const columnNames = {
@@ -523,7 +548,7 @@ export default function EQMSList() {
     return orderedKeys;
   }, [sortedData]);
 
-  const totalSelected = selectedRows.length;
+  const totalSelected = sortedData.filter((row) => selectedRows.includes(row.id)).length;
   const totalPaid = useMemo(
     () =>
       sortedData.filter((row) => getPaymentStatus(row) !== "pending").length,
@@ -550,14 +575,6 @@ export default function EQMSList() {
     }
   }, [data?.eqms_start_date, data?.eqms_end_date]);
 
-  useEffect(() => {
-    if (selectAll) {
-      const ids = sortedData.map((r) => r.id);
-      setSelectedRows(ids);
-    } else if (selectedRows.length === sortedData.length) {
-      setSelectedRows([]);
-    }
-  }, [selectAll, sortedData]);
 
   const formatDateForQuery = (dateStr) => {
     if (!dateStr) return "";
@@ -578,6 +595,7 @@ export default function EQMSList() {
       if (!resp.ok) throw new Error(`Ошибка HTTP ${resp.status}`);
       const json = await resp.json();
       setStatementData(json || []);
+      setStatementPageNumber(1);
       setShowStatement(true);
       showAlert(`Загружено ${json.length} дней с транзакциями`, "success");
     } catch (err) {
@@ -605,6 +623,8 @@ export default function EQMSList() {
     );
   }, [statementData]);
 
+  const statementPage = paginateRows(flatStatementData, statementPageNumber, pageSize);
+
   return (
     <>
       <div className="page-content-wrapper content-page eqms-page">
@@ -613,8 +633,9 @@ export default function EQMSList() {
           style={{ flexDirection: "column", gap: "20px", height: "auto" }}
         >
           <main>
-            <div className="my-applications-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div className="eqms-title"><h1>Платежи EQMS</h1><span>Таможенные платежи и статусы АБС</span></div>
+            <div className="my-applications-header eqms-toolbar">
+              <div className="eqms-toolbar__actions">
                 {!showStatement && (
                   <button
                     className={!showFilters ? "filter-toggle" : "Unloading"}
@@ -623,33 +644,34 @@ export default function EQMSList() {
                     Фильтры
                   </button>
                 )}
-                <pre> </pre>
                 {!showStatement && (
                   <>
                     <button
                       className="Unloading"
                       onClick={handleExport}
-                      disabled={selectedRows.length === 0}
+                      disabled={loading || totalSelected === 0}
                     >
                       Выгрузка EQMS
                     </button>
                     <button
                       className="save"
                       onClick={handlePayAll}
-                      disabled={selectedRows.length === 0 || payingIds.size > 0}
+                      disabled={loading || totalSelected === 0 || payingIds.size > 0}
                     >
-                      Оплатить всё
+                      Оплатить выбранные
                     </button>
                     <button
                       className={selectAll ? "selectAll-toggle" : ""}
                       onClick={toggleSelectAll}
+                      disabled={loading || sortedData.length === 0}
+                      title="Выбор всех записей по текущим фильтрам на всех страницах"
                     >
-                      {selectAll ? "Снять выделение" : "Выбрать все"}
+                      {selectAll ? "Снять выделение" : "Выбрать все записи"}
                     </button>
-                    <button className="edit" onClick={selectAllUnpaid}>
+                    <button className="edit" onClick={selectAllUnpaid} disabled={loading}>
                       Выбрать все неоплаченные
                     </button>
-                    <button className="save" onClick={selectAllPaid}>
+                    <button className="save" onClick={selectAllPaid} disabled={loading}>
                       Выбрать все оплаченные
                     </button>
                   </>
@@ -661,6 +683,8 @@ export default function EQMSList() {
                 >
                   Просмотреть выписку с АБС
                 </button>
+              </div>
+              <div className="eqms-toolbar__summary">
                 {!showStatement && (
                   <div className="selection-stats-card">
                     <div className="stat">
@@ -681,8 +705,6 @@ export default function EQMSList() {
                     </div>
                   </div>
                 )}
-              </div>
-
               {/* Customs Balance Card */}
               <div className="customs-balance-card" style={{
                 background: "var(--bg-card, #ffffff)",
@@ -701,11 +723,13 @@ export default function EQMSList() {
                   {balanceLoading ? "Загрузка..." : balance !== null ? `${Number(balance).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TJS` : "—"}
                 </strong>
               </div>
+              </div>
             </div>
             {showFilters && !showStatement && (
               <div className="filters animate-slideIn">
                 <input
                   placeholder="ID"
+                  value={filters.id || ""}
                   onChange={(e) =>
                     setFilters((p) => ({
                       ...p,
@@ -714,7 +738,8 @@ export default function EQMSList() {
                   }
                 />
                 <input
-                  placeholder="Doc ID"
+                  placeholder="Номер документа"
+                  value={filters.docId || ""}
                   onChange={(e) =>
                     setFilters((p) => ({
                       ...p,
@@ -723,7 +748,8 @@ export default function EQMSList() {
                   }
                 />
                 <input
-                  placeholder="Transaction ID"
+                  placeholder="Номер транзакции"
+                  value={filters.transactionId || ""}
                   onChange={(e) =>
                     setFilters((p) => ({
                       ...p,
@@ -732,7 +758,8 @@ export default function EQMSList() {
                   }
                 />
                 <input
-                  placeholder="Payer Name"
+                  placeholder="Имя плательщика"
+                  value={filters.payerName || ""}
                   onChange={(e) =>
                     setFilters((p) => ({
                       ...p,
@@ -741,7 +768,8 @@ export default function EQMSList() {
                   }
                 />
                 <input
-                  placeholder="Receiver Name"
+                  placeholder="Имя получателя"
+                  value={filters.recName || ""}
                   onChange={(e) =>
                     setFilters((p) => ({
                       ...p,
@@ -771,7 +799,8 @@ export default function EQMSList() {
                   ]}
                 />
                 <input
-                  placeholder="Amount"
+                  placeholder="Сумма"
+                  value={filters.amount || ""}
                   type="number"
                   onChange={(e) =>
                     setFilters((p) => ({ ...p, amount: e.target.value }))
@@ -802,6 +831,9 @@ export default function EQMSList() {
                       id="eqms_end_date"
                     />
                   </div>
+                  <label className="eqms-global-search">Поиск по всем полям
+                    <input type="search" value={globalSearch} onChange={event=>setGlobalSearch(event.target.value)} placeholder="Все значения за выбранные даты" />
+                  </label>
                 </>
               )}
               {showStatement && (
@@ -828,7 +860,11 @@ export default function EQMSList() {
               )}
             </div>
             <div
-              className="my-applications-content"
+              className="my-applications-content eqms-table-scroll"
+              ref={tableScrollRef}
+              tabIndex={0}
+              role="region"
+              aria-label="Таблица платежей — прокрутка по горизонтали"
               style={{ position: "relative" }}
             >
               {showStatement ? (
@@ -862,7 +898,7 @@ export default function EQMSList() {
                       Нет данных для отображения в выписке
                     </div>
                   ) : (
-                    <table>
+                    <table data-flex-ignore="true">
                       <thead>
                         <tr>
                           <th>Дата операции (DOPER)</th>
@@ -898,7 +934,7 @@ export default function EQMSList() {
                         </tr>
                       </thead>
                       <tbody>
-                        {flatStatementData.map((tx, index) => (
+                        {statementPage.rows.map((tx, index) => (
                           <tr key={index}>
                             <td>{tx.doper || "N/A"}</td>
                             <td>{tx.DOCDOPER || "N/A"}</td>
@@ -951,15 +987,17 @@ export default function EQMSList() {
                   Нет данных для отображения
                 </div>
               ) : (
-                <table className="eqms-table">
+                <table className="eqms-table" data-flex-ignore="true">
                   <thead>
                     <tr>
                       <th className="eqms-th eqms-th--checkbox">
                         <input
                           type="checkbox"
                           className="custom-checkbox"
-                          checked={selectAll}
-                          onChange={toggleSelectAll}
+                          aria-label="Выбрать все записи на текущей странице"
+                          checked={pageSelected}
+                          ref={(input) => { if (input) input.indeterminate = pagePartlySelected; }}
+                          onChange={() => setSelectedRows((previous) => togglePageSelection(previous, page.rows))}
                         />
                       </th>
                       {tableHeaders.map((header) => (
@@ -967,6 +1005,9 @@ export default function EQMSList() {
                           key={header}
                           className={`eqms-th eqms-th--sortable${sortField === header ? " eqms-th--active" : ""}`}
                           onClick={() => handleSort(header)}
+                          aria-sort={sortField === header ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                          tabIndex={0}
+                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handleSort(header); } }}
                         >
                           <span className="eqms-th__label">
                             {columnNames[header] || header}
@@ -989,7 +1030,7 @@ export default function EQMSList() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedData.map((row) => {
+                    {page.rows.map((row) => {
                       const paymentStatus = getPaymentStatus(row);
                       const isPaid =
                         paymentStatus === "already_paid" ||
@@ -1013,6 +1054,7 @@ export default function EQMSList() {
                             <input
                               type="checkbox"
                               className="custom-checkbox"
+                              aria-label={`Выбрать запись ${row.id}`}
                               checked={selectedRows.includes(row.id)}
                               onChange={(e) =>
                                 handleCheckboxToggle(row.id, e.target.checked)
@@ -1213,6 +1255,14 @@ export default function EQMSList() {
                 </table>
               )}
             </div>
+            <EqmsPagination page={showStatement ? statementPage : page} pageSize={pageSize}
+              disabled={loading || statementLoading}
+              onPageChange={(next) => {
+                if (showStatement) setStatementPageNumber(next); else setPageNumber(next);
+                if (tableScrollRef.current) tableScrollRef.current.scrollTop = 0;
+              }}
+              onPageSizeChange={(size) => { setPageSize(size); setPageNumber(1); setStatementPageNumber(1); }} />
+            {!showStatement && <p className="eqms-selection-hint">Флажок в заголовке выбирает текущую страницу. Кнопки выбора и выгрузка работают по всем отфильтрованным записям. Выбрано: {totalSelected}.</p>}
           </main>
         </div>
         {alert && (

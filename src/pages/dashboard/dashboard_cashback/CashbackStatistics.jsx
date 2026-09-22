@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Empty, Select, Table, Tag } from "antd";
+import { Empty, Select, Table, Tag, Button, Space } from "antd";
 import {
   buildCashbackChartSeries,
   summarizeCashbackByName,
@@ -63,6 +63,8 @@ const CustomTooltip = ({ active, payload, label, isSum }) => {
 
 export default function CashbackStatistics({ items, periodLabel }) {
   const [metric, setMetric] = useState("sum");
+  const [showChart,setShowChart]=useState(true);
+  const [showTable,setShowTable]=useState(true);
   const summary = useMemo(() => summarizeCashbackByName(items), [items]);
   const chart = useMemo(
     () => buildCashbackChartSeries(items, metric),
@@ -160,7 +162,7 @@ export default function CashbackStatistics({ items, periodLabel }) {
             </Tag>
           </div>
         </div>
-        <Select
+        <Space wrap><Button aria-expanded={showChart} onClick={()=>setShowChart(value=>!value)}>{showChart?'Скрыть график статистики':'Показать график статистики'}</Button><Button aria-expanded={showTable} onClick={()=>setShowTable(value=>!value)}>{showTable?'Скрыть таблицу статистики':'Показать таблицу статистики'}</Button><Select
           value={metric}
           onChange={setMetric}
           options={[
@@ -168,10 +170,10 @@ export default function CashbackStatistics({ items, periodLabel }) {
             { label: "Количество операций", value: "count" },
           ]}
           style={{ width: 220 }}
-        />
+        /></Space>
       </div>
 
-      {chart.data.length ? (
+      {showChart && (chart.data.length ? (
         <div style={{ width: "100%", height: 340, marginBottom: "20px" }}>
           <ResponsiveContainer>
             <AreaChart data={chart.data}>
@@ -223,9 +225,9 @@ export default function CashbackStatistics({ items, periodLabel }) {
           description="За выбранный период данных нет"
           style={{ margin: "24px 0" }}
         />
-      )}
+      ))}
 
-      <Table
+      <div hidden={!showTable}><Table
         size="small"
         rowKey="name"
         columns={columns}
@@ -251,7 +253,7 @@ export default function CashbackStatistics({ items, periodLabel }) {
             </Table.Summary.Row>
           ) : null
         }
-      />
+      /></div>
     </div>
   );
 }

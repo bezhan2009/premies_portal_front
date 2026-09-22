@@ -1,6 +1,7 @@
 import useClientDocumentUrl from "../../../hooks/useClientDocumentUrl.js";
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Empty } from "antd";
+import { Table, Button, Space, Modal, Typography, Card, Tag, message, Spin, Empty, Input, Select } from "antd";
+import { filterComplianceRequests, matchEntries } from "../../../utils/complianceRequestFilters.js";
 import { Building2, CalendarDays, CreditCard, Eye, FileImage, FileText, Hash, Phone } from "lucide-react";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import DocumentPreviewModal from "../../../components/client-documents/DocumentPreviewModal.jsx";
@@ -10,6 +11,7 @@ import {
 } from "../../../utils/clientDocuments.js";
 import { formatComplianceCreatedAt } from "../../../utils/complianceRequests.js";
 import "../../../styles/ComplianceRequests.scss";
+import ComplianceMatches from "../../../components/general/ComplianceMatches.jsx";
 
 const { Text } = Typography;
 
@@ -82,6 +84,10 @@ const PassportScanCard = ({ title, document, onPreview }) => {
 
 export default function ComplianceRequests() {
     const [requests, setRequests] = useState([]);
+    const [filters,setFilters]=useState({search:'',status:'',source:'',score:'',from:'',to:''});
+    const [page,setPage]=useState(1);
+    const [pageSize,setPageSize]=useState(10);
+    const updateFilter=(key,value)=>{setFilters(previous=>({...previous,[key]:value??''}));setPage(1);};
     const [loading, setLoading] = useState(false);
     const [selectedApp, setSelectedApp] = useState(null);
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -275,6 +281,7 @@ export default function ComplianceRequests() {
             title: "ID",
             dataIndex: "id",
             key: "id",
+            width: 70,
         },
         {
             title: "Дата создания",
@@ -284,28 +291,11 @@ export default function ComplianceRequests() {
             render: formatComplianceCreatedAt,
         },
         {
-            title: "ФИО Клиента",
+            title: "Клиент / ИНН / телефон",
             dataIndex: "client_full_name",
             key: "client_full_name",
-            render: emptyValue,
-        },
-        {
-            title: "Телефон",
-            dataIndex: "client_phone",
-            key: "client_phone",
-            render: emptyValue,
-        },
-        {
-            title: "ИНН / идентификатор",
-            dataIndex: "client_identifier",
-            key: "client_identifier",
-            render: (value) => value || "-",
-        },
-        {
-            title: "Вероятность совпадения (%)",
-            dataIndex: "match_similarity",
-            key: "match_similarity",
-            render: (val) => <Text type="danger">{val === null || val === undefined || val === "" ? "—" : `${val}%`}</Text>
+            width: 260,
+            render: (_,record) => <div className="compliance-client-cell"><strong>{emptyValue(record.client_full_name)}</strong><span>ИНН: {emptyValue(record.client_identifier)}</span><span>Тел.: {emptyValue(record.client_phone)}</span></div>,
         },
         {
             title: "Совпадение",
@@ -317,30 +307,21 @@ export default function ComplianceRequests() {
                     return <Text type="secondary">-</Text>;
                 }
 
-                return (
-                    <Space direction="vertical" size={2} style={{ maxWidth: 300 }}>
-                        <Text strong>{match.source || "-"}</Text>
-                        <Text>{match.data?.full_name || "-"}</Text>
-                        <Text type="secondary">
-                            similarity: {Number(match.similarity || 0).toFixed(2)}
-                        </Text>
-                        <Text code style={{ whiteSpace: "normal", wordBreak: "break-word" }}>
-                            {JSON.stringify([match])}
-                        </Text>
-                    </Space>
-                );
+                return <ComplianceMatches value={record.best_match} requestId={record.id} />;
             },
         },
         {
             title: "Балл комплаенса",
             dataIndex: "compliance_score",
             key: "compliance_score",
+            width: 110,
             render: (val) => <strong style={{ fontSize: "16px", color: "#1890ff" }}>{val || 0}</strong>
         },
         {
             title: "Статус",
             dataIndex: "status",
             key: "status",
+            width: 140,
             render: (status) => {
                 let color = "blue";
                 let text = "На проверке";
@@ -352,7 +333,9 @@ export default function ComplianceRequests() {
         {
             title: "Доп. Инфо",
             key: "extra",
+            width: 240,
             render: (_, record) => (
+                <details><summary>Анкета клиента</summary>
                 <Space direction="vertical" size="small">
                     <Text>Занятость: {emptyValue(record.client_occupation)}</Text>
                     <Text>Метод открытия: {emptyValue(record.monthly_income)}</Text>
@@ -360,11 +343,13 @@ export default function ComplianceRequests() {
                     <Text>Касса (Сумма/Кол-во): {emptyValue(record.total_cash_transactions_amount)} / {emptyValue(record.total_cash_transactions_count)}</Text>
                     <Text><b>Балл комплаенса: {record.compliance_score || 0}</b></Text>
                 </Space>
+                </details>
             )
         },
         {
             title: "Действия",
             key: "actions",
+            width: 230,
             render: (_, record) => (
                 <Space direction="vertical" size="small">
                     <Button onClick={() => handleViewApplication(record)}>
@@ -411,14 +396,24 @@ export default function ComplianceRequests() {
 
     return (
         <>
-            <Card title="Заявки на проверку Комплайнс" style={{ margin: "20px" }}>
+            <Card title="Заявки на проверку Комплайнс" className="compliance-requests-table" style={{ margin: "20px" }}>
+                <div className="compliance-request-filters">
+                    <Input.Search aria-label="Поиск заявок комплаенса" placeholder="Поиск по всем полям заявки" allowClear value={filters.search} onChange={event=>updateFilter('search',event.target.value)} />
+                    <Select aria-label="Статус заявки" placeholder="Все статусы" allowClear value={filters.status||undefined} onChange={value=>updateFilter('status',value)} options={Object.entries(statusMeta).map(([value,item])=>({value,label:item.label}))}/>
+                    <Select aria-label="База совпадения" placeholder="Все базы совпадений" allowClear showSearch value={filters.source||undefined} onChange={value=>updateFilter('source',value)} options={[...new Set(requests.flatMap(item=>matchEntries(item.best_match).map(match=>match.source)).filter(Boolean))].sort().map(value=>({value,label:value}))}/>
+                    <Select aria-label="Балл комплаенса" placeholder="Все баллы" allowClear value={filters.score===''?undefined:filters.score} onChange={value=>updateFilter('score',value)} options={[...new Set(requests.map(item=>Number(item.compliance_score||0)))].sort((a,b)=>a-b).map(value=>({value,label:String(value)}))}/>
+                    <label>Создана с<Input type="date" value={filters.from} onChange={event=>updateFilter('from',event.target.value)}/></label>
+                    <label>Создана по<Input type="date" min={filters.from||undefined} value={filters.to} onChange={event=>updateFilter('to',event.target.value)}/></label>
+                    <Button onClick={()=>{setFilters({search:'',status:'',source:'',score:'',from:'',to:''});setPage(1);}}>Сбросить</Button>
+                </div>
                 <Table
-                    dataSource={requests}
+                    dataSource={filterComplianceRequests(requests,filters)}
                     columns={columns}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 10, showSizeChanger: true }}
-                    scroll={{ x: 1500 }}
+                    tableLayout="fixed"
+                    pagination={{ current:page,pageSize,showSizeChanger:true,onChange:(next,size)=>{setPage(next);setPageSize(size);},showTotal:total=>`Всего: ${total}` }}
+                    scroll={{ x: 1630 }}
                 />
             </Card>
 
@@ -524,7 +519,7 @@ export default function ComplianceRequests() {
                                 </div>
                                 <div>
                                     <span>Найденное имя</span>
-                                    <strong>{emptyValue(bestMatch?.data?.full_name)}</strong>
+                                    <strong>{emptyValue(bestMatch?.data?.full_name || bestMatch?.data?.name)}</strong>
                                 </div>
                                 <div>
                                     <span>Последнее изменение</span>
@@ -533,6 +528,7 @@ export default function ComplianceRequests() {
                             </div>
                         </section>
 
+                        <section className="compliance-section-card"><h3>Подробности всех совпадений</h3><ComplianceMatches value={selectedRequest.best_match} requestId={selectedRequest.id} /></section>
                         <section className="compliance-section-card">
                             <div className="compliance-section-title">
                                 <h3>Действия Compliance</h3>

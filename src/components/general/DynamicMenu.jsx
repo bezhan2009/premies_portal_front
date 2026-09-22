@@ -74,7 +74,7 @@ import { Tooltip, Dropdown, Menu, Input } from "antd";
 
 export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
     const navigate = useNavigate();
-    const [displayName, setDisplayName] = useState(
+    const [, setDisplayName] = useState(
         localStorage.getItem("full_name") || localStorage.getItem("username") || "Неизвестное имя"
     );
     const [hasNewApplications, setHasNewApplications] = useState(false);
@@ -94,7 +94,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         onClick: null,
     });
     const [roles, setRoles] = useState([]);
-    const [ws, setWs] = useState(null);
+    const [, setWs] = useState(null);
     const [forcePasswordChange, setForcePasswordChange] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const setChatStoreUnreadCount = useChatStore(state => state.setUnreadCount);
@@ -768,7 +768,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
         if (roles.includes(5)) additionalLinks.push({name:"Санкции",key:"director_sanctions",href:"/director/sanctions",icon:FileText});
         if (roles.some(r => [39,49].includes(r)) && !roles.includes(17)) additionalLinks.push({name:"Заявки на санкции",key:"client_sanctions",href:"/frontovik/change-approvals",icon:FileText});
-        if (roles.includes(17) || roles.includes(35)) {
+        if (roles.includes(17) || roles.includes(35) || roles.includes(50)) {
             additionalLinks.push({
                 name: "Фронтовик",
                 key: "frontovik",
@@ -1080,7 +1080,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
 
         return [...baseLinks, ...additionalLinks];
-    }, [roles, hasNewApplications, unreadFeedbackCount, unreadGroupsCount]);
+    }, [roles, hasNewApplications, unreadFeedbackCount]);
 
     const setNavigationLinks = useNavigationStore(state => state.setLinks);
     useEffect(() => {
@@ -1156,15 +1156,6 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
 
         element.appendChild(circle);
         window.setTimeout(() => circle.remove(), 600);
-    };
-
-    const handleChangePassword = () => {
-        setIsModalOpen(true);
-        setModalError("");
-        setNewPassword("");
-        setConfirmNewPassword("");
-        setShowNewPassword(false);
-        setShowConfirmPassword(false);
     };
 
     const handleSubmit = async (e) => {
