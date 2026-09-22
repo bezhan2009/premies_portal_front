@@ -17,10 +17,9 @@ export const getComplianceLookupStateForScreening = ({
   complianceCheck = {},
 }) => {
   const normalizedIdentifier = String(identifier || "").replace(/\s/g, "");
-  if (!/^\d{9,14}$/.test(normalizedIdentifier)) {
-    const validForeignIdentifier = /^[A-Za-z0-9-]{5,32}$/.test(normalizedIdentifier);
+  if (!/^\d{9}$/.test(normalizedIdentifier)) {
     return {
-      pending: isResident !== false || !validForeignIdentifier,
+      pending: true,
       isWhiteListed: false,
     };
   }

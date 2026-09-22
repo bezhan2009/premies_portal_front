@@ -23,3 +23,4 @@ export const submitClientCreation = async payload => (await api.post('/client/on
 })).data;
 export const getClientCreation = async id => (await api.get(`/client/onboarding/${encodeURIComponent(id)}`)).data;
 export const retryClientCreation = async id => (await api.post(`/client/onboarding/${encodeURIComponent(id)}/retry`)).data;
+export const releaseClientCreationForEdit = async id => (await api.post(`/client/onboarding/${encodeURIComponent(id)}/edit`)).data;

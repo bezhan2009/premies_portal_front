@@ -16,6 +16,7 @@ import {
 import { useClientCreation, creationPayload } from "./useClientCreation.js";
 import { ClientCreationFields, ClientCreationProgress, IdentityCheckIcon } from "./ClientCreationFields.jsx";
 import CustomDateInput from "../../elements/CustomDateInput.jsx";
+import { validCreationINN } from './onboardingRules';
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
@@ -51,8 +52,7 @@ const questionnaireFields = [
   } },
   { name: "inn", label: "ИНН / идентификатор", validate: (value, values) => {
     const normalized = String(value || "").trim();
-    if (values.is_resident === true) return /^\d{9,14}$/.test(normalized);
-    return /^[A-Za-z0-9-]{5,32}$/.test(normalized);
+    return validCreationINN(normalized);
   } },
   { name: "phone", label: "Номер телефона" },
   ...complianceCategories.map((name) => ({ name, label: complianceFieldLabels[name] })),
@@ -99,7 +99,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   const closeModal = async () => {
     try { await draft.persist(); } catch (e) { message.error(workflowError(e)); return; }
     setCloseConfirmOpen(false);
-    if (!creation.running) creation.dismiss();
+    creation.hide();
     form.resetFields();
     setClientPhotoList([]);
     setClientDocumentList([]);
@@ -107,7 +107,6 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
   };
 
   const requestClose = () => {
-    if (submitting || passportBusy || preflightBusy) return;
     setCloseConfirmOpen(true);
   };
 
@@ -227,7 +226,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
 
   useEffect(() => {
     const identifier = String(values.inn || "").replace(/\s/g, "");
-    if (!open || !/^\d{9,14}$/.test(identifier)) {
+    if (!open || !validCreationINN(identifier)) {
       setComplianceCheck({ state: "idle", identifier: "", matched: false, listType: "" });
       return undefined;
     }
@@ -330,7 +329,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
     return () => clearTimeout(timer);
   }, [open, validReview, preflightBusy, creation.locked]);
   const uploadPassport = async file => {
-    if (!/^\d{9,14}$/.test(String(values.inn || '').trim())) { message.error('Сначала укажите ИНН клиента'); return false; }
+    if (!validCreationINN(values.inn)) { message.error('ИНН должен содержать ровно 9 цифр'); return false; }
     setPassportBusy(true);
     try {
       const receipt = await uploadWorkflowAttachment(file, { scope_id: draft.id, purpose: 'passport', inn: String(values.inn).trim() });
@@ -342,7 +341,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
     return false;
   };
   const handleSubmit = async current => {
-    if (!creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique) {
+    if (creation.unresolved || !creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique) {
       message.warning('Загрузите паспорт и дождитесь разрешения после проверки клиента'); return;
     }
     setSubmitting(true);
@@ -367,8 +366,8 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       centered
       className="new-client-modal"
       destroyOnHidden
-      maskClosable={!submitting && !passportBusy && !preflightBusy}
-      closable={!submitting && !passportBusy && !preflightBusy}
+      maskClosable
+      closable
     >
       <div className="new-client-modal__header">
         <span className="new-client-modal__header-icon"><UserRound size={22} /></span>
@@ -388,7 +387,10 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
         <span>{draft.saving ? 'Сохраняем черновик…' : draft.savedAt ? 'Черновик сохранён' : 'Черновик сохранится автоматически'}</span>
       </div>
       {draft.error && <Alert type="error" message={draft.error} showIcon />}
-      <ClientCreationProgress creation={creation} onDone={async result => { try { await draft.finish(); } catch (e) { message.error(workflowError(e)); } onSubmitted(result); onClose(); }} />
+      {creation.showProgress && <ClientCreationProgress creation={creation} onBack={creation.backToForm} onDone={async result => { try { await draft.finish(creation.pending?.data?.draft_id); } catch (e) { message.error(workflowError(e)); } creation.dismiss(); onSubmitted(result); onClose(); }} />}
+      {!creation.showProgress && creation.error && <Alert showIcon type="error" message={creation.error} />}
+      {!creation.showProgress && creation.unresolved && <Alert showIcon type="warning" message="Есть сохранённая операция создания. Анкету можно редактировать; перед новой отправкой необходимо завершить или проверить предыдущую попытку."
+        action={<><Button onClick={creation.resume}>Состояние операции</Button><Button loading={creation.busy} onClick={creation.backToForm}>Завершить неудачную попытку</Button></>} />}
       <Form
         style={{ display: creation.locked ? "none" : undefined }}
         form={form}
@@ -469,24 +471,22 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
               <Form.Item
                 label="ИНН / идентификатор клиента"
                 name="inn"
+                normalize={value => String(value || '').replace(/\D/g, '').slice(0, 9)}
                 dependencies={["is_resident"]}
                 rules={[
                   requiredRule,
-                  ({ getFieldValue }) => ({
+                  () => ({
                     validator: (_, value) => {
                       const normalized = String(value || "").trim();
-                      const isResident = getFieldValue("is_resident");
-                      const valid = isResident === false
-                        ? /^[A-Za-z0-9-]{5,32}$/.test(normalized)
-                        : /^\d{9,14}$/.test(normalized);
+                      const valid = validCreationINN(normalized);
                       return valid
                         ? Promise.resolve()
-                        : Promise.reject(new Error("Для резидента укажите ИНН; для нерезидента — идентификатор"));
+                        : Promise.reject(new Error("ИНН должен содержать ровно 9 цифр"));
                     },
                   }),
                 ]}
               >
-                <Input maxLength={32} placeholder="Введите ИНН" suffix={creation.enabled && <IdentityCheckIcon kind="inn" value={values.inn} check={creation.checks.inn} />} onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
+                <Input maxLength={9} inputMode="numeric" placeholder="9 цифр" suffix={creation.enabled && <IdentityCheckIcon kind="inn" value={values.inn} check={creation.checks.inn} />} onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -497,7 +497,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
           </Row>
         </section>
 
-        {creation.enabled && <ClientCreationFields form={form} creation={creation} />}
+        {creation.enabled && <ClientCreationFields key={draft.id} form={form} creation={creation} />}
         <section className="new-client-compliance-block">
           {complianceOptionsError && <Alert type="error" showIcon message={complianceOptionsError} />}
           <div className="new-client-compliance-block__header">
@@ -571,7 +571,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
           <Button
             type="primary"
             htmlType="button"
-            disabled={!creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique || preflightBusy || passportBusy}
+            disabled={creation.unresolved || creation.busy || !creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique || preflightBusy || passportBusy}
             loading={submitting}
             onClick={() => form.submit()}
           >
@@ -592,7 +592,7 @@ export default function NewClientModal({ open, onClose, onSubmitted, initialSear
       centered
       zIndex={2100}
     >
-      Последние введённые данные будут сохранены в черновиках. К заполнению можно вернуться позже.
+      Вы закрываете окно, указанные данные могут пропасть. Сохранённый черновик останется доступен. Закрытие окна не отменяет уже отправленную операцию.
     </Modal>
   </>;
 }

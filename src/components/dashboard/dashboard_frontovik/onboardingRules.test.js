@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { countries, validCreationINN, tajikPassportExpiry, admissionRejected } from './onboardingRules.js';
+import { lookupPostalCode } from './tajikPostalLookup.js';
+const address = (region_key, district, city) => ({region_key, district:{name:district},city:{name:city}});
+test('1: country select defaults can use TJ and includes RU/UZ; only alpha-2 values', () => {
+  assert.equal(countries.length, 249);
+  assert.equal(countries.find(c=>c.value==='TJ').label,'TJ — Таджикистан');
+  assert.ok(countries.some(c=>c.value==='RU')); assert.ok(countries.some(c=>c.value==='UZ'));
+  assert.ok(countries.every(c=>/^[A-Z]{2}$/.test(c.value)));
+});
+test('2: exactly nine INN digits including leading zero',()=>{assert.ok(validCreationINN('001234567'));assert.ok(validCreationINN('727161351'));});
+test('3: invalid short, long, alphabetic, nonresident identifiers',()=>{for(const v of ['12345678','1234567890','RU1234567','123 45678','12345678я',''])assert.equal(validCreationINN(v),false);});
+test('4: Tajik passport +10 years minus day',()=>assert.equal(tajikPassportExpiry('2019-08-11'),'2029-08-10'));
+test('5: month/year boundary',()=>assert.equal(tajikPassportExpiry('2023-01-01'),'2032-12-31'));
+test('6: leap year clamps Feb 29 before subtracting day',()=>assert.equal(tajikPassportExpiry('2020-02-29'),'2030-02-27'));
+test('7: incomplete or invalid dates never generate expiry',()=>{for(const v of ['2023-02-29','2023-1-1','','202-01-01']) assert.equal(tajikPassportExpiry(v),'');});
+test('8: Dushanbe Sino postal index',()=>assert.equal(lookupPostalCode(address('dushanbe','СИНО','ДУШАНБЕ'))?.zip,'734000'));
+test('9: Kanibadam same-name district',()=>assert.equal(lookupPostalCode(address('sughd','Канибадамский район','Канибадам'))?.zip,'735900'));
+test('10: Khujand and Buston',()=>{assert.equal(lookupPostalCode(address('sughd','Худжандский район','Худжанд'))?.zip,'735700');assert.equal(lookupPostalCode(address('sughd','Бустонский район','Бустон'))?.zip,'735730');});
+test('11: Bokhtar city is not former Bokhtar district',()=>assert.equal(lookupPostalCode(address('khatlon','Бохтарский район','Бохтар'))?.zip,'735140'));
+test('12: settlement and region scoping',()=>{assert.equal(lookupPostalCode(address('rrp','Гиссарский район','Шарора'))?.zip,'735022');assert.equal(lookupPostalCode(address('sughd','Гиссарский район','Шарора')),null);});
+test('13: unknown village never gets district or region index',()=>assert.equal(lookupPostalCode(address('sughd','Канибадамский район','Неизвестный посёлок')),null));
+test('14: duplicate place with different indexes is ambiguous',()=>assert.equal(lookupPostalCode(address('sughd','Ашт','Аппон'),[['sughd','Ашт','Аппон','735793','settlement'],['sughd','Ашт','Аппон','735799','settlement']]),null));
+test('15: definitive rejection vs unknown transport outcome',()=>{for(const status of [400,401,403,413,422])assert.ok(admissionRejected({response:{status}}));for(const status of [409,500,502,503,504])assert.equal(admissionRejected({response:{status}}),false);assert.equal(admissionRejected({}),false);});

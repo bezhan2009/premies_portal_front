@@ -7,6 +7,7 @@ import { normalizeClientPhone } from '../../../api/ABS_frotavik/changeClientPhon
 import ClientAddressFields from './ClientAddressFields';
 import { transliterateName } from './clientProfileUtils';
 import CustomDateInput from '../../elements/CustomDateInput';
+import { countries, tajikPassportExpiry } from './onboardingRules';
 const stepNames = [['CHECK_INN', 'Проверка ИНН'], ['CHECK_PHONE', 'Проверка телефона'], ['CREATE_CLIENT', 'Создание картотеки'], ['SAVE_CODEWORD', 'Сохранение кодового слова'], ['SAVE_ADDRESS', 'Создание адреса'], ['LINK_ADDRESS', 'Привязка адреса'], ['SET_KOPF', 'Настройка КОПФ'], ['SET_OKATO', 'Настройка ОКАТО'], ['VERIFY', 'Проверка данных']];
 const required = {
   required: true,
@@ -35,7 +36,19 @@ export function IdentityCheckIcon({
     }}>!</span></Tooltip>;
   return null;
 }
-export function PassportFields() {
+export function PassportFields({ form }) {
+  const passport = Form.useWatch('passport', form) || {};
+  const previous = useRef(null);
+  useEffect(() => {
+    const next = { type: passport.type?.code, issued: passport.issued };
+    const old = previous.current;
+    previous.current = next;
+    // Preserve restored/manual expiry; regenerate only when source fields change.
+    if (next.type === '058' && (!passport.expires || old && (next.type !== old.type || next.issued !== old.issued))) {
+      const expires = tajikPassportExpiry(next.issued);
+      if (expires) form.setFieldValue(['passport', 'expires'], expires);
+    }
+  }, [passport.type?.code, passport.issued, form]);
   const field = (name, label, needed = true) => <Col xs={24} md={8} key={name}><Form.Item name={['passport', name]} label={label} rules={needed ? [required] : []}><Input /></Form.Item></Col>;
   const dateField = (name, label) => <Col xs={24} md={8} key={name}><Form.Item name={['passport', name]} label={label} rules={[required]}><CustomDateInput type="date" style={{ width: '100%' }} /></Form.Item></Col>;
   return <Row gutter={18}><Col xs={24} md={8}><Form.Item name={['passport', 'type', 'code']} label="Тип документа" rules={[required]}><Select options={documentTypes} /></Form.Item></Col>{field('series', 'Серия', false)}{field('number', 'Номер документа')}{dateField('issued', 'Дата выдачи')}{field('issuer', 'Кем выдан')}{dateField('expires', 'Срок действия')}</Row>;
@@ -92,19 +105,20 @@ export function ClientCreationFields({
               value: 'F',
               label: 'Женский'
             }]} /></Form.Item></Col>
- <Col xs={24} md={8}><Form.Item name="country" label="Страна"><Input readOnly /></Form.Item></Col>
+ <Col xs={24} md={8}><Form.Item name="country" label="Страна" rules={[required]}><Select showSearch optionFilterProp="label" options={countries} /></Form.Item></Col>
  {field('latin_last_name', 'Фамилия латиницей')}{field('latin_first_name', 'Имя латиницей')}{field('latin_middle_name', 'Отчество латиницей', false)}
  {select('service_group', 'Группа обслуживания')}
  <Col xs={24} md={8}><Form.Item name="codeword" label="Кодовое слово" rules={[required]}><Input.Password maxLength={100} autoComplete="new-password" placeholder="Введите кодовое слово" /></Form.Item></Col>
  </Row><Typography.Text type="secondary">Латиница формируется автоматически. При необходимости исправьте её по паспорту.</Typography.Text></section>
- <section className="new-client-form-section"><div className="new-client-form-section__title"><strong>Паспорт</strong></div><PassportFields /></section>
+ <section className="new-client-form-section"><div className="new-client-form-section__title"><strong>Паспорт</strong></div><PassportFields form={form} /></section>
  <section className="new-client-form-section"><div className="new-client-form-section__title"><strong>Адрес регистрации</strong></div><ClientAddressFields form={form} /></section>
  <section className="new-client-form-section"><Row gutter={18}>{select('kopf', 'Организационно-правовая форма / КОПФ')}{select('sector', 'Сектор экономики')}{select('tariff', 'Тарифная категория')}</Row>{error && <Alert showIcon type="error" message={error} />}</section>
  </>;
 }
 export function ClientCreationProgress({
   creation,
-  onDone
+  onDone,
+  onBack
 }) {
   const {
     job,
@@ -132,6 +146,7 @@ export function ClientCreationProgress({
     }}>{`Шаг: ${step || 'не определён'}\n${job.error_log}`}</Typography.Text>} />}
   {job?.client_code && <Typography.Text>Код клиента: {job.client_code}</Typography.Text>}
   {pending && <Typography.Text type="secondary">Номер запроса: {pending.request_id}</Typography.Text>}
+  {pending && !busy && <Button onClick={onBack}>Вернуться к анкете</Button>}
   {job?.status === 'partial' && <Button loading={busy} onClick={creation.retry}>Продолжить с сохранённого шага</Button>}
   {pending && !job?.status && error && <Button loading={busy} onClick={() => creation.submit({})}>Проверить / повторить приём запроса</Button>}
   {job?.status === 'completed' && <Button type="primary" onClick={() => onDone(job)}>Открыть клиента</Button>}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AutoComplete, Col, Form, Input, Row, Select, Typography } from 'antd';
 import { creationCatalogs, findCreationAddresses } from '../../../api/ABS_frotavik/createClient';
 import { addressOKATO } from './clientProfileUtils';
+import { lookupPostalCode, postalSource } from './tajikPostalLookup';
 const required = {
   required: true,
   message: 'Обязательное поле'
@@ -16,6 +17,16 @@ export default function ClientAddressFields({
     [suggestions, setSuggestions] = useState([]);
   const searchGeneration = useRef(0),
     searchTimer = useRef(null);
+  const postalAddress = useRef(null);
+  const postalMatch = lookupPostalCode(address);
+  useEffect(() => {
+    const key = JSON.stringify([address.region_key, address.district?.name, address.city?.name]);
+    const changed = postalAddress.current !== null && postalAddress.current !== key && JSON.parse(postalAddress.current)[2];
+    postalAddress.current = key;
+    // Keep a loaded draft's manual index. Once the locality changes, an old
+    // index must not silently remain attached to a different address.
+    if (changed || !address.zip) form.setFieldValue(['address', 'zip'], postalMatch?.zip || '');
+  }, [address.region_key, address.district?.name, address.city?.name, form]);
   useEffect(() => {
     let active = true;
     creationCatalogs().then(c => {
@@ -112,7 +123,7 @@ export default function ClientAddressFields({
    {field(['street', 'name'], 'Улица', options(suggestions.map(a => a.street?.name)), true, search)}
    {field(['house', 'code'], 'Дом', options(suggestions.filter(a => a.street?.name === address.street?.name).map(a => a.house?.house_number || a.house?.code)))}
    {field(['flat', 'name'], 'Квартира', options(suggestions.map(a => a.flat?.name)), false)}
-   {field(['zip'], 'Индекс', options(suggestions.map(a => a.zip)))}
+   <Col xs={24} md={8}><Form.Item name={['address', 'zip']} label="Индекс" rules={[required, { pattern: /^[0-9]{6}$/, message: 'Почтовый индекс Таджикистана — 6 цифр' }]} extra={postalMatch ? 'Заполнен по справочнику Почты Таджикистана; при необходимости уточните отделение вручную.' : 'Точное совпадение в почтовом справочнике не найдено. Укажите индекс отделения вручную.'}><Input inputMode="numeric" maxLength={6} /></Form.Item></Col>
    <Col xs={24} md={8}><Form.Item name={['address', 'okato']} label="ОКАТО" rules={[{
           required: true,
           message: 'Уточните район для автоматического определения ОКАТО'
@@ -121,5 +132,6 @@ export default function ClientAddressFields({
    <Form.Item name={['address', 'region', 'name']} hidden><Input /></Form.Item>
   </Row>
   <Typography.Text type="secondary">Страна: ТОҶИКИСТОН. ОКАТО определяется по населённому пункту, району или области. Если населённого пункта нет в справочнике, введите его вручную — используется код выбранного района.</Typography.Text>
+  <div><Typography.Link href={postalSource} target="_blank" rel="noreferrer">Источник почтовых индексов — Почта Таджикистана</Typography.Link><Typography.Text type="secondary"> · Индекс не вычисляется из ОКАТО. Если точного соответствия нет, он не подставляется из другого района.</Typography.Text></div>
  </>;
 }

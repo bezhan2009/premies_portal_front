@@ -54,9 +54,10 @@ export default function useOnboardingDraft(open, form, locked) {
     await persist(); const nextID = newPhoneChangeID();
     state.current = { id: nextID, revision: 0, last: '', completed: false }; setID(nextID); setPassport(null); setReview(null); setSavedAt(null); setError(''); form.resetFields();
   };
-  const finish = async () => {
-    await queue.current.catch(() => {}); state.current.completed = true;
-    await deleteClientDraft(state.current.id); await refresh();
+  const finish = async (completedID = state.current.id) => {
+    await queue.current.catch(() => {});
+    if (completedID === state.current.id) state.current.completed = true;
+    await deleteClientDraft(completedID); await refresh();
   };
   return { id, passport, setPassport, review, setReview, drafts, restore, startNew, persist, finish, error, saving, savedAt };
 }

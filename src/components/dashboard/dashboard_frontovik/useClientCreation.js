@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from 'antd';
-import { creationCapabilities, checkNewClientIdentity, submitClientCreation, getClientCreation, retryClientCreation } from '../../../api/ABS_frotavik/createClient';
+import { creationCapabilities, checkNewClientIdentity, submitClientCreation, getClientCreation, retryClientCreation, releaseClientCreationForEdit } from '../../../api/ABS_frotavik/createClient';
+import { admissionRejected } from './onboardingRules';
 import { newPhoneChangeID, normalizeClientPhone } from '../../../api/ABS_frotavik/changeClientPhone';
 import { frontovikActorID } from '../../../utils/frontovikIdentity';
 export function creationPayload(v) {
   const address = {
     ...v.address,
-    country_code: v.country
+    country_code: v.address?.country_code || 'TJ'
   };
   return {
     draft_id: v.draft_id,
@@ -45,6 +46,7 @@ export function useClientCreation(open, form) {
     [busy, setBusy] = useState(false),
     [checks, setChecks] = useState({});
   const values = Form.useWatch([], form) || {};
+  const [showProgress, setShowProgress] = useState(false);
   const mounted = useRef(true);
   const generations = useRef({});
   const pendingRef = useRef(null);
@@ -56,7 +58,7 @@ export function useClientCreation(open, form) {
     sessionStorage.setItem(storageKey, JSON.stringify(p));
   }, [storageKey]);
   const accept = useCallback(r => {
-    if (!mounted.current) return;
+    if (!mounted.current || !r?.status || r.request_id !== pendingRef.current?.request_id) return;
     setJob(r);
     setError('');
     if (['completed', 'failed'].includes(r.status)) sessionStorage.removeItem(storageKey);
@@ -69,6 +71,7 @@ export function useClientCreation(open, form) {
   }, []);
   useEffect(() => {
     if (!open) return;
+    setShowProgress(false);
     let active = true;
     creationCapabilities().then(r => {
       if (active) setEnabled(r.enabled);
@@ -81,7 +84,7 @@ export function useClientCreation(open, form) {
     } catch {/* invalid draft */}
     if (saved) {
       savePending(saved);
-      getClientCreation(saved.request_id).then(accept).catch(e => {
+      getClientCreation(saved.request_id).then(r => { if (active) accept(r); }).catch(e => {
         if (active) setError(e.response?.status === 404 ? 'Приём запроса не подтверждён. Повторите отправку с тем же номером.' : 'Не удалось загрузить состояние создания');
       });
     } else {
@@ -96,7 +99,7 @@ export function useClientCreation(open, form) {
   }, [open, storageKey, savePending, accept]);
   const check = async (kind, value) => {
     const normalized = kind === 'phone' ? normalizeClientPhone(value) : String(value || '').trim();
-    const valid = kind === 'phone' ? Boolean(normalized) : /^\d{9,14}$/.test(normalized);
+    const valid = kind === 'phone' ? Boolean(normalized) : /^\d{9}$/.test(normalized);
     const gen = (generations.current[kind] || 0) + 1;
     generations.current[kind] = gen;
     if (!valid) {
@@ -174,6 +177,7 @@ export function useClientCreation(open, form) {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setBusy(true);
+    setShowProgress(true);
     setError('');
     const p = pendingRef.current || {
       request_id: newPhoneChangeID(),
@@ -182,16 +186,25 @@ export function useClientCreation(open, form) {
     savePending(p);
     try {
       const r = await submitClientCreation(p);
-      if (r.requires_compliance) {
+      if ('service_allowed' in r) {
         sessionStorage.removeItem(storageKey);
         pendingRef.current = null;
         setPending(null);
+        setJob(null);
+        setShowProgress(false);
         return r;
       }
       accept(r);
       return r;
     } catch (e) {
       setError(e.response?.data?.error || 'Связь прервана. Проверяем приём запроса');
+      if (admissionRejected(e) && pendingRef.current?.request_id === p.request_id) {
+        sessionStorage.removeItem(storageKey);
+        pendingRef.current = null;
+        setPending(null);
+        setJob(null);
+        setShowProgress(false);
+      }
       return null;
     } finally {
       submittingRef.current = false;
@@ -201,7 +214,10 @@ export function useClientCreation(open, form) {
   const retry = async () => {
     setBusy(true);
     try {
-      accept(await retryClientCreation(pending.request_id));
+      const result = await retryClientCreation(pending.request_id);
+      if ('service_allowed' in result) {
+        setError(result.message || 'Требуется решение комплайнс');
+      } else accept(result);
     } catch (e) {
       setError(e.response?.data?.error || 'Не удалось продолжить операцию');
     } finally {
@@ -215,7 +231,24 @@ export function useClientCreation(open, form) {
     setJob(null);
     setError('');
     setBusy(false);
+    setShowProgress(false);
   }, [storageKey]);
+  const backToForm = async () => {
+    setShowProgress(false);
+    if (!pendingRef.current || busy) return;
+    if (job?.client_code || job?.colvir_reference_id || ['queued', 'processing', 'completed'].includes(job?.status)) return;
+    setBusy(true);
+    try {
+      await releaseClientCreationForEdit(pendingRef.current.request_id);
+      dismiss();
+    } catch (e) {
+      setError(e.response?.data?.error || 'Не удалось завершить старую попытку. Повторное создание пока заблокировано.');
+    } finally { setBusy(false); }
+  };
+  const hide = () => {
+    setShowProgress(false);
+    if (!pendingRef.current || ['completed', 'failed'].includes(job?.status)) dismiss();
+  };
   const unique = ['inn', 'phone'].every(k => checks[k]?.state === 'unique' && checks[k].value === (k === 'phone' ? normalizeClientPhone(values[k]) : String(values[k] || '').trim()));
   return {
     enabled,
@@ -229,7 +262,12 @@ export function useClientCreation(open, form) {
     submit,
     retry,
     dismiss,
-    locked: Boolean(pending),
+    backToForm,
+    hide,
+    showProgress,
+    resume: () => setShowProgress(true),
+    unresolved: Boolean(pending),
+    locked: Boolean(pending && showProgress),
     running: Boolean(pending && !['completed', 'failed', 'partial'].includes(job?.status))
   };
 }
