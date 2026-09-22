@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_PROCESSING_URL || 'http://10.64.20.84:5003';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const historyHeaders = () => ({Authorization:`Bearer ${localStorage.getItem('access_token')}`});
 
 export const fetchTransactionsByCardId = async (
     cardID,
@@ -8,7 +9,7 @@ export const fetchTransactionsByCardId = async (
     toDate = null
 ) => {
     const url = new URL(
-        `${import.meta.env.VITE_BACKEND_PROCESSING_URL}/api/Transactions/by-cards`
+        `${BASE_URL}/api/processing-history/by-cards`
     );
 
     // Remove trailing comma if present
@@ -24,7 +25,7 @@ export const fetchTransactionsByCardId = async (
         url.searchParams.append("toDate", toDate);
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, {headers:historyHeaders()});
 
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -45,7 +46,7 @@ export const fetchTransactionsByATM = async (atmId, fromDate, toDate) => {
         if (toDate) params.append('toDate', toDate);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-atm?${params.toString()}`
+            `${BASE_URL}/api/processing-history/by-atm?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -58,7 +59,7 @@ export const fetchTransactionsByATM = async (atmId, fromDate, toDate) => {
 export const fetchTransactionsByUTRNNO = async (utrnno) => {
     try {
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-utrnno/${utrnno}`
+            `${BASE_URL}/api/processing-history/by-utrnno?utrnno=${encodeURIComponent(utrnno)}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -76,7 +77,7 @@ export const fetchTransactionsByType = async (transactionType, fromDate, toDate)
         if (toDate) params.append('toDate', toDate);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-transaction-type?${params.toString()}`
+            `${BASE_URL}/api/processing-history/by-transaction-type?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -95,7 +96,7 @@ export const fetchTransactionsByAmount = async (fromAmount, toAmount, fromDate, 
         if (toDate) params.append('toDate', toDate);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-amount-with-date?${params.toString()}`
+            `${BASE_URL}/api/processing-history/by-amount-with-date?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -113,7 +114,7 @@ export const fetchTransactionsByReversal = async (reversal, fromDate, toDate) =>
         if (toDate) params.append('toDate', toDate);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-reversal?${params.toString()}`
+            `${BASE_URL}/api/processing-history/by-reversal?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -131,7 +132,7 @@ export const fetchTransactionsByMCC = async (mcc, fromDate, toDate) => {
         if (toDate) params.append('toDate', toDate);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/by-mcc?${params.toString()}`
+            `${BASE_URL}/api/processing-history/by-mcc?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -151,7 +152,7 @@ export const fetchTransactionsByCardBinAndType = async (cardBin, transactionType
         if (toTime) params.append('toTime', toTime);
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/search?${params.toString()}`
+            `${BASE_URL}/api/processing-history/search?${params.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {
@@ -176,7 +177,7 @@ export const fetchTransactionsSearch = async (params) => {
         });
 
         const response = await axios.get(
-            `${BASE_URL}/api/Transactions/search-transactions?${q.toString()}`
+            `${BASE_URL}/api/processing-history/search-transactions?${q.toString()}`, {headers:historyHeaders()}
         );
         return response.data;
     } catch (error) {

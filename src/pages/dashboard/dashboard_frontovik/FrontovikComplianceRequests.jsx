@@ -1,3 +1,4 @@
+import useClientDocumentUrl from "../../../hooks/useClientDocumentUrl.js";
 import React, { useEffect, useState } from "react";
 import { Button, Card, Empty, Modal, Spin, Table, Tag, message } from "antd";
 import { Building2, CalendarDays, CreditCard, Eye, FileImage, FileText, Hash, Phone } from "lucide-react";
@@ -60,7 +61,7 @@ const findDocumentByType = (documents, type) =>
   documents.find((document) => document?.document_type === type) || null;
 
 const PassportScanCard = ({ title, document, onPreview }) => {
-  const url = document ? resolveClientDocumentUrl(document) : "";
+  const url = useClientDocumentUrl(document);
   return (
     <button
       type="button"

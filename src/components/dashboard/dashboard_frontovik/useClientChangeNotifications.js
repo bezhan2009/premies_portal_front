@@ -7,7 +7,7 @@ export default function useClientChangeNotifications() {
   const addNotification = useNotificationStore(state => state.addNotification);
   useEffect(() => {
     let roles = []; try { roles = JSON.parse(localStorage.getItem('role_ids') || '[]'); } catch { /* no session */ }
-    if (!roles.includes(17)) return;
+    if (!roles.some(r => [17,35,39,49].includes(r))) return;
     let active = true;
     const actor = frontovikActorID();
     const key = `frontovik-change-notifications:${actor}`;
@@ -19,7 +19,7 @@ export default function useClientChangeNotifications() {
         for (const r of rows) {
           const state = r.execution?.status || r.status; next[r.request_id] = state;
           if (previous[r.request_id] !== state && (r.actor_id === actor && ['approved', 'rejected', 'completed', 'failed'].includes(state) || roles.includes(49) && r.actor_id !== actor && state === 'awaiting_approval')) {
-            addNotification({ id: `client-change-${r.request_id}-${state}`, type: 'application-status', title: 'Изменение данных клиента', message: r.execution?.message || r.message,
+            addNotification({ id: `client-change-${r.request_id}-${state}`, type: 'application-status', title: r.kind === 'read' ? 'Доступ к данным клиента' : 'Изменение данных клиента', message: r.execution?.message || r.message,
               action: { kind: 'compliance-request', href: `/frontovik/change-approvals?requestId=${encodeURIComponent(r.request_id)}` } });
           }
         }

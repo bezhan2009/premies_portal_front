@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -24,6 +24,7 @@ import "../../../styles/components/CustomerDirectory.scss";
 
 const INITIAL_FILTERS = {
   search: "",
+  creatorUsername: "",
   departments: [],
   resident: "",
   overdue: "",
@@ -199,6 +200,8 @@ export default function CustomerDirectory() {
   const [filters, setFilters] = useState(() => ({ ...INITIAL_FILTERS, search: initialSearch }));
   const [draftSearch, setDraftSearch] = useState(initialSearch);
   const [departments, setDepartments] = useState([]);
+ const [access,setAccess]=useState(null);
+ useEffect(() => {fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/me`,{headers:authHeaders()}).then(r=>{if(!r.ok)throw Error("Не удалось проверить ограничения");return r.json()}).then(setAccess).catch(()=>setAccess({creator_username:"",failed:true}));},[]);
   const [result, setResult] = useState({ items: [], total: 0, page: 1, limit: 30 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -215,6 +218,13 @@ export default function CustomerDirectory() {
   const [actionLoading, setActionLoading] = useState("");
   const [notice, setNotice] = useState("");
   const isOperator = useMemo(() => readRoles().includes(3), []);
+  const accessGeneration = useRef(0);
+  const clearClientViews = useCallback(() => {
+    accessGeneration.current += 1;
+    setSelectedCustomer(null); setScoreEditor(null); setDocumentsCustomer(null); setDocuments([]);
+    setResult({items:[],total:0,page:1,limit:30});
+  }, []);
+
 
   const loadDepartments = useCallback(async () => {
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/departments`, { headers: authHeaders() });
@@ -224,10 +234,12 @@ export default function CustomerDirectory() {
   }, []);
 
   const loadCustomers = useCallback(async () => {
+    const generation = accessGeneration.current;
     setLoading(true);
     setError("");
     try {
       const params = new URLSearchParams({ page: String(page), limit: "30" });
+      if (filters.creatorUsername) params.set("creator_username",filters.creatorUsername);
       if (filters.search) params.set("search", filters.search);
       if (filters.departments.length) params.set("departments", filters.departments.join(","));
       if (filters.resident) params.set("resident", filters.resident);
@@ -238,7 +250,9 @@ export default function CustomerDirectory() {
       params.set("sort_order", filters.sortOrder);
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, { headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось загрузить клиентов");
-      setResult(await response.json());
+      const data = await response.json();
+      if (generation !== accessGeneration.current) return;
+      setResult(data);
     } catch (requestError) {
       setError(requestError.message || "Ошибка загрузки клиентов");
       setResult({ items: [], total: 0, page, limit: 30 });
@@ -259,6 +273,36 @@ export default function CustomerDirectory() {
     return () => clearInterval(interval);
   }, [loadCustomers, loadDepartments]);
 
+  // Drop every visible client view at the server-issued deadline. The next
+  // request recomputes scope, including changes made by an operator/director.
+  useEffect(() => {
+    if (!result.access_expires_at) return;
+    const remaining = new Date(result.access_expires_at) - new Date(result.server_time) - 1000;
+    const timer = setTimeout(() => { clearClientViews(); void loadCustomers(); }, Math.max(0, remaining));
+    return () => clearTimeout(timer);
+  }, [result.access_expires_at, result.server_time, clearClientViews, loadCustomers]);
+  const visibleCodes = [...new Set([selectedCustomer?.client_index, scoreEditor?.client_index, documentsCustomer?.client_index].filter(Boolean))].join(",");
+  useEffect(() => {
+    if (!visibleCodes) return;
+    let active = true, deadline;
+    const clear = () => { if (active) clearClientViews(); };
+    const check = async () => {
+      try {
+        const grants = await Promise.all(visibleCodes.split(",").map(async code => {
+          const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/check?directory=true&client_code=${encodeURIComponent(code)}`, {headers:authHeaders(), signal:AbortSignal.timeout(8000)});
+          if (!r.ok) throw Error("Доступ к клиенту истёк");
+          return r.json();
+        }));
+        if (!active) return;
+        clearTimeout(deadline);
+        const durations = grants.filter(g=>g.expires_at).map(g=>new Date(g.expires_at)-new Date(g.server_time)-1000);
+        if (durations.length) deadline=setTimeout(clear,Math.max(0,Math.min(...durations)));
+      } catch { clear(); }
+    };
+    void check(); const timer=setInterval(check,15000);
+    return ()=>{active=false;clearTimeout(deadline);clearInterval(timer);};
+  }, [visibleCodes,clearClientViews]);
+
   const applySearch = (event) => {
     event.preventDefault();
     setPage(1);
@@ -275,11 +319,14 @@ export default function CustomerDirectory() {
     : [...filters.departments, code]);
 
   const openCustomer = async (clientIndex) => {
+    const generation = accessGeneration.current;
     setActionLoading(`detail-${clientIndex}`);
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/${encodeURIComponent(clientIndex)}`, { headers: authHeaders() });
       if (!response.ok) throw new Error("Не удалось загрузить данные клиента");
-      setSelectedCustomer(await response.json());
+      const data=await response.json();
+      if(generation !== accessGeneration.current)return;
+      setSelectedCustomer(data);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -331,12 +378,14 @@ export default function CustomerDirectory() {
   };
 
   const openDocuments = async (customer) => {
+    const generation = accessGeneration.current;
     setDocumentsCustomer(customer);
     setDocuments([]);
     if (!customer.inn) return;
     setDocumentsLoading(true);
     try {
       const data = await getClientDocumentsByINN(customer.inn);
+      if(generation !== accessGeneration.current)return;
       setDocuments(Array.isArray(data) ? data : []);
     } catch {
       setError("Не удалось загрузить документы клиента");
@@ -445,6 +494,8 @@ export default function CustomerDirectory() {
         </section>
       )}
 
+      <section className="customer-filter-bar" style={{padding:"12px 0"}}><label>Оформил <input aria-label="Оформил" disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || filters.creatorUsername} onChange={e=>updateFilter("creatorUsername",e.target.value)} placeholder="Логин сотрудника АБС" /></label>{access?.creator_username && <small> Фильтр закреплён оператором</small>}
+ <button type="button" onClick={()=>{const code=window.prompt("Код клиента для запроса просмотра (например 5000.000001)");if(/^\d{4}\.\d{6}$/.test(code||""))window.dispatchEvent(new CustomEvent("client-read-sanction",{detail:code}));}}>Запросить просмотр клиента</button></section>
       <section className="customer-table-wrap">
         <table className="customer-table">
           <thead>

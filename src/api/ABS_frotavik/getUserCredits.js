@@ -1,6 +1,6 @@
 import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
 
-const ABS_CACHE_TTL = 60 * 1000;
+const ABS_CACHE_TTL = 0; // Client authorization must be checked on every request.
 const absRequestCache = new Map();
 export const invalidateClientProfileCache = () => absRequestCache.clear();
 

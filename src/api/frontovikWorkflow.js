@@ -9,7 +9,7 @@ portal.interceptors.request.use(config => {
 export const workflowError = e => e?.response?.data?.error || e?.message || 'Не удалось выполнить запрос';
 export const getChangePermissions = async () => (await abs.get('/client/change-permissions')).data;
 export const listChangeApprovals = async () => (await abs.get('/client/change-approvals')).data;
-export const decideChangeApproval = async (id, decision, reason = '') => (await abs.post(`/client/change-approvals/${encodeURIComponent(id)}/decision`, { decision, reason })).data;
+export const decideChangeApproval = async (id, decision, reason = '', minutes = 10) => (await abs.post(`/client/change-approvals/${encodeURIComponent(id)}/decision`, { decision, reason, minutes })).data;
 export const listClientDrafts = async () => (await portal.get('/frontovik/drafts')).data;
 export const saveClientDraft = async (id, revision, payload) => (await portal.put(`/frontovik/drafts/${encodeURIComponent(id)}`, { revision, payload })).data;
 export const deleteClientDraft = async id => portal.delete(`/frontovik/drafts/${encodeURIComponent(id)}`);

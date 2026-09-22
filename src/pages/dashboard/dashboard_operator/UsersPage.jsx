@@ -54,6 +54,8 @@ export default function UsersPage() {
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedAppOffices, setSelectedAppOffices] = useState([]);
   const [selectedCustomerDepartments, setSelectedCustomerDepartments] = useState([]);
+  const [approverDepartments,setApproverDepartments]=useState([]);
+  const [creatorRestriction,setCreatorRestriction]=useState("");
 
   // Worker/Office details
   const [position, setPosition] = useState("");
@@ -255,12 +257,13 @@ export default function UsersPage() {
       if (customerAccessRes.ok) {
         const customerAccessData = await customerAccessRes.json();
         setSelectedCustomerDepartments(customerAccessData.department_codes || []);
+ setApproverDepartments(customerAccessData.approver_departments || []); setCreatorRestriction(customerAccessData.creator_username || "");
       } else {
-        setSelectedCustomerDepartments([]);
+        setSelectedCustomerDepartments([]); setApproverDepartments([]); setCreatorRestriction("");
       }
     } catch (err) {
       console.error(err);
-      setSelectedCustomerDepartments([]);
+      setSelectedCustomerDepartments([]); setApproverDepartments([]); setCreatorRestriction("");
     }
 
     // Fetch user application offices
@@ -398,7 +401,7 @@ export default function UsersPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ department_codes: selectedCustomerDepartments }),
+        body: JSON.stringify({ department_codes: selectedCustomerDepartments, approver_departments: selectedRoles.includes(49) ? approverDepartments.filter(code => selectedCustomerDepartments.includes(code)) : [], creator_username: creatorRestriction.trim() }),
       });
 
       if (!accessRes.ok) {
@@ -891,6 +894,12 @@ export default function UsersPage() {
                 ))}
               </div>
 
+              <div className="modal-section-title">5. Санкции</div>
+              <div className="checkbox-item"><input type="checkbox" id="sanction-approver" checked={selectedRoles.includes(49)} onChange={e => handleRoleChange(e,49)} /><label htmlFor="sanction-approver">Может подтверждать заявки на просмотр и изменение данных</label></div>
+              <p>Выберите коды клиентов, заявки которых сотрудник может согласовывать. Собственные заявки подтверждать нельзя.</p>
+              <div className="roles-checklist">{selectedCustomerDepartments.map(code => <label className="checkbox-item" key={code}><input type="checkbox" disabled={!selectedRoles.includes(49)} checked={approverDepartments.includes(code)} onChange={e => setApproverDepartments(old => e.target.checked ? [...old,code] : old.filter(v => v!==code))} />{code}</label>)}</div>
+              <div className="modal-section-title">6. Страница «Клиенты»</div>
+              <div className="form-group"><label htmlFor="creator-restriction">Оформил — логин сотрудника в АБС</label><input id="creator-restriction" maxLength={255} value={creatorRestriction} onChange={e => setCreatorRestriction(e.target.value)} placeholder="Пусто — все сотрудники в разрешённых подразделениях" /><small>При заполнении видны только клиенты этого сотрудника. Пользователь не сможет изменить закреплённый фильтр.</small></div>
               {/* Conditional Worker Details */}
               {selectedRoles.some((r) => [6, 8].includes(r)) && (
                 <div className="conditional-details-block">

@@ -1,3 +1,4 @@
+import DirectorSanctions from "../../pages/dashboard/dashboard_director/DirectorSanctions";
 import ClientChangeApprovals from "../../pages/dashboard/dashboard_frontovik/ClientChangeApprovals";
 import { Route, Outlet } from "react-router-dom";
 import RequireRole from "../../middlewares/RequireRole.jsx";
@@ -26,6 +27,7 @@ import DeclineManagementPage from "../../pages/dashboard/dashboard_declines/Decl
 
 const managementRoutes = (
   <>
+ <Route path="frontovik/change-approvals" element={<RequireRole allowedRoles={[17,35,39,49]}><ClientChangeApprovals /></RequireRole>} />
     <Route
       element={
         <RequireRole allowedRoles={[42]}>
@@ -63,7 +65,7 @@ const managementRoutes = (
         path="frontovik/compliance-requests"
         element={<FrontovikComplianceRequests />}
       />
-      <Route path="frontovik/change-approvals" element={<ClientChangeApprovals />} />
+
     </Route>
 
     {/* Director (Role 5) */}
@@ -74,6 +76,7 @@ const managementRoutes = (
         </RequireRole>
       }
     >
+      <Route path="/director/sanctions" element={<DirectorSanctions />} />
       <Route path="/director/reports" element={<DashboardDirectorReports />} />
       <Route
         path="/director/knowledge-base"

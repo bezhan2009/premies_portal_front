@@ -1,3 +1,4 @@
+import useClientDocumentUrl from "../../hooks/useClientDocumentUrl.js";
 import React from "react";
 import Modal from "../general/Modal.jsx";
 import {
@@ -17,11 +18,12 @@ export default function DocumentPreviewModal({
   actionLabel,
   onAction,
 }) {
+  const documentUrl = useClientDocumentUrl(document, isOpen);
   if (!document) {
     return null;
   }
 
-  const documentUrl = resolveClientDocumentUrl(document);
+
   const documentTitle = title || document.title || "Предпросмотр документа";
   const isImage = isImageDocument(document);
   const isPdf = isPdfDocument(document);

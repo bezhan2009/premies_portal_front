@@ -1,3 +1,5 @@
+import useClientDocumentUrl from "../../../hooks/useClientDocumentUrl.js";
+import { showReadSanction } from "../../general/ClientReadRequestModal";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import AlertMessage from "../../general/AlertMessage.jsx";
 import Spinner from "../../Spinner.jsx";
@@ -84,9 +86,9 @@ import {
 } from "../../../utils/liveWorkflowPageState.js";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_ABS_SERVICE_URL;
-const API_ATM_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || "/api/atm";
+const API_ATM_URL = `${import.meta.env.VITE_BACKEND_URL}/client-access`;
 const API_TELEGRAM_URL = import.meta.env.VITE_BACKEND_TELEGRAM_URL || "/telegram-api";
-const SEARCH_CACHE_TTL = 60 * 1000;
+const SEARCH_CACHE_TTL = 0; // Client authorization must be checked on every request.
 const searchLookupCache = new Map();
 
 const cachedSearchLookup = (key, request) => {
@@ -131,6 +133,7 @@ export default function ABSClientSearch() {
     const consumedClientIndexRef = useRef("");
     const handleSearchClientRef = useRef(null);
     const handleClearRef = useRef(null);
+    const accessGeneration = useRef(0);
     const remoteSearchSignatureRef = useRef("");
     const [cardsData, setCardsData] = useState([]);
     const [accountsData, setAccountsData] = useState([]);
@@ -365,6 +368,16 @@ export default function ABSClientSearch() {
     };
 
     const handleClear = (options = {}) => {
+        accessGeneration.current += 1;
+        setGraphModalOpen(false); setGraphData([]); setSelectedReferenceId("");
+        setDetailsModalOpen(false); setDetailsData(null);
+        setRepayModalOpen(false); setSelectedCreditForRepay(null);
+        setIsBlockModalOpen(false); setIsPinModalOpen(false);
+        setIsServicesModalOpen(false); setActiveCardServices([]); setActiveCardId(null);
+        setIsLimitsModalOpen(false); setCardLimits([]); setBlockingCardId(null);
+        setIsAuditLogsModalOpen(false); setAuditLogs([]);
+        setVerifiedClientCodes([]);
+        setIsLoading(false); searchInFlightRef.current = false;
         if (!options?.remote) {
             publishLiveWorkflowPageState({ kind: "frontovik.clear" });
         }
@@ -413,20 +426,20 @@ export default function ABSClientSearch() {
 
         switch (searchType) {
             case "client/info?phoneNumber=":
-                url = clientCreationEnabled ? `${API_BASE_URL}/client/info?phoneNumber=${digits}` : `${API_ATM_URL}/services/clientcode.php?phone=${digits}`;
+                url = clientCreationEnabled ? `${API_BASE_URL}/client/info?phoneNumber=${digits}` : `${API_ATM_URL}/lookup?phone=${digits}`;
                 break;
             case "byCardId":
-                url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
+                url = `${API_ATM_URL}/lookup?cardidn=${searchValue}`;
                 break;
             case "byAccount":
-                url = `${API_ATM_URL}/services/clientcode.php?acc=${searchValue}`;
+                url = `${API_ATM_URL}/lookup?acc=${searchValue}`;
                 break;
             case "byName": {
-                url = `${API_ATM_URL}/services/clientcode.php?longname=${encodeURIComponent(searchValue || "")}`;
+                url = `${API_ATM_URL}/lookup?longname=${encodeURIComponent(searchValue || "")}`;
                 break;
             }
             case "byLast4":
-                url = `${API_ATM_URL}/services/clientcode.php?last4=${searchValue}`;
+                url = `${API_ATM_URL}/lookup?last4=${searchValue}`;
                 break;
             default:
                 throw new Error("Неизвестный тип поиска");
@@ -437,7 +450,7 @@ export default function ABSClientSearch() {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(clientCreationEnabled && searchType === "client/info?phoneNumber=" ? { Authorization: `Bearer ${localStorage.getItem("access_token") || ""}` } : {}),
+                    Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
                 },
             });
 
@@ -454,7 +467,7 @@ export default function ABSClientSearch() {
 
     const extractClientCodeFromSearchResult = (item) => {
         if (typeof item === "string") return item;
-        return item?.code || item?.clicode || item?.client_code || item?.clientCode || "";
+        return item?.Code || item?.code || item?.clicode || item?.client_code || item?.clientCode || "";
     };
 
     const handleSearchClient = async (
@@ -471,6 +484,7 @@ export default function ABSClientSearch() {
         // This also protects the URL-driven search from React StrictMode effect re-runs.
         if (searchInFlightRef.current) return;
         searchInFlightRef.current = true;
+        const generation = accessGeneration.current;
 
         const resolvedSearch = resolveClientSearch(searchValue, searchType);
         const formattedPhone = resolvedSearch.searchValue;
@@ -566,6 +580,7 @@ export default function ABSClientSearch() {
                         ? "Номеру телефона"
                         : null,
                 );
+                if (generation !== accessGeneration.current) return;
                 setClientsData(normalizedData);
                 setSelectedClientIndex(0);
 
@@ -588,7 +603,8 @@ export default function ABSClientSearch() {
                     });
 
                     if (!response.ok) {
-                        const error = new Error(`HTTP error! status: ${response.status}`);
+                        const payload = await response.json().catch(()=>({})); showReadSanction(payload);
+                        const error = new Error(payload.error || `HTTP error! status: ${response.status}`);
                         error.status = response.status;
                         throw error;
                     }
@@ -603,6 +619,9 @@ export default function ABSClientSearch() {
                 });
                 if (data === null) return;
 
+                const blocked = (Array.isArray(data) ? data : [data]).find(item => item?.access_required);
+                if (generation !== accessGeneration.current) return;
+                if (blocked) {showReadSanction({approval_required:true,client_code:blocked.client_code || blocked.Code});setClientsData([]);return;}
                 let normalizedData = [];
 
                 if (searchTypeIndex === 0) {
@@ -627,6 +646,7 @@ export default function ABSClientSearch() {
                             ? "ИНН"
                             : null,
                 );
+                if (generation !== accessGeneration.current) return;
                 setClientsData(enrichedData);
                 setSelectedClientIndex(0);
 
@@ -638,11 +658,14 @@ export default function ABSClientSearch() {
                 }
             }
         } catch (error) {
+            if (generation !== accessGeneration.current) return;
             console.error("Ошибка при поиске клиента:", error);
-            showAlert("Произошла ошибка при поиске клиента", "error");
+            showReadSanction(error?.response?.data);
+            showAlert(error?.response?.data?.error || error.message || "Произошла ошибка при поиске клиента", "error");
             setClientsData([]);
             setClientNotFound(false);
         } finally {
+            if (generation !== accessGeneration.current) return;
             searchInFlightRef.current = false;
             setIsLoading(false);
         }
@@ -1114,11 +1137,13 @@ export default function ABSClientSearch() {
     };
 
     const handleOpenLimits = async (cardId) => {
+        const generation = accessGeneration.current;
         setActiveCardId(cardId);
         setIsLimitsModalOpen(true);
         setModalLoading(true);
         try {
             const limits = await fetchCardLimits(cardId);
+            if (generation !== accessGeneration.current) return;
             setCardLimits(limits);
 
             // Log audit action
@@ -1131,6 +1156,7 @@ export default function ABSClientSearch() {
                 details: `Просмотр лимитов для карты ${cardId}`
             });
         } catch (e) {
+            if (generation !== accessGeneration.current) return;
             console.error("Error fetching limits:", e);
             showAlert("Ошибка при загрузке лимитов", "error");
         } finally {
@@ -1196,6 +1222,7 @@ export default function ABSClientSearch() {
     };
 
     const handleOpenGraph = async (referenceId) => {
+        const generation = accessGeneration.current;
         setSelectedReferenceId(referenceId);
         setGraphModalOpen(true);
         setIsGraphLoading(true);
@@ -1228,8 +1255,10 @@ export default function ABSClientSearch() {
             }
 
             const data = await response.json();
+            if (generation !== accessGeneration.current) return;
             setGraphData(data);
         } catch (error) {
+            if (generation !== accessGeneration.current) return;
             console.error("Ошибка при загрузке графика платежей:", error);
             showAlert("Произошла ошибка при загрузке графика платежей", "error");
         } finally {
@@ -1244,6 +1273,7 @@ export default function ABSClientSearch() {
     };
 
     const handleOpenDetails = async (referenceId) => {
+        const generation = accessGeneration.current;
         setDetailsModalOpen(true);
         setIsDetailsLoading(true);
 
@@ -1259,12 +1289,14 @@ export default function ABSClientSearch() {
 
         try {
             const data = await fetchLoanDetails(referenceId);
+            if (generation !== accessGeneration.current) return;
             if (data) {
                 setDetailsData(data);
             } else {
                 showAlert("Не удалось разобрать данные ответа", "error");
             }
         } catch (error) {
+            if (generation !== accessGeneration.current) return;
             console.error("Ошибка при загрузке деталей кредита:", error);
             showAlert("Произошла ошибка при загрузке деталей кредита", "error");
         } finally {
@@ -1454,13 +1486,21 @@ export default function ABSClientSearch() {
 
     const selectedClient =
         clientsData.length > 0 ? clientsData[selectedClientIndex] : null;
+    useEffect(() => {
+      const code=selectedClient?.client_code;if(!code)return;
+      let active=true,expiryTimer;
+      const clear=()=>{if(active){invalidateClientProfileCache();searchLookupCache.clear();handleClearRef.current?.({remote:true});}};
+      const check=async()=>{try{const r=await fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/check?client_code=${encodeURIComponent(code)}`,{headers:{Authorization:`Bearer ${localStorage.getItem('access_token')}`},signal:AbortSignal.timeout(8000)});if(!active)return;if(!r.ok){clear();return};const d=await r.json();if(!active)return;clearTimeout(expiryTimer);if(d.expires_at)expiryTimer=setTimeout(clear,Math.max(0,new Date(d.expires_at).getTime()-Date.now()));}catch{clear();}};
+      void check();const timer=setInterval(check,15000);return()=>{active=false;clearInterval(timer);clearTimeout(expiryTimer);};
+    },[selectedClient?.client_code]);
+
     const selectedClientRef = useRef(selectedClient);
     selectedClientRef.current = selectedClient;
     const isSelectedClientPinRequired =
         selectedClient?.requires_pin && !verifiedClientCodes.includes(selectedClient.client_code);
     const selectedClientINN = selectedClient?.tax_code?.trim() || "";
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
-    const selectedClientPhotoUrl = resolveClientDocumentUrl(selectedClientSelfie);
+    const selectedClientPhotoUrl = useClientDocumentUrl(selectedClientSelfie);
     const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
     const visiblePosTerminals =
         posTerminalsClientCode === String(selectedClient?.client_code || "").trim()
@@ -1842,31 +1882,7 @@ export default function ABSClientSearch() {
         };
     }, [selectedClient?.client_code, selectedClientIndex, verifiedClientCodes, handleGetDataUser]);
 
-    // Восстановление состояния
-    useEffect(() => {
-        // A direct link from "Клиенты" must show the requested customer, not
-        // briefly restore and request data for the previously opened one.
-        if (initialRequestedClientIndexRef.current) return;
-
-        const savedState = sessionStorage.getItem("absClientSearchState");
-        if (savedState) {
-            const state = JSON.parse(savedState);
-            setPhoneNumber(state.phoneNumber || "");
-            setDisplayPhone(state.displayPhone || "");
-            setClientsData(state.clientsData || []);
-            setSelectedClientIndex(state.selectedClientIndex || 0);
-            setSelectTypeSearchClient(
-                state.selectTypeSearchClient || TYPE_SEARCH_CLIENT[0].value,
-            );
-            setIsMobile(state.isMobile || null);
-            setCardsData(state.cardsData || []);
-            setAccountsData(state.accountsData || []);
-            setCreditsData(state.creditsData || []);
-            setDepositsData(state.depositsData || []);
-            setPosTerminals(state.posTerminals || []);
-            setPosTerminalsClientCode(state.posTerminalsClientCode || "");
-        }
-    }, []);
+    useEffect(() => { sessionStorage.removeItem("absClientSearchState"); }, []);
 
     useEffect(() => {
         const clientIndex = requestedClientIndex;
@@ -1894,8 +1910,10 @@ export default function ABSClientSearch() {
     }, [requestedClientIndex, setSearchParams]);
 
     const userInfoPhone = async (phone) => {
+        const generation = accessGeneration.current;
         try {
             const mobileProfile = await getUserInfoPhone(phone);
+            if (generation !== accessGeneration.current) return;
             const isRegistered =
                 mobileProfile?.isMobileAppRegistered === true ||
                 mobileProfile?.is_mobile_app_registered === true ||
@@ -1907,41 +1925,15 @@ export default function ABSClientSearch() {
                 setIsMobile({ isMobileAppRegistered: false });
             }
         } catch (e) {
+            if (generation !== accessGeneration.current) return;
             console.error(e);
             setIsMobile({ isMobileAppRegistered: false });
         }
     };
 
     const saveState = useCallback(() => {
-        const stateToSave = {
-            phoneNumber,
-            displayPhone,
-            clientsData,
-            selectedClientIndex,
-            selectTypeSearchClient,
-            isMobile,
-            cardsData,
-            accountsData,
-            creditsData,
-            depositsData,
-            posTerminals,
-            posTerminalsClientCode,
-        };
-        sessionStorage.setItem("absClientSearchState", JSON.stringify(stateToSave));
-    }, [
-        phoneNumber,
-        displayPhone,
-        clientsData,
-        selectedClientIndex,
-        selectTypeSearchClient,
-        isMobile,
-        cardsData,
-        accountsData,
-        creditsData,
-        depositsData,
-        posTerminals,
-        posTerminalsClientCode,
-    ]);
+        sessionStorage.removeItem("absClientSearchState");
+    }, []);
 
     useEffect(() => {
         saveState();
@@ -1959,6 +1951,7 @@ export default function ABSClientSearch() {
     }, [selectedClient]);
 
     const fetchTelegramUser = async (phone) => {
+        const generation = accessGeneration.current;
         try {
             setTelegramLoading(true);
             setTelegramData(null);
@@ -1972,11 +1965,13 @@ export default function ABSClientSearch() {
             const json = await resp.json();
             const users = json?.data;
             if (Array.isArray(users) && users.length > 0) {
+            if (generation !== accessGeneration.current) return;
                 setTelegramData(users[0]);
             } else {
                 setTelegramData(null);
             }
         } catch (e) {
+            if (generation !== accessGeneration.current) return;
             console.error("Ошибка Telegram поиска:", e);
             setTelegramData(null);
         } finally {

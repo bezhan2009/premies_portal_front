@@ -1,7 +1,7 @@
 import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
 
-const ATM_BASE_URL = import.meta.env.VITE_BACKEND_ATM_SERVICE_URL || "/api/atm";
-const LOOKUP_CACHE_TTL = 60 * 1000;
+const ATM_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/client-access`;
+const LOOKUP_CACHE_TTL = 0; // Client authorization must be checked on every request.
 const lookupCache = new Map();
 
 const authScope = () => {
@@ -65,7 +65,7 @@ const fetchATM = async (path) => {
   return cachedLookup(url, async () => {
     const response = await fetch(url, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token") || ""}` },
     });
     if (!response.ok) {
       const error = new Error(`Сервис поиска вернул HTTP ${response.status}`);
@@ -95,11 +95,11 @@ export const resolveBulkClientCodes = async (identifierType, rawValue) => {
 
   let data;
   if (identifierType === "telefon") {
-    data = await fetchATM(`/services/clientcode.php?phone=${encodeURIComponent(digits)}`);
+    data = await fetchATM(`/lookup?phone=${encodeURIComponent(digits)}`);
   } else if (identifierType === "account_number") {
-    data = await fetchATM(`/services/clientcode.php?acc=${encodeURIComponent(value)}`);
+    data = await fetchATM(`/lookup?acc=${encodeURIComponent(value)}`);
   } else if (identifierType === "card_id") {
-    data = await fetchATM(`/services/innbyidn.php?cardidn=${encodeURIComponent(value)}`);
+    data = await fetchATM(`/lookup?cardidn=${encodeURIComponent(value)}`);
   } else {
     throw new Error("Неизвестный тип идентификатора");
   }

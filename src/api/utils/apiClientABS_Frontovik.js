@@ -24,3 +24,9 @@ apiClientABS_Frontovik.interceptors.request.use(
 
 
 addInterceptors(apiClientABS_Frontovik);
+
+apiClientABS_Frontovik.interceptors.response.use(response => response, error => {
+ const data=error.response?.data;
+ if (data?.approval_required && /^\d{4}\.\d{6}$/.test(data.client_code || '')) window.dispatchEvent(new CustomEvent('client-read-sanction',{detail:data.client_code}));
+ return Promise.reject(error);
+});
