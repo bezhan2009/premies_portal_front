@@ -20,19 +20,10 @@ import {
 } from "lucide-react";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import Select from "../../../components/elements/Select.jsx";
+import { buildCustomerDirectoryQuery, CUSTOMER_DIRECTORY_INITIAL_FILTERS } from "./customerDirectoryFilters.js";
 import "../../../styles/components/CustomerDirectory.scss";
 
-const INITIAL_FILTERS = {
-  search: "",
-  creatorUsername: "",
-  departments: [],
-  resident: "",
-  overdue: "",
-  terror: "",
-  complianceScore: "",
-  sortBy: "created_at",
-  sortOrder: "desc",
-};
+const INITIAL_FILTERS = CUSTOMER_DIRECTORY_INITIAL_FILTERS;
 
 const readRoles = () => {
   try {
@@ -199,9 +190,33 @@ export default function CustomerDirectory() {
   const initialSearch = searchParams.get("search")?.trim() || "";
   const [filters, setFilters] = useState(() => ({ ...INITIAL_FILTERS, search: initialSearch }));
   const [draftSearch, setDraftSearch] = useState(initialSearch);
+  const [draftCreator, setDraftCreator] = useState("");
   const [departments, setDepartments] = useState([]);
- const [access,setAccess]=useState(null);
- useEffect(() => {fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/me`,{headers:authHeaders()}).then(r=>{if(!r.ok)throw Error("Не удалось проверить ограничения");return r.json()}).then(setAccess).catch(()=>setAccess({creator_username:"",failed:true}));},[]);
+  const [access, setAccess] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/client-access/me`, { headers: authHeaders(), signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw Error("Не удалось проверить ограничения");
+        return response.json();
+      })
+      .then(setAccess)
+      .catch((requestError) => {
+        if (requestError.name !== "AbortError") setAccess({ creator_username: "", failed: true });
+      });
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    if (!access || access.failed || access.creator_username) return undefined;
+    const timer = window.setTimeout(() => {
+      const creatorUsername = draftCreator.trim();
+      setPage(1);
+      setFilters((current) => current.creatorUsername === creatorUsername
+        ? current
+        : { ...current, creatorUsername });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [access, draftCreator]);
   const [result, setResult] = useState({ items: [], total: 0, page: 1, limit: 30 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -219,6 +234,7 @@ export default function CustomerDirectory() {
   const [notice, setNotice] = useState("");
   const isOperator = useMemo(() => readRoles().includes(3), []);
   const accessGeneration = useRef(0);
+  const customerRequestRef = useRef(null);
   const clearClientViews = useCallback(() => {
     accessGeneration.current += 1;
     setSelectedCustomer(null); setScoreEditor(null); setDocumentsCustomer(null); setDocuments([]);
@@ -235,31 +251,33 @@ export default function CustomerDirectory() {
 
   const loadCustomers = useCallback(async () => {
     const generation = accessGeneration.current;
+    customerRequestRef.current?.abort();
+    const controller = new AbortController();
+    customerRequestRef.current = controller;
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "30" });
-      if (filters.creatorUsername) params.set("creator_username",filters.creatorUsername);
-      if (filters.search) params.set("search", filters.search);
-      if (filters.departments.length) params.set("departments", filters.departments.join(","));
-      if (filters.resident) params.set("resident", filters.resident);
-      if (filters.overdue) params.set("overdue", filters.overdue);
-      if (filters.terror) params.set("terror", filters.terror);
-      if (filters.complianceScore) params.set("compliance_score", filters.complianceScore);
-      params.set("sort_by", filters.sortBy);
-      params.set("sort_order", filters.sortOrder);
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, { headers: authHeaders() });
+      const params = buildCustomerDirectoryQuery({ page, filters });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers?${params.toString()}`, {
+        headers: authHeaders(),
+        signal: controller.signal,
+      });
       if (!response.ok) throw new Error("Не удалось загрузить клиентов");
       const data = await response.json();
-      if (generation !== accessGeneration.current) return;
+      if (generation !== accessGeneration.current || controller.signal.aborted) return;
       setResult(data);
     } catch (requestError) {
+      if (requestError.name === "AbortError") return;
       setError(requestError.message || "Ошибка загрузки клиентов");
-      setResult({ items: [], total: 0, page, limit: 30 });
     } finally {
-      setLoading(false);
+      if (customerRequestRef.current === controller) {
+        customerRequestRef.current = null;
+        setLoading(false);
+      }
     }
   }, [filters, page]);
+
+  useEffect(() => () => customerRequestRef.current?.abort(), []);
 
   useEffect(() => { loadDepartments().catch((requestError) => setError(requestError.message)); }, [loadDepartments]);
   useEffect(() => { loadCustomers(); }, [loadCustomers]);
@@ -317,6 +335,13 @@ export default function CustomerDirectory() {
   const toggleDepartment = (code) => updateFilter("departments", filters.departments.includes(code)
     ? filters.departments.filter((item) => item !== code)
     : [...filters.departments, code]);
+
+  const requestClientReadAccess = () => {
+    const code = window.prompt("Код клиента для запроса просмотра (например 5000.000001)");
+    if (/^\d{4}\.\d{6}$/.test(code || "")) {
+      window.dispatchEvent(new CustomEvent("client-read-sanction", { detail: code }));
+    }
+  };
 
   const openCustomer = async (clientIndex) => {
     const generation = accessGeneration.current;
@@ -458,6 +483,7 @@ export default function CustomerDirectory() {
           <span>{Number(result.total || 0).toLocaleString("ru-RU")} записей по доступным подразделениям · <small style={{ color: "#16a34a", fontWeight: "600" }}>Автообновление каждую 1 мин</small></span>
         </div>
         <div className="customer-directory__header-actions">
+          <button type="button" className="customer-button customer-button--secondary" onClick={requestClientReadAccess}><Eye size={17} />Запросить просмотр клиента</button>
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkComplianceCheck} disabled={actionLoading === "bulk-compliance"}><ShieldCheck size={17} className={actionLoading === "bulk-compliance" ? "customer-spin" : ""} />Проверить комплайнс (все)</button>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={runBulkMobileCheck} disabled={actionLoading === "bulk-mobile"}><RefreshCw size={17} className={actionLoading === "bulk-mobile" ? "customer-spin" : ""} />Проверить мобильный банк (все)</button>}
           {isOperator && <button type="button" className="customer-button customer-button--secondary" onClick={loadSettings}><Settings2 size={17} />Настройки</button>}
@@ -467,13 +493,14 @@ export default function CustomerDirectory() {
 
       <section className="customer-directory__toolbar">
         <form className="customer-search" onSubmit={applySearch}><Search size={18} /><input value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="ФИО, ИНН, телефон или индекс клиента" /><button type="submit" title="Найти"><Search size={17} /></button></form>
+        <label className="customer-filter-group customer-filter-group--input"><Users size={17} /><span>Оформил</span><input aria-label="Оформил" disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || draftCreator} onChange={(event) => setDraftCreator(event.target.value)} placeholder="Логин АБС" title={access?.creator_username ? "Фильтр закреплён оператором" : "Поиск по логину сотрудника АБС"} /></label>
         <div className="customer-filter-group"><SlidersHorizontal size={17} /><Select className="customer-filter-select" value={filters.resident} onChange={(value) => updateFilter("resident", value)} options={[{ value: "", label: "Все клиенты" }, { value: "true", label: "Резиденты" }, { value: "false", label: "Нерезиденты" }]} /></div>
-        <div className="customer-filter-group"><AlertTriangle size={17} /><Select className="customer-filter-select" value={filters.overdue} onChange={(value) => updateFilter("overdue", value)} options={[{ value: "", label: "Любой статус" }, { value: "true", label: "Просрочка" }]} /></div>
-        <div className="customer-filter-group"><ShieldCheck size={17} /><Select className="customer-filter-select" value={filters.terror} onChange={(value) => updateFilter("terror", value)} options={[{ value: "", label: "Все проверки" }, { value: "matched", label: "Есть совпадение" }]} /></div>
+        <div className="customer-filter-group"><AlertTriangle size={17} /><Select className="customer-filter-select" value={filters.overdue} onChange={(value) => updateFilter("overdue", value)} options={[{ value: "", label: "Любая просрочка" }, { value: "true", label: "Есть просрочка" }, { value: "false", label: "Без просрочки" }]} /></div>
+        <div className="customer-filter-group"><ShieldCheck size={17} /><Select className="customer-filter-select" value={filters.terror} onChange={(value) => updateFilter("terror", value)} options={[{ value: "", label: "Все проверки" }, { value: "matched", label: "Есть совпадение" }, { value: "clear", label: "Без совпадений" }]} /></div>
         <div className="customer-filter-group"><Filter size={17} /><Select className="customer-filter-select" value={filters.complianceScore} onChange={(value) => updateFilter("complianceScore", value)} options={[{ value: "", label: "Все баллы" }, ...[1, 2, 3, 4, 5].map((score) => ({ value: String(score), label: `${score} балл` }))]} /></div>
         <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortBy} onChange={(value) => updateFilter("sortBy", value)} options={[{ value: "created_at", label: "По дате создания" }, { value: "updated_at", label: "По дате изменения" }]} /></div>
         <div className="customer-filter-group customer-filter-group--sort"><ArrowUpDown size={17} /><Select className="customer-filter-select" value={filters.sortOrder} onChange={(value) => updateFilter("sortOrder", value)} options={[{ value: "desc", label: "Сначала новые" }, { value: "asc", label: "Сначала старые" }]} /></div>
-        <button type="button" className="customer-reset-button" onClick={() => { setFilters(INITIAL_FILTERS); setDraftSearch(""); setPage(1); }} title="Сбросить фильтры"><X size={17} /></button>
+        <button type="button" className="customer-reset-button" onClick={() => { setFilters({ ...INITIAL_FILTERS }); setDraftSearch(""); setDraftCreator(""); setPage(1); }} title="Сбросить фильтры"><X size={17} /></button>
       </section>
 
       <section className="customer-departments" aria-label="Подразделения">
@@ -494,9 +521,8 @@ export default function CustomerDirectory() {
         </section>
       )}
 
-      <section className="customer-filter-bar" style={{padding:"12px 0"}}><label>Оформил <input aria-label="Оформил" disabled={!access || access.failed || Boolean(access.creator_username)} value={access?.creator_username || filters.creatorUsername} onChange={e=>updateFilter("creatorUsername",e.target.value)} placeholder="Логин сотрудника АБС" /></label>{access?.creator_username && <small> Фильтр закреплён оператором</small>}
- <button type="button" onClick={()=>{const code=window.prompt("Код клиента для запроса просмотра (например 5000.000001)");if(/^\d{4}\.\d{6}$/.test(code||""))window.dispatchEvent(new CustomEvent("client-read-sanction",{detail:code}));}}>Запросить просмотр клиента</button></section>
-      <section className="customer-table-wrap">
+      <section className={`customer-table-wrap${loading && result.items?.length ? " customer-table-wrap--loading" : ""}`} aria-busy={loading}>
+        {loading && result.items?.length > 0 && <div className="customer-table-loading">Обновление списка…</div>}
         <table className="customer-table">
           <thead>
             <tr>
@@ -514,7 +540,7 @@ export default function CustomerDirectory() {
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan="11" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
+            {!result.items?.length && loading ? <tr><td colSpan="11" className="customer-table__empty">Загрузка клиентов...</td></tr> : result.items?.length ? result.items.map((customer) => {
               const cards = parseJson(customer.cards);
               const credits = parseJson(customer.credits);
               const deposits = parseJson(customer.deposits);
