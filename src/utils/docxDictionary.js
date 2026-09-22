@@ -1,6 +1,8 @@
+import { ibDocxDictionary } from "./internetBankingDocx";
 // Dictionary of available data keys for DOCX template generation.
 // The same key can be used as a DOCX placeholder or as a source system key in the generator UI.
 export const docxDictionary = [
+  ...ibDocxDictionary,
   {
     category: "Заявление на изменение данных",
     keys: [

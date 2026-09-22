@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import ApiDocsModal from "./ApiDocsModal";
+import InternetBankingDocxSettings from "./InternetBankingDocxSettings";
+import { IB_DOCX_PLACEMENTS, initialBankingDocx } from "../../../utils/internetBankingDocx";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -30,7 +32,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 import CustomSelect from "../../elements/CustomSelect";
 import { docxDictionary } from "../../../utils/docxDictionary";
 import {
@@ -271,7 +273,7 @@ const getInitialFormState = () => ({
 const getRoleName = (id) => SYSTEM_ROLES.find((role) => role.id === Number(id))?.name || `Роль ${id}`;
 
 const getPlacement = (page, section) =>
-  BUTTON_PLACEMENTS.find((place) => place.page === page && place.section === section) ||
+  [...BUTTON_PLACEMENTS, ...IB_DOCX_PLACEMENTS].find((place) => place.page === page && place.section === section) ||
   BUTTON_PLACEMENTS.find((place) => place.id === "custom");
 
 const getDictionaryItem = (key) => dictionaryItems.find((item) => item.key === key);
@@ -476,7 +478,7 @@ const parseAuditPayload = (log = {}) => {
   if (typeof rawPayload === "string") {
     try {
       return JSON.parse(rawPayload);
-    } catch (error) {
+    } catch {
       return rawPayload;
     }
   }
@@ -581,6 +583,7 @@ const formatAuditTimestamp = (timestamp) => {
 
 const DocxGenerator = () => {
   const [templates, setTemplates] = useState([]);
+  const [channel, setChannel] = useState("daily");
   const [loading, setLoading] = useState(true);
   const [editorMode, setEditorMode] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState(null);
@@ -838,15 +841,17 @@ const DocxGenerator = () => {
         template.parsedRoles.length === 0 ||
         template.parsedRoles.includes(Number(roleFilter));
 
-      return matchesQuery && matchesPage && matchesRole;
+      const matchesChannel = channel === "banking" ? Boolean(template.internetBanking) : !template.internetBanking;
+      return matchesChannel && matchesQuery && matchesPage && matchesRole;
     });
-  }, [hydratedTemplates, pageFilter, roleFilter, searchQuery]);
+  }, [hydratedTemplates, pageFilter, roleFilter, searchQuery, channel]);
 
-  const totalVariants = hydratedTemplates.reduce(
+  const channelTemplates = hydratedTemplates.filter((template) => channel === "banking" ? Boolean(template.internetBanking) : !template.internetBanking);
+  const totalVariants = channelTemplates.reduce(
     (sum, template) => sum + template.parsedVariants.length,
     0,
   );
-  const totalMappings = hydratedTemplates.reduce(
+  const totalMappings = channelTemplates.reduce(
     (sum, template) =>
       sum +
       template.parsedVariants.reduce(
@@ -875,7 +880,7 @@ const DocxGenerator = () => {
   }, [dictionarySearch]);
 
   const handleStartAdd = () => {
-    setActiveTemplate(getInitialFormState());
+    setActiveTemplate(channel === "banking" ? {...getInitialFormState(),page:"InternetBanking",section:"overview",internetBanking:initialBankingDocx(),roles:[],pdfRoles:[],docxRoles:[]} : getInitialFormState());
     setCollapsedVariants({});
     setEditorMode("add");
   };
@@ -1226,7 +1231,7 @@ const DocxGenerator = () => {
       loadTemplates();
     } catch (err) {
       console.error(err);
-      alert("Ошибка сохранения шаблона");
+      alert(err.response?.data?.error || "Ошибка сохранения шаблона");
     }
   };
 
@@ -1265,7 +1270,7 @@ const DocxGenerator = () => {
     setTestVariantIdx(0);
     setTestInputs(createTestInputs(variants[0]));
     setExternalTestInputs(createExternalDocxTestInputs(variants[0]));
-    setTestMode("external");
+    setTestMode(template.internetBanking ? "manual" : "external");
     setShowTestModal(true);
   };
 
@@ -1355,7 +1360,7 @@ const DocxGenerator = () => {
           const raw = await err.response.data.text();
           const parsed = JSON.parse(raw);
           errorText = parsed.error || parsed.message || errorText;
-        } catch (_) {}
+        } catch { /* Keep the original response when it is not JSON. */ }
       } else if (err.response?.data?.error || err.response?.data?.message) {
         errorText = err.response.data.error || err.response.data.message;
       }
@@ -1447,11 +1452,12 @@ const DocxGenerator = () => {
             </button>
           </section>
 
+          <div role="tablist" aria-label="Канал документов" style={{display:"flex",gap:8,marginBottom:16}}>{[["daily","Activ Daily"],["banking","Интернет-банкинг"]].map(([value,label])=><button type="button" role="tab" aria-selected={channel===value} key={value} className={`docx-btn ${channel===value?"docx-btn--primary":"docx-btn--secondary"}`} onClick={()=>{setChannel(value);setPageFilter("all");setRoleFilter("all");}}>{label}</button>)}</div>
           <section className="docx-stats-grid">
             <div className="docx-stat-card">
               <FileText size={22} />
               <span>Шаблоны</span>
-              <strong>{hydratedTemplates.length}</strong>
+              <strong>{channelTemplates.length}</strong>
             </div>
             <div className="docx-stat-card">
               <Layers size={22} />
@@ -1461,7 +1467,7 @@ const DocxGenerator = () => {
             <div className="docx-stat-card">
               <MousePointerClick size={22} />
               <span>Места показа</span>
-              <strong>{BUTTON_PLACEMENTS.length - 1}</strong>
+              <strong>{channel === "banking" ? IB_DOCX_PLACEMENTS.length : BUTTON_PLACEMENTS.length - 1}</strong>
             </div>
             <div className="docx-stat-card">
               <FileJson size={22} />
@@ -1490,19 +1496,19 @@ const DocxGenerator = () => {
               onChange={(val) => setPageFilter(val)}
               options={[
                 { value: "all", label: "Все страницы" },
-                ...[...new Set(BUTTON_PLACEMENTS.filter((item) => item.page).map((item) => item.page))].map(
+                ...[...new Set((channel === "banking" ? IB_DOCX_PLACEMENTS : BUTTON_PLACEMENTS).filter((item) => item.page).map((item) => item.page))].map(
                   (page) => ({ value: page, label: page })
                 )
               ]}
             />
-            <CustomSelect
+            {channel === "daily" && <CustomSelect
               value={roleFilter}
               onChange={(val) => setRoleFilter(val)}
               options={[
                 { value: "all", label: "Все роли" },
                 ...SYSTEM_ROLES.map((role) => ({ value: String(role.id), label: role.name }))
               ]}
-            />
+            />}
           </section>
 
           {loading ? (
@@ -1527,7 +1533,7 @@ const DocxGenerator = () => {
                 const placement = getPlacement(template.page, template.section);
 
                 return (
-                  <motion.article
+                  <Motion.article
                     key={template.ID || template.id}
                     layout
                     initial={{ opacity: 0, y: 10 }}
@@ -1562,8 +1568,8 @@ const DocxGenerator = () => {
 
                     <div className="docx-card-meta">
                       <div>
-                        <span className="docx-meta-label">Роли</span>
-                        <div className="docx-chip-list">{renderRoleChips(template.parsedRoles)}</div>
+                        <span className="docx-meta-label">{template.internetBanking ? "Публикация в ИБ" : "Роли"}</span>
+                        <div className="docx-chip-list">{template.internetBanking ? (template.internetBanking.enabled ? "Включена · по правам клиента" : "Выключена") : renderRoleChips(template.parsedRoles)}</div>
                       </div>
                       <div>
                         <span className="docx-meta-label">Варианты</span>
@@ -1618,7 +1624,7 @@ const DocxGenerator = () => {
                         <Trash2 size={16} />
                       </button>
                     </div>
-                  </motion.article>
+                  </Motion.article>
                 );
               })}
             </section>
@@ -1658,7 +1664,7 @@ const DocxGenerator = () => {
                   <Info size={18} />
                   <div>
                     <h2>Кнопка генерации</h2>
-                    <p>Название будет видно пользователю на странице фронтовика.</p>
+                    <p>Название будет видно пользователю выбранного канала.</p>
                   </div>
                 </div>
 
@@ -1699,6 +1705,7 @@ const DocxGenerator = () => {
                       Формат для system.uniqueId. Токены: <strong>YYYY</strong> (год), <strong>YY</strong> (год 2 знака), <strong>MM</strong> (месяц), <strong>DD</strong> (день), <strong>HH</strong> (часы), <strong>mm</strong> (минуты), <strong>ss</strong> (секунды), <strong>RAND</strong> (случайные 4 цифры), <strong>SEQ</strong> (хвост таймстампа 6 цифр).
                     </small>
                   </label>
+                  {!activeTemplate.internetBanking && <>
                   <label className="docx-field">
                     <span>Тип документа для мобильного приложения</span>
                     <CustomSelect
@@ -1734,9 +1741,11 @@ const DocxGenerator = () => {
                       </span>
                     </div>
                   </label>
+                  </>}
                 </div>
               </section>
 
+              {activeTemplate.internetBanking ? <InternetBankingDocxSettings template={activeTemplate} onChange={setActiveTemplate}/> : <>
               <section className="docx-editor-card">
                 <div className="docx-section-title">
                   <MousePointerClick size={18} />
@@ -1965,6 +1974,7 @@ const DocxGenerator = () => {
                 </div>
               </section>
 
+              </>}
               <section className="docx-editor-card">
                 <div className="docx-section-title docx-section-title--with-action" style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "stretch" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2346,7 +2356,7 @@ const DocxGenerator = () => {
 
       <AnimatePresence>
         {showDrawer && (
-          <motion.aside
+          <Motion.aside
             className="docx-drawer"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -2397,14 +2407,14 @@ const DocxGenerator = () => {
                   </section>
                 ))}
               </div>
-            </motion.aside>
+            </Motion.aside>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showTestModal && testTemplate && (
           <div className="docx-modal-layer">
-            <motion.div
+            <Motion.div
               className="docx-modal"
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2576,7 +2586,7 @@ const DocxGenerator = () => {
                   <span>{isTestGenerating ? "Генерация..." : "Сгенерировать и скачать"}</span>
                 </button>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -2584,7 +2594,7 @@ const DocxGenerator = () => {
       <AnimatePresence>
         {valueBuilder.isOpen && (
           <div className="docx-modal-layer" style={{ zIndex: 100000 }}>
-            <motion.div
+            <Motion.div
               className="docx-modal"
               style={{ maxWidth: "860px" }}
               initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -2991,7 +3001,7 @@ const DocxGenerator = () => {
                   Применить
                 </button>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -2999,7 +3009,7 @@ const DocxGenerator = () => {
       <AnimatePresence>
         {showAuditModal && (
           <div className="docx-modal-layer">
-            <motion.div
+            <Motion.div
               className="docx-modal docx-audit-modal"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -3085,7 +3095,7 @@ const DocxGenerator = () => {
 
                             <AnimatePresence initial={false}>
                               {isExpanded && (
-                                <motion.div
+                                <Motion.div
                                   className="docx-audit-payload"
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: "auto" }}
@@ -3100,7 +3110,7 @@ const DocxGenerator = () => {
                                       <span>В этой записи нет сохраненного payload.</span>
                                     </div>
                                   )}
-                                </motion.div>
+                                </Motion.div>
                               )}
                             </AnimatePresence>
                           </div>
@@ -3110,7 +3120,7 @@ const DocxGenerator = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
         )}
       </AnimatePresence>
