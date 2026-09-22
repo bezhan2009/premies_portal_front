@@ -21,6 +21,7 @@ import {
 import activeLogoImg from "../../../assets/new_logo.png";
 import PosTerminalsTab from "./PosTerminalsTab.jsx";
 import { buildFrontovikTabs } from "./posTerminalUtils.js";
+import { OpenClientCardButton } from "./OpenClientCardModal.jsx";
 
 const getPcStatusData = (code) => {
   const statusMap = {
@@ -195,6 +196,7 @@ const ClientDataTabs = ({
   cardsData,
   sortedCards,
   handleExportCards,
+  onCardOpened,
   handleNavigateToTransactions,
   handleNavigateToAllCardsTransactions,
   hasTransactionsAccess,
@@ -1244,6 +1246,8 @@ const ClientDataTabs = ({
           <div className="tab-pane-fade">
             <div className="tab-pane-header">
               <h3>Карты клиента</h3>
+              <div className="tab-header-btn-row">
+                <OpenClientCardButton key={selectedClient?.client_code} client={selectedClient} onOpened={onCardOpened} />
               {cardsData?.length > 0 && (
                 <div className="tab-header-btn-row">
                   <button
@@ -1257,6 +1261,7 @@ const ClientDataTabs = ({
                   </button>
                 </div>
               )}
+              </div>
             </div>
             {cardsData?.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column" }}>

@@ -250,3 +250,13 @@
     flex-direction: column;
   }
 }
+.compliance-requests-table {
+  .ant-table-cell { vertical-align: top; overflow-wrap: anywhere; word-break: normal; }
+  .compliance-client-cell { display:flex; flex-direction:column; gap:6px; }
+  details summary { cursor:pointer; }
+}
+.compliance-request-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:20px;
+  > .ant-input-search { flex:1 1 300px; }
+  > .ant-select { min-width:170px; }
+  > label { display:flex; flex-direction:column; gap:4px; }
+}

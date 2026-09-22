@@ -25,6 +25,7 @@ const CardCashbackTable = () => {
         order: "descend",
     });
     const [showChart, setShowChart] = useState(false);
+    const [showTable, setShowTable] = useState(true);
     const [dateRange, setDateRange] = useState(["", ""]);
 
     const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -383,6 +384,7 @@ const CardCashbackTable = () => {
                     <Button onClick={() => setShowChart(!showChart)}>
                         {showChart ? "Скрыть график" : "Показать график"}
                     </Button>
+                    <Button aria-expanded={showTable} onClick={()=>setShowTable(value=>!value)}>{showTable?'Скрыть таблицу операций':'Показать таблицу операций'}</Button>
                     <Button
                         icon={<ReloadOutlined />}
                         onClick={handleRefresh}
@@ -403,7 +405,7 @@ const CardCashbackTable = () => {
             ) : (
                 <>
                 <CashbackStatistics items={filteredItems} periodLabel={periodLabel} />
-                <Table
+                <div hidden={!showTable}><Table
                     tableId="cashback-card-list"
                     columns={columns}
                     dataSource={filteredItems}
@@ -418,7 +420,7 @@ const CardCashbackTable = () => {
                     locale={{ emptyText: "Нет данных" }}
                     onChange={handleTableChange}
                     defaultSortOrder="descend"
-                />
+                /></div>
                 </>
             )}
         </div>

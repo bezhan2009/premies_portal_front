@@ -30,7 +30,7 @@ test("terror screening is ready without a middle name", () => {
   );
 });
 
-test("white-list status suppresses an external terrorist match", () => {
+test("white-list status does not suppress a mandatory external terrorist match", () => {
   const reasons = buildNewClientStatusReasons({
     complianceCheck: { state: "checked", matched: true, listType: "white" },
     terrorScreening: { state: "matched", match: { similarity: 0.91 } },
@@ -39,7 +39,7 @@ test("white-list status suppresses an external terrorist match", () => {
   });
 
   assert.ok(reasons.some(({ text }) => text.includes("белом списке")));
-  assert.ok(reasons.every(({ text }) => !text.includes("террористическом")));
+  assert.ok(reasons.some(({ text }) => text.includes("террористическом")));
 });
 
 test("black-list status does not suppress an external terrorist match", () => {
@@ -88,14 +88,14 @@ test("confirmed white-list result unlocks the gate and suppresses screening", ()
   );
 });
 
-test("screening stays gated for an incomplete resident INN but not a valid foreign identifier", () => {
+test("screening requires nine numeric INN digits for residents and nonresidents", () => {
   assert.deepEqual(
     getComplianceLookupStateForScreening({ identifier: "12345", isResident: true }),
     { pending: true, isWhiteListed: false },
   );
   assert.deepEqual(
     getComplianceLookupStateForScreening({ identifier: "AB-123456", isResident: false }),
-    { pending: false, isWhiteListed: false },
+    { pending: true, isWhiteListed: false },
   );
 });
 

@@ -766,7 +766,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
             });
         }
 
-        if (roles.includes(17) || roles.includes(35)) {
+        if (roles.includes(17) || roles.includes(35) || roles.includes(44)) {
             additionalLinks.push({
                 name: "Фронтовик",
                 key: "frontovik",

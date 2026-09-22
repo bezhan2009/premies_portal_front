@@ -192,10 +192,57 @@
   > div span { overflow-wrap: anywhere; color: #a33a4e; font-size: 12px; }
 }
 
-.customer-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid #dfe3e8; border-radius: 8px; background: #fff; }
+.customer-table-wrap { width: 100%; max-width: 100%; overflow: auto; max-height: 72vh; border: 1px solid #dfe3e8; border-radius: 8px; background: #fff; }
 .customer-table { width: 100%; min-width: max(1340px, 100%); border-collapse: collapse; }
 .customer-table th { padding: 14px 15px; color: #76808b; background: #fafbfc; border-bottom: 1px solid #dfe3e8; font-size: 11px; font-weight: 800; letter-spacing: 0; text-align: left; text-transform: uppercase; }
 .customer-table td { padding: 15px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
+.customer-table th { position: sticky; top: 0; z-index: 2; }
+.customer-table th:first-child, .customer-table td:first-child { position: sticky; left: 0; min-width: 245px; max-width: 290px; background: #fff; z-index: 1; box-shadow: 1px 0 0 #e4e7eb; }
+.customer-table th:first-child { z-index: 3; background: #fafbfc; }
+.customer-table td { min-width: 135px; max-width: 250px; padding: 10px 12px; overflow-wrap: anywhere; }
+.customer-table tbody tr:hover td { background-color: #fafbfc; }
+.customer-product-line { display: grid; gap: 3px; padding: 4px 0; border-bottom: 1px solid #f0f1f3; font-size: 12px; }
+.customer-product-line small { color: #64748b; font-variant-numeric: tabular-nums; }
+.customer-table details summary { cursor: pointer; color: #a91d35; font-size: 12px; margin-top: 5px; }
+.customer-choice { border: 0; padding: 0; margin: 0; display: block; font-size: 12px; color: #526071; }
+.customer-choice legend { margin-bottom: 5px; font-weight: 600; }
+.customer-choice button, .customer-duplicate-filters button { padding: 6px 10px; border: 1px solid #dce1e7; background: #fff; color: #526071; cursor: pointer; font-size: 12px; }
+.customer-choice button[data-active="true"], .customer-duplicate-filters button[aria-pressed="true"] { background: #a91d35; color: #fff; border-color: #a91d35; }
+.customer-directory .customer-choice select, .customer-directory .customer-choice input { display: block; padding: 6px; min-height: 34px; border: 1px solid #dce1e7; border-radius: 5px; max-width: 240px; background: #fff; color: #27313c; }
+.customer-directory.content-page { padding: 18px 24px; }
+.customer-directory__toolbar[data-collapsed="true"] > :not(form) { display: none; }
+.customer-table-wrap[aria-busy="true"] { cursor: progress; }
+.customer-directory__toolbar { padding: 18px; background: #fff; border: 1px solid #e1e6ed; border-radius: 12px; }
+.customer-directory .customer-choice { min-width: 160px; flex: 1 1 185px; font-weight: 600; }
+.customer-directory .customer-choice legend { padding: 0; }
+.customer-directory .customer-choice select, .customer-directory .customer-choice input { width: 100%; max-width: none; height: 38px; margin-top: 5px; padding: 7px 10px; border-radius: 7px; font: inherit; font-weight: 400; box-sizing: border-box; }
+.customer-directory .customer-choice[data-active="true"] select,.customer-directory .customer-choice[data-active="true"] input { border-color: #a91d35; background: #fff1f3; color: #911b30; }
+.customer-segment { display: flex; height: 38px; }
+.customer-segment button { flex: 1; white-space: nowrap; font: inherit; font-weight: 400; }
+.customer-segment button:first-child { border-radius: 7px 0 0 7px; }
+.customer-segment button:last-child { border-radius: 0 7px 7px 0; }
+.customer-segment button+button { border-left: 0; }
+.customer-directory__toolbar button:focus-visible,.customer-directory__toolbar select:focus-visible,.customer-directory__toolbar input:focus-visible { outline: 2px solid #a91d35; outline-offset: 2px; }
+.customer-duplicate-filters { flex: 1 0 100%; }
+.customer-duplicate-filters button { min-height: 38px; border-radius: 7px; }
+.customer-filter-footer { display: flex; flex: 1 0 100%; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid #edf0f3; }
+.customer-filter-footer .customer-button--primary { margin-left: auto; min-width: 132px; justify-content: center; }
+.customer-filter-footer .customer-reset-button { display: flex; align-items: center; gap: 6px; width: auto; min-width: 165px; white-space: nowrap; flex-shrink: 0; min-height: 38px; padding: 0 12px; }
+.customer-filter-footer span { font-size: 12px; color: #8a2739; }
+.customer-overview { margin: 14px 0 20px; }
+.customer-overview>header { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; color:#68727e; margin-bottom:10px; }
+.customer-overview-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+.customer-overview article { display:grid; gap:8px; padding:16px; background:linear-gradient(135deg,#fff,#f7f9fc); border:1px solid #e1e6ed; border-radius:12px; min-width:0; }
+.customer-overview article svg { color:#a91d35; }
+.customer-overview article span { font-size:13px; color:#485669; }
+.customer-overview article strong { font-size:26px; color:#202c3c; }
+.customer-overview article small { font-size:12px; line-height:1.55; color:#667489; }
+@media(max-width:1250px){.customer-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:750px){.customer-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.customer-filter-footer{flex-wrap:wrap;}}
+@media(max-width:450px){.customer-overview-grid{grid-template-columns:1fr;}}
+.customer-duplicate-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.customer-directory__toolbar { gap: 14px; align-items: end; }
+.customer-search { flex: 1 0 100%; }
 .customer-table tbody tr:last-child td { border-bottom: 0; }
 .customer-table td > strong, .customer-table td > span, .customer-table td > small { display: block; }
 .customer-table td > strong { color: #222a34; font-size: 14px; }
@@ -280,3 +327,5 @@
   .customer-detail-grid { grid-template-columns: 1fr; }
   .customer-pagination { align-items: flex-start; flex-direction: column; }
 }
+.customer-employee-choice .ant-select-selector { min-height: 38px; border-radius: 8px !important; background: white !important; }
+.customer-employee-choice[data-active="true"] .ant-select-selector { border-color: #e11d48 !important; background: #fff1f2 !important; }

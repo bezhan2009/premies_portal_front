@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Form, Input, Modal, Space, Table, Tag, message } from "antd";
 import { Edit3, Plus, RefreshCw, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
+import CompactClientSearch from "../../../components/general/CompactClientSearch.jsx";
 
 const listConfig = {
   white: {
@@ -219,8 +220,10 @@ export default function ComplianceListPage({ listType }) {
         okText="Сохранить"
         cancelText="Отмена"
         destroyOnClose
+        width={650}
       >
         <Form form={form} layout="vertical" preserve={false} style={{ marginTop: 20 }}>
+          {!editingItem && modalOpen && <CompactClientSearch onSelect={values=>{form.setFieldsValue(values);message.success('Данные клиента перенесены. Проверьте их перед сохранением.');}}/>}
           <Form.Item
             name="inn"
             label="ИНН клиента"

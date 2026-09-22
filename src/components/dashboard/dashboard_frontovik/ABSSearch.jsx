@@ -10,6 +10,7 @@ import {
     getUserInfoPhone,
     fetchCreditGraphs,
     getClientByCode,
+    invalidateClientProfileCache,
 } from "../../../api/ABS_frotavik/getUserCredits";
 import {
     fetchLoanDetails,
@@ -56,6 +57,7 @@ import ClientDocumentsModal from "../../client-documents/ClientDocumentsModal.js
 import ClientDocumentUploadModal from "../../client-documents/ClientDocumentUploadModal.jsx";
 import DocumentPreviewModal from "../../client-documents/DocumentPreviewModal.jsx";
 import NewClientModal from "./NewClientModal.jsx";
+import { creationCapabilities } from "../../../api/ABS_frotavik/createClient.js";
 import { getClientDocumentsByINN } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import { fetchMerchantPosTerminals } from "../../../api/merchantPosTerminals.js";
 import {
@@ -70,6 +72,8 @@ import {
     formatPhoneNumber as formatPhoneNumberUtil,
     copyToClipboard as copyToClipboardUtil,
     resolveClientSearch,
+    normalizePhoneSearchValue,
+    preservePhoneSearchInput,
 } from "./absSearchUtils.js";
 import {
     getClientSelfieDocument,
@@ -122,6 +126,8 @@ export default function ABSClientSearch() {
     const [isLoading, setIsLoading] = useState(false);
     const [clientNotFound, setClientNotFound] = useState(false);
     const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+    const [clientCreationEnabled, setClientCreationEnabled] = useState(false);
+    useEffect(() => { let active=true; creationCapabilities().then(r=>{if(active)setClientCreationEnabled(r.enabled)}).catch(()=>{});return()=>{active=false}; }, []);
     const searchInFlightRef = useRef(false);
     const pinRequirementCacheRef = useRef(new Map());
     const consumedClientIndexRef = useRef("");
@@ -288,6 +294,8 @@ export default function ABSClientSearch() {
 
     const detectSearchType = (val) => {
         if (!val) return null;
+        // Nine local phone digits must not silently switch to INN while typing.
+        if (preservePhoneSearchInput(val, selectTypeSearchClient)) return TYPE_SEARCH_CLIENT[0].value;
         
         // а) Если есть русские/английские буквы -> поиск по ФИО (byName)
         if (/[a-zA-Zа-яА-ЯёЁ]/.test(val)) {
@@ -405,11 +413,10 @@ export default function ABSClientSearch() {
     // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
         let url = "";
-        const digits = String(searchValue || "").replace(/\D/g, "");
 
         switch (searchType) {
             case "client/info?phoneNumber=":
-                url = `${API_ATM_URL}/services/clientcode.php?phone=${digits}`;
+                url = `${API_ATM_URL}/services/clientcode.php?phone=${normalizePhoneSearchValue(searchValue)}`;
                 break;
             case "byCardId":
                 url = `${API_ATM_URL}/services/innbyidn.php?cardidn=${searchValue}`;
@@ -436,6 +443,7 @@ export default function ABSClientSearch() {
                 },
             });
 
+            if (clientCreationEnabled && response.status === 404) return [];
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -2030,11 +2038,11 @@ export default function ABSClientSearch() {
                             phoneNumber={phoneNumber}
                         />
 
-                        {clientNotFound && !isLoading && clientsData.length === 0 && (
+                        {clientCreationEnabled && clientNotFound && !isLoading && clientsData.length === 0 && (
                             <div className="new-client-entry">
                                 <div>
                                     <strong>Клиент не найден в АБС</strong>
-                                    <span>Создайте обязательную анкету для определения сценария обслуживания.</span>
+                                    <span>Заполните анкету и данные для создания клиента в АБС.</span>
                                 </div>
                                 <button
                                     type="button"
@@ -2119,6 +2127,15 @@ export default function ABSClientSearch() {
                         ) : (
                             <ClientDataTabs
                                 selectedClient={selectedClient}
+                                onCardOpened={async (code) => {
+                                    invalidateClientProfileCache();
+                                    const generation = productRequestGenerationRef.current;
+                                    const [cards, accounts] = await Promise.all([getUserCards(code), getUserAccounts(code)]);
+                                    if (selectedClientRef.current?.client_code !== code || generation !== productRequestGenerationRef.current) return;
+                                    if (!Array.isArray(cards) || !Array.isArray(accounts)) throw new Error("Failed to refresh cards/accounts");
+                                    setCardsData(current => cards.map(card => ({ ...current.find(old => old.cardId === card.cardId), ...card })));
+                                    setAccountsData(accounts);
+                                }}
                                 cardsData={cardsData}
                                 sortedCards={sortedCards}
                                 requestSortCards={requestSortCards}
@@ -2278,8 +2295,10 @@ export default function ABSClientSearch() {
 
             <NewClientModal
                 open={isNewClientModalOpen}
+                initialSearch={phoneNumber}
                 onClose={() => setIsNewClientModalOpen(false)}
                 onSubmitted={(result) => {
+                    if (result?.status === "completed" && result.client_code) { searchLookupCache.clear(); invalidateClientProfileCache(); setClientNotFound(false); handleSearchClient(result.client_code, "client/info/client-index?clientIndex="); return; }
                     const requiresCompliance = Boolean(result?.requires_compliance);
                     showAlert(
                         result?.message || (requiresCompliance

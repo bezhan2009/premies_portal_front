@@ -2,6 +2,16 @@ import { TYPE_SEARCH_CLIENT } from "../../../const/defConst.js";
 
 const CLIENT_CODE_PATTERN = /^\d{4}\.\d{6}$/;
 
+export const normalizePhoneSearchValue = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("992") ? digits.slice(3) : digits;
+};
+
+export const preservePhoneSearchInput = (value, selectedType) => selectedType === TYPE_SEARCH_CLIENT[0].value
+  && /^[+\d\s()-]*$/.test(value)
+  && String(value).replace(/\D/g, "").length <= 12
+  && !/^1\d{11}$/.test(String(value).replace(/\D/g, ""));
+
 export const resolveClientSearch = (value, selectedSearchType) => {
   const searchValue = String(value || "").trim();
   return {

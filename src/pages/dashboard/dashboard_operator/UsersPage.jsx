@@ -529,7 +529,24 @@ export default function UsersPage() {
           >
             Офисы приема заявок
           </button>
+          <button
+            className={`tab-btn ${activeTab === "monitoring" ? "active" : ""}`}
+            onClick={() => { setActiveTab("monitoring"); setError(""); }}
+          >
+            Пользователи мониторинга
+          </button>
         </div>
+
+        {activeTab === "monitoring" && (
+          <section className="admin-tab-content">
+            <p>Управление доступом к мониторингу API. Войдите под учётной записью администратора мониторинга.</p>
+            <iframe
+              title="Пользователи мониторинга API"
+              src={`http://${window.location.hostname}:8989/?tab=users&embed=1`}
+              style={{ width: "100%", height: "75vh", minHeight: 620, border: "1px solid #e5e7eb", borderRadius: 12 }}
+            />
+          </section>
+        )}
 
         {error && (
           <div className="admin-alert admin-alert-danger">

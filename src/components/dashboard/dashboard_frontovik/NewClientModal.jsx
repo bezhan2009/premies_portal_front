@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
+import useOnboardingDraft from './useOnboardingDraft';
+import { preflightClientCreation, uploadWorkflowAttachment, workflowError } from '../../../api/frontovikWorkflow';
+import { newPhoneChangeID } from '../../../api/ABS_frotavik/changeClientPhone';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Button, Col, Form, Input, Modal, Progress, Radio, Row, Select, Upload, message } from "antd";
 import { Camera, FileUp, ShieldCheck, UserRound } from "lucide-react";
-import { checkTerroristList, submitFrontovikNewClient } from "../../../api/complianceRequests.js";
+import { checkTerroristList } from "../../../api/complianceRequests.js";
 import { uploadClientDocument } from "../../../api/clientsDataFiles/clientsDataFiles.js";
 import {
   buildNewClientStatusReasons,
@@ -9,6 +12,11 @@ import {
   isQuestionnaireFieldValid,
   isTerrorScreeningReady,
 } from "./newClientFormUtils.js";
+
+import { useClientCreation, creationPayload } from "./useClientCreation.js";
+import { ClientCreationFields, ClientCreationProgress, IdentityCheckIcon } from "./ClientCreationFields.jsx";
+import CustomDateInput from "../../elements/CustomDateInput.jsx";
+import { validCreationINN } from './onboardingRules';
 
 const requiredRule = { required: true, message: "Обязательное поле" };
 const yesNoOptions = [
@@ -44,8 +52,7 @@ const questionnaireFields = [
   } },
   { name: "inn", label: "ИНН / идентификатор", validate: (value, values) => {
     const normalized = String(value || "").trim();
-    if (values.is_resident === true) return /^\d{9,14}$/.test(normalized);
-    return /^[A-Za-z0-9-]{5,32}$/.test(normalized);
+    return validCreationINN(normalized);
   } },
   { name: "phone", label: "Номер телефона" },
   ...complianceCategories.map((name) => ({ name, label: complianceFieldLabels[name] })),
@@ -54,9 +61,12 @@ const questionnaireFields = [
   { name: "apl_pzl", label: "АПЛ/ПЗЛ", boolean: true },
 ];
 
-export default function NewClientModal({ open, onClose, onSubmitted }) {
+export default function NewClientModal({ open, onClose, onSubmitted, initialSearch = "" }) {
   const [form] = Form.useForm();
+  const creation = useClientCreation(open, form);
+  useEffect(() => { if (open) { const digits=String(initialSearch).replace(/\D/g, ""); if (/^992\d{9}$/.test(digits)) form.setFieldValue("phone",digits); else if (/^\d{9}$/.test(digits)) form.setFieldValue("inn",digits); } }, [open, initialSearch, form]);
   const [submitting, setSubmitting] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [complianceCheck, setComplianceCheck] = useState({
     state: "idle",
     identifier: "",
@@ -68,9 +78,14 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     match: null,
   });
   const [complianceOptions, setComplianceOptions] = useState({});
+  const [complianceOptionsError, setComplianceOptionsError] = useState('');
   const [complianceScoreByValue, setComplianceScoreByValue] = useState({});
   const [clientPhotoList, setClientPhotoList] = useState([]);
   const [clientDocumentList, setClientDocumentList] = useState([]);
+  const draft = useOnboardingDraft(open, form, creation.locked);
+  const [preflightBusy, setPreflightBusy] = useState(false);
+  const [passportBusy, setPassportBusy] = useState(false);
+  const activeDraft = useRef({}); activeDraft.current = { id: draft.id, open };
   const watchedValues = Form.useWatch([], form);
   const values = useMemo(() => watchedValues || {}, [watchedValues]);
   const screeningIdentifier = String(values.inn || "").replace(/\s/g, "");
@@ -80,6 +95,20 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       isResident: values.is_resident,
       complianceCheck,
     });
+
+  const closeModal = async () => {
+    try { await draft.persist(); } catch (e) { message.error(workflowError(e)); return; }
+    setCloseConfirmOpen(false);
+    creation.hide();
+    form.resetFields();
+    setClientPhotoList([]);
+    setClientDocumentList([]);
+    onClose();
+  };
+
+  const requestClose = () => {
+    setCloseConfirmOpen(true);
+  };
 
   const totalComplianceScore = useMemo(() => {
     const getScore = (value) => Number(complianceScoreByValue[value]) || 0;
@@ -95,15 +124,20 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
   }, [complianceScoreByValue, values]);
 
   const completion = useMemo(() => {
-    const invalidFields = questionnaireFields.filter(
-      (field) => !isQuestionnaireFieldValid(field, values),
-    );
-    const completed = questionnaireFields.length - invalidFields.length;
+    const creationFields = creation.enabled ? [
+      ["department","Филиал"], ["service_group","Группа обслуживания"], ["codeword","Кодовое слово"], ["sex","Пол"], ["country","Страна"], ["latin_first_name","Имя латиницей"], ["latin_last_name","Фамилия латиницей"],
+      ["sector","Сектор экономики"], ["tariff","Тарифная категория"], ["address.region_key","Область"],
+      ["passport.type.code","Тип документа"], ["passport.number","Номер документа"], ["passport.issued","Дата выдачи"], ["passport.issuer","Кем выдан"], ["passport.expires","Срок действия"],
+      ["address.country_name","Страна адреса"], ["address.region.name","Регион"], ["address.district.name","Район"], ["address.city.name","Город"], ["address.street.name","Улица"], ["address.house.code","Дом"], ["address.zip","Почтовый индекс"], ["address.okato","ОКАТО"], ["kopf","КОПФ"]
+    ].map(([path,label])=>({name:path,label,validate:(_value,all)=>Boolean(path.split(".").reduce((item,key)=>item?.[key],all))})) : [];
+    const fields = [...questionnaireFields, ...creationFields];
+    const invalidFields = fields.filter(field => !isQuestionnaireFieldValid(field, values));
+    const completed = fields.length - invalidFields.length;
     return {
-      percent: Math.round((completed / questionnaireFields.length) * 100),
+      percent: Math.round((completed / fields.length) * 100),
       invalidFields,
     };
-  }, [values]);
+  }, [values, creation.enabled]);
 
   const statusReasons = useMemo(
     () => buildNewClientStatusReasons({
@@ -139,10 +173,11 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           },
           signal: controller.signal,
         });
-        if (!response.ok) return;
+        if (!response.ok) throw new Error('catalog unavailable');
 
         const options = await response.json();
-        if (!Array.isArray(options)) return;
+        if (!Array.isArray(options) || complianceCategories.some(category => !options.some(option => option.category === category))) throw new Error('incomplete catalog');
+        setComplianceOptionsError('');
 
         const grouped = {};
         const scores = {};
@@ -178,6 +213,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         );
       } catch (error) {
         if (error.name !== "AbortError") {
+          setComplianceOptionsError('Справочники комплаенс недоступны или не заполнены. Повторите открытие формы после их настройки в Daily.');
           console.error("Ошибка загрузки справочников комплаенса:", error);
         }
       }
@@ -190,7 +226,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
 
   useEffect(() => {
     const identifier = String(values.inn || "").replace(/\s/g, "");
-    if (!open || !/^\d{9,14}$/.test(identifier)) {
+    if (!open || !validCreationINN(identifier)) {
       setComplianceCheck({ state: "idle", identifier: "", matched: false, listType: "" });
       return undefined;
     }
@@ -236,7 +272,7 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
       middleName: String(values.middle_name || "").trim(),
       birthDate: String(values.birth_date || "").trim(),
     };
-    if (!open || complianceLookupPending || isWhiteListed || !isTerrorScreeningReady(screeningData)) {
+    if (!open || complianceLookupPending || !isTerrorScreeningReady(screeningData)) {
       setTerrorScreening({ state: "idle", match: null });
       return undefined;
     }
@@ -268,56 +304,70 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
     values.middle_name,
   ]);
 
-  const handleSubmit = async (values) => {
+
+  const withDocuments = input => ({ ...input, draft_id: draft.id, passport_attachment_id: draft.passport?.id });
+  const formKey = JSON.stringify(creationPayload(withDocuments(values)));
+  const validPassport = Boolean(draft.passport && draft.passport.inn === String(values.inn || '').trim() && draft.passport.scope_id === draft.id);
+  const validReview = draft.review?.key === formKey ? draft.review.result : null;
+  const checkQuestionnaire = async (background = false) => {
+    if (preflightBusy || !validPassport || !creation.enabled) return;
+    setPreflightBusy(true);
+    try {
+      const current = await form.validateFields();
+      await draft.persist();
+      const data = creationPayload(withDocuments(current));
+      const key = JSON.stringify(data);
+      const result = await preflightClientCreation({ request_id: newPhoneChangeID(), data });
+      if (activeDraft.current.id === draft.id && activeDraft.current.open) draft.setReview({ key, result });
+    } catch (e) { if (!e.errorFields && !background) message.error(workflowError(e)); }
+    finally { setPreflightBusy(false); }
+  };
+  const backgroundCheck = useRef(checkQuestionnaire); backgroundCheck.current = checkQuestionnaire;
+  useEffect(() => {
+    if (!open || !validReview?.requires_compliance || validReview?.request?.status !== 'pending' || creation.locked) return;
+    const timer = setTimeout(() => { void backgroundCheck.current(true); }, 15000);
+    return () => clearTimeout(timer);
+  }, [open, validReview, preflightBusy, creation.locked]);
+  const uploadPassport = async file => {
+    if (!validCreationINN(values.inn)) { message.error('ИНН должен содержать ровно 9 цифр'); return false; }
+    setPassportBusy(true);
+    try {
+      const receipt = await uploadWorkflowAttachment(file, { scope_id: draft.id, purpose: 'passport', inn: String(values.inn).trim() });
+      if (activeDraft.current.id !== receipt.scope_id || !activeDraft.current.open) return false;
+      draft.setPassport(receipt); draft.setReview(null);
+      setClientDocumentList([{ uid: receipt.id, name: receipt.filename, status: 'done' }]);
+    } catch (e) { message.error(workflowError(e)); }
+    finally { setPassportBusy(false); }
+    return false;
+  };
+  const handleSubmit = async current => {
+    if (creation.unresolved || !creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique) {
+      message.warning('Загрузите паспорт и дождитесь разрешения после проверки клиента'); return;
+    }
     setSubmitting(true);
     try {
-      const identifier = String(values.inn || "").trim();
-      const uploads = [
-        ...clientPhotoList.map((item) => ({
-          file: item.originFileObj,
-          title: "Фото клиента",
-          documentType: "selfie_with_passport",
-        })),
-        ...clientDocumentList.map((item) => ({
-          file: item.originFileObj,
-          title: item.name || "Документ клиента",
-          documentType: "front_side_of_the_passport",
-        })),
-      ].filter((item) => item.file);
-
-      for (const upload of uploads) {
-        await uploadClientDocument(identifier, upload.title, upload.file, upload.documentType);
+      await draft.persist();
+      for (const item of clientPhotoList) {
+        if (item.originFileObj) await uploadClientDocument(String(current.inn).trim(), 'Фото клиента', item.originFileObj, 'selfie_with_passport');
       }
-
-      const result = await submitFrontovikNewClient({
-        ...values,
-        occupation: values.client_occupation,
-        compliance_score: totalComplianceScore,
-      });
-      form.resetFields();
-      setClientPhotoList([]);
-      setClientDocumentList([]);
-      onSubmitted(result);
-      onClose();
-    } catch (error) {
-      message.error(error.message || "Не удалось отправить анкету");
-    } finally {
-      setSubmitting(false);
-    }
+      const result = await creation.submit(withDocuments(current));
+      if (result?.requires_compliance) draft.setReview({ key: formKey, result });
+    } catch (e) { message.error(workflowError(e)); }
+    finally { setSubmitting(false); }
   };
 
-  return (
+  return <>
     <Modal
       title={null}
       open={open}
-      onCancel={onClose}
+      onCancel={requestClose}
       footer={null}
       width={1480}
       centered
       className="new-client-modal"
       destroyOnHidden
-      maskClosable={!submitting}
-      closable={!submitting}
+      maskClosable
+      closable
     >
       <div className="new-client-modal__header">
         <span className="new-client-modal__header-icon"><UserRound size={22} /></span>
@@ -328,7 +378,21 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
         </div>
       </div>
 
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', margin: '12px 0' }}>
+        <Select aria-label="Сохранённые черновики" placeholder="Последние 10 незавершённых картотек" style={{ minWidth: 300 }} disabled={creation.locked || submitting || passportBusy || preflightBusy}
+          value={draft.drafts.some(d => d.id === draft.id) ? draft.id : undefined}
+          options={draft.drafts.map(d => ({ value: d.id, label: [d.payload.values?.last_name, d.payload.values?.first_name, d.payload.values?.inn].filter(Boolean).join(' · ') || 'Незавершённая картотека' }))}
+          onChange={id => { draft.restore(id).then(() => { setClientPhotoList([]); setClientDocumentList([]); }).catch(e => message.error(workflowError(e))); }} />
+        <Button disabled={creation.locked || submitting || passportBusy || preflightBusy} onClick={() => draft.startNew().then(() => { setClientPhotoList([]); setClientDocumentList([]); }).catch(e => message.error(workflowError(e)))}>Новая анкета</Button>
+        <span>{draft.saving ? 'Сохраняем черновик…' : draft.savedAt ? 'Черновик сохранён' : 'Черновик сохранится автоматически'}</span>
+      </div>
+      {draft.error && <Alert type="error" message={draft.error} showIcon />}
+      {creation.showProgress && <ClientCreationProgress creation={creation} onBack={creation.backToForm} onDone={async result => { try { await draft.finish(creation.pending?.data?.draft_id); } catch (e) { message.error(workflowError(e)); } creation.dismiss(); onSubmitted(result); onClose(); }} />}
+      {!creation.showProgress && creation.error && <Alert showIcon type="error" message={creation.error} />}
+      {!creation.showProgress && creation.unresolved && <Alert showIcon type="warning" message="Есть сохранённая операция создания. Анкету можно редактировать; перед новой отправкой необходимо завершить или проверить предыдущую попытку."
+        action={<><Button onClick={creation.resume}>Состояние операции</Button><Button loading={creation.busy} onClick={creation.backToForm}>Завершить неудачную попытку</Button></>} />}
       <Form
+        style={{ display: creation.locked ? "none" : undefined }}
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
@@ -338,6 +402,13 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
           is_resident: true,
           fatca: false,
           apl_pzl: false,
+          country: "TJ",
+          service_group: "5100",
+          kopf: "4",
+          sector: "7",
+          tariff: "200",
+          passport: { type: { code: "058" } },
+          address: { country_name: "ТОҶИКИСТОН" },
         }}
       >
         <div className="new-client-progress-panel">
@@ -393,42 +464,42 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Дата рождения" name="birth_date" rules={[requiredRule]}>
-                <Input type="date" max={new Date().toISOString().slice(0, 10)} />
+                <CustomDateInput type="date" style={{ width: "100%" }} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item
                 label="ИНН / идентификатор клиента"
                 name="inn"
+                normalize={value => String(value || '').replace(/\D/g, '').slice(0, 9)}
                 dependencies={["is_resident"]}
                 rules={[
                   requiredRule,
-                  ({ getFieldValue }) => ({
+                  () => ({
                     validator: (_, value) => {
                       const normalized = String(value || "").trim();
-                      const isResident = getFieldValue("is_resident");
-                      const valid = isResident === false
-                        ? /^[A-Za-z0-9-]{5,32}$/.test(normalized)
-                        : /^\d{9,14}$/.test(normalized);
+                      const valid = validCreationINN(normalized);
                       return valid
                         ? Promise.resolve()
-                        : Promise.reject(new Error("Для резидента укажите ИНН; для нерезидента — идентификатор"));
+                        : Promise.reject(new Error("ИНН должен содержать ровно 9 цифр"));
                     },
                   }),
                 ]}
               >
-                <Input maxLength={32} placeholder="Введите ИНН" />
+                <Input maxLength={9} inputMode="numeric" placeholder="9 цифр" suffix={creation.enabled && <IdentityCheckIcon kind="inn" value={values.inn} check={creation.checks.inn} />} onBlur={() => creation.enabled && creation.check("inn", form.getFieldValue("inn"))} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Номер телефона" name="phone" rules={[requiredRule]}>
-                <Input maxLength={20} placeholder="992XXXXXXXXX" />
+                <Input maxLength={20} placeholder="992XXXXXXXXX" suffix={creation.enabled && <IdentityCheckIcon kind="phone" value={values.phone} check={creation.checks.phone} />} onBlur={() => creation.enabled && creation.check("phone", form.getFieldValue("phone"))} />
               </Form.Item>
             </Col>
           </Row>
         </section>
 
+        {creation.enabled && <ClientCreationFields key={draft.id} form={form} creation={creation} />}
         <section className="new-client-compliance-block">
+          {complianceOptionsError && <Alert type="error" showIcon message={complianceOptionsError} />}
           <div className="new-client-compliance-block__header">
             <strong><ShieldCheck size={18} /> Параметры комплаенса</strong>
             <span>Балл комплаенса: <b>{totalComplianceScore}</b></span>
@@ -476,33 +547,52 @@ export default function NewClientModal({ open, onClose, onSubmitted }) {
                 <Button htmlType="button" icon={<Camera size={16} />}>Выбрать фото</Button>
               </Upload>
             </Form.Item>
-            <Form.Item label="Документ клиента">
+            <Form.Item label="Скан паспорта" required>
               <Upload
-                accept="image/*,.pdf,.doc,.docx"
-                beforeUpload={() => false}
+                accept=".pdf,.jpg,.jpeg,.png"
+                beforeUpload={uploadPassport}
+                disabled={passportBusy || submitting}
                 fileList={clientDocumentList}
                 maxCount={1}
-                onChange={({ fileList }) => setClientDocumentList(fileList)}
+                onRemove={() => { draft.setPassport(null); draft.setReview(null); setClientDocumentList([]); return true; }}
               >
-                <Button htmlType="button" icon={<FileUp size={16} />}>Выбрать документ</Button>
+                <Button htmlType="button" icon={<FileUp size={16} />} loading={passportBusy}>Загрузить скан паспорта</Button>
               </Upload>
+              {validPassport && <div style={{ color: '#15803d', marginTop: 8 }}>✓ {draft.passport.filename} — скан сохранён в документах клиента</div>}
             </Form.Item>
           </div>
         </section>
-
+        {validReview && <Alert showIcon type={validReview.service_allowed ? 'success' : validReview.request?.status === 'rejected' ? 'error' : 'warning'} message={validReview.message}
+          description={validReview.request?.id ? <a href={`/frontovik/compliance-requests?requestId=${validReview.request.id}`}>Заявка комплайнс №{validReview.request.id}</a> : undefined} />}
+        {!validReview && <Alert type="info" showIcon message="Перед созданием загрузите скан паспорта и проверьте анкету. При совпадениях потребуется решение комплайнс." />}
         <div className="new-client-modal__actions">
-          <Button htmlType="button" onClick={onClose} disabled={submitting}>Отмена</Button>
+          <Button htmlType="button" onClick={requestClose} disabled={submitting}>Отмена</Button>
+          <Button disabled={!creation.enabled || !validPassport || !creation.unique || submitting || passportBusy} loading={preflightBusy} onClick={() => checkQuestionnaire(false)}>Проверить клиента</Button>
           <Button
             type="primary"
             htmlType="button"
+            disabled={creation.unresolved || creation.busy || !creation.enabled || !validPassport || !validReview?.service_allowed || !creation.unique || preflightBusy || passportBusy}
             loading={submitting}
-            disabled={terrorScreening.state === "checking" && !isWhiteListed}
             onClick={() => form.submit()}
           >
-            Отправить заявку
+            {creation.enabled ? "Создать клиента" : "Отправить заявку"}
           </Button>
         </div>
       </Form>
     </Modal>
-  );
+    <Modal
+      open={closeConfirmOpen}
+      title="Предупреждение"
+      okText="Закрыть"
+      cancelText="Остаться"
+      okButtonProps={{ danger: true }}
+      onOk={closeModal}
+      onCancel={() => setCloseConfirmOpen(false)}
+      maskClosable={false}
+      centered
+      zIndex={2100}
+    >
+      Вы закрываете окно, указанные данные могут пропасть. Сохранённый черновик останется доступен. Закрытие окна не отменяет уже отправленную операцию.
+    </Modal>
+  </>;
 }

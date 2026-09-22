@@ -2,6 +2,7 @@ import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
 
 const ABS_CACHE_TTL = 60 * 1000;
 const absRequestCache = new Map();
+export const invalidateClientProfileCache = () => absRequestCache.clear();
 
 const authCacheScope = () => {
   try { return localStorage.getItem("access_token") || "anonymous"; }

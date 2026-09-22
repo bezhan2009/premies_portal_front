@@ -82,7 +82,7 @@ const managementRoutes = (
     {/* Frontovik (Role 17), Auditor (Role 35), and Customers (Role 39) */}
     <Route
       element={
-        <RequireRole allowedRoles={[17, 35, 39]}>
+        <RequireRole allowedRoles={[17, 35, 39, 44]}>
           <Outlet />
         </RequireRole>
       }

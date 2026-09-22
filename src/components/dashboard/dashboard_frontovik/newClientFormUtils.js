@@ -17,10 +17,9 @@ export const getComplianceLookupStateForScreening = ({
   complianceCheck = {},
 }) => {
   const normalizedIdentifier = String(identifier || "").replace(/\s/g, "");
-  if (!/^\d{9,14}$/.test(normalizedIdentifier)) {
-    const validForeignIdentifier = /^[A-Za-z0-9-]{5,32}$/.test(normalizedIdentifier);
+  if (!/^\d{9}$/.test(normalizedIdentifier)) {
     return {
-      pending: isResident !== false || !validForeignIdentifier,
+      pending: true,
       isWhiteListed: false,
     };
   }
@@ -57,11 +56,11 @@ export const buildNewClientStatusReasons = ({
     } else if (complianceCheck.listType === "black") {
       reasons.push({ tone: "danger", text: "Клиент в черных списках" });
     } else if (isWhiteListed) {
-      reasons.push({ tone: "success", text: "Клиент в белом списке — совпадения по спискам игнорируются" });
+      reasons.push({ tone: "success", text: "Клиент в белом списке. Проверка террористических списков обязательна" });
     }
   }
 
-  if (!isWhiteListed && !complianceLookupPending) {
+  if (!complianceLookupPending) {
     if (terrorScreening.state === "checking") {
       reasons.push({ tone: "checking", text: "Проверка ФИО по внешнему списку…" });
     } else if (terrorScreening.state === "error") {
