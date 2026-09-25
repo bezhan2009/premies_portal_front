@@ -494,6 +494,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
                         icon: FileText
                     },
                     { name: "Данные", href: "/operator/data", key: "data", icon: Database },
+                    { name: "Proxy Pay", href: "/operator/proxy-pay", key: "proxy_pay", icon: ArrowLeftRight },
                     { name: "Тесты", href: "/operator/tests", key: "tests_operator", icon: CheckSquare },
                     {
                         name: "Управление Базой знаний",

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Input, Button, Space, Typography, Tag, Row, Col, DatePicker } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, Card, Input, Button, Space, Typography, Tag, Row, Col, DatePicker } from 'antd';
 import FlexibleAntTable from '../../components/table/FlexibleAntTable';
 import { apiClient } from '../../api/utils/apiClient';
 import { RefreshCw, Filter, Search, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import UserProfileLink from '../../components/general/UserProfileLink.jsx';
+import { auditLogErrorMessage } from './auditLogsErrors.js';
+import { createAuditLogsLoader } from './auditLogsLoader.js';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -13,38 +15,44 @@ const AuditLogsPage = () => {
     const [logs, setLogs] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState('');
     const [actionFilter, setActionFilter] = useState('');
     const [userFilter, setUserFilter] = useState('');
     const [clientPhoneFilter, setClientPhoneFilter] = useState('');
     const [clientInnFilter, setClientInnFilter] = useState('');
     const [dateRange, setDateRange] = useState(null);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
+    const auditLoader = useRef(null);
+    if (!auditLoader.current) auditLoader.current = createAuditLogsLoader(apiClient);
 
     const fetchAuditLogs = async (page = 1, pageSize = 20) => {
-        setLoading(true);
-        try {
-            const params = {
-                size: pageSize,
-                from: (page - 1) * pageSize,
-            };
-            if (actionFilter) params.action = actionFilter;
-            if (userFilter) params.username = userFilter;
-            if (clientPhoneFilter) params.client_phone = clientPhoneFilter;
-            if (clientInnFilter) params.client_inn = clientInnFilter;
-            if (dateRange && dateRange[0] && dateRange[1]) {
-                params.startDate = dateRange[0].toISOString();
-                params.endDate = dateRange[1].toISOString();
-            }
-
-            const response = await apiClient.get('/audit/logs', { params });
-            setLogs(response.data.logs || []);
-            setTotal(response.data.total || 0);
-            setPagination({ current: page, pageSize });
-        } catch (error) {
-            console.error('Failed to fetch audit logs:', error);
-        } finally {
-            setLoading(false);
+        const params = {
+            size: pageSize,
+            from: (page - 1) * pageSize,
+        };
+        if (actionFilter) params.action = actionFilter;
+        if (userFilter) params.username = userFilter;
+        if (clientPhoneFilter) params.client_phone = clientPhoneFilter;
+        if (clientInnFilter) params.client_inn = clientInnFilter;
+        if (dateRange && dateRange[0] && dateRange[1]) {
+            params.startDate = dateRange[0].toISOString();
+            params.endDate = dateRange[1].toISOString();
         }
+        await auditLoader.current(params, {
+            onStart: () => { setLoading(true); setLoadError(''); },
+            onSuccess: (data) => {
+                setLogs(data.logs || []);
+                setTotal(data.total || 0);
+                setPagination({ current: page, pageSize });
+            },
+            onError: (error) => {
+                setLogs([]);
+                setTotal(0);
+                setLoadError(auditLogErrorMessage(error));
+                console.error('Failed to fetch audit logs:', error);
+            },
+            onFinish: () => setLoading(false),
+        });
     };
 
     useEffect(() => {
@@ -272,6 +280,14 @@ const AuditLogsPage = () => {
                             )}
                         </Space>
                     </Card>
+                    {loadError && (
+                        <Alert
+                            type="error"
+                            showIcon
+                            message={loadError}
+                            style={{ marginTop: '16px' }}
+                        />
+                    )}
                     <div style={{ marginTop: '16px' }}>
                         <FlexibleAntTable
                             dataSource={logs}

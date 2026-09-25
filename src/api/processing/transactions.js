@@ -1,29 +1,42 @@
 import axios from 'axios';
+import { withClientProductRead } from '../../utils/clientProductRead.js';
+import { buildCardHistoryRequestURL } from '../../utils/cardHistoryContext.js';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const runtimeEnv = import.meta.env || {};
+const BASE_URL = runtimeEnv.VITE_BACKEND_URL;
 const historyHeaders = () => ({Authorization:`Bearer ${localStorage.getItem('access_token')}`});
+
+export const withSelectedClient = (url, clientIndex) => {
+    if (!/^\d{4}\.\d{6}$/.test(String(clientIndex || '').trim())) {
+        throw new Error('Не выбран клиент');
+    }
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}clientIndex=${encodeURIComponent(String(clientIndex).trim())}`;
+};
+
+export const executeFrontovikCardAction = async ({ clientIndex, cardId, action, reason = '', comment = '' }) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://localhost:7575';
+    const response = await axios.post(
+        withSelectedClient(`${GATEWAY_URL}/api/transactions/card-action`, clientIndex),
+        { cardId: String(cardId), action, reason: String(reason), comment: String(comment) },
+        {
+            headers: {
+                'accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        }
+    );
+    return response.data;
+};
 
 export const fetchTransactionsByCardId = async (
     cardID,
     fromDate = null,
-    toDate = null
+    toDate = null,
+    clientIndex = ''
 ) => {
-    const url = new URL(
-        `${BASE_URL}/api/processing-history/by-cards`
-    );
-
-    // Remove trailing comma if present
-    const cardIds = String(cardID).replace(/,+$/, "");
-
-    url.searchParams.append("cardIds", cardIds);
-
-    if (fromDate) {
-        url.searchParams.append("fromDate", fromDate);
-    }
-
-    if (toDate) {
-        url.searchParams.append("toDate", toDate);
-    }
+    const url = buildCardHistoryRequestURL(BASE_URL, cardID, fromDate, toDate, clientIndex);
 
     const response = await fetch(url, {headers:historyHeaders()});
 
@@ -187,10 +200,10 @@ export const fetchTransactionsSearch = async (params) => {
 };
 
 // Получение подробной информации о карте
-export const fetchCardDetails = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
+export const fetchCardDetails = async (cardId, clientCode) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/card-data`, {
+        const response = await axios.post(withClientProductRead(`${GATEWAY_URL}/api/transactions/card-data`, clientCode), {
             cardId: String(cardId)
         }, {
             headers: {
@@ -207,7 +220,7 @@ export const fetchCardDetails = async (cardId) => {
 };
 
 export const fetchCardFios = async (cardIds) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
         const response = await axios.post(`${GATEWAY_URL}/api/transactions/card-fio`, {
             cardIds: cardIds
@@ -233,10 +246,10 @@ const escapeXmlText = (value) => String(value || "")
     .replace(/'/g, "&apos;");
 
 // Получение информации об уведомлениях (сервисах) карты
-export const fetchCardServices = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const fetchCardServices = async (cardId, clientCode) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.get(`${GATEWAY_URL}/api/transactions/services?CardId=${cardId}`, {
+        const response = await axios.get(withClientProductRead(`${GATEWAY_URL}/api/transactions/services?CardId=${encodeURIComponent(cardId)}`, clientCode), {
             headers: {
                 'accept': '*/*',
                 'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -250,9 +263,9 @@ export const fetchCardServices = async (cardId) => {
 };
 
 // Изменение статуса карты (блокировка)
-export const changeCardStatus = async (cardId, status, comment) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
-    const url = `${GATEWAY_URL}/api/transactions/block-card`;
+export const changeCardStatus = async (cardId, status, comment, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = withSelectedClient(`${GATEWAY_URL}/api/transactions/block-card`, clientIndex);
     const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -298,9 +311,9 @@ export const changeCardStatus = async (cardId, status, comment) => {
 };
 
 // Разблокировка карты
-export const unblockCard = async (cardId, comment) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
-    const url = `${GATEWAY_URL}/api/transactions/unblock-card`;
+export const unblockCard = async (cardId, comment, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = withSelectedClient(`${GATEWAY_URL}/api/transactions/unblock-card`, clientIndex);
     const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -345,10 +358,10 @@ export const unblockCard = async (cardId, comment) => {
 };
 
 // Валидация/активация карты через ПЦ (Scenario B)
-export const validateCard = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
+export const validateCard = async (cardId, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://10.65.10.20:7575';
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/validate-card`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/validate-card`, clientIndex), {
             cardId: String(cardId)
         }, {
             headers: {
@@ -365,10 +378,10 @@ export const validateCard = async (cardId) => {
 };
 
 // Изменение статуса карты через ПЦ (REST) для сценария C активации
-export const changeCardStatusRest = async (cardId, hotCardStatus) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
+export const changeCardStatusRest = async (cardId, hotCardStatus, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://localhost:7575';
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/change-card-status`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/change-card-status`, clientIndex), {
             cardId: String(cardId),
             hotCardStatus: String(hotCardStatus)
         }, {
@@ -386,10 +399,10 @@ export const changeCardStatusRest = async (cardId, hotCardStatus) => {
 };
 
 // Сброс счетчика ПИН
-export const resetPinCounter = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const resetPinCounter = async (cardId, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/reset-pin-counter`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/reset-pin-counter`, clientIndex), {
             cardId: String(cardId)
         }, {
             headers: {
@@ -406,10 +419,10 @@ export const resetPinCounter = async (cardId) => {
 };
 
 // Генерация/Смена ПИН
-export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const generatePin = async (cardId, phoneNumber, pinValue = "", clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/generate-pin`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/generate-pin`, clientIndex), {
             cardId: String(cardId),
             phoneNumber: String(phoneNumber),
             pinDeliveryMethod: "WS",
@@ -428,10 +441,11 @@ export const generatePin = async (cardId, phoneNumber, pinValue = "") => {
     }
 };
 
-export const sendPinOtp = async (phoneNumber) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const sendPinOtp = async (cardId, phoneNumber, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/send-pin-otp`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/send-pin-otp`, clientIndex), {
+            cardId: String(cardId),
             phoneNumber: String(phoneNumber)
         }, {
             headers: {
@@ -447,10 +461,11 @@ export const sendPinOtp = async (phoneNumber) => {
     }
 };
 
-export const checkPinOtp = async (phoneNumber, otpCode) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const checkPinOtp = async (cardId, phoneNumber, otpCode, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/check-pin-otp`, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/check-pin-otp`, clientIndex), {
+            cardId: String(cardId),
             phoneNumber: String(phoneNumber),
             otpCode: String(otpCode)
         }, {
@@ -468,10 +483,10 @@ export const checkPinOtp = async (phoneNumber, otpCode) => {
 };
 
 // Управление сервисами (SMS/3DS)
-export const manageCardService = async (payload) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const manageCardService = async (payload, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/service-action`, payload, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/service-action`, clientIndex), payload, {
             headers: {
                 'accept': '*/*',
                 'Content-Type': 'application/json',
@@ -484,10 +499,10 @@ export const manageCardService = async (payload) => {
         throw error;
     }
 };
-export const fetchCardLimits = async (cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const fetchCardLimits = async (cardId, clientCode) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.get(`${GATEWAY_URL}/api/transactions/limits?CardId=${cardId}`, {
+        const response = await axios.get(withClientProductRead(`${GATEWAY_URL}/api/transactions/limits?CardId=${encodeURIComponent(cardId)}`, clientCode), {
             headers: {
                 'accept': '*/*',
                 'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -500,10 +515,10 @@ export const fetchCardLimits = async (cardId) => {
     }
 };
 
-export const changeCardLimit = async (payload) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL;
+export const changeCardLimit = async (payload, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL;
     try {
-        const response = await axios.post(`${GATEWAY_URL}/api/transactions/change-limit`, payload, {
+        const response = await axios.post(withSelectedClient(`${GATEWAY_URL}/api/transactions/change-limit`, clientIndex), payload, {
             headers: {
                 'accept': '*/*',
                 'Content-Type': 'application/json',
@@ -517,9 +532,9 @@ export const changeCardLimit = async (payload) => {
     }
 };
 
-export const activateCardSoap = async (contractId, cardId) => {
-    const GATEWAY_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7575';
-    const url = `${GATEWAY_URL}/api/transactions/activate-card`;
+export const activateCardSoap = async (contractId, cardId, clientIndex) => {
+    const GATEWAY_URL = runtimeEnv.VITE_BACKEND_URL || 'http://localhost:7575';
+    const url = withSelectedClient(`${GATEWAY_URL}/api/transactions/activate-card`, clientIndex);
     
     const xml = `<?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 

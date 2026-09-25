@@ -42,6 +42,7 @@ const MainLayout = () => {
     if (pathname.includes("/operator/docx-generator")) return "docx_generator";
     if (pathname.includes("/operator/student-certificates")) return "student_certificates";
     if (pathname.includes("/operator/bulk-abs-search")) return "bulk_abs_search";
+    if (pathname.includes("/operator/proxy-pay")) return "proxy_pay";
     if (pathname.includes("/customers")) return "customers";
     if (pathname.includes("/declines")) return "declines_management";
     if (pathname.includes("/internet-bank")) return "internet_bank";

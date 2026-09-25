@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buildUserAccessPayload, selectApproverDepartment, readUserManagementResponse, saveUserPermissions } from "./userAccessSettings";
 import { Helmet } from "react-helmet";
 import {
   FaUserShield,
@@ -223,6 +224,7 @@ export default function UsersPage() {
     setError("");
     setSuccess("");
     setEditingUser(u);
+    setActionLoading(true);
     setFullName(u.full_name || "");
     setFirstName(u.first_name || "");
     setLastName(u.last_name || "");
@@ -242,28 +244,22 @@ export default function UsersPage() {
       const userRolesRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles/user/${u.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (userRolesRes.ok) {
-        const userRolesData = await userRolesRes.json();
-        setSelectedRoles(userRolesData.map((r) => r.ID));
-      }
+      const userRolesData = await readUserManagementResponse(userRolesRes, "Не удалось загрузить роли сотрудника");
+      setSelectedRoles(userRolesData.map((r) => r.ID));
     } catch (err) {
-      console.error(err);
+      setError(err.message); setEditingUser(null); setActionLoading(false); return;
     }
 
     try {
       const customerAccessRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/access/${u.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (customerAccessRes.ok) {
-        const customerAccessData = await customerAccessRes.json();
-        setSelectedCustomerDepartments(customerAccessData.department_codes || []);
- setApproverDepartments(customerAccessData.approver_departments || []); setCreatorRestriction(customerAccessData.creator_username || "");
-      } else {
-        setSelectedCustomerDepartments([]); setApproverDepartments([]); setCreatorRestriction("");
-      }
+      const customerAccessData = await readUserManagementResponse(customerAccessRes, "Не удалось загрузить доступы сотрудника");
+      setSelectedCustomerDepartments(customerAccessData.department_codes || []);
+      setApproverDepartments(customerAccessData.approver_departments || []);
+      setCreatorRestriction(customerAccessData.creator_username || "");
     } catch (err) {
-      console.error(err);
-      setSelectedCustomerDepartments([]); setApproverDepartments([]); setCreatorRestriction("");
+      setError(err.message); setEditingUser(null); setActionLoading(false); return;
     }
 
     // Fetch user application offices
@@ -271,12 +267,11 @@ export default function UsersPage() {
       const userAppOfficesRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/application-offices/user/${u.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (userAppOfficesRes.ok) {
-        const userAppOfficesData = await userAppOfficesRes.json();
-        setSelectedAppOffices(userAppOfficesData.map((o) => o.ID));
-      }
+      const userAppOfficesData = await readUserManagementResponse(userAppOfficesRes, "Не удалось загрузить офисы сотрудника");
+      if (userAppOfficesData !== null && !Array.isArray(userAppOfficesData)) throw new Error("Не удалось загрузить офисы сотрудника: неверный формат списка");
+      setSelectedAppOffices((userAppOfficesData || []).map((o) => o.ID));
     } catch (err) {
-      console.error(err);
+      setError(err.message); setEditingUser(null); setActionLoading(false); return;
     }
 
     // Reset conditional parameters
@@ -288,6 +283,7 @@ export default function UsersPage() {
     setOfficeTitle("");
     setOfficeCode("");
     setOfficeDesc("");
+    setActionLoading(false);
   };
 
   const handleRoleChange = (e, roleId) => {
@@ -324,7 +320,7 @@ export default function UsersPage() {
   const handleSanctionDepartmentChange = (e, departmentCode) => {
     if (e.target.checked) {
       setSelectedRoles((current) => current.includes(49) ? current : [...current, 49]);
-      setSelectedCustomerDepartments((current) => current.includes(departmentCode) ? current : [...current, departmentCode]);
+      setSelectedCustomerDepartments((current) => selectApproverDepartment(current, departmentCode));
       setApproverDepartments((current) => current.includes(departmentCode) ? current : [...current, departmentCode]);
     } else {
       setApproverDepartments((current) => current.filter((code) => code !== departmentCode));
@@ -340,6 +336,12 @@ export default function UsersPage() {
 
     try {
       // 1. Update basic profile
+      const accessPayload = buildUserAccessPayload(selectedCustomerDepartments, approverDepartments, selectedRoles.includes(49), creatorRestriction);
+      // Fail before changing anything if this session cannot save client access.
+      const preflight = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/access/${editingUser.id}`, {
+        headers: { Authorization: `Bearer ${token}` }, cache: "no-store",
+      });
+      await readUserManagementResponse(preflight, "Не удалось проверить право изменения доступов");
       const profileRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/${editingUser.id}`, {
         method: "PUT",
         headers: {
@@ -363,8 +365,7 @@ export default function UsersPage() {
       });
 
       if (!profileRes.ok) {
-        const errData = await profileRes.json();
-        throw new Error(errData.error || "Не удалось обновить профиль");
+        await readUserManagementResponse(profileRes, "Не удалось обновить профиль");
       }
 
       if (photoFile) {
@@ -376,12 +377,12 @@ export default function UsersPage() {
           body: formData,
         });
         if (!photoRes.ok) {
-          const errData = await photoRes.json();
-          throw new Error(errData.error || "Не удалось загрузить фото сотрудника");
+          await readUserManagementResponse(photoRes, "Не удалось загрузить фото сотрудника");
         }
       }
 
       // 2. Update roles and application offices
+      const saveRoles = async () => {
       const rolesRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/roles/user/${editingUser.id}`, {
         method: "PATCH",
         headers: {
@@ -403,23 +404,26 @@ export default function UsersPage() {
       });
 
       if (!rolesRes.ok) {
-        const errData = await rolesRes.json();
-        throw new Error(errData.error || "Не удалось обновить роли сотрудника");
+        await readUserManagementResponse(rolesRes, "Не удалось обновить роли сотрудника");
       }
+      };
 
+      const saveAccess = async () => {
       const accessRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/access/${editingUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ department_codes: selectedCustomerDepartments, approver_departments: selectedRoles.includes(49) ? approverDepartments.filter(code => selectedCustomerDepartments.includes(code)) : [], creator_username: creatorRestriction.trim() }),
+        body: JSON.stringify(accessPayload),
       });
 
       if (!accessRes.ok) {
-        const errData = await accessRes.json();
-        throw new Error(errData.error || "Не удалось обновить доступ к клиентам");
+        await readUserManagementResponse(accessRes, "Не удалось обновить доступ к клиентам");
       }
+      };
+      // Set scope before granting approval; revoke approval before clearing scope.
+      await saveUserPermissions(selectedRoles.includes(49), saveRoles, saveAccess);
 
       setSuccess("Данные сотрудника успешно обновлены");
       setEditingUser(null);
@@ -449,8 +453,7 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Не удалось создать офис");
+        await readUserManagementResponse(response, "Не удалось создать офис");
       }
 
       setNewOfficeTitle("");
@@ -479,8 +482,7 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Не удалось обновить офис");
+        await readUserManagementResponse(response, "Не удалось обновить офис");
       }
 
       setEditingAppOffice(null);
@@ -505,8 +507,7 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Не удалось удалить офис");
+        await readUserManagementResponse(response, "Не удалось удалить офис");
       }
 
       fetchAppOffices();
@@ -873,6 +874,7 @@ export default function UsersPage() {
               <div className="modal-section-title">
                 3. Офисы приема заявок (для карточного/кредитного фронта)
               </div>
+              <p>Ничего не выбрано — доступны все офисы. Если выбрать офисы, будут доступны только выбранные.</p>
               <div className="roles-checklist">
                 {appOffices.map((office) => (
                   <div key={office.ID} className="checkbox-item">
@@ -890,6 +892,7 @@ export default function UsersPage() {
               <div className="modal-section-title">
                 4. Доступ к подразделениям клиентов
               </div>
+              <p>Ничего не выбрано — доступны клиенты всех подразделений. Если выбрать подразделения, доступны только выбранные.</p>
               <div className="roles-checklist customer-department-checklist">
                 {customerDepartments.map((department) => (
                   <div key={department.department_code} className="checkbox-item">
@@ -908,7 +911,7 @@ export default function UsersPage() {
 
               <div className="modal-section-title">5. Санкции</div>
               <div className="checkbox-item"><input type="checkbox" id="sanction-approver" checked={selectedRoles.includes(49)} onChange={e => handleRoleChange(e,49)} /><label htmlFor="sanction-approver">Может подтверждать заявки на просмотр и изменение данных</label></div>
-              <p>Выберите коды клиентов, заявки которых сотрудник может согласовывать. Выбранный код автоматически добавляется в доступ сотрудника. Собственные заявки подтверждать нельзя.</p>
+              <p>При включённом праве согласования пустой список означает все доступные подразделения; выбранные галочки ограничивают согласование. Собственные заявки подтверждать нельзя.</p>
               <div className="roles-checklist customer-department-checklist">
                 {customerDepartments.map((department) => {
                   const code = department.department_code;

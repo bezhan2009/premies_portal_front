@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:production-server": "vite build --mode production-server",
-    "build:test-server": "vite build --mode test-server",
     "lint": "eslint .",
     "preview": "vite preview"
   },

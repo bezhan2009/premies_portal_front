@@ -22,6 +22,7 @@ import activeLogoImg from "../../../assets/new_logo.png";
 import PosTerminalsTab from "./PosTerminalsTab.jsx";
 import { buildFrontovikTabs } from "./posTerminalUtils.js";
 import { OpenClientCardButton } from "./OpenClientCardModal.jsx";
+import { getCardActionCapabilities } from "../../../utils/frontovikCardActions.js";
 
 const getPcStatusData = (code) => {
   const statusMap = {
@@ -228,6 +229,8 @@ const ClientDataTabs = ({
   onManageServices,
   onOpenLimits,
   hasBlockCardAccess,
+  hasActivateCardAccess,
+  hasUnblockCardAccess,
   hasChangePinAccess,
   hasVsmAccess,
   selectedClient,
@@ -687,42 +690,21 @@ const ClientDataTabs = ({
             </div>
 
             {(() => {
-              const absStatus = card.statusName;
-              const pcStatus = String(card.details?.hotCardStatus);
-              
-              const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
-              const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
-              const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
-
-              if (isScenarioA || isScenarioC) {
+              const roles = [hasBlockCardAccess && 29, hasActivateCardAccess && 51, hasUnblockCardAccess && 52].filter(Boolean);
+              const capabilities = getCardActionCapabilities(card, roles);
+              if (capabilities.canActivate) {
                 return (
                   <button
                     className="button"
                     style={{ background: "#10b981", color: "white", width: "100%" }}
-                    onClick={() => onActivateCard(card, isScenarioA ? 'A' : 'C')}
+                    onClick={() => onActivateCard(card)}
                   >
                     Активировать
                   </button>
                 );
               }
-
-              if (isScenarioD) {
-                if (hasBlockCardAccess) {
-                  return (
-                    <button
-                      className="button"
-                      style={{ background: "#e11d48", color: "white", width: "100%" }}
-                      onClick={() => onBlockCard(card.cardId)}
-                    >
-                      Заблокировать
-                    </button>
-                  );
-                }
-                return null;
-              }
-
-              if (hasBlockCardAccess) {
-                return pcStatus === "0" ? (
+              if (capabilities.canBlock) {
+                return (
                   <button
                     className="button"
                     style={{ background: "#e11d48", color: "white", width: "100%" }}
@@ -730,7 +712,10 @@ const ClientDataTabs = ({
                   >
                     Заблокировать
                   </button>
-                ) : (
+                );
+              }
+              if (capabilities.canUnblock) {
+                return (
                   <button
                     className="button"
                     style={{ background: "#10b981", color: "white", width: "100%" }}
@@ -780,7 +765,7 @@ const ClientDataTabs = ({
         );
       },
     },
-  ], [accountsData, hasTransactionsAccess, hasChangePinAccess, hasBlockCardAccess, onManageServices, handleNavigateToTransactions, onChangePin, onResetPin, onBlockCard, onUnblockCard, onOpenLimits, hasVsmAccess]);
+  ], [accountsData, hasTransactionsAccess, hasChangePinAccess, hasBlockCardAccess, hasActivateCardAccess, hasUnblockCardAccess, onManageServices, handleNavigateToTransactions, onChangePin, onResetPin, onBlockCard, onUnblockCard, onActivateCard, onOpenLimits, hasVsmAccess]);
 
   const accountColumns = React.useMemo(() => [
     {
@@ -1447,38 +1432,24 @@ const ClientDataTabs = ({
 
                       <div className="card-actions-bar">
                         {(() => {
-                          const absStatus = card.statusName;
-                          const pcStatus = String(card.details?.hotCardStatus);
-                          
-                          const isScenarioA = absStatus === "Карта выпущена" && pcStatus === "17";
-                          const isScenarioC = absStatus === "Карта выпущена" && pcStatus === "0";
-                          const isScenarioD = absStatus === "Активирована" && pcStatus === "0";
-
-                          if (isScenarioA || isScenarioC) {
+                          const roles = [hasBlockCardAccess && 29, hasActivateCardAccess && 51, hasUnblockCardAccess && 52].filter(Boolean);
+                          const capabilities = getCardActionCapabilities(card, roles);
+                          if (capabilities.canActivate) {
                             return (
-                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onActivateCard(card, isScenarioA ? 'A' : 'C')}>
+                              <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onActivateCard(card)}>
                                 Активировать
                               </button>
                             );
                           }
-
-                          if (isScenarioD) {
-                            if (hasBlockCardAccess) {
-                              return (
-                                <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>
-                                  Заблокировать
-                                </button>
-                              );
-                            }
-                            return null;
-                          }
-
-                          if (hasBlockCardAccess) {
-                            return pcStatus === "0" ? (
+                          if (capabilities.canBlock) {
+                            return (
                               <button className="card-action-btn neutral" style={{color: '#e11d48'}} onClick={() => onBlockCard(card.cardId)}>
                                 Заблокировать
                               </button>
-                            ) : (
+                            );
+                          }
+                          if (capabilities.canUnblock) {
+                            return (
                               <button className="card-action-btn primary btn-unlock-highlight" onClick={() => onUnblockCard(card)}>
                                 Разблокировать
                               </button>

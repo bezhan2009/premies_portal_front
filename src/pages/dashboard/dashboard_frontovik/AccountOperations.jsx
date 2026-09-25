@@ -13,6 +13,7 @@ export default function DashboardAccountOperations() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialAccount = queryParams.get("account");
+  const clientIndex = queryParams.get("clientIndex") || "";
   const [accountNumber, setAccountNumber] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -117,6 +118,7 @@ export default function DashboardAccountOperations() {
           if (fromDate) params.append("startDate", formatToDDMMYYYY(fromDate));
           if (toDate) params.append("endDate", formatToDDMMYYYY(toDate));
           params.append("accountNumber", targetAccount);
+          if (clientIndex) params.append("clientIndex", clientIndex);
           const url = `${baseUrl}/account/operations?${params.toString()}`;
           const response = await fetch(url, {
             headers: {
@@ -160,7 +162,7 @@ export default function DashboardAccountOperations() {
         showAlert("Введите номер счета", "warning");
       }
     },
-    [accountNumber, fromDate, toDate],
+    [accountNumber, fromDate, toDate, clientIndex],
   );
 
   useEffect(() => {

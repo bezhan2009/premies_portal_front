@@ -1,4 +1,6 @@
 import useClientDocumentUrl from "../../../hooks/useClientDocumentUrl.js";
+import { withClientProductRead } from "../../../utils/clientProductRead.js";
+import { buildCardHistoryPath } from "../../../utils/cardHistoryContext.js";
 import { showReadSanction } from "../../general/ClientReadRequestModal";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import AlertMessage from "../../general/AlertMessage.jsx";
@@ -32,15 +34,11 @@ import {
 import {
     fetchCardDetails,
     fetchCardServices,
-    changeCardStatus,
-    unblockCard,
+    executeFrontovikCardAction,
     resetPinCounter,
     generatePin,
     manageCardService,
     fetchCardLimits,
-    activateCardSoap,
-    validateCard,
-    changeCardStatusRest,
 } from "../../../api/processing/transactions.js";
 
 // Extracted Components
@@ -74,6 +72,8 @@ import {
     formatPhoneNumber as formatPhoneNumberUtil,
     copyToClipboard as copyToClipboardUtil,
     resolveClientSearch,
+    scopedClientLookupURL,
+    preservePhoneSearchInput,
 } from "./absSearchUtils.js";
 import {
     getClientSelfieDocument,
@@ -194,6 +194,8 @@ export default function ABSClientSearch() {
     const hasTransactionsAccess = canAccessTransactions();
     const hasAccountOperationsAccess = canAccessAccountOperations();
     const hasBlockCardAccess = canBlockCard();
+	const hasActivateCardAccess = hasRole(51);
+	const hasUnblockCardAccess = hasRole(52);
     const hasChangePinAccess = canChangePin();
 
     const {
@@ -342,7 +344,7 @@ export default function ABSClientSearch() {
         const value = e.target.value;
         
         // Автоматически определяем тип поиска по вводимому значению
-        const detectedType = detectSearchType(value);
+        const detectedType = preservePhoneSearchInput(value, selectTypeSearchClient) ? null : detectSearchType(value);
         let activeType = selectTypeSearchClient;
         if (detectedType) {
             activeType = detectedType;
@@ -419,29 +421,7 @@ export default function ABSClientSearch() {
 
     // Функция для поиска через ATM API
     const searchViaATMService = async (searchType, searchValue) => {
-        let url = "";
-        const digits = String(searchValue || "").replace(/\D/g, "");
-
-        switch (searchType) {
-            case "client/info?phoneNumber=":
-                url = clientCreationEnabled ? `${API_BASE_URL}/client/info?phoneNumber=${digits}` : `${API_ATM_URL}/lookup?phone=${digits}`;
-                break;
-            case "byCardId":
-                url = `${API_ATM_URL}/lookup?cardidn=${searchValue}`;
-                break;
-            case "byAccount":
-                url = `${API_ATM_URL}/lookup?acc=${searchValue}`;
-                break;
-            case "byName": {
-                url = `${API_ATM_URL}/lookup?longname=${encodeURIComponent(searchValue || "")}`;
-                break;
-            }
-            case "byLast4":
-                url = `${API_ATM_URL}/lookup?last4=${searchValue}`;
-                break;
-            default:
-                throw new Error("Неизвестный тип поиска");
-        }
+        const url = scopedClientLookupURL(API_ATM_URL, searchType, searchValue);
 
         return cachedSearchLookup(url, async () => {
             const response = await fetch(url, {
@@ -452,7 +432,6 @@ export default function ABSClientSearch() {
                 },
             });
 
-            if (clientCreationEnabled && response.status === 404) return [];
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -818,7 +797,7 @@ export default function ABSClientSearch() {
                             if (credit.referenceId) {
                                 const [details, graphs] = await Promise.all([
                                     fetchLoanDetails(credit.referenceId),
-                                    fetchCreditGraphs(credit.referenceId).catch(() => [])
+                                    fetchCreditGraphs(credit.referenceId, clientCode).catch(() => [])
                                 ]);
                                 return { ...credit, loanDetails: details, graphs };
                             }
@@ -840,8 +819,8 @@ export default function ABSClientSearch() {
                     normalizedCards.map(async (card) => {
                         try {
                             const [details, services] = await Promise.all([
-                                fetchCardDetails(card.cardId),
-                                fetchCardServices(card.cardId),
+                                fetchCardDetails(card.cardId, clientCode),
+                                fetchCardServices(card.cardId, clientCode),
                             ]);
 
                             // 1. Преобразуем балансы счетов в ПЦ из дирамов в сомони
@@ -943,19 +922,14 @@ export default function ABSClientSearch() {
 
     const handleBlockCardConfirm = async (status, comment) => {
         setIsBlockingLoading(true);
-        const commentWithOperator = addOperatorToComment(comment);
         try {
-            await changeCardStatus(blockingCardId, status, commentWithOperator);
-
-            // Log audit action
-            logAuditAction({
-                action: "Блокировка карты",
-                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
-                client_phone: selectedClient?.phone || "",
-                client_inn: selectedClient?.tax_code || "",
-                card_number: String(blockingCardId),
-                details: `Блокировка карты ${blockingCardId} со статусом ${status}. Комментарий: ${commentWithOperator}`
-            });
+            await executeFrontovikCardAction({
+				clientIndex: selectedClient?.client_code,
+				cardId: blockingCardId,
+				action: 'block',
+				reason: status,
+				comment,
+			});
 
             showAlert("Карта успешно заблокирована", "success");
             setIsBlockModalOpen(false);
@@ -974,7 +948,7 @@ export default function ABSClientSearch() {
 
     const handleResetPin = async (cardId) => {
         try {
-            await resetPinCounter(cardId);
+            await resetPinCounter(cardId, selectedClient?.client_code);
 
             // Log audit action
             logAuditAction({
@@ -1005,56 +979,19 @@ export default function ABSClientSearch() {
             return;
         }
 
-        const commentWithOperator = addOperatorToComment(comment);
-        const pcStatus = String(card?.details?.hotCardStatus ?? "").trim();
-        const absStatus = String(card?.statusName || "").trim().toLowerCase();
-        const shouldValidateInPcOnly = pcStatus !== "" && pcStatus !== "0" && absStatus === "активирована";
-
         try {
-            if (shouldValidateInPcOnly) {
-                await validateCard(cardId);
-            } else {
-                await unblockCard(cardId, commentWithOperator);
-            }
-
-            // Log audit action
-            logAuditAction({
-                action: shouldValidateInPcOnly ? "Валидация карты в ПЦ" : "Разблокировка карты",
-                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
-                client_phone: selectedClient?.phone || "",
-                client_inn: selectedClient?.tax_code || "",
-                card_number: String(cardId),
-                details: `${shouldValidateInPcOnly ? "Валидация карты через ПЦ" : "Разблокировка карты"} ${cardId}. Комментарий: ${commentWithOperator}`
-            });
-
-            showAlert(shouldValidateInPcOnly ? "Карта успешно валидирована в ПЦ" : "Карта успешно разблокирована", "success");
+            await executeFrontovikCardAction({ clientIndex: selectedClient?.client_code, cardId, action: 'unblock', comment });
+            showAlert("Карта успешно разблокирована", "success");
             handleGetDataUser(selectedClient, selectedClientIndex);
         } catch {
-            showAlert(shouldValidateInPcOnly ? "Ошибка при валидации карты" : "Ошибка при разблокировке карты", "error");
+            showAlert("Ошибка при разблокировке карты", "error");
         }
     };
 
-    const handleActivateCard = async (card, scenario) => {
+    const handleActivateCard = async (card) => {
         setModalLoading(true);
         try {
-            logAuditAction({
-                action: "Активация карты",
-                client_name: selectedClient ? `${selectedClient.surname || ""} ${selectedClient.name || ""} ${selectedClient.patronymic || ""}`.trim() : "",
-                client_phone: selectedClient?.phone || "",
-                client_inn: selectedClient?.tax_code || "",
-                card_number: String(card.cardId),
-                details: `Сценарий активации ${scenario} для карты ${card.cardId}`
-            });
-
-            if (scenario === 'A') {
-                await activateCardSoap(card.agreement, card.cardId);
-            } else if (scenario === 'B') {
-                await validateCard(card.cardId);
-            } else if (scenario === 'C') {
-                await changeCardStatusRest(card.cardId, "24");
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                await activateCardSoap(card.agreement, card.cardId);
-            }
+            await executeFrontovikCardAction({ clientIndex: selectedClient?.client_code, cardId: card.cardId, action: 'activate' });
 
             showAlert("Карта успешно активирована", "success");
             handleGetDataUser(selectedClient, selectedClientIndex);
@@ -1081,7 +1018,7 @@ export default function ABSClientSearch() {
         setModalLoading(true);
         try {
             console.log("Attempting pin change:", { cardId: activeCardId, phone, pin });
-            const res = await generatePin(activeCardId, phone, pin);
+            const res = await generatePin(activeCardId, phone, pin, selectedClient?.client_code);
             console.log("Pin change response:", res);
 
             // Log audit action
@@ -1110,7 +1047,7 @@ export default function ABSClientSearch() {
         try {
             console.log("Attempting services update:", actions);
             for (const action of actions) {
-                const res = await manageCardService(action);
+                const res = await manageCardService(action, selectedClient?.client_code);
                 console.log("Service update response:", res);
             }
 
@@ -1141,7 +1078,7 @@ export default function ABSClientSearch() {
         setIsLimitsModalOpen(true);
         setModalLoading(true);
         try {
-            const limits = await fetchCardLimits(cardId);
+            const limits = await fetchCardLimits(cardId, selectedClient?.client_code);
             if (generation !== accessGeneration.current) return;
             setCardLimits(limits);
 
@@ -1239,7 +1176,7 @@ export default function ABSClientSearch() {
         try {
             const token = localStorage.getItem("access_token");
             const response = await fetch(
-                `${API_BASE_URL}/credits/graphs?referenceId=${referenceId}`,
+                withClientProductRead(`${API_BASE_URL}/credits/graphs?referenceId=${encodeURIComponent(referenceId)}`, selectedClient?.client_code),
                 {
                     method: "GET",
                     headers: {
@@ -1427,7 +1364,7 @@ export default function ABSClientSearch() {
         });
 
         sessionStorage.setItem("allowedCardId", cardId);
-        navigate("/processing/transactions/" + cardId);
+        navigate(buildCardHistoryPath(cardId, selectedClient?.client_code || ""));
     };
 
     const handleNavigateToAllCardsTransactions = (cards) => {
@@ -1443,7 +1380,7 @@ export default function ABSClientSearch() {
             details: `Переход к списку транзакций по всем картам: ${cardIds}`
         });
 
-        navigate("/processing/transactions/" + cardIds);
+        navigate(buildCardHistoryPath(cardIds, selectedClient?.client_code || ""));
     };
 
     const handleNavigateToAccountOperations = (accountNumber) => {
@@ -1458,7 +1395,7 @@ export default function ABSClientSearch() {
         });
 
         sessionStorage.setItem("allowedAccountNumber", accountNumber);
-        navigate("/accounts/account-operations?account=" + accountNumber);
+        navigate("/accounts/account-operations?" + new URLSearchParams({account: accountNumber, clientIndex: selectedClient?.client_code || ''}).toString());
     };
 
     const handleNavigateToPosHistory = (selectedAtmIDs) => {
@@ -1911,7 +1848,7 @@ export default function ABSClientSearch() {
     const userInfoPhone = async (phone) => {
         const generation = accessGeneration.current;
         try {
-            const mobileProfile = await getUserInfoPhone(phone);
+            const mobileProfile = await getUserInfoPhone(phone, selectedClient?.client_code);
             if (generation !== accessGeneration.current) return;
             const isRegistered =
                 mobileProfile?.isMobileAppRegistered === true ||
@@ -2181,6 +2118,8 @@ export default function ABSClientSearch() {
                                 onManageServices={openServicesModal}
                                 onOpenLimits={handleOpenLimits}
                                 hasBlockCardAccess={hasBlockCardAccess}
+								hasActivateCardAccess={hasActivateCardAccess}
+								hasUnblockCardAccess={hasUnblockCardAccess}
                                 hasChangePinAccess={hasChangePinAccess}
                                 hasVsmAccess={hasRole(38)}
                                 tableData={tableData}
@@ -2287,6 +2226,8 @@ export default function ABSClientSearch() {
                 onClose={() => setIsPinModalOpen(false)}
                 onConfirm={handleChangePinConfirm}
                 isLoading={modalLoading}
+				cardId={activeCardId}
+				clientIndex={selectedClient?.client_code}
                 defaultPhoneNumber={clientsData[selectedClientIndex]?.phone || ""}
             />
 
@@ -2296,6 +2237,7 @@ export default function ABSClientSearch() {
                 limits={cardLimits}
                 isLoading={modalLoading}
                 cardId={activeCardId}
+				clientIndex={selectedClient?.client_code}
             />
 
             <NewClientModal

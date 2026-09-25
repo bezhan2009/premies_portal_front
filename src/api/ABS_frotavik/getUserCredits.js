@@ -1,4 +1,5 @@
 import { apiClientABS_Frontovik } from "../utils/apiClientABS_Frontovik";
+import { buildSelectedClientPhoneURL, withClientProductRead } from '../../utils/clientProductRead.js';
 
 const ABS_CACHE_TTL = 0; // Client authorization must be checked on every request.
 const absRequestCache = new Map();
@@ -91,10 +92,10 @@ export const getUserDeposits = async (clientIndex) => {
   }
 };
 
-export const fetchDepositSchedule = async (colvirReferenceId) => {
+export const fetchDepositSchedule = async (colvirReferenceId, clientCode) => {
   try {
     const res = await apiClientABS_Frontovik(
-      "/credits/graphs?referenceId=" + encodeURIComponent(colvirReferenceId),
+      withClientProductRead("/credits/graphs?referenceId=" + encodeURIComponent(colvirReferenceId), clientCode),
     );
     if (Array.isArray(res.data)) {
       return res.data;
@@ -112,9 +113,9 @@ export const fetchDepositSchedule = async (colvirReferenceId) => {
   }
 };
 
-export const getUserInfoPhone = async (clientNumber) => {
+export const getUserInfoPhone = async (clientNumber, clientIndex) => {
   try {
-    const res = await apiClientABS_Frontovik("account/user/" + clientNumber);
+    const res = await apiClientABS_Frontovik(buildSelectedClientPhoneURL(clientNumber, clientIndex));
     return res.data;
   } catch (err) {
     console.log(err);
@@ -131,11 +132,11 @@ export const repayLoanEarly = async (repayData) => {
   }
 };
 
-export const fetchCreditGraphs = async (referenceId) => {
+export const fetchCreditGraphs = async (referenceId, clientCode) => {
   try {
-    return await cachedABSRequest(`credit-graphs:${referenceId}`, async () => {
+    return await cachedABSRequest(`credit-graphs:${clientCode || ''}:${referenceId}`, async () => {
       const res = await apiClientABS_Frontovik(
-        "/credits/graphs?referenceId=" + referenceId
+        withClientProductRead("/credits/graphs?referenceId=" + encodeURIComponent(referenceId), clientCode)
       );
       return res.data;
     });

@@ -7,6 +7,15 @@ export const normalizePhoneSearchValue = (value) => {
   return digits.length === 12 && digits.startsWith("992") ? digits.slice(3) : digits;
 };
 
+export const scopedClientLookupURL = (base, mode, input) => {
+  const keys = { 'client/info?phoneNumber=': 'phone', byCardId: 'cardidn', byAccount: 'acc', byName: 'longname', byLast4: 'last4' };
+  const key = keys[mode];
+  if (!key) throw new Error('Неизвестный тип поиска');
+  const value = key === 'phone' ? normalizePhoneSearchValue(input) : String(input || '').trim();
+  if (!value) throw new Error('Введите значение для поиска');
+  return `${base.replace(/\/$/, '')}/lookup?${key}=${encodeURIComponent(value)}`;
+};
+
 export const preservePhoneSearchInput = (value, selectedType) => selectedType === TYPE_SEARCH_CLIENT[0].value
   && /^[+\d\s()-]*$/.test(value)
   && String(value).replace(/\D/g, "").length <= 12

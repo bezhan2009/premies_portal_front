@@ -109,7 +109,7 @@ const DepositDetails = ({ deposit, onBack, selectedClient }) => {
     const loadSchedule = async () => {
       setIsScheduleLoading(true);
       try {
-        const data = await fetchDepositSchedule(colvirReferenceId);
+        const data = await fetchDepositSchedule(colvirReferenceId, selectedClient?.client_code);
         if (!cancelled) {
           setSchedulePoints(data || []);
         }
@@ -130,7 +130,7 @@ const DepositDetails = ({ deposit, onBack, selectedClient }) => {
     return () => {
       cancelled = true;
     };
-  }, [colvirReferenceId]);
+  }, [colvirReferenceId, selectedClient?.client_code]);
 
   const handleExportDetails = () => {
     const ws = XLSX.utils.json_to_sheet(balances.map(b => ({

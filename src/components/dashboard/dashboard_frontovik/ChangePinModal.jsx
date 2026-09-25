@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Spinner from "../../Spinner.jsx";
 import { sendPinOtp, checkPinOtp } from "../../../api/processing/transactions.js";
 
-const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNumber = "" }) => {
+const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, cardId, clientIndex, defaultPhoneNumber = "" }) => {
     const [step, setStep] = useState("otp-request"); // "otp-request", "otp-verify", "pin-mode"
     const [mode, setMode] = useState("generate"); // "generate" or "manual"
     const [phoneNumber, setPhoneNumber] = useState(defaultPhoneNumber);
@@ -29,7 +29,7 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
         }
         setLocalLoading(true);
         try {
-            await sendPinOtp(phoneNumber);
+            await sendPinOtp(cardId, phoneNumber, clientIndex);
             setStep("otp-verify");
         } catch (error) {
             alert("Ошибка при отправке СМС. Попробуйте еще раз.");
@@ -45,7 +45,7 @@ const ChangePinModal = ({ isOpen, onClose, onConfirm, isLoading, defaultPhoneNum
         }
         setLocalLoading(true);
         try {
-            const res = await checkPinOtp(phoneNumber, otpCode);
+            const res = await checkPinOtp(cardId, phoneNumber, otpCode, clientIndex);
             if (res.message === "success") {
                 setStep("pin-mode");
             } else {

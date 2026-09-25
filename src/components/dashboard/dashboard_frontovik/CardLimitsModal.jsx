@@ -79,7 +79,7 @@ const getPercentage = (currentValue, value) => {
   return Math.min((curNum / valNum) * 100, 100);
 };
 
-const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId = "" }) => {
+const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, clientIndex, cardExId = "" }) => {
   const [hasEditRole, setHasEditRole] = useState(false);
   const [editingLimitIdx, setEditingLimitIdx] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -144,7 +144,7 @@ const CardLimitsModal = ({ isOpen, onClose, limits, isLoading, cardId, cardExId 
         currency: String(limit.currency)
       };
 
-      await changeCardLimit(payload);
+      await changeCardLimit(payload, clientIndex);
       alert("Лимит успешно изменен! Пожалуйста, закройте и откройте заново окно для обновления данных.");
       setEditingLimitIdx(null);
       setEditValue("");

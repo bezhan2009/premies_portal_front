@@ -66,6 +66,7 @@ export default function DashboardOperatorProcessingTransactions() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const historyClientIndex = searchParams.get("clientIndex") || "";
   const posHistoryClientCode = searchParams.get("clientCode") || "";
   const posHistoryAtmIds = searchParams.get("atmIds") || "";
   const posHistory = useMemo(
@@ -446,6 +447,7 @@ export default function DashboardOperatorProcessingTransactions() {
               cardId || id,
               fromDate || undefined,
               toDate || undefined,
+              historyClientIndex,
             );
             break;
           case "atmId":
@@ -539,6 +541,7 @@ export default function DashboardOperatorProcessingTransactions() {
       validateSearch,
       showAlert,
       posHistory,
+      historyClientIndex,
     ],
   );
 
