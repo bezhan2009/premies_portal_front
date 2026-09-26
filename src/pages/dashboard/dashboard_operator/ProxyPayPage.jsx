@@ -1,21 +1,19 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Alert,Button,Card,Col,DatePicker,Descriptions,Input,Modal,Row,Select,Space,Statistic,Table,Tabs,Tag,Typography,Tooltip} from 'antd';
 import {apiClient} from '../../../api/utils/apiClient.js';
-import * as XLSX from 'xlsx';
-import dayjs from 'dayjs';
 import {useNavigate} from 'react-router-dom';
 import ProxyPayManualJournal from './ProxyPayManualJournal.jsx';
-import {forecastText,ledgerCanOpen,ledgerCanPay,ledgerDate,ledgerDirection,ledgerMoney,ledgerStatus} from './proxyLedgerUtils.js';
+import ProxyPayDirectionChart from './ProxyPayDirectionChart.jsx';
+import {forecastText,ledgerCanOpen,ledgerCanPay,ledgerDate,ledgerDirection,ledgerMoney,ledgerStatus,proxyStageActions} from './proxyLedgerUtils.js';
+import {proxyRegistryDownloadURL} from './proxyPayRegistry.js';
 import './ProxyPayPage.css';
 
 const URL=`${import.meta.env.VITE_BACKEND_URL}/proxy-pay`;
-const errorText=e=>e.response?.data?.error || 'Сервис временно недоступен';
+const errorText=e=>e.response?.data?.error || e.message || 'Сервис временно недоступен';
 const states=['manual','sending','accepted','executed','unknown','error','no_difference'].map(value=>({value,label:ledgerStatus(value)}));
 const statusTag=value=><Tag color={{executed:'green',error:'red',unknown:'orange',sending:'blue',accepted:'gold',no_difference:'default'}[value]}>{ledgerStatus(value)}</Tag>;
 const wholeMoney=value=>value==null?'—':Number(value).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rateText=value=>value==null?'—':Number(value).toFixed(4);
-const exportHeaders=['Дата и время операции','Направление перевола','Номер карты','Номер счета','Сумма в ПЦ','Сумма в АБС','Курс ПЦ','Курс АБС','Сумма в РУБ','Разница','Номер операции','Статус платежки','Статус конвертации','Статус КР'];
-const exportRow=r=>[ledgerDate(r.occurred_at),ledgerDirection(r.direction),r.card_number||'',r.account||'',r.amount_minor==null?'':r.amount_minor/100,r.tjs_minor==null?'':r.tjs_minor/100,r.pc_rate==null?'':Number(r.pc_rate.toFixed(4)),r.abs_rate==null?'':Number(r.abs_rate.toFixed(4)),r.rub_minor==null?'':r.rub_minor/100,r.difference_minor==null?'':r.difference_minor/100,r.utrnno,ledgerStatus(r.payment_status),ledgerStatus(r.conversion_status),ledgerStatus(r.difference_status)];
 
 function TransferLedger(){
  const navigate=useNavigate();
@@ -44,7 +42,7 @@ function TransferLedger(){
  const loadPrepared=async(row,kind)=>(await apiClient.get(`${URL}/transfers/${row.id}/${kind}/prepare`,{timeout:35000})).data;
  const openStage=async(row,kind)=>{
   const current=++generation.current;setSelected({row,kind});setPrepared(null);setStageHistory(null);setModalError('');
-  const operationId=row[`${kind}_operation_id`];
+  const operationId=proxyStageActions(row)[kind]?.operationId;
   const canPay=ledgerCanPay(row,kind);
   if(kind==='conversion'&&!row.quote_at&&!operationId&&!row.legacy_settled)return;
   setBusy('prepare');try{
@@ -55,24 +53,39 @@ function TransferLedger(){
    if(current===generation.current){setPrepared(value||history);setStageHistory(history);if(value?.transfer)setSelected({row:{...row,...value.transfer},kind});}
   }catch(e){if(current===generation.current)setModalError(errorText(e));}finally{if(current===generation.current)setBusy('');}
  };
+ const quoteAndPrepare=async(sourceRow)=>{
+  await apiClient.post(`${URL}/transfers/${sourceRow.id}/quote`,{},{timeout:55000});
+  const {data:list}=await apiClient.get(`${URL}/transfers`,{params:{utrnno:sourceRow.utrnno,page:1},timeout:35000});
+  const row=(list.items||[]).find(item=>item.id===sourceRow.id);
+  if(!row)throw new Error('Обновлённая операция не найдена в реестре');
+  const nextKind=row.can_difference?'difference':'conversion';
+  const nextPrepared=await loadPrepared(row,nextKind);
+  setSelected({row,kind:nextKind});setPrepared(nextPrepared);setStageHistory(null);refresh();
+ };
  const quote=async()=>{if(actionRef.current)return;actionRef.current=true;setBusy('quote');setModalError('');try{
-  const {data:row}=await apiClient.post(`${URL}/transfers/${selected.row.id}/quote`,{},{timeout:55000});
-  const merged={...selected.row,...row};setSelected({...selected,row:merged});setPrepared(await loadPrepared(merged,'conversion'));refresh();
+  await quoteAndPrepare(selected.row);
  }catch(e){setModalError(errorText(e));}finally{actionRef.current=false;setBusy('');}};
  const pay=()=>Modal.confirm({title:'Подтвердите проводку',content:<Space direction="vertical"><strong>{({payment:'Платежка',conversion:'Конвертация',difference:'Курс. разница'})[selected.kind]} · №{selected.row.utrnno}</strong><span>{prepared?.input.amount} {selected.kind==='conversion'?'RUB':'TJS'}</span><span>Списание: {prepared?.input.payer_iban}</span><span>Зачисление: {prepared?.input.beneficiary_iban}</span><span>Запрос будет отправлен в АБС один раз.</span></Space>,okText:'Оплатить',cancelText:'Отмена',onOk:async()=>{
   if(actionRef.current)return;actionRef.current=true;setBusy('pay');setModalError('');try{
-   const {data:value}=await apiClient.post(`${URL}/transfers/${selected.row.id}/${selected.kind}/execute`,{confirm:true,quote_version:selected.row.quote_version},{timeout:165000});
-   setNotice({type:value.operation.status==='executed'?'success':'warning',text:`№${selected.row.utrnno}: ${ledgerStatus(value.operation.status)}. ${value.operation.message||''}`});setSelected(null);setPrepared(null);refresh();
+   const currentRow=selected.row,currentKind=selected.kind;
+   const {data:value}=await apiClient.post(`${URL}/transfers/${currentRow.id}/${currentKind}/execute`,{confirm:true,quote_version:currentRow.quote_version},{timeout:165000});
+   const booked=value.operation.status==='executed'&&value.operation.abs_status==='BOOKED';
+   setNotice({type:value.operation.status==='executed'?'success':'warning',text:`№${currentRow.utrnno}: ${ledgerStatus(value.operation.status)}. ${value.operation.message||''}`});
+   if(currentKind==='payment'&&booked){
+    try{await quoteAndPrepare(currentRow);setNotice({type:'success',text:`№${currentRow.utrnno}: платежка исполнена, курсы загружены.`});}
+    catch(quoteError){setSelected(null);setPrepared(null);setNotice({type:'warning',text:`№${currentRow.utrnno}: платежка исполнена, но курсы не загрузились — ${errorText(quoteError)}.`});}
+   }else{setSelected(null);setPrepared(null);refresh();}
   }catch(e){setModalError(`${errorText(e)}. Обновите реестр перед дальнейшими действиями.`);refresh();}finally{actionRef.current=false;setBusy('');}
  }});
  const sync=async()=>{setBusy('sync');try{const {data:state}=await apiClient.post(`${URL}/transfers/sync`,{},{timeout:185000});if(state.last_error)setError(state.last_error);refresh();}catch(e){setError(errorText(e));}finally{setBusy('');}};
- const checkStatuses=async(row)=>{setBusy(`status-${row.id}`);try{for(const id of [row.payment_operation_id,row.conversion_operation_id,row.difference_operation_id].filter(Boolean))await apiClient.post(`${URL}/operations/${id}/status`,{},{timeout:145000});refresh();}catch(e){setError(errorText(e));}finally{setBusy('');}};
+ const checkStatuses=async(row)=>{setBusy(`status-${row.id}`);try{const ids=[row.payment_operation_id,row.conversion_operation_id,row.difference_operation_id,...(row.settlement?.entries||[]).map(entry=>entry.operation_id)].filter(Boolean);for(const id of [...new Set(ids)])await apiClient.post(`${URL}/operations/${id}/status`,{},{timeout:145000});refresh();}catch(e){setError(errorText(e));}finally{setBusy('');}};
  const showRates=async()=>{setBusy('rates');try{const {data:value}=await apiClient.get(`${URL}/rate-history`);setRateHistory(value.items||[]);}catch(e){setError(errorText(e));}finally{setBusy('');}};
  const exportExcel=async()=>{setBusy('export');try{
-  const {data:value}=await apiClient.get(`${URL}/transfers`,{params:{...requestFilters,export:1},timeout:120000});
-  const all=value.items||[];
-  const sheet=XLSX.utils.aoa_to_sheet([exportHeaders,...all.map(exportRow)]);sheet['!cols']=exportHeaders.map((_,i)=>({wch:[21,25,22,24,17,17,12,12,17,14,18,21,23,19][i]}));
-  const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,sheet,'Proxy Pay');XLSX.writeFile(workbook,`proxy-pay-${dayjs().format('YYYY-MM-DD-HHmm')}.xlsx`);
+  const target=proxyRegistryDownloadURL(URL,requestFilters);
+  const response=await apiClient.get(target,{responseType:'blob',timeout:120000});
+  const disposition=response.headers?.['content-disposition']||'';
+  const fileName=disposition.match(/filename="?([^";]+)"?/i)?.[1]||'proxy-pay-register.xlsx';
+  const objectURL=window.URL.createObjectURL(response.data);const anchor=document.createElement('a');anchor.href=objectURL;anchor.download=fileName;document.body.appendChild(anchor);anchor.click();anchor.remove();window.URL.revokeObjectURL(objectURL);
  }catch(e){setError(errorText(e));}finally{setBusy('');}};
  const columns=[
   {title:'Операция',key:'operation',fixed:'left',width:185,render:(_,r)=><><Typography.Text strong>№ {r.utrnno}</Typography.Text><div className="proxy-muted">{ledgerDate(r.occurred_at)}</div>{r.historical&&<Tag>Историческая</Tag>}</>},
@@ -83,8 +96,8 @@ function TransferLedger(){
   {title:'Курс АБС',dataIndex:'abs_rate',align:'right',width:115,render:rateText},
   {title:'Сумма в РУБ',dataIndex:'rub_minor',align:'right',width:145,render:ledgerMoney},
   {title:'Разница, TJS',dataIndex:'difference_minor',align:'right',width:130,render:v=><Typography.Text type={v<0?'danger':undefined}>{ledgerMoney(v)}</Typography.Text>},
-  {title:'Платежка / конвертация / Курс. разница',width:235,render:(_,r)=><Space direction="vertical" size={6}><Tooltip title={r.payment_message}>{statusTag(r.payment_status)}</Tooltip><Tooltip title={r.conversion_message}>{statusTag(r.conversion_status)}</Tooltip><Tooltip title={r.difference_message}>{statusTag(r.difference_status)}</Tooltip>{r.block_reason&&<Typography.Text type="danger">{r.block_reason}</Typography.Text>}</Space>},
-  {title:'Действия',key:'actions',width:190,fixed:'right',render:(_,r)=><Space direction="vertical" size={4}><Button size="small" disabled={!ledgerCanOpen(r,'payment')} onClick={()=>openStage(r,'payment')}>Платежка</Button><Button size="small" disabled={!ledgerCanOpen(r,'conversion')} onClick={()=>openStage(r,'conversion')}>Конвертация</Button><Button size="small" disabled={!ledgerCanOpen(r,'difference')} onClick={()=>openStage(r,'difference')}>Курс. разница</Button>{(r.payment_operation_id||r.conversion_operation_id||r.difference_operation_id)&&<Button type="link" size="small" loading={busy===`status-${r.id}`} onClick={()=>checkStatuses(r)}>Проверить статусы</Button>}</Space>},
+  {title:'Платежка / Курс. разница / Конвертация',width:235,render:(_,r)=><Space direction="vertical" size={6}><Tooltip title={r.payment_message}>{statusTag(r.payment_status)}</Tooltip><Tooltip title={r.difference_message}>{statusTag(r.difference_status)}</Tooltip><Tooltip title={r.conversion_message}>{statusTag(r.conversion_status)}</Tooltip>{r.block_reason&&<Typography.Text type="danger">{r.block_reason}</Typography.Text>}</Space>},
+  {title:'Действия',key:'actions',width:190,fixed:'right',render:(_,r)=><Space direction="vertical" size={4}><Button size="small" disabled={!ledgerCanOpen(r,'payment')} onClick={()=>openStage(r,'payment')}>Платежка</Button><Button size="small" disabled={!ledgerCanOpen(r,'difference')} onClick={()=>openStage(r,'difference')}>Курс. разница</Button><Button size="small" disabled={!ledgerCanOpen(r,'conversion')} onClick={()=>openStage(r,'conversion')}>Конвертация</Button>{(r.payment_operation_id||r.conversion_operation_id||r.difference_operation_id||(r.settlement?.entries||[]).some(entry=>entry.operation_id))&&<Button type="link" size="small" loading={busy===`status-${r.id}`} onClick={()=>checkStatuses(r)}>Проверить статусы</Button>}</Space>},
  ];
  return <div className="proxy-ledger">
   <div className="proxy-title"><div><Typography.Title level={3}>P2P · Proxy Pay</Typography.Title><Typography.Text type="secondary">P2PSP279 · время Душанбе (UTC+5)</Typography.Text></div><Space wrap><Button onClick={()=>{refresh();loadMetrics();}}>Обновить</Button><Button loading={busy==='sync'} onClick={sync}>Сверить с процессингом</Button></Space></div>
@@ -93,6 +106,7 @@ function TransferLedger(){
    <Col xs={24} lg={8}><Card><Statistic title="Курс RUB → TJS" value={metrics?.rate??'—'} precision={4}/><div className="proxy-metric-note">{metrics?.rate_delta?<Tag color={metrics.rate_delta>0?'green':'red'}>{metrics.rate_delta>0?'+':''}{Number(metrics.rate_delta).toFixed(4)}</Tag>:<Tag>{metrics?.rate_changed_at?'Без нового изменения':'Первое наблюдение'}</Tag>}</div><Typography.Text type="secondary">Изменение замечено: {ledgerDate(metrics?.rate_changed_at)}<br/>Проверен: {ledgerDate(metrics?.checked_at)}</Typography.Text><div><Button size="small" loading={busy==='rates'} onClick={showRates}>История курсов</Button></div></Card></Col>
    <Col xs={24} lg={8}><Card><div className="proxy-muted">Курсовая разница · TJS</div><div className="proxy-difference">{ledgerMoney(metrics?.difference_minor)} <span>/</span> {wholeMoney(metrics?.fx_balance)}</div><Typography.Text type="secondary">Сумма разниц / баланс счёта<br/>17507972590808713206</Typography.Text>{metrics?.balance_error&&<div className="proxy-warning">{metrics.balance_error}</div>}</Card></Col>
   </Row>
+  <ProxyPayDirectionChart metrics={metrics?.direction_metrics}/>
   {(error||metricsError)&&<Alert showIcon type="error" message={error||metricsError}/>} {notice&&<Alert showIcon closable onClose={()=>setNotice(null)} type={notice.type} message={notice.text}/>}
   <Alert showIcon type="info" message="Получение операций и финансовые проводки настраиваются отдельными задачами." description="Исторические неоплаченные операции доступны для ручной обработки. Повтор допускается только после подтверждённой ошибки АБС; неопределённый статус повторно не отправляется."/>
   <Card className="proxy-filter-card"><Row gutter={[12,12]}>
@@ -108,11 +122,11 @@ function TransferLedger(){
   {data.sync.last_error&&<Alert type="warning" message={`Ошибка загрузки: ${data.sync.last_error}`}/>}
   {data.sync.backfill_date&&<Typography.Paragraph type="secondary">Архив с 01.08.2026. Следующий день для сверки: {data.sync.backfill_date}.</Typography.Paragraph>}
   <Table rowKey="id" dataSource={data.items} columns={columns} loading={loading} scroll={{x:2060}} pagination={{current:page,pageSize:50,total:data.total,showSizeChanger:false,onChange:setPage,showTotal:total=>`${total} операций`}}/>
-  <Modal open={!!selected} title={`${({payment:'Платежка',conversion:'Конвертация',difference:'Курс. разница'})[selected?.kind]||''} · №${selected?.row.utrnno??''}`} width={860} maskClosable={false} onCancel={()=>{if(!busy){generation.current++;setSelected(null);setPrepared(null);setStageHistory(null);}}} closable={!busy} footer={selected&&<Space><Button disabled={!!busy} onClick={()=>setSelected(null)}>Закрыть</Button>{selected.kind==='conversion'&&!selected.row.legacy_settled&&!selected.row.block_reason&&(!selected.row.conversion_operation_id||selected.row.conversion_status==='error')&&selected.row.payment_status==='executed'&&selected.row.payment_abs_status==='BOOKED'&&<Button loading={busy==='quote'} disabled={!!busy&&busy!=='quote'} onClick={quote}>Получить курсы</Button>}<Button type="primary" loading={busy==='pay'} disabled={!!busy||!prepared||!ledgerCanPay(selected.row,selected.kind)} onClick={pay}>Оплатить</Button></Space>}>
+  <Modal open={!!selected} title={`${({payment:'Платежка',conversion:'Конвертация',difference:'Курс. разница'})[selected?.kind]||''} · №${selected?.row.utrnno??''}`} width={860} maskClosable={false} onCancel={()=>{if(!busy){generation.current++;setSelected(null);setPrepared(null);setStageHistory(null);}}} closable={!busy} footer={selected&&<Space><Button disabled={!!busy} onClick={()=>setSelected(null)}>Закрыть</Button>{proxyStageActions(selected.row).refreshQuote.enabled&&<Button loading={busy==='quote'} disabled={!!busy&&busy!=='quote'} onClick={quote}>Обновить курсы</Button>}<Button type="primary" loading={busy==='pay'} disabled={!!busy||!prepared||!ledgerCanPay(selected.row,selected.kind)} onClick={pay}>Оплатить</Button></Space>}>
    {selected&&<Space direction="vertical" size={16} style={{width:'100%'}}>
     {selected.row.historical&&<Alert type="info" message={selected.row.legacy_settled?'Историческая операция полностью выполнена':'Историческая операция доступна для проводки при отсутствии ранее выполненного этапа'}/>}
     {selected.row.block_reason&&<Alert type="error" message={selected.row.block_reason}/>}
-    {selected.kind==='conversion'&&selected.row.payment_status!=='executed'&&<Alert type="warning" message="Конвертация доступна после исполнения платежки (BOOKED). Курсы можно получить заранее."/>}
+    {selected.kind==='conversion'&&selected.row.payment_status!=='executed'&&<Alert type="warning" message="Конвертация доступна после исполнения платежки (BOOKED), загрузки курса и урегулирования курсовой разницы."/>}
     {modalError&&<Alert type="error" message={modalError}/>}
     <Descriptions bordered size="small" column={2} items={[
      {key:'direction',label:'Направление',children:ledgerDirection(selected.row.direction)},{key:'date',label:'Дата операции',children:ledgerDate(selected.row.occurred_at)},

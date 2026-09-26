@@ -17,7 +17,7 @@ import AccountOperations from "../../pages/dashboard/dashboard_frontovik/Account
 
 import DocxGenerator from "../../components/dashboard/dashboard_operator/DocxGenerator.jsx";
 
-const operatorRoutes = (
+const operatorRoutes = (<>
   <Route
     element={
       <RequireRole allowedRoles={[3]}>
@@ -42,10 +42,12 @@ const operatorRoutes = (
     <Route path="/operator/docx-generator" element={<DocxGenerator />} />
     <Route path="/operator/student-certificates" element={<StudentCertificatesBulkPage />} />
     <Route path="/operator/bulk-abs-search" element={<BulkAbsSearchPage />} />
-    <Route path="/operator/proxy-pay" element={<ProxyPayPage />} />
-    <Route path="/operator/proxy-pay/statement" element={<AccountOperations proxyPayMode />} />
     <Route path="/operator/groups" element={<OperatorGroupsPage />} />
   </Route>
-);
+  <Route element={<RequireRole allowedRoles={[53]}><Outlet /></RequireRole>}>
+    <Route path="/operator/proxy-pay" element={<ProxyPayPage />} />
+    <Route path="/operator/proxy-pay/statement" element={<AccountOperations proxyPayMode />} />
+  </Route>
+</>);
 
 export default operatorRoutes;
