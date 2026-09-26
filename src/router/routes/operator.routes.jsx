@@ -13,6 +13,7 @@ import OperatorGroupsPage from "../../pages/dashboard/dashboard_operator/Operato
 import StudentCertificatesBulkPage from "../../pages/dashboard/dashboard_operator/StudentCertificatesBulkPage.jsx";
 import BulkAbsSearchPage from "../../pages/dashboard/dashboard_operator/BulkAbsSearchPage.jsx";
 import ProxyPayPage from "../../pages/dashboard/dashboard_operator/ProxyPayPage.jsx";
+import AccountOperations from "../../pages/dashboard/dashboard_frontovik/AccountOperations.jsx";
 
 import DocxGenerator from "../../components/dashboard/dashboard_operator/DocxGenerator.jsx";
 
@@ -42,6 +43,7 @@ const operatorRoutes = (
     <Route path="/operator/student-certificates" element={<StudentCertificatesBulkPage />} />
     <Route path="/operator/bulk-abs-search" element={<BulkAbsSearchPage />} />
     <Route path="/operator/proxy-pay" element={<ProxyPayPage />} />
+    <Route path="/operator/proxy-pay/statement" element={<AccountOperations proxyPayMode />} />
     <Route path="/operator/groups" element={<OperatorGroupsPage />} />
   </Route>
 );
