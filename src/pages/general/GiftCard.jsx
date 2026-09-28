@@ -385,7 +385,7 @@ export default function GiftCard({ edit = false }) {
             }
             try {
                 setIsFetchingDocuments(true);
-                const docs = await getClientDocumentsByINN(data.inn);
+                const docs = await getClientDocumentsByINN(data.inn, data.client_code);
                 setClientDocuments(docs);
             } catch (err) {
                 console.error("Failed to load documents for INN", err);
@@ -394,7 +394,7 @@ export default function GiftCard({ edit = false }) {
             }
         };
         fetchDocs();
-    }, [data.inn]);
+    }, [data.inn, data.client_code]);
     
     useEffect(() => {
         const fetchOffices = async () => {
@@ -2623,11 +2623,12 @@ export default function GiftCard({ edit = false }) {
                     isOpen={isUploadModalOpen}
                     onClose={() => setIsUploadModalOpen(false)}
                     inn={data.inn}
+                    clientIndex={data.client_code}
                     onUploadSuccess={async () => {
                         setIsUploadModalOpen(false);
                         try {
                             setIsFetchingDocuments(true);
-                            const docs = await getClientDocumentsByINN(data.inn);
+                            const docs = await getClientDocumentsByINN(data.inn, data.client_code);
                             setClientDocuments(docs);
                         } catch (err) {
                             console.error("Failed to load documents for INN", err);
@@ -2641,6 +2642,7 @@ export default function GiftCard({ edit = false }) {
                     isOpen={!!previewDocument}
                     onClose={() => setPreviewDocument(null)}
                     document={previewDocument}
+                    clientIndex={data.client_code}
                 />
             </div>
         </>

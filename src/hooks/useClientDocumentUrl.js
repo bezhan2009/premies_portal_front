@@ -1,13 +1,15 @@
 import {useEffect, useState} from 'react';
 import {resolveClientDocumentUrl} from '../utils/clientDocuments.js';
+import {scopedDocumentUrl} from '../api/clientsDataFiles/clientDocumentScope.js';
 
 // Portal files require the same JWT and client scope as their metadata. Never
 // send a portal token to an application-server or external document URL.
-export default function useClientDocumentUrl(document, enabled=true) {
- const source=enabled ? resolveClientDocumentUrl(document) : '';
+export default function useClientDocumentUrl(document, enabled=true, clientIndex) {
+ const rawSource=enabled ? resolveClientDocumentUrl(document) : '';
  const [file,setFile]=useState({source:'',url:''});
  let protectedFile=false;
- try { const u=new URL(source); protectedFile=u.origin===new URL(import.meta.env.VITE_BACKEND_URL).origin && u.pathname.startsWith('/uploads/client_documents/'); } catch {}
+ try { const u=new URL(rawSource); protectedFile=u.origin===new URL(import.meta.env.VITE_BACKEND_URL).origin && u.pathname.startsWith('/uploads/client_documents/'); } catch {}
+ const source=protectedFile ? scopedDocumentUrl(rawSource,clientIndex) : rawSource;
  useEffect(()=>{
   if(!protectedFile || !source) return;
   const controller=new AbortController(); let objectUrl='';

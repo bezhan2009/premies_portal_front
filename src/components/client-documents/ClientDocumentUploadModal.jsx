@@ -7,6 +7,7 @@ export default function ClientDocumentUploadModal({
   onClose,
   onUploadSuccess,
   inn: initialInn = "",
+  clientIndex,
   hideInn = false,
   initialTitle = "",
   documentType = "",
@@ -44,7 +45,7 @@ export default function ClientDocumentUploadModal({
 
     setIsLoading(true);
     try {
-      await uploadClientDocument(inn, title, file, documentType);
+      await uploadClientDocument(inn, title, file, documentType, clientIndex);
       onUploadSuccess();
       onClose();
     } catch (err) {

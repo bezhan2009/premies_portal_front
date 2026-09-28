@@ -13,12 +13,13 @@ export default function DocumentPreviewModal({
   isOpen,
   onClose,
   document,
+  clientIndex,
   oval = false,
   title,
   actionLabel,
   onAction,
 }) {
-  const documentUrl = useClientDocumentUrl(document, isOpen);
+  const documentUrl = useClientDocumentUrl(document, isOpen, clientIndex);
   if (!document) {
     return null;
   }

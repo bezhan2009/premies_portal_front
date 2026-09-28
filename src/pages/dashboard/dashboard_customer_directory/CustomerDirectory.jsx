@@ -474,7 +474,7 @@ export default function CustomerDirectory() {
     if (!customer.inn) return;
     setDocumentsLoading(true);
     try {
-      const data = await getClientDocumentsByINN(customer.inn);
+      const data = await getClientDocumentsByINN(customer.inn, customer.client_index);
       if (generation === accessGeneration.current) setDocuments(Array.isArray(data) ? data : []);
     } catch {
       setError("Не удалось загрузить документы клиента");

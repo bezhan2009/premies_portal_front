@@ -1436,7 +1436,7 @@ export default function ABSClientSearch() {
         selectedClient?.requires_pin && !verifiedClientCodes.includes(selectedClient.client_code);
     const selectedClientINN = selectedClient?.tax_code?.trim() || "";
     const selectedClientSelfie = getClientSelfieDocument(clientDocuments);
-    const selectedClientPhotoUrl = useClientDocumentUrl(selectedClientSelfie);
+    const selectedClientPhotoUrl = useClientDocumentUrl(selectedClientSelfie, true, selectedClient?.client_code);
     const hasOverdueDebt = hasOverdueCreditDebt(accountsData);
     const visiblePosTerminals =
         posTerminalsClientCode === String(selectedClient?.client_code || "").trim()
@@ -1582,7 +1582,7 @@ export default function ABSClientSearch() {
         const loadClientDocuments = async () => {
             try {
                 setClientDocumentsLoading(true);
-                const response = await getClientDocumentsByINN(selectedClientINN);
+                const response = await getClientDocumentsByINN(selectedClientINN, selectedClient?.client_code);
 
                 if (!cancelled) {
                     setClientDocuments(response || []);
@@ -1605,7 +1605,7 @@ export default function ABSClientSearch() {
         return () => {
             cancelled = true;
         };
-    }, [selectedClientINN, clientDocumentsRefreshKey]);
+    }, [selectedClientINN, selectedClient?.client_code, clientDocumentsRefreshKey]);
 
     useEffect(() => {
         if (!selectedClient || !hasRole(35)) {
@@ -2179,6 +2179,7 @@ export default function ABSClientSearch() {
                 isOpen={Boolean(documentPreview)}
                 onClose={handleCloseDocumentPreview}
                 document={documentPreview}
+                clientIndex={selectedClient?.client_code}
                 oval={documentPreviewVariant === "oval"}
                 title={
                     documentPreviewVariant === "oval"
@@ -2198,6 +2199,7 @@ export default function ABSClientSearch() {
                 onClose={() => setClientDocumentUploadOpen(false)}
                 onUploadSuccess={handleClientDocumentUploadSuccess}
                 inn={selectedClientINN}
+                clientIndex={selectedClient?.client_code}
                 hideInn
                 initialTitle={clientDocumentUploadMode === "photo" ? "Фото клиента" : ""}
                 documentType={clientDocumentUploadMode === "photo" ? "selfie_with_passport" : ""}
