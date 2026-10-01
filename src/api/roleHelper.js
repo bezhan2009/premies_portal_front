@@ -21,7 +21,7 @@ export const ROLE_CLIENT_DOCUMENTS = 27;
 export const ROLE_BLOCK_CARD = 29;
 export const ROLE_CHANGE_PIN = 30;
 export const ROLE_OPEN_CARD = 50;
-export const ROLE_EMBOSSER = 51;
+export const ROLE_EMBOSSER = 54;
 
 export const canAccessTransactions = () => hasRole(ROLE_PROCESSING);
 export const canAccessAccountOperations = () => hasRole(ROLE_ACCOUNT_OPERATIONS);

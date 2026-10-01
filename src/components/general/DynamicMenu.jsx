@@ -767,7 +767,7 @@ export default function Sidebar({ activeLink = "reports", isOpen, toggle }) {
         }
 
         if (roles.includes(5)) additionalLinks.push({name:"Санкции",key:"director_sanctions",href:"/director/sanctions",icon:FileText});
-        if (roles.includes(51)) additionalLinks.push({name:"Эмбоссер",key:"embosser",href:"/embosser",icon:CreditCard});
+        if (roles.includes(54)) additionalLinks.push({name:"Эмбоссер",key:"embosser",href:"/embosser",icon:CreditCard});
         if (roles.some(r => [39,49].includes(r)) && !roles.includes(17)) additionalLinks.push({name:"Заявки на санкции",key:"client_sanctions",href:"/frontovik/change-approvals",icon:FileText});
         if (roles.includes(17) || roles.includes(35) || roles.includes(50)) {
             additionalLinks.push({

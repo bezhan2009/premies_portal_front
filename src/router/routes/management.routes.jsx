@@ -28,7 +28,7 @@ import DeclineManagementPage from "../../pages/dashboard/dashboard_declines/Decl
 
 const managementRoutes = (
   <>
- <Route path="embosser" element={<RequireRole allowedRoles={[51]}><EmbosserPage /></RequireRole>} />
+ <Route path="embosser" element={<RequireRole allowedRoles={[54]}><EmbosserPage /></RequireRole>} />
  <Route path="frontovik/change-approvals" element={<RequireRole allowedRoles={[17,35,39,49]}><ClientChangeApprovals /></RequireRole>} />
     <Route
       element={

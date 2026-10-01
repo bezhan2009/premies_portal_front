@@ -94,7 +94,7 @@ function RedirectDashboard() {
       navigate("/client-documents", { replace: true });
     } else if (roleIds.includes(41)) {
       navigate("/rohat", { replace: true });
-    } else if (roleIds.includes(51)) {
+    } else if (roleIds.includes(54)) {
       navigate("/embosser", { replace: true });
     } else if (roleIds.includes(1)) {
         navigate("/request-access", { replace: true });
