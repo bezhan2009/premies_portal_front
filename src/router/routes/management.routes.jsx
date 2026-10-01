@@ -1,4 +1,5 @@
 import DirectorSanctions from "../../pages/dashboard/dashboard_director/DirectorSanctions";
+import EmbosserPage from "../../pages/dashboard/dashboard_embosser/EmbosserPage.jsx";
 import ClientChangeApprovals from "../../pages/dashboard/dashboard_frontovik/ClientChangeApprovals";
 import { Route, Outlet } from "react-router-dom";
 import RequireRole from "../../middlewares/RequireRole.jsx";
@@ -27,6 +28,7 @@ import DeclineManagementPage from "../../pages/dashboard/dashboard_declines/Decl
 
 const managementRoutes = (
   <>
+ <Route path="embosser" element={<RequireRole allowedRoles={[51]}><EmbosserPage /></RequireRole>} />
  <Route path="frontovik/change-approvals" element={<RequireRole allowedRoles={[17,35,39,49]}><ClientChangeApprovals /></RequireRole>} />
     <Route
       element={

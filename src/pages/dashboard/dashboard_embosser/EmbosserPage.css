@@ -1,0 +1,14 @@
+.embosser-page { padding: 24px; display: grid; gap: 18px; }
+.embosser-page__heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.embosser-page__heading h2 { margin-bottom: 2px; }
+.embosser-page__card { min-width: 0; }
+.embosser-page__filters { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.embosser-page__filters .ant-input-search { width: min(430px, 100%); }
+.embosser-page__filters .ant-select { min-width: 190px; }
+.embosser-page__hint { margin-top: 18px; }
+.embosser-page__actions { margin: 8px 0 18px; }
+.embosser-page__history-title { margin-top: 20px; }
+.embosser-page__event { border-left: 3px solid #dbeafe; padding: 4px 0 8px 13px; margin-bottom: 11px; display: grid; gap: 3px; }
+.embosser-page__event span { color: #64748b; font-size: 12px; }
+.embosser-page__event p { margin: 0; white-space: pre-wrap; }
+@media (max-width: 640px) { .embosser-page { padding: 12px; } .embosser-page__heading { align-items: center; } }
