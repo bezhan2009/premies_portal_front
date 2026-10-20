@@ -10,6 +10,7 @@ import QRStatistics from "./QRStatistics.jsx";
 import { Button, Drawer, Space } from "antd";
 import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
 import * as XLSX from "xlsx";
+import { filterQrTransactions, merchantTitle } from "./qrMerchantFilter.js";
 
 // New imports for loan integration
 import RepayModal from "../../components/dashboard/dashboard_frontovik/RepayModal.jsx";
@@ -275,21 +276,14 @@ export default function TransactionsQR() {
     }
   }, []);
 
-  const filteredData = useMemo(() => {
-    if (!Array.isArray(tableData)) return [];
-    return tableData.filter((row) =>
-      Object.entries(filters).every(([key, value]) => {
-        if (!value) return true;
-        const rowValue = row[key];
-        if (rowValue == null) return false;
-        if (typeof rowValue === "number")
-          return String(rowValue).includes(value);
-        if (typeof rowValue === "string")
-          return rowValue.toLowerCase().includes(String(value).toLowerCase());
-        return false;
-      }),
-    );
-  }, [tableData, filters]);
+  const merchantsByCode = useMemo(
+    () => new Map(merchants.map((merchant) => [String(merchant.code), merchant.title])),
+    [merchants],
+  );
+  const filteredData = useMemo(
+    () => filterQrTransactions(tableData, filters, merchantsByCode),
+    [tableData, filters, merchantsByCode],
+  );
 
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
@@ -818,6 +812,17 @@ export default function TransactionsQR() {
               {isThemOnUs && (
                 <>
                   <input
+                    placeholder="Наименование мерчанта"
+                    aria-label="Наименование мерчанта"
+                    value={filters.merchant_name || ""}
+                    onChange={(e) =>
+                      setFilters((previous) => ({
+                        ...previous,
+                        merchant_name: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
                     placeholder="Код мерчанта"
                     onChange={(e) =>
                       setFilters((p) => ({
@@ -1337,11 +1342,7 @@ export default function TransactionsQR() {
                   <Table.Column
                     title="Мерчант"
                     key="merchant"
-                    render={(_, row) => {
-                      const code = row.merchant_code || row.merchant_id;
-                      if (!code) return "—";
-                      return merchants.find((m) => String(m.code) === String(code))?.title ?? code;
-                    }}
+                    render={(_, row) => merchantTitle(row, merchantsByCode)}
                   />
                 )}
                 {isThemOnUs && (
