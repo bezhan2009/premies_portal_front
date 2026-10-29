@@ -312,10 +312,23 @@ function Save-DeployState {
     [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, $utf8NoBom)
 }
 
+function Get-PlinkExecutable {
+    $plinkCommand = Get-Command plink -ErrorAction SilentlyContinue
+    $localPlink = Join-Path $env:USERPROFILE "plink.exe"
+    if ($plinkCommand) {
+        return $plinkCommand.Source
+    }
+    if (Test-Path -LiteralPath $localPlink) {
+        return $localPlink
+    }
+    throw "plink.exe was not found. Install PuTTY Link or place plink.exe in $env:USERPROFILE."
+}
+
 function Invoke-SSHScript {
     param(
         [string]$Script,
-        [string]$Password
+        [string]$Password,
+        [switch]$CaptureOutput
     )
 
     $script:LastSshExitCode = 1
@@ -324,21 +337,126 @@ function Invoke-SSHScript {
     [System.IO.File]::WriteAllText($tempFile, ($Script -replace "`r", "") + "`n", $utf8NoBom)
 
     try {
-        $plinkCommand = Get-Command plink -ErrorAction SilentlyContinue
-        $localPlink = Join-Path $env:USERPROFILE "plink.exe"
-        if ($plinkCommand) {
-            $plinkExecutable = $plinkCommand.Source
-        } elseif (Test-Path -LiteralPath $localPlink) {
-            $plinkExecutable = $localPlink
-        } else {
-            throw "plink.exe was not found. Install PuTTY Link or place plink.exe in $env:USERPROFILE."
+        $plinkExecutable = Get-PlinkExecutable
+        if ($CaptureOutput) {
+            $output = @("y" | & $plinkExecutable -ssh -P $ServerPort -pw $Password -m $tempFile "$ServerUser@$ServerIp" 2>$null)
+            $script:LastSshExitCode = $LASTEXITCODE
+            return $output
         }
-
         "y" | & $plinkExecutable -ssh -P $ServerPort -pw $Password -m $tempFile "$ServerUser@$ServerIp"
         $script:LastSshExitCode = $LASTEXITCODE
     } finally {
         Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
     }
+}
+
+function Get-ServerPassword {
+    if ([string]::IsNullOrWhiteSpace($script:ServerPassword)) {
+        $script:ServerPassword = Get-EncryptedSecret -Path $PasswordFile -Prompt "SSH password for $ServerUser@$ServerIp" -EnvironmentValue $env:DEPLOY_SSH_PASSWORD
+    }
+    return $script:ServerPassword
+}
+
+# GitLab is frequently reachable only from inside the bank network. When this
+# computer cannot push there, the new commits travel to the server as a small
+# git bundle and the server performs the same GitLab mirror push.
+function Get-ServerKnownCommits {
+    param(
+        [hashtable]$Project,
+        [string]$Password
+    )
+
+    $lines = New-Object 'System.Collections.Generic.List[string]'
+    $quotedGitLabRef = ConvertTo-BashLiteral "refs/remotes/gitlab/$($Project.Branch)"
+    foreach ($path in $Project.RemotePaths) {
+        $quotedGitDirectory = ConvertTo-BashLiteral "$path/.git"
+        $quotedPath = ConvertTo-BashLiteral $path
+        $lines.Add("if [ -d $quotedGitDirectory ]; then cd $quotedPath; git rev-list --max-count=400 HEAD; git rev-list --max-count=400 $quotedGitLabRef 2>/dev/null || true; exit 0; fi")
+    }
+    $lines.Add("exit 3")
+    $output = Invoke-SSHScript -Script ($lines -join "`n") -Password $Password -CaptureOutput
+    return @($output | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^[0-9a-f]{40}$' } | Select-Object -Unique)
+}
+
+function New-ServerMirrorBundle {
+    param(
+        [hashtable]$Project,
+        [string[]]$KnownCommits
+    )
+
+    $localKnown = @()
+    if ($KnownCommits.Count -gt 0) {
+        $localKnown = @($KnownCommits | & git -C $Project.LocalPath cat-file --batch-check 2>$null | ForEach-Object {
+            if ($_ -match '^([0-9a-f]{40}) commit ') { $Matches[1] }
+        })
+    }
+    if ($localKnown.Count -eq 0) {
+        throw "The server repository for $($Project.LocalName) shares no history with GitHub $($Project.Branch)."
+    }
+    if ($localKnown -contains $Project.OriginSha) {
+        return ""
+    }
+
+    $bundleRef = "refs/deploy/$($Project.Branch)"
+    $bundleFile = [System.IO.Path]::GetTempFileName()
+    try {
+        & git -C $Project.LocalPath update-ref $bundleRef $Project.OriginSha
+        @(@($bundleRef) + @($localKnown | ForEach-Object { "^$_" })) | & git -C $Project.LocalPath bundle create $bundleFile --stdin 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not create a git bundle for $($Project.LocalName)."
+        }
+        $bytes = [System.IO.File]::ReadAllBytes($bundleFile)
+        # The whole remote script is passed as one SSH command argument (128 KiB limit on Linux).
+        if ($bytes.Length -gt 64KB) {
+            throw "The pending $($Project.LocalName) commits are too large ($($bytes.Length) bytes) to transfer through the deployment script."
+        }
+        return [Convert]::ToBase64String($bytes, [Base64FormattingOptions]::InsertLineBreaks)
+    } finally {
+        & git -C $Project.LocalPath update-ref -d $bundleRef 2>$null
+        Remove-Item -LiteralPath $bundleFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Add-ServerMirrorCommands {
+    param(
+        [System.Collections.Generic.List[string]]$Lines,
+        [hashtable]$Project
+    )
+
+    $quotedHeader = ConvertTo-BashLiteral "http.extraHeader=Authorization: Basic $($Project.GitLabAuthHeader)"
+    $quotedUrl = ConvertTo-BashLiteral $Project.GitLabUrl
+    $quotedOriginSha = ConvertTo-BashLiteral $Project.OriginSha
+    $quotedSourceRef = ConvertTo-BashLiteral "refs/remotes/github/$($Project.Branch)"
+    $quotedBundleRefspec = ConvertTo-BashLiteral "+refs/deploy/$($Project.Branch):refs/remotes/github/$($Project.Branch)"
+    $quotedGitLabFetch = ConvertTo-BashLiteral "+refs/heads/$($Project.Branch):refs/remotes/gitlab/$($Project.Branch)"
+    $quotedGitLabRef = ConvertTo-BashLiteral "refs/remotes/gitlab/$($Project.Branch)"
+    $quotedTarget = ConvertTo-BashLiteral "refs/heads/$($Project.Branch)"
+    $mergeMessage = ConvertTo-BashLiteral "chore(deploy): synchronize $($Project.LocalName) from GitHub $($Project.OriginSha.Substring(0, 12))"
+
+    $Lines.Add("echo $(ConvertTo-BashLiteral "[MIRROR] $($Project.LocalName): pushing GitHub $($Project.OriginSha.Substring(0, 12)) to GitLab from the server")")
+    if ([string]::IsNullOrEmpty($Project.ServerBundle)) {
+        $Lines.Add("git update-ref $quotedSourceRef $quotedOriginSha")
+    } else {
+        $Lines.Add('deploy_bundle="$(mktemp)"')
+        $Lines.Add('base64 -d > "$deploy_bundle" <<''DEPLOY_BUNDLE''')
+        $Lines.Add($Project.ServerBundle)
+        $Lines.Add('DEPLOY_BUNDLE')
+        $Lines.Add('git bundle verify "$deploy_bundle" >/dev/null')
+        $Lines.Add('git fetch --no-tags "$deploy_bundle" ' + $quotedBundleRefspec)
+        $Lines.Add('rm -f "$deploy_bundle"')
+    }
+    $Lines.Add("github_sha=`$(git rev-parse $quotedSourceRef)")
+    $Lines.Add('if [ "$github_sha" != ' + $quotedOriginSha + ' ]; then echo ''[ERROR] Transferred commit does not match GitHub.''; exit 28; fi')
+    $Lines.Add("git -c credential.helper= -c $quotedHeader fetch --no-tags $quotedUrl $quotedGitLabFetch")
+    $Lines.Add("gitlab_sha=`$(git rev-parse $quotedGitLabRef)")
+    $Lines.Add('if [ "$(git rev-parse "$gitlab_sha^{tree}")" = "$(git rev-parse "$github_sha^{tree}")" ]; then')
+    $Lines.Add("  echo '[MIRROR] GitLab already has the GitHub content.'")
+    $Lines.Add('elif git merge-base --is-ancestor "$gitlab_sha" "$github_sha"; then')
+    $Lines.Add("  git -c credential.helper= -c $quotedHeader push $quotedUrl " + '"$github_sha:"' + $quotedTarget)
+    $Lines.Add('else')
+    $Lines.Add("  mirror_sha=`$(git -c user.name='Activ Daily Deploy' -c user.email='deploy@activ.local' commit-tree " + '"$github_sha^{tree}" -p "$github_sha" -p "$gitlab_sha" -m ' + $mergeMessage + ')')
+    $Lines.Add("  git -c credential.helper= -c $quotedHeader push $quotedUrl " + '"$mirror_sha:"' + $quotedTarget)
+    $Lines.Add('fi')
 }
 
 function Send-DeployNotification {
@@ -640,12 +758,21 @@ foreach ($project in $Candidates) {
         }
     }
     if (-not $mirrorSucceeded) {
-        $message = "GitLab mirror failed for $($project.LocalName)."
-        Write-Host "[ERROR] $message" -ForegroundColor Red
-        $MirrorErrors += $message
-        continue
+        Write-Host "[MIRROR] $($project.LocalName): GitLab is not reachable from this computer; the server will push the commits." -ForegroundColor Yellow
+        $project.MirrorOnServer = $true
     }
     $ReadyProjects += $project
+}
+
+foreach ($project in @($ReadyProjects | Where-Object { $_.MirrorOnServer })) {
+    try {
+        $knownCommits = Get-ServerKnownCommits -Project $project -Password (Get-ServerPassword)
+        $project.ServerBundle = New-ServerMirrorBundle -Project $project -KnownCommits $knownCommits
+    } catch {
+        $message = "GitLab mirror through the server failed for $($project.LocalName): $($_.Exception.Message)"
+        Write-Host "[ERROR] $message" -ForegroundColor Red
+        $MirrorErrors += $message
+    }
 }
 
 if ($MirrorErrors.Count -gt 0 -or $ReadyProjects.Count -ne $Candidates.Count) {
@@ -687,6 +814,9 @@ foreach ($project in $ReadyProjects) {
     $bashLines.Add('case "$origin_url" in')
     $bashLines.Add("  *gl.abank.tj*) git remote set-url origin $quotedUrl ;;")
     $bashLines.Add("esac")
+    if ($project.MirrorOnServer) {
+        Add-ServerMirrorCommands -Lines $bashLines -Project $project
+    }
     $bashLines.Add("git -c credential.helper= -c $quotedHeader fetch --no-tags $quotedUrl $quotedFetchRefspec")
     $bashLines.Add('old_sha="$(git rev-parse HEAD)"')
     $bashLines.Add("new_sha=`$(git rev-parse $quotedGitLabTrackingRef)")
@@ -886,7 +1016,7 @@ $bashLines.Add("docker image prune -f")
 $bashLines.Add("echo '[DEPLOY] Completed successfully.'")
 $remoteScript = $bashLines -join "`n"
 
-$serverPassword = Get-EncryptedSecret -Path $PasswordFile -Prompt "SSH password for $ServerUser@$ServerIp" -EnvironmentValue $env:DEPLOY_SSH_PASSWORD
+$serverPassword = Get-ServerPassword
 if ([string]::IsNullOrWhiteSpace($serverPassword)) {
     throw "SSH password is required."
 }
