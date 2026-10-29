@@ -6,10 +6,13 @@
 # With no -Services argument, all configured services are cloned if necessary
 # and deployed. Use -Services only when an explicit subset is required.
 
+[CmdletBinding()]
 param(
     [switch]$Force,
     [string]$Services,
-    [switch]$DryRun
+    [switch]$DryRun,
+    # Synchronize GitHub to GitLab only; nothing is checked out or rebuilt on the server.
+    [switch]$MirrorOnly
 )
 
 $ErrorActionPreference = "Continue"
@@ -332,6 +335,10 @@ function Invoke-SSHScript {
     )
 
     $script:LastSshExitCode = 1
+    # sshd hands the script to the shell as a single argument, which Linux caps at 128 KiB.
+    if ($Script.Length -gt 126000) {
+        throw "The remote script is too large ($($Script.Length) characters) to send in one SSH command."
+    }
     $tempFile = [System.IO.Path]::GetTempFileName()
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($tempFile, ($Script -replace "`r", "") + "`n", $utf8NoBom)
@@ -378,6 +385,35 @@ function Get-ServerKnownCommits {
     return @($output | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^[0-9a-f]{40}$' } | Select-Object -Unique)
 }
 
+# Windows PowerShell can prefix piped stdin with a UTF-8 BOM, which git rejects,
+# so the input is handed over as a file instead of through the pipeline.
+function Invoke-GitWithInput {
+    param(
+        [string]$RepositoryPath,
+        [string[]]$Arguments,
+        [string[]]$InputLines
+    )
+
+    $inputFile = [System.IO.Path]::GetTempFileName()
+    $outputFile = [System.IO.Path]::GetTempFileName()
+    $errorFile = [System.IO.Path]::GetTempFileName()
+    try {
+        [System.IO.File]::WriteAllText($inputFile, (($InputLines -join "`n") + "`n"), (New-Object System.Text.UTF8Encoding($false)))
+        $quotedArguments = @(@("-C", $RepositoryPath) + $Arguments | ForEach-Object {
+            if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
+        })
+        $process = Start-Process -FilePath "git" -ArgumentList $quotedArguments -RedirectStandardInput $inputFile `
+            -RedirectStandardOutput $outputFile -RedirectStandardError $errorFile -NoNewWindow -Wait -PassThru
+        return [pscustomobject]@{
+            ExitCode = $process.ExitCode
+            Output   = @(Get-Content -LiteralPath $outputFile)
+            Error    = (Get-Content -Raw -LiteralPath $errorFile)
+        }
+    } finally {
+        Remove-Item -LiteralPath $inputFile, $outputFile, $errorFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function New-ServerMirrorBundle {
     param(
         [hashtable]$Project,
@@ -386,7 +422,8 @@ function New-ServerMirrorBundle {
 
     $localKnown = @()
     if ($KnownCommits.Count -gt 0) {
-        $localKnown = @($KnownCommits | & git -C $Project.LocalPath cat-file --batch-check 2>$null | ForEach-Object {
+        $check = Invoke-GitWithInput -RepositoryPath $Project.LocalPath -Arguments @("cat-file", "--batch-check") -InputLines $KnownCommits
+        $localKnown = @($check.Output | ForEach-Object {
             if ($_ -match '^([0-9a-f]{40}) commit ') { $Matches[1] }
         })
     }
@@ -401,13 +438,13 @@ function New-ServerMirrorBundle {
     $bundleFile = [System.IO.Path]::GetTempFileName()
     try {
         & git -C $Project.LocalPath update-ref $bundleRef $Project.OriginSha
-        @(@($bundleRef) + @($localKnown | ForEach-Object { "^$_" })) | & git -C $Project.LocalPath bundle create $bundleFile --stdin 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not create a git bundle for $($Project.LocalName)."
+        $bundle = Invoke-GitWithInput -RepositoryPath $Project.LocalPath -Arguments @("bundle", "create", $bundleFile, "--stdin") -InputLines (@($bundleRef) + @($localKnown | ForEach-Object { "^$_" }))
+        if ($bundle.ExitCode -ne 0) {
+            throw "Could not create a git bundle for $($Project.LocalName): $($bundle.Error)"
         }
         $bytes = [System.IO.File]::ReadAllBytes($bundleFile)
         # The whole remote script is passed as one SSH command argument (128 KiB limit on Linux).
-        if ($bytes.Length -gt 64KB) {
+        if ($bytes.Length -gt 88KB) {
             throw "The pending $($Project.LocalName) commits are too large ($($bytes.Length) bytes) to transfer through the deployment script."
         }
         return [Convert]::ToBase64String($bytes, [Base64FormattingOptions]::InsertLineBreaks)
@@ -526,6 +563,9 @@ if ($controllerPath.StartsWith($frontendRepositoryPrefix, [System.StringComparis
                     }
                     if ($DryRun) {
                         $restartArguments += "-DryRun"
+                    }
+                    if ($MirrorOnly) {
+                        $restartArguments += "-MirrorOnly"
                     }
                     & $powerShellExecutable @restartArguments
                     exit $LASTEXITCODE
@@ -777,6 +817,25 @@ foreach ($project in @($ReadyProjects | Where-Object { $_.MirrorOnServer })) {
 
 if ($MirrorErrors.Count -gt 0 -or $ReadyProjects.Count -ne $Candidates.Count) {
     throw "GitLab synchronization failed. Nothing was deployed: $($MirrorErrors -join ' ')"
+}
+
+if ($MirrorOnly) {
+    $serverMirrorProjects = @($ReadyProjects | Where-Object { $_.MirrorOnServer })
+    if ($serverMirrorProjects.Count -gt 0) {
+        $mirrorLines = New-Object 'System.Collections.Generic.List[string]'
+        $mirrorLines.Add("set -eu")
+        foreach ($project in $serverMirrorProjects) {
+            Add-RemoteDirectorySelection -Lines $mirrorLines -Paths $project.RemotePaths -ProjectName $project.LocalName -RepositoryUrl $project.GitLabUrl -Branch $project.Branch -AuthHeader $project.GitLabAuthHeader
+            Add-ServerMirrorCommands -Lines $mirrorLines -Project $project
+        }
+        Write-Host "[MIRROR] Connecting to ${ServerUser}@${ServerIp}:${ServerPort}..." -ForegroundColor Green
+        Invoke-SSHScript -Script ($mirrorLines -join "`n") -Password (Get-ServerPassword)
+        if ($script:LastSshExitCode -ne 0) {
+            throw "GitLab synchronization through the server failed. Nothing was deployed."
+        }
+    }
+    Write-Host "[OK] GitLab is synchronized with GitHub; nothing was deployed." -ForegroundColor Green
+    exit 0
 }
 
 $bashLines = New-Object 'System.Collections.Generic.List[string]'
